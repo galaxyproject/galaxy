@@ -23,25 +23,37 @@ class ConditionalDependencies(object):
 
     def parse_configs(self):
         self.config = load_app_properties(config_file=self.config_file)
-        job_conf_xml = self.config.get("job_config_file", join(dirname(self.config_file), 'job_conf.xml'))
+        job_conf_xml = self.config.get("job_config_file",
+                                       join(
+                                           dirname(self.config_file),
+                                           'job_conf.xml'))
         try:
-            for plugin in ElementTree.parse(job_conf_xml).find('plugins').findall('plugin'):
+            for plugin in ElementTree.parse(job_conf_xml).find(
+                    'plugins').findall('plugin'):
                 if 'load' in plugin.attrib:
                     self.job_runners.append(plugin.attrib['load'])
         except (OSError, IOError):
             pass
-        object_store_conf_xml = self.config.get("object_store_config_file", join(dirname(self.config_file), 'object_store_conf.xml'))
+        object_store_conf_xml = self.config.get("object_store_config_file",
+                                                join(
+                                                    dirname(self.config_file),
+                                                    'object_store_conf.xml'))
         try:
-            for store in ElementTree.parse(object_store_conf_xml).iter('object_store'):
+            for store in ElementTree.parse(object_store_conf_xml).iter(
+                    'object_store'):
                 if 'type' in store.attrib:
                     self.object_stores.append(store.attrib['type'])
         except (OSError, IOError):
             pass
 
         # Parse auth conf
-        auth_conf_xml = self.config.get("auth_config_file", join(dirname(self.config_file), 'auth_conf.xml'))
+        auth_conf_xml = self.config.get("auth_config_file",
+                                        join(
+                                            dirname(self.config_file),
+                                            'auth_conf.xml'))
         try:
-            for auth in ElementTree.parse(auth_conf_xml).findall('authenticator'):
+            for auth in ElementTree.parse(auth_conf_xml).findall(
+                    'authenticator'):
                 auth_type = auth.find('type')
                 if auth_type is not None:
                     self.authenticators.append(auth_type.text)
@@ -68,7 +80,8 @@ class ConditionalDependencies(object):
 
     def check_drmaa(self):
         return ("galaxy.jobs.runners.drmaa:DRMAAJobRunner" in self.job_runners
-                or "galaxy.jobs.runners.slurm:SlurmJobRunner" in self.job_runners)
+                or
+                "galaxy.jobs.runners.slurm:SlurmJobRunner" in self.job_runners)
 
     def check_pbs_python(self):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
@@ -89,14 +102,16 @@ class ConditionalDependencies(object):
         return self.config.get("graphite_host", None) is not None
 
     def check_weberror(self):
-        return (asbool(self.config["debug"]) and asbool(self.config["use_interactive"]))
+        return (asbool(self.config["debug"])
+                and asbool(self.config["use_interactive"]))
 
     def check_pygments(self):
         # pygments is a dependency of weberror and only weberror
         return self.check_weberror()
 
     def check_python_ldap(self):
-        return ('ldap' in self.authenticators or 'activedirectory' in self.authenticators)
+        return ('ldap' in self.authenticators
+                or 'activedirectory' in self.authenticators)
 
     def check_azure_storage(self):
         return 'azure_blob' in self.object_stores

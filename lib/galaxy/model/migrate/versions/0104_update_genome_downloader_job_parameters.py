@@ -26,7 +26,13 @@ context = scoped_session(sessionmaker(autoflush=False, autocommit=True))
 
 
 class DeferredJob(object):
-    states = Bunch(NEW='new', WAITING='waiting', QUEUED='queued', RUNNING='running', OK='ok', ERROR='error')
+    states = Bunch(
+        NEW='new',
+        WAITING='waiting',
+        QUEUED='queued',
+        RUNNING='running',
+        OK='ok',
+        ERROR='error')
 
     def __init__(self, state=None, plugin=None, params=None):
         self.state = state
@@ -37,8 +43,14 @@ class DeferredJob(object):
 DeferredJob.table = Table("deferred_job", metadata,
                           Column("id", Integer, primary_key=True),
                           Column("create_time", DateTime, default=now),
-                          Column("update_time", DateTime, default=now, onupdate=now),
-                          Column("state", String(64), index=True), Column("plugin", String(128), index=True), Column("params", JSONType))
+                          Column(
+                              "update_time",
+                              DateTime,
+                              default=now,
+                              onupdate=now),
+                          Column("state", String(64), index=True),
+                          Column("plugin", String(128), index=True),
+                          Column("params", JSONType))
 
 mapper(DeferredJob, DeferredJob.table, properties={})
 
@@ -48,7 +60,8 @@ def upgrade(migrate_engine):
 
     liftoverjobs = dict()
 
-    jobs = context.query(DeferredJob).filter_by(plugin='LiftOverTransferPlugin').all()
+    jobs = context.query(DeferredJob).filter_by(
+        plugin='LiftOverTransferPlugin').all()
 
     for job in jobs:
         if job.params['parentjob'] not in liftoverjobs:
@@ -66,7 +79,8 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
 
-    jobs = context.query(DeferredJob).filter_by(plugin='GenomeTransferPlugin').all()
+    jobs = context.query(DeferredJob).filter_by(
+        plugin='GenomeTransferPlugin').all()
 
     for job in jobs:
         if len(job.params['liftover']) == 0:

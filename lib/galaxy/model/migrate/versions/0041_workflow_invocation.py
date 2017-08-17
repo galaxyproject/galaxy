@@ -16,21 +16,45 @@ metadata = MetaData()
 WorkflowInvocation_table = Table("workflow_invocation", metadata,
                                  Column("id", Integer, primary_key=True),
                                  Column("create_time", DateTime, default=now),
-                                 Column("update_time", DateTime, default=now, onupdate=now),
-                                 Column("workflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=False))
+                                 Column(
+                                     "update_time",
+                                     DateTime,
+                                     default=now,
+                                     onupdate=now),
+                                 Column(
+                                     "workflow_id",
+                                     Integer,
+                                     ForeignKey("workflow.id"),
+                                     index=True,
+                                     nullable=False))
 
 WorkflowInvocationStep_table = Table("workflow_invocation_step", metadata,
                                      Column("id", Integer, primary_key=True),
-                                     Column("create_time", DateTime, default=now),
-                                     Column("update_time", DateTime, default=now, onupdate=now),
+                                     Column(
+                                         "create_time", DateTime, default=now),
+                                     Column(
+                                         "update_time",
+                                         DateTime,
+                                         default=now,
+                                         onupdate=now),
                                      Column(
                                          "workflow_invocation_id",
                                          Integer,
                                          ForeignKey("workflow_invocation.id"),
                                          index=True,
                                          nullable=False),
-                                     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
-                                     Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=False))
+                                     Column(
+                                         "workflow_step_id",
+                                         Integer,
+                                         ForeignKey("workflow_step.id"),
+                                         index=True,
+                                         nullable=False),
+                                     Column(
+                                         "job_id",
+                                         Integer,
+                                         ForeignKey("job.id"),
+                                         index=True,
+                                         nullable=False))
 
 tables = [WorkflowInvocation_table, WorkflowInvocationStep_table]
 
@@ -44,7 +68,9 @@ def upgrade(migrate_engine):
         try:
             table.create()
         except:
-            log.warning("Failed to create table '%s', ignoring (might result in wrong schema)" % table.name)
+            log.warning(
+                "Failed to create table '%s', ignoring (might result in wrong schema)"
+                % table.name)
 
 
 def downgrade(migrate_engine):

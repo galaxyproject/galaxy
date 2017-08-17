@@ -44,7 +44,8 @@ class ContainerManagerMixin(object):
         iters = []
         iters.append(self.contained(container))
         iters.append(self.subcontainers(container))
-        return galaxy.util.merge_sorted_iterables(self.order_contents_on, *iters)
+        return galaxy.util.merge_sorted_iterables(self.order_contents_on,
+                                                  *iters)
 
     def contained(self, container, **kwargs):
         """
@@ -56,7 +57,8 @@ class ContainerManagerMixin(object):
         """
         Returns only the containers within this one.
         """
-        return self._filter_contents(container, self.subcontainer_class, **kwargs)
+        return self._filter_contents(container, self.subcontainer_class,
+                                     **kwargs)
 
     # ---- private
     def _filter_contents(self, container, content_class, **kwargs):

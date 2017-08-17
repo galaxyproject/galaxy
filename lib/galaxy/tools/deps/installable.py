@@ -46,16 +46,20 @@ def ensure_installed(installable_context, install_func, auto_init):
                 if installable_context.can_install():
                     if install_func(installable_context):
                         installed = False
-                        log.warning("%s installation requested and failed." % desc)
+                        log.warning(
+                            "%s installation requested and failed." % desc)
                     else:
                         installed = installable_context.is_installed()
                         if not installed:
-                            log.warning("%s installation requested, seemed to succeed, but not found." % desc)
+                            log.warning(
+                                "%s installation requested, seemed to succeed, but not found."
+                                % desc)
                 else:
                     installed = False
             else:
                 installed = False
-                log.warning("%s not installed and auto-installation disabled.", desc)
+                log.warning("%s not installed and auto-installation disabled.",
+                            desc)
         else:
             installed = True
         return installed
@@ -65,9 +69,11 @@ def ensure_installed(installable_context, install_func, auto_init):
 
     try:
         if auto_init and os.access(parent_path, os.W_OK):
-            with FileLock(os.path.join(parent_path, desc.lower()), timeout=300):
+            with FileLock(
+                    os.path.join(parent_path, desc.lower()), timeout=300):
                 return _check()
         else:
             return _check()
     except FileLockException:
-        raise Exception("Failed to get file lock for %s" % os.path.join(parent_path, desc.lower()))
+        raise Exception("Failed to get file lock for %s" % os.path.join(
+            parent_path, desc.lower()))

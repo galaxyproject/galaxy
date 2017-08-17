@@ -21,7 +21,8 @@ class DependenciesDescription(object):
         return dict(
             requirements=[r.to_dict() for r in self.requirements],
             installed_tool_dependencies=[
-                DependenciesDescription._toolshed_install_dependency_to_dict(d) for d in self.installed_tool_dependencies
+                DependenciesDescription._toolshed_install_dependency_to_dict(d)
+                for d in self.installed_tool_dependencies
             ])
 
     @staticmethod
@@ -31,9 +32,14 @@ class DependenciesDescription(object):
 
         requirements_dicts = as_dict.get('requirements', [])
         requirements = ToolRequirements.from_list(requirements_dicts)
-        installed_tool_dependencies_dicts = as_dict.get('installed_tool_dependencies', [])
-        installed_tool_dependencies = map(DependenciesDescription._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts)
-        return DependenciesDescription(requirements=requirements, installed_tool_dependencies=installed_tool_dependencies)
+        installed_tool_dependencies_dicts = as_dict.get(
+            'installed_tool_dependencies', [])
+        installed_tool_dependencies = map(
+            DependenciesDescription._toolshed_install_dependency_from_dict,
+            installed_tool_dependencies_dicts)
+        return DependenciesDescription(
+            requirements=requirements,
+            installed_tool_dependencies=installed_tool_dependencies)
 
     @staticmethod
     def _toolshed_install_dependency_from_dict(as_dict):
@@ -43,7 +49,8 @@ class DependenciesDescription(object):
         repository_object = bunch.Bunch(
             name=as_dict['repository_name'],
             owner=as_dict['repository_owner'],
-            installed_changeset_revision=as_dict['repository_installed_changeset'], )
+            installed_changeset_revision=as_dict[
+                'repository_installed_changeset'], )
         dependency_object = bunch.Bunch(
             name=as_dict['dependency_name'],
             version=as_dict['dependency_version'],
@@ -60,4 +67,5 @@ class DependenciesDescription(object):
             dependency_type=tool_dependency.type,
             repository_name=tool_shed_repository.name,
             repository_owner=tool_shed_repository.owner,
-            repository_installed_changeset=tool_shed_repository.installed_changeset_revision, )
+            repository_installed_changeset=tool_shed_repository.
+            installed_changeset_revision, )

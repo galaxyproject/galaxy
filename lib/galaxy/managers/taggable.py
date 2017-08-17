@@ -56,7 +56,8 @@ class TaggableManagerMixin(object):
         """
         Set an `item`'s tags from a list of strings.
         """
-        return _tags_from_strings(item, self.app.tag_handler, new_tags, user=user)
+        return _tags_from_strings(
+            item, self.app.tag_handler, new_tags, user=user)
 
     # def tags_by_user( self, user, **kwargs ):
     # TODO: here or TagManager
@@ -85,7 +86,8 @@ class TaggableDeserializerMixin(object):
         Note: this will erase any previous tags.
         """
         new_tags_list = self.validate.basestring_list(key, val)
-        _tags_from_strings(item, self.app.tag_handler, new_tags_list, user=user)
+        _tags_from_strings(
+            item, self.app.tag_handler, new_tags_list, user=user)
         return item.tags
 
 

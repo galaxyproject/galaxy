@@ -25,7 +25,9 @@ class ChronosRunnerException(Exception):
 def handle_exception_call(func):
     # Catch chronos exceptions. The latest version of chronos-python does
     # support a hierarchy over the exceptions.
-    chronos_exceptions = (chronos.ChronosAPIError, chronos.UnauthorizedError, chronos.MissingFieldError, chronos.OneOfViolationError, )
+    chronos_exceptions = (chronos.ChronosAPIError, chronos.UnauthorizedError,
+                          chronos.MissingFieldError,
+                          chronos.OneOfViolationError, )
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -109,7 +111,8 @@ class ChronosJobRunner(AsynchronousJobRunner):
             kwargs[self.RUNNER_PARAM_SPEC_KEY] = {}
         kwargs[self.RUNNER_PARAM_SPEC_KEY].update(self.RUNNER_PARAM_SPEC)
         super(ChronosJobRunner, self).__init__(app, nworkers, **kwargs)
-        protocol = 'http' if self.runner_params.get('insecure', True) else 'https'
+        protocol = 'http' if self.runner_params.get('insecure',
+                                                    True) else 'https'
         self._chronos_client = chronos.connect(
             self.runner_params['chronos'],
             username=self.runner_params.get('username'),
@@ -121,7 +124,10 @@ class ChronosJobRunner(AsynchronousJobRunner):
     @handle_exception_call
     def queue_job(self, job_wrapper):
         LOGGER.debug("Starting queue_job for job " + job_wrapper.get_id_tag())
-        if not self.prepare_job(job_wrapper, include_metadata=False, modify_command_for_container=False):
+        if not self.prepare_job(
+                job_wrapper,
+                include_metadata=False,
+                modify_command_for_container=False):
             LOGGER.debug("Not ready " + job_wrapper.get_id_tag())
             return
         job_destination = job_wrapper.job_destination
@@ -129,7 +135,10 @@ class ChronosJobRunner(AsynchronousJobRunner):
         job_name = chronos_job_spec['name']
         self._chronos_client.add(chronos_job_spec)
         ajs = AsynchronousJobState(
-            files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_id=job_name, job_destination=job_destination)
+            files_dir=job_wrapper.working_directory,
+            job_wrapper=job_wrapper,
+            job_id=job_name,
+            job_destination=job_destination)
         self.monitor_queue.put(ajs)
         return None
 
@@ -147,20 +156,30 @@ class ChronosJobRunner(AsynchronousJobRunner):
             LOGGER.error(msg.format(name=job_name))
 
     def recover(self, job, job_wrapper):
-        msg = ('(name!r/runner!r) is still in {state!s} state, adding to' ' the runner monitor queue')
+        msg = ('(name!r/runner!r) is still in {state!s} state, adding to'
+               ' the runner monitor queue')
         job_id = job.get_job_runner_external_id()
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
+        ajs = AsynchronousJobState(
+            files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
         ajs.job_id = self.JOB_NAME_PREFIX + str(job_id)
         ajs.command_line = job.command_line
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
         if job.state == model.Job.states.RUNNING:
-            LOGGER.debug(msg.format(name=job.id, runner=job.job_runner_external_id, state='running'))
+            LOGGER.debug(
+                msg.format(
+                    name=job.id,
+                    runner=job.job_runner_external_id,
+                    state='running'))
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.state == model.Job.states.QUEUED:
-            LOGGER.debug(msg.format(name=job.id, runner=job.job_runner_external_id, state='queued'))
+            LOGGER.debug(
+                msg.format(
+                    name=job.id,
+                    runner=job.job_runner_external_id,
+                    state='queued'))
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)
@@ -186,7 +205,8 @@ class ChronosJobRunner(AsynchronousJobRunner):
 
     def _mark_as_successful(self, job_state):
         msg = 'Job {name!r} finished successfully'
-        _write_logfile(job_state.output_file, msg.format(name=job_state.job_id))
+        _write_logfile(
+            job_state.output_file, msg.format(name=job_state.job_id))
         _write_logfile(job_state.error_file, '')
         job_state.running = False
         job_state.job_wrapper.change_state(model.Job.states.OK)
@@ -234,11 +254,14 @@ class ChronosJobRunner(AsynchronousJobRunner):
             'name': job_name,
         }
         if not job_destination.params.get('docker_enabled'):
-            raise ChronosRunnerException('ChronosJobRunner needs \'docker_enabled\' to be set as True')
-        destination_params = self.parse_destination_params(job_destination.params)
+            raise ChronosRunnerException(
+                'ChronosJobRunner needs \'docker_enabled\' to be set as True')
+        destination_params = self.parse_destination_params(
+            job_destination.params)
         template.update(destination_params)
         template['container']['type'] = 'DOCKER'
-        template['container']['image'] = self._find_container(job_wrapper).container_id
+        template['container']['image'] = self._find_container(
+            job_wrapper).container_id
         return template
 
     def _retrieve_job(self, job_id):

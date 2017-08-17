@@ -30,7 +30,8 @@ class PopulatedExternalServiceAction(object):
         if self.result is None:
             self.perform_action()
         if self.handled_results is None:
-            self.handled_results = self.action.handle_action(self.result, self.param_dict, trans)
+            self.handled_results = self.action.handle_action(
+                self.result, self.param_dict, trans)
         return self.handled_results
 
 
@@ -52,7 +53,8 @@ class ExternalServiceAction(object):
         self.parent = parent
         self.result_handlers = []
         for handler in elem.findall('result_handler'):
-            self.result_handlers.append(ExternalServiceActionResultHandler.from_elem(handler, self))
+            self.result_handlers.append(
+                ExternalServiceActionResultHandler.from_elem(handler, self))
 
     def __action_url_id(self, param_dict):
         rval = self.name
@@ -77,7 +79,9 @@ class ExternalServiceAction(object):
     def handle_action(self, completed_action, param_dict, trans):
         handled_results = []
         for handled_result in self.result_handlers:
-            handled_results.append(handled_result.handle_result(completed_action, param_dict, trans))
+            handled_results.append(
+                handled_result.handle_result(completed_action, param_dict,
+                                             trans))
         return handled_results
 
     def perform_action(self, param_dict):
@@ -95,7 +99,8 @@ class ExternalServiceResult(object):
 
 
 class ExternalServiceWebAPIActionResult(ExternalServiceResult):
-    def __init__(self, name, param_dict, url, method, target):  # display_handler = None ):
+    def __init__(self, name, param_dict, url, method,
+                 target):  # display_handler = None ):
         ExternalServiceResult.__init__(self, name, param_dict)
         self.url = url
         self.method = method
@@ -137,11 +142,13 @@ class ExternalServiceWebAPIAction(ExternalServiceAction):
             target = self.target
             method = self.method
             url = self.url.build_template(param_dict).strip()
-            return ExternalServiceWebAPIActionResult(name, param_dict, url, method, target)
+            return ExternalServiceWebAPIActionResult(name, param_dict, url,
+                                                     method, target)
 
     def __init__(self, elem, parent):
         ExternalServiceAction.__init__(self, elem, parent)
-        self.web_api_request = self.ExternalServiceWebAPIActionRequest(elem.find('request'), parent)
+        self.web_api_request = self.ExternalServiceWebAPIActionRequest(
+            elem.find('request'), parent)
 
     def perform_action(self, param_dict):
         return self.web_api_request.get_web_api_action(param_dict)
@@ -174,7 +181,8 @@ class ExternalServiceTemplateAction(ExternalServiceAction):
         self.template = Template(elem.find('template'), parent)
 
     def perform_action(self, param_dict):
-        return ExternalServiceValueResult(self.name, param_dict, self.template.build_template(param_dict))
+        return ExternalServiceValueResult(
+            self.name, param_dict, self.template.build_template(param_dict))
 
 
 action_type_to_class = {

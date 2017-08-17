@@ -34,7 +34,12 @@ class NoQuotaAgent(object):
             usage = user.total_disk_usage
         return usage
 
-    def get_percent(self, trans=None, user=False, history=False, usage=False, quota=False):
+    def get_percent(self,
+                    trans=None,
+                    user=False,
+                    history=False,
+                    usage=False,
+                    quota=False):
         return None
 
     def get_user_quotas(self, user):
@@ -101,15 +106,18 @@ class QuotaAgent(NoQuotaAgent):
 
     @property
     def default_unregistered_quota(self):
-        return self._default_quota(self.model.DefaultQuotaAssociation.types.UNREGISTERED)
+        return self._default_quota(
+            self.model.DefaultQuotaAssociation.types.UNREGISTERED)
 
     @property
     def default_registered_quota(self):
-        return self._default_quota(self.model.DefaultQuotaAssociation.types.REGISTERED)
+        return self._default_quota(
+            self.model.DefaultQuotaAssociation.types.REGISTERED)
 
     def _default_quota(self, default_type):
         dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(
-            self.model.DefaultQuotaAssociation.table.c.type == default_type).first()
+            self.model.DefaultQuotaAssociation.table.c.type ==
+            default_type).first()
         if not dqa:
             return None
         if dqa.quota.bytes < 0:
@@ -127,7 +135,8 @@ class QuotaAgent(NoQuotaAgent):
             self.sa_session.delete(gqa)
         # Find the old default, assign the new quota if it exists
         dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(
-            self.model.DefaultQuotaAssociation.table.c.type == default_type).first()
+            self.model.DefaultQuotaAssociation.table.c.type ==
+            default_type).first()
         if dqa:
             dqa.quota = quota
         # Or create if necessary
@@ -136,7 +145,12 @@ class QuotaAgent(NoQuotaAgent):
         self.sa_session.add(dqa)
         self.sa_session.flush()
 
-    def get_percent(self, trans=None, user=False, history=False, usage=False, quota=False):
+    def get_percent(self,
+                    trans=None,
+                    user=False,
+                    history=False,
+                    usage=False,
+                    quota=False):
         """
         Return the percentage of any storage quota applicable to the user/transaction.
         """
@@ -158,7 +172,11 @@ class QuotaAgent(NoQuotaAgent):
         except ZeroDivisionError:
             return 100
 
-    def set_entity_quota_associations(self, quotas=[], users=[], groups=[], delete_existing_assocs=True):
+    def set_entity_quota_associations(self,
+                                      quotas=[],
+                                      users=[],
+                                      groups=[],
+                                      delete_existing_assocs=True):
         for quota in quotas:
             if delete_existing_assocs:
                 flush_needed = False

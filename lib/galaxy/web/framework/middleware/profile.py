@@ -87,7 +87,9 @@ def pstats_as_html(stats, *sel_list):
     """
     rval = []
     # Number of function calls, primitive calls, total time
-    rval.append("<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>" % (stats.total_calls, stats.prim_calls, stats.total_tt))
+    rval.append(
+        "<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>" %
+        (stats.total_calls, stats.prim_calls, stats.total_tt))
     # Extract functions that match 'sel_list'
     funcs, order_message, select_message = get_func_list(stats, sel_list)
     # Deal with any ordering or selection messages
@@ -153,7 +155,8 @@ def get_func_list(stats, sel_list):
     # Do the selection and accumulate messages
     select_message = ""
     for selection in sel_list:
-        list, select_message = stats.eval_print_amount(selection, list, select_message)
+        list, select_message = stats.eval_print_amount(selection, list,
+                                                       select_message)
     # Return the list of functions selected and the message
     return list, order_message, select_message
 

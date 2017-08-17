@@ -28,7 +28,9 @@ def check_html(file_path, chunk=None):
     # reworked.
     for line in temp:
         lineno += 1
-        matches = regexp1.search(line) or regexp2.search(line) or regexp3.search(line) or regexp4.search(line) or regexp5.search(line)
+        matches = regexp1.search(line) or regexp2.search(
+            line) or regexp3.search(line) or regexp4.search(
+                line) or regexp5.search(line)
         if matches:
             if chunk is None:
                 temp.close()
@@ -137,4 +139,5 @@ def check_image(file_path):
     return False
 
 
-__all__ = ('check_binary', 'check_bz2', 'check_gzip', 'check_html', 'check_image', 'check_zip', 'is_gzip', 'is_bz2', )
+__all__ = ('check_binary', 'check_bz2', 'check_gzip', 'check_html',
+           'check_image', 'check_zip', 'is_gzip', 'is_bz2', )

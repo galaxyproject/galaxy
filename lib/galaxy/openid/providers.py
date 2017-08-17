@@ -28,9 +28,12 @@ class OpenIDProvider(object):
         op_endpoint_url = provider_elem.find('op_endpoint_url')
         if op_endpoint_url is not None:
             op_endpoint_url = op_endpoint_url.text
-        never_associate_with_user = string_as_bool(provider_elem.get('never_associate_with_user', 'False'))
-        assert (provider_id and provider_name and op_endpoint_url), Exception("OpenID Provider improperly configured")
-        assert provider_id not in RESERVED_PROVIDER_IDS, Exception('Specified OpenID Provider uses a reserved id: %s' % (provider_id))
+        never_associate_with_user = string_as_bool(
+            provider_elem.get('never_associate_with_user', 'False'))
+        assert (provider_id and provider_name and op_endpoint_url
+                ), Exception("OpenID Provider improperly configured")
+        assert provider_id not in RESERVED_PROVIDER_IDS, Exception(
+            'Specified OpenID Provider uses a reserved id: %s' % (provider_id))
         sreg_required = []
         sreg_optional = []
         use_for = {}
@@ -40,15 +43,18 @@ class OpenIDProvider(object):
             use_default_sreg = False
             for field_elem in elem.findall('field'):
                 sreg_name = field_elem.get('name')
-                assert sreg_name, Exception('A name is required for a sreg element')
+                assert sreg_name, Exception(
+                    'A name is required for a sreg element')
                 if string_as_bool(field_elem.get('required')):
                     sreg_required.append(sreg_name)
                 else:
                     sreg_optional.append(sreg_name)
                 for use_elem in field_elem.findall('use_for'):
                     use_for[use_elem.get('name')] = sreg_name
-                for store_user_preference_elem in field_elem.findall('store_user_preference'):
-                    store_user_preference[store_user_preference_elem.get('name')] = sreg_name
+                for store_user_preference_elem in field_elem.findall(
+                        'store_user_preference'):
+                    store_user_preference[store_user_preference_elem.get(
+                        'name')] = sreg_name
         if use_default_sreg:
             sreg_required = None
             sreg_optional = None
@@ -103,9 +109,12 @@ class OpenIDProvider(object):
 
     def post_authentication(self, trans, openid_manager, info):
         sreg_attributes = openid_manager.get_sreg(info)
-        for store_pref_name, store_pref_value_name in self.store_user_preference.iteritems():
-            if store_pref_value_name in (self.sreg_optional + self.sreg_required):
-                trans.user.preferences[store_pref_name] = sreg_attributes.get(store_pref_value_name)
+        for store_pref_name, store_pref_value_name in self.store_user_preference.iteritems(
+        ):
+            if store_pref_value_name in (
+                    self.sreg_optional + self.sreg_required):
+                trans.user.preferences[store_pref_name] = sreg_attributes.get(
+                    store_pref_value_name)
             else:
                 raise Exception('Only sreg is currently supported.')
         trans.sa_session.add(trans.user)
@@ -133,9 +142,11 @@ class OpenIDProviders(object):
         providers = odict()
         for elem in oid_elem.findall('provider'):
             try:
-                provider = OpenIDProvider.from_file(os.path.join('openid', elem.get('file')))
+                provider = OpenIDProvider.from_file(
+                    os.path.join('openid', elem.get('file')))
                 providers[provider.id] = provider
-                log.debug('Loaded OpenID provider: %s (%s)' % (provider.name, provider.id))
+                log.debug('Loaded OpenID provider: %s (%s)' % (provider.name,
+                                                               provider.id))
             except Exception as e:
                 log.error('Failed to add OpenID provider: %s' % (e))
         return cls(providers)
@@ -146,7 +157,9 @@ class OpenIDProviders(object):
         else:
             self.providers = odict()
         self._banned_identifiers = [
-            provider.op_endpoint_url for provider in self.providers.itervalues() if provider.never_associate_with_user
+            provider.op_endpoint_url
+            for provider in self.providers.itervalues()
+            if provider.never_associate_with_user
         ]
 
     def __iter__(self):
@@ -160,4 +173,8 @@ class OpenIDProviders(object):
             return default
 
     def new_provider_from_identifier(self, identifier):
-        return OpenIDProvider(None, identifier, identifier, never_associate_with_user=identifier in self._banned_identifiers)
+        return OpenIDProvider(
+            None,
+            identifier,
+            identifier,
+            never_associate_with_user=identifier in self._banned_identifiers)

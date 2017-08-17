@@ -33,7 +33,10 @@ def _get_samtools_version():
     if not cmd_exists('samtools'):
         raise Exception('This tool needs samtools, but it is not on PATH.')
     # Get the version of samtools via --version-only, if available
-    p = subprocess.Popen(['samtools', '--version-only'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(
+        ['samtools', '--version-only'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE)
     output, error = p.communicate()
 
     # --version-only is available
@@ -42,7 +45,9 @@ def _get_samtools_version():
         version = output.split('+')[0]
         return version
 
-    output = subprocess.Popen(['samtools'], stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()[1]
+    output = subprocess.Popen(
+        ['samtools'], stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE).communicate()[1]
     lines = output.split('\n')
     for line in lines:
         if line.lower().startswith('version'):
@@ -65,8 +70,13 @@ def __main__():
     # convert to SAM
     unsorted_bam_filename = os.path.join(tmp_dir, 'unsorted.bam')
     unsorted_stderr_filename = os.path.join(tmp_dir, 'unsorted.stderr')
-    cmd = "samtools view -bS '%s' > '%s'" % (input_filename, unsorted_bam_filename)
-    proc = subprocess.Popen(args=cmd, stderr=open(unsorted_stderr_filename, 'wb'), shell=True, cwd=tmp_dir)
+    cmd = "samtools view -bS '%s' > '%s'" % (input_filename,
+                                             unsorted_bam_filename)
+    proc = subprocess.Popen(
+        args=cmd,
+        stderr=open(unsorted_stderr_filename, 'wb'),
+        shell=True,
+        cwd=tmp_dir)
     return_code = proc.wait()
     if return_code:
         stderr_target = sys.stderr
@@ -87,10 +97,18 @@ def __main__():
     # samtools changed sort command arguments (starting from version 1.3)
     samtools_version = LooseVersion(_get_samtools_version())
     if samtools_version < LooseVersion('1.0'):
-        cmd = "samtools sort -o '%s' '%s' > '%s'" % (unsorted_bam_filename, sorting_prefix, output_filename)
+        cmd = "samtools sort -o '%s' '%s' > '%s'" % (unsorted_bam_filename,
+                                                     sorting_prefix,
+                                                     output_filename)
     else:
-        cmd = "samtools sort -T '%s' '%s' > '%s'" % (sorting_prefix, unsorted_bam_filename, output_filename)
-    proc = subprocess.Popen(args=cmd, stderr=open(sorted_stderr_filename, 'wb'), shell=True, cwd=tmp_dir)
+        cmd = "samtools sort -T '%s' '%s' > '%s'" % (sorting_prefix,
+                                                     unsorted_bam_filename,
+                                                     output_filename)
+    proc = subprocess.Popen(
+        args=cmd,
+        stderr=open(sorted_stderr_filename, 'wb'),
+        shell=True,
+        cwd=tmp_dir)
     return_code = proc.wait()
 
     if return_code:

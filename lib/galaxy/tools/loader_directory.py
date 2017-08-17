@@ -35,9 +35,12 @@ def find_possible_tools_from_path(
         enable_beta_formats=False, ):
     """Walk a directory and find potential tool files."""
     possible_tool_files = []
-    for possible_tool_file in _find_tool_files(path, recursive=recursive, enable_beta_formats=enable_beta_formats):
+    for possible_tool_file in _find_tool_files(
+            path, recursive=recursive,
+            enable_beta_formats=enable_beta_formats):
         try:
-            does_look_like_a_tool = looks_like_a_tool(possible_tool_file, enable_beta_formats=enable_beta_formats)
+            does_look_like_a_tool = looks_like_a_tool(
+                possible_tool_file, enable_beta_formats=enable_beta_formats)
         except IOError:
             # Some problem reading the tool file, skip.
             continue
@@ -106,7 +109,9 @@ def is_tool_load_error(obj):
     return obj is TOOL_LOAD_ERROR
 
 
-def looks_like_a_tool(path_or_uri_like, invalid_names=[], enable_beta_formats=False):
+def looks_like_a_tool(path_or_uri_like,
+                      invalid_names=[],
+                      enable_beta_formats=False):
     """Quick check to see if a file looks like it may be a tool file.
 
     Whether true in a strict sense or not, lets say the intention and
@@ -149,8 +154,10 @@ def looks_like_a_tool_xml(path):
     if not os.path.getsize(full_path):
         return False
 
-    if (checkers.check_binary(full_path) or checkers.check_image(full_path) or checkers.check_gzip(full_path)[0]
-            or checkers.check_bz2(full_path)[0] or checkers.check_zip(full_path)):
+    if (checkers.check_binary(full_path) or checkers.check_image(full_path)
+            or checkers.check_gzip(full_path)[0]
+            or checkers.check_bz2(full_path)[0]
+            or checkers.check_zip(full_path)):
         return False
 
     with open(path, "r") as f:
@@ -208,7 +215,8 @@ def looks_like_a_cwl_artifact(path, classes=None):
 
 def looks_like_a_tool_cwl(path):
     """Quick check to see if a file looks like it may be a CWL tool."""
-    return looks_like_a_cwl_artifact(path, classes=["CommandLineTool", "ExpressionTool"])
+    return looks_like_a_cwl_artifact(
+        path, classes=["CommandLineTool", "ExpressionTool"])
 
 
 def _find_tool_files(path_or_uri_like, recursive, enable_beta_formats):
@@ -273,6 +281,8 @@ BETA_TOOL_CHECKERS = {
     'cwl': looks_like_a_tool_cwl,
 }
 
-__all__ = ("find_possible_tools_from_path", "is_a_yaml_with_class", "is_tool_load_error", "load_tool_elements_from_path",
-           "load_tool_sources_from_path", "looks_like_a_cwl_artifact", "looks_like_a_tool_cwl", "looks_like_a_tool_xml",
+__all__ = ("find_possible_tools_from_path", "is_a_yaml_with_class",
+           "is_tool_load_error", "load_tool_elements_from_path",
+           "load_tool_sources_from_path", "looks_like_a_cwl_artifact",
+           "looks_like_a_tool_cwl", "looks_like_a_tool_xml",
            "looks_like_a_tool_yaml", )

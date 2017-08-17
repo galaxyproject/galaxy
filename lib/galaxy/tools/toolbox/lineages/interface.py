@@ -70,7 +70,10 @@ class ToolLineage:
         Return an ordered list of lineages (ToolLineageVersion) in this
         chain, from oldest to newest.
         """
-        return [ToolLineageVersion(tool_id, tool_version) for tool_id, tool_version in zip(self.tool_ids, self.tool_versions)]
+        return [
+            ToolLineageVersion(tool_id, tool_version)
+            for tool_id, tool_version in zip(self.tool_ids, self.tool_versions)
+        ]
 
     def get_version_ids(self, reverse=False):
         if reverse:

@@ -12,14 +12,22 @@ LEVEL_WARN = "warn"
 LEVEL_ERROR = "error"
 
 
-def lint_tool_source(tool_source, level=LEVEL_ALL, fail_level=LEVEL_WARN, extra_modules=[], skip_types=[]):
+def lint_tool_source(tool_source,
+                     level=LEVEL_ALL,
+                     fail_level=LEVEL_WARN,
+                     extra_modules=[],
+                     skip_types=[]):
     lint_context = LintContext(level=level, skip_types=skip_types)
     lint_tool_source_with(lint_context, tool_source, extra_modules)
 
     return not lint_context.failed(fail_level)
 
 
-def lint_xml(tool_xml, level=LEVEL_ALL, fail_level=LEVEL_WARN, extra_modules=[], skip_types=[]):
+def lint_xml(tool_xml,
+             level=LEVEL_ALL,
+             fail_level=LEVEL_WARN,
+             extra_modules=[],
+             skip_types=[]):
     lint_context = LintContext(level=level, skip_types=skip_types)
     lint_xml_with(lint_context, tool_xml, extra_modules)
 
@@ -55,7 +63,8 @@ def lint_tool_source_with(lint_context, tool_source, extra_modules=[]):
 
 def lint_xml_with(lint_context, tool_xml, extra_modules=[]):
     tool_source = get_tool_source(xml_tree=tool_xml)
-    return lint_tool_source_with(lint_context, tool_source, extra_modules=extra_modules)
+    return lint_tool_source_with(
+        lint_context, tool_source, extra_modules=extra_modules)
 
 
 # TODO: Nothing inherently tool-y about LintContext and in fact

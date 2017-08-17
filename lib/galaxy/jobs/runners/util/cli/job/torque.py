@@ -88,7 +88,9 @@ class Torque(BaseJobExec):
             except Exception:
                 tree = None
         if tree is None:
-            log.warning('No valid qstat XML return from `qstat -x`, got the following: %s' % status)
+            log.warning(
+                'No valid qstat XML return from `qstat -x`, got the following: %s'
+                % status)
             return None
         else:
             for job in tree.findall('Job'):
@@ -109,9 +111,15 @@ class Torque(BaseJobExec):
 
     def _get_job_state(self, state):
         try:
-            return {'E': job_states.RUNNING, 'R': job_states.RUNNING, 'Q': job_states.QUEUED, 'C': job_states.OK}.get(state)
+            return {
+                'E': job_states.RUNNING,
+                'R': job_states.RUNNING,
+                'Q': job_states.QUEUED,
+                'C': job_states.OK
+            }.get(state)
         except KeyError:
-            raise KeyError("Failed to map torque status code [%s] to job state." % state)
+            raise KeyError(
+                "Failed to map torque status code [%s] to job state." % state)
 
 
 __all__ = ('Torque', )

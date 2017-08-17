@@ -23,11 +23,14 @@ class InputMatchedException(MessageException):
 def expand_multi_inputs(inputs, classifier, key_filter=None):
     key_filter = key_filter or (lambda x: True)
 
-    single_inputs, matched_multi_inputs, multiplied_multi_inputs = __split_inputs(inputs, classifier, key_filter)
+    single_inputs, matched_multi_inputs, multiplied_multi_inputs = __split_inputs(
+        inputs, classifier, key_filter)
 
     # Build up every combination of inputs to be run together.
-    input_combos = __extend_with_matched_combos(single_inputs, matched_multi_inputs)
-    input_combos = __extend_with_multiplied_combos(input_combos, multiplied_multi_inputs)
+    input_combos = __extend_with_matched_combos(single_inputs,
+                                                matched_multi_inputs)
+    input_combos = __extend_with_multiplied_combos(input_combos,
+                                                   multiplied_multi_inputs)
 
     return input_combos
 
@@ -72,7 +75,8 @@ def __extend_with_matched_combos(single_inputs, multi_inputs):
     first_multi_value = multi_inputs.get(first_multi_input_key)
 
     for value in first_multi_value:
-        new_inputs = __copy_and_extend_inputs(single_inputs, first_multi_input_key, value)
+        new_inputs = __copy_and_extend_inputs(single_inputs,
+                                              first_multi_input_key, value)
         matched_multi_inputs.append(new_inputs)
 
     for multi_input_key, multi_input_values in multi_inputs.iteritems():
@@ -95,7 +99,8 @@ def __extend_with_multiplied_combos(input_combos, multi_inputs):
 
         for combo in combos:
             for input_value in multi_input_value:
-                iter_combo = __copy_and_extend_inputs(combo, multi_input_key, input_value)
+                iter_combo = __copy_and_extend_inputs(combo, multi_input_key,
+                                                      input_value)
                 iter_combos.append(iter_combo)
 
         combos = iter_combos

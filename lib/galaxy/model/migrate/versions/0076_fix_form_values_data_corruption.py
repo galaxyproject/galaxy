@@ -29,7 +29,8 @@ def upgrade(migrate_engine):
         # first check if loading the dict from the json succeeds
         # if that fails, it means that the content field is corrupted.
         try:
-            field_values_dict = loads(_sniffnfix_pg9_hex(str(row['field_values'])))
+            field_values_dict = loads(
+                _sniffnfix_pg9_hex(str(row['field_values'])))
         except Exception:
             corrupted_rows = corrupted_rows + 1
             # content field is corrupted
@@ -58,13 +59,16 @@ def upgrade(migrate_engine):
                     if index == len(fields_list) - 1:
                         # since this is the last field, the value string lies between the
                         # field name and the '"}' string at the end, hence len(field_values_str) - 2
-                        value = field_values_str[field_index + len(field_name_key):len(field_values_str) - 2]
+                        value = field_values_str[field_index + len(
+                            field_name_key):len(field_values_str) - 2]
                     else:
                         # if this is not the last field then the value string lies between
                         # this field name and the next field name
                         next_field = fields_list[index + 1]
-                        next_field_index = field_values_str.find('", "%s": "' % next_field['name'])
-                        value = field_values_str[field_index + len(field_name_key):next_field_index]
+                        next_field_index = field_values_str.find(
+                            '", "%s": "' % next_field['name'])
+                        value = field_values_str[
+                            field_index + len(field_name_key):next_field_index]
                     # clean up the value string, escape the required quoutes and newline characters
                     value = value.replace("'", "\''")\
                                  .replace('"', '\\\\"')\
@@ -75,7 +79,8 @@ def upgrade(migrate_engine):
                     field_values_dict[field['name']] = value
             # update the db
             json_values = dumps(field_values_dict)
-            cmd = "UPDATE form_values SET content='%s' WHERE id=%i" % (json_values, int(row['id']))
+            cmd = "UPDATE form_values SET content='%s' WHERE id=%i" % (
+                json_values, int(row['id']))
             migrate_engine.execute(cmd)
             try:
                 print("Post replacement: %s" % json_values)

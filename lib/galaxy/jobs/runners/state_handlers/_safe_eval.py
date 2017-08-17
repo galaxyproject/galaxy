@@ -49,7 +49,9 @@ AST_NODE_TYPE_WHITELIST = [
 
 BUILTIN_AND_MATH_FUNCTIONS = 'abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor'.split(
     '|')
-STRING_AND_LIST_METHODS = [name for name in dir('') + dir([]) if not name.startswith('_')]
+STRING_AND_LIST_METHODS = [
+    name for name in dir('') + dir([]) if not name.startswith('_')
+]
 VALID_FUNCTIONS = BUILTIN_AND_MATH_FUNCTIONS + STRING_AND_LIST_METHODS
 
 
@@ -170,5 +172,7 @@ def safe_eval(expression, variables):
     True
     """
     if not _check_expression(expression, allowed_variables=variables.keys()):
-        raise Exception("Invalid expression [%s], only a very simple subset of Python is allowed." % expression)
+        raise Exception(
+            "Invalid expression [%s], only a very simple subset of Python is allowed."
+            % expression)
     return eval(expression, globals(), variables)

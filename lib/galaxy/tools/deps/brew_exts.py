@@ -51,11 +51,14 @@ class BrewContext(object):
     def __init__(self, args=None):
         ensure_brew_on_path(args)
         raw_config = brew_execute(["config"])
-        config_lines = [l.strip().split(":", 1) for l in raw_config.split("\n") if l]
+        config_lines = [
+            l.strip().split(":", 1) for l in raw_config.split("\n") if l
+        ]
         config = dict([(p[0].strip(), p[1].strip()) for p in config_lines])
         # unset if "/usr/local" -> https://github.com/Homebrew/homebrew/blob/master/Library/Homebrew/cmd/config.rb
         homebrew_prefix = config.get("HOMEBREW_PREFIX", "/usr/local")
-        homebrew_cellar = config.get("HOMEBREW_CELLAR", os.path.join(homebrew_prefix, "Cellar"))
+        homebrew_cellar = config.get("HOMEBREW_CELLAR",
+                                     os.path.join(homebrew_prefix, "Cellar"))
         self.homebrew_prefix = homebrew_prefix
         self.homebrew_cellar = homebrew_cellar
 
@@ -72,11 +75,13 @@ class RecipeContext(object):
 
     @property
     def cellar_path(self):
-        return recipe_cellar_path(self.brew_context.homebrew_cellar, self.recipe, self.version)
+        return recipe_cellar_path(self.brew_context.homebrew_cellar,
+                                  self.recipe, self.version)
 
     @property
     def tap_path(self):
-        return os.path.join(self.brew_context.homebrew_prefix, "Library", "Taps", self.__tap_path(self.recipe))
+        return os.path.join(self.brew_context.homebrew_prefix, "Library",
+                            "Taps", self.__tap_path(self.recipe))
 
     def __tap_path(self, recipe):
         parts = recipe.split("/")
@@ -86,7 +91,8 @@ class RecipeContext(object):
             if not from_url:
                 raise Exception(CANNOT_DETERMINE_TAP_ERROR_MESSAGE)
             from_url_parts = from_url.split("/")
-            blob_index = from_url_parts.index("blob")  # comes right after username and repository
+            blob_index = from_url_parts.index(
+                "blob")  # comes right after username and repository
             if blob_index < 2:
                 raise Exception(CANNOT_DETERMINE_TAP_ERROR_MESSAGE)
             username = from_url_parts[blob_index - 2]
@@ -106,16 +112,32 @@ def main():
     global RELAXED
     global BREW_ARGS
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument("--brew", help="Path to linuxbrew 'brew' executable to target")
+    parser.add_argument(
+        "--brew", help="Path to linuxbrew 'brew' executable to target")
     actions = ["vinstall", "vuninstall", "vdeps", "vinfo", "env"]
     action = __action(sys)
     if not action:
-        parser.add_argument('action', metavar='action', help="Versioned action to perform.", choices=actions)
-    parser.add_argument('recipe', metavar='recipe', help="Recipe for action - should be absolute (e.g. homebrew/science/samtools).")
-    parser.add_argument('version', metavar='version', help="Version for action (e.g. 0.1.19).")
+        parser.add_argument(
+            'action',
+            metavar='action',
+            help="Versioned action to perform.",
+            choices=actions)
     parser.add_argument(
-        '--relaxed', action='store_true', help="Relaxed processing - for instance allow use of env on non-vinstall-ed recipes.")
-    parser.add_argument('--verbose', action='store_true', help="Verbose output")
+        'recipe',
+        metavar='recipe',
+        help=
+        "Recipe for action - should be absolute (e.g. homebrew/science/samtools)."
+    )
+    parser.add_argument(
+        'version', metavar='version', help="Version for action (e.g. 0.1.19).")
+    parser.add_argument(
+        '--relaxed',
+        action='store_true',
+        help=
+        "Relaxed processing - for instance allow use of env on non-vinstall-ed recipes."
+    )
+    parser.add_argument(
+        '--verbose', action='store_true', help="Verbose output")
     parser.add_argument('restargs', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     if args.verbose:
@@ -135,7 +157,8 @@ def main():
     elif action == "vdeps":
         print_versioned_deps(recipe_context, args.recipe, args.version)
     elif action == "env":
-        env_statements = build_env_statements_from_recipe_context(recipe_context)
+        env_statements = build_env_statements_from_recipe_context(
+            recipe_context)
         print(env_statements)
     elif action == "vinfo":
         with brew_head_at_version(recipe_context, args.recipe, args.version):
@@ -155,13 +178,17 @@ class CommandLineException(Exception):
                         "-------->>end stderr<<--------\n"
                         "-------->>begin stdout<<--------\n"
                         "%s\n"
-                        "-------->>end stdout<<--------\n") % (command, stderr, stdout)
+                        "-------->>end stdout<<--------\n") % (command, stderr,
+                                                               stdout)
 
     def __str__(self):
         return self.message
 
 
-def versioned_install(recipe_context, package=None, version=None, installed_deps=[]):
+def versioned_install(recipe_context,
+                      package=None,
+                      version=None,
+                      installed_deps=[]):
     if package is None:
         package = recipe_context.recipe
         version = recipe_context.version
@@ -198,12 +225,17 @@ def versioned_install(recipe_context, package=None, version=None, installed_deps
                 # dep_version obtained from brew versions doesn't
                 # include revision. This linked_keg attribute does.
                 keg_verion = brew_info(dep)["linked_keg"]
-                dep_metadata = {'name': dep, 'version': keg_verion, 'versioned': versioned}
+                dep_metadata = {
+                    'name': dep,
+                    'version': keg_verion,
+                    'versioned': versioned
+                }
                 deps_metadata.append(dep_metadata)
 
             cellar_root = recipe_context.brew_context.homebrew_cellar
             cellar_path = recipe_context.cellar_path
-            env_actions = build_env_actions(deps_metadata, cellar_root, cellar_path, custom_only=True)
+            env_actions = build_env_actions(
+                deps_metadata, cellar_root, cellar_path, custom_only=True)
             env = EnvAction.build_env(env_actions)
             args = ["install"]
             if VERBOSE:
@@ -216,7 +248,8 @@ def versioned_install(recipe_context, package=None, version=None, installed_deps
             metadata = {'deps': deps_metadata}
             cellar_root = recipe_context.brew_context.homebrew_cellar
             cellar_path = recipe_cellar_path(cellar_root, package, version)
-            v_metadata_path = os.path.join(cellar_path, "INSTALL_RECEIPT_VERSIONED.json")
+            v_metadata_path = os.path.join(cellar_path,
+                                           "INSTALL_RECEIPT_VERSIONED.json")
             with open(v_metadata_path, "w") as f:
                 json.dump(metadata, f)
 
@@ -253,12 +286,14 @@ def print_versioned_deps(recipe_context, recipe, version):
 def load_versioned_deps(cellar_path, relaxed=None):
     if relaxed is None:
         relaxed = RELAXED
-    v_metadata_path = os.path.join(cellar_path, "INSTALL_RECEIPT_VERSIONED.json")
+    v_metadata_path = os.path.join(cellar_path,
+                                   "INSTALL_RECEIPT_VERSIONED.json")
     if not os.path.isfile(v_metadata_path):
         if RELAXED:
             return []
         else:
-            raise IOError("Could not locate versioned receipt file: {}".format(v_metadata_path))
+            raise IOError("Could not locate versioned receipt file: {}".format(
+                v_metadata_path))
     with open(v_metadata_path, "r") as f:
         metadata = json.load(f)
     return metadata['deps']
@@ -296,20 +331,29 @@ def brew_execute(args, env=None):
 
 def build_env_statements_from_recipe_context(recipe_context, **kwds):
     cellar_root = recipe_context.brew_context.homebrew_cellar
-    env_statements = build_env_statements(cellar_root, recipe_context.cellar_path, **kwds)
+    env_statements = build_env_statements(cellar_root,
+                                          recipe_context.cellar_path, **kwds)
     return env_statements
 
 
-def build_env_statements(cellar_root, cellar_path, relaxed=None, custom_only=False):
+def build_env_statements(cellar_root,
+                         cellar_path,
+                         relaxed=None,
+                         custom_only=False):
     deps = load_versioned_deps(cellar_path, relaxed=relaxed)
-    actions = build_env_actions(deps, cellar_root, cellar_path, relaxed, custom_only)
+    actions = build_env_actions(deps, cellar_root, cellar_path, relaxed,
+                                custom_only)
     env_statements = []
     for action in actions:
         env_statements.extend(action.to_statements())
     return "\n".join(env_statements)
 
 
-def build_env_actions(deps, cellar_root, cellar_path, relaxed=None, custom_only=False):
+def build_env_actions(deps,
+                      cellar_root,
+                      cellar_path,
+                      relaxed=None,
+                      custom_only=False):
 
     path_appends = []
     ld_path_appends = []
@@ -342,9 +386,19 @@ def build_env_actions(deps, cellar_root, cellar_path, relaxed=None, custom_only=
     handle_keg(cellar_path)
     if not custom_only:
         if path_appends:
-            actions.append(EnvAction(cellar_path, {"action": "prepend", "variable": "PATH", "value": ":".join(path_appends)}))
+            actions.append(
+                EnvAction(cellar_path, {
+                    "action": "prepend",
+                    "variable": "PATH",
+                    "value": ":".join(path_appends)
+                }))
         if ld_path_appends:
-            actions.append(EnvAction(cellar_path, {"action": "prepend", "variable": "LD_LIBRARY_PATH", "value": ":".join(path_appends)}))
+            actions.append(
+                EnvAction(cellar_path, {
+                    "action": "prepend",
+                    "variable": "LD_LIBRARY_PATH",
+                    "value": ":".join(path_appends)
+                }))
     return actions
 
 
@@ -352,9 +406,10 @@ class EnvAction(object):
     def __init__(self, keg_root, action_description):
         self.variable = action_description["variable"]
         self.action = action_description["action"]
-        self.value = string.Template(action_description["value"]).safe_substitute({
-            'KEG_ROOT': keg_root,
-        })
+        self.value = string.Template(
+            action_description["value"]).safe_substitute({
+                'KEG_ROOT': keg_root,
+            })
 
     @staticmethod
     def build_env(env_actions):
@@ -366,9 +421,11 @@ class EnvAction(object):
         if self.action == "set" or not environ.get(self.variable, ""):
             environ[self.variable] = self.__eval("${value}")
         elif self.action == "prepend":
-            environ[self.variable] = self.__eval("${value}:%s" % environ[self.variable])
+            environ[self.variable] = self.__eval(
+                "${value}:%s" % environ[self.variable])
         else:
-            environ[self.variable] = self.__eval("%s:${value}" % environ[self.variable])
+            environ[self.variable] = self.__eval(
+                "%s:${value}" % environ[self.variable])
 
     def __eval(self, template):
         return string.Template(template).safe_substitute(
@@ -480,7 +537,9 @@ def brew_versions_info(package, tap_path):
 
     # TODO: Also use tags.
     stdout = brew_execute(["versions", package])
-    version_parts = [l for l in stdout.split("\n") if l and "git checkout" in l]
+    version_parts = [
+        l for l in stdout.split("\n") if l and "git checkout" in l
+    ]
     version_parts = map(lambda l: WHITESPACE_PATTERN.split(l), version_parts)
     info = [(p[0], p[3], versioned(p[4])) for p in version_parts]
     return info
@@ -514,7 +573,8 @@ def ensure_brew_on_path(args):
 
     def ensure_on_path(brew):
         if brew != brew_on_path:
-            os.environ["PATH"] = "%s:%s" % (os.path.dirname(brew), os.environ["PATH"])
+            os.environ["PATH"] = "%s:%s" % (os.path.dirname(brew),
+                                            os.environ["PATH"])
 
     default_brew_path = os.path.join(DEFAULT_HOMEBREW_ROOT, "bin", "brew")
     if args and args.brew:

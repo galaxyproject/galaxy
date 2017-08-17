@@ -87,7 +87,8 @@ def build_pull_command(tag, **kwds):
 def build_docker_cache_command(image, **kwds):
     inspect_image_command = command_shell("inspect", [image], **kwds)
     pull_image_command = command_shell("pull", [image], **kwds)
-    cache_command = "%s > /dev/null 2>&1\n[ $? -ne 0 ] && %s > /dev/null 2>&1\n" % (inspect_image_command, pull_image_command)
+    cache_command = "%s > /dev/null 2>&1\n[ $? -ne 0 ] && %s > /dev/null 2>&1\n" % (
+        inspect_image_command, pull_image_command)
     return cache_command
 
 
@@ -120,7 +121,8 @@ def build_docker_run_command(
         auto_rm=DEFAULT_AUTO_REMOVE,
         set_user=DEFAULT_SET_USER,
         host=DEFAULT_HOST, ):
-    command_parts = _docker_prefix(docker_cmd=docker_cmd, sudo=sudo, sudo_cmd=sudo_cmd, host=host)
+    command_parts = _docker_prefix(
+        docker_cmd=docker_cmd, sudo=sudo, sudo_cmd=sudo_cmd, host=host)
     command_parts.append("run")
     if interactive:
         command_parts.append("-i")
@@ -131,7 +133,9 @@ def build_docker_run_command(
     for volume in volumes:
         command_parts.extend(["-v", shlex_quote(str(volume))])
     if volumes_from:
-        command_parts.extend(["--volumes-from", shlex_quote(str(volumes_from))])
+        command_parts.extend(
+            ["--volumes-from",
+             shlex_quote(str(volumes_from))])
     if memory:
         command_parts.extend(["-m", shlex_quote(memory)])
     if name:
@@ -170,7 +174,11 @@ def command_shell(command, command_args=[], **kwds):
     return argv_to_str(command_list(command, command_args, **kwds))
 
 
-def _docker_prefix(docker_cmd=DEFAULT_DOCKER_COMMAND, sudo=DEFAULT_SUDO, sudo_cmd=DEFAULT_SUDO_COMMAND, host=DEFAULT_HOST, **kwds):
+def _docker_prefix(docker_cmd=DEFAULT_DOCKER_COMMAND,
+                   sudo=DEFAULT_SUDO,
+                   sudo_cmd=DEFAULT_SUDO_COMMAND,
+                   host=DEFAULT_HOST,
+                   **kwds):
     """Prefix to issue a docker command."""
     command_parts = []
     if sudo:

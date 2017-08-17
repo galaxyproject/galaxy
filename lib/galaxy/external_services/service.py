@@ -31,13 +31,16 @@ class ExternalServiceActionsGroup(object):
     def load_sub_elems(self, elem):
         for sub_elem in elem:
             if sub_elem.tag == 'param':
-                self.add_item(ExternalServiceParameter.from_elem(sub_elem, self))
+                self.add_item(
+                    ExternalServiceParameter.from_elem(sub_elem, self))
             elif sub_elem.tag == 'action':
                 self.add_item(ExternalServiceAction.from_elem(sub_elem, self))
             elif sub_elem.tag == 'section':
-                self.add_item(ExternalServiceActionsGroup.from_elem(sub_elem, self))
+                self.add_item(
+                    ExternalServiceActionsGroup.from_elem(sub_elem, self))
             elif sub_elem.tag == 'conditional':
-                self.add_item(ExternalServiceActionsConditional(sub_elem, self))
+                self.add_item(
+                    ExternalServiceActionsConditional(sub_elem, self))
             else:
                 raise ValueError('Unknown tag: %s' % sub_elem.tag)
 
@@ -45,7 +48,8 @@ class ExternalServiceActionsGroup(object):
         self.items.append(item)
 
     def populate(self, service_instance, item=None, param_dict=None):
-        return PopulatedExternalService(self, service_instance, item, param_dict)
+        return PopulatedExternalService(self, service_instance, item,
+                                        param_dict)
 
     def prepare_actions(self, param_dict, parent_dict, parent_section):
         group = Bunch()
@@ -56,16 +60,20 @@ class ExternalServiceActionsGroup(object):
             if isinstance(item, ExternalServiceParameter):
                 group[item.name] = item.get_value(param_dict)
             elif isinstance(item, ExternalServiceActionsGroup):
-                group[item.name] = item.prepare_actions(param_dict, group, group_section)
+                group[item.name] = item.prepare_actions(
+                    param_dict, group, group_section)
             elif isinstance(item, ExternalServiceAction):
                 group_section.append(item.populate_action(param_dict))
             elif isinstance(item, ExternalServiceActionsConditional):
                 conditional_group = Bunch()
-                conditional_group_section = ActionSection(item.name, item.label)
+                conditional_group_section = ActionSection(
+                    item.name, item.label)
                 group_section.append(conditional_group_section)
                 group[item.name] = conditional_group
                 for case in item.get_current_cases(param_dict):
-                    conditional_group[case.name] = case.prepare_actions(param_dict, conditional_group, conditional_group_section)
+                    conditional_group[case.name] = case.prepare_actions(
+                        param_dict, conditional_group,
+                        conditional_group_section)
             else:
                 raise TypeError('unknown item type found: %s' % item)
         return group
@@ -78,7 +86,8 @@ class ExternalServiceActionsGroupWhen(ExternalServiceActionsGroup):
     def from_elem(self, parent, elem):
         """Loads the proper when by attributes of elem"""
         when_type = elem.get('type')
-        assert when_type in when_type_to_class, TypeError("When type not implemented: %s" % when_type)
+        assert when_type in when_type_to_class, TypeError(
+            "When type not implemented: %s" % when_type)
         return when_type_to_class[when_type].from_elem(parent, elem)
 
     def is_case(self, param_dict):
@@ -96,13 +105,17 @@ class ValueExternalServiceActionsGroupWhen(ExternalServiceActionsGroupWhen):
     type = "value"
 
     def __init__(self, parent, name, value, label=None):
-        super(ValueExternalServiceActionsGroupWhen, self).__init__(parent, name, label)
+        super(ValueExternalServiceActionsGroupWhen, self).__init__(
+            parent, name, label)
         self.value = value
 
     @classmethod
     def from_elem(self, parent, elem):
         """Returns an instance of this when"""
-        rval = ValueExternalServiceActionsGroupWhen(parent, elem.get('name'), elem.get('value'), elem.get('label'))
+        rval = ValueExternalServiceActionsGroupWhen(parent,
+                                                    elem.get('name'),
+                                                    elem.get('value'),
+                                                    elem.get('label'))
         rval.load_sub_elems(elem)
         return rval
 
@@ -115,13 +128,16 @@ class BooleanExternalServiceActionsGroupWhen(ExternalServiceActionsGroupWhen):
     type = "boolean"
 
     def __init__(self, parent, name, value, label=None):
-        super(BooleanExternalServiceActionsGroupWhen, self).__init__(parent, name, label)
+        super(BooleanExternalServiceActionsGroupWhen, self).__init__(
+            parent, name, label)
         self.value = value
 
     @classmethod
     def from_elem(self, parent, elem):
         """Returns an instance of this when"""
-        rval = BooleanExternalServiceActionsGroupWhen(parent, elem.get('name'), elem.get('label'))
+        rval = BooleanExternalServiceActionsGroupWhen(parent,
+                                                      elem.get('name'),
+                                                      elem.get('label'))
         rval.load_sub_elems(elem)
         return rval
 
@@ -130,28 +146,34 @@ class BooleanExternalServiceActionsGroupWhen(ExternalServiceActionsGroupWhen):
         return bool(ref)
 
 
-class ItemIsInstanceExternalServiceActionsGroupWhen(ExternalServiceActionsGroupWhen):
+class ItemIsInstanceExternalServiceActionsGroupWhen(
+        ExternalServiceActionsGroupWhen):
     type = "item_type"
 
     def __init__(self, parent, name, value, label=None):
-        super(ItemIsInstanceExternalServiceActionsGroupWhen, self).__init__(parent, name, label)
+        super(ItemIsInstanceExternalServiceActionsGroupWhen, self).__init__(
+            parent, name, label)
         self.value = value
 
     @classmethod
     def from_elem(self, parent, elem):
         """Returns an instance of this when"""
-        rval = ItemIsInstanceExternalServiceActionsGroupWhen(parent, elem.get('name'), elem.get('value'), elem.get('label'))
+        rval = ItemIsInstanceExternalServiceActionsGroupWhen(
+            parent, elem.get('name'), elem.get('value'), elem.get('label'))
         rval.load_sub_elems(elem)
         return rval
 
     def is_case(self, param_dict):
         ref = self.get_ref(param_dict)
-        return ref.__class__.__name__.lower() in map(lambda x: x.lower(), self.value.split('.'))  # HACK!
+        return ref.__class__.__name__.lower() in map(
+            lambda x: x.lower(), self.value.split('.'))  # HACK!
 
 
 when_type_to_class = {}
 for class_type in [
-        ValueExternalServiceActionsGroupWhen, BooleanExternalServiceActionsGroupWhen, ItemIsInstanceExternalServiceActionsGroupWhen
+        ValueExternalServiceActionsGroupWhen,
+        BooleanExternalServiceActionsGroupWhen,
+        ItemIsInstanceExternalServiceActionsGroupWhen
 ]:
     when_type_to_class[class_type.type] = class_type
 
@@ -169,7 +191,8 @@ class ExternalServiceActionsConditional(object):
         self.ref = self.ref.split('.')
         self.cases = []
         for when_elem in elem.findall('when'):
-            self.cases.append(ExternalServiceActionsGroupWhen.from_elem(self, when_elem))
+            self.cases.append(
+                ExternalServiceActionsGroupWhen.from_elem(self, when_elem))
 
     def get_current_cases(self, param_dict):
         rval = []
@@ -204,15 +227,19 @@ class PopulatedExternalService(object):
         self.populate()
 
     def __getattr__(self, name):
-        return getattr(self.service_instance, name)  # should .service or.service_instance should be here...
+        return getattr(
+            self.service_instance,
+            name)  # should .service or.service_instance should be here...
 
     def populate(self):
         param_dict = {}
-        param_dict['fields'] = Bunch(**self.service_instance.form_values.content)
+        param_dict['fields'] = Bunch(
+            **self.service_instance.form_values.content)
         param_dict['item'] = self.item
         param_dict['service'] = self.service_group.parent
         param_dict['service_instance'] = self.service_instance
-        action_list = ActionSection(self.service_group.name, self.service_group.label)
+        action_list = ActionSection(self.service_group.name,
+                                    self.service_group.label)
         for item in self.service_group.items:
             if isinstance(item, ExternalServiceParameter):
                 param_dict[item.name] = item.get_value(param_dict)
@@ -240,7 +267,8 @@ class PopulatedExternalService(object):
                     action_found = True
                     actions = action
                     break
-            assert action_found, 'Action not found: %s in %s' % (name, actions_list)
+            assert action_found, 'Action not found: %s in %s' % (name,
+                                                                 actions_list)
         assert action, 'Action not found: %s' % actions_list
         return action
 

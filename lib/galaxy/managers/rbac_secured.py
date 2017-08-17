@@ -7,7 +7,8 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class RBACPermissionFailedException(galaxy.exceptions.InsufficientPermissionsException):
+class RBACPermissionFailedException(
+        galaxy.exceptions.InsufficientPermissionsException):
     pass
 
 
@@ -35,7 +36,8 @@ class RBACPermission(object):
 
     def error_unless_permitted(self, item, user):
         if not self.is_permitted(item, user):
-            error_info = dict(model_class=item.__class__, id=getattr(item, 'id', None))
+            error_info = dict(
+                model_class=item.__class__, id=getattr(item, 'id', None))
             raise self.permission_failed_error_class(**error_info)
 
     def grant(self, item, user, flush=True):
@@ -49,7 +51,8 @@ class RBACPermission(object):
 
     def _error_unless_role_permitted(self, item, role):
         if not self._role_is_permitted(item, role):
-            error_info = dict(model_class=item.__class__, id=getattr(item, 'id', None))
+            error_info = dict(
+                model_class=item.__class__, id=getattr(item, 'id', None))
             raise self.permission_failed_error_class(**error_info)
 
     def _grant_role(self, item, role, flush=True):
@@ -78,7 +81,8 @@ class DatasetRBACPermission(RBACPermission):
     # ---- double secrect probation
     def __assert_action(self):
         if not self.action_name:
-            raise NotImplementedError("abstract parent class" + " needs action_name")
+            raise NotImplementedError("abstract parent class" +
+                                      " needs action_name")
 
     # ---- interface
     def by_dataset(self, dataset):
@@ -97,7 +101,8 @@ class DatasetRBACPermission(RBACPermission):
         if not found:
             return None
         if len(found) > 1:
-            raise galaxy.exceptions.InconsistentDatabase(dataset=dataset.id, role=role.id)
+            raise galaxy.exceptions.InconsistentDatabase(
+                dataset=dataset.id, role=role.id)
         return found[0]
 
     def set(self, dataset, roles, flush=True):
@@ -232,7 +237,8 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
         #   anonymous access to public datasets
         return (self._is_public_based_on_roles(current_roles) or
                 # admin is always permitted
-                self.user_manager.is_admin(user) or self._user_has_all_roles(user, current_roles))
+                self.user_manager.is_admin(user)
+                or self._user_has_all_roles(user, current_roles))
 
     def grant(self, item, user):
         pass

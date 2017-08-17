@@ -67,7 +67,8 @@ def _json_wrap_input(input, value, handle_files="SKIP"):
         # value is a SelectToolParameterWrapper()
         json_value = [int(_) for _ in _cast_if_not_none(value.value, list)]
     else:
-        raise NotImplementedError("input_type [%s] not implemented" % input_type)
+        raise NotImplementedError(
+            "input_type [%s] not implemented" % input_type)
 
     return json_value
 

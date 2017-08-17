@@ -62,7 +62,8 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("runtime_version", {}).get("command", None)
 
     def parse_version_command_interpreter(self):
-        return self.root_dict.get("runtime_version", {}).get("interpreter", None)
+        return self.root_dict.get("runtime_version", {}).get(
+            "interpreter", None)
 
     def parse_requirements_and_containers(self):
         return requirements.parse_requirements_from_dict(self.root_dict)
@@ -91,7 +92,8 @@ class YamlToolSource(ToolSource):
             if output_type == "data":
                 output_defs.append(self._parse_output(tool, name, output_dict))
             elif output_type == "collection":
-                output_collection_defs.append(self._parse_output(tool, name, output_dict))
+                output_collection_defs.append(
+                    self._parse_output(tool, name, output_dict))
             else:
                 message = "Unknown output_type [%s] encountered." % output_type
                 raise Exception(message)
@@ -110,7 +112,8 @@ class YamlToolSource(ToolSource):
         output.format = output_dict.get("format", "data")
         output.change_format = []
         output.format_source = output_dict.get("format_source", None)
-        output.default_identifier_source = output_dict.get("default_identifier_source", None)
+        output.default_identifier_source = output_dict.get(
+            "default_identifier_source", None)
         output.metadata_source = output_dict.get("metadata_source", "")
         output.parent = output_dict.get("parent", None)
         output.label = output_dict.get("label", None)
@@ -121,7 +124,8 @@ class YamlToolSource(ToolSource):
         output.hidden = output_dict.get("hidden", "")
         # TODO: implement tool output action group fixes
         output.actions = ToolOutputActionGroup(output, None)
-        output.dataset_collector_descriptions = self._dataset_collector_descriptions(output_dict)
+        output.dataset_collector_descriptions = self._dataset_collector_descriptions(
+            output_dict)
         return output
 
     def _parse_output_collection(self, tool, name, output_dict):
@@ -139,7 +143,8 @@ class YamlToolSource(ToolSource):
         default_format_source = output_dict.get("format_source", None)
         default_metadata_source = output_dict.get("metadata_source", "")
         filters = []
-        dataset_collector_descriptions = self._dataset_collector_descriptions(output_dict)
+        dataset_collector_descriptions = self._dataset_collector_descriptions(
+            output_dict)
 
         structure = ToolOutputCollectionStructure(
             collection_type=collection_type,
@@ -161,7 +166,8 @@ class YamlToolSource(ToolSource):
     def _dataset_collector_descriptions(self, discover_datasets_dicts):
         if _is_dict(discover_datasets_dicts):
             discover_datasets_dicts = [discover_datasets_dicts]
-        dataset_collector_descriptions = dataset_collector_descriptions_from_list(discover_datasets_dicts)
+        dataset_collector_descriptions = dataset_collector_descriptions_from_list(
+            discover_datasets_dicts)
         return dataset_collector_descriptions
 
     def parse_tests_to_dict(self):

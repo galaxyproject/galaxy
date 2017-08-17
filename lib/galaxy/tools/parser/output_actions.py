@@ -27,11 +27,13 @@ class ToolOutputActionGroup(object):
         if config_elem is not None:
             for elem in config_elem:
                 if elem.tag == "conditional":
-                    self.actions.append(ToolOutputActionConditional(self, elem))
+                    self.actions.append(
+                        ToolOutputActionConditional(self, elem))
                 elif elem.tag == "action":
                     self.actions.append(ToolOutputAction.from_elem(self, elem))
                 else:
-                    log.debug("Unknown ToolOutputAction tag specified: %s" % elem.tag)
+                    log.debug("Unknown ToolOutputAction tag specified: %s" %
+                              elem.tag)
 
     def apply_action(self, output_dataset, other_values):
         for action in self.actions:
@@ -53,15 +55,18 @@ class ToolOutputActionConditionalWhen(ToolOutputActionGroup):
         """Loads the proper when by attributes of elem"""
         when_value = when_elem.get("value", None)
         if when_value is not None:
-            return ValueToolOutputActionConditionalWhen(parent, when_elem, when_value)
+            return ValueToolOutputActionConditionalWhen(
+                parent, when_elem, when_value)
         else:
             when_value = when_elem.get("datatype_isinstance", None)
             if when_value is not None:
-                return DatatypeIsInstanceToolOutputActionConditionalWhen(parent, when_elem, when_value)
+                return DatatypeIsInstanceToolOutputActionConditionalWhen(
+                    parent, when_elem, when_value)
         raise TypeError("When type not implemented")
 
     def __init__(self, parent, config_elem, value):
-        super(ToolOutputActionConditionalWhen, self).__init__(parent, config_elem)
+        super(ToolOutputActionConditionalWhen, self).__init__(
+            parent, config_elem)
         self.value = value
 
     def is_case(self, output_dataset, other_values):
@@ -76,7 +81,8 @@ class ToolOutputActionConditionalWhen(ToolOutputActionGroup):
 
     def apply_action(self, output_dataset, other_values):
         if self.is_case(output_dataset, other_values):
-            return super(ToolOutputActionConditionalWhen, self).apply_action(output_dataset, other_values)
+            return super(ToolOutputActionConditionalWhen, self).apply_action(
+                output_dataset, other_values)
 
 
 class ValueToolOutputActionConditionalWhen(ToolOutputActionConditionalWhen):
@@ -87,12 +93,15 @@ class ValueToolOutputActionConditionalWhen(ToolOutputActionConditionalWhen):
         return bool(str(ref) == self.value)
 
 
-class DatatypeIsInstanceToolOutputActionConditionalWhen(ToolOutputActionConditionalWhen):
+class DatatypeIsInstanceToolOutputActionConditionalWhen(
+        ToolOutputActionConditionalWhen):
     tag = "when datatype_isinstance"
 
     def __init__(self, parent, config_elem, value):
-        super(DatatypeIsInstanceToolOutputActionConditionalWhen, self).__init__(parent, config_elem, value)
-        self.value = type(self.tool.app.datatypes_registry.get_datatype_by_extension(value))
+        super(DatatypeIsInstanceToolOutputActionConditionalWhen,
+              self).__init__(parent, config_elem, value)
+        self.value = type(
+            self.tool.app.datatypes_registry.get_datatype_by_extension(value))
 
     def is_case(self, output_dataset, other_values):
         ref = self.get_ref(output_dataset, other_values)
@@ -109,7 +118,8 @@ class ToolOutputActionConditional(object):
         self.name = self.name.split('.')
         self.cases = []
         for when_elem in config_elem.findall('when'):
-            self.cases.append(ToolOutputActionConditionalWhen.from_elem(self, when_elem))
+            self.cases.append(
+                ToolOutputActionConditionalWhen.from_elem(self, when_elem))
 
     def apply_action(self, output_dataset, other_values):
         for case in self.cases:
@@ -162,7 +172,8 @@ class ToolOutputActionOption(object):
         self.filters = []
         if elem is not None:
             for filter_elem in elem.findall('filter'):
-                self.filters.append(ToolOutputActionOptionFilter.from_elem(self, filter_elem))
+                self.filters.append(
+                    ToolOutputActionOptionFilter.from_elem(self, filter_elem))
 
     def get_value(self, other_values):
         raise TypeError("Not implemented")
@@ -195,7 +206,8 @@ class FromFileToolOutputActionOption(ToolOutputActionOption):
         self.options = []
         data_file = self.name
         if not os.path.isabs(data_file):
-            data_file = os.path.join(self.tool.app.config.tool_data_path, data_file)
+            data_file = os.path.join(self.tool.app.config.tool_data_path,
+                                     data_file)
         for line in open(data_file):
             self.options.append(line.rstrip('\n\r').split(self.separator))
 
@@ -207,7 +219,8 @@ class FromFileToolOutputActionOption(ToolOutputActionOption):
             if options:
                 return str(options[self.offset][self.column])
         except Exception as e:
-            log.debug("Error in FromFileToolOutputActionOption get_value: %s" % e)
+            log.debug(
+                "Error in FromFileToolOutputActionOption get_value: %s" % e)
         return None
 
 
@@ -239,12 +252,14 @@ class FromParamToolOutputActionOption(ToolOutputActionOption):
                 value = value[0]
             elif isinstance(value, dict):
                 value = value[attr_name]
-            elif hasattr(value, "collection") and value not in COLLECTION_ATTRIBUTES:
+            elif hasattr(value,
+                         "collection") and value not in COLLECTION_ATTRIBUTES:
                 # if this is an HDCA for instance let reverse.ext grab
                 # the reverse element and then continue for loop to grab
                 # dataset extension
                 value = value.collection[attr_name].element_object
-            elif hasattr(value, "collection") and value in COLLECTION_ATTRIBUTES:
+            elif hasattr(value,
+                         "collection") and value in COLLECTION_ATTRIBUTES:
                 value = getattr(value.collection, attr_name)
             else:
                 value = getattr(value, attr_name)
@@ -255,7 +270,8 @@ class FromParamToolOutputActionOption(ToolOutputActionOption):
             if options:
                 return str(options[self.offset][self.column])
         except Exception as e:
-            log.debug("Error in FromParamToolOutputActionOption get_value: %s" % e)
+            log.debug(
+                "Error in FromParamToolOutputActionOption get_value: %s" % e)
         return None
 
 
@@ -269,7 +285,8 @@ class FromDataTableOutputActionOption(ToolOutputActionOption):
         assert self.name is not None, "Required 'name' attribute missing from FromDataTableOutputActionOption"
         self.missing_tool_data_table_name = None
         if self.name in self.tool.app.tool_data_tables:
-            self.options = self.tool.app.tool_data_tables[self.name].get_fields()
+            self.options = self.tool.app.tool_data_tables[
+                self.name].get_fields()
             self.column = elem.get('column', None)
             assert self.column is not None, "Required 'column' attribute missing from FromDataTableOutputActionOption"
             self.column = int(self.column)
@@ -290,7 +307,8 @@ class FromDataTableOutputActionOption(ToolOutputActionOption):
             if options:
                 return str(options[self.offset][self.column])
         except Exception as e:
-            log.debug("Error in FromDataTableOutputActionOption get_value: %s" % e)
+            log.debug(
+                "Error in FromDataTableOutputActionOption get_value: %s" % e)
         return None
 
 
@@ -350,7 +368,8 @@ class ParamValueToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
     tag = "param_value"
 
     def __init__(self, parent, elem):
-        super(ParamValueToolOutputActionOptionFilter, self).__init__(parent, elem)
+        super(ParamValueToolOutputActionOptionFilter, self).__init__(
+            parent, elem)
         self.ref = elem.get('ref', None)
         if self.ref:
             self.ref = self.ref.split('.')
@@ -382,7 +401,8 @@ class ParamValueToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
         rval = []
         for fields in options:
             try:
-                if self.keep == (self.compare(self.cast(fields[self.column]), value)):
+                if self.keep == (self.compare(
+                        self.cast(fields[self.column]), value)):
                     rval.append(fields)
             except Exception as e:
                 log.debug(e)
@@ -394,7 +414,8 @@ class InsertColumnToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
     tag = "insert_column"
 
     def __init__(self, parent, elem):
-        super(InsertColumnToolOutputActionOptionFilter, self).__init__(parent, elem)
+        super(InsertColumnToolOutputActionOptionFilter, self).__init__(
+            parent, elem)
         self.ref = elem.get('ref', None)
         if self.ref:
             self.ref = self.ref.split('.')
@@ -444,7 +465,8 @@ class MultipleSplitterFilter(ToolOutputActionOptionFilter):
         rval = []
         for fields in options:
             for field in fields[self.column].split(self.separator):
-                rval.append(fields[0:self.column] + [field] + fields[self.column + 1:])
+                rval.append(fields[0:self.column] + [field] +
+                            fields[self.column + 1:])
         return rval
 
 
@@ -461,7 +483,9 @@ class ColumnStripFilter(ToolOutputActionOptionFilter):
     def filter_options(self, options, other_values):
         rval = []
         for fields in options:
-            rval.append(fields[0:self.column] + [fields[self.column].strip(self.strip)] + fields[self.column + 1:])
+            rval.append(fields[0:self.column] + [
+                fields[self.column].strip(self.strip)
+            ] + fields[self.column + 1:])
         return rval
 
 
@@ -474,8 +498,10 @@ class ColumnReplaceFilter(ToolOutputActionOptionFilter):
         self.old_value = elem.get("old_value", None)
         self.new_value = elem.get("new_value", None)
         self.new_column = elem.get('new_column', None)
-        assert (bool(self.old_column) ^ bool(self.old_value) and bool(self.new_column) ^ bool(self.new_value)
-                ), "Required 'old_column' or 'old_value' and 'new_column' or 'new_value' attribute missing from ColumnReplaceFilter"
+        assert (
+            bool(self.old_column) ^ bool(self.old_value)
+            and bool(self.new_column) ^ bool(self.new_value)
+        ), "Required 'old_column' or 'old_value' and 'new_column' or 'new_value' attribute missing from ColumnReplaceFilter"
         self.column = elem.get('column', None)
         assert self.column is not None, "Required 'column' attribute missing from ColumnReplaceFilter"
         self.column = int(self.column)
@@ -495,7 +521,9 @@ class ColumnReplaceFilter(ToolOutputActionOptionFilter):
                 new_value = fields[self.new_column]
             else:
                 new_value = self.new_value
-            rval.append(fields[0:self.column] + [fields[self.column].replace(old_value, new_value)] + fields[self.column + 1:])
+            rval.append(fields[0:self.column] + [
+                fields[self.column].replace(old_value, new_value)
+            ] + fields[self.column + 1:])
         return rval
 
 
@@ -561,14 +589,17 @@ class StringFunctionFilter(ToolOutputActionOptionFilter):
         assert self.column is not None, "Required 'column' attribute missing from StringFunctionFilter"
         self.column = int(self.column)
         self.function = elem.get("name", None)
-        assert self.function in ['lower', 'upper'
-                                 ], "Required function 'name' missing or invalid from StringFunctionFilter"  # add function names as needed
+        assert self.function in [
+            'lower', 'upper'
+        ], "Required function 'name' missing or invalid from StringFunctionFilter"  # add function names as needed
         self.function = getattr(string, self.function)
 
     def filter_options(self, options, other_values):
         rval = []
         for fields in options:
-            rval.append(fields[0:self.column] + [self.function(fields[self.column])] + fields[self.column + 1:])
+            rval.append(fields[0:self.column] + [
+                self.function(fields[self.column])
+            ] + fields[self.column + 1:])
         return rval
 
 
@@ -579,14 +610,17 @@ for action_type in [MetadataToolOutputAction, FormatToolOutputAction]:
 
 option_types = {}
 for option_type in [
-        NullToolOutputActionOption, FromFileToolOutputActionOption, FromParamToolOutputActionOption, FromDataTableOutputActionOption
+        NullToolOutputActionOption, FromFileToolOutputActionOption,
+        FromParamToolOutputActionOption, FromDataTableOutputActionOption
 ]:
     option_types[option_type.tag] = option_type
 
 filter_types = {}
 for filter_type in [
-        ParamValueToolOutputActionOptionFilter, InsertColumnToolOutputActionOptionFilter, MultipleSplitterFilter, ColumnStripFilter,
-        MetadataValueFilter, BooleanFilter, StringFunctionFilter, ColumnReplaceFilter
+        ParamValueToolOutputActionOptionFilter,
+        InsertColumnToolOutputActionOptionFilter, MultipleSplitterFilter,
+        ColumnStripFilter, MetadataValueFilter, BooleanFilter,
+        StringFunctionFilter, ColumnReplaceFilter
 ]:
     filter_types[filter_type.tag] = filter_type
 

@@ -14,7 +14,9 @@ from galaxy.util import asbool
 import galaxy.webapps.tool_shed.model
 import galaxy.webapps.tool_shed.model.mapping
 import galaxy.web.framework.webapp
-from galaxy.webapps.util import (MiddlewareWrapUnsupported, build_template_error_formatters, wrap_if_allowed, wrap_if_allowed_or_fail)
+from galaxy.webapps.util import (MiddlewareWrapUnsupported,
+                                 build_template_error_formatters,
+                                 wrap_if_allowed, wrap_if_allowed_or_fail)
 from galaxy import util
 from galaxy.util.properties import load_app_properties
 from routes.middleware import RoutesMiddleware
@@ -44,14 +46,16 @@ def add_ui_controllers(webapp, app):
             # Look for a controller inside the modules
             for key in dir(module):
                 T = getattr(module, key)
-                if isclass(T) and T is not BaseUIController and issubclass(T, BaseUIController):
+                if isclass(T) and T is not BaseUIController and issubclass(
+                        T, BaseUIController):
                     webapp.add_ui_controller(name, T(app))
 
 
 def app_factory(global_conf, load_app_kwds={}, **kwargs):
     """Return a wsgi application serving the root object"""
     # Create the Galaxy tool shed application unless passed in
-    kwargs = load_app_properties(kwds=kwargs, config_prefix='TOOL_SHED_CONFIG_', **load_app_kwds)
+    kwargs = load_app_properties(
+        kwds=kwargs, config_prefix='TOOL_SHED_CONFIG_', **load_app_kwds)
     if 'app' in kwargs:
         app = kwargs.pop('app')
     else:
@@ -65,11 +69,19 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
             sys.exit(1)
     atexit.register(app.shutdown)
     # Create the universe WSGI application
-    webapp = CommunityWebApplication(app, session_cookie='galaxycommunitysession', name="tool_shed")
+    webapp = CommunityWebApplication(
+        app, session_cookie='galaxycommunitysession', name="tool_shed")
     add_ui_controllers(webapp, app)
-    webapp.add_route('/view/{owner}', controller='repository', action='sharable_owner')
-    webapp.add_route('/view/{owner}/{name}', controller='repository', action='sharable_repository')
-    webapp.add_route('/view/{owner}/{name}/{changeset_revision}', controller='repository', action='sharable_repository_revision')
+    webapp.add_route(
+        '/view/{owner}', controller='repository', action='sharable_owner')
+    webapp.add_route(
+        '/view/{owner}/{name}',
+        controller='repository',
+        action='sharable_repository')
+    webapp.add_route(
+        '/view/{owner}/{name}/{changeset_revision}',
+        controller='repository',
+        action='sharable_repository_revision')
     # Handle displaying tool help images and README file images for tools contained in repositories.
     webapp.add_route(
         '/repository/static/images/{repository_id}/{image_file:.+?}',
@@ -80,7 +92,11 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_route('/{controller}/{action}', action='index')
     webapp.add_route('/{action}', controller='repository', action='index')
     # Enable 'hg clone' functionality on repos by letting hgwebapp handle the request
-    webapp.add_route('/repos/*path_info', controller='hg', action='handle_request', path_info='/')
+    webapp.add_route(
+        '/repos/*path_info',
+        controller='hg',
+        action='handle_request',
+        path_info='/')
     # Add the web API.  # A good resource for RESTful services - http://routes.readthedocs.org/en/latest/restful.html
     webapp.add_api_controllers('galaxy.webapps.tool_shed.api', app)
     webapp.mapper.connect(
@@ -89,16 +105,32 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
         controller='authenticate',
         action='get_tool_shed_api_key',
         conditions=dict(method=["GET"]))
-    webapp.mapper.connect('group', '/api/groups/', controller='groups', action='index', conditions=dict(method=["GET"]))
-    webapp.mapper.connect('group', '/api/groups/', controller='groups', action='create', conditions=dict(method=["POST"]))
-    webapp.mapper.connect('group', '/api/groups/{encoded_id}', controller='groups', action='show', conditions=dict(method=["GET"]))
+    webapp.mapper.connect(
+        'group',
+        '/api/groups/',
+        controller='groups',
+        action='index',
+        conditions=dict(method=["GET"]))
+    webapp.mapper.connect(
+        'group',
+        '/api/groups/',
+        controller='groups',
+        action='create',
+        conditions=dict(method=["POST"]))
+    webapp.mapper.connect(
+        'group',
+        '/api/groups/{encoded_id}',
+        controller='groups',
+        action='show',
+        conditions=dict(method=["GET"]))
     webapp.mapper.resource(
         'category',
         'categories',
         controller='categories',
         name_prefix='category_',
         path_prefix='/api',
-        parent_resources=dict(member_name='category', collection_name='categories'))
+        parent_resources=dict(
+            member_name='category', collection_name='categories'))
     webapp.mapper.connect(
         'repositories_in_category',
         '/api/categories/{category_id}/repositories',
@@ -128,7 +160,8 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
         name_prefix='repository_',
         path_prefix='/api',
         new={'import_capsule': 'POST'},
-        parent_resources=dict(member_name='repository', collection_name='repositories'))
+        parent_resources=dict(
+            member_name='repository', collection_name='repositories'))
     webapp.mapper.resource(
         'repository_revision',
         'repository_revisions',
@@ -137,7 +170,9 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
         controller='repository_revisions',
         name_prefix='repository_revision_',
         path_prefix='/api',
-        parent_resources=dict(member_name='repository_revision', collection_name='repository_revisions'))
+        parent_resources=dict(
+            member_name='repository_revision',
+            collection_name='repository_revisions'))
     webapp.mapper.resource(
         'user',
         'users',
@@ -146,7 +181,11 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
         path_prefix='/api',
         parent_resources=dict(member_name='user', collection_name='users'))
     webapp.mapper.connect(
-        'update_repository', '/api/repositories/{id}', controller='repositories', action='update', conditions=dict(method=["PATCH", "PUT"]))
+        'update_repository',
+        '/api/repositories/{id}',
+        controller='repositories',
+        action='update',
+        conditions=dict(method=["PATCH", "PUT"]))
     webapp.mapper.connect(
         'repository_create_changeset_revision',
         '/api/repositories/{id}/changeset_revision',
@@ -166,22 +205,49 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
         action='show_tools',
         conditions=dict(method=["GET"]))
     webapp.mapper.connect(
-        'create_repository', '/api/repositories', controller='repositories', action='create', conditions=dict(method=["POST"]))
-    webapp.mapper.connect('tools', '/api/tools', controller='tools', action='index', conditions=dict(method=["GET"]))
-    webapp.mapper.connect('json', '/api/tools/json', controller='tools', action='json', conditions=dict(method=["GET"]))
-    webapp.mapper.connect("version", "/api/version", controller="configuration", action="version", conditions=dict(method=["GET"]))
+        'create_repository',
+        '/api/repositories',
+        controller='repositories',
+        action='create',
+        conditions=dict(method=["POST"]))
+    webapp.mapper.connect(
+        'tools',
+        '/api/tools',
+        controller='tools',
+        action='index',
+        conditions=dict(method=["GET"]))
+    webapp.mapper.connect(
+        'json',
+        '/api/tools/json',
+        controller='tools',
+        action='json',
+        conditions=dict(method=["GET"]))
+    webapp.mapper.connect(
+        "version",
+        "/api/version",
+        controller="configuration",
+        action="version",
+        conditions=dict(method=["GET"]))
 
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get('middleware', True):
-        webapp = wrap_in_middleware(webapp, global_conf, app.application_stack, **kwargs)
+        webapp = wrap_in_middleware(webapp, global_conf, app.application_stack,
+                                    **kwargs)
     if asbool(kwargs.get('static_enabled', True)):
-        webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static, args=(global_conf, ), kwargs=kwargs)
+        webapp = wrap_if_allowed(
+            webapp,
+            app.application_stack,
+            wrap_in_static,
+            args=(global_conf, ),
+            kwargs=kwargs)
     # Close any pooled database connections before forking
     try:
         galaxy.webapps.tool_shed.model.mapping.metadata.bind.dispose()
     except:
-        log.exception("Unable to dispose of pooled tool_shed model database connections.")
+        log.exception(
+            "Unable to dispose of pooled tool_shed model database connections."
+        )
     # Return
     return webapp
 
@@ -197,12 +263,18 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # First put into place httpexceptions, which must be most closely
     # wrapped around the application (it can interact poorly with
     # other middleware):
-    app = wrap_if_allowed(app, stack, httpexceptions.make_middleware, name='paste.httpexceptions', args=(conf, ))
+    app = wrap_if_allowed(
+        app,
+        stack,
+        httpexceptions.make_middleware,
+        name='paste.httpexceptions',
+        args=(conf, ))
     # Create a separate mapper for redirects to prevent conflicts.
     redirect_mapper = routes.Mapper()
     redirect_mapper = _map_redirects(redirect_mapper)
     # Load the Routes middleware which we use for redirecting
-    app = wrap_if_allowed(app, stack, RoutesMiddleware, args=(redirect_mapper, ))
+    app = wrap_if_allowed(
+        app, stack, RoutesMiddleware, args=(redirect_mapper, ))
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
@@ -216,14 +288,17 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                 maildomain=conf.get('remote_user_maildomain', None),
                 display_servers=util.listify(conf.get('display_servers', '')),
                 admin_users=conf.get('admin_users', '').split(','),
-                remote_user_header=conf.get('remote_user_header', 'HTTP_REMOTE_USER'),
+                remote_user_header=conf.get('remote_user_header',
+                                            'HTTP_REMOTE_USER'),
                 remote_user_secret_header=conf.get('remote_user_secret', None),
-                normalize_remote_user_email=conf.get('normalize_remote_user_email', False)))
+                normalize_remote_user_email=conf.get(
+                    'normalize_remote_user_email', False)))
     # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):
         from paste import recursive
-        app = wrap_if_allowed(app, stack, recursive.RecursiveMiddleware, args=(conf, ))
+        app = wrap_if_allowed(
+            app, stack, recursive.RecursiveMiddleware, args=(conf, ))
     # Transaction logging (apache access.log style)
     if asbool(conf.get('use_translogger', True)):
         from paste.translogger import TransLogger
@@ -245,11 +320,17 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         # Middleware to check for WSGI compliance
         if asbool(conf.get('use_lint', True)):
             from paste import lint
-            app = wrap_if_allowed(app, stack, lint.make_middleware, name='paste.lint', args=(conf, ))
+            app = wrap_if_allowed(
+                app,
+                stack,
+                lint.make_middleware,
+                name='paste.lint',
+                args=(conf, ))
         # Middleware to run the python profiler on each request
         if asbool(conf.get('use_profile', False)):
             from paste.debug import profile
-            app = wrap_if_allowed(app, stack, profile.ProfileMiddleware, args=(conf, ))
+            app = wrap_if_allowed(
+                app, stack, profile.ProfileMiddleware, args=(conf, ))
         if interactive:
             # Interactive exception debugging, scary dangerous if publicly
             # accessible, if not enabled we'll use the regular error printing
@@ -261,20 +342,31 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                     stack,
                     evalexception.EvalException,
                     args=(conf, ),
-                    kwargs=dict(templating_formatters=build_template_error_formatters()))
+                    kwargs=dict(
+                        templating_formatters=build_template_error_formatters(
+                        )))
             except MiddlewareWrapUnsupported as exc:
                 log.warning(str(exc))
                 import galaxy.web.framework.middleware.error
-                app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf, ))
+                app = wrap_if_allowed(
+                    app,
+                    stack,
+                    galaxy.web.framework.middleware.error.ErrorMiddleware,
+                    args=(conf, ))
         else:
             # Not in interactive debug mode, just use the regular error middleware
             import galaxy.web.framework.middleware.error
-            app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf, ))
+            app = wrap_if_allowed(
+                app,
+                stack,
+                galaxy.web.framework.middleware.error.ErrorMiddleware,
+                args=(conf, ))
     return app
 
 
 def wrap_in_static(app, global_conf, **local_conf):
-    urlmap, _ = galaxy.web.framework.webapp.build_url_map(app, global_conf, local_conf)
+    urlmap, _ = galaxy.web.framework.webapp.build_url_map(
+        app, global_conf, local_conf)
     return urlmap
 
 
@@ -300,4 +392,5 @@ def _map_redirects(mapper):
 
 
 def uwsgi_app():
-    return galaxy.web.framework.webapp.build_native_uwsgi_app(app_factory, "tool_shed")
+    return galaxy.web.framework.webapp.build_native_uwsgi_app(
+        app_factory, "tool_shed")

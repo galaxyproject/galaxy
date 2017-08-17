@@ -16,7 +16,8 @@ def submodules(module):
             submodule = getattr(module, submodule_name)
             submodules.append(submodule)
         except BaseException:
-            message = "%s dynamic module could not be loaded (traceback follows):" % (full_submodule)
+            message = "%s dynamic module could not be loaded (traceback follows):" % (
+                full_submodule)
             log.exception(message)
     return submodules
 

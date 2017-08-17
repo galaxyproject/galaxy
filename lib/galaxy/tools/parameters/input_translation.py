@@ -73,7 +73,8 @@ class ToolInputTranslator(object):
             append_param_elem = req_param.find("append_param")
             if append_param_elem is not None:
                 separator = append_param_elem.get('separator', ',')
-                first_separator = append_param_elem.get('first_separator', None)
+                first_separator = append_param_elem.get(
+                    'first_separator', None)
                 join_str = append_param_elem.get('join', '=')
                 append_dict = {}
                 for value_elem in append_param_elem.findall('value'):
@@ -81,10 +82,17 @@ class ToolInputTranslator(object):
                     value_missing = value_elem.get('missing')
                     if None not in [value_name, value_missing]:
                         append_dict[value_name] = value_missing
-                append_param = Bunch(separator=separator, first_separator=first_separator, join_str=join_str, append_dict=append_dict)
+                append_param = Bunch(
+                    separator=separator,
+                    first_separator=first_separator,
+                    join_str=join_str,
+                    append_dict=append_dict)
 
             rval.param_trans_dict[remote_name] = Bunch(
-                galaxy_name=galaxy_name, missing=missing, value_trans=value_trans, append_param=append_param)
+                galaxy_name=galaxy_name,
+                missing=missing,
+                value_trans=value_trans,
+                append_param=append_param)
 
         return rval
 
@@ -97,16 +105,20 @@ class ToolInputTranslator(object):
         """
         for remote_name, translator in self.param_trans_dict.items():
             galaxy_name = translator.galaxy_name  # NB: if a param by name galaxy_name is provided, it is always thrown away unless galaxy_name == remote_name
-            value = params.get(remote_name,
-                               translator.missing)  # get value from input params, or use default value specified in tool config
+            value = params.get(
+                remote_name, translator.missing
+            )  # get value from input params, or use default value specified in tool config
             if translator.value_trans and value in translator.value_trans:
                 value = translator.value_trans[value]
             if translator.append_param:
-                for param_name, missing_value in translator.append_param.append_dict.items():
+                for param_name, missing_value in translator.append_param.append_dict.items(
+                ):
                     param_value = params.get(param_name, missing_value)
                     if translator.append_param.first_separator and translator.append_param.first_separator not in value:
                         sep = translator.append_param.first_separator
                     else:
                         sep = translator.append_param.separator
-                    value += '%s%s%s%s' % (sep, param_name, translator.append_param.join_str, param_value)
+                    value += '%s%s%s%s' % (sep, param_name,
+                                           translator.append_param.join_str,
+                                           param_value)
             params.update({galaxy_name: value})

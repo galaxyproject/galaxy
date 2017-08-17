@@ -42,7 +42,8 @@ class AnnotatableManagerMixin(object):
             self._delete_annotation(item, user, flush=flush)
             return None
 
-        annotation_obj = item.add_item_annotation(self.session(), user, item, annotation)
+        annotation_obj = item.add_item_annotation(self.session(), user, item,
+                                                  annotation)
         if flush:
             self.session().flush()
         return annotation_obj

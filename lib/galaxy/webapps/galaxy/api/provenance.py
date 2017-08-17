@@ -21,13 +21,15 @@ class BaseProvenanceController(BaseAPIController):
     @web.expose_api
     def index(self, trans, **kwd):
         follow = kwd.get('follow', False)
-        value = self._get_provenance(trans, self.provenance_item_class, kwd[self.provenance_item_id], follow)
+        value = self._get_provenance(trans, self.provenance_item_class,
+                                     kwd[self.provenance_item_id], follow)
         return value
 
     @web.expose_api
     def show(self, trans, elem_name, **kwd):
         follow = kwd.get('follow', False)
-        value = self._get_provenance(trans, self.provenance_item_class, kwd[self.provenance_item_id], follow)
+        value = self._get_provenance(trans, self.provenance_item_class,
+                                     kwd[self.provenance_item_id], follow)
         return value
 
     @web.expose_api
@@ -40,9 +42,15 @@ class BaseProvenanceController(BaseAPIController):
         raise HTTPBadRequest("Cannot Delete Provenance")
 
     def _get_provenance(self, trans, item_class_name, item_id, follow=True):
-        provenance_item = self.get_object(trans, item_id, item_class_name, check_ownership=False, check_accessible=False)
+        provenance_item = self.get_object(
+            trans,
+            item_id,
+            item_class_name,
+            check_ownership=False,
+            check_accessible=False)
         if item_class_name == "HistoryDatasetAssociation":
-            self.hda_manager.error_unless_accessible(provenance_item, trans.user)
+            self.hda_manager.error_unless_accessible(provenance_item,
+                                                     trans.user)
         else:
             self.security_check(trans, provenance_item, check_accessible=True)
         out = self._get_record(trans, provenance_item, follow)
@@ -55,16 +63,28 @@ class BaseProvenanceController(BaseAPIController):
             job = item.creating_job
             if job is not None:
                 return {
-                    "id": trans.security.encode_id(item.id),
-                    "uuid": (lambda uuid: str(uuid) if uuid else None)(item.dataset.uuid),
-                    "job_id": trans.security.encode_id(job.id),
-                    "tool_id": job.tool_id,
-                    "parameters": self._get_job_record(trans, job, follow),
-                    "stderr": job.stderr,
-                    "stdout": job.stdout,
+                    "id":
+                    trans.security.encode_id(item.id),
+                    "uuid": (lambda uuid: str(uuid) if uuid else None
+                             )(item.dataset.uuid),
+                    "job_id":
+                    trans.security.encode_id(job.id),
+                    "tool_id":
+                    job.tool_id,
+                    "parameters":
+                    self._get_job_record(trans, job, follow),
+                    "stderr":
+                    job.stderr,
+                    "stdout":
+                    job.stdout,
                 }
             else:
-                return {"id": trans.security.encode_id(item.id), "uuid": (lambda uuid: str(uuid) if uuid else None)(item.dataset.uuid)}
+                return {
+                    "id":
+                    trans.security.encode_id(item.id),
+                    "uuid": (lambda uuid: str(uuid) if uuid else None
+                             )(item.dataset.uuid)
+                }
         return None
 
     def _get_job_record(self, trans, job, follow):
@@ -78,8 +98,10 @@ class BaseProvenanceController(BaseAPIController):
                 out[in_d.name] = self._get_record(trans, in_d.dataset, follow)
             else:
                 out[in_d.name] = {
-                    "id": trans.security.encode_id(in_d.dataset.id),
-                    "uuid": (lambda uuid: str(uuid) if uuid else None)(in_d.dataset.dataset.uuid),
+                    "id":
+                    trans.security.encode_id(in_d.dataset.id),
+                    "uuid": (lambda uuid: str(uuid) if uuid else None
+                             )(in_d.dataset.dataset.uuid),
                 }
         return out
 

@@ -42,7 +42,9 @@ def upgrade(migrate_engine):
         try:
             migrate_engine.execute(cmd)
         except Exception:
-            log.exception("Altering tool_dependency.version column from TrimmedString(40) to Text failed.")
+            log.exception(
+                "Altering tool_dependency.version column from TrimmedString(40) to Text failed."
+            )
 
 
 def downgrade(migrate_engine):

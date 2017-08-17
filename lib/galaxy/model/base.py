@@ -13,7 +13,8 @@ from galaxy.util.bunch import Bunch
 class ModelMapping(Bunch):
     def __init__(self, model_modules, engine):
         self.engine = engine
-        context = scoped_session(sessionmaker(autoflush=False, autocommit=True))
+        context = scoped_session(
+            sessionmaker(autoflush=False, autocommit=True))
         # For backward compatibility with "context.current"
         # deprecated?
         context.current = context
@@ -23,7 +24,8 @@ class ModelMapping(Bunch):
         model_classes = {}
         for module in model_modules:
             m_obs = getmembers(module, isclass)
-            m_obs = dict([m for m in m_obs if m[1].__module__ == module.__name__])
+            m_obs = dict(
+                [m for m in m_obs if m[1].__module__ == module.__name__])
             model_classes.update(m_obs)
 
         super(ModelMapping, self).__init__(**model_classes)

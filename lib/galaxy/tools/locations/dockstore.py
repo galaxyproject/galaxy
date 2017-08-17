@@ -22,7 +22,8 @@ class DockStoreResolver(ToolLocationResolver):
         else:
             tool_id, version = tool_id, "latest"
         tmp_path = self._temp_path(uri_like + ".cwl")
-        cwl_str = _Ga4ghToolClient().get_tool_cwl(tool_id, version=version, as_string=True)
+        cwl_str = _Ga4ghToolClient().get_tool_cwl(
+            tool_id, version=version, as_string=True)
         with open(tmp_path, "wb") as f:
             f.write(cwl_str)
         return tmp_path
@@ -40,16 +41,20 @@ class _Ga4ghToolClient(object):
         return self._requests.get(url)
 
     def get_tool_version(self, tool_id, version="latest"):
-        url = "%s/ga4gh/v1/tools/%s/versions/%s" % (self.base_url, quote(tool_id, safe=''), version)
+        url = "%s/ga4gh/v1/tools/%s/versions/%s" % (self.base_url,
+                                                    quote(tool_id, safe=''),
+                                                    version)
         return self._requests.get(url)
 
     def get_tool_descriptor(self, tool_id, version="latest", tool_type="CWL"):
-        url = "%s/ga4gh/v1/tools/%s/versions/%s/%s/descriptor" % (self.base_url, quote(tool_id, safe=''), version, tool_type)
+        url = "%s/ga4gh/v1/tools/%s/versions/%s/%s/descriptor" % (
+            self.base_url, quote(tool_id, safe=''), version, tool_type)
         return self._requests.get(url)
 
     def get_tool_cwl(self, tool_id, version="latest", as_string=False):
         tool_type = "CWL"
-        url = "%s/ga4gh/v1/tools/%s/versions/%s/%s/descriptor" % (self.base_url, quote(tool_id, safe=''), version, tool_type)
+        url = "%s/ga4gh/v1/tools/%s/versions/%s/%s/descriptor" % (
+            self.base_url, quote(tool_id, safe=''), version, tool_type)
         descriptor_response = self._requests.get(url)
         descriptor_str = descriptor_response.json()["descriptor"]
         if as_string:
@@ -60,7 +65,8 @@ class _Ga4ghToolClient(object):
     @property
     def _requests(self):
         if requests is None:
-            raise Exception("requests Python library needs to be installed use GA4GH APIs")
+            raise Exception(
+                "requests Python library needs to be installed use GA4GH APIs")
         return requests
 
 

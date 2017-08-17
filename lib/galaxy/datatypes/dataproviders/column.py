@@ -272,10 +272,13 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         # TODO: too much going on in this loop - the above should all be precomputed AMAP...
         all_columns = line.split(self.deliminator)
         # if no indeces were passed to init, return all columns
-        selected_indeces = self.selected_column_indeces or list(range(len(all_columns)))
+        selected_indeces = self.selected_column_indeces or list(
+            range(len(all_columns)))
         parsed_columns = []
         for parser_index, column_index in enumerate(selected_indeces):
-            parsed_columns.append(self.parse_column_at_index(all_columns, parser_index, column_index))
+            parsed_columns.append(
+                self.parse_column_at_index(all_columns, parser_index,
+                                           column_index))
         return parsed_columns
 
     def parse_column_at_index(self, columns, parser_index, index):
@@ -284,7 +287,8 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         if the type is unavailable.
         """
         try:
-            return self.parse_value(columns[index], self.get_column_type(parser_index))
+            return self.parse_value(columns[index],
+                                    self.get_column_type(parser_index))
         # if a selected index is not within columns, return None
         except IndexError:
             return None

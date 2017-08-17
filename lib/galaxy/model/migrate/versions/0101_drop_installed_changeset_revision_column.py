@@ -25,7 +25,8 @@ def upgrade(migrate_engine):
     print(__doc__)
     metadata.reflect()
     try:
-        ToolDependency_table = Table("tool_dependency", metadata, autoload=True)
+        ToolDependency_table = Table(
+            "tool_dependency", metadata, autoload=True)
     except NoSuchTableError:
         ToolDependency_table = None
         log.debug("Failed loading table tool_dependency")
@@ -34,7 +35,9 @@ def upgrade(migrate_engine):
             col = ToolDependency_table.c.installed_changeset_revision
             col.drop()
         except Exception:
-            log.exception("Dropping column 'installed_changeset_revision' from tool_dependency table failed.")
+            log.exception(
+                "Dropping column 'installed_changeset_revision' from tool_dependency table failed."
+            )
 
 
 def downgrade(migrate_engine):

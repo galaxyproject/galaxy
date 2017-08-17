@@ -84,15 +84,20 @@ def get_config(argv, cwd=None):
     old_defaults = database_defaults.get('old_config_files')
     config_file = read_config_file_arg(argv, default, old_defaults, cwd=cwd)
     repo = database_defaults['repo']
-    config_prefix = database_defaults.get('config_prefix', DEFAULT_CONFIG_PREFIX)
-    config_override = database_defaults.get('config_override', 'GALAXY_CONFIG_')
+    config_prefix = database_defaults.get('config_prefix',
+                                          DEFAULT_CONFIG_PREFIX)
+    config_override = database_defaults.get('config_override',
+                                            'GALAXY_CONFIG_')
     default_sqlite_file = database_defaults['default_sqlite_file']
     if config_file.endswith(".yml") or config_file.endswith(".yml.sample"):
         config_section = database_defaults.get('config_section', None)
     else:
         # An .ini file - just let load_app_properties find app:main.
         config_section = None
-    properties = load_app_properties(config_file=config_file, config_prefix=config_override, config_section=config_section)
+    properties = load_app_properties(
+        config_file=config_file,
+        config_prefix=config_override,
+        config_section=config_section)
 
     if ("%sdatabase_connection" % config_prefix) in properties:
         db_url = properties["%sdatabase_connection" % config_prefix]
@@ -102,4 +107,5 @@ def get_config(argv, cwd=None):
     else:
         db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % default_sqlite_file
 
-    return dict(db_url=db_url, repo=repo, config_file=config_file, database=database)
+    return dict(
+        db_url=db_url, repo=repo, config_file=config_file, database=database)

@@ -30,7 +30,8 @@ class NoProviderAvailable(TypeError):
     def __init__(self, factory_source, format_requested=None, msg=''):
         self.factory_source = factory_source
         self.format_requested = format_requested
-        msg = msg or 'No provider available in factory_source "%s" for format requested' % (str(factory_source))
+        msg = msg or 'No provider available in factory_source "%s" for format requested' % (
+            str(factory_source))
         if self.format_requested:
             msg += ': "%s"' % (self.format_requested)
         super(NoProviderAvailable, self).__init__(msg)

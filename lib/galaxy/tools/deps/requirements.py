@@ -27,7 +27,8 @@ class ToolRequirement(object):
 
     def to_dict(self):
         specs = [s.to_dict() for s in self.specs]
-        return dict(name=self.name, type=self.type, version=self.version, specs=specs)
+        return dict(
+            name=self.name, type=self.type, version=self.version, specs=specs)
 
     def copy(self):
         return copy.deepcopy(self)
@@ -37,8 +38,12 @@ class ToolRequirement(object):
         version = dict.get("version", None)
         name = dict.get("name", None)
         type = dict.get("type", None)
-        specs = [RequirementSpecification.from_dict(s) for s in dict.get("specs", [])]
-        return ToolRequirement(name=name, type=type, version=version, specs=specs)
+        specs = [
+            RequirementSpecification.from_dict(s)
+            for s in dict.get("specs", [])
+        ]
+        return ToolRequirement(
+            name=name, type=type, version=version, specs=specs)
 
     def __eq__(self, other):
         return self.name == other.name and self.type == other.type and self.version == other.version and self.specs == other.specs
@@ -47,10 +52,12 @@ class ToolRequirement(object):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash((self.name, self.type, self.version, frozenset(self.specs)))
+        return hash((self.name, self.type, self.version,
+                     frozenset(self.specs)))
 
     def __str__(self):
-        return "ToolRequirement[%s,version=%s,type=%s,specs=%s]" % (self.name, self.version, self.type, self.specs)
+        return "ToolRequirement[%s,version=%s,type=%s,specs=%s]" % (
+            self.name, self.version, self.type, self.specs)
 
     __repr__ = __str__
 
@@ -97,9 +104,12 @@ class ToolRequirements(object):
     def __init__(self, tool_requirements=None):
         if tool_requirements:
             if not isinstance(tool_requirements, list):
-                raise ToolRequirementsException('ToolRequirements Constructor expects a list')
-            self.tool_requirements = OrderedSet(
-                [r if isinstance(r, ToolRequirement) else ToolRequirement.from_dict(r) for r in tool_requirements])
+                raise ToolRequirementsException(
+                    'ToolRequirements Constructor expects a list')
+            self.tool_requirements = OrderedSet([
+                r if isinstance(r, ToolRequirement) else
+                ToolRequirement.from_dict(r) for r in tool_requirements
+            ])
         else:
             self.tool_requirements = OrderedSet()
 
@@ -109,11 +119,15 @@ class ToolRequirements(object):
 
     @property
     def resolvable(self):
-        return ToolRequirements([r for r in self.tool_requirements if r.type in {'package', 'set_environment'}])
+        return ToolRequirements([
+            r for r in self.tool_requirements
+            if r.type in {'package', 'set_environment'}
+        ])
 
     @property
     def packages(self):
-        return ToolRequirements([r for r in self.tool_requirements if r.type == 'package'])
+        return ToolRequirements(
+            [r for r in self.tool_requirements if r.type == 'package'])
 
     def to_list(self):
         return [r.to_dict() for r in self.tool_requirements]
@@ -124,7 +138,8 @@ class ToolRequirements(object):
         self.tool_requirements.add(requirement)
 
     def __eq__(self, other):
-        return len(self.tool_requirements & other.tool_requirements) == len(self.tool_requirements) == len(other.tool_requirements)
+        return len(self.tool_requirements & other.tool_requirements) == len(
+            self.tool_requirements) == len(other.tool_requirements)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -176,7 +191,8 @@ class ContainerDescription(object):
     def from_dict(dict):
         identifier = dict["identifier"]
         type = dict.get("type", DEFAULT_CONTAINER_TYPE)
-        resolve_dependencies = dict.get("resolve_dependencies", DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES)
+        resolve_dependencies = dict.get("resolve_dependencies",
+                                        DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES)
         shell = dict.get("shell", DEFAULT_CONTAINER_SHELL)
         return ContainerDescription(
             identifier=identifier,
@@ -185,13 +201,15 @@ class ContainerDescription(object):
             shell=shell, )
 
     def __str__(self):
-        return "ContainerDescription[identifier=%s,type=%s]" % (self.identifier, self.type)
+        return "ContainerDescription[identifier=%s,type=%s]" % (
+            self.identifier, self.type)
 
 
 def parse_requirements_from_dict(root_dict):
     requirements = root_dict.get("requirements", [])
     containers = root_dict.get("containers", [])
-    return ToolRequirements.from_list(requirements), map(ContainerDescription.from_dict, containers)
+    return ToolRequirements.from_list(requirements), map(
+        ContainerDescription.from_dict, containers)
 
 
 def parse_requirements_from_xml(xml_root):
@@ -243,7 +261,9 @@ def parse_requirements_from_xml(xml_root):
 def container_from_element(container_elem):
     identifier = xml_text(container_elem)
     type = container_elem.get("type", DEFAULT_CONTAINER_TYPE)
-    resolve_dependencies = asbool(container_elem.get("resolve_dependencies", DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES))
+    resolve_dependencies = asbool(
+        container_elem.get("resolve_dependencies",
+                           DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES))
     shell = container_elem.get("shell", DEFAULT_CONTAINER_SHELL)
     container = ContainerDescription(
         identifier=identifier,

@@ -8,7 +8,8 @@ import os
 from six import StringIO
 
 import galaxy.tools
-from galaxy.model import (HistoryDatasetAssociation, HistoryDatasetCollectionAssociation, User)
+from galaxy.model import (HistoryDatasetAssociation,
+                          HistoryDatasetCollectionAssociation, User)
 from galaxy.util import string_as_bool
 
 from . import validation
@@ -68,11 +69,13 @@ class StaticValueFilter(Filter):
         rval = []
         filter_value = self.value
         try:
-            filter_value = User.expand_user_properties(trans.user, filter_value)
+            filter_value = User.expand_user_properties(trans.user,
+                                                       filter_value)
         except:
             pass
         for fields in options:
-            if (self.keep and fields[self.column] == filter_value) or (not self.keep and fields[self.column] != filter_value):
+            if (self.keep and fields[self.column] == filter_value) or (
+                    not self.keep and fields[self.column] != filter_value):
                 rval.append(fields)
         return rval
 
@@ -135,9 +138,12 @@ class DataMetaFilter(Filter):
         if isinstance(ref, HistoryDatasetCollectionAssociation):
             ref = ref.to_hda_representative(self.multiple)
         is_data = isinstance(ref, galaxy.tools.wrappers.DatasetFilenameWrapper)
-        is_data_list = isinstance(ref, galaxy.tools.wrappers.DatasetListWrapper) or isinstance(ref, list)
+        is_data_list = isinstance(
+            ref, galaxy.tools.wrappers.DatasetListWrapper) or isinstance(
+                ref, list)
         is_data_or_data_list = is_data or is_data_list
-        if not isinstance(ref, HistoryDatasetAssociation) and not is_data_or_data_list:
+        if not isinstance(
+                ref, HistoryDatasetAssociation) and not is_data_or_data_list:
             return []  # not a valid dataset
 
         if is_data_list:
@@ -155,7 +161,8 @@ class DataMetaFilter(Filter):
             meta_value = ref.metadata.get(self.key, None)
 
         if meta_value is None:
-            return [(disp_name, optval, selected) for disp_name, optval, selected in options]
+            return [(disp_name, optval, selected)
+                    for disp_name, optval, selected in options]
 
         if self.column is not None:
             rval = []
@@ -165,7 +172,11 @@ class DataMetaFilter(Filter):
             return rval
         else:
             if not self.dynamic_option.columns:
-                self.dynamic_option.columns = {"name": 0, "value": 1, "selected": 2}
+                self.dynamic_option.columns = {
+                    "name": 0,
+                    "value": 1,
+                    "selected": 2
+                }
                 self.dynamic_option.largest_index = 2
             if not isinstance(meta_value, list):
                 meta_value = [meta_value]
@@ -216,12 +227,14 @@ class ParamValueFilter(Filter):
         ref = other_values.get(self.ref_name, None)
         for ref_attribute in self.ref_attribute:
             if not hasattr(ref, ref_attribute):
-                return []  # ref does not have attribute, so we cannot filter, return empty list
+                return [
+                ]  # ref does not have attribute, so we cannot filter, return empty list
             ref = getattr(ref, ref_attribute)
         ref = str(ref)
         rval = []
         for fields in options:
-            if (self.keep and fields[self.column] == ref) or (not self.keep and fields[self.column] != ref):
+            if (self.keep and fields[self.column] == ref) or (
+                    not self.keep and fields[self.column] != ref):
                 rval.append(fields)
         return rval
 
@@ -272,14 +285,18 @@ class MultipleSplitterFilter(Filter):
         self.separator = elem.get("separator", ",")
         columns = elem.get("column", None)
         assert columns is not None, "Required 'columns' attribute missing from filter"
-        self.columns = [d_option.column_spec_to_index(column) for column in columns.split(",")]
+        self.columns = [
+            d_option.column_spec_to_index(column)
+            for column in columns.split(",")
+        ]
 
     def filter_options(self, options, trans, other_values):
         rval = []
         for fields in options:
             for column in self.columns:
                 for field in fields[column].split(self.separator):
-                    rval.append(fields[0:column] + [field] + fields[column + 1:])
+                    rval.append(fields[0:column] + [field] +
+                                fields[column + 1:])
         return rval
 
 
@@ -314,7 +331,8 @@ class AttributeValueSplitterFilter(Filter):
                     if len(ary) == 2:
                         name = ary[0]
                         if name not in attr_names:
-                            rval.append(fields[0:column] + [name] + fields[column:])
+                            rval.append(fields[0:column] + [name] +
+                                        fields[column:])
                             attr_names.append(name)
         return rval
 
@@ -385,7 +403,10 @@ class RemoveValueFilter(Filter):
         self.metadata_key = elem.get("key", None)
         assert self.value is not None or (
             (self.ref_name is not None or self.meta_ref is not None)
-            and self.metadata_key is not None), ValueError("Required 'value' or 'ref' and 'key' attributes missing from filter")
+            and self.metadata_key is not None
+        ), ValueError(
+            "Required 'value' or 'ref' and 'key' attributes missing from filter"
+        )
         self.multiple = string_as_bool(elem.get("multiple", "False"))
         self.separator = elem.get("separator", ",")
 
@@ -414,11 +435,16 @@ class RemoveValueFilter(Filter):
                 data_ref = other_values.get(self.meta_ref)
                 if isinstance(data_ref, HistoryDatasetCollectionAssociation):
                     data_ref = data_ref.to_hda_representative()
-                if not isinstance(data_ref, HistoryDatasetAssociation) and not isinstance(data_ref,
-                                                                                          galaxy.tools.wrappers.DatasetFilenameWrapper):
+                if not isinstance(
+                        data_ref,
+                        HistoryDatasetAssociation) and not isinstance(
+                            data_ref,
+                            galaxy.tools.wrappers.DatasetFilenameWrapper):
                     return options  # cannot modify options
                 value = data_ref.metadata.get(self.metadata_key, None)
-        return [(disp_name, optval, selected) for disp_name, optval, selected in options if not compare_value(optval, value)]
+        return [(disp_name, optval, selected)
+                for disp_name, optval, selected in options
+                if not compare_value(optval, value)]
 
 
 class SortByColumnFilter(Filter):
@@ -500,7 +526,8 @@ class DynamicOptions(object):
         if tool_data_table_name:
             app = tool_param.tool.app
             if tool_data_table_name in app.tool_data_tables:
-                self.tool_data_table = app.tool_data_tables[tool_data_table_name]
+                self.tool_data_table = app.tool_data_tables[
+                    tool_data_table_name]
                 # Column definitions are optional, but if provided override those from the table
                 if elem.find("column") is not None:
                     self.parse_column_definitions(elem)
@@ -512,7 +539,9 @@ class DynamicOptions(object):
                     self.missing_index_file = self.tool_data_table.missing_index_file
             else:
                 self.missing_tool_data_table_name = tool_data_table_name
-                log.warning("Data table named '%s' is required by tool but not configured" % tool_data_table_name)
+                log.warning(
+                    "Data table named '%s' is required by tool but not configured"
+                    % tool_data_table_name)
         # Options are defined by parsing tabular text data from a data file
         # on disk, a dataset, or the value of another parameter
         elif data_file is not None or dataset_file is not None or from_parameter is not None:
@@ -520,10 +549,13 @@ class DynamicOptions(object):
             if data_file is not None:
                 data_file = data_file.strip()
                 if not os.path.isabs(data_file):
-                    full_path = os.path.join(self.tool_param.tool.app.config.tool_data_path, data_file)
+                    full_path = os.path.join(
+                        self.tool_param.tool.app.config.tool_data_path,
+                        data_file)
                     if os.path.exists(full_path):
                         self.index_file = data_file
-                        self.file_fields = self.parse_file_fields(open(full_path))
+                        self.file_fields = self.parse_file_fields(
+                            open(full_path))
                     else:
                         self.missing_index_file = data_file
             elif dataset_file is not None:
@@ -532,7 +564,8 @@ class DynamicOptions(object):
                 self.converter_safe = False
             elif from_parameter is not None:
                 transform_lines = elem.get('transform_lines', None)
-                self.file_fields = list(load_from_parameter(from_parameter, transform_lines))
+                self.file_fields = list(
+                    load_from_parameter(from_parameter, transform_lines))
 
         # Load filters
         for filter_elem in elem.findall('filter'):
@@ -540,7 +573,8 @@ class DynamicOptions(object):
 
         # Load Validators
         for validator in elem.findall('validator'):
-            self.validators.append(validation.Validator.from_element(self.tool_param, validator))
+            self.validators.append(
+                validation.Validator.from_element(self.tool_param, validator))
 
         if self.dataset_ref_name:
             tool_param.data_ref = self.dataset_ref_name
@@ -563,7 +597,9 @@ class DynamicOptions(object):
         rval = []
         field_count = None
         for line in reader:
-            if line.startswith('#') or (self.line_startswith and not line.startswith(self.line_startswith)):
+            if line.startswith('#') or (
+                    self.line_startswith
+                    and not line.startswith(self.line_startswith)):
                 continue
             line = line.rstrip("\n\r")
             if line:
@@ -577,8 +613,10 @@ class DynamicOptions(object):
                         except AttributeError:
                             name = "a configuration file"
                         # Perhaps this should be an error, but even a warning is useful.
-                        log.warning("Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r" %
-                                    (field_count, len(fields), name, self.separator, line))
+                        log.warning(
+                            "Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r"
+                            % (field_count, len(fields), name, self.separator,
+                               line))
                     rval.append(fields)
         return rval
 
@@ -607,7 +645,9 @@ class DynamicOptions(object):
                 options = self.parse_file_fields(open(path))
             else:
                 # Pass just the first megabyte to parse_file_fields.
-                log.warning("Attempting to load options from large file, reading just first megabyte")
+                log.warning(
+                    "Attempting to load options from large file, reading just first megabyte"
+                )
                 contents = open(path, 'r').read(1048576)
                 options = self.parse_file_fields(StringIO(contents))
         elif self.tool_data_table:
@@ -629,7 +669,8 @@ class DynamicOptions(object):
                 rval.append(fields)
         return rval
 
-    def get_field_by_name_for_value(self, field_name, value, trans, other_values):
+    def get_field_by_name_for_value(self, field_name, value, trans,
+                                    other_values):
         """
         Get contents of field by name for specified value.
         """
@@ -651,7 +692,8 @@ class DynamicOptions(object):
         if self.file_fields is not None or self.tool_data_table is not None or self.dataset_ref_name is not None:
             options = self.get_fields(trans, other_values)
             for fields in options:
-                rval.append((fields[self.columns['name']], fields[self.columns['value']], False))
+                rval.append((fields[self.columns['name']],
+                             fields[self.columns['value']], False))
         else:
             for filter in self.filters:
                 rval = filter.filter_options(rval, trans, other_values)

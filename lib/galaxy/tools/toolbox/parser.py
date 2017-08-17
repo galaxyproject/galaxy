@@ -108,14 +108,17 @@ class ToolConfItem(object):
     @property
     def elem(self):
         if self._elem is None:
-            raise Exception("item.elem called on toolbox element from non-XML source")
+            raise Exception(
+                "item.elem called on toolbox element from non-XML source")
         return self._elem
 
     @property
     def labels(self):
         labels = None
         if "labels" in self.attributes:
-            labels = [label.strip() for label in self.attributes["labels"].split(",")]
+            labels = [
+                label.strip() for label in self.attributes["labels"].split(",")
+            ]
         return labels
 
 
@@ -142,7 +145,8 @@ def ensure_tool_conf_item(xml_or_item):
 
 
 def get_toolbox_parser(config_filename):
-    is_yaml = any(config_filename.endswith(e) for e in [".yml", ".yaml", ".json"])
+    is_yaml = any(
+        config_filename.endswith(e) for e in [".yml", ".yaml", ".json"])
     if is_yaml:
         return YamlToolConfSource(config_filename)
     else:

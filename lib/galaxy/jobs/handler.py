@@ -74,7 +74,8 @@ class JobHandlerQueue(object):
         # Helper for interruptable sleep
         self.sleeper = Sleeper()
         self.running = True
-        self.monitor_thread = threading.Thread(name="JobHandlerQueue.monitor_thread", target=self.__monitor)
+        self.monitor_thread = threading.Thread(
+            name="JobHandlerQueue.monitor_thread", target=self.__monitor)
         self.monitor_thread.setDaemon(True)
 
     def start(self):
@@ -88,7 +89,8 @@ class JobHandlerQueue(object):
         log.info("job handler queue started")
 
     def job_wrapper(self, job, use_persisted_destination=False):
-        return JobWrapper(job, self, use_persisted_destination=use_persisted_destination)
+        return JobWrapper(
+            job, self, use_persisted_destination=use_persisted_destination)
 
     def job_pair_for_id(self, id):
         job = self.sa_session.query(model.Job).get(id)
@@ -105,7 +107,8 @@ class JobHandlerQueue(object):
         if self.track_jobs_in_database:
             in_list = (model.Job.states.QUEUED, model.Job.states.RUNNING)
         else:
-            in_list = (model.Job.states.NEW, model.Job.states.QUEUED, model.Job.states.RUNNING)
+            in_list = (model.Job.states.NEW, model.Job.states.QUEUED,
+                       model.Job.states.RUNNING)
         if self.app.config.user_activation_on:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
                 .outerjoin(model.User) \
@@ -118,12 +121,19 @@ class JobHandlerQueue(object):
                         (model.Job.handler == self.app.config.server_name)).all()
 
         for job in jobs_at_startup:
-            if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
-                log.warning("(%s) Tool '%s' removed from tool config, unable to recover job" % (job.id, job.tool_id))
-                self.job_wrapper(job).fail('This tool was disabled before the job completed.  Please contact your Galaxy administrator.')
+            if not self.app.toolbox.has_tool(
+                    job.tool_id, job.tool_version, exact=True):
+                log.warning(
+                    "(%s) Tool '%s' removed from tool config, unable to recover job"
+                    % (job.id, job.tool_id))
+                self.job_wrapper(job).fail(
+                    'This tool was disabled before the job completed.  Please contact your Galaxy administrator.'
+                )
             elif job.job_runner_name is not None and job.job_runner_external_id is None:
                 # This could happen during certain revisions of Galaxy where a runner URL was persisted before the job was dispatched to a runner.
-                log.debug("(%s) Job runner assigned but no external ID recorded, adding to the job handler queue" % job.id)
+                log.debug(
+                    "(%s) Job runner assigned but no external ID recorded, adding to the job handler queue"
+                    % job.id)
                 job.job_runner_name = None
                 if self.track_jobs_in_database:
                     job.set_state(model.Job.states.NEW)
@@ -132,15 +142,21 @@ class JobHandlerQueue(object):
             elif job.job_runner_name is not None and job.job_runner_external_id is not None and job.destination_id is None:
                 # This is the first start after upgrading from URLs to destinations, convert the URL to a destination and persist
                 job_wrapper = self.job_wrapper(job)
-                job_destination = self.dispatcher.url_to_destination(job.job_runner_name)
+                job_destination = self.dispatcher.url_to_destination(
+                    job.job_runner_name)
                 if job_destination.id is None:
                     job_destination.id = 'legacy_url'
-                job_wrapper.set_job_destination(job_destination, job.job_runner_external_id)
+                job_wrapper.set_job_destination(job_destination,
+                                                job.job_runner_external_id)
                 self.dispatcher.recover(job, job_wrapper)
-                log.info('(%s) Converted job from a URL to a destination and recovered' % (job.id))
+                log.info(
+                    '(%s) Converted job from a URL to a destination and recovered'
+                    % (job.id))
             elif job.job_runner_name is None:
                 # Never (fully) dispatched
-                log.debug("(%s) No job runner assigned and job still in '%s' state, adding to the job handler queue" % (job.id, job.state))
+                log.debug(
+                    "(%s) No job runner assigned and job still in '%s' state, adding to the job handler queue"
+                    % (job.id, job.state))
                 if self.track_jobs_in_database:
                     job.set_state(model.Job.states.NEW)
                 else:
@@ -157,11 +173,15 @@ class JobHandlerQueue(object):
         job_wrapper = self.job_wrapper(job)
         # Use the persisted destination as its params may differ from
         # what's in the job_conf xml
-        job_destination = JobDestination(id=job.destination_id, runner=job.job_runner_name, params=job.destination_params)
+        job_destination = JobDestination(
+            id=job.destination_id,
+            runner=job.job_runner_name,
+            params=job.destination_params)
         # resubmits are not persisted (it's a good thing) so they
         # should be added back to the in-memory destination on startup
         try:
-            config_job_destination = self.app.job_config.get_destination(job.destination_id)
+            config_job_destination = self.app.job_config.get_destination(
+                job.destination_id)
             job_destination.resubmit = config_job_destination.resubmit
         except KeyError:
             log.debug(
@@ -247,7 +267,8 @@ class JobHandlerQueue(object):
             # Get job objects and append to watch queue for any which were
             # previously waiting
             for job_id in self.waiting_jobs:
-                jobs_to_check.append(self.sa_session.query(model.Job).get(job_id))
+                jobs_to_check.append(
+                    self.sa_session.query(model.Job).get(job_id))
             try:
                 while 1:
                     message = self.queue.get_nowait()
@@ -256,18 +277,22 @@ class JobHandlerQueue(object):
                     # Unpack the message
                     job_id, tool_id = message
                     # Get the job object and append to watch queue
-                    jobs_to_check.append(self.sa_session.query(model.Job).get(job_id))
+                    jobs_to_check.append(
+                        self.sa_session.query(model.Job).get(job_id))
             except Empty:
                 pass
         # Ensure that we get new job counts on each iteration
         self.__clear_job_count()
         # Check resubmit jobs first so that limits of new jobs will still be enforced
         for job in resubmit_jobs:
-            log.debug('(%s) Job was resubmitted and is being dispatched immediately', job.id)
+            log.debug(
+                '(%s) Job was resubmitted and is being dispatched immediately',
+                job.id)
             # Reassemble resubmit job destination from persisted value
             jw = self.__recover_job_wrapper(job)
             if jw.is_ready_for_resubmission(job):
-                self.increase_running_job_count(job.user_id, jw.job_destination.id)
+                self.increase_running_job_count(job.user_id,
+                                                jw.job_destination.id)
                 self.dispatcher.put(jw)
         # Iterate over new and waiting jobs and look for any that are
         # ready to run
@@ -280,21 +305,31 @@ class JobHandlerQueue(object):
                 if job_state == JOB_WAIT:
                     new_waiting_jobs.append(job.id)
                 elif job_state == JOB_INPUT_ERROR:
-                    log.info("(%d) Job unable to run: one or more inputs in error state" % job.id)
+                    log.info(
+                        "(%d) Job unable to run: one or more inputs in error state"
+                        % job.id)
                 elif job_state == JOB_INPUT_DELETED:
-                    log.info("(%d) Job unable to run: one or more inputs deleted" % job.id)
+                    log.info(
+                        "(%d) Job unable to run: one or more inputs deleted" %
+                        job.id)
                 elif job_state == JOB_READY:
                     self.dispatcher.put(self.job_wrappers.pop(job.id))
                     log.info("(%d) Job dispatched" % job.id)
                 elif job_state == JOB_DELETED:
-                    log.info("(%d) Job deleted by user while still queued" % job.id)
+                    log.info(
+                        "(%d) Job deleted by user while still queued" % job.id)
                 elif job_state == JOB_ADMIN_DELETED:
-                    log.info("(%d) Job deleted by admin while still queued" % job.id)
-                elif job_state in (JOB_USER_OVER_QUOTA, JOB_USER_OVER_TOTAL_WALLTIME):
+                    log.info("(%d) Job deleted by admin while still queued" %
+                             job.id)
+                elif job_state in (JOB_USER_OVER_QUOTA,
+                                   JOB_USER_OVER_TOTAL_WALLTIME):
                     if job_state == JOB_USER_OVER_QUOTA:
-                        log.info("(%d) User (%s) is over quota: job paused" % (job.id, job.user_id))
+                        log.info("(%d) User (%s) is over quota: job paused" %
+                                 (job.id, job.user_id))
                     else:
-                        log.info("(%d) User (%s) is over total walltime limit: job paused" % (job.id, job.user_id))
+                        log.info(
+                            "(%d) User (%s) is over total walltime limit: job paused"
+                            % (job.id, job.user_id))
 
                     job.set_state(model.Job.states.PAUSED)
                     for dataset_assoc in job.output_datasets + job.output_library_datasets:
@@ -305,7 +340,8 @@ class JobHandlerQueue(object):
                 elif job_state == JOB_ERROR:
                     log.error("(%d) Error checking job readiness" % job.id)
                 else:
-                    log.error("(%d) Job in unknown state '%s'" % (job.id, job_state))
+                    log.error("(%d) Job in unknown state '%s'" % (job.id,
+                                                                  job_state))
                     new_waiting_jobs.append(job.id)
             except Exception:
                 log.exception("failure running job %d", job.id)
@@ -368,18 +404,22 @@ class JobHandlerQueue(object):
             # Cause the job_destination to be set and cached by the mapper
             job_destination = job_wrapper.job_destination
         except AssertionError as e:
-            log.warning("(%s) Tool '%s' removed from tool config, unable to run job" % (job.id, job.tool_id))
+            log.warning(
+                "(%s) Tool '%s' removed from tool config, unable to run job" %
+                (job.id, job.tool_id))
             job_wrapper.fail(e)
             return JOB_ERROR, job_destination
         except JobNotReadyException as e:
             job_state = e.job_state or JOB_WAIT
             return job_state, None
         except Exception as e:
-            failure_message = getattr(e, 'failure_message', DEFAULT_JOB_PUT_FAILURE_MESSAGE)
+            failure_message = getattr(e, 'failure_message',
+                                      DEFAULT_JOB_PUT_FAILURE_MESSAGE)
             if failure_message == DEFAULT_JOB_PUT_FAILURE_MESSAGE:
                 log.exception('Failed to generate job destination')
             else:
-                log.debug("Intentionally failing job with message (%s)" % failure_message)
+                log.debug("Intentionally failing job with message (%s)" %
+                          failure_message)
             job_wrapper.fail(failure_message)
             return JOB_ERROR, job_destination
         # job is ready to run, check limits
@@ -392,23 +432,28 @@ class JobHandlerQueue(object):
             quota = self.app.quota_agent.get_quota(job.user)
             if quota is not None:
                 try:
-                    usage = self.app.quota_agent.get_usage(user=job.user, history=job.history)
+                    usage = self.app.quota_agent.get_usage(
+                        user=job.user, history=job.history)
                     if usage > quota:
                         return JOB_USER_OVER_QUOTA, job_destination
                 except AssertionError as e:
                     pass  # No history, should not happen with an anon user
         # Check total walltime limits
-        if (state == JOB_READY and "delta" in self.app.job_config.limits.total_walltime):
+        if (state == JOB_READY
+                and "delta" in self.app.job_config.limits.total_walltime):
             jobs_to_check = self.sa_session.query(model.Job).filter(
-                model.Job.user_id == job.user.id,
-                model.Job.update_time >= datetime.datetime.now() - datetime.timedelta(self.app.job_config.limits.total_walltime["window"]),
+                model.Job.user_id == job.user.id, model.Job.update_time >=
+                datetime.datetime.now() - datetime.timedelta(
+                    self.app.job_config.limits.total_walltime["window"]),
                 model.Job.state == 'ok').all()
             time_spent = datetime.timedelta(0)
             for job in jobs_to_check:
                 # History is job.state_history
                 started = None
                 finished = None
-                for history in sorted(job.state_history, key=lambda history: history.update_time):
+                for history in sorted(
+                        job.state_history,
+                        key=lambda history: history.update_time):
                     if history.state == "running":
                         started = history.create_time
                     elif history.state == "ok":
@@ -435,18 +480,24 @@ class JobHandlerQueue(object):
                 continue
             # don't run jobs for which the input dataset was deleted
             if idata.deleted:
-                self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail("input data %s (file: %s) was deleted before the job started" %
-                                                                          (idata.hid, idata.file_name))
+                self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail(
+                    "input data %s (file: %s) was deleted before the job started"
+                    % (idata.hid, idata.file_name))
                 return JOB_INPUT_DELETED
             # an error in the input data causes us to bail immediately
             elif idata.state == idata.states.ERROR:
-                self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail("input data %s is in error state" % (idata.hid))
+                self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail(
+                    "input data %s is in error state" % (idata.hid))
                 return JOB_INPUT_ERROR
             elif idata.state == idata.states.FAILED_METADATA:
-                self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail("input data %s failed to properly set metadata" % (idata.hid))
+                self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail(
+                    "input data %s failed to properly set metadata" %
+                    (idata.hid))
                 return JOB_INPUT_ERROR
-            elif idata.state != idata.states.OK and not (idata.state == idata.states.SETTING_METADATA and job.tool_id is not None
-                                                         and job.tool_id == self.app.datatypes_registry.set_external_metadata_tool.id):
+            elif idata.state != idata.states.OK and not (
+                    idata.state == idata.states.SETTING_METADATA
+                    and job.tool_id is not None and job.tool_id ==
+                    self.app.datatypes_registry.set_external_metadata_tool.id):
                 # need to requeue
                 return JOB_WAIT
 
@@ -466,8 +517,10 @@ class JobHandlerQueue(object):
             result = self.sa_session.execute(
                 select([func.count(model.Job.table.c.id)]).where(
                     and_(
-                        model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING, model.Job.states.RESUBMITTED)), (
-                            model.Job.table.c.user_id == user_id))))
+                        model.Job.table.c.state.in_(
+                            (model.Job.states.QUEUED, model.Job.states.RUNNING,
+                             model.Job.states.RESUBMITTED)), (
+                                 model.Job.table.c.user_id == user_id))))
             for row in result:
                 # there should only be one row
                 rval += row[0]
@@ -478,10 +531,16 @@ class JobHandlerQueue(object):
         if self.user_job_count is None and self.app.config.cache_user_job_count:
             self.user_job_count = {}
             query = self.sa_session.execute(
-                select([model.Job.table.c.user_id, func.count(model.Job.table.c.user_id)]).where(
+                select([
+                    model.Job.table.c.user_id,
+                    func.count(model.Job.table.c.user_id)
+                ]).where(
                     and_(
-                        model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING, model.Job.states.RESUBMITTED)), (
-                            model.Job.table.c.user_id != null()))).group_by(model.Job.table.c.user_id))
+                        model.Job.table.c.state.in_(
+                            (model.Job.states.QUEUED, model.Job.states.RUNNING,
+                             model.Job.states.RESUBMITTED)),
+                        (model.Job.table.c.user_id != null()))).group_by(
+                            model.Job.table.c.user_id))
             for row in query:
                 self.user_job_count[row[0]] = row[1]
         elif self.user_job_count is None:
@@ -500,14 +559,20 @@ class JobHandlerQueue(object):
             rval = {}
             rval.update(cached)
             result = self.sa_session.execute(
-                select([model.Job.table.c.destination_id,
-                        func.count(model.Job.table.c.destination_id).label('job_count')]).where(
-                            and_(
-                                model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING)), (
-                                    model.Job.table.c.user_id == user_id))).group_by(model.Job.table.c.destination_id))
+                select([
+                    model.Job.table.c.destination_id,
+                    func.count(model.Job.table.c.destination_id)
+                    .label('job_count')
+                ]).where(
+                    and_(
+                        model.Job.table.c.state.in_((
+                            model.Job.states.QUEUED, model.Job.states.RUNNING
+                        )), (model.Job.table.c.user_id == user_id))).group_by(
+                            model.Job.table.c.destination_id))
             for row in result:
                 # Add the count from the database to the cached count
-                rval[row['destination_id']] = rval.get(row['destination_id'], 0) + row['job_count']
+                rval[row['destination_id']] = rval.get(row['destination_id'],
+                                                       0) + row['job_count']
         return rval
 
     def __cache_user_job_count_per_destination(self):
@@ -515,15 +580,21 @@ class JobHandlerQueue(object):
         if self.user_job_count_per_destination is None and self.app.config.cache_user_job_count:
             self.user_job_count_per_destination = {}
             result = self.sa_session.execute(
-                select(
-                    [model.Job.table.c.user_id, model.Job.table.c.destination_id,
-                     func.count(model.Job.table.c.user_id).label('job_count')])
-                .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING))))
-                .group_by(model.Job.table.c.user_id, model.Job.table.c.destination_id))
+                select([
+                    model.Job.table.c.user_id,
+                    model.Job.table.c.destination_id,
+                    func.count(model.Job.table.c.user_id).label('job_count')
+                ]).where(
+                    and_(
+                        model.Job.table.c.state.in_(
+                            (model.Job.states.QUEUED, model.Job.states.RUNNING
+                             )))).group_by(model.Job.table.c.user_id,
+                                           model.Job.table.c.destination_id))
             for row in result:
                 if row['user_id'] not in self.user_job_count_per_destination:
                     self.user_job_count_per_destination[row['user_id']] = {}
-                self.user_job_count_per_destination[row['user_id']][row['destination_id']] = row['job_count']
+                self.user_job_count_per_destination[row['user_id']][row[
+                    'destination_id']] = row['job_count']
         elif self.user_job_count_per_destination is None:
             self.user_job_count_per_destination = {}
 
@@ -535,15 +606,19 @@ class JobHandlerQueue(object):
                 self.user_job_count = {}
             if self.user_job_count_per_destination is None:
                 self.user_job_count_per_destination = {}
-            self.user_job_count[user_id] = self.user_job_count.get(user_id, 0) + 1
+            self.user_job_count[user_id] = self.user_job_count.get(user_id,
+                                                                   0) + 1
             if user_id not in self.user_job_count_per_destination:
                 self.user_job_count_per_destination[user_id] = {}
-            self.user_job_count_per_destination[user_id][destination_id] = self.user_job_count_per_destination[user_id].get(
-                destination_id, 0) + 1
+            self.user_job_count_per_destination[user_id][
+                destination_id] = self.user_job_count_per_destination[user_id].get(
+                    destination_id, 0) + 1
         if self.app.job_config.limits.destination_total_concurrent_jobs:
             if self.total_job_count_per_destination is None:
                 self.total_job_count_per_destination = {}
-            self.total_job_count_per_destination[destination_id] = self.total_job_count_per_destination.get(destination_id, 0) + 1
+            self.total_job_count_per_destination[
+                destination_id] = self.total_job_count_per_destination.get(
+                    destination_id, 0) + 1
 
     def __check_user_jobs(self, job, job_wrapper):
         # TODO: Update output datasets' _state = LIMITED or some such new
@@ -571,7 +646,11 @@ class JobHandlerQueue(object):
                     if tag in self.app.job_config.limits.destination_user_concurrent_jobs:
                         # Only if there's a limit defined for this tag
                         count = 0
-                        for id in [d.id for d in self.app.job_config.get_destinations(tag)]:
+                        for id in [
+                                d.id
+                                for d in self.app.job_config.get_destinations(
+                                    tag)
+                        ]:
                             # Add up the aggregate job total for this tag
                             count += count_per_id.get(id, 0)
                         if count >= self.app.job_config.limits.destination_user_concurrent_jobs[tag]:
@@ -586,7 +665,9 @@ class JobHandlerQueue(object):
                 if count >= self.app.job_config.limits.anonymous_user_concurrent_jobs:
                     return JOB_WAIT
         else:
-            log.warning('Job %s is not associated with a user or session so job concurrency limit cannot be checked.' % job.id)
+            log.warning(
+                'Job %s is not associated with a user or session so job concurrency limit cannot be checked.'
+                % job.id)
         return JOB_READY
 
     def __cache_total_job_count_per_destination(self):
@@ -594,12 +675,18 @@ class JobHandlerQueue(object):
         if self.total_job_count_per_destination is None:
             self.total_job_count_per_destination = {}
             result = self.sa_session.execute(
-                select([model.Job.table.c.destination_id,
-                        func.count(model.Job.table.c.destination_id).label('job_count')])
-                .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING))))
-                .group_by(model.Job.table.c.destination_id))
+                select([
+                    model.Job.table.c.destination_id,
+                    func.count(model.Job.table.c.destination_id)
+                    .label('job_count')
+                ]).where(
+                    and_(
+                        model.Job.table.c.state.in_(
+                            (model.Job.states.QUEUED, model.Job.states.RUNNING
+                             )))).group_by(model.Job.table.c.destination_id))
             for row in result:
-                self.total_job_count_per_destination[row['destination_id']] = row['job_count']
+                self.total_job_count_per_destination[row[
+                    'destination_id']] = row['job_count']
 
     def get_total_job_count_per_destination(self):
         self.__cache_total_job_count_per_destination()
@@ -624,7 +711,11 @@ class JobHandlerQueue(object):
                     if tag in self.app.job_config.limits.destination_total_concurrent_jobs:
                         # Only if there's a limit defined for this tag
                         count = 0
-                        for id in [d.id for d in self.app.job_config.get_destinations(tag)]:
+                        for id in [
+                                d.id
+                                for d in self.app.job_config.get_destinations(
+                                    tag)
+                        ]:
                             # Add up the aggregate job total for this tag
                             count += count_per_id.get(id, 0)
                         if count >= self.app.job_config.limits.destination_total_concurrent_jobs[tag]:
@@ -676,7 +767,8 @@ class JobHandlerStopQueue(object):
         # Helper for interruptable sleep
         self.sleeper = Sleeper()
         self.running = True
-        self.monitor_thread = threading.Thread(name="JobHandlerStopQueue.monitor_thread", target=self.monitor)
+        self.monitor_thread = threading.Thread(
+            name="JobHandlerStopQueue.monitor_thread", target=self.monitor)
         self.monitor_thread.setDaemon(True)
         self.monitor_thread.start()
         log.info("job handler stop queue started")
@@ -719,13 +811,16 @@ class JobHandlerStopQueue(object):
                 # Unpack the message
                 job_id, error_msg = message
                 # Get the job object and append to watch queue
-                jobs_to_check.append((self.sa_session.query(model.Job).get(job_id), error_msg))
+                jobs_to_check.append(
+                    (self.sa_session.query(model.Job).get(job_id), error_msg))
         except Empty:
             pass
         for job, error_msg in jobs_to_check:
-            if (job.state not in (job.states.DELETED_NEW, job.states.DELETED) and job.finished):
+            if (job.state not in (job.states.DELETED_NEW, job.states.DELETED)
+                    and job.finished):
                 # terminated before it got here
-                log.debug('Job %s already finished, not deleting or stopping', job.id)
+                log.debug('Job %s already finished, not deleting or stopping',
+                          job.id)
                 continue
             final_state = job.states.DELETED
             if error_msg is not None:
@@ -759,12 +854,14 @@ class JobHandlerStopQueue(object):
 class DefaultJobDispatcher(object):
     def __init__(self, app):
         self.app = app
-        self.job_runners = self.app.job_config.get_job_runner_plugins(self.app.config.server_name)
+        self.job_runners = self.app.job_config.get_job_runner_plugins(
+            self.app.config.server_name)
         # Once plugins are loaded, all job destinations that were created from
         # URLs can have their URL params converted to the destination's param
         # dict by the plugin.
         self.app.job_config.convert_legacy_destinations(self.job_runners)
-        log.debug("Loaded job runners plugins: " + ':'.join(self.job_runners.keys()))
+        log.debug("Loaded job runners plugins: " +
+                  ':'.join(self.job_runners.keys()))
 
     def __get_runner_name(self, job_wrapper):
         if job_wrapper.can_split():
@@ -784,8 +881,8 @@ class DefaultJobDispatcher(object):
             return self.job_runners[runner_name].url_to_destination(url)
         except Exception:
             log.exception(
-                "Unable to convert legacy job runner URL '%s' to job destination, destination will be the '%s' runner with no params", url,
-                runner_name)
+                "Unable to convert legacy job runner URL '%s' to job destination, destination will be the '%s' runner with no params",
+                url, runner_name)
             return JobDestination(runner=runner_name)
 
     def put(self, job_wrapper):
@@ -793,12 +890,16 @@ class DefaultJobDispatcher(object):
         try:
             if isinstance(job_wrapper, TaskWrapper):
                 # DBTODO Refactor
-                log.debug("(%s) Dispatching task %s to %s runner" % (job_wrapper.job_id, job_wrapper.task_id, runner_name))
+                log.debug("(%s) Dispatching task %s to %s runner" %
+                          (job_wrapper.job_id, job_wrapper.task_id,
+                           runner_name))
             else:
-                log.debug("(%s) Dispatching to %s runner" % (job_wrapper.job_id, runner_name))
+                log.debug("(%s) Dispatching to %s runner" %
+                          (job_wrapper.job_id, runner_name))
             self.job_runners[runner_name].put(job_wrapper)
         except KeyError:
-            log.error('put(): (%s) Invalid job runner: %s' % (job_wrapper.job_id, runner_name))
+            log.error('put(): (%s) Invalid job runner: %s' %
+                      (job_wrapper.job_id, runner_name))
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
     def stop(self, job):
@@ -813,7 +914,8 @@ class DefaultJobDispatcher(object):
         if (isinstance(job, model.Job)):
             log.debug("Stopping job %d:", job.get_id())
         elif (isinstance(job, model.Task)):
-            log.debug("Stopping job %d, task %d" % (job.get_job().get_id(), job.get_id()))
+            log.debug("Stopping job %d, task %d" % (job.get_job().get_id(),
+                                                    job.get_id()))
         else:
             log.debug("Unknown job to stop")
 
@@ -823,22 +925,27 @@ class DefaultJobDispatcher(object):
         if (job.get_job_runner_name() is not None):
             runner_name = (job.get_job_runner_name().split(":", 1))[0]
             if (isinstance(job, model.Job)):
-                log.debug("stopping job %d in %s runner" % (job.get_id(), runner_name))
+                log.debug("stopping job %d in %s runner" % (job.get_id(),
+                                                            runner_name))
             elif (isinstance(job, model.Task)):
-                log.debug("Stopping job %d, task %d in %s runner" % (job.get_job().get_id(), job.get_id(), runner_name))
+                log.debug("Stopping job %d, task %d in %s runner" %
+                          (job.get_job().get_id(), job.get_id(), runner_name))
             try:
                 self.job_runners[runner_name].stop_job(job)
             except KeyError:
-                log.error('stop(): (%s) Invalid job runner: %s' % (job.get_id(), runner_name))
+                log.error('stop(): (%s) Invalid job runner: %s' %
+                          (job.get_id(), runner_name))
                 # Job and output dataset states have already been updated, so nothing is done here.
 
     def recover(self, job, job_wrapper):
         runner_name = (job.job_runner_name.split(":", 1))[0]
-        log.debug("recovering job %d in %s runner" % (job.get_id(), runner_name))
+        log.debug("recovering job %d in %s runner" % (job.get_id(),
+                                                      runner_name))
         try:
             self.job_runners[runner_name].recover(job, job_wrapper)
         except KeyError:
-            log.error('recover(): (%s) Invalid job runner: %s' % (job_wrapper.job_id, runner_name))
+            log.error('recover(): (%s) Invalid job runner: %s' %
+                      (job_wrapper.job_id, runner_name))
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
     def shutdown(self):

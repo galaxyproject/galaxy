@@ -49,7 +49,8 @@ def collect_dynamic_collections(
             collection = has_collection
 
         try:
-            collection_builder = collections_service.collection_builder_for(collection)
+            collection_builder = collections_service.collection_builder_for(
+                collection)
             job_context.populate_collection_elements(
                 collection,
                 collection_builder,
@@ -57,11 +58,13 @@ def collect_dynamic_collections(
             collection_builder.populate()
         except Exception:
             log.exception("Problem gathering output collection.")
-            collection.handle_population_failed("Problem building datasets for collection.")
+            collection.handle_population_failed(
+                "Problem building datasets for collection.")
 
 
 class JobContext(object):
-    def __init__(self, tool, job, job_working_directory, inp_data, input_dbkey):
+    def __init__(self, tool, job, job_working_directory, inp_data,
+                 input_dbkey):
         self.inp_data = inp_data
         self.input_dbkey = input_dbkey
         self.app = tool.app
@@ -74,33 +77,41 @@ class JobContext(object):
         inp_data = self.inp_data
         existing_datasets = [inp for inp in inp_data.values() if inp]
         if existing_datasets:
-            permissions = self.app.security_agent.guess_derived_permissions_for_datasets(existing_datasets)
+            permissions = self.app.security_agent.guess_derived_permissions_for_datasets(
+                existing_datasets)
         else:
             # No valid inputs, we will use history defaults
-            permissions = self.app.security_agent.history_get_default_permissions(self.job.history)
+            permissions = self.app.security_agent.history_get_default_permissions(
+                self.job.history)
         return permissions
 
     def find_files(self, collection, dataset_collectors):
         filenames = odict.odict()
-        for path, extra_file_collector in walk_over_extra_files(dataset_collectors, self.job_working_directory, collection):
+        for path, extra_file_collector in walk_over_extra_files(
+                dataset_collectors, self.job_working_directory, collection):
             filenames[path] = extra_file_collector
         return filenames
 
-    def populate_collection_elements(self, collection, root_collection_builder, output_collection_def):
+    def populate_collection_elements(self, collection, root_collection_builder,
+                                     output_collection_def):
         # TODO: allow configurable sorting.
         #    <sort by="lexical" /> <!-- default -->
         #    <sort by="reverse_lexical" />
         #    <sort regex="example.(\d+).fastq" by="1:numerical" />
         #    <sort regex="part_(\d+)_sample_([^_]+).fastq" by="2:lexical,1:numerical" />
-        dataset_collectors = map(dataset_collector, output_collection_def.dataset_collector_descriptions)
+        dataset_collectors = map(
+            dataset_collector,
+            output_collection_def.dataset_collector_descriptions)
         filenames = self.find_files(collection, dataset_collectors)
 
         element_datasets = []
         for filename, extra_file_collector in filenames.items():
             create_dataset_timer = ExecutionTimer()
-            fields_match = extra_file_collector.match(collection, os.path.basename(filename))
+            fields_match = extra_file_collector.match(
+                collection, os.path.basename(filename))
             if not fields_match:
-                raise Exception("Problem parsing metadata fields for file %s" % filename)
+                raise Exception(
+                    "Problem parsing metadata fields for file %s" % filename)
             element_identifiers = fields_match.element_identifiers
             designation = fields_match.designation
             visible = fields_match.visible
@@ -135,7 +146,8 @@ class JobContext(object):
 
         if job:
             add_datasets_timer = ExecutionTimer()
-            job.history.add_datasets(sa_session, [d for (ei, d) in element_datasets])
+            job.history.add_datasets(sa_session,
+                                     [d for (ei, d) in element_datasets])
             log.debug(
                 "(%s) Add dynamic collection datsets to history for output [%s] %s",
                 self.job.id,
@@ -152,7 +164,9 @@ class JobContext(object):
             if job:
                 element_identifier_str = ":".join(element_identifiers)
                 # Below was changed from '__new_primary_file_%s|%s__' % ( name, designation )
-                assoc = app.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, element_identifier_str), dataset)
+                assoc = app.model.JobToOutputDatasetAssociation(
+                    '__new_primary_file_%s|%s__' %
+                    (name, element_identifier_str), dataset)
                 assoc.job = self.job
             sa_session.add(assoc)
 
@@ -172,7 +186,8 @@ class JobContext(object):
         app = self.app
         sa_session = self.sa_session
 
-        primary_data = _new_hda(app, sa_session, ext, designation, visible, dbkey, self.permissions)
+        primary_data = _new_hda(app, sa_session, ext, designation, visible,
+                                dbkey, self.permissions)
 
         # Copy metadata from one of the inputs if requested.
         metadata_source = None
@@ -181,7 +196,8 @@ class JobContext(object):
 
         sa_session.flush()
         # Move data from temp location to dataset location
-        app.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
+        app.object_store.update_from_file(
+            primary_data.dataset, file_name=filename, create=True)
         primary_data.set_size()
         # If match specified a name use otherwise generate one from
         # designation.
@@ -198,21 +214,28 @@ class JobContext(object):
         return primary_data
 
 
-def collect_primary_datasets(tool, output, job_working_directory, input_ext, input_dbkey="?"):
+def collect_primary_datasets(tool,
+                             output,
+                             job_working_directory,
+                             input_ext,
+                             input_dbkey="?"):
     app = tool.app
     sa_session = tool.sa_session
     new_primary_datasets = {}
     try:
-        galaxy_json_path = os.path.join(job_working_directory, "working", jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
+        galaxy_json_path = os.path.join(job_working_directory, "working",
+                                        jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
         # LEGACY: Remove in 17.XX
         if not os.path.exists(galaxy_json_path):
             # Maybe this is a legacy job, use the job working directory instead
-            galaxy_json_path = os.path.join(job_working_directory, jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
+            galaxy_json_path = os.path.join(
+                job_working_directory, jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
         json_file = open(galaxy_json_path, 'r')
         for line in json_file:
             line = json.loads(line)
             if line.get('type') == 'new_primary_dataset':
-                new_primary_datasets[os.path.split(line.get('filename'))[-1]] = line
+                new_primary_datasets[os.path.split(line.get('filename'))[
+                    -1]] = line
     except Exception:
         # This should not be considered an error or warning condition, this file is optional
         pass
@@ -224,28 +247,40 @@ def collect_primary_datasets(tool, output, job_working_directory, input_ext, inp
     primary_datasets = {}
     for output_index, (name, outdata) in enumerate(output.items()):
         dataset_collectors = map(
-            dataset_collector, tool.outputs[name].dataset_collector_descriptions) if name in tool.outputs else [DEFAULT_DATASET_COLLECTOR]
+            dataset_collector, tool.outputs[name]
+            .dataset_collector_descriptions) if name in tool.outputs else [
+                DEFAULT_DATASET_COLLECTOR
+            ]
         filenames = odict.odict()
         if 'new_file_path' in app.config.collect_outputs_from:
             if DEFAULT_DATASET_COLLECTOR in dataset_collectors:
                 # 'new_file_path' collection should be considered deprecated,
                 # only use old-style matching (glob instead of regex and only
                 # using default collector - if enabled).
-                for filename in glob.glob(os.path.join(app.config.new_file_path, "primary_%i_*" % outdata.id)):
+                for filename in glob.glob(
+                        os.path.join(app.config.new_file_path, "primary_%i_*" %
+                                     outdata.id)):
                     filenames[filename] = DEFAULT_DATASET_COLLECTOR
         if 'job_working_directory' in app.config.collect_outputs_from:
-            for path, extra_file_collector in walk_over_extra_files(dataset_collectors, job_working_directory, outdata):
+            for path, extra_file_collector in walk_over_extra_files(
+                    dataset_collectors, job_working_directory, outdata):
                 filenames[path] = extra_file_collector
-        for filename_index, (filename, extra_file_collector) in enumerate(filenames.items()):
-            fields_match = extra_file_collector.match(outdata, os.path.basename(filename))
+        for filename_index, (
+                filename,
+                extra_file_collector) in enumerate(filenames.items()):
+            fields_match = extra_file_collector.match(
+                outdata, os.path.basename(filename))
             if not fields_match:
                 # Before I guess pop() would just have thrown an IndexError
-                raise Exception("Problem parsing metadata fields for file %s" % filename)
+                raise Exception(
+                    "Problem parsing metadata fields for file %s" % filename)
             designation = fields_match.designation
             if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
-                new_outdata_name = fields_match.name or "%s (%s)" % (outdata.name, designation)
+                new_outdata_name = fields_match.name or "%s (%s)" % (
+                    outdata.name, designation)
                 # Move data from temp location to dataset location
-                app.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
+                app.object_store.update_from_file(
+                    outdata.dataset, file_name=filename, create=True)
                 primary_output_assigned = True
                 continue
             if name not in primary_datasets:
@@ -258,15 +293,19 @@ def collect_primary_datasets(tool, output, job_working_directory, input_ext, inp
             if dbkey == INPUT_DBKEY_TOKEN:
                 dbkey = input_dbkey
             # Create new primary dataset
-            primary_data = _new_hda(app, sa_session, ext, designation, visible, dbkey)
-            app.security_agent.copy_dataset_permissions(outdata.dataset, primary_data.dataset)
+            primary_data = _new_hda(app, sa_session, ext, designation, visible,
+                                    dbkey)
+            app.security_agent.copy_dataset_permissions(
+                outdata.dataset, primary_data.dataset)
             sa_session.flush()
             # Move data from temp location to dataset location
-            app.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
+            app.object_store.update_from_file(
+                primary_data.dataset, file_name=filename, create=True)
             primary_data.set_size()
             # If match specified a name use otherwise generate one from
             # designation.
-            primary_data.name = fields_match.name or "%s (%s)" % (outdata.name, designation)
+            primary_data.name = fields_match.name or "%s (%s)" % (outdata.name,
+                                                                  designation)
             primary_data.info = outdata.info
             primary_data.init_meta(copy_from=outdata)
             primary_data.dbkey = dbkey
@@ -276,25 +315,35 @@ def collect_primary_datasets(tool, output, job_working_directory, input_ext, inp
                 job = assoc.job
                 break
             if job:
-                assoc = app.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, designation), primary_data)
+                assoc = app.model.JobToOutputDatasetAssociation(
+                    '__new_primary_file_%s|%s__' % (name, designation),
+                    primary_data)
                 assoc.job = job
                 sa_session.add(assoc)
                 sa_session.flush()
             primary_data.state = outdata.state
             # add tool/metadata provided information
-            new_primary_datasets_attributes = new_primary_datasets.get(os.path.split(filename)[-1], {})
+            new_primary_datasets_attributes = new_primary_datasets.get(
+                os.path.split(filename)[-1], {})
             if new_primary_datasets_attributes:
                 dataset_att_by_name = dict(ext='extension')
                 for att_set in ['name', 'info', 'ext', 'dbkey']:
-                    dataset_att_name = dataset_att_by_name.get(att_set, att_set)
+                    dataset_att_name = dataset_att_by_name.get(
+                        att_set, att_set)
                     setattr(primary_data, dataset_att_name,
-                            new_primary_datasets_attributes.get(att_set, getattr(primary_data, dataset_att_name)))
-                extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
+                            new_primary_datasets_attributes.get(
+                                att_set,
+                                getattr(primary_data, dataset_att_name)))
+                extra_files_path = new_primary_datasets_attributes.get(
+                    'extra_files', None)
                 if extra_files_path:
-                    extra_files_path_joined = os.path.join(job_working_directory, extra_files_path)
+                    extra_files_path_joined = os.path.join(
+                        job_working_directory, extra_files_path)
                     for root, dirs, files in os.walk(extra_files_path_joined):
-                        extra_dir = os.path.join(primary_data.extra_files_path,
-                                                 root.replace(extra_files_path_joined, '', 1).lstrip(os.path.sep))
+                        extra_dir = os.path.join(
+                            primary_data.extra_files_path,
+                            root.replace(extra_files_path_joined, '',
+                                         1).lstrip(os.path.sep))
                         for f in files:
                             app.object_store.update_from_file(
                                 primary_data.dataset,
@@ -304,10 +353,12 @@ def collect_primary_datasets(tool, output, job_working_directory, input_ext, inp
                                 create=True,
                                 dir_only=True,
                                 preserve_symlinks=True)
-            metadata_dict = new_primary_datasets_attributes.get('metadata', None)
+            metadata_dict = new_primary_datasets_attributes.get(
+                'metadata', None)
             if metadata_dict:
                 if "dbkey" in new_primary_datasets_attributes:
-                    metadata_dict["dbkey"] = new_primary_datasets_attributes["dbkey"]
+                    metadata_dict["dbkey"] = new_primary_datasets_attributes[
+                        "dbkey"]
                 primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
             else:
                 primary_data.set_meta()
@@ -336,14 +387,17 @@ def collect_primary_datasets(tool, output, job_working_directory, input_ext, inp
     return primary_datasets
 
 
-def walk_over_extra_files(extra_file_collectors, job_working_directory, matchable):
+def walk_over_extra_files(extra_file_collectors, job_working_directory,
+                          matchable):
     for extra_file_collector in extra_file_collectors:
         matches = []
         directory = job_working_directory
         if extra_file_collector.directory:
             directory = os.path.join(directory, extra_file_collector.directory)
             if not util.in_directory(directory, job_working_directory):
-                raise Exception("Problem with tool configuration, attempting to pull in datasets from outside working directory.")
+                raise Exception(
+                    "Problem with tool configuration, attempting to pull in datasets from outside working directory."
+                )
         if not os.path.isdir(directory):
             continue
         for filename in os.listdir(directory):
@@ -392,7 +446,8 @@ class DatasetCollector(object):
         re_match = re.match(pattern, filename)
         match_object = None
         if re_match:
-            match_object = CollectedDatasetMatch(re_match, self, filename, path=path)
+            match_object = CollectedDatasetMatch(
+                re_match, self, filename, path=path)
         return match_object
 
     def sort(self, matches):
@@ -500,11 +555,19 @@ def _new_hda(
     """
     # Create new primary dataset
     primary_data = app.model.HistoryDatasetAssociation(
-        extension=ext, designation=designation, visible=visible, dbkey=dbkey, create_dataset=True, flush=False, sa_session=sa_session)
+        extension=ext,
+        designation=designation,
+        visible=visible,
+        dbkey=dbkey,
+        create_dataset=True,
+        flush=False,
+        sa_session=sa_session)
     if permissions is not UNSET:
-        app.security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
+        app.security_agent.set_all_dataset_permissions(
+            primary_data.dataset, permissions, new=True, flush=False)
     sa_session.add(primary_data)
     return primary_data
 
 
-DEFAULT_DATASET_COLLECTOR = DatasetCollector(DEFAULT_DATASET_COLLECTOR_DESCRIPTION)
+DEFAULT_DATASET_COLLECTOR = DatasetCollector(
+    DEFAULT_DATASET_COLLECTOR_DESCRIPTION)

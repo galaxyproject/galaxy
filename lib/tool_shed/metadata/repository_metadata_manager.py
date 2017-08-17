@@ -9,7 +9,9 @@ from galaxy.web.form_builder import SelectField
 from tool_shed.metadata import metadata_generator
 from tool_shed.repository_types import util as rt_util
 from tool_shed.repository_types.metadata import TipOnly
-from tool_shed.util import (basic_util, common_util, hg_util, metadata_util, repository_util, shed_util_common as suc, tool_util)
+from tool_shed.util import (basic_util, common_util, hg_util, metadata_util,
+                            repository_util, shed_util_common as suc,
+                            tool_util)
 
 log = logging.getLogger(__name__)
 
@@ -56,17 +58,25 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         tool_versions_dict = {}
         for tool_dict in metadata.get('tools', []):
             # We have at least 2 changeset revisions to compare tool guids and tool ids.
-            parent_id = self.get_parent_id(id, tool_dict['id'], tool_dict['version'], tool_dict['guid'], changeset_revisions)
+            parent_id = self.get_parent_id(
+                id, tool_dict['id'], tool_dict['version'], tool_dict['guid'],
+                changeset_revisions)
             tool_versions_dict[tool_dict['guid']] = parent_id
         if tool_versions_dict:
             repository_metadata.tool_versions = tool_versions_dict
             self.sa_session.add(repository_metadata)
             self.sa_session.flush()
 
-    def build_repository_ids_select_field(self, name='repository_ids', multiple=True, display='checkboxes', my_writable=False):
+    def build_repository_ids_select_field(self,
+                                          name='repository_ids',
+                                          multiple=True,
+                                          display='checkboxes',
+                                          my_writable=False):
         """Generate the current list of repositories for resetting metadata."""
-        repositories_select_field = SelectField(name=name, multiple=multiple, display=display)
-        query = self.get_query_for_setting_metadata_on_repositories(my_writable=my_writable, order=True)
+        repositories_select_field = SelectField(
+            name=name, multiple=multiple, display=display)
+        query = self.get_query_for_setting_metadata_on_repositories(
+            my_writable=my_writable, order=True)
         for repository in query:
             owner = str(repository.user.username)
             option_label = '%s (%s)' % (str(repository.name), owner)
@@ -91,7 +101,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 self.sa_session.delete(repository_metadata)
                 self.sa_session.flush()
 
-    def compare_changeset_revisions(self, ancestor_changeset_revision, ancestor_metadata_dict):
+    def compare_changeset_revisions(self, ancestor_changeset_revision,
+                                    ancestor_metadata_dict):
         """
         Compare the contents of two changeset revisions to determine if a new repository
         metadata revision should be created.
@@ -105,9 +116,12 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         ancestor_guids = [tool_dict['guid'] for tool_dict in ancestor_tools]
         ancestor_guids.sort()
         ancestor_readme_files = ancestor_metadata_dict.get('readme_files', [])
-        ancestor_repository_dependencies_dict = ancestor_metadata_dict.get('repository_dependencies', {})
-        ancestor_repository_dependencies = ancestor_repository_dependencies_dict.get('repository_dependencies', [])
-        ancestor_tool_dependencies = ancestor_metadata_dict.get('tool_dependencies', {})
+        ancestor_repository_dependencies_dict = ancestor_metadata_dict.get(
+            'repository_dependencies', {})
+        ancestor_repository_dependencies = ancestor_repository_dependencies_dict.get(
+            'repository_dependencies', [])
+        ancestor_tool_dependencies = ancestor_metadata_dict.get(
+            'tool_dependencies', {})
         ancestor_workflows = ancestor_metadata_dict.get('workflows', [])
         ancestor_data_manager = ancestor_metadata_dict.get('data_manager', {})
         current_datatypes = self.metadata_dict.get('datatypes', [])
@@ -115,9 +129,12 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         current_guids = [tool_dict['guid'] for tool_dict in current_tools]
         current_guids.sort()
         current_readme_files = self.metadata_dict.get('readme_files', [])
-        current_repository_dependencies_dict = self.metadata_dict.get('repository_dependencies', {})
-        current_repository_dependencies = current_repository_dependencies_dict.get('repository_dependencies', [])
-        current_tool_dependencies = self.metadata_dict.get('tool_dependencies', {})
+        current_repository_dependencies_dict = self.metadata_dict.get(
+            'repository_dependencies', {})
+        current_repository_dependencies = current_repository_dependencies_dict.get(
+            'repository_dependencies', [])
+        current_tool_dependencies = self.metadata_dict.get(
+            'tool_dependencies', {})
         current_workflows = self.metadata_dict.get('workflows', [])
         current_data_manager = self.metadata_dict.get('data_manager', {})
         # Handle case where no metadata exists for either changeset.
@@ -135,12 +152,16 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         # Uncomment the following if we decide that README files should affect how installable
         # repository revisions are defined.  See the NOTE in self.compare_readme_files().
         # readme_file_comparision = self.compare_readme_files( ancestor_readme_files, current_readme_files )
-        repository_dependency_comparison = self.compare_repository_dependencies(ancestor_repository_dependencies,
-                                                                                current_repository_dependencies)
-        tool_dependency_comparison = self.compare_tool_dependencies(ancestor_tool_dependencies, current_tool_dependencies)
-        workflow_comparison = self.compare_workflows(ancestor_workflows, current_workflows)
-        datatype_comparison = self.compare_datatypes(ancestor_datatypes, current_datatypes)
-        data_manager_comparison = self.compare_data_manager(ancestor_data_manager, current_data_manager)
+        repository_dependency_comparison = self.compare_repository_dependencies(
+            ancestor_repository_dependencies, current_repository_dependencies)
+        tool_dependency_comparison = self.compare_tool_dependencies(
+            ancestor_tool_dependencies, current_tool_dependencies)
+        workflow_comparison = self.compare_workflows(ancestor_workflows,
+                                                     current_workflows)
+        datatype_comparison = self.compare_datatypes(ancestor_datatypes,
+                                                     current_datatypes)
+        data_manager_comparison = self.compare_data_manager(
+            ancestor_data_manager, current_data_manager)
         # Handle case where all metadata is the same.
         if ancestor_guids == current_guids and \
                 repository_dependency_comparison == self.EQUAL and \
@@ -174,12 +195,16 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         def __data_manager_dict_to_tuple_list(metadata_dict):
             # we do not check tool_guid or tool conf file name
             return set(
-                sorted([(name, tuple(sorted(value.get('data_tables', []))), value.get('guid'), value.get('version'), value.get('name'),
-                         value.get('id')) for name, value in metadata_dict.items()]))
+                sorted([(name, tuple(sorted(value.get('data_tables', []))),
+                         value.get('guid'), value.get('version'), value.get(
+                             'name'), value.get('id'))
+                        for name, value in metadata_dict.items()]))
 
         # only compare valid entries, any invalid entries are ignored
-        ancestor_metadata = __data_manager_dict_to_tuple_list(ancestor_metadata.get('data_managers', {}))
-        current_metadata = __data_manager_dict_to_tuple_list(current_metadata.get('data_managers', {}))
+        ancestor_metadata = __data_manager_dict_to_tuple_list(
+            ancestor_metadata.get('data_managers', {}))
+        current_metadata = __data_manager_dict_to_tuple_list(
+            current_metadata.get('data_managers', {}))
         # use set comparisons
         if ancestor_metadata.issubset(current_metadata):
             if ancestor_metadata == current_metadata:
@@ -196,7 +221,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 # Currently the only way to differentiate datatypes is by name.
                 ancestor_datatype_dtype = ancestor_datatype['dtype']
                 ancestor_datatype_extension = ancestor_datatype['extension']
-                ancestor_datatype_mimetype = ancestor_datatype.get('mimetype', None)
+                ancestor_datatype_mimetype = ancestor_datatype.get(
+                    'mimetype', None)
                 found_in_current = False
                 for current_datatype in current_datatypes:
                     if current_datatype['dtype'] == ancestor_datatype_dtype and \
@@ -212,7 +238,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 return self.SUBSET
         return self.NOT_EQUAL_AND_NOT_SUBSET
 
-    def compare_readme_files(self, ancestor_readme_files, current_readme_files):
+    def compare_readme_files(self, ancestor_readme_files,
+                             current_readme_files):
         """Determine if ancestor_readme_files is equal to or a subset of current_readme_files."""
         # NOTE: Although repository README files are considered a Galaxy utility similar to tools,
         # repository dependency definition files, etc., we don't define installable repository revisions
@@ -235,7 +262,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 return self.SUBSET
         return self.NOT_EQUAL_AND_NOT_SUBSET
 
-    def compare_repository_dependencies(self, ancestor_repository_dependencies, current_repository_dependencies):
+    def compare_repository_dependencies(self, ancestor_repository_dependencies,
+                                        current_repository_dependencies):
         """
         Determine if ancestor_repository_dependencies is the same as or a subset of
         current_repository_dependencies.
@@ -243,18 +271,21 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         # The list of repository_dependencies looks something like:
         # [["http://localhost:9009", "emboss_datatypes", "test", "ab03a2a5f407", "False", "False"]].
         # Create a string from each tuple in the list for easier comparison.
-        if len(ancestor_repository_dependencies) <= len(current_repository_dependencies):
+        if len(ancestor_repository_dependencies) <= len(
+                current_repository_dependencies):
             for ancestor_tup in ancestor_repository_dependencies:
                 a_tool_shed, a_repo_name, a_repo_owner, a_changeset_revision, \
                     a_prior_installation_required, \
                     a_only_if_compiling_contained_td = ancestor_tup
-                cleaned_a_tool_shed = common_util.remove_protocol_from_tool_shed_url(a_tool_shed)
+                cleaned_a_tool_shed = common_util.remove_protocol_from_tool_shed_url(
+                    a_tool_shed)
                 found_in_current = False
                 for current_tup in current_repository_dependencies:
                     c_tool_shed, c_repo_name, c_repo_owner, \
                         c_changeset_revision, c_prior_installation_required, \
                         c_only_if_compiling_contained_td = current_tup
-                    cleaned_c_tool_shed = common_util.remove_protocol_from_tool_shed_url(c_tool_shed)
+                    cleaned_c_tool_shed = common_util.remove_protocol_from_tool_shed_url(
+                        c_tool_shed)
                     if cleaned_c_tool_shed == cleaned_a_tool_shed and \
                             c_repo_name == a_repo_name and \
                             c_repo_owner == a_repo_owner and \
@@ -267,23 +298,27 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                     # In some cases, the only difference between a dependency definition in the lists
                     # is the changeset_revision value.  We'll check to see if this is the case, and if
                     # the defined dependency is a repository that has metadata set only on its tip.
-                    if not self.different_revision_defines_tip_only_repository_dependency(ancestor_tup, current_repository_dependencies):
+                    if not self.different_revision_defines_tip_only_repository_dependency(
+                            ancestor_tup, current_repository_dependencies):
                         return self.NOT_EQUAL_AND_NOT_SUBSET
                     return self.SUBSET
-            if len(ancestor_repository_dependencies) == len(current_repository_dependencies):
+            if len(ancestor_repository_dependencies) == len(
+                    current_repository_dependencies):
                 return self.EQUAL
             else:
                 return self.SUBSET
         return self.NOT_EQUAL_AND_NOT_SUBSET
 
-    def compare_tool_dependencies(self, ancestor_tool_dependencies, current_tool_dependencies):
+    def compare_tool_dependencies(self, ancestor_tool_dependencies,
+                                  current_tool_dependencies):
         """
         Determine if ancestor_tool_dependencies is the same as or a subset of current_tool_dependencies.
         """
         # The tool_dependencies dictionary looks something like:
         # {'bwa/0.5.9': {'readme': 'some string', 'version': '0.5.9', 'type': 'package', 'name': 'bwa'}}
         if len(ancestor_tool_dependencies) <= len(current_tool_dependencies):
-            for ancestor_td_key, ancestor_requirements_dict in ancestor_tool_dependencies.items():
+            for ancestor_td_key, ancestor_requirements_dict in ancestor_tool_dependencies.items(
+            ):
                 if ancestor_td_key in current_tool_dependencies:
                     # The only values that could have changed between the 2 dictionaries are the
                     # "readme" or "type" values.  Changing the readme value makes no difference.
@@ -293,7 +328,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 else:
                     return self.NOT_EQUAL_AND_NOT_SUBSET
             # At this point we know that ancestor_tool_dependencies is at least a subset of current_tool_dependencies.
-            if len(ancestor_tool_dependencies) == len(current_tool_dependencies):
+            if len(ancestor_tool_dependencies) == len(
+                    current_tool_dependencies):
                 return self.EQUAL
             else:
                 return self.SUBSET
@@ -311,7 +347,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 ancestor_workflow_dict = ancestor_workflow_tup[1]
                 # Currently the only way to differentiate workflows is by name.
                 ancestor_workflow_name = ancestor_workflow_dict['name']
-                num_ancestor_workflow_steps = len(ancestor_workflow_dict['steps'])
+                num_ancestor_workflow_steps = len(
+                    ancestor_workflow_dict['steps'])
                 found_in_current = False
                 for current_workflow_tup in current_workflows:
                     current_workflow_dict = current_workflow_tup[1]
@@ -329,7 +366,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 return self.SUBSET
         return self.NOT_EQUAL_AND_NOT_SUBSET
 
-    def create_or_update_repository_metadata(self, changeset_revision, metadata_dict):
+    def create_or_update_repository_metadata(self, changeset_revision,
+                                             metadata_dict):
         """Create or update a repository_metadata record in the tool shed."""
         has_repository_dependencies = False
         has_repository_dependencies_only_if_compiling_contained_td = False
@@ -338,8 +376,10 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         includes_tool_dependencies = False
         includes_workflows = False
         if metadata_dict:
-            repository_dependencies_dict = metadata_dict.get('repository_dependencies', {})
-            repository_dependencies = repository_dependencies_dict.get('repository_dependencies', [])
+            repository_dependencies_dict = metadata_dict.get(
+                'repository_dependencies', {})
+            repository_dependencies = repository_dependencies_dict.get(
+                'repository_dependencies', [])
             has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
                 repository_util.get_repository_dependency_types(repository_dependencies)
             if 'datatypes' in metadata_dict:
@@ -357,9 +397,10 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
             downloadable = True
         else:
             downloadable = False
-        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
-                                                                                          self.app.security.encode_id(self.repository.id),
-                                                                                          changeset_revision)
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
+            self.app,
+            self.app.security.encode_id(self.repository.id),
+            changeset_revision)
         if repository_metadata:
             repository_metadata.metadata = metadata_dict
             repository_metadata.downloadable = downloadable
@@ -387,22 +428,27 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
 
         return repository_metadata
 
-    def different_revision_defines_tip_only_repository_dependency(self, rd_tup, repository_dependencies):
+    def different_revision_defines_tip_only_repository_dependency(
+            self, rd_tup, repository_dependencies):
         """
         Determine if the only difference between rd_tup and a dependency definition in the list of
         repository_dependencies is the changeset_revision value.
         """
         rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required, rd_only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple(rd_tup)
-        cleaned_rd_tool_shed = common_util.remove_protocol_from_tool_shed_url(rd_tool_shed)
+        cleaned_rd_tool_shed = common_util.remove_protocol_from_tool_shed_url(
+            rd_tool_shed)
         for repository_dependency in repository_dependencies:
             tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                 common_util.parse_repository_dependency_tuple(repository_dependency)
-            cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed)
+            cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(
+                tool_shed)
             if cleaned_rd_tool_shed == cleaned_tool_shed and rd_name == name and rd_owner == owner:
                 # Determine if the repository represented by the dependency tuple is an instance of the repository type TipOnly.
-                required_repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
-                repository_type_class = self.app.repository_types_registry.get_class_by_label(required_repository.type)
+                required_repository = repository_util.get_repository_by_name_and_owner(
+                    self.app, name, owner)
+                repository_type_class = self.app.repository_types_registry.get_class_by_label(
+                    required_repository.type)
                 return isinstance(repository_type_class, TipOnly)
         return False
 
@@ -411,7 +457,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         # Compare from most recent to oldest.
         changeset_revisions.reverse()
         for changeset_revision in changeset_revisions:
-            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app, id, changeset_revision)
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
+                self.app, id, changeset_revision)
             metadata = repository_metadata.metadata
             tools_dicts = metadata.get('tools', [])
             for tool_dict in tools_dicts:
@@ -425,7 +472,9 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
             # The tool did not change through all of the changeset revisions.
             return old_id
 
-    def get_query_for_setting_metadata_on_repositories(self, my_writable=False, order=True):
+    def get_query_for_setting_metadata_on_repositories(self,
+                                                       my_writable=False,
+                                                       order=True):
         """
         Return a query containing repositories for resetting metadata.  The order parameter
         is used for displaying the list of repositories ordered alphabetically for display on
@@ -441,15 +490,21 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                                              .filter(self.app.model.Repository.table.c.deleted == false()):
                 # Always reset metadata on all repositories of types repository_suite_definition and
                 # tool_dependency_definition.
-                if repository.type in [rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION]:
-                    clause_list.append(self.app.model.Repository.table.c.id == repository.id)
+                if repository.type in [
+                        rt_util.REPOSITORY_SUITE_DEFINITION,
+                        rt_util.TOOL_DEPENDENCY_DEFINITION
+                ]:
+                    clause_list.append(
+                        self.app.model.Repository.table.c.id == repository.id)
                 else:
                     allow_push = repository.allow_push(self.app)
                     if allow_push:
                         # Include all repositories that are writable by the current user.
                         allow_push_usernames = allow_push.split(',')
                         if username in allow_push_usernames:
-                            clause_list.append(self.app.model.Repository.table.c.id == repository.id)
+                            clause_list.append(
+                                self.app.model.Repository.table.c.id ==
+                                repository.id)
             if clause_list:
                 if order:
                     return self.sa_session.query(self.app.model.Repository) \
@@ -489,7 +544,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                     if 'datatypes' in metadata:
                         ancestor_datatypes = metadata['datatypes']
                         # The saved metadata must be a subset of the new metadata.
-                        datatype_comparison = self.compare_datatypes(ancestor_datatypes, current_datatypes)
+                        datatype_comparison = self.compare_datatypes(
+                            ancestor_datatypes, current_datatypes)
                         if datatype_comparison == self.NOT_EQUAL_AND_NOT_SUBSET:
                             return True
                         else:
@@ -519,16 +575,20 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         self.repository because one or more Galaxy utilities may have been deleted from self.repository in
         the new tip.
         """
-        repository_metadata = metadata_util.get_latest_repository_metadata(self.app, self.repository.id, downloadable=False)
-        datatypes_required = self.new_datatypes_metadata_required(repository_metadata)
+        repository_metadata = metadata_util.get_latest_repository_metadata(
+            self.app, self.repository.id, downloadable=False)
+        datatypes_required = self.new_datatypes_metadata_required(
+            repository_metadata)
         # Uncomment the following if we decide that README files should affect how installable
         # repository revisions are defined.  See the NOTE in the compare_readme_files() method.
         # readme_files_required = sewlf.new_readme_files_metadata_required( repository_metadata )
         repository_dependencies_required = \
             self.new_repository_dependency_metadata_required(repository_metadata)
         tools_required = self.new_tool_metadata_required(repository_metadata)
-        tool_dependencies_required = self.new_tool_dependency_metadata_required(repository_metadata)
-        workflows_required = self.new_workflow_metadata_required(repository_metadata)
+        tool_dependencies_required = self.new_tool_dependency_metadata_required(
+            repository_metadata)
+        workflows_required = self.new_workflow_metadata_required(
+            repository_metadata)
         if datatypes_required or repository_dependencies_required or \
                 tools_required or tool_dependencies_required or workflows_required:
             return True
@@ -551,7 +611,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                     if 'readme_files' in metadata:
                         ancestor_readme_files = metadata['readme_files']
                         # The saved metadata must be a subset of the new metadata.
-                        readme_file_comparison = self.compare_readme_files(ancestor_readme_files, current_readme_files)
+                        readme_file_comparison = self.compare_readme_files(
+                            ancestor_readme_files, current_readme_files)
                         if readme_file_comparison == self.NOT_EQUAL_AND_NOT_SUBSET:
                             return True
                         else:
@@ -582,10 +643,13 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         if repository_metadata:
             metadata = repository_metadata.metadata
             if 'repository_dependencies' in metadata:
-                saved_repository_dependencies = metadata['repository_dependencies']['repository_dependencies']
-                new_repository_dependencies_metadata = self.metadata_dict.get('repository_dependencies', None)
+                saved_repository_dependencies = metadata[
+                    'repository_dependencies']['repository_dependencies']
+                new_repository_dependencies_metadata = self.metadata_dict.get(
+                    'repository_dependencies', None)
                 if new_repository_dependencies_metadata:
-                    new_repository_dependencies = self.metadata_dict['repository_dependencies']['repository_dependencies']
+                    new_repository_dependencies = self.metadata_dict[
+                        'repository_dependencies']['repository_dependencies']
                     # TODO: We used to include the following here to handle the case where repository
                     # dependency definitions were deleted.  However this erroneously returned True in
                     # cases where is should not have done so.  This usually occurred where multiple single
@@ -601,8 +665,9 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                             # In some cases, the only difference between a dependency definition in the lists
                             # is the changeset_revision value.  We'll check to see if this is the case, and if
                             # the defined dependency is a repository that has metadata set only on its tip.
-                            if not self.different_revision_defines_tip_only_repository_dependency(saved_repository_dependency,
-                                                                                                  new_repository_dependencies):
+                            if not self.different_revision_defines_tip_only_repository_dependency(
+                                    saved_repository_dependency,
+                                    new_repository_dependencies):
                                 return True
                     return False
                 else:
@@ -636,19 +701,26 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                         # for this repository, so we first compare the version string for each tool id
                         # in self.metadata_dict with what was previously saved to see if we need to create
                         # a new table record or if we can simply update the existing record.
-                        for new_tool_metadata_dict in self.metadata_dict['tools']:
+                        for new_tool_metadata_dict in self.metadata_dict[
+                                'tools']:
                             for saved_tool_metadata_dict in metadata['tools']:
-                                if saved_tool_metadata_dict['id'] not in saved_tool_ids:
-                                    saved_tool_ids.append(saved_tool_metadata_dict['id'])
-                                if new_tool_metadata_dict['id'] == saved_tool_metadata_dict['id']:
+                                if saved_tool_metadata_dict[
+                                        'id'] not in saved_tool_ids:
+                                    saved_tool_ids.append(
+                                        saved_tool_metadata_dict['id'])
+                                if new_tool_metadata_dict[
+                                        'id'] == saved_tool_metadata_dict[
+                                            'id']:
                                     if new_tool_metadata_dict['version'] != saved_tool_metadata_dict['version']:
                                         return True
                         # So far, a new metadata record is not required, but we still have to check to see if
                         # any new tool ids exist in self.metadata_dict that are not in the saved metadata.  We do
                         # this because if a new tarball was uploaded to a repository that included tools, it
                         # may have removed existing tool files if they were not included in the uploaded tarball.
-                        for new_tool_metadata_dict in self.metadata_dict['tools']:
-                            if new_tool_metadata_dict['id'] not in saved_tool_ids:
+                        for new_tool_metadata_dict in self.metadata_dict[
+                                'tools']:
+                            if new_tool_metadata_dict[
+                                    'id'] not in saved_tool_ids:
                                 return True
                         return False
                     else:
@@ -678,7 +750,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
             if metadata:
                 if 'tool_dependencies' in metadata:
                     saved_tool_dependencies = metadata['tool_dependencies']
-                    new_tool_dependencies = self.metadata_dict.get('tool_dependencies', None)
+                    new_tool_dependencies = self.metadata_dict.get(
+                        'tool_dependencies', None)
                     if new_tool_dependencies:
                         # TODO: We used to include the following here to handle the case where
                         # tool dependency definitions were deleted.  However, this erroneously
@@ -737,8 +810,13 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
 
     def reset_all_metadata_on_repository_in_tool_shed(self):
         """Reset all metadata on a single repository in a tool shed."""
-        log.debug("Resetting all metadata on repository: %s" % self.repository.name)
-        repo = hg_util.get_repo_for_repository(self.app, repository=None, repo_path=self.repository.repo_path(self.app), create=False)
+        log.debug(
+            "Resetting all metadata on repository: %s" % self.repository.name)
+        repo = hg_util.get_repo_for_repository(
+            self.app,
+            repository=None,
+            repo_path=self.repository.repo_path(self.app),
+            create=False)
         # The list of changeset_revisions refers to repository_metadata records that have been created
         # or updated.  When the following loop completes, we'll delete all repository_metadata records
         # for this repository that do not have a changeset_revision value in this list.
@@ -749,13 +827,17 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         metadata_dict = None
         ancestor_changeset_revision = None
         ancestor_metadata_dict = None
-        for changeset in self.repository.get_changesets_for_setting_metadata(self.app):
+        for changeset in self.repository.get_changesets_for_setting_metadata(
+                self.app):
             work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-ramorits")
             ctx = repo.changectx(changeset)
-            log.debug("Cloning repository changeset revision: %s", str(ctx.rev()))
-            cloned_ok, error_message = hg_util.clone_repository(self.repository_clone_url, work_dir, str(ctx.rev()))
+            log.debug("Cloning repository changeset revision: %s",
+                      str(ctx.rev()))
+            cloned_ok, error_message = hg_util.clone_repository(
+                self.repository_clone_url, work_dir, str(ctx.rev()))
             if cloned_ok:
-                log.debug("Generating metadata for changset revision: %s", str(ctx.rev()))
+                log.debug("Generating metadata for changset revision: %s",
+                          str(ctx.rev()))
                 self.set_changeset_revision(str(repo.changectx(changeset)))
                 self.set_repository_files_dir(work_dir)
                 self.generate_metadata_for_changeset_revision()
@@ -771,15 +853,21 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                         # self.SUBSET - ancestor metadata is a subset of current metadata, so continue from current
                         # self.NOT_EQUAL_AND_NOT_SUBSET - ancestor metadata is neither equal to nor a subset of current
                         # metadata, so persist ancestor metadata.
-                        comparison = self.compare_changeset_revisions(ancestor_changeset_revision, ancestor_metadata_dict)
-                        if comparison in [self.NO_METADATA, self.EQUAL, self.SUBSET]:
+                        comparison = self.compare_changeset_revisions(
+                            ancestor_changeset_revision,
+                            ancestor_metadata_dict)
+                        if comparison in [
+                                self.NO_METADATA, self.EQUAL, self.SUBSET
+                        ]:
                             ancestor_changeset_revision = self.changeset_revision
                             ancestor_metadata_dict = self.metadata_dict
                         elif comparison == self.NOT_EQUAL_AND_NOT_SUBSET:
                             metadata_changeset_revision = ancestor_changeset_revision
                             metadata_dict = ancestor_metadata_dict
-                            self.create_or_update_repository_metadata(metadata_changeset_revision, metadata_dict)
-                            changeset_revisions.append(metadata_changeset_revision)
+                            self.create_or_update_repository_metadata(
+                                metadata_changeset_revision, metadata_dict)
+                            changeset_revisions.append(
+                                metadata_changeset_revision)
                             ancestor_changeset_revision = self.changeset_revision
                             ancestor_metadata_dict = self.metadata_dict
                     else:
@@ -790,7 +878,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                         metadata_changeset_revision = self.changeset_revision
                         metadata_dict = self.metadata_dict
                         # We're at the end of the change log.
-                        self.create_or_update_repository_metadata(metadata_changeset_revision, metadata_dict)
+                        self.create_or_update_repository_metadata(
+                            metadata_changeset_revision, metadata_dict)
                         changeset_revisions.append(metadata_changeset_revision)
                         ancestor_changeset_revision = None
                         ancestor_metadata_dict = None
@@ -798,7 +887,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                     # We reach here only if self.metadata_dict is empty and ancestor_metadata_dict is not.
                     if not ctx.children():
                         # We're at the end of the change log.
-                        self.create_or_update_repository_metadata(metadata_changeset_revision, metadata_dict)
+                        self.create_or_update_repository_metadata(
+                            metadata_changeset_revision, metadata_dict)
                         changeset_revisions.append(metadata_changeset_revision)
                         ancestor_changeset_revision = None
                         ancestor_metadata_dict = None
@@ -818,20 +908,22 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         changeset_revisions_that_contain_tools = []
         for changeset in repo.changelog:
             changeset_revision = str(repo.changectx(changeset))
-            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app, encoded_repository_id,
-                                                                                              changeset_revision)
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
+                self.app, encoded_repository_id, changeset_revision)
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
                     if metadata.get('tools', None):
-                        changeset_revisions_that_contain_tools.append(changeset_revision)
+                        changeset_revisions_that_contain_tools.append(
+                            changeset_revision)
         # The list of changeset_revisions_that_contain_tools is now filtered to contain only those that
         # are downloadable and contain tools.  If a repository includes tools, build a dictionary of
         # { 'tool id' : 'parent tool id' } pairs for each tool in each changeset revision.
-        for index, changeset_revision in enumerate(changeset_revisions_that_contain_tools):
+        for index, changeset_revision in enumerate(
+                changeset_revisions_that_contain_tools):
             tool_versions_dict = {}
-            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app, encoded_repository_id,
-                                                                                              changeset_revision)
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
+                self.app, encoded_repository_id, changeset_revision)
             metadata = repository_metadata.metadata
             tool_dicts = metadata['tools']
             if index == 0:
@@ -842,8 +934,10 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                     tool_versions_dict[tool_dict['guid']] = tool_dict['id']
             else:
                 for tool_dict in tool_dicts:
-                    parent_id = self.get_parent_id(encoded_repository_id, tool_dict['id'], tool_dict['version'], tool_dict['guid'],
-                                                   changeset_revisions_that_contain_tools[0:index])
+                    parent_id = self.get_parent_id(
+                        encoded_repository_id, tool_dict['id'],
+                        tool_dict['version'], tool_dict['guid'],
+                        changeset_revisions_that_contain_tools[0:index])
                     tool_versions_dict[tool_dict['guid']] = parent_id
             if tool_versions_dict:
                 repository_metadata.tool_versions = tool_versions_dict
@@ -863,21 +957,30 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
             unsuccessful_count = 0
             for repository_id in repository_ids:
                 try:
-                    repository = repository_util.get_repository_in_tool_shed(self.app, repository_id)
+                    repository = repository_util.get_repository_in_tool_shed(
+                        self.app, repository_id)
                     self.set_repository(repository)
                     self.resetting_all_metadata_on_repository = True
                     self.reset_all_metadata_on_repository_in_tool_shed()
                     if self.invalid_file_tups:
                         message = tool_util.generate_message_for_invalid_tools(
-                            self.app, self.invalid_file_tups, repository, None, as_html=False)
+                            self.app,
+                            self.invalid_file_tups,
+                            repository,
+                            None,
+                            as_html=False)
                         log.debug(message)
                         unsuccessful_count += 1
                     else:
-                        log.debug("Successfully reset metadata on repository %s owned by %s" % (str(repository.name),
-                                                                                                str(repository.user.username)))
+                        log.debug(
+                            "Successfully reset metadata on repository %s owned by %s"
+                            % (str(repository.name),
+                               str(repository.user.username)))
                         successful_count += 1
                 except:
-                    log.exception("Error attempting to reset metadata on repository %s", str(repository.name))
+                    log.exception(
+                        "Error attempting to reset metadata on repository %s",
+                        str(repository.name))
                     unsuccessful_count += 1
             message = "Successfully reset metadata on %d %s.  " % \
                 (successful_count, inflector.cond_plural(successful_count, "repository"))
@@ -891,7 +994,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
 
     def set_repository(self, repository):
         super(RepositoryMetadataManager, self).set_repository(repository)
-        self.repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(self.user, repository)
+        self.repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(
+            self.user, repository)
 
     def set_repository_metadata(self, host, content_alert_str='', **kwd):
         """
@@ -902,25 +1006,37 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         status = 'done'
         encoded_id = self.app.security.encode_id(self.repository.id)
         repo_dir = self.repository.repo_path(self.app)
-        repo = hg_util.get_repo_for_repository(self.app, repository=None, repo_path=repo_dir, create=False)
+        repo = hg_util.get_repo_for_repository(
+            self.app, repository=None, repo_path=repo_dir, create=False)
         self.generate_metadata_for_changeset_revision()
         if self.metadata_dict:
             repository_metadata = None
-            repository_type_class = self.app.repository_types_registry.get_class_by_label(self.repository.type)
+            repository_type_class = self.app.repository_types_registry.get_class_by_label(
+                self.repository.type)
             tip_only = isinstance(repository_type_class, TipOnly)
             if not tip_only and self.new_metadata_required_for_utilities():
                 # Create a new repository_metadata table row.
-                repository_metadata = self.create_or_update_repository_metadata(self.repository.tip(self.app), self.metadata_dict)
+                repository_metadata = self.create_or_update_repository_metadata(
+                    self.repository.tip(self.app), self.metadata_dict)
                 # If this is the first record stored for this repository, see if we need to send any email alerts.
                 if len(self.repository.downloadable_revisions) == 1:
-                    suc.handle_email_alerts(self.app, host, self.repository, content_alert_str='', new_repo_alert=True, admin_only=False)
+                    suc.handle_email_alerts(
+                        self.app,
+                        host,
+                        self.repository,
+                        content_alert_str='',
+                        new_repo_alert=True,
+                        admin_only=False)
             else:
                 # Update the latest stored repository metadata with the contents and attributes of self.metadata_dict.
-                repository_metadata = metadata_util.get_latest_repository_metadata(self.app, self.repository.id, downloadable=False)
+                repository_metadata = metadata_util.get_latest_repository_metadata(
+                    self.app, self.repository.id, downloadable=False)
                 if repository_metadata:
-                    downloadable = metadata_util.is_downloadable(self.metadata_dict)
+                    downloadable = metadata_util.is_downloadable(
+                        self.metadata_dict)
                     # Update the last saved repository_metadata table row.
-                    repository_metadata.changeset_revision = self.repository.tip(self.app)
+                    repository_metadata.changeset_revision = self.repository.tip(
+                        self.app)
                     repository_metadata.metadata = self.metadata_dict
                     repository_metadata.downloadable = downloadable
                     if 'datatypes' in self.metadata_dict:
@@ -929,8 +1045,10 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                         repository_metadata.includes_datatypes = False
                     # We don't store information about the special type of repository dependency that is needed only for
                     # compiling a tool dependency defined for the dependent repository.
-                    repository_dependencies_dict = self.metadata_dict.get('repository_dependencies', {})
-                    repository_dependencies = repository_dependencies_dict.get('repository_dependencies', [])
+                    repository_dependencies_dict = self.metadata_dict.get(
+                        'repository_dependencies', {})
+                    repository_dependencies = repository_dependencies_dict.get(
+                        'repository_dependencies', [])
                     has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
                         repository_util.get_repository_dependency_types(repository_dependencies)
                     repository_metadata.has_repository_dependencies = has_repository_dependencies
@@ -951,29 +1069,38 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                     self.sa_session.flush()
                 else:
                     # There are no metadata records associated with the repository.
-                    repository_metadata = self.create_or_update_repository_metadata(self.repository.tip(self.app), self.metadata_dict)
+                    repository_metadata = self.create_or_update_repository_metadata(
+                        self.repository.tip(self.app), self.metadata_dict)
             if 'tools' in self.metadata_dict and repository_metadata and status != 'error':
                 # Set tool versions on the new downloadable change set.  The order of the list of changesets is
                 # critical, so we use the repo's changelog.
                 changeset_revisions = []
                 for changeset in repo.changelog:
                     changeset_revision = str(repo.changectx(changeset))
-                    if metadata_util.get_repository_metadata_by_changeset_revision(self.app, encoded_id, changeset_revision):
+                    if metadata_util.get_repository_metadata_by_changeset_revision(
+                            self.app, encoded_id, changeset_revision):
                         changeset_revisions.append(changeset_revision)
-                self.add_tool_versions(encoded_id, repository_metadata, changeset_revisions)
+                self.add_tool_versions(encoded_id, repository_metadata,
+                                       changeset_revisions)
         elif len(repo) == 1 and not self.invalid_file_tups:
             message = "Revision <b>%s</b> includes no Galaxy utilities for which metadata can " % \
                 str(self.repository.tip(self.app))
             message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
             status = "error"
         if self.invalid_file_tups:
-            message = tool_util.generate_message_for_invalid_tools(self.app, self.invalid_file_tups, self.repository, self.metadata_dict)
+            message = tool_util.generate_message_for_invalid_tools(
+                self.app, self.invalid_file_tups, self.repository,
+                self.metadata_dict)
             status = 'error'
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
         self.app.tool_data_tables.data_tables = {}
         return message, status
 
-    def set_repository_metadata_due_to_new_tip(self, host, content_alert_str=None, **kwd):
+    def set_repository_metadata_due_to_new_tip(self,
+                                               host,
+                                               content_alert_str=None,
+                                               **kwd):
         """Set metadata on the tip of self.repository in the tool shed."""
-        error_message, status = self.set_repository_metadata(host, content_alert_str=content_alert_str, **kwd)
+        error_message, status = self.set_repository_metadata(
+            host, content_alert_str=content_alert_str, **kwd)
         return status, error_message

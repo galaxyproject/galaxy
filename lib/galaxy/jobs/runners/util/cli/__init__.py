@@ -21,11 +21,13 @@ class CliInterface(object):
         """
 
         def __load(module_path, d):
-            module_pattern = join(join(getcwd(), code_dir, *module_path.split('.')), '*.py')
+            module_pattern = join(
+                join(getcwd(), code_dir, *module_path.split('.')), '*.py')
             for file in glob(module_pattern):
                 if basename(file).startswith('_'):
                     continue
-                module_name = '%s.%s' % (module_path, basename(file).rsplit('.py', 1)[0])
+                module_name = '%s.%s' % (module_path,
+                                         basename(file).rsplit('.py', 1)[0])
                 module = __import__(module_name)
                 for comp in module_name.split(".")[1:]:
                     module = getattr(module, comp)
@@ -55,7 +57,8 @@ class CliInterface(object):
     def get_shell_plugin(self, shell_params):
         shell_plugin = shell_params.get('plugin', DEFAULT_SHELL_PLUGIN)
         if shell_plugin not in self.active_cli_shells:
-            self.active_cli_shells[shell_plugin] = self.cli_shells[shell_plugin](**shell_params)
+            self.active_cli_shells[shell_plugin] = self.cli_shells[
+                shell_plugin](**shell_params)
         return self.active_cli_shells[shell_plugin]
 
     def get_job_interface(self, job_params):
@@ -64,13 +67,17 @@ class CliInterface(object):
             raise ValueError(ERROR_MESSAGE_NO_JOB_PLUGIN)
         job_plugin_class = self.cli_job_interfaces.get(job_plugin, None)
         if not job_plugin_class:
-            raise ValueError(ERROR_MESSAGE_NO_SUCH_JOB_PLUGIN % (job_plugin, list(self.cli_job_interfaces.keys())))
+            raise ValueError(ERROR_MESSAGE_NO_SUCH_JOB_PLUGIN %
+                             (job_plugin,
+                              list(self.cli_job_interfaces.keys())))
         job_interface = job_plugin_class(**job_params)
 
         return job_interface
 
 
 def split_params(params):
-    shell_params = dict((k.replace('shell_', '', 1), v) for k, v in params.items() if k.startswith('shell_'))
-    job_params = dict((k.replace('job_', '', 1), v) for k, v in params.items() if k.startswith('job_'))
+    shell_params = dict((k.replace('shell_', '', 1), v)
+                        for k, v in params.items() if k.startswith('shell_'))
+    job_params = dict((k.replace('job_', '', 1), v) for k, v in params.items()
+                      if k.startswith('job_'))
     return shell_params, job_params

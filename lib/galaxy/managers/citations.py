@@ -40,11 +40,14 @@ class DoiCache(object):
             'cache.data_dir': getattr(config, 'citation_cache_data_dir', None),
             'cache.lock_dir': getattr(config, 'citation_cache_lock_dir', None),
         }
-        self._cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('doi')
+        self._cache = CacheManager(
+            **parse_cache_config_options(cache_opts)).get_cache('doi')
 
     def _raw_get_bibtex(self, doi):
         dx_url = "http://dx.doi.org/" + doi
-        headers = {'Accept': 'text/bibliography; style=bibtex, application/x-bibtex'}
+        headers = {
+            'Accept': 'text/bibliography; style=bibtex, application/x-bibtex'
+        }
         req = urllib2.Request(dx_url, data="", headers=headers)
         response = urllib2.urlopen(req)
         bibtex = response.read()

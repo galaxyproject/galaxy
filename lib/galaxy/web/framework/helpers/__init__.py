@@ -24,7 +24,9 @@ def time_ago(x):
     if (datetime.utcnow() - x) > delta:  # Greater than a week difference
         return x.strftime("%b %d, %Y")
     else:
-        date_array = date.distance_of_time_in_words(x, datetime.utcnow()).replace(",", "").split(" ")
+        date_array = date.distance_of_time_in_words(x,
+                                                    datetime.utcnow()).replace(
+                                                        ",", "").split(" ")
         return "~%s %s ago" % (date_array[0], date_array[1])
 
 
@@ -58,7 +60,11 @@ def css(*args):
 
     Cache-bust with time that server started running on
     """
-    return "\n".join([stylesheet_link(url_for("/static/style/%s.css?v=%s" % (name, server_starttime))) for name in args])
+    return "\n".join([
+        stylesheet_link(
+            url_for("/static/style/%s.css?v=%s" % (name, server_starttime)))
+        for name in args
+    ])
 
 
 def js_helper(prefix, *args):
@@ -68,7 +74,11 @@ def js_helper(prefix, *args):
 
     Cache-bust with time that server started running on
     """
-    return "\n".join([javascript_link(url_for("/%s%s.js?v=%s" % (prefix, name, server_starttime))) for name in args])
+    return "\n".join([
+        javascript_link(
+            url_for("/%s%s.js?v=%s" % (prefix, name, server_starttime)))
+        for name in args
+    ])
 
 
 def js(*args):

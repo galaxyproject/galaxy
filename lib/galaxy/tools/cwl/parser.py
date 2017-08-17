@@ -42,13 +42,15 @@ def tool_proxy(tool_path, strict_cwl_validation=True):
     grab relevant data.
     """
     ensure_cwltool_available()
-    tool = to_cwl_tool_object(tool_path, strict_cwl_validation=strict_cwl_validation)
+    tool = to_cwl_tool_object(
+        tool_path, strict_cwl_validation=strict_cwl_validation)
     return tool
 
 
 def workflow_proxy(workflow_path, strict_cwl_validation=True):
     ensure_cwltool_available()
-    workflow = to_cwl_workflow_object(workflow_path, strict_cwl_validation=strict_cwl_validation)
+    workflow = to_cwl_workflow_object(
+        workflow_path, strict_cwl_validation=strict_cwl_validation)
     return workflow
 
 
@@ -59,8 +61,10 @@ def load_job_proxy(job_directory, strict_cwl_validation=True):
     tool_path = job_objects["tool_path"]
     job_inputs = job_objects["job_inputs"]
     output_dict = job_objects["output_dict"]
-    cwl_tool = tool_proxy(tool_path, strict_cwl_validation=strict_cwl_validation)
-    cwl_job = cwl_tool.job_proxy(job_inputs, output_dict, job_directory=job_directory)
+    cwl_tool = tool_proxy(
+        tool_path, strict_cwl_validation=strict_cwl_validation)
+    cwl_job = cwl_tool.job_proxy(
+        job_inputs, output_dict, job_directory=job_directory)
     return cwl_job
 
 
@@ -73,7 +77,8 @@ def to_cwl_tool_object(tool_path, strict_cwl_validation=True):
     raw_tool = cwl_tool.tool
     check_requirements(raw_tool)
     if "class" not in raw_tool:
-        raise Exception("File does not declare a class, not a valid Draft 3+ CWL tool.")
+        raise Exception(
+            "File does not declare a class, not a valid Draft 3+ CWL tool.")
     process_class = raw_tool["class"]
     if process_class == "CommandLineTool":
         proxy_class = CommandLineToolProxy
@@ -82,7 +87,9 @@ def to_cwl_tool_object(tool_path, strict_cwl_validation=True):
     else:
         raise Exception("File not a CWL CommandLineTool.")
     if "cwlVersion" not in raw_tool:
-        raise Exception("File does not declare a CWL version, pre-draft 3 CWL tools are not supported.")
+        raise Exception(
+            "File does not declare a CWL version, pre-draft 3 CWL tools are not supported."
+        )
 
     proxy = proxy_class(cwl_tool, tool_path)
     return proxy
@@ -90,7 +97,8 @@ def to_cwl_tool_object(tool_path, strict_cwl_validation=True):
 
 def to_cwl_workflow_object(workflow_path, strict_cwl_validation=None):
     proxy_class = WorkflowProxy
-    cwl_workflow = _schema_loader(strict_cwl_validation).tool(path=workflow_path)
+    cwl_workflow = _schema_loader(strict_cwl_validation).tool(
+        path=workflow_path)
     raw_workflow = cwl_workflow.tool
     check_requirements(raw_workflow, tool=False)
 
@@ -131,7 +139,8 @@ class ToolProxy(object):
         Galaxy will generate mapping the Galaxy description of the inputs into
         a cwltool compatible variant.
         """
-        return JobProxy(self, input_dict, output_dict, job_directory=job_directory)
+        return JobProxy(
+            self, input_dict, output_dict, job_directory=job_directory)
 
     @abstractmethod
     def input_instances(self):
@@ -309,7 +318,8 @@ class JobProxy(object):
 
     def _output_extra_files_dir(self, output_name):
         output_id = self.output_id(output_name)
-        return os.path.join(self._job_directory, "dataset_%s_files" % output_id)
+        return os.path.join(self._job_directory,
+                            "dataset_%s_files" % output_id)
 
     def output_id(self, output_name):
         output_id = self._output_dict[output_name]["id"]
@@ -321,7 +331,8 @@ class JobProxy(object):
 
     def output_secondary_files_dir(self, output_name, create=False):
         extra_files_dir = self._output_extra_files_dir(output_name)
-        secondary_files_dir = os.path.join(extra_files_dir, SECONDARY_FILES_EXTRA_PREFIX)
+        secondary_files_dir = os.path.join(extra_files_dir,
+                                           SECONDARY_FILES_EXTRA_PREFIX)
         if create and not os.path.exists(secondary_files_dir):
             safe_makedirs(secondary_files_dir)
         return secondary_files_dir
@@ -329,7 +340,8 @@ class JobProxy(object):
     def stage_files(self):
         cwl_job = self.cwl_job()
         if hasattr(cwl_job, "pathmapper"):
-            process.stageFiles(self.cwl_job().pathmapper, os.symlink, ignoreWritable=True)
+            process.stageFiles(
+                self.cwl_job().pathmapper, os.symlink, ignoreWritable=True)
         # else: expression tools do not have a path mapper.
 
     @staticmethod
@@ -399,31 +411,48 @@ def _simple_field_union(field):
         value_name = "_cwl__value_"
         value_label = label
         value_description = description
-        return InputInstance(value_name, value_label, value_description, **kwds)
+        return InputInstance(value_name, value_label, value_description,
+                             **kwds)
 
     select_options = []
     case_options = []
     if "null" in field_type:
-        select_options.append({"value": "null", "label": "None", "selected": True})
+        select_options.append({
+            "value": "null",
+            "label": "None",
+            "selected": True
+        })
         case_options.append(("null", []))
     if any_of_in_field_type(["Any", "string"]):
         select_options.append({"value": "string", "label": "Simple String"})
-        case_options.append(("string", [value_input(input_type=INPUT_TYPE.TEXT)]))
+        case_options.append(("string",
+                             [value_input(input_type=INPUT_TYPE.TEXT)]))
     if any_of_in_field_type(["Any", "boolean"]):
         select_options.append({"value": "boolean", "label": "Boolean"})
-        case_options.append(("boolean", [value_input(input_type=INPUT_TYPE.BOOLEAN)]))
+        case_options.append(("boolean",
+                             [value_input(input_type=INPUT_TYPE.BOOLEAN)]))
     if any_of_in_field_type(["Any", "int"]):
         select_options.append({"value": "int", "label": "Integer"})
-        case_options.append(("int", [value_input(input_type=INPUT_TYPE.INTEGER)]))
+        case_options.append(("int",
+                             [value_input(input_type=INPUT_TYPE.INTEGER)]))
     if any_of_in_field_type(["Any", "float"]):
-        select_options.append({"value": "float", "label": "Floating Point Number"})
-        case_options.append(("float", [value_input(input_type=INPUT_TYPE.FLOAT)]))
+        select_options.append({
+            "value": "float",
+            "label": "Floating Point Number"
+        })
+        case_options.append(("float",
+                             [value_input(input_type=INPUT_TYPE.FLOAT)]))
     if any_of_in_field_type(["Any", "File"]):
         select_options.append({"value": "data", "label": "Dataset"})
-        case_options.append(("data", [value_input(input_type=INPUT_TYPE.DATA)]))
+        case_options.append(("data",
+                             [value_input(input_type=INPUT_TYPE.DATA)]))
     if "Any" in field_type:
-        select_options.append({"value": "json", "label": "JSON Data Structure"})
-        case_options.append(("json", [value_input(input_type=INPUT_TYPE.TEXT, area=True)]))
+        select_options.append({
+            "value": "json",
+            "label": "JSON Data Structure"
+        })
+        case_options.append(
+            ("json", [value_input(input_type=INPUT_TYPE.TEXT, area=True)]))
 
     case_input = SelectInputInstance(
         name=case_name,
@@ -472,7 +501,8 @@ def _simple_field_to_input_type_kwds(field, field_type=None):
             input_type = simple_map_type_map[array_type]
         return {"input_type": input_type, "array": True}
     else:
-        raise Exception("Unhandled simple field type encountered - [%s]." % field_type)
+        raise Exception(
+            "Unhandled simple field type encountered - [%s]." % field_type)
 
 
 def _field_to_field_type(field):
@@ -502,7 +532,8 @@ def _field_metadata(field):
 def _simple_field_to_output(field):
     name = field["name"]
     output_data_class = field["type"]
-    output_instance = OutputInstance(name, output_data_type=output_data_class, output_type=OUTPUT_TYPE.GLOB)
+    output_instance = OutputInstance(
+        name, output_data_type=output_data_class, output_type=OUTPUT_TYPE.GLOB)
     return output_instance
 
 
@@ -556,7 +587,13 @@ class SelectInputInstance(object):
 
 
 class InputInstance(object):
-    def __init__(self, name, label, description, input_type, array=False, area=False):
+    def __init__(self,
+                 name,
+                 label,
+                 description,
+                 input_type,
+                 array=False,
+                 area=False):
         self.input_type = input_type
         self.name = name
         self.label = label
@@ -567,7 +604,11 @@ class InputInstance(object):
 
     def to_dict(self, itemwise=True):
         if itemwise and self.array:
-            as_dict = dict(type="repeat", name="%s_repeat" % self.name, title="%s" % self.name, blocks=[self.to_dict(itemwise=False)])
+            as_dict = dict(
+                type="repeat",
+                name="%s_repeat" % self.name,
+                title="%s" % self.name,
+                blocks=[self.to_dict(itemwise=False)])
         else:
             as_dict = dict(
                 name=self.name,

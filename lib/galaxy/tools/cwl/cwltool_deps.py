@@ -70,5 +70,6 @@ def ensure_cwltool_available():
         raise ImportError(message)
 
 
-__all__ = ('main', 'ref_resolver', 'load_tool', 'workflow', 'process', 'pathmapper', 'ensure_cwltool_available', 'schema_salad',
+__all__ = ('main', 'ref_resolver', 'load_tool', 'workflow', 'process',
+           'pathmapper', 'ensure_cwltool_available', 'schema_salad',
            'shellescape', 'needs_shell_quoting', )

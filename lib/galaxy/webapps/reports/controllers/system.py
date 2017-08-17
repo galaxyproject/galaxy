@@ -29,14 +29,18 @@ class System(BaseUIController):
             deleted_datasets_days = params.deleted_datasets_days
         else:
             deleted_datasets_days = '60'
-        file_path, disk_usage, datasets, file_size_str = self.disk_usage(trans, **kwd)
+        file_path, disk_usage, datasets, file_size_str = self.disk_usage(
+            trans, **kwd)
         if 'action' in kwd:
             if kwd['action'] == "userless_histories":
-                userless_histories_days, message = self.userless_histories(trans, **kwd)
+                userless_histories_days, message = self.userless_histories(
+                    trans, **kwd)
             elif kwd['action'] == "deleted_histories":
-                deleted_histories_days, message = self.deleted_histories(trans, **kwd)
+                deleted_histories_days, message = self.deleted_histories(
+                    trans, **kwd)
             elif kwd['action'] == "deleted_datasets":
-                deleted_datasets_days, message = self.deleted_datasets(trans, **kwd)
+                deleted_datasets_days, message = self.deleted_datasets(
+                    trans, **kwd)
         return trans.fill_template(
             '/webapps/reports/system.mako',
             file_path=file_path,
@@ -55,7 +59,8 @@ class System(BaseUIController):
         message = ''
         if params.userless_histories_days:
             userless_histories_days = int(params.userless_histories_days)
-            cutoff_time = datetime.utcnow() - timedelta(days=userless_histories_days)
+            cutoff_time = datetime.utcnow() - timedelta(
+                days=userless_histories_days)
             history_count = 0
             dataset_count = 0
             for history in trans.sa_session.query(model.History) \
@@ -81,7 +86,8 @@ class System(BaseUIController):
         message = ''
         if params.deleted_histories_days:
             deleted_histories_days = int(params.deleted_histories_days)
-            cutoff_time = datetime.utcnow() - timedelta(days=deleted_histories_days)
+            cutoff_time = datetime.utcnow() - timedelta(
+                days=deleted_histories_days)
             history_count = 0
             dataset_count = 0
             disk_space = 0
@@ -112,7 +118,8 @@ class System(BaseUIController):
         message = ''
         if params.deleted_datasets_days:
             deleted_datasets_days = int(params.deleted_datasets_days)
-            cutoff_time = datetime.utcnow() - timedelta(days=deleted_datasets_days)
+            cutoff_time = datetime.utcnow() - timedelta(
+                days=deleted_datasets_days)
             dataset_count = 0
             disk_space = 0
             for dataset in trans.sa_session.query(model.Dataset) \
@@ -133,7 +140,8 @@ class System(BaseUIController):
     @web.expose
     def dataset_info(self, trans, **kwd):
         message = ''
-        dataset = trans.sa_session.query(model.Dataset).get(trans.security.decode_id(kwd.get('id', '')))
+        dataset = trans.sa_session.query(model.Dataset).get(
+            trans.security.decode_id(kwd.get('id', '')))
         # Get all associated hdas and lddas that use the same disk file.
         associated_hdas = trans.sa_session.query(trans.model.HistoryDatasetAssociation) \
             .filter(and_(trans.model.HistoryDatasetAssociation.deleted == false(),
@@ -167,20 +175,23 @@ class System(BaseUIController):
                         mount = df_line
                     else:
                         try:
-                            disk_size, disk_used, disk_avail, disk_cap_pct, file_system = df_line.split()
+                            disk_size, disk_used, disk_avail, disk_cap_pct, file_system = df_line.split(
+                            )
                             break
                         except:
                             pass
                 else:
                     try:
-                        file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_line.split()
+                        file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_line.split(
+                        )
                         break
                     except:
                         pass
             else:
                 break  # EOF
         df_file.close()
-        return (file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount)
+        return (file_system, disk_size, disk_used, disk_avail, disk_cap_pct,
+                mount)
 
     @web.expose
     def disk_usage(self, trans, **kwd):

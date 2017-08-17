@@ -20,7 +20,8 @@ def decode_dataset_user(trans, dataset_hash, user_hash):
     # decode dataset id as usual
     # decode user id using the dataset create time as the key
     dataset_id = trans.security.decode_id(dataset_hash)
-    dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(dataset_id)
+    dataset = trans.sa_session.query(
+        trans.app.model.HistoryDatasetAssociation).get(dataset_id)
     assert dataset, "Bad Dataset id provided to decode_dataset_user"
     if user_hash in [None, 'None']:
         user = None

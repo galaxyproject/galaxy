@@ -10,7 +10,8 @@ from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
 
-from .parameters import (DEFAULT_DATASET_NAME, DisplayApplicationDataParameter, DisplayApplicationParameter)
+from .parameters import (DEFAULT_DATASET_NAME, DisplayApplicationDataParameter,
+                         DisplayApplicationParameter)
 from .util import encode_dataset_user
 
 log = logging.getLogger(__name__)
@@ -39,7 +40,8 @@ class DisplayApplicationLink(object):
 
     def __init__(self, display_application):
         self.display_application = display_application
-        self.parameters = odict()  # parameters are populated in order, allowing lower listed ones to have values of higher listed ones
+        self.parameters = odict(
+        )  # parameters are populated in order, allowing lower listed ones to have values of higher listed ones
         self.url_param_name_map = {}
         self.url = None
         self.id = None
@@ -61,16 +63,21 @@ class DisplayApplicationLink(object):
             rval = odict(self.other_values)
         else:
             rval = odict()
-        rval.update({
-            'BASE_URL': trans.request.base,
-            'APP': trans.app
-        })  # trans automatically appears as a response, need to add properties of trans that we want here
-        for key, value in BASE_PARAMS.items():  # add helper functions/variables
+        rval.update(
+            {
+                'BASE_URL': trans.request.base,
+                'APP': trans.app
+            }
+        )  # trans automatically appears as a response, need to add properties of trans that we want here
+        for key, value in BASE_PARAMS.items(
+        ):  # add helper functions/variables
             rval[key] = value
-        rval[DEFAULT_DATASET_NAME] = data  # always have the display dataset name available
+        rval[
+            DEFAULT_DATASET_NAME] = data  # always have the display dataset name available
         return rval
 
-    def build_parameter_dict(self, data, dataset_hash, user_hash, trans, app_kwds):
+    def build_parameter_dict(self, data, dataset_hash, user_hash, trans,
+                             app_kwds):
         other_values = self.get_inital_values(data, trans)
         other_values['DATASET_HASH'] = dataset_hash
         other_values['USER_HASH'] = user_hash
@@ -81,12 +88,14 @@ class DisplayApplicationLink(object):
                 if name in app_kwds and param.allow_override:
                     other_values[name] = app_kwds[name]
                 else:
-                    other_values[name] = param.get_value(other_values, dataset_hash, user_hash,
-                                                         trans)  # subsequent params can rely on this value
+                    other_values[name] = param.get_value(
+                        other_values, dataset_hash, user_hash,
+                        trans)  # subsequent params can rely on this value
             else:
                 ready = False
-                other_values[name] = param.get_value(other_values, dataset_hash, user_hash,
-                                                     trans)  # subsequent params can rely on this value
+                other_values[name] = param.get_value(
+                    other_values, dataset_hash, user_hash,
+                    trans)  # subsequent params can rely on this value
                 if other_values[name] is None:
                     # Need to stop here, next params may need this value to determine its own value
                     return False, other_values
@@ -95,7 +104,9 @@ class DisplayApplicationLink(object):
     def filter_by_dataset(self, data, trans):
         context = self.get_inital_values(data, trans)
         for filter_elem in self.filters:
-            if fill_template(filter_elem.text, context=context) != filter_elem.get('value', 'True'):
+            if fill_template(
+                    filter_elem.text, context=context) != filter_elem.get(
+                        'value', 'True'):
                 return False
         return True
 
@@ -111,7 +122,8 @@ class DynamicDisplayApplicationBuilder(object):
         if filename is None:
             data_table_name = elem.get('from_data_table', None)
             if data_table_name:
-                data_table = display_application.app.tool_data_tables.get(data_table_name, None)
+                data_table = display_application.app.tool_data_tables.get(
+                    data_table_name, None)
                 assert data_table is not None, 'Unable to find data table named "%s".' % data_table_name
 
         assert filename is not None or data_table is not None, 'Filename or data Table is required for dynamic_links.'
@@ -150,14 +162,22 @@ class DynamicDisplayApplicationBuilder(object):
         if data_table is not None:
             max_col = max([max_col] + list(data_table.columns.values()))
             for key, value in data_table.columns.items():
-                dynamic_params[key] = {'column': value, 'split': False, 'separator': ','}
+                dynamic_params[key] = {
+                    'column': value,
+                    'split': False,
+                    'separator': ','
+                }
         for dynamic_param in elem.findall('dynamic_param'):
             name = dynamic_param.get('name')
             value = int(dynamic_param.get('value'))
             split = string_as_bool(dynamic_param.get('split', False))
             param_separator = dynamic_param.get('separator', ',')
             max_col = max(max_col, value)
-            dynamic_params[name] = {'column': value, 'split': split, 'separator': param_separator}
+            dynamic_params[name] = {
+                'column': value,
+                'split': split,
+                'separator': param_separator
+            }
         if filename:
             data_iter = open(filename)
         elif data_table:
@@ -186,9 +206,15 @@ class DynamicDisplayApplicationBuilder(object):
                         value = value.split(attributes['separator'])
                     dynamic_values[key] = value
                 # now populate
-                links.append(DisplayApplicationLink.from_elem(new_elem, display_application, other_values=dynamic_values))
+                links.append(
+                    DisplayApplicationLink.from_elem(
+                        new_elem,
+                        display_application,
+                        other_values=dynamic_values))
             else:
-                log.warning('Invalid dynamic display application link specified in %s: "%s"' % (filename, line))
+                log.warning(
+                    'Invalid dynamic display application link specified in %s: "%s"'
+                    % (filename, line))
         self.links = links
 
     def __iter__(self):
@@ -196,13 +222,15 @@ class DynamicDisplayApplicationBuilder(object):
 
 
 class PopulatedDisplayApplicationLink(object):
-    def __init__(self, display_application_link, data, dataset_hash, user_hash, trans, app_kwds):
+    def __init__(self, display_application_link, data, dataset_hash, user_hash,
+                 trans, app_kwds):
         self.link = display_application_link
         self.data = data
         self.dataset_hash = dataset_hash
         self.user_hash = user_hash
         self.trans = trans
-        self.ready, self.parameters = self.link.build_parameter_dict(self.data, self.dataset_hash, self.user_hash, trans, app_kwds)
+        self.ready, self.parameters = self.link.build_parameter_dict(
+            self.data, self.dataset_hash, self.user_hash, trans, app_kwds)
 
     def display_ready(self):
         return self.ready
@@ -216,7 +244,8 @@ class PopulatedDisplayApplicationLink(object):
 
     def preparing_display(self):
         if not self.ready:
-            return self.link.parameters[list(self.parameters.keys())[-1]].is_preparing(self.parameters)
+            return self.link.parameters[list(self.parameters.keys())[
+                -1]].is_preparing(self.parameters)
         return False
 
     def prepare_display(self):
@@ -225,9 +254,11 @@ class PopulatedDisplayApplicationLink(object):
         if not self.ready and not self.preparing_display():
             other_values = self.parameters
             for name, param in self.link.parameters.items():
-                if found_last or list(other_values.keys())[-1] == name:  # found last parameter to be populated
+                if found_last or list(other_values.keys(
+                ))[-1] == name:  # found last parameter to be populated
                     found_last = True
-                    value = param.prepare(other_values, self.dataset_hash, self.user_hash, self.trans)
+                    value = param.prepare(other_values, self.dataset_hash,
+                                          self.user_hash, self.trans)
                     rval.append({'name': name, 'value': value, 'param': param})
                     other_values[name] = value
                     if value is None:
@@ -238,14 +269,21 @@ class PopulatedDisplayApplicationLink(object):
     def get_prepare_steps(self, datasets_only=True):
         rval = []
         for name, param in self.link.parameters.items():
-            if datasets_only and not isinstance(param, DisplayApplicationDataParameter):
+            if datasets_only and not isinstance(
+                    param, DisplayApplicationDataParameter):
                 continue
             value = self.parameters.get(name, None)
-            rval.append({'name': name, 'value': value, 'param': param, 'ready': param.ready(self.parameters)})
+            rval.append({
+                'name': name,
+                'value': value,
+                'param': param,
+                'ready': param.ready(self.parameters)
+            })
         return rval
 
     def display_url(self):
-        assert self.display_ready(), 'Display is not yet ready, cannot generate display link'
+        assert self.display_ready(
+        ), 'Display is not yet ready, cannot generate display link'
         return fill_template(self.link.url.text, context=self.parameters)
 
     def get_param_name_by_url(self, url):
@@ -258,12 +296,19 @@ class PopulatedDisplayApplicationLink(object):
 class DisplayApplication(object):
     @classmethod
     def from_file(cls, filename, app):
-        return cls.from_elem(parse_xml(filename).getroot(), app, filename=filename)
+        return cls.from_elem(
+            parse_xml(filename).getroot(), app, filename=filename)
 
     @classmethod
     def from_elem(cls, elem, app, filename=None):
         att_dict = cls._get_attributes_from_elem(elem)
-        rval = DisplayApplication(att_dict['id'], att_dict['name'], app, att_dict['version'], filename=filename, elem=elem)
+        rval = DisplayApplication(
+            att_dict['id'],
+            att_dict['name'],
+            app,
+            att_dict['version'],
+            filename=filename,
+            elem=elem)
         rval._load_links_from_elem(elem)
         return rval
 
@@ -275,7 +320,13 @@ class DisplayApplication(object):
         version = elem.get('version', None)
         return dict(id=display_id, name=name, version=version)
 
-    def __init__(self, display_id, name, app, version=None, filename=None, elem=None):
+    def __init__(self,
+                 display_id,
+                 name,
+                 app,
+                 version=None,
+                 filename=None,
+                 elem=None):
         self.id = display_id
         self.name = name
         self.app = app
@@ -294,19 +345,27 @@ class DisplayApplication(object):
                 self.links[link.id] = link
         try:
             for dynamic_links in elem.findall('dynamic_links'):
-                for link in DynamicDisplayApplicationBuilder(dynamic_links, self, self.app.datatypes_registry.build_sites):
+                for link in DynamicDisplayApplicationBuilder(
+                        dynamic_links, self,
+                        self.app.datatypes_registry.build_sites):
                     self.links[link.id] = link
         except Exception as e:
-            log.error("Error loading a set of Dynamic Display Application links: %s", e)
+            log.error(
+                "Error loading a set of Dynamic Display Application links: %s",
+                e)
 
-    def get_link(self, link_name, data, dataset_hash, user_hash, trans, app_kwds):
+    def get_link(self, link_name, data, dataset_hash, user_hash, trans,
+                 app_kwds):
         # returns a link object with data knowledge to generate links
         self._check_and_reload()
-        return PopulatedDisplayApplicationLink(self.links[link_name], data, dataset_hash, user_hash, trans, app_kwds)
+        return PopulatedDisplayApplicationLink(self.links[link_name], data,
+                                               dataset_hash, user_hash, trans,
+                                               app_kwds)
 
     def filter_by_dataset(self, data, trans):
         self._check_and_reload()
-        filtered = DisplayApplication(self.id, self.name, self.app, version=self.version)
+        filtered = DisplayApplication(
+            self.id, self.name, self.app, version=self.version)
         for link_name, link_value in self.links.items():
             if link_value.filter_by_dataset(data, trans):
                 filtered.links[link_name] = link_value
@@ -318,12 +377,14 @@ class DisplayApplication(object):
         elif self._elem:
             elem = self._elem
         else:
-            raise Exception("Unable to reload DisplayApplication %s." % (self.name))
+            raise Exception("Unable to reload DisplayApplication %s." %
+                            (self.name))
         # All toolshed-specific attributes added by e.g the registry will remain
         attr_dict = self._get_attributes_from_elem(elem)
         # We will not allow changing the id at this time (we'll need to fix several mappings upstream to handle this case)
         assert attr_dict.get('id') == self.id, ValueError(
-            "You cannot reload a Display application where the ID has changed. You will need to restart the server instead.")
+            "You cannot reload a Display application where the ID has changed. You will need to restart the server instead."
+        )
         # clear old links
         self.links = {}
         # clear data table versions:

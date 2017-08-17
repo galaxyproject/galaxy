@@ -49,21 +49,25 @@ def get_observer_class(config_value, default, monitor_what_str):
 
 
 def get_tool_conf_watcher(reload_callback, tool_cache=None):
-    return ToolConfWatcher(reload_callback=reload_callback, tool_cache=tool_cache)
+    return ToolConfWatcher(
+        reload_callback=reload_callback, tool_cache=tool_cache)
 
 
 def get_tool_data_dir_watcher(tool_data_tables, config):
     config_value = getattr(config, "watch_tool_data_dir", None)
-    observer_class = get_observer_class(config_value, default="False", monitor_what_str="tool-data directory")
+    observer_class = get_observer_class(
+        config_value, default="False", monitor_what_str="tool-data directory")
     if observer_class is not None:
-        return ToolDataWatcher(observer_class, tool_data_tables=tool_data_tables)
+        return ToolDataWatcher(
+            observer_class, tool_data_tables=tool_data_tables)
     else:
         return NullWatcher()
 
 
 def get_tool_watcher(toolbox, config):
     config_value = getattr(config, "watch_tools", None)
-    observer_class = get_observer_class(config_value, default="False", monitor_what_str="tools")
+    observer_class = get_observer_class(
+        config_value, default="False", monitor_what_str="tools")
 
     if observer_class is not None:
         return ToolWatcher(toolbox, observer_class=observer_class)
@@ -77,7 +81,8 @@ class ToolConfWatcher(object):
         self.cache = tool_cache
         self._active = False
         self._lock = threading.Lock()
-        self.thread = threading.Thread(target=self.check, name="ToolConfWatcher.thread")
+        self.thread = threading.Thread(
+            target=self.check, name="ToolConfWatcher.thread")
         self.thread.daemon = True
         self.reload_callback = reload_callback
 
@@ -256,7 +261,8 @@ class ToolFileEventHandler(FileSystemEventHandler):
                 pass
         elif path.endswith(".xml"):
             directory = os.path.dirname(path)
-            dir_callback = self.tool_watcher.tool_dir_callbacks.get(directory, None)
+            dir_callback = self.tool_watcher.tool_dir_callbacks.get(
+                directory, None)
             if dir_callback:
                 tool_file = event.src_path
                 tool_id = dir_callback(tool_file)

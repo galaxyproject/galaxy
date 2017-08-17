@@ -9,11 +9,13 @@ from string import Template
 
 from galaxy.util import asbool
 
-UPDATE_TEMPLATE = Template("git --work-tree $dir --git-dir $dir/.git fetch && "
-                           "git --work-tree $dir --git-dir $dir/.git merge origin/master")
+UPDATE_TEMPLATE = Template(
+    "git --work-tree $dir --git-dir $dir/.git fetch && "
+    "git --work-tree $dir --git-dir $dir/.git merge origin/master")
 
-UPDATE_FAILED_TEMPLATE = Template("Warning failed to update test repository $dir - "
-                                  "update stdout was [$stdout] and stderr was [$stderr].")
+UPDATE_FAILED_TEMPLATE = Template(
+    "Warning failed to update test repository $dir - "
+    "update stdout was [$stdout] and stderr was [$stderr].")
 
 LIST_SEP = re.compile("\s*,\s*")
 
@@ -22,7 +24,9 @@ class TestDataResolver(object):
     def __init__(self, env_var='GALAXY_TEST_FILE_DIR', environ=os.environ):
         file_dirs = environ.get(env_var, None)
         if file_dirs:
-            self.resolvers = [build_resolver(u, environ) for u in LIST_SEP.split(file_dirs)]
+            self.resolvers = [
+                build_resolver(u, environ) for u in LIST_SEP.split(file_dirs)
+            ]
         else:
             self.resolvers = []
 
@@ -69,7 +73,8 @@ class GitDataResolver(FileDataResolver):
     def __init__(self, repository, environ):
         self.repository = repository
         self.updated = False
-        repo_cache = environ.get("GALAXY_TEST_DATA_REPO_CACHE", "test-data-cache")
+        repo_cache = environ.get("GALAXY_TEST_DATA_REPO_CACHE",
+                                 "test-data-cache")
         m = hashlib.md5()
         m.update(repository)
         repo_path = os.path.join(repo_cache, m.hexdigest())
@@ -91,7 +96,8 @@ class GitDataResolver(FileDataResolver):
             parent_dir = os.path.dirname(self.file_dir)
             if not os.path.exists(parent_dir):
                 os.makedirs(parent_dir)
-            self.execute("git clone '%s' '%s'" % (self.repository, self.file_dir))
+            self.execute("git clone '%s' '%s'" % (self.repository,
+                                                  self.file_dir))
         update_command = UPDATE_TEMPLATE.safe_substitute(dir=self.file_dir)
         self.execute(update_command)
 

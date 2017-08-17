@@ -6,13 +6,19 @@ from .local import LocalShell
 from ....util import Bunch
 
 log = logging.getLogger(__name__)
-logging.getLogger("paramiko").setLevel(logging.WARNING)  # paramiko logging is very verbose
+logging.getLogger("paramiko").setLevel(
+    logging.WARNING)  # paramiko logging is very verbose
 
 __all__ = ('RemoteShell', 'SecureShell', 'GlobusSecureShell', 'ParamikoShell')
 
 
 class RemoteShell(LocalShell):
-    def __init__(self, rsh='rsh', rcp='rcp', hostname='localhost', username=None, **kwargs):
+    def __init__(self,
+                 rsh='rsh',
+                 rcp='rcp',
+                 hostname='localhost',
+                 username=None,
+                 **kwargs):
         super(RemoteShell, self).__init__(**kwargs)
         self.rsh = rsh
         self.rcp = rcp
@@ -25,14 +31,21 @@ class RemoteShell(LocalShell):
         if self.username is None:
             fullcmd = '%s %s %s' % (self.rsh, self.hostname, cmd)
         else:
-            fullcmd = '%s -l %s %s %s' % (self.rsh, self.username, self.hostname, cmd)
+            fullcmd = '%s -l %s %s %s' % (self.rsh, self.username,
+                                          self.hostname, cmd)
         return super(RemoteShell, self).execute(fullcmd, persist, timeout)
 
 
 class SecureShell(RemoteShell):
     SSH_NEW_KEY_STRING = 'Are you sure you want to continue connecting'
 
-    def __init__(self, rsh='ssh', rcp='scp', private_key=None, port=None, strict_host_key_checking=True, **kwargs):
+    def __init__(self,
+                 rsh='ssh',
+                 rcp='scp',
+                 private_key=None,
+                 port=None,
+                 strict_host_key_checking=True,
+                 **kwargs):
         strict_host_key_checking = "yes" if strict_host_key_checking else "no"
         rsh += " -oStrictHostKeyChecking=%s -oConnectTimeout=60" % strict_host_key_checking
         rcp += " -oStrictHostKeyChecking=%s -oConnectTimeout=60" % strict_host_key_checking
@@ -46,7 +59,14 @@ class SecureShell(RemoteShell):
 
 
 class ParamikoShell(object):
-    def __init__(self, username, hostname, password=None, private_key=None, port=22, timeout=60, **kwargs):
+    def __init__(self,
+                 username,
+                 hostname,
+                 password=None,
+                 private_key=None,
+                 port=22,
+                 timeout=60,
+                 **kwargs):
         self.username = username
         self.hostname = hostname
         self.password = password
@@ -66,7 +86,8 @@ class ParamikoShell(object):
     def execute(self, cmd, timeout=60):
         _, stdout, stderr = self.ssh.exec_command(cmd, timeout=timeout)
         return_code = stdout.channel.recv_exit_status()
-        return Bunch(stdout=stdout.read(), stderr=stderr.read(), returncode=return_code)
+        return Bunch(
+            stdout=stdout.read(), stderr=stderr.read(), returncode=return_code)
 
 
 class GlobusSecureShell(SecureShell):

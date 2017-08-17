@@ -65,7 +65,8 @@ class VisualizationsConfigParser(object):
 
         # allow manually turning off a vis by checking for a disabled property
         if 'disabled' in xml_tree.attrib:
-            log.info('Visualizations plugin disabled: %s. Skipping...', returned['name'])
+            log.info('Visualizations plugin disabled: %s. Skipping...',
+                     returned['name'])
             return None
 
         # record the embeddable flag - defaults to false
@@ -74,11 +75,13 @@ class VisualizationsConfigParser(object):
         #   work from the creator's side - it defaults to False
         returned['embeddable'] = False
         if 'embeddable' in xml_tree.attrib:
-            returned['embeddable'] = xml_tree.attrib.get('embeddable', False) == 'true'
+            returned['embeddable'] = xml_tree.attrib.get('embeddable',
+                                                         False) == 'true'
 
         # a (for now) text description of what the visualization does
         description = xml_tree.find('description')
-        returned['description'] = description.text.strip() if description is not None else None
+        returned['description'] = description.text.strip(
+        ) if description is not None else None
 
         # data_sources are the kinds of objects/data associated with the visualization
         #   e.g. views on HDAs can use this to find out what visualizations are applicable to them
@@ -99,7 +102,8 @@ class VisualizationsConfigParser(object):
         # list or dict? ordered or not?
         params = {}
         param_confs = xml_tree.find('params')
-        param_elements = param_confs.findall('param') if param_confs is not None else []
+        param_elements = param_confs.findall(
+            'param') if param_confs is not None else []
         for param_conf in param_elements:
             param = self.param_parser.parse(param_conf)
             if param:
@@ -112,9 +116,11 @@ class VisualizationsConfigParser(object):
         # store these modifiers in a 2-level dictionary { target_param: { param_modifier_key: { param_mod_data }
         # ugh - wish we didn't need these
         param_modifiers = {}
-        param_modifier_elements = param_confs.findall('param_modifier') if param_confs is not None else []
+        param_modifier_elements = param_confs.findall(
+            'param_modifier') if param_confs is not None else []
         for param_modifier_conf in param_modifier_elements:
-            param_modifier = self.param_modifier_parser.parse(param_modifier_conf)
+            param_modifier = self.param_modifier_parser.parse(
+                param_modifier_conf)
             # param modifiers map accrd. to the params they modify (for faster lookup)
             target_param = param_modifier_conf.get('modifies')
             param_modifier_key = param_modifier_conf.text
@@ -123,7 +129,8 @@ class VisualizationsConfigParser(object):
                 #   so store in a sub-dict, initializing if this is the first
                 if target_param not in param_modifiers:
                     param_modifiers[target_param] = {}
-                param_modifiers[target_param][param_modifier_key] = param_modifier
+                param_modifiers[target_param][
+                    param_modifier_key] = param_modifier
 
         # not required
         if param_modifiers:
@@ -140,7 +147,8 @@ class VisualizationsConfigParser(object):
         # render_target: where in the browser to open the rendered visualization
         # defaults to: galaxy_main
         render_target = xml_tree.find('render_target')
-        if ((render_target is not None and render_target.text) and (render_target.text in self.VALID_RENDER_TARGETS)):
+        if ((render_target is not None and render_target.text)
+                and (render_target.text in self.VALID_RENDER_TARGETS)):
             returned['render_target'] = render_target.text
         else:
             returned['render_target'] = 'galaxy_main'
@@ -169,8 +177,13 @@ class VisualizationsConfigParser(object):
         entry_point_attrib = entry_point.attrib.copy()
         entry_point_type = entry_point_attrib.pop('entry_point_type', 'mako')
         if entry_point_type not in self.ALLOWED_ENTRY_POINT_TYPES:
-            raise ParsingException('Unknown entry_point type: ' + entry_point_type)
-        return {'type': entry_point_type, 'file': entry_point.text, 'attr': entry_point_attrib}
+            raise ParsingException('Unknown entry_point type: ' +
+                                   entry_point_type)
+        return {
+            'type': entry_point_type,
+            'file': entry_point.text,
+            'attr': entry_point_attrib
+        }
 
 
 # -------------------------------------------------------------------
@@ -185,7 +198,10 @@ class DataSourceParser(object):
     """
     # these are the allowed classes to associate visualizations with (as strings)
     #   any model_class element not in this list will throw a parsing ParsingExcepion
-    ALLOWED_MODEL_CLASSES = ['Visualization', 'HistoryDatasetAssociation', 'LibraryDatasetDatasetAssociation']
+    ALLOWED_MODEL_CLASSES = [
+        'Visualization', 'HistoryDatasetAssociation',
+        'LibraryDatasetDatasetAssociation'
+    ]
     ATTRIBUTE_SPLIT_CHAR = '.'
     # these are the allowed object attributes to use in data source tests
     #   any attribute element not in this list will throw a parsing ParsingExcepion
@@ -228,7 +244,8 @@ class DataSourceParser(object):
 
         if xml_tree.text not in self.ALLOWED_MODEL_CLASSES:
             # log.debug( 'available data_source model_classes: %s' %( str( self.ALLOWED_MODEL_CLASSES ) ) )
-            raise ParsingException('Invalid data_source model_class: %s' % (xml_tree.text))
+            raise ParsingException('Invalid data_source model_class: %s' %
+                                   (xml_tree.text))
 
         # look up the model from the model module returning an empty data_source if not found
         model_class = getattr(galaxy.model, xml_tree.text, None)
@@ -268,8 +285,9 @@ class DataSourceParser(object):
             test_type = test_elem.get('type', 'eq')
             test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
-                log.warning('Skipping test. Needs both type attribute and text node to be parsed: ' + '%s, %s' % (test_type,
-                                                                                                                  test_elem.text))
+                log.warning(
+                    'Skipping test. Needs both type attribute and text node to be parsed: '
+                    + '%s, %s' % (test_type, test_elem.text))
                 continue
             test_result = test_result.strip()
 
@@ -277,7 +295,9 @@ class DataSourceParser(object):
             # TODO: too dangerous - constrain these to some allowed list
             # TODO: does this err if no test_attr - it should...
             test_attr = test_elem.get('test_attr')
-            test_attr = test_attr.split(self.ATTRIBUTE_SPLIT_CHAR) if isinstance(test_attr, string_types) else []
+            test_attr = test_attr.split(
+                self.ATTRIBUTE_SPLIT_CHAR) if isinstance(
+                    test_attr, string_types) else []
             # log.debug( 'test_type: %s, test_attr: %s, test_result: %s', test_type, test_attr, test_result )
 
             # build a lambda function that gets the desired attribute to test
@@ -295,7 +315,8 @@ class DataSourceParser(object):
             elif test_type == 'has_dataprovider':
                 # does the object itself have a datatype attr and does that datatype have the given dataprovider
                 def test_fn(o, result):
-                    return (hasattr(getter(o), 'has_dataprovider') and getter(o).has_dataprovider(result))
+                    return (hasattr(getter(o), 'has_dataprovider')
+                            and getter(o).has_dataprovider(result))
 
             elif test_type == 'has_attribute':
                 # does the object itself have attr in 'result' (no equivalence checking)
@@ -312,7 +333,12 @@ class DataSourceParser(object):
                 def test_fn(o, result):
                     return str(getter(o)) == result
 
-            tests.append({'type': test_type, 'result': test_result, 'result_type': test_result_type, 'fn': test_fn})
+            tests.append({
+                'type': test_type,
+                'result': test_result,
+                'result_type': test_result_type,
+                'fn': test_fn
+            })
 
         return tests
 
@@ -330,7 +356,8 @@ class DataSourceParser(object):
             # param_name required
             param_name = element.text
             if not param_name:
-                raise ParsingException('to_param requires text (the param name)')
+                raise ParsingException(
+                    'to_param requires text (the param name)')
 
             param = {}
             # assign is a shortcut param_attr that assigns a value to a param (as text)
@@ -347,7 +374,9 @@ class DataSourceParser(object):
                 param['param_attr'] = param_attr
             # element must have either param_attr or assign? what about no params (the object itself)
             if not param_attr and not assign:
-                raise ParsingException('to_param requires either assign or param_attr attributes: %s', param_name)
+                raise ParsingException(
+                    'to_param requires either assign or param_attr attributes: %s',
+                    param_name)
 
             # TODO: consider making the to_param name an attribute (param="hda_ldda") and the text what would
             #           be used for the conversion - this would allow CDATA values to be passed
@@ -437,6 +466,8 @@ class ParamModifierParser(ParamParser):
         # modifies is required
         modifies = element.get('modifies')
         if not modifies:
-            raise ParsingException('param_modifier entry requires a target param key (attribute "modifies")')
+            raise ParsingException(
+                'param_modifier entry requires a target param key (attribute "modifies")'
+            )
         returned = super(ParamModifierParser, self).parse(element)
         return returned

@@ -57,5 +57,8 @@ class FtpDataTransferFactory(DataTransferFactory):
         pass
 
 
-data_transfer_factories = dict([(data_transfer.type, data_transfer())
-                                for data_transfer in [ScpDataTransferFactory, HttpDataTransferFactory, FtpDataTransferFactory]])
+data_transfer_factories = dict([
+    (data_transfer.type, data_transfer())
+    for data_transfer in
+    [ScpDataTransferFactory, HttpDataTransferFactory, FtpDataTransferFactory]
+])

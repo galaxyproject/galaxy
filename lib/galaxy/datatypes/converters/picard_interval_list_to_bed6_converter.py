@@ -24,7 +24,9 @@ def __main__():
             else:
                 try:
                     elems = line.split('\t')
-                    out.write('%s\t%s\t%s\t%s\t0\t%s\n' % (elems[0], int(elems[1]) - 1, elems[2], elems[4], elems[3]))
+                    out.write('%s\t%s\t%s\t%s\t0\t%s\n' %
+                              (elems[0], int(elems[1]) - 1, elems[2], elems[4],
+                               elems[3]))
                 except Exception as e:
                     print(e)
                     skipped_lines += 1
@@ -37,7 +39,8 @@ def __main__():
     out.close()
     info_msg = "%i lines converted to BED.  " % (i + 1 - skipped_lines)
     if skipped_lines > 0:
-        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (skipped_lines, first_skipped_line)
+        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (
+            skipped_lines, first_skipped_line)
     print(info_msg)
 
 

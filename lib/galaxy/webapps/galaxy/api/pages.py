@@ -11,7 +11,8 @@ from galaxy.util.sanitize_html import sanitize_html
 log = logging.getLogger(__name__)
 
 
-class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotations, SharableMixin):
+class PagesController(BaseAPIController, SharableItemSecurityMixin,
+                      UsesAnnotations, SharableMixin):
     @expose_api
     def index(self, trans, deleted=False, **kwd):
         """
@@ -34,12 +35,14 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
                 out.append(self.encode_all_ids(trans, row.to_dict(), True))
         else:
             user = trans.get_user()
-            r = trans.sa_session.query(trans.app.model.Page).filter_by(user=user)
+            r = trans.sa_session.query(trans.app.model.Page).filter_by(
+                user=user)
             if not deleted:
                 r = r.filter_by(deleted=False)
             for row in r:
                 out.append(self.encode_all_ids(trans, row.to_dict(), True))
-            r = trans.sa_session.query(trans.app.model.Page).filter(trans.app.model.Page.user != user).filter_by(published=True)
+            r = trans.sa_session.query(trans.app.model.Page).filter(
+                trans.app.model.Page.user != user).filter_by(published=True)
             if not deleted:
                 r = r.filter_by(deleted=False)
             for row in r:
@@ -66,14 +69,19 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         user = trans.get_user()
 
         if not payload.get("title", None):
-            raise exceptions.ObjectAttributeMissingException("Page name is required")
+            raise exceptions.ObjectAttributeMissingException(
+                "Page name is required")
         elif not payload.get("slug", None):
-            raise exceptions.ObjectAttributeMissingException("Page id is required")
+            raise exceptions.ObjectAttributeMissingException(
+                "Page id is required")
         elif not self._is_valid_slug(payload["slug"]):
             raise exceptions.ObjectAttributeInvalidException(
-                "Page identifier must consist of only lowercase letters, numbers, and the '-' character")
-        elif trans.sa_session.query(trans.app.model.Page).filter_by(user=user, slug=payload["slug"], deleted=False).first():
-            raise exceptions.DuplicatedSlugException("Page slug must be unique")
+                "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
+            )
+        elif trans.sa_session.query(trans.app.model.Page).filter_by(
+                user=user, slug=payload["slug"], deleted=False).first():
+            raise exceptions.DuplicatedSlugException(
+                "Page slug must be unique")
 
         content = payload.get("content", "")
         content = sanitize_html(content, 'utf-8', 'text/html')
@@ -82,8 +90,10 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         page = trans.app.model.Page()
         page.title = payload['title']
         page.slug = payload['slug']
-        page_annotation = sanitize_html(payload.get("annotation", ""), 'utf-8', 'text/html')
-        self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
+        page_annotation = sanitize_html(
+            payload.get("annotation", ""), 'utf-8', 'text/html')
+        self.add_item_annotation(trans.sa_session,
+                                 trans.get_user(), page, page_annotation)
         page.user = user
         # And the first (empty) page revision
         page_revision = trans.app.model.PageRevision()
@@ -131,14 +141,17 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         :returns:   Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
         """
         page = self._get_page(trans, id)
-        self.security_check(trans, page, check_ownership=False, check_accessible=True)
+        self.security_check(
+            trans, page, check_ownership=False, check_accessible=True)
         rval = self.encode_all_ids(trans, page.to_dict(), True)
         rval['content'] = page.latest_revision.content
         return rval
 
-    def _get_page(self, trans, id):  # Fetches page object and verifies security.
+    def _get_page(self, trans,
+                  id):  # Fetches page object and verifies security.
         try:
-            page = trans.sa_session.query(trans.app.model.Page).get(trans.security.decode_id(id))
+            page = trans.sa_session.query(trans.app.model.Page).get(
+                trans.security.decode_id(id))
         except Exception:
             page = None
 

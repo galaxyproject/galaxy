@@ -25,7 +25,8 @@ class ExternalServiceActionResultHandler(object):
         #    e.g. mimetype returned from web_api action should be reused here...
 
 
-class ExternalServiceActionURLRedirectResultHandler(ExternalServiceActionResultHandler):
+class ExternalServiceActionURLRedirectResultHandler(
+        ExternalServiceActionResultHandler):
     """ Basic Class for External Service Actions Result Handlers"""
 
     type = 'web_redirect'
@@ -43,29 +44,41 @@ class ExternalServiceActionURLRedirectResultHandler(ExternalServiceActionResultH
         return trans.response.send_redirect(result.content)
 
 
-class ExternalServiceActionJSONResultHandler(ExternalServiceActionResultHandler):
+class ExternalServiceActionJSONResultHandler(
+        ExternalServiceActionResultHandler):
     """Class for External Service Actions JQuery Result Handler"""
 
     type = 'json_display'
 
     def handle_result(self, result, param_dict, trans):
         rval = loads(result.content)
-        return trans.fill_template('/external_services/generic_json.mako', result=rval, param_dict=param_dict, action=self.parent)
+        return trans.fill_template(
+            '/external_services/generic_json.mako',
+            result=rval,
+            param_dict=param_dict,
+            action=self.parent)
 
 
-class ExternalServiceActionJQueryGridResultHandler(ExternalServiceActionResultHandler):
+class ExternalServiceActionJQueryGridResultHandler(
+        ExternalServiceActionResultHandler):
     """Class for External Service Actions JQuery Result Handler"""
 
     type = 'jquery_grid'
 
     def handle_result(self, result, param_dict, trans):
         rval = loads(result.content)
-        return trans.fill_template('/external_services/generic_jquery_grid.mako', result=rval, param_dict=param_dict, action=self.parent)
+        return trans.fill_template(
+            '/external_services/generic_jquery_grid.mako',
+            result=rval,
+            param_dict=param_dict,
+            action=self.parent)
 
 
 result_type_to_class = {}
 for handler_class in [
-        ExternalServiceActionResultHandler, ExternalServiceActionURLRedirectResultHandler, ExternalServiceActionJQueryGridResultHandler,
+        ExternalServiceActionResultHandler,
+        ExternalServiceActionURLRedirectResultHandler,
+        ExternalServiceActionJQueryGridResultHandler,
         ExternalServiceActionJSONResultHandler
 ]:
     result_type_to_class[handler_class.type] = handler_class

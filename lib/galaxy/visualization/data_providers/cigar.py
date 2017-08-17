@@ -5,7 +5,8 @@ Functions for working with SAM/BAM CIGAR representation.
 import operator
 
 
-def get_ref_based_read_seq_and_cigar(read_seq, read_start, ref_seq, ref_seq_start, cigar):
+def get_ref_based_read_seq_and_cigar(read_seq, read_start, ref_seq,
+                                     ref_seq_start, cigar):
     '''
     Returns a ( new_read_seq, new_cigar ) that can be used with reference
     sequence to reconstruct the read. The new read sequence includes only
@@ -34,7 +35,8 @@ def get_ref_based_read_seq_and_cigar(read_seq, read_start, ref_seq, ref_seq_star
             new_op = ''
             total_count = 0
             while total_count < op_len and ref_seq_pos < len(ref_seq):
-                match, count = _match_mismatch_counter(read_seq, read_pos, ref_seq, ref_seq_pos)
+                match, count = _match_mismatch_counter(read_seq, read_pos,
+                                                       ref_seq, ref_seq_pos)
                 # Use min because count cannot exceed remainder of operation.
                 count = min(count, op_len - total_count)
                 if match:

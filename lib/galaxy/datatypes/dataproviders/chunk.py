@@ -25,7 +25,11 @@ class ChunkDataProvider(base.DataProvider):
 
     # TODO: subclass from LimitedOffsetDataProvider?
     # see web/framework/base.iterate_file, util/__init__.file_reader, and datatypes.tabular
-    def __init__(self, source, chunk_index=0, chunk_size=DEFAULT_CHUNK_SIZE, **kwargs):
+    def __init__(self,
+                 source,
+                 chunk_index=0,
+                 chunk_size=DEFAULT_CHUNK_SIZE,
+                 **kwargs):
         """
         :param chunk_index: if a source can be divided into N number of
             `chunk_size` sections, this is the index of which section to

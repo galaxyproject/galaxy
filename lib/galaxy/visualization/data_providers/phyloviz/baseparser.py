@@ -11,7 +11,8 @@ class Node(object):
         self.children = []
 
         self.isInternal = kwargs.get("isInternal", 0)
-        self.length, self.bootstrap = kwargs.get("length", 0), kwargs.get("bootstrap", None)
+        self.length, self.bootstrap = kwargs.get("length", 0), kwargs.get(
+            "bootstrap", None)
         self.events = kwargs.get("events", "")
 
         # clean up boot strap values
@@ -26,11 +27,17 @@ class Node(object):
             self.children += child
 
     def __str__(self):
-        return self.name + " id:" + str(self.id) + ", depth: " + str(self.depth)
+        return self.name + " id:" + str(self.id) + ", depth: " + str(
+            self.depth)
 
     def toJson(self):
         """Converts the data in the node to a dict representation of json"""
-        thisJson = {"name": self.name, "id": self.id, "depth": self.depth, "dist": self.length}
+        thisJson = {
+            "name": self.name,
+            "id": self.id,
+            "depth": self.depth,
+            "dist": self.length
+        }
         thisJson = self.addChildrenToJson(thisJson)
         thisJson = self.addMiscToJson(thisJson)
         return thisJson
@@ -104,7 +111,8 @@ class Base_Parser(object):
 
     def parseFile(self, filePath):
         """Base method that all phylogeny file parser should have"""
-        raise Exception("Base method for phylogeny file parsers is not implemented")
+        raise Exception(
+            "Base method for phylogeny file parsers is not implemented")
 
     def toJson(self, jsonDict):
         """Convenience method to get a json string from a python json dict"""

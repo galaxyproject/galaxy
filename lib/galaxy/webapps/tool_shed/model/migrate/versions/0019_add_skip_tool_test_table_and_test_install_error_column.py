@@ -26,9 +26,20 @@ metadata = MetaData()
 SkipToolTest_table = Table("skip_tool_test", metadata,
                            Column("id", Integer, primary_key=True),
                            Column("create_time", DateTime, default=now),
-                           Column("update_time", DateTime, default=now, onupdate=now),
-                           Column("repository_metadata_id", Integer, ForeignKey("repository_metadata.id"), index=True),
-                           Column("initial_changeset_revision", TrimmedString(255), index=True), Column("comment", TEXT))
+                           Column(
+                               "update_time",
+                               DateTime,
+                               default=now,
+                               onupdate=now),
+                           Column(
+                               "repository_metadata_id",
+                               Integer,
+                               ForeignKey("repository_metadata.id"),
+                               index=True),
+                           Column(
+                               "initial_changeset_revision",
+                               TrimmedString(255),
+                               index=True), Column("comment", TEXT))
 
 
 def upgrade(migrate_engine):
@@ -42,7 +53,8 @@ def upgrade(migrate_engine):
         default_false = "false"
 
     try:
-        RepositoryMetadata_table = Table("repository_metadata", metadata, autoload=True)
+        RepositoryMetadata_table = Table(
+            "repository_metadata", metadata, autoload=True)
     except NoSuchTableError:
         RepositoryMetadata_table = None
         log.debug("Failed loading table repository_metadata.")
@@ -51,11 +63,16 @@ def upgrade(migrate_engine):
         # Create the test_install_error column.
         c = Column("test_install_error", Boolean, default=False, index=True)
         try:
-            c.create(RepositoryMetadata_table, index_name="ix_repository_metadata_ttie")
+            c.create(
+                RepositoryMetadata_table,
+                index_name="ix_repository_metadata_ttie")
             assert c is RepositoryMetadata_table.c.test_install_error
-            migrate_engine.execute("UPDATE repository_metadata SET test_install_error=%s" % default_false)
+            migrate_engine.execute(
+                "UPDATE repository_metadata SET test_install_error=%s" %
+                default_false)
         except Exception as e:
-            print "Adding test_install_error column to the repository_metadata table failed: %s" % str(e)
+            print "Adding test_install_error column to the repository_metadata table failed: %s" % str(
+                e)
 
     # Create skip_tool_test table.
     try:
@@ -75,8 +92,10 @@ def downgrade(migrate_engine):
         print "Dropping the skip_tool_test table failed: %s" % str(e)
 
     # Drop test_install_error column from the repository_metadata table.
-    RepositoryMetadata_table = Table("repository_metadata", metadata, autoload=True)
+    RepositoryMetadata_table = Table(
+        "repository_metadata", metadata, autoload=True)
     try:
         RepositoryMetadata_table.c.test_install_error.drop()
     except Exception as e:
-        print "Dropping column test_install_error from the repository_metadata table failed: %s" % str(e)
+        print "Dropping column test_install_error from the repository_metadata table failed: %s" % str(
+            e)

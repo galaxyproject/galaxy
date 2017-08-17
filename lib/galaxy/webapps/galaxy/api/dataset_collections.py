@@ -43,25 +43,33 @@ class DatasetCollectionsController(
         if instance_type == "history":
             history_id = payload.get('history_id')
             history_id = self.decode_id(history_id)
-            history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
+            history = self.history_manager.get_owned(
+                history_id, trans.user, current_history=trans.history)
             create_params["parent"] = history
         elif instance_type == "library":
             folder_id = payload.get('folder_id')
-            library_folder = self.get_library_folder(trans, folder_id, check_accessible=True)
-            self.check_user_can_add_to_library_item(trans, library_folder, check_accessible=False)
+            library_folder = self.get_library_folder(
+                trans, folder_id, check_accessible=True)
+            self.check_user_can_add_to_library_item(
+                trans, library_folder, check_accessible=False)
             create_params["parent"] = library_folder
         else:
             trans.status = 501
             return
-        dataset_collection_instance = self.__service(trans).create(trans=trans, **create_params)
-        return dictify_dataset_collection_instance(dataset_collection_instance, security=trans.security, parent=create_params["parent"])
+        dataset_collection_instance = self.__service(trans).create(
+            trans=trans, **create_params)
+        return dictify_dataset_collection_instance(
+            dataset_collection_instance,
+            security=trans.security,
+            parent=create_params["parent"])
 
     @expose_api
     def show(self, trans, instance_type, id, **kwds):
-        dataset_collection_instance = self.__service(trans).get_dataset_collection_instance(
-            trans,
-            id=id,
-            instance_type=instance_type, )
+        dataset_collection_instance = self.__service(
+            trans).get_dataset_collection_instance(
+                trans,
+                id=id,
+                instance_type=instance_type, )
         if instance_type == 'history':
             parent = dataset_collection_instance.history
         elif instance_type == 'library':
@@ -69,7 +77,11 @@ class DatasetCollectionsController(
         else:
             trans.status = 501
             return
-        return dictify_dataset_collection_instance(dataset_collection_instance, security=trans.security, parent=parent, view='element')
+        return dictify_dataset_collection_instance(
+            dataset_collection_instance,
+            security=trans.security,
+            parent=parent,
+            view='element')
 
     def __service(self, trans):
         service = trans.app.dataset_collections_service

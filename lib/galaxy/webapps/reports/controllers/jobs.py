@@ -52,7 +52,8 @@ def sorter(default_sort_id, kwd):
     """
     Initialize sorting variables
     """
-    SortSpec = namedtuple('SortSpec', ['sort_id', 'order', 'arrow', 'exc_order'])
+    SortSpec = namedtuple('SortSpec',
+                          ['sort_id', 'order', 'arrow', 'exc_order'])
 
     sort_id = kwd.get('sort_id')
     order = kwd.get('order')
@@ -109,14 +110,17 @@ class SpecifiedDateListGrid(grids.Grid):
 
     class StateColumn(grids.TextColumn):
         def get_value(self, trans, grid, job):
-            return '<div class="count-box state-color-%s">%s</div>' % (job.state, job.state)
+            return '<div class="count-box state-color-%s">%s</div>' % (
+                job.state, job.state)
 
         def filter(self, trans, user, query, column_filter):
             if column_filter == 'Unfinished':
                 return query.filter(
                     not_(
-                        or_(model.Job.table.c.state == model.Job.states.OK, model.Job.table.c.state == model.Job.states.ERROR,
-                            model.Job.table.c.state == model.Job.states.DELETED)))
+                        or_(model.Job.table.c.state == model.Job.states.OK,
+                            model.Job.table.c.state == model.Job.states.ERROR,
+                            model.Job.table.c.state ==
+                            model.Job.states.DELETED)))
             return query
 
     class ToolColumn(grids.TextColumn):
@@ -125,7 +129,8 @@ class SpecifiedDateListGrid(grids.Grid):
 
         def filter(self, trans, user, query, column_filter):
             if column_filter is not None:
-                query = query.filter(model.Job.table.c.tool_id == column_filter)
+                query = query.filter(
+                    model.Job.table.c.tool_id == column_filter)
 
             return query
 
@@ -143,7 +148,9 @@ class SpecifiedDateListGrid(grids.Grid):
         def filter(self, trans, user, query, column_filter):
             if column_filter == 'All':
                 return query
-            return query.filter(and_(model.Job.table.c.user_id == model.User.table.c.id, model.User.table.c.email == column_filter))
+            return query.filter(
+                and_(model.Job.table.c.user_id == model.User.table.c.id,
+                     model.User.table.c.email == column_filter))
 
     class SpecifiedDateColumn(grids.GridColumn):
         def filter(self, trans, user, query, column_filter):
@@ -151,16 +158,21 @@ class SpecifiedDateListGrid(grids.Grid):
                 return query
             # We are either filtering on a date like YYYY-MM-DD or on a month like YYYY-MM,
             # so we need to figure out which type of date we have
-            if column_filter.count('-') == 2:  # We are filtering on a date like YYYY-MM-DD
+            if column_filter.count(
+                    '-') == 2:  # We are filtering on a date like YYYY-MM-DD
                 year, month, day = map(int, column_filter.split("-"))
                 start_date = date(year, month, day)
                 end_date = start_date + timedelta(days=1)
-            if column_filter.count('-') == 1:  # We are filtering on a month like YYYY-MM
+            if column_filter.count(
+                    '-') == 1:  # We are filtering on a month like YYYY-MM
                 year, month = map(int, column_filter.split("-"))
                 start_date = date(year, month, 1)
-                end_date = start_date + timedelta(days=calendar.monthrange(year, month)[1])
+                end_date = start_date + timedelta(days=calendar.monthrange(
+                    year, month)[1])
 
-            return query.filter(and_(self.model_class.table.c.create_time >= start_date, self.model_class.table.c.create_time < end_date))
+            return query.filter(
+                and_(self.model_class.table.c.create_time >= start_date,
+                     self.model_class.table.c.create_time < end_date))
 
     # Grid definition
     use_async = False
@@ -174,20 +186,23 @@ class SpecifiedDateListGrid(grids.Grid):
             key="id",
             link=(lambda item: dict(operation="job_info", id=item.id, webapp="reports")),
             attach_popup=False,
-            filterable="advanced"),
+            filterable="advanced"
+        ),
         StateColumn("State", key="state", attach_popup=False),
         ToolColumn(
             "Tool Id",
             key="tool_id",
             link=(lambda item: dict(operation="tool_per_month", id=item.id, webapp="reports")),
-            attach_popup=False),
+            attach_popup=False
+        ),
         CreateTimeColumn("Creation Time", key="create_time", attach_popup=False),
         UserColumn(
             "User",
             key="email",
             model_class=model.User,
             link=(lambda item: dict(operation="user_per_month", id=item.id, webapp="reports")),
-            attach_popup=False),
+            attach_popup=False
+        ),
         # Columns that are valid for filtering but are not visible.
         SpecifiedDateColumn("Specified Date", key="specified_date", visible=False),
         EmailColumn("Email", key="email", model_class=model.User, visible=False),
@@ -195,7 +210,11 @@ class SpecifiedDateListGrid(grids.Grid):
     ]
     columns.append(
         grids.MulticolFilterColumn(
-            "Search", cols_to_filter=[columns[1], columns[2]], key="free-text-search", visible=False, filterable="standard"))
+            "Search",
+            cols_to_filter=[columns[1], columns[2]],
+            key="free-text-search",
+            visible=False,
+            filterable="standard"))
     standard_filters = []
     default_filter = {'specified_date': 'All'}
     num_rows_per_page = 50
@@ -239,7 +258,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "job_info":
-                return trans.response.send_redirect(web.url_for(controller='jobs', action='job_info', **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='jobs', action='job_info', **kwd))
             elif operation == "tool_for_month":
                 kwd['f-tool_id'] = kwd['tool_id']
             elif operation == "tool_per_month":
@@ -247,7 +267,9 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                 job_id = kwd.get('id', None)
                 job = get_job(trans, job_id)
                 kwd['tool_id'] = job.tool_id
-                return trans.response.send_redirect(web.url_for(controller='jobs', action='tool_per_month', **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='jobs', action='tool_per_month', **kwd))
             elif operation == "user_for_month":
                 kwd['f-email'] = util.restore_text(kwd['email'])
             elif operation == "user_per_month":
@@ -259,7 +281,9 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                     kwd['email'] = job.user.email
                 else:
                     kwd['email'] = None  # For anonymous users
-                return trans.response.send_redirect(web.url_for(controller='jobs', action='user_per_month', **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='jobs', action='user_per_month', **kwd))
             elif operation == "specified_date_in_error":
                 kwd['f-state'] = 'error'
             elif operation == "unfinished":
@@ -293,7 +317,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
             month_name = row.date.strftime("%B")
             year = int(row.date.strftime("%Y"))
 
-            jobs.append((row.date.strftime("%Y-%m"), row.total_jobs, month_name, year))
+            jobs.append((row.date.strftime("%Y-%m"), row.total_jobs,
+                         month_name, year))
         return jobs
 
     @web.expose
@@ -302,7 +327,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         Queries the DB for all jobs in given month, defaults to current month.
         """
         message = ''
-        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+        PageSpec = namedtuple('PageSpec',
+                              ['entries', 'offset', 'page', 'pages_found'])
 
         params = util.Params(kwd)
         monitor_email = params.get('monitor_email', 'monitor@bx.psu.edu')
@@ -334,19 +360,23 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         monitor_user_id = get_monitor_id(trans, monitor_email)
 
         # If specified_date is not received, we'll default to the current month
-        specified_date = kwd.get('specified_date', datetime.utcnow().strftime("%Y-%m-%d"))
+        specified_date = kwd.get('specified_date',
+                                 datetime.utcnow().strftime("%Y-%m-%d"))
         specified_month = specified_date[:7]
 
         year, month = map(int, specified_month.split("-"))
         start_date = date(year, month, 1)
-        end_date = start_date + timedelta(days=calendar.monthrange(year, month)[1])
+        end_date = start_date + timedelta(days=calendar.monthrange(
+            year, month)[1])
         month_label = start_date.strftime("%B")
         year_label = start_date.strftime("%Y")
 
         # Use to make the page table
         month_jobs = sa.select(
-            (sa.func.date(model.Job.table.c.create_time).label('date'), sa.func.count(model.Job.table.c.id).label('total_jobs')),
-            whereclause=sa.and_(model.Job.table.c.user_id != monitor_user_id, model.Job.table.c.create_time >= start_date,
+            (sa.func.date(model.Job.table.c.create_time).label('date'),
+             sa.func.count(model.Job.table.c.id).label('total_jobs')),
+            whereclause=sa.and_(model.Job.table.c.user_id != monitor_user_id,
+                                model.Job.table.c.create_time >= start_date,
                                 model.Job.table.c.create_time < end_date),
             from_obj=[model.Job.table],
             group_by=['date'],
@@ -356,8 +386,10 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
         # Use to make trendline
         all_jobs = sa.select(
-            (model.Job.table.c.create_time.label('date'), model.Job.table.c.id.label('id')),
-            whereclause=sa.and_(model.Job.table.c.user_id != monitor_user_id, model.Job.table.c.create_time >= start_date,
+            (model.Job.table.c.create_time.label('date'),
+             model.Job.table.c.id.label('id')),
+            whereclause=sa.and_(model.Job.table.c.user_id != monitor_user_id,
+                                model.Job.table.c.create_time >= start_date,
                                 model.Job.table.c.create_time < end_date))
 
         trends = dict()
@@ -401,7 +433,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         Queries the DB for the user jobs in error.
         """
         message = ''
-        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+        PageSpec = namedtuple('PageSpec',
+                              ['entries', 'offset', 'page', 'pages_found'])
 
         params = util.Params(kwd)
         monitor_email = params.get('monitor_email', 'monitor@bx.psu.edu')
@@ -433,18 +466,23 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         monitor_user_id = get_monitor_id(trans, monitor_email)
 
         # If specified_date is not received, we'll default to the current month
-        specified_date = kwd.get('specified_date', datetime.utcnow().strftime("%Y-%m-%d"))
+        specified_date = kwd.get('specified_date',
+                                 datetime.utcnow().strftime("%Y-%m-%d"))
         specified_month = specified_date[:7]
         year, month = map(int, specified_month.split("-"))
         start_date = date(year, month, 1)
-        end_date = start_date + timedelta(days=calendar.monthrange(year, month)[1])
+        end_date = start_date + timedelta(days=calendar.monthrange(
+            year, month)[1])
         month_label = start_date.strftime("%B")
         year_label = start_date.strftime("%Y")
 
         month_jobs_in_error = sa.select(
-            (sa.func.date(model.Job.table.c.create_time).label('date'), sa.func.count(model.Job.table.c.id).label('total_jobs')),
-            whereclause=sa.and_(model.Job.table.c.user_id != monitor_user_id, model.Job.table.c.state == 'error',
-                                model.Job.table.c.create_time >= start_date, model.Job.table.c.create_time < end_date),
+            (sa.func.date(model.Job.table.c.create_time).label('date'),
+             sa.func.count(model.Job.table.c.id).label('total_jobs')),
+            whereclause=sa.and_(model.Job.table.c.user_id != monitor_user_id,
+                                model.Job.table.c.state == 'error',
+                                model.Job.table.c.create_time >= start_date,
+                                model.Job.table.c.create_time < end_date),
             from_obj=[model.Job.table],
             group_by=['date'],
             order_by=[_order],
@@ -453,9 +491,12 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
         # Use to make trendline
         all_jobs_in_error = sa.select(
-            (model.Job.table.c.create_time.label('date'), model.Job.table.c.id.label('id')),
-            whereclause=sa.and_(model.Job.table.c.user_id != monitor_user_id, model.Job.table.c.state == 'error',
-                                model.Job.table.c.create_time >= start_date, model.Job.table.c.create_time < end_date))
+            (model.Job.table.c.create_time.label('date'),
+             model.Job.table.c.id.label('id')),
+            whereclause=sa.and_(model.Job.table.c.user_id != monitor_user_id,
+                                model.Job.table.c.state == 'error',
+                                model.Job.table.c.create_time >= start_date,
+                                model.Job.table.c.create_time < end_date))
 
         trends = dict()
         for job in all_jobs_in_error.execute():
@@ -499,7 +540,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         """
 
         message = ''
-        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+        PageSpec = namedtuple('PageSpec',
+                              ['entries', 'offset', 'page', 'pages_found'])
 
         params = util.Params(kwd)
         monitor_email = params.get('monitor_email', 'monitor@bx.psu.edu')
@@ -532,7 +574,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
         # Use to make the page table
         jobs_by_month = sa.select(
-            (self.select_month(model.Job.table.c.create_time).label('date'), sa.func.count(model.Job.table.c.id).label('total_jobs')),
+            (self.select_month(model.Job.table.c.create_time).label('date'),
+             sa.func.count(model.Job.table.c.id).label('total_jobs')),
             whereclause=model.Job.table.c.user_id != monitor_user_id,
             from_obj=[model.Job.table],
             group_by=self.group_by_month(model.Job.table.c.create_time),
@@ -541,7 +584,9 @@ class Jobs(BaseUIController, ReportQueryBuilder):
             limit=limit)
 
         # Use to make sparkline
-        all_jobs = sa.select((self.select_day(model.Job.table.c.create_time).label('date'), model.Job.table.c.id.label('id')))
+        all_jobs = sa.select(
+            (self.select_day(model.Job.table.c.create_time).label('date'),
+             model.Job.table.c.id.label('id')))
 
         trends = self._calculate_trends_for_jobs(all_jobs)
         jobs = self._calculate_job_table(jobs_by_month)
@@ -567,7 +612,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         """
 
         message = ''
-        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+        PageSpec = namedtuple('PageSpec',
+                              ['entries', 'offset', 'page', 'pages_found'])
 
         params = util.Params(kwd)
         monitor_email = params.get('monitor_email', 'monitor@bx.psu.edu')
@@ -600,8 +646,10 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
         # Use to make the page table
         jobs_in_error_by_month = sa.select(
-            (self.select_month(model.Job.table.c.create_time).label('date'), sa.func.count(model.Job.table.c.id).label('total_jobs')),
-            whereclause=sa.and_(model.Job.table.c.state == 'error', model.Job.table.c.user_id != monitor_user_id),
+            (self.select_month(model.Job.table.c.create_time).label('date'),
+             sa.func.count(model.Job.table.c.id).label('total_jobs')),
+            whereclause=sa.and_(model.Job.table.c.state == 'error',
+                                model.Job.table.c.user_id != monitor_user_id),
             from_obj=[model.Job.table],
             group_by=self.group_by_month(model.Job.table.c.create_time),
             order_by=[_order],
@@ -610,8 +658,10 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
         # Use to make trendline
         all_jobs = sa.select(
-            (self.select_day(model.Job.table.c.create_time).label('date'), model.Job.table.c.id.label('id')),
-            whereclause=sa.and_(model.Job.table.c.state == 'error', model.Job.table.c.user_id != monitor_user_id))
+            (self.select_day(model.Job.table.c.create_time).label('date'),
+             model.Job.table.c.id.label('id')),
+            whereclause=sa.and_(model.Job.table.c.state == 'error',
+                                model.Job.table.c.user_id != monitor_user_id))
 
         trends = self._calculate_trends_for_jobs(all_jobs)
         jobs = self._calculate_job_table(jobs_in_error_by_month)
@@ -640,7 +690,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         total_time.start()
         params = util.Params(kwd)
         message = ''
-        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+        PageSpec = namedtuple('PageSpec',
+                              ['entries', 'offset', 'page', 'pages_found'])
 
         monitor_email = params.get('monitor_email', 'monitor@bx.psu.edu')
         specs = sorter('user_email', kwd)
@@ -672,7 +723,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
         jobs = []
         jobs_per_user = sa.select(
-            (model.User.table.c.email.label('user_email'), sa.func.count(model.Job.table.c.id).label('total_jobs')),
+            (model.User.table.c.email.label('user_email'),
+             sa.func.count(model.Job.table.c.id).label('total_jobs')),
             from_obj=[sa.outerjoin(model.Job.table, model.User.table)],
             group_by=['user_email'],
             order_by=[_order],
@@ -690,10 +742,13 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         q_time.stop()
         query1time = q_time.time_elapsed()
 
-        users = sa.select([model.User.table.c.email], from_obj=[model.User.table])
+        users = sa.select(
+            [model.User.table.c.email], from_obj=[model.User.table])
 
         all_jobs_per_user = sa.select(
-            (model.Job.table.c.id.label('id'), model.Job.table.c.create_time.label('date'), model.User.table.c.email.label('user_email')),
+            (model.Job.table.c.id.label('id'),
+             model.Job.table.c.create_time.label('date'),
+             model.User.table.c.email.label('user_email')),
             from_obj=[sa.outerjoin(model.Job.table, model.User.table)],
             whereclause=model.User.table.c.email.in_(users))
 
@@ -757,14 +812,16 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         _order = specs.exc_order
 
         q = sa.select(
-            (self.select_month(model.Job.table.c.create_time).label('date'), sa.func.count(model.Job.table.c.id).label('total_jobs')),
+            (self.select_month(model.Job.table.c.create_time).label('date'),
+             sa.func.count(model.Job.table.c.id).label('total_jobs')),
             whereclause=model.User.table.c.email == email,
             from_obj=[sa.join(model.Job.table, model.User.table)],
             group_by=self.group_by_month(model.Job.table.c.create_time),
             order_by=[_order])
 
         all_jobs_per_user = sa.select(
-            (model.Job.table.c.create_time.label('date'), model.Job.table.c.id.label('job_id')),
+            (model.Job.table.c.create_time.label('date'),
+             model.Job.table.c.id.label('job_id')),
             whereclause=sa.and_(model.User.table.c.email == email),
             from_obj=[sa.join(model.Job.table, model.User.table)])
 
@@ -786,7 +843,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
         jobs = []
         for row in q.execute():
-            jobs.append((row.date.strftime("%Y-%m"), row.total_jobs, row.date.strftime("%B"), row.date.strftime("%Y")))
+            jobs.append((row.date.strftime("%Y-%m"), row.total_jobs,
+                         row.date.strftime("%B"), row.date.strftime("%Y")))
         return trans.fill_template(
             '/webapps/reports/jobs_user_per_month.mako',
             order=order,
@@ -801,7 +859,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
     @web.expose
     def per_tool(self, trans, **kwd):
         message = ''
-        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+        PageSpec = namedtuple('PageSpec',
+                              ['entries', 'offset', 'page', 'pages_found'])
 
         params = util.Params(kwd)
         monitor_email = params.get('monitor_email', 'monitor@bx.psu.edu')
@@ -837,7 +896,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
         jobs = []
         q = sa.select(
-            (model.Job.table.c.tool_id.label('tool_id'), sa.func.count(model.Job.table.c.id).label('total_jobs')),
+            (model.Job.table.c.tool_id.label('tool_id'),
+             sa.func.count(model.Job.table.c.id).label('total_jobs')),
             whereclause=model.Job.table.c.user_id != monitor_user_id,
             from_obj=[model.Job.table],
             group_by=['tool_id'],
@@ -846,7 +906,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
             limit=limit)
 
         all_jobs_per_tool = sa.select(
-            (model.Job.table.c.tool_id.label('tool_id'), model.Job.table.c.id.label('id'),
+            (model.Job.table.c.tool_id.label('tool_id'),
+             model.Job.table.c.id.label('id'),
              self.select_day(model.Job.table.c.create_time).label('date')),
             whereclause=model.Job.table.c.user_id != monitor_user_id,
             from_obj=[model.Job.table])
@@ -897,7 +958,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         """
 
         message = ''
-        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+        PageSpec = namedtuple('PageSpec',
+                              ['entries', 'offset', 'page', 'pages_found'])
 
         params = util.Params(kwd)
         monitor_email = params.get('monitor_email', 'monitor@bx.psu.edu')
@@ -932,8 +994,10 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         monitor_user_id = get_monitor_id(trans, monitor_email)
 
         jobs_in_error_per_tool = sa.select(
-            (model.Job.table.c.tool_id.label('tool_id'), sa.func.count(model.Job.table.c.id).label('total_jobs')),
-            whereclause=sa.and_(model.Job.table.c.state == 'error', model.Job.table.c.user_id != monitor_user_id),
+            (model.Job.table.c.tool_id.label('tool_id'),
+             sa.func.count(model.Job.table.c.id).label('total_jobs')),
+            whereclause=sa.and_(model.Job.table.c.state == 'error',
+                                model.Job.table.c.user_id != monitor_user_id),
             from_obj=[model.Job.table],
             group_by=['tool_id'],
             order_by=[_order],
@@ -941,9 +1005,11 @@ class Jobs(BaseUIController, ReportQueryBuilder):
             limit=limit)
 
         all_jobs_per_tool_errors = sa.select(
-            (self.select_day(model.Job.table.c.create_time).label('date'), model.Job.table.c.id.label('id'),
+            (self.select_day(model.Job.table.c.create_time).label('date'),
+             model.Job.table.c.id.label('id'),
              model.Job.table.c.tool_id.label('tool_id')),
-            whereclause=sa.and_(model.Job.table.c.state == 'error', model.Job.table.c.user_id != monitor_user_id),
+            whereclause=sa.and_(model.Job.table.c.state == 'error',
+                                model.Job.table.c.user_id != monitor_user_id),
             from_obj=[model.Job.table])
 
         currday = date.today()
@@ -1001,19 +1067,24 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         monitor_user_id = get_monitor_id(trans, monitor_email)
 
         tool_id = params.get('tool_id', 'Add a column1')
-        specified_date = params.get('specified_date', datetime.utcnow().strftime("%Y-%m-%d"))
+        specified_date = params.get('specified_date',
+                                    datetime.utcnow().strftime("%Y-%m-%d"))
         q = sa.select(
-            (self.select_month(model.Job.table.c.create_time).label('date'), sa.func.count(model.Job.table.c.id).label('total_jobs')),
-            whereclause=sa.and_(model.Job.table.c.tool_id == tool_id, model.Job.table.c.user_id != monitor_user_id),
+            (self.select_month(model.Job.table.c.create_time).label('date'),
+             sa.func.count(model.Job.table.c.id).label('total_jobs')),
+            whereclause=sa.and_(model.Job.table.c.tool_id == tool_id,
+                                model.Job.table.c.user_id != monitor_user_id),
             from_obj=[model.Job.table],
             group_by=self.group_by_month(model.Job.table.c.create_time),
             order_by=[_order])
 
         # Use to make sparkline
         all_jobs_for_tool = sa.select(
-            (self.select_month(model.Job.table.c.create_time).label('month'), self.select_day(model.Job.table.c.create_time).label('day'),
+            (self.select_month(model.Job.table.c.create_time).label('month'),
+             self.select_day(model.Job.table.c.create_time).label('day'),
              model.Job.table.c.id.label('id')),
-            whereclause=sa.and_(model.Job.table.c.tool_id == tool_id, model.Job.table.c.user_id != monitor_user_id),
+            whereclause=sa.and_(model.Job.table.c.tool_id == tool_id,
+                                model.Job.table.c.user_id != monitor_user_id),
             from_obj=[model.Job.table])
         trends = dict()
         for job in all_jobs_for_tool.execute():
@@ -1033,7 +1104,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
         jobs = []
         for row in q.execute():
-            jobs.append((row.date.strftime("%Y-%m"), row.total_jobs, row.date.strftime("%B"), row.date.strftime("%Y")))
+            jobs.append((row.date.strftime("%Y-%m"), row.total_jobs,
+                         row.date.strftime("%B"), row.date.strftime("%Y")))
         return trans.fill_template(
             '/webapps/reports/jobs_tool_per_month.mako',
             order=order,
@@ -1051,14 +1123,16 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         message = ''
         job = trans.sa_session.query(model.Job) \
                               .get(trans.security.decode_id(kwd.get('id', '')))
-        return trans.fill_template('/webapps/reports/job_info.mako', job=job, message=message)
+        return trans.fill_template(
+            '/webapps/reports/job_info.mako', job=job, message=message)
 
 
 # ---- Utility methods -------------------------------------------------------
 
 
 def get_job(trans, id):
-    return trans.sa_session.query(trans.model.Job).get(trans.security.decode_id(id))
+    return trans.sa_session.query(trans.model.Job).get(
+        trans.security.decode_id(id))
 
 
 def get_monitor_id(trans, monitor_email):

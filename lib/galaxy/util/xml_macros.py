@@ -67,7 +67,9 @@ def _macros_of_type(root, type, el_func):
     macro_dict = {}
     if macros_el is not None:
         macro_els = macros_el.findall('macro')
-        filtered_els = [(macro_el.get("name"), el_func(macro_el)) for macro_el in macro_els if macro_el.get('type') == type]
+        filtered_els = [(macro_el.get("name"), el_func(macro_el))
+                        for macro_el in macro_els
+                        if macro_el.get('type') == type]
         macro_dict = dict(filtered_els)
     return macro_dict
 
@@ -136,7 +138,11 @@ def _expand_macro(element, expand_el, macros, tokens):
 
 
 def _expand_yield_statements(macro_def, expand_el):
-    yield_els = [yield_el for macro_def_el in macro_def for yield_el in macro_def_el.findall('.//yield')]
+    yield_els = [
+        yield_el
+        for macro_def_el in macro_def
+        for yield_el in macro_def_el.findall('.//yield')
+    ]
 
     expand_el_children = list(expand_el)
     macro_def_parent_map = \

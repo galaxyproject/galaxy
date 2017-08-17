@@ -50,7 +50,8 @@ def _render_jinja2(recipe_dir):
     try:
         import jinja2
     except ImportError:
-        raise Exception("Failed to import jinja2 for evaluating Conda recipe templates.")
+        raise Exception(
+            "Failed to import jinja2 for evaluating Conda recipe templates.")
 
     loaders = [jinja2.FileSystemLoader(recipe_dir)]
     env = jinja2.Environment(loader=jinja2.ChoiceLoader(loaders))

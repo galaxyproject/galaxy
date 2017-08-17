@@ -12,59 +12,81 @@ from tool_shed.util import xml_util
 log = logging.getLogger(__name__)
 
 
-def build_tool_dependencies_select_field(app, tool_shed_repository, name, multiple=True, display='checkboxes', uninstalled_only=False):
+def build_tool_dependencies_select_field(app,
+                                         tool_shed_repository,
+                                         name,
+                                         multiple=True,
+                                         display='checkboxes',
+                                         uninstalled_only=False):
     """
     Generate a SelectField consisting of the current list of tool dependency ids
     for an installed tool shed repository.
     """
-    tool_dependencies_select_field = SelectField(name=name, multiple=multiple, display=display)
+    tool_dependencies_select_field = SelectField(
+        name=name, multiple=multiple, display=display)
     for tool_dependency in tool_shed_repository.tool_dependencies:
         if uninstalled_only:
             if tool_dependency.status not in [
-                    app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
-                    app.install_model.ToolDependency.installation_status.UNINSTALLED
+                    app.install_model.ToolDependency.installation_status.
+                    NEVER_INSTALLED, app.install_model.ToolDependency.
+                    installation_status.UNINSTALLED
             ]:
                 continue
         else:
             if tool_dependency.status in [
-                    app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
-                    app.install_model.ToolDependency.installation_status.UNINSTALLED
+                    app.install_model.ToolDependency.installation_status.
+                    NEVER_INSTALLED, app.install_model.ToolDependency.
+                    installation_status.UNINSTALLED
             ]:
                 continue
-        option_label = '%s version %s' % (str(tool_dependency.name), str(tool_dependency.version))
+        option_label = '%s version %s' % (str(tool_dependency.name),
+                                          str(tool_dependency.version))
         option_value = app.security.encode_id(tool_dependency.id)
         tool_dependencies_select_field.add_option(option_label, option_value)
     return tool_dependencies_select_field
 
 
-def create_or_update_tool_dependency(app, tool_shed_repository, name, version, type, status, set_status=True):
+def create_or_update_tool_dependency(app,
+                                     tool_shed_repository,
+                                     name,
+                                     version,
+                                     type,
+                                     status,
+                                     set_status=True):
     """Create or update a tool_dependency record in the Galaxy database."""
     # Called from Galaxy (never the tool shed) when a new repository is being installed or when an uninstalled
     # repository is being reinstalled.
     context = app.install_model.context
     # First see if an appropriate tool_dependency record exists for the received tool_shed_repository.
     if version:
-        tool_dependency = get_tool_dependency_by_name_version_type_repository(app, tool_shed_repository, name, version, type)
+        tool_dependency = get_tool_dependency_by_name_version_type_repository(
+            app, tool_shed_repository, name, version, type)
     else:
-        tool_dependency = get_tool_dependency_by_name_type_repository(app, tool_shed_repository, name, type)
+        tool_dependency = get_tool_dependency_by_name_type_repository(
+            app, tool_shed_repository, name, type)
     if tool_dependency:
         # In some cases we should not override the current status of an existing tool_dependency, so do so only
         # if set_status is True.
         if set_status:
-            set_tool_dependency_attributes(app, tool_dependency=tool_dependency, status=status)
+            set_tool_dependency_attributes(
+                app, tool_dependency=tool_dependency, status=status)
     else:
         # Create a new tool_dependency record for the tool_shed_repository.
         debug_msg = 'Creating a new record for version %s of tool dependency %s for revision %s of repository %s.  ' % \
             (str(version), str(name), str(tool_shed_repository.changeset_revision), str(tool_shed_repository.name))
         debug_msg += 'The status is being set to %s.' % str(status)
         log.debug(debug_msg)
-        tool_dependency = app.install_model.ToolDependency(tool_shed_repository.id, name, version, type, status)
+        tool_dependency = app.install_model.ToolDependency(
+            tool_shed_repository.id, name, version, type, status)
         context.add(tool_dependency)
         context.flush()
     return tool_dependency
 
 
-def create_tool_dependency_objects(app, tool_shed_repository, relative_install_dir, set_status=True):
+def create_tool_dependency_objects(app,
+                                   tool_shed_repository,
+                                   relative_install_dir,
+                                   set_status=True):
     """
     Create or update a ToolDependency for each entry in tool_dependencies_config.  This method is called when
     installing a new tool_shed_repository.
@@ -72,9 +94,11 @@ def create_tool_dependency_objects(app, tool_shed_repository, relative_install_d
     tool_dependency_objects = []
     shed_config_dict = tool_shed_repository.get_shed_config_dict(app)
     if shed_config_dict.get('tool_path'):
-        relative_install_dir = os.path.join(shed_config_dict.get('tool_path'), relative_install_dir)
+        relative_install_dir = os.path.join(
+            shed_config_dict.get('tool_path'), relative_install_dir)
     # Get the tool_dependencies.xml file from the repository.
-    tool_dependencies_config = hg_util.get_config_from_disk('tool_dependencies.xml', relative_install_dir)
+    tool_dependencies_config = hg_util.get_config_from_disk(
+        'tool_dependencies.xml', relative_install_dir)
     tree, error_message = xml_util.parse_xml(tool_dependencies_config)
     if tree is None:
         return tool_dependency_objects
@@ -87,7 +111,13 @@ def create_tool_dependency_objects(app, tool_shed_repository, relative_install_d
             if name and version:
                 status = app.install_model.ToolDependency.installation_status.NEVER_INSTALLED
                 tool_dependency = create_or_update_tool_dependency(
-                    app, tool_shed_repository, name=name, version=version, type=tool_dependency_type, status=status, set_status=set_status)
+                    app,
+                    tool_shed_repository,
+                    name=name,
+                    version=version,
+                    type=tool_dependency_type,
+                    status=status,
+                    set_status=set_status)
                 tool_dependency_objects.append(tool_dependency)
         elif tool_dependency_type == 'set_environment':
             for env_elem in elem:
@@ -97,7 +127,13 @@ def create_tool_dependency_objects(app, tool_shed_repository, relative_install_d
                 if name and action:
                     status = app.install_model.ToolDependency.installation_status.NEVER_INSTALLED
                     tool_dependency = create_or_update_tool_dependency(
-                        app, tool_shed_repository, name=name, version=None, type=tool_dependency_type, status=status, set_status=set_status)
+                        app,
+                        tool_shed_repository,
+                        name=name,
+                        version=None,
+                        type=tool_dependency_type,
+                        status=status,
+                        set_status=set_status)
                     tool_dependency_objects.append(tool_dependency)
     return tool_dependency_objects
 
@@ -145,7 +181,8 @@ def get_platform_info_dict():
 
 def get_tool_dependency(app, id):
     """Get a tool_dependency from the database via id"""
-    return app.install_model.context.query(app.install_model.ToolDependency).get(app.security.decode_id(id))
+    return app.install_model.context.query(
+        app.install_model.ToolDependency).get(app.security.decode_id(id))
 
 
 def get_tool_dependency_by_name_type_repository(app, repository, name, type):
@@ -166,7 +203,8 @@ def get_tool_dependency_by_name_version_type(app, name, version, type):
                   .first()
 
 
-def get_tool_dependency_by_name_version_type_repository(app, repository, name, version, type):
+def get_tool_dependency_by_name_version_type_repository(
+        app, repository, name, version, type):
     context = app.install_model.context
     return context.query(app.install_model.ToolDependency) \
                   .filter(and_(app.install_model.ToolDependency.table.c.tool_shed_repository_id == repository.id,
@@ -185,7 +223,8 @@ def get_tool_dependency_ids(as_string=False, **kwd):
     elif 'inst_td_ids' in kwd:
         tool_dependency_ids = util.listify(kwd['inst_td_ids'])
     elif 'uninstalled_tool_dependency_ids' in kwd:
-        tool_dependency_ids = util.listify(kwd['uninstalled_tool_dependency_ids'])
+        tool_dependency_ids = util.listify(
+            kwd['uninstalled_tool_dependency_ids'])
     else:
         tool_dependency_ids = []
     if tool_dependency_id and tool_dependency_id not in tool_dependency_ids:
@@ -195,19 +234,25 @@ def get_tool_dependency_ids(as_string=False, **kwd):
     return tool_dependency_ids
 
 
-def get_tool_dependency_install_dir(app, repository_name, repository_owner, repository_changeset_revision, tool_dependency_type,
-                                    tool_dependency_name, tool_dependency_version):
+def get_tool_dependency_install_dir(
+        app, repository_name, repository_owner, repository_changeset_revision,
+        tool_dependency_type, tool_dependency_name, tool_dependency_version):
     if tool_dependency_type == 'package':
         return os.path.abspath(
-            os.path.join(app.config.tool_dependency_dir, tool_dependency_name, tool_dependency_version, repository_owner, repository_name,
-                         repository_changeset_revision))
+            os.path.join(app.config.tool_dependency_dir, tool_dependency_name,
+                         tool_dependency_version, repository_owner,
+                         repository_name, repository_changeset_revision))
     if tool_dependency_type == 'set_environment':
         return os.path.abspath(
-            os.path.join(app.config.tool_dependency_dir, 'environment_settings', tool_dependency_name, repository_owner, repository_name,
+            os.path.join(app.config.tool_dependency_dir,
+                         'environment_settings', tool_dependency_name,
+                         repository_owner, repository_name,
                          repository_changeset_revision))
 
 
-def parse_package_elem(package_elem, platform_info_dict=None, include_after_install_actions=True):
+def parse_package_elem(package_elem,
+                       platform_info_dict=None,
+                       include_after_install_actions=True):
     """
     Parse a <package> element within a tool dependency definition and return a list of action tuples.
     This method is called when setting metadata on a repository that includes a tool_dependencies.xml
@@ -242,7 +287,9 @@ def parse_package_elem(package_elem, platform_info_dict=None, include_after_inst
             # <actions> elements.
             platform_actions_elements = []
             for actions_elem in elem.findall('actions'):
-                if actions_elem.get('architecture') is not None and actions_elem.get('os') is not None:
+                if actions_elem.get(
+                        'architecture') is not None and actions_elem.get(
+                            'os') is not None:
                     platform_actions_elements.append(actions_elem)
             platform_actions_element_count = len(platform_actions_elements)
             platform_actions_elements_processed = 0
@@ -259,8 +306,11 @@ def parse_package_elem(package_elem, platform_info_dict=None, include_after_inst
                     architecture = child_element.get('architecture')
                     # Skip <actions> tags that have only one of architecture or os specified, in order for the
                     # count in platform_actions_elements_processed to remain accurate.
-                    if (system and not architecture) or (architecture and not system):
-                        log.debug('Error: Both architecture and os attributes must be specified in an <actions> tag.')
+                    if (system and not architecture) or (architecture
+                                                         and not system):
+                        log.debug(
+                            'Error: Both architecture and os attributes must be specified in an <actions> tag.'
+                        )
                         continue
                     # Since we are inside an <actions_group> tag set, compare it with our current platform information
                     # and filter the <actions> tag sets that don't match. Require both the os and architecture attributes
@@ -309,7 +359,8 @@ def parse_package_elem(package_elem, platform_info_dict=None, include_after_inst
             if platform_info_dict is None and not include_after_install_actions:
                 # We must be setting metadata on a repository.
                 if len(actions_elem_list) >= 1:
-                    actions_elem_tuples.append((in_actions_group, actions_elem_list[0]))
+                    actions_elem_tuples.append((in_actions_group,
+                                                actions_elem_list[0]))
                 else:
                     # We are processing a recipe that contains only an <actions_group> tag set for installing a binary,
                     # but does not include an additional recipe for installing and compiling from source.
@@ -318,7 +369,8 @@ def parse_package_elem(package_elem, platform_info_dict=None, include_after_inst
                 # We must be installing a repository.
                 if after_install_actions:
                     actions_elem_list.extend(after_install_actions)
-                actions_elem_tuples.append((in_actions_group, actions_elem_list))
+                actions_elem_tuples.append((in_actions_group,
+                                            actions_elem_list))
         else:
             # Skip any element that is not <actions> or <actions_group> - this will skip comments, <repository> tags
             # and <readme> tags.
@@ -331,7 +383,8 @@ def remove_tool_dependency(app, tool_dependency):
     """The received tool_dependency must be in an error state."""
     context = app.install_model.context
     dependency_install_dir = tool_dependency.installation_directory(app)
-    removed, error_message = remove_tool_dependency_installation_directory(dependency_install_dir)
+    removed, error_message = remove_tool_dependency_installation_directory(
+        dependency_install_dir)
     if removed:
         tool_dependency.status = app.install_model.ToolDependency.installation_status.UNINSTALLED
         tool_dependency.error_message = None
@@ -349,10 +402,12 @@ def remove_tool_dependency_installation_directory(dependency_install_dir):
             shutil.rmtree(dependency_install_dir)
             removed = True
             error_message = ''
-            log.debug("Removed tool dependency installation directory: %s" % str(dependency_install_dir))
+            log.debug("Removed tool dependency installation directory: %s" %
+                      str(dependency_install_dir))
         except Exception as e:
             removed = False
-            error_message = "Error removing tool dependency installation directory %s: %s" % (str(dependency_install_dir), str(e))
+            error_message = "Error removing tool dependency installation directory %s: %s" % (
+                str(dependency_install_dir), str(e))
             log.warning(error_message)
     else:
         removed = True
@@ -360,7 +415,10 @@ def remove_tool_dependency_installation_directory(dependency_install_dir):
     return removed, error_message
 
 
-def set_tool_dependency_attributes(app, tool_dependency, status, error_message=None):
+def set_tool_dependency_attributes(app,
+                                   tool_dependency,
+                                   status,
+                                   error_message=None):
     sa_session = app.install_model.context
     if status == app.install_model.ToolDependency.installation_status.UNINSTALLED:
         installation_directory = tool_dependency.installation_directory(app)
@@ -370,7 +428,8 @@ def set_tool_dependency_attributes(app, tool_dependency, status, error_message=N
         tool_shed_repository = tool_dependency.tool_shed_repository
         debug_msg = 'Updating an existing record for version %s of tool dependency %s for revision %s of repository %s ' % \
             (str(tool_dependency.version), str(tool_dependency.name), str(tool_shed_repository.changeset_revision), str(tool_shed_repository.name))
-        debug_msg += 'by updating the status from %s to %s.' % (str(tool_dependency.status), str(status))
+        debug_msg += 'by updating the status from %s to %s.' % (
+            str(tool_dependency.status), str(status))
         log.debug(debug_msg)
     tool_dependency.status = status
     sa_session.add(tool_dependency)

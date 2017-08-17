@@ -27,12 +27,15 @@ def upgrade(migrate_engine):
     # Load existing tables
     metadata.reflect()
     try:
-        job_external_output_metadata = Table("job_external_output_metadata", metadata, autoload=True)
+        job_external_output_metadata = Table(
+            "job_external_output_metadata", metadata, autoload=True)
         col = Column("filename_override_metadata", String(255))
         col.create(job_external_output_metadata)
         assert col is job_external_output_metadata.c.filename_override_metadata
     except Exception:
-        log.exception("Adding column 'filename_override_metadata' to job_external_output_metadata table failed.")
+        log.exception(
+            "Adding column 'filename_override_metadata' to job_external_output_metadata table failed."
+        )
 
 
 def downgrade(migrate_engine):

@@ -5,7 +5,11 @@ import zipfile
 from .checkers import (is_bz2, is_gzip)
 
 
-def get_fileobj(filename, mode="r", gzip_only=False, bz2_only=False, zip_only=False):
+def get_fileobj(filename,
+                mode="r",
+                gzip_only=False,
+                bz2_only=False,
+                zip_only=False):
     """
     Returns a fileobj. If the file is compressed, return appropriate file reader.
 

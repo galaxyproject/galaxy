@@ -24,7 +24,8 @@ class GenomesController(BaseAPIController):
         return self.app.genomes.get_dbkeys(trans, **kwd)
 
     @web.json
-    def show(self, trans, id, num=None, chrom=None, low=None, high=None, **kwd):
+    def show(self, trans, id, num=None, chrom=None, low=None, high=None,
+             **kwd):
         """
         GET /api/genomes/{id}
 
@@ -38,10 +39,12 @@ class GenomesController(BaseAPIController):
         # Return info.
         rval = None
         if reference:
-            region = self.app.genomes.reference(trans, dbkey=id, chrom=chrom, low=low, high=high)
+            region = self.app.genomes.reference(
+                trans, dbkey=id, chrom=chrom, low=low, high=high)
             rval = {'dataset_type': 'refseq', 'data': region.sequence}
         else:
-            rval = self.app.genomes.chroms(trans, dbkey=id, num=num, chrom=chrom, low=low)
+            rval = self.app.genomes.chroms(
+                trans, dbkey=id, num=num, chrom=chrom, low=low)
         return rval
 
     @web.expose_api_raw_anonymous
@@ -59,11 +62,19 @@ class GenomesController(BaseAPIController):
         tbl_entries = self.app.tool_data_tables.data_tables[index_type].data
         index_file_name = [x[-1] for x in tbl_entries if id in x].pop()
 
-        if_open = open(index_file_name + index_extensions[index_type], mode='r')
+        if_open = open(
+            index_file_name + index_extensions[index_type], mode='r')
         return if_open.read()
 
     @web.expose_api_raw_anonymous
-    def sequences(self, trans, id, num=None, chrom=None, low=None, high=None, **kwd):
+    def sequences(self,
+                  trans,
+                  id,
+                  num=None,
+                  chrom=None,
+                  low=None,
+                  high=None,
+                  **kwd):
         """
         GET /api/genomes/{id}/sequences
 
@@ -73,5 +84,6 @@ class GenomesController(BaseAPIController):
         id = get_id(id, kwd.get('format', None))
         reference = is_true(kwd.get('reference', False))
         assert reference
-        region = self.app.genomes.reference(trans, dbkey=id, chrom=chrom, low=low, high=high)
+        region = self.app.genomes.reference(
+            trans, dbkey=id, chrom=chrom, low=low, high=high)
         return region.sequence

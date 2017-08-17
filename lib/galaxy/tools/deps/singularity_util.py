@@ -38,7 +38,10 @@ def build_singularity_run_command(
     return " ".join(command_parts)
 
 
-def _singularity_prefix(singularity_cmd=DEFAULT_SINGULARITY_COMMAND, sudo=DEFAULT_SUDO, sudo_cmd=DEFAULT_SUDO_COMMAND, **kwds):
+def _singularity_prefix(singularity_cmd=DEFAULT_SINGULARITY_COMMAND,
+                        sudo=DEFAULT_SUDO,
+                        sudo_cmd=DEFAULT_SUDO_COMMAND,
+                        **kwds):
     """Prefix to issue a singularity command."""
     command_parts = []
     if sudo:

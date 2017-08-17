@@ -21,14 +21,22 @@ class ToolShedController(BaseAPIController):
     """RESTful controller for interactions with tool sheds."""
 
     def __get_repo_dict_by_id(self, id):
-        tool_shed_repository = repository_util.get_tool_shed_repository_by_id(self.app, id)
+        tool_shed_repository = repository_util.get_tool_shed_repository_by_id(
+            self.app, id)
         if tool_shed_repository is None:
-            log.debug("Unable to locate tool_shed_repository record for id %s." % (str(id)))
+            log.debug(
+                "Unable to locate tool_shed_repository record for id %s." %
+                (str(id)))
             return {}
-        tool_shed_repository_dict = tool_shed_repository.as_dict(value_mapper=self.__get_value_mapper(tool_shed_repository))
+        tool_shed_repository_dict = tool_shed_repository.as_dict(
+            value_mapper=self.__get_value_mapper(tool_shed_repository))
         tool_shed_repository_dict['url'] = web.url_for(
-            controller='tool_shed_repositories', action='show', id=self.app.security.encode_id(tool_shed_repository.id))
-        tool_shed_repository_dict['repository_dependencies'] = self.__flatten_repository_dependency_list(tool_shed_repository)
+            controller='tool_shed_repositories',
+            action='show',
+            id=self.app.security.encode_id(tool_shed_repository.id))
+        tool_shed_repository_dict[
+            'repository_dependencies'] = self.__flatten_repository_dependency_list(
+                tool_shed_repository)
         return tool_shed_repository_dict
 
     def __get_tool_dependencies(self, metadata, tool_dependencies=None):
@@ -41,7 +49,8 @@ class ToolShedController(BaseAPIController):
                 tool_dependencies.append(dependency_dict)
         if metadata['has_repository_dependencies']:
             for dependency in metadata['repository_dependencies']:
-                tool_dependencies = self.__get_tool_dependencies(dependency, tool_dependencies)
+                tool_dependencies = self.__get_tool_dependencies(
+                    dependency, tool_dependencies)
         return tool_dependencies
 
     def __flatten_repository_dependency_list(self, tool_shed_repository):
@@ -51,12 +60,15 @@ class ToolShedController(BaseAPIController):
         dependencies = []
         for dependency in tool_shed_repository.repository_dependencies:
             if len(dependency.repository_dependencies) > 0:
-                sub_dependencies = self.__flatten_repository_dependency_list(dependency)
+                sub_dependencies = self.__flatten_repository_dependency_list(
+                    dependency)
                 for sub_dependency in sub_dependencies:
                     if sub_dependency not in dependencies:
                         dependencies.append(sub_dependency)
             if dependency not in dependencies:
-                dependencies.append(dependency.as_dict(value_mapper=self.__get_value_mapper(tool_shed_repository)))
+                dependencies.append(
+                    dependency.as_dict(value_mapper=self.__get_value_mapper(
+                        tool_shed_repository)))
         return dependencies
 
     def __get_value_mapper(self, tool_shed_repository):
@@ -72,7 +84,8 @@ class ToolShedController(BaseAPIController):
         if metadata['includes_tools_for_display_in_tool_panel']:
             for key, tool_dict in metadata['tools']:
                 tool_info = dict(
-                    clean=re.sub('[^a-zA-Z0-9]+', '_', tool_dict['name']).lower(),
+                    clean=re.sub('[^a-zA-Z0-9]+', '_',
+                                 tool_dict['name']).lower(),
                     name=tool_dict['name'],
                     version=tool_dict['version'],
                     description=tool_dict['description'])
@@ -112,7 +125,8 @@ class ToolShedController(BaseAPIController):
         repositories = []
         if repository_ids is not None:
             for repository_id in repository_ids.split('|'):
-                tool_shed_repository_dict = self.__get_repo_dict_by_id(repository_id)
+                tool_shed_repository_dict = self.__get_repo_dict_by_id(
+                    repository_id)
                 repositories.append(tool_shed_repository_dict)
             return repositories
         else:
@@ -149,8 +163,12 @@ class ToolShedController(BaseAPIController):
             return {'status': 'error', 'message': message}
         response = json.loads(
             util.url_get(
-                tool_shed_url, params=dict(tsr_id=tsr_id, guid=guid, changeset=changeset.split(':')[-1]), pathspec=['api', 'tools', 'json'
-                                                                                                                    ]))
+                tool_shed_url,
+                params=dict(
+                    tsr_id=tsr_id,
+                    guid=guid,
+                    changeset=changeset.split(':')[-1]),
+                pathspec=['api', 'tools', 'json']))
         return response
 
     @expose_api
@@ -163,7 +181,8 @@ class ToolShedController(BaseAPIController):
         :param tool_shed_url: the url of the toolshed to get categories from
         """
         tool_shed_url = urlunquote(kwd.get('tool_shed_url', ''))
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(
+            trans.app, tool_shed_url)
         url = util.build_url(tool_shed_url, pathspec=['api', 'categories'])
         categories = []
         for category in json.loads(util.url_get(url)):
@@ -191,8 +210,12 @@ class ToolShedController(BaseAPIController):
         tool_shed_url = urlunquote(kwd.get('tool_shed_url', ''))
         category_id = kwd.get('category_id', '')
         params = dict(installable=True)
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
-        url = util.build_url(tool_shed_url, pathspec=['api', 'categories', category_id, 'repositories'], params=params)
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(
+            trans.app, tool_shed_url)
+        url = util.build_url(
+            tool_shed_url,
+            pathspec=['api', 'categories', category_id, 'repositories'],
+            params=params)
         repositories = []
         return_json = json.loads(util.url_get(url))
         for repository in return_json['repositories']:
@@ -231,7 +254,8 @@ class ToolShedController(BaseAPIController):
         tool_ids = kwd.get('tool_ids', None)
         if tool_ids is not None:
             tool_ids = util.listify(tool_ids)
-        tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field(trans.app)
+        tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field(
+            trans.app)
         tool_panel_section_dict = {
             'name': tool_panel_section_select_field.name,
             'id': tool_panel_section_select_field.field_id,
@@ -244,24 +268,41 @@ class ToolShedController(BaseAPIController):
             if len(tool_shed_url) == 0:
                 # By design, this list should always be from the same toolshed. If
                 # this is ever not the case, this code will need to be updated.
-                tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_ids[0].split('/')[0])
+                tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(
+                    self.app, tool_ids[0].split('/')[0])
             found_repository = json.loads(
-                util.url_get(tool_shed_url, params=dict(tool_ids=','.join(tool_ids)), pathspec=['api', 'repositories']))
+                util.url_get(
+                    tool_shed_url,
+                    params=dict(tool_ids=','.join(tool_ids)),
+                    pathspec=['api', 'repositories']))
             fr_keys = found_repository.keys()
             repository_id = found_repository[fr_keys[0]]['repository_id']
-            repository_data['current_changeset'] = found_repository['current_changeset']
-            repository_data['repository'] = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'repositories', repository_id]))
+            repository_data['current_changeset'] = found_repository[
+                'current_changeset']
+            repository_data['repository'] = json.loads(
+                util.url_get(
+                    tool_shed_url,
+                    pathspec=['api', 'repositories', repository_id]))
             del found_repository['current_changeset']
             repository_data['tool_shed_url'] = tool_shed_url
         else:
-            repository_data['repository'] = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'repositories', repository_id]))
+            repository_data['repository'] = json.loads(
+                util.url_get(
+                    tool_shed_url,
+                    pathspec=['api', 'repositories', repository_id]))
         repository_data['repository']['metadata'] = json.loads(
-            util.url_get(tool_shed_url, pathspec=['api', 'repositories', repository_id, 'metadata']))
-        repository_data['shed_conf'] = tool_util.build_shed_tool_conf_select_field(trans.app).get_html().replace('\n', '')
-        repository_data['panel_section_html'] = tool_panel_section_select_field.get_html(extra_attr={'style': 'width: 30em;'}).replace(
-            '\n', '')
+            util.url_get(
+                tool_shed_url,
+                pathspec=['api', 'repositories', repository_id, 'metadata']))
+        repository_data[
+            'shed_conf'] = tool_util.build_shed_tool_conf_select_field(
+                trans.app).get_html().replace('\n', '')
+        repository_data[
+            'panel_section_html'] = tool_panel_section_select_field.get_html(
+                extra_attr={'style': 'width: 30em;'}).replace('\n', '')
         repository_data['panel_section_dict'] = tool_panel_section_dict
-        for changeset, metadata in repository_data['repository']['metadata'].items():
+        for changeset, metadata in repository_data['repository'][
+                'metadata'].items():
             if changeset not in tool_dependencies:
                 tool_dependencies[changeset] = []
             if metadata['includes_tools_for_display_in_tool_panel']:
@@ -269,7 +310,8 @@ class ToolShedController(BaseAPIController):
                     tools[changeset] = []
                 for tool_dict in metadata['tools']:
                     tool_info = dict(
-                        clean=re.sub('[^a-zA-Z0-9]+', '_', tool_dict['name']).lower(),
+                        clean=re.sub('[^a-zA-Z0-9]+', '_',
+                                     tool_dict['name']).lower(),
                         guid=tool_dict['guid'],
                         name=tool_dict['name'],
                         version=tool_dict['version'],
@@ -277,8 +319,10 @@ class ToolShedController(BaseAPIController):
                     if tool_info not in tools[changeset]:
                         tools[changeset].append(tool_info)
                 if metadata['has_repository_dependencies']:
-                    for repository_dependency in metadata['repository_dependencies']:
-                        tools[changeset] = self.__get_tools(repository_dependency, tools[changeset])
+                    for repository_dependency in metadata[
+                            'repository_dependencies']:
+                        tools[changeset] = self.__get_tools(
+                            repository_dependency, tools[changeset])
                 repository_data['tools'] = tools
             for key, dependency_dict in metadata['tool_dependencies'].items():
                 if 'readme' in dependency_dict:
@@ -286,8 +330,12 @@ class ToolShedController(BaseAPIController):
                 if dependency_dict not in tool_dependencies[changeset]:
                     tool_dependencies[changeset].append(dependency_dict)
             if metadata['has_repository_dependencies']:
-                for repository_dependency in metadata['repository_dependencies']:
-                    tool_dependencies[changeset] = self.__get_tool_dependencies(repository_dependency, tool_dependencies[changeset])
+                for repository_dependency in metadata[
+                        'repository_dependencies']:
+                    tool_dependencies[
+                        changeset] = self.__get_tool_dependencies(
+                            repository_dependency,
+                            tool_dependencies[changeset])
         repository_data['tool_dependencies'] = tool_dependencies
         return repository_data
 
@@ -306,5 +354,9 @@ class ToolShedController(BaseAPIController):
         q = kwd.get('term', None)
         if None in [q, tool_shed_url]:
             return {}
-        response = json.loads(util.url_get(tool_shed_url, params=dict(q=q), pathspec=['api', 'repositories']))
+        response = json.loads(
+            util.url_get(
+                tool_shed_url,
+                params=dict(q=q),
+                pathspec=['api', 'repositories']))
         return response

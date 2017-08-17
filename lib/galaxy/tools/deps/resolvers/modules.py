@@ -29,23 +29,30 @@ UNKNOWN_FIND_BY_MESSAGE = "ModuleDependencyResolver does not know how to find mo
 
 
 class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
-    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'modulepath']
+    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + [
+        'base_path', 'modulepath'
+    ]
     resolver_type = "modules"
 
     def __init__(self, dependency_manager, **kwds):
         self._setup_mapping(dependency_manager, **kwds)
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         find_by = kwds.get('find_by', 'avail')
-        prefetch = _string_as_bool(kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
+        prefetch = _string_as_bool(
+            kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
         self.modulecmd = kwds.get('modulecmd', DEFAULT_MODULECMD_PATH)
         self.modulepath = kwds.get('modulepath', self.__default_modulespath())
-        self.default_indicator = kwds.get('default_indicator', DEFAULT_INDICATOR)
+        self.default_indicator = kwds.get('default_indicator',
+                                          DEFAULT_INDICATOR)
         if find_by == 'directory':
-            self.module_checker = DirectoryModuleChecker(self, self.modulepath, prefetch)
+            self.module_checker = DirectoryModuleChecker(
+                self, self.modulepath, prefetch)
         elif find_by == 'avail':
-            self.module_checker = AvailModuleChecker(self, self.modulepath, prefetch, self.default_indicator)
+            self.module_checker = AvailModuleChecker(
+                self, self.modulepath, prefetch, self.default_indicator)
         else:
-            raise Exception(UNKNOWN_FIND_BY_MESSAGE % (find_by, ["avail", "directory"]))
+            raise Exception(UNKNOWN_FIND_BY_MESSAGE % (find_by,
+                                                       ["avail", "directory"]))
 
     def __default_modulespath(self):
         if 'MODULEPATH' in environ:
@@ -84,7 +91,9 @@ class DirectoryModuleChecker(object):
         self.module_dependency_resolver = module_dependency_resolver
         self.directories = modulepath.split(pathsep)
         if prefetch:
-            log.warning("Created module dependency resolver with prefetch enabled, but directory module checker does not support this.")
+            log.warning(
+                "Created module dependency resolver with prefetch enabled, but directory module checker does not support this."
+            )
 
     def has_module(self, module, version):
         has_module = False
@@ -92,7 +101,8 @@ class DirectoryModuleChecker(object):
             module_directory = join(directory, module)
             has_module_directory = isdir(module_directory)
             if not version:
-                has_module = has_module_directory or exists(module_directory)  # could be a bare modulefile
+                has_module = has_module_directory or exists(
+                    module_directory)  # could be a bare modulefile
             else:
                 modulefile = join(module_directory, version)
                 has_modulefile = exists(modulefile)
@@ -110,7 +120,11 @@ class AvailModuleChecker(object):
     (by default '(default)'. Matching is done using the module and
     (if version=True) the module version."""
 
-    def __init__(self, module_dependency_resolver, modulepath, prefetch, default_indicator=DEFAULT_INDICATOR):
+    def __init__(self,
+                 module_dependency_resolver,
+                 modulepath,
+                 prefetch,
+                 default_indicator=DEFAULT_INDICATOR):
         self.module_dependency_resolver = module_dependency_resolver
         self.modulepath = modulepath
         self.default_indicator = default_indicator
@@ -129,7 +143,8 @@ class AvailModuleChecker(object):
 
         for module_name, module_version in module_generator:
             names_match = module == module_name
-            module_match = names_match and (version is None or module_version == version)
+            module_match = names_match and (version is None
+                                            or module_version == version)
             if module_match:
                 return True
         return False
@@ -153,8 +168,12 @@ class AvailModuleChecker(object):
                 yield module_name, module_version
 
     def __module_avail_output(self):
-        avail_command = [self.module_dependency_resolver.modulecmd, 'sh', 'avail']
-        return Popen(avail_command, stderr=PIPE, env={'MODULEPATH': self.modulepath}).communicate()[1]
+        avail_command = [
+            self.module_dependency_resolver.modulecmd, 'sh', 'avail'
+        ]
+        return Popen(
+            avail_command, stderr=PIPE, env={'MODULEPATH':
+                                             self.modulepath}).communicate()[1]
 
 
 class ModuleDependency(Dependency):
@@ -163,10 +182,16 @@ class ModuleDependency(Dependency):
     Using Environment Modules' 'modulecmd' (specifically 'modulecmd sh load') to
     convert module specifications into shell expressions for inclusion in
     the script used to run a tool in Galaxy."""
-    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['module_name', 'module_version']
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + [
+        'module_name', 'module_version'
+    ]
     dependency_type = 'module'
 
-    def __init__(self, module_dependency_resolver, module_name, module_version=None, exact=True):
+    def __init__(self,
+                 module_dependency_resolver,
+                 module_name,
+                 module_version=None,
+                 exact=True):
         self.module_dependency_resolver = module_dependency_resolver
         self.module_name = module_name
         self.module_version = module_version
@@ -180,8 +205,9 @@ class ModuleDependency(Dependency):
         module_to_load = self.module_name
         if self.module_version:
             module_to_load = '%s/%s' % (self.module_name, self.module_version)
-        command = 'MODULEPATH=%s; export MODULEPATH; eval `%s sh load %s`' % (self.module_dependency_resolver.modulepath,
-                                                                              self.module_dependency_resolver.modulecmd, module_to_load)
+        command = 'MODULEPATH=%s; export MODULEPATH; eval `%s sh load %s`' % (
+            self.module_dependency_resolver.modulepath,
+            self.module_dependency_resolver.modulecmd, module_to_load)
         return command
 
 

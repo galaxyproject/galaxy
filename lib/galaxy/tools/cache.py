@@ -28,7 +28,11 @@ class ToolCache(object):
         """
         removed_tool_ids = []
         try:
-            paths_to_cleanup = {path: tool.all_ids for path, tool in self._tools_by_path.items() if self._should_cleanup(path)}
+            paths_to_cleanup = {
+                path: tool.all_ids
+                for path, tool in self._tools_by_path.items()
+                if self._should_cleanup(path)
+            }
             for config_filename, tool_ids in paths_to_cleanup.items():
                 del self._hash_by_tool_paths[config_filename]
                 del self._tools_by_path[config_filename]
@@ -52,7 +56,8 @@ class ToolCache(object):
             return True
         new_mtime = os.path.getmtime(config_filename)
         if self._mod_time_by_path.get(config_filename) < new_mtime:
-            if md5_hash_file(config_filename) != self._hash_by_tool_paths.get(config_filename):
+            if md5_hash_file(config_filename) != self._hash_by_tool_paths.get(
+                    config_filename):
                 return True
         return False
 
@@ -78,7 +83,8 @@ class ToolCache(object):
         tool_hash = md5_hash_file(config_filename)
         tool_id = str(tool.id)
         self._hash_by_tool_paths[config_filename] = tool_hash
-        self._mod_time_by_path[config_filename] = os.path.getmtime(config_filename)
+        self._mod_time_by_path[config_filename] = os.path.getmtime(
+            config_filename)
         self._tool_paths_by_id[tool_id] = config_filename
         self._tools_by_path[config_filename] = tool
         self._new_tool_ids.add(tool_id)
@@ -112,7 +118,8 @@ class ToolShedRepositoryCache(object):
         return repositories
 
     def rebuild(self):
-        self.cache.repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).all()
+        self.cache.repositories = self.app.install_model.context.current.query(
+            self.app.install_model.ToolShedRepository).all()
 
     def get_installed_repository(self,
                                  tool_shed=None,
@@ -147,16 +154,30 @@ class ToolShedRepositoryCache(object):
                                   changeset_revision=None,
                                   repository_id=None):
         if repository_id:
-            repos = [repo for repo in self.tool_shed_repositories if repo.id == repository_id]
+            repos = [
+                repo for repo in self.tool_shed_repositories
+                if repo.id == repository_id
+            ]
             if repos:
                 return repos[0]
             else:
                 return None
-        repos = [repo for repo in self.tool_shed_repositories if repo.tool_shed == tool_shed and repo.owner == owner and repo.name == name]
+        repos = [
+            repo for repo in self.tool_shed_repositories
+            if repo.tool_shed == tool_shed and repo.owner == owner
+            and repo.name == name
+        ]
         if installed_changeset_revision:
-            repos = [repo for repo in repos if repo.installed_changeset_revision == installed_changeset_revision]
+            repos = [
+                repo for repo in repos
+                if repo.installed_changeset_revision ==
+                installed_changeset_revision
+            ]
         if changeset_revision:
-            repos = [repo for repo in repos if repo.changeset_revision == changeset_revision]
+            repos = [
+                repo for repo in repos
+                if repo.changeset_revision == changeset_revision
+            ]
         if repos:
             return repos[0]
         else:

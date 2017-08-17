@@ -14,7 +14,8 @@ class CacheableStaticURLParser(StaticURLParser):
         path_info = environ.get('PATH_INFO', '')
         if not path_info:
             # See if this is a static file hackishly mapped.
-            if os.path.exists(self.directory) and os.path.isfile(self.directory):
+            if os.path.exists(self.directory) and os.path.isfile(
+                    self.directory):
                 app = fileapp.FileApp(self.directory)
                 if self.cache_seconds:
                     app.cache_control(max_age=int(self.cache_seconds))

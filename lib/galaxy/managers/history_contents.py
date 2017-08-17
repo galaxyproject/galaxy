@@ -64,43 +64,99 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         self.subcontainer_manager = self.subcontainer_class_manager_class(app)
 
     # ---- interface
-    def contained(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
+    def contained(self,
+                  container,
+                  filters=None,
+                  limit=None,
+                  offset=None,
+                  order_by=None,
+                  **kwargs):
         """
         Returns non-subcontainer objects within `container`.
         """
-        filter_to_inside_container = self._get_filter_for_contained(container, self.contained_class)
+        filter_to_inside_container = self._get_filter_for_contained(
+            container, self.contained_class)
         filters = base.munge_lists(filter_to_inside_container, filters)
-        return self.contained_manager.list(filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs)
+        return self.contained_manager.list(
+            filters=filters,
+            limit=limit,
+            offset=offset,
+            order_by=order_by,
+            **kwargs)
 
-    def subcontainers(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
+    def subcontainers(self,
+                      container,
+                      filters=None,
+                      limit=None,
+                      offset=None,
+                      order_by=None,
+                      **kwargs):
         """
         Returns only the containers within `container`.
         """
-        filter_to_inside_container = self._get_filter_for_contained(container, self.subcontainer_class)
+        filter_to_inside_container = self._get_filter_for_contained(
+            container, self.subcontainer_class)
         filters = base.munge_lists(filter_to_inside_container, filters)
         # TODO: collections.DatasetCollectionManager doesn't have the list
         # return self.subcontainer_manager.list( filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs )
-        return self._session().query(self.subcontainer_class).filter(filters).all()
+        return self._session().query(
+            self.subcontainer_class).filter(filters).all()
 
-    def contents(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
+    def contents(self,
+                 container,
+                 filters=None,
+                 limit=None,
+                 offset=None,
+                 order_by=None,
+                 **kwargs):
         """
         Returns a list of both/all types of contents, filtered and in some order.
         """
         # TODO?: we could branch here based on 'if limit is None and offset is None' - to a simpler (non-union) query
         # for now, I'm just using this (even for non-limited/offset queries) to reduce code paths
-        return self._union_of_contents(container, filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs)
+        return self._union_of_contents(
+            container,
+            filters=filters,
+            limit=limit,
+            offset=offset,
+            order_by=order_by,
+            **kwargs)
 
-    def contents_count(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
+    def contents_count(self,
+                       container,
+                       filters=None,
+                       limit=None,
+                       offset=None,
+                       order_by=None,
+                       **kwargs):
         """
         Returns a count of both/all types of contents, based on the given filters.
         """
-        return self.contents_query(container, filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs).count()
+        return self.contents_query(
+            container,
+            filters=filters,
+            limit=limit,
+            offset=offset,
+            order_by=order_by,
+            **kwargs).count()
 
-    def contents_query(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
+    def contents_query(self,
+                       container,
+                       filters=None,
+                       limit=None,
+                       offset=None,
+                       order_by=None,
+                       **kwargs):
         """
         Returns the contents union query for subqueries, etc.
         """
-        return self._union_of_contents_query(container, filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs)
+        return self._union_of_contents_query(
+            container,
+            filters=filters,
+            limit=limit,
+            offset=offset,
+            order_by=order_by,
+            **kwargs)
 
     # order_by parsing - similar to FilterParser but not enough yet to warrant a class?
     def parse_order_by(self, order_by_string, default=None):
@@ -125,7 +181,9 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             return self.parse_order_by(default)
         # TODO: allow order_by None
         raise glx_exceptions.RequestParameterInvalidException(
-            'Unknown order_by', order_by=order_by_string, available=['create_time', 'update_time', 'name', 'hid'])
+            'Unknown order_by',
+            order_by=order_by_string,
+            available=['create_time', 'update_time', 'name', 'hid'])
 
     # history specific methods
     def state_counts(self, history):
@@ -135,9 +193,15 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
 
         Note: does not include deleted/hidden contents.
         """
-        filters = [sql.column('deleted') == false(), sql.column('visible') == true()]
-        contents_subquery = self._union_of_contents_query(history, filters=filters).subquery()
-        statement = (sql.select([sql.column('state'), func.count('*')]).select_from(contents_subquery).group_by(sql.column('state')))
+        filters = [
+            sql.column('deleted') == false(),
+            sql.column('visible') == true()
+        ]
+        contents_subquery = self._union_of_contents_query(
+            history, filters=filters).subquery()
+        statement = (sql.select([
+            sql.column('state'), func.count('*')
+        ]).select_from(contents_subquery).group_by(sql.column('state')))
         counts = self.app.model.context.execute(statement).fetchall()
         return dict(counts)
 
@@ -151,8 +215,14 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         """
         returned = dict(deleted=0, hidden=0, active=0)
         contents_subquery = self._union_of_contents_query(history).subquery()
-        columns = [sql.column('deleted'), sql.column('visible'), func.count('*')]
-        statement = (sql.select(columns).select_from(contents_subquery).group_by(sql.column('deleted'), sql.column('visible')))
+        columns = [
+            sql.column('deleted'),
+            sql.column('visible'),
+            func.count('*')
+        ]
+        statement = (
+            sql.select(columns).select_from(contents_subquery).group_by(
+                sql.column('deleted'), sql.column('visible')))
         groups = self.app.model.context.execute(statement).fetchall()
         for deleted, visible, count in groups:
             if deleted:
@@ -174,7 +244,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         contents = self.contents(history, **kwargs)
         for content in contents:
             if isinstance(content, self.subcontainer_class):
-                processed_list = self.subcontainer_manager.map_datasets(content, fn)
+                processed_list = self.subcontainer_manager.map_datasets(
+                    content, fn)
                 returned.extend(processed_list)
             else:
                 processed = fn(content)
@@ -187,7 +258,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
 
     def _filter_to_contents_query(self, container, content_class, **kwargs):
         # TODO: use list (or by_history etc.)
-        container_filter = self._get_filter_for_contained(container, content_class)
+        container_filter = self._get_filter_for_contained(
+            container, content_class)
         query = self._session().query(content_class).filter(container_filter)
         return query
 
@@ -199,12 +271,14 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         Returns a limited and offset list of both types of contents, filtered
         and in some order.
         """
-        contents_results = self._union_of_contents_query(container, **kwargs).all()
+        contents_results = self._union_of_contents_query(container,
+                                                         **kwargs).all()
         if not expand_models:
             return contents_results
 
         # partition ids into a map of { component_class names -> list of ids } from the above union query
-        id_map = dict(((self.contained_class_type_name, []), (self.subcontainer_class_type_name, [])))
+        id_map = dict(((self.contained_class_type_name, []),
+                       (self.subcontainer_class_type_name, [])))
         for result in contents_results:
             result_type = self._get_union_type(result)
             contents_id = self._get_union_id(result)
@@ -215,9 +289,11 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
 
         # query 2 & 3: use the ids to query each component_class, returning an id->full component model map
         contained_ids = id_map[self.contained_class_type_name]
-        id_map[self.contained_class_type_name] = self._contained_id_map(contained_ids)
+        id_map[self.contained_class_type_name] = self._contained_id_map(
+            contained_ids)
         subcontainer_ids = id_map[self.subcontainer_class_type_name]
-        id_map[self.subcontainer_class_type_name] = self._subcontainer_id_map(subcontainer_ids)
+        id_map[self.subcontainer_class_type_name] = self._subcontainer_id_map(
+            subcontainer_ids)
 
         # cycle back over the union query to create an ordered list of the objects returned in queries 2 & 3 above
         contents = []
@@ -229,13 +305,20 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             contents.append(content)
         return contents
 
-    def _union_of_contents_query(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
+    def _union_of_contents_query(self,
+                                 container,
+                                 filters=None,
+                                 limit=None,
+                                 offset=None,
+                                 order_by=None,
+                                 **kwargs):
         """
         Returns a query for a limited and offset list of both types of contents,
         filtered and in some order.
         """
         order_by = order_by if order_by is not None else self.default_order_by
-        order_by = order_by if isinstance(order_by, (tuple, list)) else (order_by, )
+        order_by = order_by if isinstance(order_by, (tuple,
+                                                     list)) else (order_by, )
 
         # TODO: 3 queries and 3 iterations over results - this is undoubtedly better solved in the actual SQL layer
         # via one common table for contents, Some Yonder Resplendent and Fanciful Join, or ORM functionality
@@ -247,8 +330,10 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         # note: I'm trying to keep these private functions as generic as possible in order to move them toward base later
 
         # query 1: create a union of common columns for which the component_classes can be filtered/limited
-        contained_query = self._contents_common_query_for_contained(container.id)
-        subcontainer_query = self._contents_common_query_for_subcontainer(container.id)
+        contained_query = self._contents_common_query_for_contained(
+            container.id)
+        subcontainer_query = self._contents_common_query_for_subcontainer(
+            container.id)
         contents_query = contained_query.union(subcontainer_query)
 
         # TODO: this needs the same fn/orm split that happens in the main query
@@ -287,7 +372,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             collection_id=literal(None))
         subquery = self._session().query(*columns)
         # for the HDA's we need to join the Dataset since it has an actual state column
-        subquery = subquery.join(model.Dataset, model.Dataset.id == component_class.dataset_id)
+        subquery = subquery.join(
+            model.Dataset, model.Dataset.id == component_class.dataset_id)
         subquery = subquery.filter(component_class.history_id == history_id)
         return subquery
 
@@ -306,7 +392,9 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             update_time=model.DatasetCollection.update_time)
         subquery = self._session().query(*columns)
         # for the HDCA's we need to join the DatasetCollection since it has update/create times
-        subquery = subquery.join(model.DatasetCollection, model.DatasetCollection.id == component_class.collection_id)
+        subquery = subquery.join(
+            model.DatasetCollection,
+            model.DatasetCollection.id == component_class.collection_id)
         subquery = subquery.filter(component_class.history_id == history_id)
         return subquery
 
@@ -323,8 +411,11 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         if not id_list:
             return []
         component_class = self.contained_class
-        query = (self._session().query(component_class).filter(component_class.id.in_(id_list)).options(undefer('_metadata'))
-                 .options(eagerload('dataset.actions')).options(eagerload('tags')).options(eagerload('annotations')))
+        query = (
+            self._session().query(component_class).filter(
+                component_class.id.in_(id_list)).options(undefer('_metadata'))
+            .options(eagerload('dataset.actions')).options(eagerload('tags'))
+            .options(eagerload('annotations')))
         return dict((row.id, row) for row in query.all())
 
     def _subcontainer_id_map(self, id_list):
@@ -332,12 +423,14 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         if not id_list:
             return []
         component_class = self.subcontainer_class
-        query = (self._session().query(component_class).filter(component_class.id.in_(id_list)).options(eagerload('collection'))
+        query = (self._session().query(component_class).filter(
+            component_class.id.in_(id_list)).options(eagerload('collection'))
                  .options(eagerload('tags')).options(eagerload('annotations')))
         return dict((row.id, row) for row in query.all())
 
 
-class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
+class HistoryContentsSerializer(base.ModelSerializer,
+                                deletable.PurgableSerializerMixin):
     """
     Interface/service object for serializing histories into dictionaries.
     """
@@ -383,14 +476,16 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
         return self.serialize_id(content, key, **context)
 
 
-class HistoryContentsFilters(base.ModelFilterParser, deletable.PurgableFiltersMixin):
+class HistoryContentsFilters(base.ModelFilterParser,
+                             deletable.PurgableFiltersMixin):
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
 
     # TODO: history_content_type filter doesn't work with psycopg2: column does not exist (even with hybrid props)
     def _parse_orm_filter(self, attr, op, val):
         def raise_filter_err(attr, op, val, msg):
-            raise glx_exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
+            raise glx_exceptions.RequestParameterInvalidException(
+                msg, column=attr, operation=op, val=val)
 
         # we need to use some manual/text/column fu here since some where clauses on the union don't work
         # using the model_class defined above - they need to be wrapped in their own .column()
@@ -401,7 +496,8 @@ class HistoryContentsFilters(base.ModelFilterParser, deletable.PurgableFiltersMi
             if val == 'dataset':
                 return sql.column('history_content_type') == 'dataset'
             if val == 'dataset_collection':
-                return sql.column('history_content_type') == 'dataset_collection'
+                return sql.column(
+                    'history_content_type') == 'dataset_collection'
             raise_filter_err(attr, op, val, 'bad op in filter')
 
         if attr == 'type_id':
@@ -428,22 +524,28 @@ class HistoryContentsFilters(base.ModelFilterParser, deletable.PurgableFiltersMi
                 states = [s for s in val.split(',') if s]
                 for state in states:
                     if state not in valid_states:
-                        raise_filter_err(attr, op, state, 'invalid state in filter')
+                        raise_filter_err(attr, op, state,
+                                         'invalid state in filter')
                 return sql.column('state').in_(states)
             raise_filter_err(attr, op, val, 'bad op in filter')
 
-        return super(HistoryContentsFilters, self)._parse_orm_filter(attr, op, val)
+        return super(HistoryContentsFilters, self)._parse_orm_filter(
+            attr, op, val)
 
     def decode_type_id(self, type_id):
         TYPE_ID_SEP = '-'
         split = type_id.split(TYPE_ID_SEP, 1)
-        return TYPE_ID_SEP.join([split[0], str(self.app.security.decode_id(split[1]))])
+        return TYPE_ID_SEP.join(
+            [split[0], str(self.app.security.decode_id(split[1]))])
 
     def parse_type_id_list(self, type_id_list_string, sep=','):
         """
         Split `type_id_list_string` at `sep`.
         """
-        return [self.decode_type_id(type_id) for type_id in type_id_list_string.split(sep)]
+        return [
+            self.decode_type_id(type_id)
+            for type_id in type_id_list_string.split(sep)
+        ]
 
     def _add_parsers(self):
         super(HistoryContentsFilters, self)._add_parsers()

@@ -12,7 +12,8 @@ class SampleStateFactory(object):
         assert name, 'SampleState requires a name'
         if description is None:
             description = ''
-        return SampleState(name=name, desc=description, request_type=request_type)
+        return SampleState(
+            name=name, desc=description, request_type=request_type)
 
     def from_elem(self, request_type, elem):
         """

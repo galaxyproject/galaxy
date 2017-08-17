@@ -34,7 +34,8 @@ class HgWebConfigManager(object):
             # Persist our in-memory configuration.
             self.write_config()
         except Exception as e:
-            log.debug("Exception in HgWebConfigManager.add_entry(): %s" % str(e))
+            log.debug(
+                "Exception in HgWebConfigManager.add_entry(): %s" % str(e))
         finally:
             lock.release()
 
@@ -51,7 +52,8 @@ class HgWebConfigManager(object):
             # Persist our in-memory configuration.
             self.write_config()
         except Exception as e:
-            log.debug("Exception in HgWebConfigManager.change_entry(): %s" % str(e))
+            log.debug(
+                "Exception in HgWebConfigManager.change_entry(): %s" % str(e))
         finally:
             lock.release()
 
@@ -66,7 +68,8 @@ class HgWebConfigManager(object):
                 self.read_config(force_read=True)
                 entry = self.in_memory_config.get('paths', lhs)
             except ConfigParser.NoOptionError:
-                raise Exception("Entry for repository %s missing in file %s." % (lhs, self.hgweb_config))
+                raise Exception("Entry for repository %s missing in file %s." %
+                                (lhs, self.hgweb_config))
         return entry
 
     @property
@@ -76,8 +79,9 @@ class HgWebConfigManager(object):
             # We used to raise an exception here...
             # raise Exception( "Required file %s does not exist - check config setting for hgweb_config_dir." % hgweb_config )
             # ...but now we just log the missing file and create a new empty one.
-            log.debug("Required file %s does not exist, so creating a new, empty file.  Check your config setting for hgweb_config_dir." %
-                      hgweb_config)
+            log.debug(
+                "Required file %s does not exist, so creating a new, empty file.  Check your config setting for hgweb_config_dir."
+                % hgweb_config)
             hgweb_config_file = open(hgweb_config, 'wb')
             hgweb_config_file.write(new_hgweb_config_template)
             hgweb_config_file.close()
@@ -88,8 +92,11 @@ class HgWebConfigManager(object):
         today = date.today()
         backup_date = today.strftime("%Y_%m_%d")
         hgweb_config_backup_filename = 'hgweb.config_%s_backup' % backup_date
-        hgweb_config_copy = os.path.join(self.hgweb_config_dir, hgweb_config_backup_filename)
-        shutil.copy(os.path.abspath(self.hgweb_config), os.path.abspath(hgweb_config_copy))
+        hgweb_config_copy = os.path.join(self.hgweb_config_dir,
+                                         hgweb_config_backup_filename)
+        shutil.copy(
+            os.path.abspath(self.hgweb_config),
+            os.path.abspath(hgweb_config_copy))
 
     def read_config(self, force_read=False):
         if force_read or self.in_memory_config is None:

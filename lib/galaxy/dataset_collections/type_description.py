@@ -43,15 +43,19 @@ class CollectionTypeDescription(object):
         self.__has_subcollections = self.collection_type.find(":") > 0
 
     def effective_collection_type_description(self, subcollection_type):
-        effective_collection_type = self.effective_collection_type(subcollection_type)
-        return self.collection_type_description_factory.for_collection_type(effective_collection_type)
+        effective_collection_type = self.effective_collection_type(
+            subcollection_type)
+        return self.collection_type_description_factory.for_collection_type(
+            effective_collection_type)
 
     def effective_collection_type(self, subcollection_type):
         if hasattr(subcollection_type, 'collection_type'):
             subcollection_type = subcollection_type.collection_type
 
         if not self.has_subcollections_of_type(subcollection_type):
-            raise ValueError("Cannot compute effective subcollection type of %s over %s" % (subcollection_type, self))
+            raise ValueError(
+                "Cannot compute effective subcollection type of %s over %s" %
+                (subcollection_type, self))
 
         return self.collection_type[:-(len(subcollection_type) + 1)]
 
@@ -67,11 +71,13 @@ class CollectionTypeDescription(object):
         if hasattr(other_collection_type, 'collection_type'):
             other_collection_type = other_collection_type.collection_type
         collection_type = self.collection_type
-        return collection_type.endswith(other_collection_type) and collection_type != other_collection_type
+        return collection_type.endswith(
+            other_collection_type) and collection_type != other_collection_type
 
     def is_subcollection_of_type(self, other_collection_type):
         if not hasattr(other_collection_type, 'collection_type'):
-            other_collection_type = self.collection_type_description_factory.for_collection_type(other_collection_type)
+            other_collection_type = self.collection_type_description_factory.for_collection_type(
+                other_collection_type)
         return other_collection_type.has_subcollections_of_type(self)
 
     def can_match_type(self, other_collection_type):
@@ -82,9 +88,12 @@ class CollectionTypeDescription(object):
 
     def subcollection_type_description(self):
         if not self.__has_subcollections:
-            raise ValueError("Cannot generate subcollection type description for flat type %s" % self.collection_type)
+            raise ValueError(
+                "Cannot generate subcollection type description for flat type %s"
+                % self.collection_type)
         subcollection_type = self.collection_type.split(":", 1)[1]
-        return self.collection_type_description_factory.for_collection_type(subcollection_type)
+        return self.collection_type_description_factory.for_collection_type(
+            subcollection_type)
 
     def has_subcollections(self):
         return self.__has_subcollections
@@ -97,7 +106,8 @@ class CollectionTypeDescription(object):
         return self.collection_type.split(":")[0]
 
     def rank_type_plugin(self):
-        return self.collection_type_description_factory.type_registry.get(self.rank_collection_type())
+        return self.collection_type_description_factory.type_registry.get(
+            self.rank_collection_type())
 
     @property
     def dimension(self):
@@ -105,13 +115,15 @@ class CollectionTypeDescription(object):
 
     def multiply(self, other_collection_type):
         collection_type = map_over_collection_type(self, other_collection_type)
-        return self.collection_type_description_factory.for_collection_type(collection_type)
+        return self.collection_type_description_factory.for_collection_type(
+            collection_type)
 
     def __str__(self):
         return "CollectionTypeDescription[%s]" % self.collection_type
 
 
-def map_over_collection_type(mapped_over_collection_type, target_collection_type):
+def map_over_collection_type(mapped_over_collection_type,
+                             target_collection_type):
     if hasattr(mapped_over_collection_type, 'collection_type'):
         mapped_over_collection_type = mapped_over_collection_type.collection_type
 

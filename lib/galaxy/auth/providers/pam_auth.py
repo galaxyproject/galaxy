@@ -62,7 +62,8 @@ class PAM(AuthProvider):
         auto_register_email = None
         force_fail = False
         log.debug("use username: {} use email {} email {} username {}".format(
-            options.get('login-use-username'), options.get('login-use-email', False), email, username))
+            options.get('login-use-username'),
+            options.get('login-use-email', False), email, username))
         # check email based login first because if email exists in Galaxy DB
         # we will be given the "public name" as username
         if _get_bool(options, 'login-use-email', False) and email is not None:
@@ -76,11 +77,15 @@ class PAM(AuthProvider):
                     else:
                         auto_register_username = email_user
                 else:
-                    log.debug('PAM authenticate: warning: email does not match configured PAM maildomain')
+                    log.debug(
+                        'PAM authenticate: warning: email does not match configured PAM maildomain'
+                    )
                     # no need to fail: if auto-register is not enabled, this
                     # might still be a valid user
             else:
-                log.debug('PAM authenticate: email must be used to login, but no valid email found')
+                log.debug(
+                    'PAM authenticate: email must be used to login, but no valid email found'
+                )
                 force_fail = True
         elif _get_bool(options, 'login-use-username', False):
             # if we get here via authenticate_user then
@@ -93,10 +98,13 @@ class PAM(AuthProvider):
                 elif options.get('maildomain', None) is not None:
                     # we can register a user with this username and mail domain
                     # if auto registration is enabled
-                    auto_register_email = '{}@{}'.format(username, options['maildomain'])
+                    auto_register_email = '{}@{}'.format(
+                        username, options['maildomain'])
                 auto_register_username = username
             else:
-                log.debug('PAM authenticate: username login selected but no username provided')
+                log.debug(
+                    'PAM authenticate: username login selected but no username provided'
+                )
                 force_fail = True
         else:
             log.debug('PAM authenticate: could not find username for PAM')
@@ -110,20 +118,26 @@ class PAM(AuthProvider):
         log.debug("PAM auth: will use external helper: {}".format(use_helper))
         authenticated = False
         if use_helper:
-            authentication_helper = options.get('authentication-helper-script', '/bin/false').strip()
-            log.debug("PAM auth: external helper script: {}".format(authentication_helper))
+            authentication_helper = options.get('authentication-helper-script',
+                                                '/bin/false').strip()
+            log.debug("PAM auth: external helper script: {}".format(
+                authentication_helper))
             if not authentication_helper.startswith('/'):
                 # don't accept relative path
                 authenticated = False
             else:
-                auth_cmd = shlex.split('/usr/bin/sudo -n {}'.format(authentication_helper))
+                auth_cmd = shlex.split(
+                    '/usr/bin/sudo -n {}'.format(authentication_helper))
                 log.debug("PAM auth: external helper cmd: {}".format(auth_cmd))
                 proc = Popen(auth_cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-                message = '{}\n{}\n{}\n'.format(pam_service, pam_username, password)
+                message = '{}\n{}\n{}\n'.format(pam_service, pam_username,
+                                                password)
                 (output, error) = proc.communicate(message)
                 status = proc.wait()
                 if status != 0 and error != '':
-                    log.debug("PAM auth: external authentication script had errors: status {} error {}".format(status, error))
+                    log.debug(
+                        "PAM auth: external authentication script had errors: status {} error {}".
+                        format(status, error))
                 if output.strip() == 'True':
                     authenticated = True
                 else:
@@ -132,21 +146,26 @@ class PAM(AuthProvider):
             try:
                 import pam
             except ImportError:
-                log.debug('PAM authenticate: could not load pam module, PAM authentication disabled')
+                log.debug(
+                    'PAM authenticate: could not load pam module, PAM authentication disabled'
+                )
                 return None, '', ''
 
             p_auth = pam.pam()
-            authenticated = p_auth.authenticate(pam_username, password, service=pam_service)
+            authenticated = p_auth.authenticate(
+                pam_username, password, service=pam_service)
 
         if authenticated:
-            log.debug('PAM authentication successful for {}'.format(pam_username))
+            log.debug(
+                'PAM authentication successful for {}'.format(pam_username))
             return True, auto_register_email, auto_register_username
         else:
             log.debug('PAM authentication failed for {}'.format(pam_username))
             return False, '', ''
 
     def authenticate_user(self, user, password, options):
-        return self.authenticate(user.email, user.username, password, options)[0]
+        return self.authenticate(user.email, user.username, password,
+                                 options)[0]
 
 
 __all__ = ('PAM', )

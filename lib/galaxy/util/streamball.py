@@ -29,7 +29,8 @@ class StreamBall(object):
             self.members.append((file, relpath))
 
     def stream(self, environ, start_response):
-        response_write = start_response(self.wsgi_status, self.wsgi_headeritems)
+        response_write = start_response(self.wsgi_status,
+                                        self.wsgi_headeritems)
 
         class tarfileobj:
             def write(self, *args, **kwargs):
@@ -48,7 +49,8 @@ class ZipBall(object):
         self._tmpd = tmpd
 
     def stream(self, environ, start_response):
-        response_write = start_response(self.wsgi_status, self.wsgi_headeritems)
+        response_write = start_response(self.wsgi_status,
+                                        self.wsgi_headeritems)
         tmpfh = open(self._tmpf)
         response_write(tmpfh.read())
         tmpfh.close()
@@ -56,5 +58,7 @@ class ZipBall(object):
             os.unlink(self._tmpf)
             os.rmdir(self._tmpd)
         except OSError:
-            log.exception("Unable to remove temporary library download archive and directory")
+            log.exception(
+                "Unable to remove temporary library download archive and directory"
+            )
         return []

@@ -36,7 +36,8 @@ def upgrade(migrate_engine):
     print(__doc__)
     metadata.reflect()
     try:
-        ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
+        ToolShedRepository_table = Table(
+            "tool_shed_repository", metadata, autoload=True)
     except NoSuchTableError:
         ToolShedRepository_table = None
         log.debug("Failed loading table tool_shed_repository")
@@ -47,20 +48,25 @@ def upgrade(migrate_engine):
                 col = ToolShedRepository_table.c.update_available
                 col.drop()
             except Exception:
-                log.exception("Dropping column update_available from the tool_shed_repository table failed.")
+                log.exception(
+                    "Dropping column update_available from the tool_shed_repository table failed."
+                )
         c = Column("tool_shed_status", JSONType, nullable=True)
         try:
             c.create(ToolShedRepository_table)
             assert c is ToolShedRepository_table.c.tool_shed_status
         except Exception:
-            log.exception("Adding tool_shed_status column to the tool_shed_repository table failed.")
+            log.exception(
+                "Adding tool_shed_status column to the tool_shed_repository table failed."
+            )
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     try:
-        ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
+        ToolShedRepository_table = Table(
+            "tool_shed_repository", metadata, autoload=True)
     except NoSuchTableError:
         ToolShedRepository_table = None
         log.debug("Failed loading table tool_shed_repository")
@@ -71,11 +77,17 @@ def downgrade(migrate_engine):
                 col = ToolShedRepository_table.c.tool_shed_status
                 col.drop()
             except Exception:
-                log.exception("Dropping column tool_shed_status from the tool_shed_repository table failed.")
+                log.exception(
+                    "Dropping column tool_shed_status from the tool_shed_repository table failed."
+                )
             c = Column("update_available", Boolean, default=False)
             try:
                 c.create(ToolShedRepository_table)
                 assert c is ToolShedRepository_table.c.update_available
-                migrate_engine.execute("UPDATE tool_shed_repository SET update_available=%s" % engine_false(migrate_engine))
+                migrate_engine.execute(
+                    "UPDATE tool_shed_repository SET update_available=%s" %
+                    engine_false(migrate_engine))
             except Exception:
-                log.exception("Adding column update_available to the tool_shed_repository table failed.")
+                log.exception(
+                    "Adding column update_available to the tool_shed_repository table failed."
+                )

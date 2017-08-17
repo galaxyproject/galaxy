@@ -43,12 +43,17 @@ class LibraryListGrid(grids.Grid):
             link=(lambda library: dict(operation="browse", id=library.id)),
             attach_popup=False,
             filterable="advanced"),
-        DescriptionColumn("Data library description", key="description", attach_popup=False, filterable="advanced"),
+        DescriptionColumn(
+            "Data library description",
+            key="description",
+            attach_popup=False,
+            filterable="advanced"),
         grids.GridColumn("Created", key="create_time", format=time_ago),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
         StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
+        grids.DeletedColumn(
+            "Deleted", key="deleted", visible=False, filterable="advanced")
     ]
     columns.append(
         grids.MulticolFilterColumn(
@@ -57,14 +62,21 @@ class LibraryListGrid(grids.Grid):
             key="free-text-search",
             visible=False,
             filterable="standard"))
-    global_actions = [grids.GridAction("Create new data library", dict(controller='library_admin', action='create_library'))]
+    global_actions = [
+        grids.GridAction("Create new data library",
+                         dict(
+                             controller='library_admin',
+                             action='create_library'))
+    ]
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
-        grids.GridColumnFilter("Deleted", args=dict(deleted=True, purged=False)),
+        grids.GridColumnFilter(
+            "Deleted", args=dict(deleted=True, purged=False)),
         grids.GridColumnFilter("Purged", args=dict(purged=True)),
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
-    default_filter = dict(name="All", description="All", deleted="False", purged="False")
+    default_filter = dict(
+        name="All", description="All", deleted="False", purged="False")
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
@@ -81,7 +93,11 @@ class LibraryAdmin(BaseUIController):
             operation = kwd['operation'].lower()
             if operation == "browse":
                 return trans.response.send_redirect(
-                    web.url_for(controller='library_common', action='browse_library', cntrller='library_admin', **kwd))
+                    web.url_for(
+                        controller='library_common',
+                        action='browse_library',
+                        cntrller='library_admin',
+                        **kwd))
             elif operation == "delete":
                 return self.delete_library(trans, **kwd)
             elif operation == "undelete":
@@ -126,18 +142,23 @@ class LibraryAdmin(BaseUIController):
             search_term = kwd["f-free-text-search"]
             if trans.app.config.enable_lucene_library_search:
                 indexed_search_enabled = True
-                search_url = trans.app.config.config_dict.get("fulltext_find_url", "")
+                search_url = trans.app.config.config_dict.get(
+                    "fulltext_find_url", "")
                 if search_url:
-                    status, message, lddas = lucene_search(trans, 'library_admin', search_term, search_url, **kwd)
+                    status, message, lddas = lucene_search(
+                        trans, 'library_admin', search_term, search_url, **kwd)
             elif trans.app.config.enable_whoosh_library_search:
                 indexed_search_enabled = True
-                status, message, lddas = whoosh_search(trans, 'library_admin', search_term, **kwd)
+                status, message, lddas = whoosh_search(trans, 'library_admin',
+                                                       search_term, **kwd)
             else:
                 indexed_search_enabled = False
             if indexed_search_enabled:
                 comptypes = get_comptypes(trans)
-                show_deleted = galaxy.util.string_as_bool(kwd.get('show_deleted', False))
-                use_panels = galaxy.util.string_as_bool(kwd.get('use_panels', False))
+                show_deleted = galaxy.util.string_as_bool(
+                    kwd.get('show_deleted', False))
+                use_panels = galaxy.util.string_as_bool(
+                    kwd.get('use_panels', False))
                 return trans.fill_template(
                     '/library/common/library_dataset_search_results.mako',
                     cntrller='library_admin',
@@ -162,12 +183,15 @@ class LibraryAdmin(BaseUIController):
             synopsis = kwd.get('synopsis', '')
             if synopsis in ['None', None]:
                 synopsis = ''
-            library = trans.app.model.Library(name=name, description=description, synopsis=synopsis)
-            root_folder = trans.app.model.LibraryFolder(name=name, description='')
+            library = trans.app.model.Library(
+                name=name, description=description, synopsis=synopsis)
+            root_folder = trans.app.model.LibraryFolder(
+                name=name, description='')
             library.root_folder = root_folder
             trans.sa_session.add_all((library, root_folder))
             trans.sa_session.flush()
-            message = "The new library named '%s' has been created" % escape(library.name)
+            message = "The new library named '%s' has been created" % escape(
+                library.name)
             return trans.response.send_redirect(
                 web.url_for(
                     controller='library_common',
@@ -176,7 +200,10 @@ class LibraryAdmin(BaseUIController):
                     id=trans.security.encode_id(library.id),
                     message=message,
                     status='done'))
-        return trans.fill_template('/admin/library/new_library.mako', message=message, status=escape(status))
+        return trans.fill_template(
+            '/admin/library/new_library.mako',
+            message=message,
+            status=escape(status))
 
     @web.expose
     @web.require_admin
@@ -210,7 +237,8 @@ class LibraryAdmin(BaseUIController):
         # TODO: change this function to purge_library_item, behaving similar to delete_library_item
         # assuming we want the ability to purge libraries.
         # This function is currently only used by the functional tests.
-        library = trans.sa_session.query(trans.app.model.Library).get(trans.security.decode_id(kwd.get('id')))
+        library = trans.sa_session.query(trans.app.model.Library).get(
+            trans.security.decode_id(kwd.get('id')))
 
         def purge_folder(library_folder):
             for lf in library_folder.folders:
@@ -238,9 +266,14 @@ class LibraryAdmin(BaseUIController):
             trans.sa_session.flush()
 
         if not library.deleted:
-            message = "Library '%s' has not been marked deleted, so it cannot be purged" % escape(library.name)
+            message = "Library '%s' has not been marked deleted, so it cannot be purged" % escape(
+                library.name)
             return trans.response.send_redirect(
-                web.url_for(controller='library_admin', action='browse_libraries', message=message, status='error'))
+                web.url_for(
+                    controller='library_admin',
+                    action='browse_libraries',
+                    message=message,
+                    status='error'))
         else:
             purge_folder(library.root_folder)
             library.purged = True
@@ -249,4 +282,8 @@ class LibraryAdmin(BaseUIController):
             message = "Library '%s' and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script" % escape(
                 library.name)
             return trans.response.send_redirect(
-                web.url_for(controller='library_admin', action='browse_libraries', message=message, status='done'))
+                web.url_for(
+                    controller='library_admin',
+                    action='browse_libraries',
+                    message=message,
+                    status='done'))

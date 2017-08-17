@@ -53,7 +53,11 @@ def main():
                     # Value is not a number, so it can be indexed.
                     if val not in name_loc_dict:
                         # Value is not in dictionary.
-                        name_loc_dict[val] = {'contig': feature.chrom, 'start': feature.start, 'end': feature.end}
+                        name_loc_dict[val] = {
+                            'contig': feature.chrom,
+                            'start': feature.start,
+                            'end': feature.end
+                        }
                     else:
                         # Value already in dictionary, so update dictionary.
                         loc = name_loc_dict[val]
@@ -75,7 +79,11 @@ def main():
                 continue
 
             # Process line
-            name_loc_dict[fields[3]] = {'contig': fields[0], 'start': int(fields[1]), 'end': int(fields[2])}
+            name_loc_dict[fields[3]] = {
+                'contig': fields[0],
+                'start': int(fields[1]),
+                'end': int(fields[2])
+            }
 
     # Create sorted list of entries.
     out = open(out_fname, 'w')
@@ -83,7 +91,8 @@ def main():
     entries = []
     for name in sorted(name_loc_dict.keys()):
         loc = name_loc_dict[name]
-        entry = '%s\t%s\t%s' % (name.lower(), name, '%s:%i-%i' % (loc['contig'], loc['start'], loc['end']))
+        entry = '%s\t%s\t%s' % (name.lower(), name, '%s:%i-%i' %
+                                (loc['contig'], loc['start'], loc['end']))
         if len(entry) > max_len:
             max_len = len(entry)
         entries.append(entry)

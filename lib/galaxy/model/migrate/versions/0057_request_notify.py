@@ -33,14 +33,17 @@ def upgrade(migrate_engine):
             col.create(Request_table)
             assert col is Request_table.c.notification
         except Exception:
-            log.exception("Creating column 'notification' in the 'request' table failed.")
+            log.exception(
+                "Creating column 'notification' in the 'request' table failed."
+            )
 
         cmd = "SELECT id, user_id, notify FROM request"
         result = migrate_engine.execute(cmd)
         for r in result:
             id = int(r[0])
             notify_new = dict(email=[], sample_states=[], body='', subject='')
-            cmd = "UPDATE request SET notification='%s' WHERE id=%i" % (dumps(notify_new), id)
+            cmd = "UPDATE request SET notification='%s' WHERE id=%i" % (
+                dumps(notify_new), id)
             migrate_engine.execute(cmd)
 
         # remove the 'notify' column for non-sqlite databases.
@@ -48,7 +51,9 @@ def upgrade(migrate_engine):
             try:
                 Request_table.c.notify.drop()
             except Exception:
-                log.exception("Deleting column 'notify' from the 'request' table failed.")
+                log.exception(
+                    "Deleting column 'notify' from the 'request' table failed."
+                )
 
 
 def downgrade(migrate_engine):
@@ -58,4 +63,5 @@ def downgrade(migrate_engine):
         Request_table = Table("request", metadata, autoload=True)
         Request_table.c.notification.drop()
     except Exception:
-        log.exception("Dropping column 'notification' from 'request' table failed.")
+        log.exception(
+            "Dropping column 'notification' from 'request' table failed.")

@@ -59,7 +59,12 @@ class DeletableDeserializerMixin(object):
 
 class DeletableFiltersMixin(object):
     def _add_parsers(self):
-        self.orm_filter_parsers.update({'deleted': {'op': ('eq'), 'val': self.parse_bool}})
+        self.orm_filter_parsers.update({
+            'deleted': {
+                'op': ('eq'),
+                'val': self.parse_bool
+            }
+        })
 
 
 class PurgableManagerMixin(DeletableManagerMixin):
@@ -106,4 +111,9 @@ class PurgableDeserializerMixin(DeletableDeserializerMixin):
 class PurgableFiltersMixin(DeletableFiltersMixin):
     def _add_parsers(self):
         DeletableFiltersMixin._add_parsers(self)
-        self.orm_filter_parsers.update({'purged': {'op': ('eq'), 'val': self.parse_bool}})
+        self.orm_filter_parsers.update({
+            'purged': {
+                'op': ('eq'),
+                'val': self.parse_bool
+            }
+        })

@@ -21,17 +21,20 @@ def __main__():
         chromCol = int(sys.argv[3]) - 1
     except:
         stop_err(
-            "'%s' is an invalid chrom column, correct the column settings before attempting to convert the data format." % str(sys.argv[3]))
+            "'%s' is an invalid chrom column, correct the column settings before attempting to convert the data format."
+            % str(sys.argv[3]))
     try:
         startCol = int(sys.argv[4]) - 1
     except:
         stop_err(
-            "'%s' is an invalid start column, correct the column settings before attempting to convert the data format." % str(sys.argv[4]))
+            "'%s' is an invalid start column, correct the column settings before attempting to convert the data format."
+            % str(sys.argv[4]))
     try:
         endCol = int(sys.argv[5]) - 1
     except:
         stop_err(
-            "'%s' is an invalid end column, correct the column settings before attempting to convert the data format." % str(sys.argv[5]))
+            "'%s' is an invalid end column, correct the column settings before attempting to convert the data format."
+            % str(sys.argv[5]))
     try:
         strandCol = int(sys.argv[6]) - 1
     except:
@@ -63,7 +66,9 @@ def __main__():
             name = "region_%i" % count
         try:
 
-            out.write("%s\t%i\t%i\t%s\t%i\t%s\n" % (region.chrom, region.start, region.end, name, 0, region.strand))
+            out.write("%s\t%i\t%i\t%s\t%i\t%s\n" %
+                      (region.chrom, region.start, region.end, name, 0,
+                       region.strand))
         except:
             skipped_lines += 1
             if not first_skipped_line:
@@ -71,7 +76,8 @@ def __main__():
     out.close()
     print("%i regions converted to BED." % (count + 1 - skipped_lines))
     if skipped_lines > 0:
-        print("Skipped %d blank or invalid lines starting with line # %d." % (skipped_lines, first_skipped_line))
+        print("Skipped %d blank or invalid lines starting with line # %d." %
+              (skipped_lines, first_skipped_line))
 
 
 if __name__ == "__main__":

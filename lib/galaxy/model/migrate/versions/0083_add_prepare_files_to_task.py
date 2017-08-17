@@ -21,7 +21,8 @@ def upgrade(migrate_engine):
         c.create(task_table)
         assert c is task_table.c.prepare_input_files_cmd
     except Exception:
-        log.exception("Adding prepare_input_files_cmd column to task table failed.")
+        log.exception(
+            "Adding prepare_input_files_cmd column to task table failed.")
     try:
         task_table = Table("task", metadata, autoload=True)
         c = Column("working_directory", String(1024), nullable=True)
@@ -34,7 +35,8 @@ def upgrade(migrate_engine):
     try:
         task_table.c.part_file.drop()
     except Exception:
-        log.exception("Deleting column 'part_file' from the 'task' table failed.")
+        log.exception(
+            "Deleting column 'part_file' from the 'task' table failed.")
 
 
 def downgrade(migrate_engine):
@@ -44,12 +46,14 @@ def downgrade(migrate_engine):
         task_table = Table("task", metadata, autoload=True)
         task_table.c.prepare_input_files_cmd.drop()
     except Exception:
-        log.exception("Dropping prepare_input_files_cmd column from task table failed.")
+        log.exception(
+            "Dropping prepare_input_files_cmd column from task table failed.")
     try:
         task_table = Table("task", metadata, autoload=True)
         task_table.c.working_directory.drop()
     except Exception:
-        log.exception("Dropping working_directory column from task table failed.")
+        log.exception(
+            "Dropping working_directory column from task table failed.")
     try:
         task_table = Table("task", metadata, autoload=True)
         c = Column("part_file", String(1024), nullable=True)

@@ -29,7 +29,8 @@ def submission_params(prefix=SUBMIT_PARAM_PREFIX, **kwds):
     return submission_params
 
 
-def build_submit_description(executable, output, error, user_log, query_params):
+def build_submit_description(executable, output, error, user_log,
+                             query_params):
     """
     Build up the contents of a condor submit description file.
 
@@ -68,7 +69,8 @@ def condor_submit(submit_file):
     """
     external_id = None
     try:
-        submit = Popen(('condor_submit', submit_file), stdout=PIPE, stderr=STDOUT)
+        submit = Popen(
+            ('condor_submit', submit_file), stdout=PIPE, stderr=STDOUT)
         message, _ = submit.communicate()
         if submit.returncode == 0:
             external_id = parse_external_id(message, type='condor')

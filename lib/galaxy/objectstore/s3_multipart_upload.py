@@ -70,7 +70,9 @@ def multipart_upload(s3server, bucket, s3_key_name, tarball, mb_size):
     cores = multiprocessing.cpu_count()
 
     def split_file(in_file, mb_size, split_num=5):
-        prefix = os.path.join(os.path.dirname(in_file), "%sS3PART" % (os.path.basename(s3_key_name)))
+        prefix = os.path.join(
+            os.path.dirname(in_file),
+            "%sS3PART" % (os.path.basename(s3_key_name)))
         max_chunk = s3server['max_chunk_size']
         # Split chunks so they are 5MB < chunk < 250MB(max_chunk_size)
         split_size = int(max(min(mb_size / (split_num * 2.0), max_chunk), 5))
@@ -79,11 +81,14 @@ def multipart_upload(s3server, bucket, s3_key_name, tarball, mb_size):
             subprocess.check_call(cl)
         return sorted(glob.glob("%s*" % prefix))
 
-    mp = bucket.initiate_multipart_upload(s3_key_name, reduced_redundancy=s3server['use_rr'])
+    mp = bucket.initiate_multipart_upload(
+        s3_key_name, reduced_redundancy=s3server['use_rr'])
 
     with multimap(cores) as pmap:
-        for _ in pmap(transfer_part, ((s3server, mp.id, mp.key_name, mp.bucket_name, i, part)
-                                      for (i, part) in enumerate(split_file(tarball, mb_size, cores)))):
+        for _ in pmap(
+                transfer_part,
+            ((s3server, mp.id, mp.key_name, mp.bucket_name, i, part)
+             for (i, part) in enumerate(split_file(tarball, mb_size, cores)))):
             pass
     mp.complete_upload()
 
@@ -100,7 +105,8 @@ def multimap(cores=None):
 
     def wrapper(func):
         def wrap(self, timeout=None):
-            return func(self, timeout=timeout if timeout is not None else 1e100)
+            return func(
+                self, timeout=timeout if timeout is not None else 1e100)
 
         return wrap
 

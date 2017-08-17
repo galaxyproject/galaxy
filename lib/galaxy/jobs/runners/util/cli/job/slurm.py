@@ -10,7 +10,8 @@ try:
 except ImportError:
     # Not in Galaxy, map Galaxy job states to Pulsar ones.
     from galaxy.util import enum
-    job_states = enum(RUNNING='running', OK='complete', QUEUED='queued', ERROR="failed")
+    job_states = enum(
+        RUNNING='running', OK='complete', QUEUED='queued', ERROR="failed")
 
 log = getLogger(__name__)
 
@@ -35,7 +36,9 @@ class Slurm(BaseJobExec):
                     k = argmap[k]
                 scriptargs[k] = v
             except:
-                log.warning('Unrecognized long argument passed to Slurm CLI plugin: %s' % k)
+                log.warning(
+                    'Unrecognized long argument passed to Slurm CLI plugin: %s'
+                    % k)
 
         # Generated template.
         template_scriptargs = ''
@@ -84,7 +87,8 @@ class Slurm(BaseJobExec):
                 'CD': job_states.OK
             }.get(state)
         except KeyError:
-            raise KeyError("Failed to map slurm status code [%s] to job state." % state)
+            raise KeyError(
+                "Failed to map slurm status code [%s] to job state." % state)
 
 
 __all__ = ('Slurm', )

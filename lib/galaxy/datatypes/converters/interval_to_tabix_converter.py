@@ -25,7 +25,11 @@ def main():
     # Create index.
     if options.preset:
         # Preset type.
-        ctabix.tabix_index(filename=index_fname, preset=options.preset, keep_original=True, index_filename=out_fname)
+        ctabix.tabix_index(
+            filename=index_fname,
+            preset=options.preset,
+            keep_original=True,
+            index_filename=out_fname)
     else:
         # For interval files; column indices are 0-based.
         ctabix.tabix_index(
@@ -36,7 +40,9 @@ def main():
             keep_original=True,
             index_filename=out_fname)
     if os.path.getsize(index_fname) == 0:
-        sys.stderr.write("The converted tabix index file is empty, meaning the input data is invalid.")
+        sys.stderr.write(
+            "The converted tabix index file is empty, meaning the input data is invalid."
+        )
 
 
 if __name__ == "__main__":

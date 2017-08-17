@@ -121,10 +121,13 @@ def parse_xml(file_name):
     fobj = open(file_name, 'r')
     if using_python_27:
         try:
-            tree = XmlET.parse(fobj, parser=XmlET.XMLParser(target=Py27CommentedTreeBuilder()))
+            tree = XmlET.parse(
+                fobj,
+                parser=XmlET.XMLParser(target=Py27CommentedTreeBuilder()))
         except Exception as e:
             fobj.close()
-            error_message = "Exception attempting to parse %s: %s" % (str(file_name), str(e))
+            error_message = "Exception attempting to parse %s: %s" % (
+                str(file_name), str(e))
             log.exception(error_message)
             return None, error_message
     else:
@@ -132,7 +135,8 @@ def parse_xml(file_name):
             tree = XmlET.parse(fobj, parser=Py26CommentedTreeBuilder())
         except Exception as e:
             fobj.close()
-            error_message = "Exception attempting to parse %s: %s" % (str(file_name), str(e))
+            error_message = "Exception attempting to parse %s: %s" % (
+                str(file_name), str(e))
             log.exception(error_message)
             return None, error_message
     fobj.close()
@@ -146,9 +150,11 @@ def xml_to_string(elem, encoding='utf-8', use_indent=False, level=0):
             # set the level to 1 since level 0 is the <toolbox> tag set.
             indent(elem, level=level)
         if using_python_27:
-            xml_str = '%s\n' % xml.etree.ElementTree.tostring(elem, encoding=encoding, method="xml")
+            xml_str = '%s\n' % xml.etree.ElementTree.tostring(
+                elem, encoding=encoding, method="xml")
         else:
-            xml_str = '%s\n' % xml.etree.ElementTree.tostring(elem, encoding=encoding)
+            xml_str = '%s\n' % xml.etree.ElementTree.tostring(
+                elem, encoding=encoding)
     else:
         xml_str = ''
     return xml_str

@@ -11,9 +11,12 @@ from .cwltool_deps import (
     schema_salad,
     workflow, )
 
-RawProcessReference = namedtuple("RawProcessReference", ["process_object", "uri"])
-ProcessDefinition = namedtuple("ProcessDefinition",
-                               ["process_object", "metadata", "document_loader", "avsc_names", "raw_process_reference"])
+RawProcessReference = namedtuple("RawProcessReference",
+                                 ["process_object", "uri"])
+ProcessDefinition = namedtuple("ProcessDefinition", [
+    "process_object", "metadata", "document_loader", "avsc_names",
+    "raw_process_reference"
+])
 
 
 class SchemaLoader(object):
@@ -24,12 +27,18 @@ class SchemaLoader(object):
     @property
     def raw_document_loader(self):
         ensure_cwltool_available()
-        return schema_salad.ref_resolver.Loader({"cwl": "https://w3id.org/cwl/cwl#", "id": "@id"})
+        return schema_salad.ref_resolver.Loader({
+            "cwl":
+            "https://w3id.org/cwl/cwl#",
+            "id":
+            "@id"
+        })
 
     def raw_process_reference(self, path):
         uri = "file://" + os.path.abspath(path)
         fileuri, _ = urldefrag(uri)
-        return RawProcessReference(self.raw_document_loader.fetch(fileuri), uri)
+        return RawProcessReference(
+            self.raw_document_loader.fetch(fileuri), uri)
 
     def process_definition(self, raw_reference):
         document_loader, avsc_names, process_object, metadata, uri = load_tool.validate_document(
@@ -49,7 +58,8 @@ class SchemaLoader(object):
         if process_definition is None:
             raw_process_reference = kwds.get("raw_process_reference", None)
             if raw_process_reference is None:
-                raw_process_reference = self.raw_process_reference(kwds["path"])
+                raw_process_reference = self.raw_process_reference(
+                    kwds["path"])
             process_definition = self.process_definition(raw_process_reference)
 
         make_tool = kwds.get("make_tool", workflow.defaultMakeTool)

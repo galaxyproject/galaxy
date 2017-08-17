@@ -44,13 +44,16 @@ class LoggingProxy(ConnectionProxy):
         rollback(conn)
         log.debug("rollback transaction: thread: %r" % thread_ident)
 
-    def cursor_execute(self, execute, cursor, statement, parameters, context, executemany):
+    def cursor_execute(self, execute, cursor, statement, parameters, context,
+                       executemany):
         thread_ident = threading.current_thread().ident
         start = time.clock()
         rval = execute(cursor, statement, parameters, context)
         duration = time.clock() - start
-        log.debug("statement: %r parameters: %r executemany: %r duration: %r stack: %r thread: %r", statement, parameters, executemany,
-                  duration, " > ".join(pretty_stack()), thread_ident)
+        log.debug(
+            "statement: %r parameters: %r executemany: %r duration: %r stack: %r thread: %r",
+            statement, parameters, executemany, duration,
+            " > ".join(pretty_stack()), thread_ident)
         return rval
 
 
@@ -62,7 +65,8 @@ class TraceLoggerProxy(ConnectionProxy):
     def __init__(self, trace_logger):
         self.trace_logger = trace_logger
 
-    def cursor_execute(self, execute, cursor, statement, parameters, context, executemany):
+    def cursor_execute(self, execute, cursor, statement, parameters, context,
+                       executemany):
         start = time.clock()
         rval = execute(cursor, statement, parameters, context)
         duration = time.clock() - start

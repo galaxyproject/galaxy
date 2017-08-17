@@ -27,11 +27,13 @@ def dataset_collector_descriptions_from_elem(elem, legacy=True):
     if len(primary_dataset_elems) == 0 and legacy:
         return [DEFAULT_DATASET_COLLECTOR_DESCRIPTION]
     else:
-        return map(lambda elem: DatasetCollectionDescription(**elem.attrib), primary_dataset_elems)
+        return map(lambda elem: DatasetCollectionDescription(**elem.attrib),
+                   primary_dataset_elems)
 
 
 def dataset_collector_descriptions_from_list(discover_datasets_dicts):
-    return map(lambda kwds: DatasetCollectionDescription(**kwds), discover_datasets_dicts)
+    return map(lambda kwds: DatasetCollectionDescription(**kwds),
+               discover_datasets_dicts)
 
 
 class DatasetCollectionDescription(object):
@@ -46,7 +48,8 @@ class DatasetCollectionDescription(object):
             self.default_ext = kwargs.get("format")
         self.default_visible = asbool(kwargs.get("visible", None))
         self.directory = kwargs.get("directory", None)
-        self.assign_primary_output = asbool(kwargs.get('assign_primary_output', False))
+        self.assign_primary_output = asbool(
+            kwargs.get('assign_primary_output', False))
         sort_by = kwargs.get("sort_by", DEFAULT_SORT_BY)
         if sort_by.startswith("reverse_"):
             self.sort_reverse = True

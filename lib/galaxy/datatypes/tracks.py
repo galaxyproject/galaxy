@@ -59,13 +59,16 @@ class UCSCTrackHub(Html):
         """
         rval = [
             '<html><head><title>Files for Composite Dataset (%s)</title></head><p/>\
-            This composite dataset is composed of the following files:<p/><ul>' % (self.file_ext)
+            This composite dataset is composed of the following files:<p/><ul>'
+            % (self.file_ext)
         ]
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+        for composite_name, composite_file in self.get_composite_files(
+                dataset=dataset).items():
             opt_text = ''
             if composite_file.optional:
                 opt_text = ' (optional)'
-            rval.append('<li><a href="%s">%s</a>%s' % (composite_name, composite_name, opt_text))
+            rval.append('<li><a href="%s">%s</a>%s' %
+                        (composite_name, composite_name, opt_text))
         rval.append('</ul></html>')
         return "\n".join(rval)
 

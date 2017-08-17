@@ -22,15 +22,18 @@ def add_changeset(repo_ui, repo, path_to_filename_in_archive):
     commands.add(repo_ui, repo, str(path_to_filename_in_archive))
 
 
-def archive_repository_revision(app, repository, archive_dir, changeset_revision):
+def archive_repository_revision(app, repository, archive_dir,
+                                changeset_revision):
     '''Create an un-versioned archive of a repository.'''
-    repo = get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+    repo = get_repo_for_repository(
+        app, repository=repository, repo_path=None, create=False)
     options_dict = get_mercurial_default_options_dict('archive')
     options_dict['rev'] = changeset_revision
     error_message = ''
     return_code = None
     try:
-        return_code = commands.archive(get_configured_ui, repo, archive_dir, **options_dict)
+        return_code = commands.archive(get_configured_ui, repo, archive_dir,
+                                       **options_dict)
     except Exception as e:
         error_message = "Error attempting to archive revision <b>%s</b> of repository %s: %s\nReturn code: %s\n" % \
             (str(changeset_revision), str(repository.name), str(e), str(return_code))
@@ -70,7 +73,8 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev):
 
 
 def commit_changeset(repo_ui, repo, full_path_to_changeset, username, message):
-    commands.commit(repo_ui, repo, full_path_to_changeset, user=username, message=message)
+    commands.commit(
+        repo_ui, repo, full_path_to_changeset, user=username, message=message)
 
 
 def copy_file_from_manifest(repo, ctx, filename, dir):
@@ -98,7 +102,8 @@ def create_hgrc_file(app, repository):
     # not being tracked by mercurial in the current repository.  It'll remove unknown
     # files and empty directories.  This is not currently used because it is not supported
     # in the mercurial API.
-    repo = get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+    repo = get_repo_for_repository(
+        app, repository=repository, repo_path=None, create=False)
     fp = repo.opener('hgrc', 'wb')
     fp.write('[paths]\n')
     fp.write('default = .\n')
@@ -159,7 +164,8 @@ def get_ctx_file_path_from_manifest(filename, repo, changeset_revision):
     to the value of changeset_revision.
     """
     stripped_filename = basic_util.strip_path(filename)
-    for changeset in reversed_upper_bounded_changelog(repo, changeset_revision):
+    for changeset in reversed_upper_bounded_changelog(repo,
+                                                      changeset_revision):
         manifest_ctx = repo.changectx(changeset)
         for ctx_file in manifest_ctx.files():
             ctx_file_name = basic_util.strip_path(ctx_file)
@@ -202,7 +208,8 @@ def get_mercurial_default_options_dict(command, command_table=None, **kwd):
         possible = possible[0]
     if len(possible) != 1:
         raise Exception('unable to find mercurial command "%s"' % command)
-    default_options_dict = dict((r[1].replace('-', '_'), r[2]) for r in next(iter(possible.values()))[1][1])
+    default_options_dict = dict((r[1].replace('-', '_'), r[2])
+                                for r in next(iter(possible.values()))[1][1])
     for option in kwd:
         default_options_dict[option] = kwd[option]
     return default_options_dict
@@ -225,7 +232,8 @@ def get_named_tmpfile_from_ctx(ctx, filename, dir):
                 fctx = None
                 continue
             if fctx:
-                fh = tempfile.NamedTemporaryFile('wb', prefix="tmp-toolshed-gntfc", dir=dir)
+                fh = tempfile.NamedTemporaryFile(
+                    'wb', prefix="tmp-toolshed-gntfc", dir=dir)
                 tmp_filename = fh.name
                 fh.close()
                 fh = open(tmp_filename, 'wb')
@@ -243,9 +251,11 @@ def get_readable_ctx_date(ctx):
     return ctx_date
 
 
-def get_repo_for_repository(app, repository=None, repo_path=None, create=False):
+def get_repo_for_repository(app, repository=None, repo_path=None,
+                            create=False):
     if repository is not None:
-        return hg.repository(get_configured_ui(), repository.repo_path(app), create=create)
+        return hg.repository(
+            get_configured_ui(), repository.repo_path(app), create=create)
     if repo_path is not None:
         return hg.repository(get_configured_ui(), repo_path, create=create)
 
@@ -264,7 +274,11 @@ def get_reversed_changelog_changesets(repo):
     return reversed_changelog
 
 
-def get_revision_label(app, repository, changeset_revision, include_date=True, include_hash=True):
+def get_revision_label(app,
+                       repository,
+                       changeset_revision,
+                       include_date=True,
+                       include_hash=True):
     """
     Return a string consisting of the human read-able changeset rev and the changeset revision string
     which includes the revision date if the receive include_date is True.
@@ -272,7 +286,8 @@ def get_revision_label(app, repository, changeset_revision, include_date=True, i
     repo = get_repo_for_repository(app, repository=repository, repo_path=None)
     ctx = get_changectx_for_changeset(repo, changeset_revision)
     if ctx:
-        return get_revision_label_from_ctx(ctx, include_date=include_date, include_hash=include_hash)
+        return get_revision_label_from_ctx(
+            ctx, include_date=include_date, include_hash=include_hash)
     else:
         if include_hash:
             return "-1:%s" % changeset_revision
@@ -280,11 +295,12 @@ def get_revision_label(app, repository, changeset_revision, include_date=True, i
             return "-1"
 
 
-def get_rev_label_changeset_revision_from_repository_metadata(app,
-                                                              repository_metadata,
-                                                              repository=None,
-                                                              include_date=True,
-                                                              include_hash=True):
+def get_rev_label_changeset_revision_from_repository_metadata(
+        app,
+        repository_metadata,
+        repository=None,
+        include_date=True,
+        include_hash=True):
     if repository is None:
         repository = repository_metadata.repository
     repo = hg.repository(get_configured_ui(), repository.repo_path(app))
@@ -295,7 +311,8 @@ def get_rev_label_changeset_revision_from_repository_metadata(app,
         if include_date:
             changeset_revision_date = get_readable_ctx_date(ctx)
             if include_hash:
-                label = "%s:%s (%s)" % (str(ctx.rev()), changeset_revision, changeset_revision_date)
+                label = "%s:%s (%s)" % (str(ctx.rev()), changeset_revision,
+                                        changeset_revision_date)
             else:
                 label = "%s (%s)" % (str(ctx.rev()), changeset_revision_date)
         else:
@@ -327,7 +344,10 @@ def get_revision_label_from_ctx(ctx, include_date=True, include_hash=True):
             return '%s' % str(ctx.rev())
 
 
-def get_rev_label_from_changeset_revision(repo, changeset_revision, include_date=True, include_hash=True):
+def get_rev_label_from_changeset_revision(repo,
+                                          changeset_revision,
+                                          include_date=True,
+                                          include_hash=True):
     """
     Given a changeset revision hash, return two strings, the changeset rev and the changeset revision hash
     which includes the revision date if the receive include_date is True.
@@ -344,14 +364,17 @@ def get_rev_label_from_changeset_revision(repo, changeset_revision, include_date
 
 def pull_repository(repo, repository_clone_url, ctx_rev):
     """Pull changes from a remote repository to a local one."""
-    commands.pull(get_configured_ui(), repo, source=repository_clone_url, rev=[ctx_rev])
+    commands.pull(
+        get_configured_ui(), repo, source=repository_clone_url, rev=[ctx_rev])
 
 
 def remove_file(repo_ui, repo, selected_file, force=True):
     commands.remove(repo_ui, repo, selected_file, force=force)
 
 
-def reversed_lower_upper_bounded_changelog(repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision):
+def reversed_lower_upper_bounded_changelog(
+        repo, excluded_lower_bounds_changeset_revision,
+        included_upper_bounds_changeset_revision):
     """
     Return a reversed list of changesets in the repository changelog after the excluded_lower_bounds_changeset_revision,
     but up to and including the included_upper_bounds_changeset_revision.  The value of excluded_lower_bounds_changeset_revision
@@ -377,12 +400,14 @@ def reversed_lower_upper_bounded_changelog(repo, excluded_lower_bounds_changeset
     return reversed_changelog
 
 
-def reversed_upper_bounded_changelog(repo, included_upper_bounds_changeset_revision):
+def reversed_upper_bounded_changelog(repo,
+                                     included_upper_bounds_changeset_revision):
     """
     Return a reversed list of changesets in the repository changelog up to and including the
     included_upper_bounds_changeset_revision.
     """
-    return reversed_lower_upper_bounded_changelog(repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision)
+    return reversed_lower_upper_bounded_changelog(
+        repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision)
 
 
 def unpack_chunks(hg_unbundle10_obj):
@@ -398,13 +423,21 @@ def unpack_chunks(hg_unbundle10_obj):
             break
         if length < 84:
             raise Exception("negative data length")
-        node, p1, p2, cs = struct.unpack('20s20s20s20s', readexactly(hg_unbundle10_obj, 80))
+        node, p1, p2, cs = struct.unpack('20s20s20s20s',
+                                         readexactly(hg_unbundle10_obj, 80))
         yield {
-            'node': node.encode('hex'),
-            'p1': p1.encode('hex'),
-            'p2': p2.encode('hex'),
-            'cs': cs.encode('hex'),
-            'data': [patch for patch in unpack_patches(hg_unbundle10_obj, length - 84)]
+            'node':
+            node.encode('hex'),
+            'p1':
+            p1.encode('hex'),
+            'p2':
+            p2.encode('hex'),
+            'cs':
+            cs.encode('hex'),
+            'data': [
+                patch
+                for patch in unpack_patches(hg_unbundle10_obj, length - 84)
+            ]
         }
 
 
@@ -423,7 +456,8 @@ def unpack_groups(hg_unbundle10_obj):
         if length <= 4:
             # We found a "null meta chunk", which ends the changegroup.
             break
-        filename = readexactly(hg_unbundle10_obj, length - 4).encode('string_escape')
+        filename = readexactly(hg_unbundle10_obj,
+                               length - 4).encode('string_escape')
         # Process the file group.
         yield (filename, [chunk for chunk in unpack_chunks(hg_unbundle10_obj)])
 
@@ -434,13 +468,20 @@ def unpack_patches(hg_unbundle10_obj, remaining):
     for this data field, a length argument is required.
     """
     while remaining >= 12:
-        start, end, blocklen = struct.unpack('>lll', readexactly(hg_unbundle10_obj, 12))
+        start, end, blocklen = struct.unpack('>lll',
+                                             readexactly(
+                                                 hg_unbundle10_obj, 12))
         remaining -= 12
         if blocklen > remaining:
             raise Exception("unexpected end of patch stream")
         block = readexactly(hg_unbundle10_obj, blocklen)
         remaining -= blocklen
-        yield {'start': start, 'end': end, 'blocklen': blocklen, 'block': block.encode('string_escape')}
+        yield {
+            'start': start,
+            'end': end,
+            'blocklen': blocklen,
+            'block': block.encode('string_escape')
+        }
     if remaining > 0:
         log.error("Unexpected end of patch stream, %s remaining", remaining)
         raise Exception("unexpected end of patch stream")

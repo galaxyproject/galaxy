@@ -45,7 +45,11 @@ class PluginManager(object):
     to be inherited.
     """
 
-    def __init__(self, app, directories_setting=None, skip_bad_plugins=True, **kwargs):
+    def __init__(self,
+                 app,
+                 directories_setting=None,
+                 skip_bad_plugins=True,
+                 **kwargs):
         """
         Set up the manager and load all plugins.
 
@@ -63,7 +67,8 @@ class PluginManager(object):
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins = odict.odict()
 
-        self.directories = util.config_directories_from_setting(directories_setting, app.config.root)
+        self.directories = util.config_directories_from_setting(
+            directories_setting, app.config.root)
 
         self.load_configuration()
         self.load_plugins()
@@ -92,12 +97,16 @@ class PluginManager(object):
                 # NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
                 # TODO: overwriting may be desired
                 elif plugin and plugin.name in self.plugins:
-                    log.warning('%s, plugin with name already exists: %s. Skipping...', self, plugin.name)
+                    log.warning(
+                        '%s, plugin with name already exists: %s. Skipping...',
+                        self, plugin.name)
 
             except Exception:
                 if not self.skip_bad_plugins:
                     raise
-                log.exception('Plugin loading raised exception: %s. Skipping...', plugin_path)
+                log.exception(
+                    'Plugin loading raised exception: %s. Skipping...',
+                    plugin_path)
 
         return self.plugins
 
@@ -208,7 +217,8 @@ class HookPluginManager(PluginManager):
         plugin = super(HookPluginManager, self).load_plugin(plugin_path)
 
         loading_point_name = self.loading_point_filename[:-3]
-        plugin['module'] = self.import_plugin_module(loading_point_name, plugin)
+        plugin['module'] = self.import_plugin_module(loading_point_name,
+                                                     plugin)
         return plugin
 
     def import_plugin_module(self, loading_point_name, plugin, import_as=None):
@@ -228,12 +238,14 @@ class HookPluginManager(PluginManager):
         """
         # add this name to import_as (w/ default to plugin.name) to prevent namespace pollution in sys.modules
         import_as = '%s.%s' % (__name__, (import_as or plugin.name))
-        module_file, pathname, description = imp.find_module(loading_point_name, [plugin.path])
+        module_file, pathname, description = imp.find_module(
+            loading_point_name, [plugin.path])
         try:
             # TODO: hate this hack but only way to get package imports inside the plugin to work?
             sys.path.append(plugin.path)
             # sys.modules will now have import_as in its list
-            module = imp.load_module(import_as, module_file, pathname, description)
+            module = imp.load_module(import_as, module_file, pathname,
+                                     description)
         finally:
             module_file.close()
             if plugin.path in sys.path:
@@ -268,7 +280,8 @@ class HookPluginManager(PluginManager):
                     returned[plugin.name] = fn_returned
                 except Exception:
                     # fail gracefully and continue with other plugins
-                    log.exception('Hook function "%s" failed for plugin "%s"', hook_name, plugin.name)
+                    log.exception('Hook function "%s" failed for plugin "%s"',
+                                  hook_name, plugin.name)
 
         # not sure of utility of this - seems better to be fire-and-forget pub-sub
         return returned
@@ -299,7 +312,9 @@ class HookPluginManager(PluginManager):
 
                 except Exception:
                     # fail gracefully and continue with other plugins
-                    log.exception('Filter hook function "%s" failed for plugin "%s"', hook_name, plugin.name)
+                    log.exception(
+                        'Filter hook function "%s" failed for plugin "%s"',
+                        hook_name, plugin.name)
 
         # may have been altered by hook fns, return
         return hook_arg
@@ -358,7 +373,8 @@ class PageServingPluginManager(PluginManager):
         """
         self.base_url = base_url or self.DEFAULT_BASE_URL
         if not self.base_url:
-            raise PluginManagerException('base_url or DEFAULT_BASE_URL required')
+            raise PluginManagerException(
+                'base_url or DEFAULT_BASE_URL required')
         self.template_cache_dir = template_cache_dir
         self.additional_template_paths = []
 
@@ -370,9 +386,11 @@ class PageServingPluginManager(PluginManager):
             additional template lookup directories
         """
         for directory in self.directories:
-            possible_path = os.path.join(directory, self.additional_template_paths_config_filename)
+            possible_path = os.path.join(
+                directory, self.additional_template_paths_config_filename)
             if os.path.exists(possible_path):
-                added_paths = self.parse_additional_template_paths(possible_path, directory)
+                added_paths = self.parse_additional_template_paths(
+                    possible_path, directory)
                 self.additional_template_paths.extend(added_paths)
 
     def parse_additional_template_paths(self, config_filepath, base_directory):
@@ -393,7 +411,8 @@ class PageServingPluginManager(PluginManager):
         paths_list = xml_tree.getroot()
         for rel_path_elem in paths_list.findall('path'):
             if rel_path_elem.text is not None:
-                additional_paths.append(os.path.join(base_directory, rel_path_elem.text))
+                additional_paths.append(
+                    os.path.join(base_directory, rel_path_elem.text))
         return additional_paths
 
     def is_plugin(self, plugin_path):
@@ -487,7 +506,8 @@ class PageServingPluginManager(PluginManager):
         if self.serves_templates and os.path.isdir(template_path):
             plugin.serves_templates = True
             plugin['template_path'] = template_path
-            plugin['template_lookup'] = self.build_plugin_template_lookup(plugin)
+            plugin['template_lookup'] = self.build_plugin_template_lookup(
+                plugin)
         return plugin
 
     # ------------------------------------------------------------------------- serving static files
@@ -523,15 +543,18 @@ class PageServingPluginManager(PluginManager):
             return None
         template_lookup_paths = plugin.template_path
         if self.additional_template_paths:
-            template_lookup_paths = [template_lookup_paths] + self.additional_template_paths
-        template_lookup = self._create_mako_template_lookup(self.template_cache_dir, template_lookup_paths)
+            template_lookup_paths = [template_lookup_paths
+                                     ] + self.additional_template_paths
+        template_lookup = self._create_mako_template_lookup(
+            self.template_cache_dir, template_lookup_paths)
         return template_lookup
 
-    def _create_mako_template_lookup(self,
-                                     cache_dir,
-                                     paths,
-                                     collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE,
-                                     output_encoding=DEFAULT_TEMPLATE_ENCODING):
+    def _create_mako_template_lookup(
+            self,
+            cache_dir,
+            paths,
+            collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE,
+            output_encoding=DEFAULT_TEMPLATE_ENCODING):
         """
         Create a ``TemplateLookup`` with defaults.
 
@@ -540,7 +563,10 @@ class PageServingPluginManager(PluginManager):
         """
         # TODO: possible to add galaxy/templates into the lookup here?
         return mako.lookup.TemplateLookup(
-            directories=paths, module_directory=cache_dir, collection_size=collection_size, output_encoding=output_encoding)
+            directories=paths,
+            module_directory=cache_dir,
+            collection_size=collection_size,
+            output_encoding=output_encoding)
 
     def fill_template(self, trans, plugin, template_filename, **kwargs):
         """
@@ -556,7 +582,10 @@ class PageServingPluginManager(PluginManager):
         :returns:       rendered template
         """
         # defined here to be overridden
-        return trans.fill_template(template_filename, template_lookup=plugin.template_lookup, **kwargs)
+        return trans.fill_template(
+            template_filename,
+            template_lookup=plugin.template_lookup,
+            **kwargs)
 
     # TODO: add fill_template fn that is able to load extra libraries beforehand (and remove after)
     # TODO: add template helpers specific to the plugins

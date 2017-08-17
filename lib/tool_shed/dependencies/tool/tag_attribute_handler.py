@@ -51,18 +51,22 @@ class TagAttributeHandler(object):
             error_message = ''
             if sub_elem.tag == 'package':
                 altered, new_sub_elem, error_message = self.process_package_tag_set(
-                    elem=sub_elem, message=message, skip_actions_tags=skip_actions_tags)
+                    elem=sub_elem,
+                    message=message,
+                    skip_actions_tags=skip_actions_tags)
             elif sub_elem.tag == 'action':
                 # <action type="set_environment_for_install">
                 #    <repository name="package_readline_6_2" owner="devteam"">
                 #        <package name="readline" version="6.2" />
                 #    </repository>
                 # </action>
-                altered, new_sub_elem, error_message = self.process_action_tag_set(elem=sub_elem, message=message)
+                altered, new_sub_elem, error_message = self.process_action_tag_set(
+                    elem=sub_elem, message=message)
             else:
                 # Inspect the sub elements of elem to locate all <repository> tags and
                 # populate them with toolshed and changeset_revision attributes if necessary.
-                altered, new_sub_elem, error_message = self.rdd.handle_sub_elem(parent_elem=elem, elem_index=sub_index, elem=sub_elem)
+                altered, new_sub_elem, error_message = self.rdd.handle_sub_elem(
+                    parent_elem=elem, elem_index=sub_index, elem=sub_elem)
             if error_message and error_message not in message:
                 message += error_message
             if altered:
@@ -73,7 +77,10 @@ class TagAttributeHandler(object):
                 new_elem[sub_index] = new_sub_elem
         return elem_altered, new_elem, message
 
-    def process_actions_group_tag_set(self, elem, message, skip_actions_tags=False):
+    def process_actions_group_tag_set(self,
+                                      elem,
+                                      message,
+                                      skip_actions_tags=False):
         # Inspect all entries in the <actions_group> tag set, skipping <actions>
         # tag sets that define os and architecture attributes.  We want to inspect
         # only the last <actions> tag set contained within the <actions_group> tag
@@ -185,7 +192,8 @@ class TagAttributeHandler(object):
                 new_elem[sub_index] = new_sub_elem
         return elem_altered, new_elem, message
 
-    def process_repository_tag_set(self, parent_elem, elem_index, elem, message):
+    def process_repository_tag_set(self, parent_elem, elem_index, elem,
+                                   message):
         # We have a complex repository dependency.
         altered, new_elem, error_message = self.rdd.handle_complex_dependency_elem(
             parent_elem=parent_elem, elem_index=elem_index, elem=elem)

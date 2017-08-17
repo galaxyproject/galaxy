@@ -31,7 +31,13 @@ class FilteredLineDataProvider(base.LimitedOffsetDataProvider):
         'comment_char': 'str',
     }
 
-    def __init__(self, source, strip_lines=True, strip_newlines=False, provide_blank=False, comment_char=DEFAULT_COMMENT_CHAR, **kwargs):
+    def __init__(self,
+                 source,
+                 strip_lines=True,
+                 strip_newlines=False,
+                 provide_blank=False,
+                 comment_char=DEFAULT_COMMENT_CHAR,
+                 **kwargs):
         """
         :param strip_lines: remove whitespace from the beginning an ending
             of each line (or not).
@@ -108,7 +114,9 @@ class RegexLineDataProvider(FilteredLineDataProvider):
         super(RegexLineDataProvider, self).__init__(source, **kwargs)
 
         self.regex_list = regex_list if isinstance(regex_list, list) else []
-        self.compiled_regex_list = [re.compile(regex) for regex in self.regex_list]
+        self.compiled_regex_list = [
+            re.compile(regex) for regex in self.regex_list
+        ]
         self.invert = invert
         # NOTE: no support for flags
 
@@ -120,7 +128,8 @@ class RegexLineDataProvider(FilteredLineDataProvider):
         return line
 
     def filter_by_regex(self, line):
-        matches = any([regex.match(line) for regex in self.compiled_regex_list])
+        matches = any(
+            [regex.match(line) for regex in self.compiled_regex_list])
         if self.invert:
             return line if not matches else None
         return line if matches else None
@@ -139,7 +148,11 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
     Note: mem intensive (gathers list of lines before output)
     """
 
-    def __init__(self, source, new_block_delim_fn=None, block_filter_fn=None, **kwargs):
+    def __init__(self,
+                 source,
+                 new_block_delim_fn=None,
+                 block_filter_fn=None,
+                 **kwargs):
         """
         :param new_block_delim_fn: T/F function to determine whether a given line
             is the start of a new block.
@@ -152,9 +165,12 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
         """
         # composition - not inheritance
         # TODO: not a fan of this:
-        (filter_fn, limit, offset) = (kwargs.pop('filter_fn', None), kwargs.pop('limit', None), kwargs.pop('offset', 0))
+        (filter_fn, limit, offset) = (kwargs.pop('filter_fn', None),
+                                      kwargs.pop('limit', None), kwargs.pop(
+                                          'offset', 0))
         line_provider = FilteredLineDataProvider(source, **kwargs)
-        super(BlockDataProvider, self).__init__(line_provider, filter_fn=filter_fn, limit=limit, offset=offset)
+        super(BlockDataProvider, self).__init__(
+            line_provider, filter_fn=filter_fn, limit=limit, offset=offset)
 
         self.new_block_delim_fn = new_block_delim_fn
         self.block_filter_fn = block_filter_fn
@@ -240,7 +256,8 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
         Called per block (just before providing).
         """
         # empty block_lines and assemble block
-        return list((self.block_lines.popleft() for i in range(len(self.block_lines))))
+        return list((self.block_lines.popleft()
+                     for i in range(len(self.block_lines))))
 
     def filter_block(self, block):
         """

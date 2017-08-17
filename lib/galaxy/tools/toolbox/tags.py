@@ -12,7 +12,8 @@ def tool_tag_manager(app):
     """ Build a tool tag manager according to app's configuration
     and return it.
     """
-    if hasattr(app.config, "get_bool") and app.config.get_bool('enable_tool_tags', False):
+    if hasattr(app.config, "get_bool") and app.config.get_bool(
+            'enable_tool_tags', False):
         return PersistentToolTagManager(app)
     else:
         return NullToolTagManager()
@@ -45,7 +46,9 @@ class PersistentToolTagManager(AbstractToolTagManager):
         self.sa_session = app.model.context
 
     def reset_tags(self):
-        log.info("removing all tool tag associations (" + str(self.sa_session.query(self.app.model.ToolTagAssociation).count()) + ")")
+        log.info("removing all tool tag associations (" + str(
+            self.sa_session.query(self.app.model.ToolTagAssociation).count()) +
+                 ")")
         self.sa_session.query(self.app.model.ToolTagAssociation).delete()
         self.sa_session.flush()
 
@@ -56,12 +59,14 @@ class PersistentToolTagManager(AbstractToolTagManager):
             for tag_name in tag_names:
                 if tag_name == '':
                     continue
-                tag = self.sa_session.query(self.app.model.Tag).filter_by(name=tag_name).first()
+                tag = self.sa_session.query(self.app.model.Tag).filter_by(
+                    name=tag_name).first()
                 if not tag:
                     tag = self.app.model.Tag(name=tag_name)
                     self.sa_session.add(tag)
                     self.sa_session.flush()
-                    tta = self.app.model.ToolTagAssociation(tool_id=tool_id, tag_id=tag.id)
+                    tta = self.app.model.ToolTagAssociation(
+                        tool_id=tool_id, tag_id=tag.id)
                     self.sa_session.add(tta)
                     self.sa_session.flush()
                 else:
@@ -69,6 +74,7 @@ class PersistentToolTagManager(AbstractToolTagManager):
                         if tagged_tool.tool_id == tool_id:
                             break
                     else:
-                        tta = self.app.model.ToolTagAssociation(tool_id=tool_id, tag_id=tag.id)
+                        tta = self.app.model.ToolTagAssociation(
+                            tool_id=tool_id, tag_id=tag.id)
                         self.sa_session.add(tta)
                         self.sa_session.flush()

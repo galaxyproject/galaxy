@@ -21,7 +21,8 @@ from .interface import (
     ToolStdioRegex, )
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_elem
-from .output_objects import (ToolOutput, ToolOutputCollection, ToolOutputCollectionStructure)
+from .output_objects import (ToolOutput, ToolOutputCollection,
+                             ToolOutputCollectionStructure)
 from .util import (
     aggressive_error_checks,
     error_on_exit_code, )
@@ -83,13 +84,16 @@ class XmlToolSource(ToolSource):
         edam_topics = self.root.find("edam_topics")
         if edam_topics is None:
             return []
-        return [edam_topic.text for edam_topic in edam_topics.findall("edam_topic")]
+        return [
+            edam_topic.text for edam_topic in edam_topics.findall("edam_topic")
+        ]
 
     def parse_description(self):
         return xml_text(self.root, "description")
 
     def parse_is_multi_byte(self):
-        return self._get_attribute_as_bool("is_multi_byte", self.default_is_multi_byte)
+        return self._get_attribute_as_bool("is_multi_byte",
+                                           self.default_is_multi_byte)
 
     def parse_display_interface(self, default):
         return self._get_attribute_as_bool("display_interface", default)
@@ -110,7 +114,8 @@ class XmlToolSource(ToolSource):
             return []
 
         environment_variables = []
-        for environment_variable_el in environment_variables_el.findall("environment_variable"):
+        for environment_variable_el in environment_variables_el.findall(
+                "environment_variable"):
             definition = {
                 "name": environment_variable_el.get("name"),
                 "template": environment_variable_el.text,
@@ -120,9 +125,12 @@ class XmlToolSource(ToolSource):
 
     def parse_interpreter(self):
         command_el = self._command_el
-        interpreter = (command_el is not None) and command_el.get("interpreter", None)
+        interpreter = (command_el is not None) and command_el.get(
+            "interpreter", None)
         if not self.legacy_defaults:
-            log.warning("Deprecated interpeter attribute on command element is now ignored.")
+            log.warning(
+                "Deprecated interpeter attribute on command element is now ignored."
+            )
             interpreter = None
 
         return interpreter
@@ -214,20 +222,25 @@ class XmlToolSource(ToolSource):
             inherit_format = False
             inherit_metadata = False
             if structured_like:
-                inherit_format = string_as_bool(collection_elem.get("inherit_format", None))
-                inherit_metadata = string_as_bool(collection_elem.get("inherit_metadata", None))
+                inherit_format = string_as_bool(
+                    collection_elem.get("inherit_format", None))
+                inherit_metadata = string_as_bool(
+                    collection_elem.get("inherit_metadata", None))
             default_format_source = collection_elem.get("format_source", None)
-            default_metadata_source = collection_elem.get("metadata_source", "")
+            default_metadata_source = collection_elem.get(
+                "metadata_source", "")
             filters = collection_elem.findall('filter')
 
             dataset_collector_descriptions = None
             if collection_elem.find("discover_datasets") is not None:
-                dataset_collector_descriptions = dataset_collector_descriptions_from_elem(collection_elem, legacy=False)
+                dataset_collector_descriptions = dataset_collector_descriptions_from_elem(
+                    collection_elem, legacy=False)
             structure = ToolOutputCollectionStructure(
                 collection_type=collection_type,
                 collection_type_source=collection_type_source,
                 structured_like=structured_like,
-                dataset_collector_descriptions=dataset_collector_descriptions, )
+                dataset_collector_descriptions=dataset_collector_descriptions,
+            )
             output_collection = ToolOutputCollection(
                 name,
                 structure,
@@ -270,14 +283,19 @@ class XmlToolSource(ToolSource):
         output_format = data_elem.get("format", default_format)
         auto_format = string_as_bool(data_elem.get("auto_format", "false"))
         if auto_format and output_format != "data":
-            raise ValueError("Setting format and auto_format is not supported at this time.")
+            raise ValueError(
+                "Setting format and auto_format is not supported at this time."
+            )
         elif auto_format:
             output_format = "_sniff_"
         output.format = output_format
         output.change_format = data_elem.findall("change_format")
-        output.format_source = data_elem.get("format_source", default_format_source)
-        output.default_identifier_source = data_elem.get("default_identifier_source", 'None')
-        output.metadata_source = data_elem.get("metadata_source", default_metadata_source)
+        output.format_source = data_elem.get("format_source",
+                                             default_format_source)
+        output.default_identifier_source = data_elem.get(
+            "default_identifier_source", 'None')
+        output.metadata_source = data_elem.get("metadata_source",
+                                               default_metadata_source)
         output.parent = data_elem.get("parent", None)
         output.label = xml_text(data_elem, "label")
         output.count = int(data_elem.get("count", 1))
@@ -285,8 +303,10 @@ class XmlToolSource(ToolSource):
         output.tool = tool
         output.from_work_dir = data_elem.get("from_work_dir", None)
         output.hidden = string_as_bool(data_elem.get("hidden", ""))
-        output.actions = ToolOutputActionGroup(output, data_elem.find('actions'))
-        output.dataset_collector_descriptions = dataset_collector_descriptions_from_elem(data_elem, legacy=self.legacy_defaults)
+        output.actions = ToolOutputActionGroup(output,
+                                               data_elem.find('actions'))
+        output.dataset_collector_descriptions = dataset_collector_descriptions_from_elem(
+            data_elem, legacy=self.legacy_defaults)
         return output
 
     def parse_stdio(self):
@@ -300,7 +320,8 @@ class XmlToolSource(ToolSource):
             elif detect_errors == "aggressive":
                 return aggressive_error_checks()
             else:
-                raise ValueError("Unknown detect_errors value encountered [%s]" % detect_errors)
+                raise ValueError("Unknown detect_errors value encountered [%s]"
+                                 % detect_errors)
         elif len(self.root.findall('stdio')) == 0 and not self.legacy_defaults:
             return error_on_exit_code()
         else:
@@ -349,7 +370,8 @@ def _test_elem_to_dict(test_elem, i):
         output_collections=__parse_output_collection_elems(test_elem),
         inputs=__parse_input_elems(test_elem, i),
         expect_num_outputs=test_elem.get("expect_num_outputs"),
-        command=__parse_assert_list_from_elem(test_elem.find("assert_command")),
+        command=__parse_assert_list_from_elem(
+            test_elem.find("assert_command")),
         stdout=__parse_assert_list_from_elem(test_elem.find("assert_stdout")),
         stderr=__parse_assert_list_from_elem(test_elem.find("assert_stderr")),
         expect_exit_code=test_elem.get("expect_exit_code"),
@@ -378,7 +400,8 @@ def __parse_output_elem(output_elem):
     if name is None:
         raise Exception("Test output does not have a 'name'")
 
-    file, attributes = __parse_test_attributes(output_elem, attrib, parse_discovered_datasets=True)
+    file, attributes = __parse_test_attributes(
+        output_elem, attrib, parse_discovered_datasets=True)
     return name, file, attributes
 
 
@@ -390,7 +413,8 @@ def __parse_command_elem(test_elem):
 def __parse_output_collection_elems(test_elem):
     output_collections = []
     for output_collection_elem in test_elem.findall("output_collection"):
-        output_collection_def = __parse_output_collection_elem(output_collection_elem)
+        output_collection_def = __parse_output_collection_elem(
+            output_collection_elem)
         output_collections.append(output_collection_def)
     return output_collections
 
@@ -410,12 +434,17 @@ def __parse_element_tests(parent_element):
         element_attrib = dict(element.attrib)
         identifier = element_attrib.pop('name', None)
         if identifier is None:
-            raise Exception("Test primary dataset does not have a 'identifier'")
-        element_tests[identifier] = __parse_test_attributes(element, element_attrib, parse_elements=True)
+            raise Exception(
+                "Test primary dataset does not have a 'identifier'")
+        element_tests[identifier] = __parse_test_attributes(
+            element, element_attrib, parse_elements=True)
     return element_tests
 
 
-def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_discovered_datasets=False):
+def __parse_test_attributes(output_elem,
+                            attrib,
+                            parse_elements=False,
+                            parse_discovered_datasets=False):
     assert_list = __parse_assert_list(output_elem)
 
     # Allow either file or value to specify a target file to compare result with
@@ -452,12 +481,15 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
             primary_attrib = dict(primary_elem.attrib)
             designation = primary_attrib.pop('designation', None)
             if designation is None:
-                raise Exception("Test primary dataset does not have a 'designation'")
-            primary_datasets[designation] = __parse_test_attributes(primary_elem, primary_attrib)
+                raise Exception(
+                    "Test primary dataset does not have a 'designation'")
+            primary_datasets[designation] = __parse_test_attributes(
+                primary_elem, primary_attrib)
 
     has_checksum = md5sum or checksum
     has_nested_tests = extra_files or element_tests or primary_datasets
-    if not (assert_list or file or metadata or has_checksum or has_nested_tests):
+    if not (assert_list or file or metadata or has_checksum
+            or has_nested_tests):
         raise Exception(
             "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or checksum tests, etc...)"
         )
@@ -486,7 +518,11 @@ def __parse_assert_list_from_elem(assert_elem):
         converted_children = []
         for child_elem in elem:
             converted_children.append(convert_elem(child_elem))
-        return {"tag": tag, "attributes": attributes, "children": converted_children}
+        return {
+            "tag": tag,
+            "attributes": attributes,
+            "children": converted_children
+        }
 
     if assert_elem is not None:
         assert_list = []
@@ -607,12 +643,15 @@ def __parse_param_elem(param_elem, i=0):
             elif child.tag == 'edit_attributes':
                 attrib['edit_attributes'].append(child)
             elif child.tag == 'collection':
-                attrib['collection'] = TestCollectionDef(child, __parse_param_elem)
+                attrib['collection'] = TestCollectionDef(
+                    child, __parse_param_elem)
         if composite_data_name:
             # Composite datasets need implicit renaming;
             # inserted at front of list so explicit declarations
             # take precedence
-            attrib['edit_attributes'].insert(0, {'type': 'name', 'value': composite_data_name})
+            attrib['edit_attributes'].insert(
+                0, {'type': 'name',
+                    'value': composite_data_name})
     name = attrib.pop('name')
     return (name, value, attrib)
 
@@ -653,12 +692,14 @@ class StdioParser(object):
                 if exit_code.desc is None:
                     exit_code.desc = exit_code_elem.get("description")
                 # Parse the error level:
-                exit_code.error_level = (self.parse_error_level(exit_code_elem.get("level")))
+                exit_code.error_level = (
+                    self.parse_error_level(exit_code_elem.get("level")))
                 code_range = exit_code_elem.get("range", "")
                 if code_range is None:
                     code_range = exit_code_elem.get("value", "")
                 if code_range is None:
-                    log.warning("Tool stdio exit codes must have " + "a range or value")
+                    log.warning("Tool stdio exit codes must have " +
+                                "a range or value")
                     continue
                 # Parse the range. We look for:
                 #   :Y
@@ -681,7 +722,8 @@ class StdioParser(object):
                         exit_code.range_end = int(code_ranges[1])
                 # If we got more than one colon, then ignore the exit code.
                 elif (len(code_ranges) > 2):
-                    log.warning("Invalid tool exit_code range %s - ignored" % code_range)
+                    log.warning("Invalid tool exit_code range %s - ignored" %
+                                code_range)
                     continue
                 # Else we have a singular value. If it's not an integer, then
                 # we'll just write a log message and skip this exit_code.
@@ -690,7 +732,9 @@ class StdioParser(object):
                         exit_code.range_start = int(code_range)
                     except:
                         log.error(code_range)
-                        log.warning("Invalid range start for tool's exit_code %s: exit_code ignored" % code_range)
+                        log.warning(
+                            "Invalid range start for tool's exit_code %s: exit_code ignored"
+                            % code_range)
                         continue
                     exit_code.range_end = exit_code.range_start
                 # TODO: Check if we got ">", ">=", "<", or "<=":
@@ -698,11 +742,14 @@ class StdioParser(object):
                 # isn't bogus. If we have two infinite values, then
                 # the start must be -inf and the end must be +inf.
                 # So at least warn about this situation:
-                if (isinf(exit_code.range_start) and isinf(exit_code.range_end)):
-                    log.warning("Tool exit_code range %s will match on " + "all exit codes" % code_range)
+                if (isinf(exit_code.range_start)
+                        and isinf(exit_code.range_end)):
+                    log.warning("Tool exit_code range %s will match on " +
+                                "all exit codes" % code_range)
                 self.stdio_exit_codes.append(exit_code)
         except Exception:
-            log.error("Exception in parse_stdio_exit_codes! " + str(sys.exc_info()))
+            log.error("Exception in parse_stdio_exit_codes! " +
+                      str(sys.exc_info()))
             trace = sys.exc_info()[2]
             if trace is not None:
                 trace_msg = repr(traceback.format_tb(trace))
@@ -727,11 +774,13 @@ class StdioParser(object):
                 if regex.desc is None:
                     regex.desc = regex_elem.get("description")
                 # Parse the error level
-                regex.error_level = (self.parse_error_level(regex_elem.get("level")))
+                regex.error_level = (
+                    self.parse_error_level(regex_elem.get("level")))
                 regex.match = regex_elem.get("match", "")
                 if regex.match is None:
                     # TODO: Convert the offending XML element to a string
-                    log.warning("Ignoring tool's stdio regex element %s - " "the 'match' attribute must exist")
+                    log.warning("Ignoring tool's stdio regex element %s - "
+                                "the 'match' attribute must exist")
                     continue
                 # Parse the output sources. We look for the "src", "source",
                 # and "sources" attributes, in that order. If there is no
@@ -760,14 +809,16 @@ class StdioParser(object):
                     if re.search("err", src, re.IGNORECASE):
                         regex.stderr_match = True
                     if (not regex.stdout_match and not regex.stderr_match):
-                        log.warning("Tool id %s: unable to determine if tool "
-                                    "stream source scanning is output, error, "
-                                    "or both. Defaulting to use both." % self.id)
+                        log.warning(
+                            "Tool id %s: unable to determine if tool "
+                            "stream source scanning is output, error, "
+                            "or both. Defaulting to use both." % self.id)
                         regex.stdout_match = True
                         regex.stderr_match = True
                 self.stdio_regexes.append(regex)
         except Exception:
-            log.error("Exception in parse_stdio_exit_codes! " + str(sys.exc_info()))
+            log.error("Exception in parse_stdio_exit_codes! " +
+                      str(sys.exc_info()))
             trace = sys.exc_info()[2]
             if trace is not None:
                 trace_msg = repr(traceback.format_tb(trace))
@@ -790,7 +841,9 @@ class StdioParser(object):
                 elif (re.search("fatal", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.FATAL
                 else:
-                    log.debug("Tool %s: error level %s did not match log/warning/fatal" % (self.id, err_level))
+                    log.debug(
+                        "Tool %s: error level %s did not match log/warning/fatal"
+                        % (self.id, err_level))
         except Exception:
             log.error("Exception in parse_error_level " + str(sys.exc_info()))
             trace = sys.exc_info()[2]
@@ -898,7 +951,8 @@ class XmlInputSource(InputSource):
         conversions = []
         for conv_elem in elem.findall("conversion"):
             name = conv_elem.get("name")  # name for commandline substitution
-            conv_extensions = conv_elem.get("type")  # target datatype extension
+            conv_extensions = conv_elem.get(
+                "type")  # target datatype extension
             conversions.append((name, conv_extensions))
         return conversions
 

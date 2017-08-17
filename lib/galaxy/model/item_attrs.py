@@ -26,27 +26,36 @@ class UsesItemRatings:
         """ Returns the average rating for an item."""
         if webapp_model is None:
             webapp_model = galaxy.model
-        item_rating_assoc_class = self._get_item_rating_assoc_class(item, webapp_model=webapp_model)
+        item_rating_assoc_class = self._get_item_rating_assoc_class(
+            item, webapp_model=webapp_model)
         if not item_rating_assoc_class:
-            raise RuntimeException("Item does not have ratings: %s" % item.__class__.__name__)
-        item_id_filter = self._get_item_id_filter_str(item, item_rating_assoc_class)
-        ave_rating = db_session.query(func.avg(item_rating_assoc_class.rating)).filter(item_id_filter).scalar()
+            raise RuntimeException(
+                "Item does not have ratings: %s" % item.__class__.__name__)
+        item_id_filter = self._get_item_id_filter_str(item,
+                                                      item_rating_assoc_class)
+        ave_rating = db_session.query(
+            func.avg(item_rating_assoc_class.rating)).filter(
+                item_id_filter).scalar()
         # Convert ave_rating to float; note: if there are no item ratings, ave rating is None.
         if ave_rating:
             ave_rating = float(ave_rating)
         else:
             ave_rating = 0
-        num_ratings = int(db_session.query(func.count(item_rating_assoc_class.rating)).filter(item_id_filter).scalar())
+        num_ratings = int(
+            db_session.query(func.count(item_rating_assoc_class.rating))
+            .filter(item_id_filter).scalar())
         return (ave_rating, num_ratings)
 
     def rate_item(self, db_session, user, item, rating, webapp_model=None):
         """ Rate an item. Return type is <item_class>RatingAssociation. """
         if webapp_model is None:
             webapp_model = galaxy.model
-        item_rating = self.get_user_item_rating(db_session, user, item, webapp_model=webapp_model)
+        item_rating = self.get_user_item_rating(
+            db_session, user, item, webapp_model=webapp_model)
         if not item_rating:
             # User has not yet rated item; create rating.
-            item_rating_assoc_class = self._get_item_rating_assoc_class(item, webapp_model=webapp_model)
+            item_rating_assoc_class = self._get_item_rating_assoc_class(
+                item, webapp_model=webapp_model)
             item_rating = item_rating_assoc_class()
             item_rating.user = user
             item_rating.set_item(item)
@@ -63,13 +72,17 @@ class UsesItemRatings:
         """ Returns user's rating for an item. Return type is <item_class>RatingAssociation. """
         if webapp_model is None:
             webapp_model = galaxy.model
-        item_rating_assoc_class = self._get_item_rating_assoc_class(item, webapp_model=webapp_model)
+        item_rating_assoc_class = self._get_item_rating_assoc_class(
+            item, webapp_model=webapp_model)
         if not item_rating_assoc_class:
-            raise RuntimeException("Item does not have ratings: %s" % item.__class__.__name__)
+            raise RuntimeException(
+                "Item does not have ratings: %s" % item.__class__.__name__)
 
         # Query rating table by user and item id.
-        item_id_filter = self._get_item_id_filter_str(item, item_rating_assoc_class)
-        return db_session.query(item_rating_assoc_class).filter_by(user=user).filter(item_id_filter).first()
+        item_id_filter = self._get_item_id_filter_str(item,
+                                                      item_rating_assoc_class)
+        return db_session.query(item_rating_assoc_class).filter_by(
+            user=user).filter(item_id_filter).first()
 
     def _get_item_rating_assoc_class(self, item, webapp_model=None):
         """ Returns an item's item-rating association class. """
@@ -78,7 +91,10 @@ class UsesItemRatings:
         item_rating_assoc_class = '%sRatingAssociation' % item.__class__.__name__
         return getattr(webapp_model, item_rating_assoc_class, None)
 
-    def _get_item_id_filter_str(self, item, item_rating_assoc_class, webapp_model=None):
+    def _get_item_id_filter_str(self,
+                                item,
+                                item_rating_assoc_class,
+                                webapp_model=None):
         # Get foreign key in item-rating association table that references item table.
         if webapp_model is None:
             webapp_model = galaxy.model
@@ -89,8 +105,10 @@ class UsesItemRatings:
                 break
 
         if not item_fk:
-            raise RuntimeException("Cannot find item id column in item-rating association table: %s, %s" % item_rating_assoc_class.__name__,
-                                   item_rating_assoc_class.table.name)
+            raise RuntimeException(
+                "Cannot find item id column in item-rating association table: %s, %s"
+                % item_rating_assoc_class.__name__,
+                item_rating_assoc_class.table.name)
 
         # TODO: can we provide a better filter than a raw string?
         return "%s=%i" % (item_fk.parent.name, item.id)
@@ -114,7 +132,8 @@ class UsesAnnotations:
             return None
 
         # Get annotation association object.
-        annotation_assoc = db_session.query(annotation_assoc_class).filter_by(user=user)
+        annotation_assoc = db_session.query(annotation_assoc_class).filter_by(
+            user=user)
 
         # TODO: use filtering like that in _get_item_id_filter_str()
         if item.__class__ == galaxy.model.History:
@@ -152,12 +171,15 @@ class UsesAnnotations:
             db_session.delete(annotation_assoc)
             db_session.flush()
 
-    def copy_item_annotation(self, db_session, source_user, source_item, target_user, target_item):
+    def copy_item_annotation(self, db_session, source_user, source_item,
+                             target_user, target_item):
         """ Copy an annotation from a user/item source to a user/item target. """
         if source_user and target_user:
-            annotation_str = self.get_item_annotation_str(db_session, source_user, source_item)
+            annotation_str = self.get_item_annotation_str(
+                db_session, source_user, source_item)
             if annotation_str:
-                annotation = self.add_item_annotation(db_session, target_user, target_item, annotation_str)
+                annotation = self.add_item_annotation(
+                    db_session, target_user, target_item, annotation_str)
                 return annotation
         return None
 

@@ -8,7 +8,13 @@ class Phyloxml_Parser(Base_Parser):
     def __init__(self):
         super(Phyloxml_Parser, self).__init__()
         self.phyloTree = PhyloTree()
-        self.tagsOfInterest = {"clade": "", "name": "name", "branch_length": "length", "confidence": "bootstrap", "events": "events"}
+        self.tagsOfInterest = {
+            "clade": "",
+            "name": "name",
+            "branch_length": "length",
+            "confidence": "bootstrap",
+            "events": "events"
+        }
 
     def parseFile(self, filePath):
         """passes a file and extracts its Phylogeny Tree content."""
@@ -16,7 +22,9 @@ class Phyloxml_Parser(Base_Parser):
 
         xmlTree = ElementTree.parse(phyloXmlFile)
         xmlRoot = xmlTree.getroot()[0]
-        self.nameSpaceIndex = xmlRoot.tag.rfind("}") + 1  # used later by the clean tag method to remove the name space in every element.tag
+        self.nameSpaceIndex = xmlRoot.tag.rfind(
+            "}"
+        ) + 1  # used later by the clean tag method to remove the name space in every element.tag
 
         phyloRoot = None
         for child in xmlRoot:
@@ -64,7 +72,8 @@ class Phyloxml_Parser(Base_Parser):
         for child in leafNode:
             childTag = self.cleanTag(child.tag)
             if childTag in self.tagsOfInterest:
-                key = self.tagsOfInterest[childTag]  # need to map phyloxml terms to ours
+                key = self.tagsOfInterest[
+                    childTag]  # need to map phyloxml terms to ours
                 node[key] = child.text
 
         node["depth"] = depth
@@ -76,7 +85,11 @@ class Phyloxml_Parser(Base_Parser):
         def getTagFromTaxonomyNode(node):
             """Returns the name of a taxonomy node. A taxonomy node have to be treated differently as the name
             is embedded one level deeper"""
-            phyloxmlTaxoNames = {"common_name": "", "scientific_name": "", "code": ""}
+            phyloxmlTaxoNames = {
+                "common_name": "",
+                "scientific_name": "",
+                "code": ""
+            }
             for child in node:
                 childTag = self.cleanTag(child.tag)
                 if childTag in phyloxmlTaxoNames:
@@ -112,7 +125,8 @@ class Phyloxml_Parser(Base_Parser):
                     text = child.text
                 node[key] = text
 
-        return self.phyloTree.makeNode(self._getNodeName(internalNode, depth), **node)
+        return self.phyloTree.makeNode(
+            self._getNodeName(internalNode, depth), **node)
 
     def cleanTag(self, tagString):
         return tagString[self.nameSpaceIndex:]

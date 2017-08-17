@@ -15,7 +15,8 @@ from galaxy.web.params import QuotaParamParser
 log = logging.getLogger(__name__)
 
 
-class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaParamParser):
+class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin,
+                         QuotaParamParser):
     @web.expose_api
     @web.require_admin
     def index(self, trans, deleted='False', **kwd):
@@ -29,10 +30,12 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         query = trans.sa_session.query(trans.app.model.Quota)
         if deleted:
             route = 'deleted_quota'
-            query = query.filter(trans.app.model.Quota.table.c.deleted == true())
+            query = query.filter(
+                trans.app.model.Quota.table.c.deleted == true())
         else:
             route = 'quota'
-            query = query.filter(trans.app.model.Quota.table.c.deleted == false())
+            query = query.filter(
+                trans.app.model.Quota.table.c.deleted == false())
         for quota in query:
             item = quota.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(quota.id)
@@ -49,7 +52,12 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         Displays information about a quota.
         """
         quota = self.get_quota(trans, id, deleted=util.string_as_bool(deleted))
-        return quota.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'total_disk_usage': float})
+        return quota.to_dict(
+            view='element',
+            value_mapper={
+                'id': trans.security.encode_id,
+                'total_disk_usage': float
+            })
 
     @web.expose_api
     @web.require_admin
@@ -117,7 +125,9 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         DELETE /api/quotas/{encoded_quota_id}
         Deletes a quota
         """
-        quota = self.get_quota(trans, id, deleted=False)  # deleted quotas are not technically members of this collection
+        quota = self.get_quota(
+            trans, id, deleted=False
+        )  # deleted quotas are not technically members of this collection
 
         # a request body is optional here
         payload = kwd.get('payload', {})

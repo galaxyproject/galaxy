@@ -34,7 +34,8 @@ class RepoWeighting(scoring.BM25F):
         # Arbitrary for now
         reasonable_hits = 100.0
 
-        stored_times_downloaded = searcher.stored_fields(docnum)["times_downloaded"]
+        stored_times_downloaded = searcher.stored_fields(docnum)[
+            "times_downloaded"]
         if not isinstance(stored_times_downloaded, (int, long)):
             times_downloaded = int(stored_times_downloaded)
         else:
@@ -44,7 +45,8 @@ class RepoWeighting(scoring.BM25F):
             times_downloaded = 1
         popularity_modifier = (times_downloaded / reasonable_hits)
 
-        cert_modifier = 2 if searcher.stored_fields(docnum)["approved"] == 'yes' else 1
+        cert_modifier = 2 if searcher.stored_fields(docnum)[
+            "approved"] == 'yes' else 1
 
         # Adjust the computed score for this document by the popularity
         # and by the certification level.
@@ -72,24 +74,35 @@ class RepoSearch(object):
                 # http://en.wikipedia.org/wiki/Okapi_BM25
                 # __Basically__ the higher number the bigger weight.
                 repo_weighting = RepoWeighting(field_B={
-                    'name_B': boosts.repo_name_boost,
-                    'description_B': boosts.repo_description_boost,
-                    'long_description_B': boosts.repo_long_description_boost,
-                    'homepage_url_B': boosts.repo_homepage_url_boost,
-                    'remote_repository_url_B': boosts.repo_remote_repository_url_boost,
-                    'repo_owner_username': boosts.repo_owner_username_boost
+                    'name_B':
+                    boosts.repo_name_boost,
+                    'description_B':
+                    boosts.repo_description_boost,
+                    'long_description_B':
+                    boosts.repo_long_description_boost,
+                    'homepage_url_B':
+                    boosts.repo_homepage_url_boost,
+                    'remote_repository_url_B':
+                    boosts.repo_remote_repository_url_boost,
+                    'repo_owner_username':
+                    boosts.repo_owner_username_boost
                 })
 
                 searcher = index.searcher(weighting=repo_weighting)
 
                 parser = MultifieldParser(
-                    ['name', 'description', 'long_description', 'homepage_url', 'remote_repository_url', 'repo_owner_username'],
+                    [
+                        'name', 'description', 'long_description',
+                        'homepage_url', 'remote_repository_url',
+                        'repo_owner_username'
+                    ],
                     schema=schema)
 
                 user_query = parser.parse('*' + search_term + '*')
 
                 try:
-                    hits = searcher.search_page(user_query, page, pagelen=page_size, terms=True)
+                    hits = searcher.search_page(
+                        user_query, page, pagelen=page_size, terms=True)
                 except ValueError:
                     raise ObjectNotFound('The requested page does not exist.')
 
@@ -104,19 +117,30 @@ class RepoSearch(object):
                 for hit in hits:
                     hit_dict = {}
                     hit_dict['id'] = trans.security.encode_id(hit.get('id'))
-                    hit_dict['repo_owner_username'] = hit.get('repo_owner_username')
+                    hit_dict['repo_owner_username'] = hit.get(
+                        'repo_owner_username')
                     hit_dict['name'] = hit.get('name')
                     hit_dict['long_description'] = hit.get('long_description')
-                    hit_dict['remote_repository_url'] = hit.get('remote_repository_url')
+                    hit_dict['remote_repository_url'] = hit.get(
+                        'remote_repository_url')
                     hit_dict['homepage_url'] = hit.get('homepage_url')
                     hit_dict['description'] = hit.get('description')
                     hit_dict['last_updated'] = hit.get('last_updated')
-                    hit_dict['full_last_updated'] = hit.get('full_last_updated')
+                    hit_dict['full_last_updated'] = hit.get(
+                        'full_last_updated')
                     hit_dict['approved'] = hit.get('approved')
                     hit_dict['times_downloaded'] = hit.get('times_downloaded')
-                    results['hits'].append({'repository': hit_dict, 'matched_terms': hit.matched_terms(), 'score': hit.score})
+                    results['hits'].append({
+                        'repository':
+                        hit_dict,
+                        'matched_terms':
+                        hit.matched_terms(),
+                        'score':
+                        hit.score
+                    })
                 return results
             finally:
                 searcher.close()
         else:
-            raise exceptions.InternalServerError('The search index file is missing.')
+            raise exceptions.InternalServerError(
+                'The search index file is missing.')

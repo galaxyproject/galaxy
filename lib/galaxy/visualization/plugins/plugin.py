@@ -66,14 +66,19 @@ class ServesTemplatesPluginMixin(object):
     #: default encoding of plugin templates
     DEFAULT_TEMPLATE_ENCODING = 'utf-8'
 
-    def _set_up_template_plugin(self, template_cache_dir, additional_template_paths=None, **kwargs):
+    def _set_up_template_plugin(self,
+                                template_cache_dir,
+                                additional_template_paths=None,
+                                **kwargs):
         """
         Detect and set up template paths if the plugin serves templates.
         """
         self.serves_templates = False
         if self._is_template_plugin():
             self.template_path = self._build_template_path()
-            self.template_lookup = self._build_template_lookup(template_cache_dir, additional_template_paths=additional_template_paths)
+            self.template_lookup = self._build_template_lookup(
+                template_cache_dir,
+                additional_template_paths=additional_template_paths)
             self.serves_templates = True
         return self.serves_templates
 
@@ -83,17 +88,19 @@ class ServesTemplatesPluginMixin(object):
     def _build_template_path(self):
         return os.path.join(self.path, 'templates')
 
-    def _build_template_lookup(self,
-                               template_cache_dir,
-                               additional_template_paths=None,
-                               collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE,
-                               output_encoding=DEFAULT_TEMPLATE_ENCODING):
+    def _build_template_lookup(
+            self,
+            template_cache_dir,
+            additional_template_paths=None,
+            collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE,
+            output_encoding=DEFAULT_TEMPLATE_ENCODING):
         """
         Build a mako template filename lookup for the plugin.
         """
         template_lookup_paths = self.template_path
         if additional_template_paths:
-            template_lookup_paths = [template_lookup_paths] + additional_template_paths
+            template_lookup_paths = [template_lookup_paths
+                                     ] + additional_template_paths
         return mako.lookup.TemplateLookup(
             directories=template_lookup_paths,
             module_directory=template_cache_dir,
@@ -102,7 +109,8 @@ class ServesTemplatesPluginMixin(object):
 
 
 # =============================================================================
-class VisualizationPlugin(pluginframework.Plugin, ServesStaticPluginMixin, ServesTemplatesPluginMixin):
+class VisualizationPlugin(pluginframework.Plugin, ServesStaticPluginMixin,
+                          ServesTemplatesPluginMixin):
     """
     A plugin that instantiates resources, serves static files, and uses mako
     templates to render web pages.
@@ -113,17 +121,22 @@ class VisualizationPlugin(pluginframework.Plugin, ServesStaticPluginMixin, Serve
     # TODO: concept/name collision between plugin config and visualization config
 
     def __init__(self, app, path, name, config, context=None, **kwargs):
-        super(VisualizationPlugin, self).__init__(app, path, name, config, context=None, **kwargs)
+        super(VisualizationPlugin, self).__init__(
+            app, path, name, config, context=None, **kwargs)
         context = context or {}
         self.config = config
 
         base_url = context.get('base_url', '')
-        self.base_url = '/'.join([base_url, self.name]) if base_url else self.name
+        self.base_url = '/'.join([base_url,
+                                  self.name]) if base_url else self.name
         self._set_up_static_plugin()
 
         template_cache_dir = context.get('template_cache_dir', None)
-        additional_template_paths = context.get('additional_template_paths', [])
-        self._set_up_template_plugin(template_cache_dir, additional_template_paths=additional_template_paths)
+        additional_template_paths = context.get('additional_template_paths',
+                                                [])
+        self._set_up_template_plugin(
+            template_cache_dir,
+            additional_template_paths=additional_template_paths)
 
         self.resource_parser = resource_parser.ResourceParser(app)
 
@@ -153,7 +166,10 @@ class VisualizationPlugin(pluginframework.Plugin, ServesStaticPluginMixin, Serve
                 visualization_id=trans.security.encode_id(visualization.id), ))
         return self._render(render_vars, trans=trans, embedded=embedded)
 
-    def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
+    def _get_saved_visualization_config(self,
+                                        visualization,
+                                        revision=None,
+                                        **kwargs):
         """
         Return the config of a saved visualization and revision.
 
@@ -210,7 +226,8 @@ class VisualizationPlugin(pluginframework.Plugin, ServesStaticPluginMixin, Serve
         and return any key/value pairs found in the plugin's `params` section.
         """
         expected_params = self.config.get('params', {})
-        config = self.resource_parser.parse_config(trans, expected_params, kwargs)
+        config = self.resource_parser.parse_config(trans, expected_params,
+                                                   kwargs)
         return config
 
     def _config_to_resources(self, trans, config):
@@ -220,7 +237,8 @@ class VisualizationPlugin(pluginframework.Plugin, ServesStaticPluginMixin, Serve
         """
         expected_params = self.config.get('params', {})
         param_modifiers = self.config.get('param_modifiers', {})
-        resources = self.resource_parser.parse_parameter_dictionary(trans, expected_params, config, param_modifiers)
+        resources = self.resource_parser.parse_parameter_dictionary(
+            trans, expected_params, config, param_modifiers)
         return resources
 
     def _render(self, render_vars, trans=None, embedded=None, **kwargs):
@@ -233,7 +251,10 @@ class VisualizationPlugin(pluginframework.Plugin, ServesStaticPluginMixin, Serve
         #   http://docs.makotemplates.org/en/latest/runtime.html
         render_vars.update(vars={})
         template_filename = self.config['entry_point']['file']
-        return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
+        return trans.fill_template(
+            template_filename,
+            template_lookup=self.template_lookup,
+            **render_vars)
 
     def _parse_embedded(self, embedded):
         """
@@ -253,7 +274,8 @@ class InteractiveEnvironmentPlugin(VisualizationPlugin):
     def __init__(self, app, path, name, config, context=None, **kwargs):
         # TODO: this is a hack until we can get int envs seperated from the vis reg and into their own framework
         context['base_url'] = 'interactive_environments'
-        super(InteractiveEnvironmentPlugin, self).__init__(app, path, name, config, context=context, **kwargs)
+        super(InteractiveEnvironmentPlugin, self).__init__(
+            app, path, name, config, context=context, **kwargs)
 
     def _render(self, render_vars, trans=None, embedded=None, **kwargs):
         """
@@ -270,28 +292,38 @@ class InteractiveEnvironmentPlugin(VisualizationPlugin):
         if 'get_api_key' not in render_vars:
 
             def get_api_key():
-                return api_keys.ApiKeyManager(trans.app).get_or_create_api_key(trans.user)
+                return api_keys.ApiKeyManager(trans.app).get_or_create_api_key(
+                    trans.user)
 
             render_vars['get_api_key'] = get_api_key
 
         if 'plugin_path' not in render_vars:
             render_vars['plugin_path'] = os.path.abspath(self.path)
 
-        if self.config.get('plugin_type', 'visualization') == "interactive_environment":
+        if self.config.get('plugin_type',
+                           'visualization') == "interactive_environment":
             try:
                 request = self.INTENV_REQUEST_FACTORY(trans, self)
             except:
                 log.exception("IE plugin request handling failed")
                 return trans.fill_template(
                     'message.mako',
-                    message='Loading the interactive environment failed, please contact the {admin_tag} for assistance'.format(
-                        admin_tag='<a href="mailto:{admin_mail}">Galaxy administrator</a>'.format(
-                            admin_mail=trans.app.config.error_email_to) if trans.app.config.error_email_to else 'Galaxy administrator'),
+                    message=
+                    'Loading the interactive environment failed, please contact the {admin_tag} for assistance'.
+                    format(
+                        admin_tag=
+                        '<a href="mailto:{admin_mail}">Galaxy administrator</a>'.
+                        format(admin_mail=trans.app.config.error_email_to)
+                        if trans.app.config.error_email_to else
+                        'Galaxy administrator'),
                     status='error')
             render_vars["ie_request"] = request
 
         template_filename = self.config['entry_point']['file']
-        return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
+        return trans.fill_template(
+            template_filename,
+            template_lookup=self.template_lookup,
+            **render_vars)
 
 
 # =============================================================================
@@ -318,9 +350,15 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         """
         render_vars['embedded'] = self._parse_embedded(embedded)
         render_vars.update(vars={})
-        render_vars.update({"script_tag_attributes": self.config['entry_point']['attr']})
+        render_vars.update({
+            "script_tag_attributes":
+            self.config['entry_point']['attr']
+        })
         template_filename = os.path.join(self.MAKO_TEMPLATE)
-        return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
+        return trans.fill_template(
+            template_filename,
+            template_lookup=self.template_lookup,
+            **render_vars)
 
 
 # =============================================================================

@@ -14,8 +14,10 @@ class EnvFileBuilder(object):
 
     def append_line(self, make_executable=True, **kwd):
         env_var_dict = dict(**kwd)
-        env_entry, env_file = self.create_or_update_env_shell_file(self.install_dir, env_var_dict)
-        return_code = self.file_append(env_entry, env_file, make_executable=make_executable)
+        env_entry, env_file = self.create_or_update_env_shell_file(
+            self.install_dir, env_var_dict)
+        return_code = self.file_append(
+            env_entry, env_file, make_executable=make_executable)
         self.return_code = self.return_code or return_code
         return self.return_code
 
@@ -31,9 +33,11 @@ class EnvFileBuilder(object):
                 changed_value = '%s' % env_var_value
             elif env_var_action == 'append_to':
                 changed_value = '$%s:%s' % (env_var_name, env_var_value)
-            line = "%s=%s; export %s" % (env_var_name, changed_value, env_var_name)
+            line = "%s=%s; export %s" % (env_var_name, changed_value,
+                                         env_var_name)
         elif env_var_action == "source":
-            line = "if [ -f %s ] ; then . %s ; fi" % (env_var_value, env_var_value)
+            line = "if [ -f %s ] ; then . %s ; fi" % (env_var_value,
+                                                      env_var_value)
         else:
             raise Exception("Unknown shell file action %s" % env_var_action)
         env_shell_file_path = os.path.join(install_dir, 'env.sh')
@@ -72,7 +76,8 @@ class EnvFileBuilder(object):
         if make_executable:
             # Explicitly set the file's executable bits.
             try:
-                os.chmod(file_path, int('111', base=8) | os.stat(file_path)[stat.ST_MODE])
+                os.chmod(file_path,
+                         int('111', base=8) | os.stat(file_path)[stat.ST_MODE])
             except Exception as e:
                 log.exception(str(e))
                 return 1

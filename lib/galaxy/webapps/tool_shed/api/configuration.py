@@ -24,4 +24,7 @@ class ConfigurationController(BaseAPIController):
         :rtype:     dict
         :returns:   dictionary with versions keyed as 'version_major' and 'version'
         """
-        return {"version_major": self.app.config.version_major, "version": self.app.config.version}
+        return {
+            "version_major": self.app.config.version_major,
+            "version": self.app.config.version
+        }

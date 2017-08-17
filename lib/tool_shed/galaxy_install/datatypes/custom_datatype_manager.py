@@ -11,7 +11,11 @@ class CustomDatatypeLoader(object):
     def __init__(self, app):
         self.app = app
 
-    def alter_config_and_load_prorietary_datatypes(self, datatypes_config, relative_install_dir, deactivate=False, override=True):
+    def alter_config_and_load_prorietary_datatypes(self,
+                                                   datatypes_config,
+                                                   relative_install_dir,
+                                                   deactivate=False,
+                                                   override=True):
         """
         Parse a custom datatypes config (a datatypes_conf.xml file included in an installed
         tool shed repository) and add information to appropriate element attributes that will
@@ -29,7 +33,8 @@ class CustomDatatypeLoader(object):
         if registration is None:
             # We have valid XML, but not a valid custom datatypes definition.
             return None, None
-        converter_path, display_path = self.get_converter_and_display_paths(registration, relative_install_dir)
+        converter_path, display_path = self.get_converter_and_display_paths(
+            registration, relative_install_dir)
         if converter_path:
             # Path to datatype converters
             registration.attrib['proprietary_converter_path'] = converter_path
@@ -55,12 +60,14 @@ class CustomDatatypeLoader(object):
                         if root.find('.hg') < 0:
                             for name in files:
                                 if name == datatype_file_name:
-                                    datatype_class_modules.append(os.path.join(root, name))
+                                    datatype_class_modules.append(
+                                        os.path.join(root, name))
                                     break
                     break
             if datatype_class_modules:
                 for relative_path_to_datatype_file_name in datatype_class_modules:
-                    datatype_file_name_path, datatype_file_name = os.path.split(relative_path_to_datatype_file_name)
+                    datatype_file_name_path, datatype_file_name = os.path.split(
+                        relative_path_to_datatype_file_name)
                     for elem in registration.findall('datatype'):
                         # Handle 'type' attribute which should be something like one of the following:
                         # type="gmap:GmapDB"
@@ -71,23 +78,30 @@ class CustomDatatypeLoader(object):
                             proprietary_datatype_module = fields[0]
                             if proprietary_datatype_module.find('.') >= 0:
                                 # Handle the case where datatype_module is "galaxy.datatypes.gmap".
-                                proprietary_datatype_module = proprietary_datatype_module.split('.')[-1]
+                                proprietary_datatype_module = proprietary_datatype_module.split(
+                                    '.')[-1]
                             # The value of proprietary_path must be an absolute path due to job_working_directory.
-                            elem.attrib['proprietary_path'] = os.path.abspath(datatype_file_name_path)
-                            elem.attrib['proprietary_datatype_module'] = proprietary_datatype_module
+                            elem.attrib['proprietary_path'] = os.path.abspath(
+                                datatype_file_name_path)
+                            elem.attrib[
+                                'proprietary_datatype_module'] = proprietary_datatype_module
         # Load custom datatypes
         self.app.datatypes_registry.load_datatypes(
-            root_dir=self.app.config.root, config=datatypes_config_root, deactivate=deactivate, override=override)
+            root_dir=self.app.config.root,
+            config=datatypes_config_root,
+            deactivate=deactivate,
+            override=override)
         return converter_path, display_path
 
-    def create_repository_dict_for_proprietary_datatypes(self,
-                                                         tool_shed,
-                                                         name,
-                                                         owner,
-                                                         installed_changeset_revision,
-                                                         tool_dicts,
-                                                         converter_path=None,
-                                                         display_path=None):
+    def create_repository_dict_for_proprietary_datatypes(
+            self,
+            tool_shed,
+            name,
+            owner,
+            installed_changeset_revision,
+            tool_dicts,
+            converter_path=None,
+            display_path=None):
         return dict(
             tool_shed=tool_shed,
             repository_name=name,
@@ -97,7 +111,8 @@ class CustomDatatypeLoader(object):
             converter_path=converter_path,
             display_path=display_path)
 
-    def get_converter_and_display_paths(self, registration_elem, relative_install_dir):
+    def get_converter_and_display_paths(self, registration_elem,
+                                        relative_install_dir):
         """
         Find the relative path to data type converters and display applications included
         in installed tool shed repositories.
@@ -112,7 +127,8 @@ class CustomDatatypeLoader(object):
                 for converter in elem.findall('converter'):
                     converter_config = converter.get('file', None)
                     if converter_config:
-                        converter_config_file_name = basic_util.strip_path(converter_config)
+                        converter_config_file_name = basic_util.strip_path(
+                            converter_config)
                         for root, dirs, files in os.walk(relative_install_dir):
                             if root.find('.hg') < 0:
                                 for name in files:
@@ -129,7 +145,8 @@ class CustomDatatypeLoader(object):
                 for display_app in elem.findall('display'):
                     display_config = display_app.get('file', None)
                     if display_config:
-                        display_config_file_name = basic_util.strip_path(display_config)
+                        display_config_file_name = basic_util.strip_path(
+                            display_config)
                         for root, dirs, files in os.walk(relative_install_dir):
                             if root.find('.hg') < 0:
                                 for name in files:
@@ -143,19 +160,27 @@ class CustomDatatypeLoader(object):
                 break
         return converter_path, display_path
 
-    def load_installed_datatype_converters(self, installed_repository_dict, deactivate=False):
+    def load_installed_datatype_converters(self,
+                                           installed_repository_dict,
+                                           deactivate=False):
         """Load or deactivate proprietary datatype converters."""
         self.app.datatypes_registry.load_datatype_converters(
-            self.app.toolbox, installed_repository_dict=installed_repository_dict, deactivate=deactivate)
+            self.app.toolbox,
+            installed_repository_dict=installed_repository_dict,
+            deactivate=deactivate)
 
-    def load_installed_datatypes(self, repository, relative_install_dir, deactivate=False):
+    def load_installed_datatypes(self,
+                                 repository,
+                                 relative_install_dir,
+                                 deactivate=False):
         """
         Load proprietary datatypes and return information needed for loading custom
         datatypes converters and display applications later.
         """
         metadata = repository.metadata
         repository_dict = None
-        datatypes_config = hg_util.get_config_from_disk(suc.DATATYPES_CONFIG_FILENAME, relative_install_dir)
+        datatypes_config = hg_util.get_config_from_disk(
+            suc.DATATYPES_CONFIG_FILENAME, relative_install_dir)
         if datatypes_config:
             converter_path, display_path = \
                 self.alter_config_and_load_prorietary_datatypes(datatypes_config,
@@ -173,7 +198,11 @@ class CustomDatatypeLoader(object):
                                                                           display_path=display_path)
         return repository_dict
 
-    def load_installed_display_applications(self, installed_repository_dict, deactivate=False):
+    def load_installed_display_applications(self,
+                                            installed_repository_dict,
+                                            deactivate=False):
         """Load or deactivate custom datatype display applications."""
         self.app.datatypes_registry.load_display_applications(
-            self.app, installed_repository_dict=installed_repository_dict, deactivate=deactivate)
+            self.app,
+            installed_repository_dict=installed_repository_dict,
+            deactivate=deactivate)

@@ -10,7 +10,8 @@ from galaxy.util import unicodify
 
 DEFAULT_SHELL = '/bin/bash'
 
-DEFAULT_JOB_FILE_TEMPLATE = Template(resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8'))
+DEFAULT_JOB_FILE_TEMPLATE = Template(
+    resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8'))
 
 SLOTS_STATEMENT_CLUSTER_DEFAULT = \
     resource_string(__name__, 'CLUSTER_SLOTS_STATEMENT.sh').decode('UTF-8')
@@ -72,13 +73,19 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     True
     """
     if any([param not in kwds for param in REQUIRED_TEMPLATE_PARAMS]):
-        raise Exception("Failed to create job_script, a required parameter is missing.")
+        raise Exception(
+            "Failed to create job_script, a required parameter is missing.")
     job_instrumenter = kwds.get("job_instrumenter", None)
     if job_instrumenter:
         del kwds["job_instrumenter"]
-        working_directory = kwds.get("metadata_directory", kwds["working_directory"])
-        kwds["instrument_pre_commands"] = job_instrumenter.pre_execute_commands(working_directory) or ''
-        kwds["instrument_post_commands"] = job_instrumenter.post_execute_commands(working_directory) or ''
+        working_directory = kwds.get("metadata_directory",
+                                     kwds["working_directory"])
+        kwds[
+            "instrument_pre_commands"] = job_instrumenter.pre_execute_commands(
+                working_directory) or ''
+        kwds[
+            "instrument_post_commands"] = job_instrumenter.post_execute_commands(
+                working_directory) or ''
 
     template_params = OPTIONAL_TEMPLATE_PARAMS.copy()
     template_params.update(**kwds)
@@ -92,7 +99,8 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
 
 
 def check_script_integrity(config):
-    return getattr(config, "check_job_script_integrity", DEFAULT_INTEGRITY_CHECK)
+    return getattr(config, "check_job_script_integrity",
+                   DEFAULT_INTEGRITY_CHECK)
 
 
 def write_script(path, contents, config, mode=0o755):
@@ -113,11 +121,16 @@ def _handle_script_integrity(path, config):
         return
 
     script_integrity_verified = False
-    count = getattr(config, "check_job_script_integrity_count", DEFAULT_INTEGRITY_COUNT)
-    sleep_amt = getattr(config, "check_job_script_integrity_sleep", DEFAULT_INTEGRITY_SLEEP)
+    count = getattr(config, "check_job_script_integrity_count",
+                    DEFAULT_INTEGRITY_COUNT)
+    sleep_amt = getattr(config, "check_job_script_integrity_sleep",
+                        DEFAULT_INTEGRITY_SLEEP)
     for i in range(count):
         try:
-            proc = subprocess.Popen([path], shell=True, env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"})
+            proc = subprocess.Popen(
+                [path],
+                shell=True,
+                env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"})
             proc.wait()
             if proc.returncode == 42:
                 script_integrity_verified = True
@@ -137,7 +150,10 @@ def _handle_script_integrity(path, config):
             pass
 
     if not script_integrity_verified:
-        raise Exception("Failed to write job script, could not verify job script integrity.")
+        raise Exception(
+            "Failed to write job script, could not verify job script integrity."
+        )
 
 
-__all__ = ('check_script_integrity', 'job_script', 'write_script', 'INTEGRITY_INJECTION', )
+__all__ = ('check_script_integrity', 'job_script', 'write_script',
+           'INTEGRITY_INJECTION', )

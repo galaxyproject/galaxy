@@ -33,7 +33,8 @@ class InteractiveEnvironmentsController(BaseUIController):
         try:
             interface = container_interfaces[proxy_map.container_interface]
         except KeyError:
-            log.error('Invalid container interface key: %s', proxy_map.container_interface)
+            log.error('Invalid container interface key: %s',
+                      proxy_map.container_interface)
             return None
         container = interface.get_container(proxy_map.container_ids[0])
         return container.is_ready()

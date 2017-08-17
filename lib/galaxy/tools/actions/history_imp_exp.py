@@ -12,7 +12,14 @@ log = logging.getLogger(__name__)
 class ImportHistoryToolAction(ToolAction):
     """Tool action used for importing a history to an archive. """
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, **kwargs):
+    def execute(self,
+                tool,
+                trans,
+                incoming={},
+                set_output_hid=False,
+                overwrite=True,
+                history=None,
+                **kwargs):
         #
         # Create job.
         #
@@ -42,7 +49,8 @@ class ImportHistoryToolAction(ToolAction):
         # Use abspath because mkdtemp() does not, contrary to the documentation,
         # always return an absolute path.
         archive_dir = os.path.abspath(tempfile.mkdtemp())
-        jiha = trans.app.model.JobImportHistoryArchive(job=job, archive_dir=archive_dir)
+        jiha = trans.app.model.JobImportHistoryArchive(
+            job=job, archive_dir=archive_dir)
         trans.sa_session.add(jiha)
 
         #
@@ -60,7 +68,9 @@ class ImportHistoryToolAction(ToolAction):
 
         # Queue the job for execution
         trans.app.job_queue.put(job.id, tool.id)
-        trans.log_event("Added import history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+        trans.log_event(
+            "Added import history job to the job queue, id: %s" % str(job.id),
+            tool_id=job.tool_id)
 
         return job, odict()
 
@@ -68,7 +78,14 @@ class ImportHistoryToolAction(ToolAction):
 class ExportHistoryToolAction(ToolAction):
     """Tool action used for exporting a history to an archive. """
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, **kwargs):
+    def execute(self,
+                tool,
+                trans,
+                incoming={},
+                set_output_hid=False,
+                overwrite=True,
+                history=None,
+                **kwargs):
         #
         # Get history to export.
         #
@@ -106,20 +123,30 @@ class ExportHistoryToolAction(ToolAction):
         archive_dataset = trans.app.model.Dataset()
         trans.sa_session.add(archive_dataset)
 
-        trans.sa_session.flush()  # ensure job.id and archive_dataset.id are available
-        trans.app.object_store.create(archive_dataset)  # set the object store id, create dataset (if applicable)
+        trans.sa_session.flush(
+        )  # ensure job.id and archive_dataset.id are available
+        trans.app.object_store.create(
+            archive_dataset
+        )  # set the object store id, create dataset (if applicable)
 
         #
         # Setup job and job wrapper.
         #
 
         # Add association for keeping track of job, history, archive relationship.
-        jeha = trans.app.model.JobExportHistoryArchive(job=job, history=history, dataset=archive_dataset, compressed=incoming['compress'])
+        jeha = trans.app.model.JobExportHistoryArchive(
+            job=job,
+            history=history,
+            dataset=archive_dataset,
+            compressed=incoming['compress'])
         trans.sa_session.add(jeha)
 
         job_wrapper = JobExportHistoryArchiveWrapper(job)
         cmd_line = job_wrapper.setup_job(
-            trans, jeha, include_hidden=incoming['include_hidden'], include_deleted=incoming['include_deleted'])
+            trans,
+            jeha,
+            include_hidden=incoming['include_hidden'],
+            include_deleted=incoming['include_deleted'])
 
         #
         # Add parameters to job_parameter table.
@@ -137,6 +164,8 @@ class ExportHistoryToolAction(ToolAction):
 
         # Queue the job for execution
         trans.app.job_queue.put(job.id, tool.id)
-        trans.log_event("Added export history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+        trans.log_event(
+            "Added export history job to the job queue, id: %s" % str(job.id),
+            tool_id=job.tool_id)
 
         return job, odict()

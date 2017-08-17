@@ -18,5 +18,6 @@ def _get_state_handlers_dict():
             if func not in state_handlers:
                 state_handlers[func] = []
             state_handlers[func].append(getattr(module, func))
-            log.debug("Loaded '%s' state handler from module %s", func, module.__name__)
+            log.debug("Loaded '%s' state handler from module %s", func,
+                      module.__name__)
     return state_handlers

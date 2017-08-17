@@ -25,8 +25,15 @@ def main(argv=None):
     parser = arg_parser(argv, globals())
     add_build_arguments(parser)
     add_single_image_arguments(parser)
-    parser.add_argument('command', metavar='COMMAND', help='Command (build-and-test, build, all)')
-    parser.add_argument('tool', metavar="TOOL", default=None, help="Path to tool to build mulled image for.")
+    parser.add_argument(
+        'command',
+        metavar='COMMAND',
+        help='Command (build-and-test, build, all)')
+    parser.add_argument(
+        'tool',
+        metavar="TOOL",
+        default=None,
+        help="Path to tool to build mulled image for.")
     args = parser.parse_args()
     tool_source = get_tool_source(args.tool)
     requirements, _ = tool_source.parse_requirements_and_containers()

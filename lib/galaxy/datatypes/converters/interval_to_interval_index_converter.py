@@ -18,8 +18,10 @@ def main():
 
     # Read options, args.
     parser = optparse.OptionParser()
-    parser.add_option('-c', '--chr-col', type='int', dest='chrom_col', default=1)
-    parser.add_option('-s', '--start-col', type='int', dest='start_col', default=2)
+    parser.add_option(
+        '-c', '--chr-col', type='int', dest='chrom_col', default=1)
+    parser.add_option(
+        '-s', '--start-col', type='int', dest='start_col', default=2)
     parser.add_option('-e', '--end-col', type='int', dest='end_col', default=3)
     (options, args) = parser.parse_args()
     input_fname, output_fname = args
@@ -34,7 +36,8 @@ def main():
     offset = 0
     for line in open(input_fname, "r"):
         feature = line.strip().split()
-        if not feature or feature[0].startswith("track") or feature[0].startswith("#"):
+        if not feature or feature[0].startswith(
+                "track") or feature[0].startswith("#"):
             offset += len(line)
             continue
         chrom = feature[options.chrom_col]

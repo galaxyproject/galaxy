@@ -92,9 +92,14 @@ class AdminConfigSerializer(ConfigSerializer):
 
         self.serializers.update({
             # TODO: this is available from user serialization: remove
-            'is_admin_user': lambda *a: True,
-            'library_import_dir': _defaults_to(None),
-            'user_library_import_dir': _defaults_to(None),
-            'allow_library_path_paste': _defaults_to(False),
-            'allow_user_deletion': _defaults_to(False),
+            'is_admin_user':
+            lambda *a: True,
+            'library_import_dir':
+            _defaults_to(None),
+            'user_library_import_dir':
+            _defaults_to(None),
+            'allow_library_path_paste':
+            _defaults_to(False),
+            'allow_user_deletion':
+            _defaults_to(False),
         })

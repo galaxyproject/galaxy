@@ -12,12 +12,18 @@ log = logging.getLogger(__name__)
 
 
 class ToolShedRepository(object):
-    dict_collection_visible_keys = ('id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev',
-                                    'includes_datatypes', 'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status',
-                                    'error_message')
-    dict_element_visible_keys = ('id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev',
-                                 'includes_datatypes', 'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status',
-                                 'error_message')
+    dict_collection_visible_keys = ('id', 'tool_shed', 'name', 'owner',
+                                    'installed_changeset_revision',
+                                    'changeset_revision', 'ctx_rev',
+                                    'includes_datatypes', 'tool_shed_status',
+                                    'deleted', 'uninstalled', 'dist_to_shed',
+                                    'status', 'error_message')
+    dict_element_visible_keys = ('id', 'tool_shed', 'name', 'owner',
+                                 'installed_changeset_revision',
+                                 'changeset_revision', 'ctx_rev',
+                                 'includes_datatypes', 'tool_shed_status',
+                                 'deleted', 'uninstalled', 'dist_to_shed',
+                                 'status', 'error_message')
     installation_status = Bunch(
         NEW='New',
         CLONING='Cloning',
@@ -29,7 +35,12 @@ class ToolShedRepository(object):
         DEACTIVATED='Deactivated',
         ERROR='Error',
         UNINSTALLED='Uninstalled')
-    states = Bunch(INSTALLING='running', OK='ok', WARNING='queued', ERROR='error', UNINSTALLED='deleted_new')
+    states = Bunch(
+        INSTALLING='running',
+        OK='ok',
+        WARNING='queued',
+        ERROR='error',
+        UNINSTALLED='deleted_new')
 
     def __init__(self,
                  id=None,
@@ -85,7 +96,9 @@ class ToolShedRepository(object):
     @property
     def can_deactivate(self):
         return self.status not in [
-            self.installation_status.DEACTIVATED, self.installation_status.ERROR, self.installation_status.UNINSTALLED
+            self.installation_status.DEACTIVATED,
+            self.installation_status.ERROR,
+            self.installation_status.UNINSTALLED
         ]
 
     @property
@@ -93,18 +106,21 @@ class ToolShedRepository(object):
         return self.deleted
 
     def get_sharable_url(self, app):
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, self.tool_shed)
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(
+            app, self.tool_shed)
         if tool_shed_url:
             # Append a slash to the tool shed URL, because urlparse.urljoin will eliminate
             # the last part of a URL if it does not end with a forward slash.
             tool_shed_url = '%s/' % tool_shed_url
-            return urljoin(tool_shed_url, 'view/%s/%s' % (self.owner, self.name))
+            return urljoin(tool_shed_url, 'view/%s/%s' % (self.owner,
+                                                          self.name))
         return tool_shed_url
 
     def get_shed_config_filename(self):
         shed_config_filename = None
         if self.metadata:
-            shed_config_filename = self.metadata.get('shed_config_filename', shed_config_filename)
+            shed_config_filename = self.metadata.get('shed_config_filename',
+                                                     shed_config_filename)
         return shed_config_filename
 
     def get_shed_config_dict(self, app, default=None):
@@ -114,16 +130,20 @@ class ToolShedRepository(object):
         """
 
         def _is_valid_shed_config_filename(filename):
-            for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
+            for shed_tool_conf_dict in app.toolbox.dynamic_confs(
+                    include_migrated_tool_conf=True):
                 if filename == shed_tool_conf_dict['config_filename']:
                     return True
             return False
 
-        if not self.shed_config_filename or not _is_valid_shed_config_filename(self.shed_config_filename):
+        if not self.shed_config_filename or not _is_valid_shed_config_filename(
+                self.shed_config_filename):
             self.guess_shed_config(app, default=default)
         if self.shed_config_filename:
-            for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
-                if self.shed_config_filename == shed_tool_conf_dict['config_filename']:
+            for shed_tool_conf_dict in app.toolbox.dynamic_confs(
+                    include_migrated_tool_conf=True):
+                if self.shed_config_filename == shed_tool_conf_dict[
+                        'config_filename']:
                     return shed_tool_conf_dict
         return default
 
@@ -133,7 +153,9 @@ class ToolShedRepository(object):
         relative_path = None
         if shed_conf_dict:
             tool_path = shed_conf_dict['tool_path']
-            relative_path = os.path.join(self.tool_shed_path_name, 'repos', self.owner, self.name, self.installed_changeset_revision)
+            relative_path = os.path.join(self.tool_shed_path_name, 'repos',
+                                         self.owner, self.name,
+                                         self.installed_changeset_revision)
         return tool_path, relative_path
 
     def guess_shed_config(self, app, default=None):
@@ -141,7 +163,8 @@ class ToolShedRepository(object):
         metadata = self.metadata or {}
         for tool in metadata.get('tools', []):
             tool_ids.append(tool.get('guid'))
-        for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
+        for shed_tool_conf_dict in app.toolbox.dynamic_confs(
+                include_migrated_tool_conf=True):
             name = shed_tool_conf_dict['config_filename']
             for elem in shed_tool_conf_dict['config_elems']:
                 if elem.tag == 'tool':
@@ -159,12 +182,17 @@ class ToolShedRepository(object):
                                 return shed_tool_conf_dict
         if self.includes_datatypes:
             # We need to search by file paths here, which is less desirable.
-            tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url(self.tool_shed)
-            for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
+            tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url(
+                self.tool_shed)
+            for shed_tool_conf_dict in app.toolbox.dynamic_confs(
+                    include_migrated_tool_conf=True):
                 tool_path = shed_tool_conf_dict['tool_path']
-                relative_path = os.path.join(tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision)
+                relative_path = os.path.join(tool_path, tool_shed, 'repos',
+                                             self.owner, self.name,
+                                             self.installed_changeset_revision)
                 if os.path.exists(relative_path):
-                    self.shed_config_filename = shed_tool_conf_dict['config_filename']
+                    self.shed_config_filename = shed_tool_conf_dict[
+                        'config_filename']
                     return shed_tool_conf_dict
         return default
 
@@ -177,8 +205,10 @@ class ToolShedRepository(object):
     @property
     def has_repository_dependencies(self):
         if self.metadata:
-            repository_dependencies_dict = self.metadata.get('repository_dependencies', {})
-            repository_dependencies = repository_dependencies_dict.get('repository_dependencies', [])
+            repository_dependencies_dict = self.metadata.get(
+                'repository_dependencies', {})
+            repository_dependencies = repository_dependencies_dict.get(
+                'repository_dependencies', [])
             # [["http://localhost:9009", "package_libgtextutils_0_6", "test", "e2003cbf18cd", "True", "True"]]
             for rd_tup in repository_dependencies:
                 tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
@@ -190,8 +220,10 @@ class ToolShedRepository(object):
     @property
     def has_repository_dependencies_only_if_compiling_contained_td(self):
         if self.metadata:
-            repository_dependencies_dict = self.metadata.get('repository_dependencies', {})
-            repository_dependencies = repository_dependencies_dict.get('repository_dependencies', [])
+            repository_dependencies_dict = self.metadata.get(
+                'repository_dependencies', {})
+            repository_dependencies = repository_dependencies_dict.get(
+                'repository_dependencies', [])
             # [["http://localhost:9009", "package_libgtextutils_0_6", "test", "e2003cbf18cd", "True", "True"]]
             for rd_tup in repository_dependencies:
                 tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
@@ -208,7 +240,10 @@ class ToolShedRepository(object):
     @property
     def includes_data_managers(self):
         if self.metadata:
-            return bool(len(self.metadata.get('data_manager', {}).get('data_managers', {})))
+            return bool(
+                len(
+                    self.metadata.get('data_manager', {})
+                    .get('data_managers', {})))
         return False
 
     @property
@@ -252,19 +287,25 @@ class ToolShedRepository(object):
         """Return the repository's tool dependencies that are currently installed, but possibly in an error state."""
         installed_dependencies = []
         for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status in [ToolDependency.installation_status.INSTALLED]:
+            if tool_dependency.status in [
+                    ToolDependency.installation_status.INSTALLED
+            ]:
                 installed_dependencies.append(tool_dependency)
         return installed_dependencies
 
     @property
     def is_deprecated_in_tool_shed(self):
         if self.tool_shed_status:
-            return asbool(self.tool_shed_status.get('repository_deprecated', False))
+            return asbool(
+                self.tool_shed_status.get('repository_deprecated', False))
         return False
 
     @property
     def is_deactivated_or_installed(self):
-        return self.status in [self.installation_status.DEACTIVATED, self.installation_status.INSTALLED]
+        return self.status in [
+            self.installation_status.DEACTIVATED,
+            self.installation_status.INSTALLED
+        ]
 
     @property
     def is_installed(self):
@@ -273,7 +314,9 @@ class ToolShedRepository(object):
     @property
     def is_latest_installable_revision(self):
         if self.tool_shed_status:
-            return asbool(self.tool_shed_status.get('latest_installable_revision', False))
+            return asbool(
+                self.tool_shed_status.get('latest_installable_revision',
+                                          False))
         return False
 
     @property
@@ -285,7 +328,9 @@ class ToolShedRepository(object):
         """Return the repository's repository dependencies that are not currently installed, and may not ever have been installed."""
         missing_required_repositories = []
         for required_repository in self.repository_dependencies:
-            if required_repository.status not in [self.installation_status.INSTALLED]:
+            if required_repository.status not in [
+                    self.installation_status.INSTALLED
+            ]:
                 missing_required_repositories.append(required_repository)
         return missing_required_repositories
 
@@ -294,7 +339,9 @@ class ToolShedRepository(object):
         """Return the repository's tool dependencies that are not currently installed, and may not ever have been installed."""
         missing_dependencies = []
         for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status not in [ToolDependency.installation_status.INSTALLED]:
+            if tool_dependency.status not in [
+                    ToolDependency.installation_status.INSTALLED
+            ]:
                 missing_dependencies.append(tool_dependency)
         return missing_dependencies
 
@@ -305,10 +352,14 @@ class ToolShedRepository(object):
         return None
 
     def repo_path(self, app):
-        tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url(self.tool_shed)
-        for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
+        tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url(
+            self.tool_shed)
+        for shed_tool_conf_dict in app.toolbox.dynamic_confs(
+                include_migrated_tool_conf=True):
             tool_path = shed_tool_conf_dict['tool_path']
-            relative_path = os.path.join(tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision)
+            relative_path = os.path.join(tool_path, tool_shed, 'repos',
+                                         self.owner, self.name,
+                                         self.installed_changeset_revision)
             if os.path.exists(relative_path):
                 return relative_path
         return None
@@ -333,11 +384,14 @@ class ToolShedRepository(object):
         required_repositories_being_installed = []
         for required_repository in self.repository_dependencies:
             if required_repository.status in [
-                    self.installation_status.CLONING, self.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
-                    self.installation_status.INSTALLING_TOOL_DEPENDENCIES, self.installation_status.LOADING_PROPRIETARY_DATATYPES,
+                    self.installation_status.CLONING, self.installation_status.
+                    INSTALLING_REPOSITORY_DEPENDENCIES,
+                    self.installation_status.INSTALLING_TOOL_DEPENDENCIES,
+                    self.installation_status.LOADING_PROPRIETARY_DATATYPES,
                     self.installation_status.SETTING_TOOL_VERSIONS
             ]:
-                required_repositories_being_installed.append(required_repository)
+                required_repositories_being_installed.append(
+                    required_repository)
         return required_repositories_being_installed
 
     @property
@@ -346,10 +400,13 @@ class ToolShedRepository(object):
         required_repositories_missing_or_being_installed = []
         for required_repository in self.repository_dependencies:
             if required_repository.status in [
-                    self.installation_status.ERROR, self.installation_status.INSTALLING, self.installation_status.NEVER_INSTALLED,
+                    self.installation_status.ERROR,
+                    self.installation_status.INSTALLING,
+                    self.installation_status.NEVER_INSTALLED,
                     self.installation_status.UNINSTALLED
             ]:
-                required_repositories_missing_or_being_installed.append(required_repository)
+                required_repositories_missing_or_being_installed.append(
+                    required_repository)
         return required_repositories_missing_or_being_installed
 
     @property
@@ -358,7 +415,8 @@ class ToolShedRepository(object):
         required_repositories_with_installation_errors = []
         for required_repository in self.repository_dependencies:
             if required_repository.status == self.installation_status.ERROR:
-                required_repositories_with_installation_errors.append(required_repository)
+                required_repositories_with_installation_errors.append(
+                    required_repository)
         return required_repositories_with_installation_errors
 
     @property
@@ -374,13 +432,16 @@ class ToolShedRepository(object):
         """
         required_rd_tups_that_must_be_installed = []
         if self.has_repository_dependencies:
-            rd_tups = self.metadata['repository_dependencies']['repository_dependencies']
+            rd_tups = self.metadata['repository_dependencies'][
+                'repository_dependencies']
             for rd_tup in rd_tups:
                 if len(rd_tup) == 5:
                     tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                         common_util.parse_repository_dependency_tuple(rd_tup, contains_error=False)
                     if asbool(prior_installation_required):
-                        required_rd_tups_that_must_be_installed.append((tool_shed, name, owner, changeset_revision, 'True', 'False'))
+                        required_rd_tups_that_must_be_installed.append(
+                            (tool_shed, name, owner, changeset_revision,
+                             'True', 'False'))
                 elif len(rd_tup) == 6:
                     tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                         common_util.parse_repository_dependency_tuple(rd_tup, contains_error=False)
@@ -389,7 +450,9 @@ class ToolShedRepository(object):
                     # dependency of the dependent repository.
                     if not asbool(only_if_compiling_contained_td):
                         if asbool(prior_installation_required):
-                            required_rd_tups_that_must_be_installed.append((tool_shed, name, owner, changeset_revision, 'True', 'False'))
+                            required_rd_tups_that_must_be_installed.append(
+                                (tool_shed, name, owner, changeset_revision,
+                                 'True', 'False'))
         return required_rd_tups_that_must_be_installed
 
     @property
@@ -405,14 +468,16 @@ class ToolShedRepository(object):
     def set_shed_config_filename(self, value):
         self.metadata['shed_config_filename'] = value
 
-    shed_config_filename = property(get_shed_config_filename, set_shed_config_filename)
+    shed_config_filename = property(get_shed_config_filename,
+                                    set_shed_config_filename)
 
     def to_dict(self, view='collection', value_mapper=None):
         if value_mapper is None:
             value_mapper = {}
         rval = {}
         try:
-            visible_keys = self.__getattribute__('dict_' + view + '_visible_keys')
+            visible_keys = self.__getattribute__('dict_' + view +
+                                                 '_visible_keys')
         except AttributeError:
             raise Exception('Unknown API view: %s' % view)
         for key in visible_keys:
@@ -437,7 +502,10 @@ class ToolShedRepository(object):
         """Return the repository's tool dependencies that are currently installed, but possibly in an error state."""
         installed_dependencies = []
         for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status in [ToolDependency.installation_status.INSTALLED, ToolDependency.installation_status.ERROR]:
+            if tool_dependency.status in [
+                    ToolDependency.installation_status.INSTALLED,
+                    ToolDependency.installation_status.ERROR
+            ]:
                 installed_dependencies.append(tool_dependency)
         return installed_dependencies
 
@@ -446,8 +514,10 @@ class ToolShedRepository(object):
         dependencies_missing_or_being_installed = []
         for tool_dependency in self.tool_dependencies:
             if tool_dependency.status in [
-                    ToolDependency.installation_status.ERROR, ToolDependency.installation_status.INSTALLING,
-                    ToolDependency.installation_status.NEVER_INSTALLED, ToolDependency.installation_status.UNINSTALLED
+                    ToolDependency.installation_status.ERROR,
+                    ToolDependency.installation_status.INSTALLING,
+                    ToolDependency.installation_status.NEVER_INSTALLED,
+                    ToolDependency.installation_status.UNINSTALLED
             ]:
                 dependencies_missing_or_being_installed.append(tool_dependency)
         return dependencies_missing_or_being_installed
@@ -476,14 +546,16 @@ class ToolShedRepository(object):
         """
         rd_tups_of_repositories_needed_for_compiling_td = []
         if self.metadata:
-            repository_dependencies = self.metadata.get('repository_dependencies', None)
+            repository_dependencies = self.metadata.get(
+                'repository_dependencies', None)
             rd_tups = repository_dependencies['repository_dependencies']
             for rd_tup in rd_tups:
                 if len(rd_tup) == 6:
                     tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = rd_tup
                     if asbool(only_if_compiling_contained_td):
-                        rd_tups_of_repositories_needed_for_compiling_td.append((tool_shed, name, owner, changeset_revision, 'False',
-                                                                                'True'))
+                        rd_tups_of_repositories_needed_for_compiling_td.append(
+                            (tool_shed, name, owner, changeset_revision,
+                             'False', 'True'))
         return rd_tups_of_repositories_needed_for_compiling_td
 
     @property
@@ -515,7 +587,9 @@ class ToolShedRepository(object):
 
 
 class RepositoryRepositoryDependencyAssociation(object):
-    def __init__(self, tool_shed_repository_id=None, repository_dependency_id=None):
+    def __init__(self,
+                 tool_shed_repository_id=None,
+                 repository_dependency_id=None):
         self.tool_shed_repository_id = tool_shed_repository_id
         self.repository_dependency_id = repository_dependency_id
 
@@ -527,11 +601,26 @@ class RepositoryDependency(object):
 
 class ToolDependency(object):
     installation_status = Bunch(
-        NEVER_INSTALLED='Never installed', INSTALLING='Installing', INSTALLED='Installed', ERROR='Error', UNINSTALLED='Uninstalled')
+        NEVER_INSTALLED='Never installed',
+        INSTALLING='Installing',
+        INSTALLED='Installed',
+        ERROR='Error',
+        UNINSTALLED='Uninstalled')
 
-    states = Bunch(INSTALLING='running', OK='ok', WARNING='queued', ERROR='error', UNINSTALLED='deleted_new')
+    states = Bunch(
+        INSTALLING='running',
+        OK='ok',
+        WARNING='queued',
+        ERROR='error',
+        UNINSTALLED='deleted_new')
 
-    def __init__(self, tool_shed_repository_id=None, name=None, version=None, type=None, status=None, error_message=None):
+    def __init__(self,
+                 tool_shed_repository_id=None,
+                 name=None,
+                 version=None,
+                 type=None,
+                 status=None,
+                 error_message=None):
         self.tool_shed_repository_id = tool_shed_repository_id
         self.name = name
         self.version = version
@@ -541,16 +630,22 @@ class ToolDependency(object):
 
     @property
     def can_install(self):
-        return self.status in [self.installation_status.NEVER_INSTALLED, self.installation_status.UNINSTALLED]
+        return self.status in [
+            self.installation_status.NEVER_INSTALLED,
+            self.installation_status.UNINSTALLED
+        ]
 
     @property
     def can_uninstall(self):
-        return self.status in [self.installation_status.ERROR, self.installation_status.INSTALLED]
+        return self.status in [
+            self.installation_status.ERROR, self.installation_status.INSTALLED
+        ]
 
     @property
     def can_update(self):
         return self.status in [
-            self.installation_status.NEVER_INSTALLED, self.installation_status.INSTALLED, self.installation_status.ERROR,
+            self.installation_status.NEVER_INSTALLED,
+            self.installation_status.INSTALLED, self.installation_status.ERROR,
             self.installation_status.UNINSTALLED
         ]
 
@@ -567,11 +662,17 @@ class ToolDependency(object):
 
     def installation_directory(self, app):
         if self.type == 'package':
-            return os.path.join(app.config.tool_dependency_dir, self.name, self.version, self.tool_shed_repository.owner,
-                                self.tool_shed_repository.name, self.tool_shed_repository.installed_changeset_revision)
+            return os.path.join(
+                app.config.tool_dependency_dir, self.name, self.version,
+                self.tool_shed_repository.owner,
+                self.tool_shed_repository.name,
+                self.tool_shed_repository.installed_changeset_revision)
         if self.type == 'set_environment':
-            return os.path.join(app.config.tool_dependency_dir, 'environment_settings', self.name, self.tool_shed_repository.owner,
-                                self.tool_shed_repository.name, self.tool_shed_repository.installed_changeset_revision)
+            return os.path.join(
+                app.config.tool_dependency_dir, 'environment_settings',
+                self.name, self.tool_shed_repository.owner,
+                self.tool_shed_repository.name,
+                self.tool_shed_repository.installed_changeset_revision)
 
     @property
     def is_installed(self):
@@ -581,7 +682,11 @@ class ToolDependency(object):
 class ToolVersion(object, Dictifiable):
     dict_element_visible_keys = ('id', 'tool_shed_repository')
 
-    def __init__(self, id=None, create_time=None, tool_id=None, tool_shed_repository=None):
+    def __init__(self,
+                 id=None,
+                 create_time=None,
+                 tool_id=None,
+                 tool_shed_repository=None):
         self.id = id
         self.create_time = create_time
         self.tool_id = tool_id

@@ -23,12 +23,13 @@ metadata = MetaData()
 NOW = datetime.datetime.utcnow
 ROLE_TYPE = 'system'
 
-RepositoryRoleAssociation_table = Table("repository_role_association", metadata,
-                                        Column("id", Integer, primary_key=True),
-                                        Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
-                                        Column("role_id", Integer, ForeignKey("role.id"), index=True),
-                                        Column("create_time", DateTime, default=NOW),
-                                        Column("update_time", DateTime, default=NOW, onupdate=NOW))
+RepositoryRoleAssociation_table = Table(
+    "repository_role_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
+    Column("role_id", Integer, ForeignKey("role.id"), index=True),
+    Column("create_time", DateTime, default=NOW),
+    Column("update_time", DateTime, default=NOW, onupdate=NOW))
 
 
 def nextval(migrate_engine, table, col='id'):
@@ -37,7 +38,8 @@ def nextval(migrate_engine, table, col='id'):
     elif migrate_engine.name in ['mysql', 'sqlite']:
         return "null"
     else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        raise Exception('Unable to convert data for unknown database type: %s'
+                        % migrate_engine.name)
 
 
 def localtimestamp(migrate_engine):
@@ -46,7 +48,8 @@ def localtimestamp(migrate_engine):
     elif migrate_engine.name == 'sqlite':
         return "current_date || ' ' || current_time"
     else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        raise Exception('Unable to convert data for unknown database type: %s'
+                        % migrate_engine.name)
 
 
 def boolean_false(migrate_engine):
@@ -55,7 +58,8 @@ def boolean_false(migrate_engine):
     elif migrate_engine.name == 'sqlite':
         return 0
     else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        raise Exception('Unable to convert data for unknown database type: %s'
+                        % migrate_engine.name)
 
 
 def upgrade(migrate_engine):
@@ -67,7 +71,8 @@ def upgrade(migrate_engine):
         RepositoryRoleAssociation_table.create()
     except Exception as e:
         print str(e)
-        log.debug("Creating repository_role_association table failed: %s" % str(e))
+        log.debug(
+            "Creating repository_role_association table failed: %s" % str(e))
     # Select the list of repositories and associated public user names for their owners.
     user_ids = []
     repository_ids = []
@@ -95,7 +100,8 @@ def upgrade(migrate_engine):
         cmd += ");"
         migrate_engine.execute(cmd)
         # Get the id of the new role.
-        cmd = "SELECT id FROM role WHERE name = '%s' and type = '%s';" % (role_name, ROLE_TYPE)
+        cmd = "SELECT id FROM role WHERE name = '%s' and type = '%s';" % (
+            role_name, ROLE_TYPE)
         row = migrate_engine.execute(cmd).fetchone()
         if row:
             role_id = row[0]
@@ -104,7 +110,8 @@ def upgrade(migrate_engine):
         if role_id:
             # Create a repository_role_association record to associate the repository with the new role.
             cmd = "INSERT INTO repository_role_association VALUES ("
-            cmd += "%s, " % nextval(migrate_engine, 'repository_role_association')
+            cmd += "%s, " % nextval(migrate_engine,
+                                    'repository_role_association')
             cmd += "%d, " % int(repository_id)
             cmd += "%d, " % int(role_id)
             cmd += "%s, " % localtimestamp(migrate_engine)
@@ -144,20 +151,24 @@ def downgrade(migrate_engine):
             role_id = None
         if role_id:
             # Delete all user_role_association records for the current role.
-            cmd = "DELETE FROM user_role_association WHERE role_id = %d;" % int(role_id)
+            cmd = "DELETE FROM user_role_association WHERE role_id = %d;" % int(
+                role_id)
             migrate_engine.execute(cmd)
             # Delete all repository_role_association records for the current role.
-            cmd = "DELETE FROM repository_role_association WHERE role_id = %d;" % int(role_id)
+            cmd = "DELETE FROM repository_role_association WHERE role_id = %d;" % int(
+                role_id)
             migrate_engine.execute(cmd)
             # Delete the role from the role table.
             cmd = "DELETE FROM role WHERE id = %d;" % int(role_id)
             migrate_engine.execute(cmd)
     # Drop the repository_role_association table.
     try:
-        RepositoryRoleAssociation_table = Table("repository_role_association", metadata, autoload=True)
+        RepositoryRoleAssociation_table = Table(
+            "repository_role_association", metadata, autoload=True)
     except NoSuchTableError:
         log.debug("Failed loading table repository_role_association")
     try:
         RepositoryRoleAssociation_table.drop()
     except Exception as e:
-        log.debug("Dropping repository_role_association table failed: %s" % str(e))
+        log.debug(
+            "Dropping repository_role_association table failed: %s" % str(e))

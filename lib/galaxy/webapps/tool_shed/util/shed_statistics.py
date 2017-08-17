@@ -75,7 +75,8 @@ class ShedCounter(object):
                         for invalid_tool_config in invalid_tool_configs:
                             if invalid_tool_config not in processed_invalid_tool_configs:
                                 self.invalid_versions_of_tools += 1
-                                processed_invalid_tool_configs.append(invalid_tool_config)
+                                processed_invalid_tool_configs.append(
+                                    invalid_tool_config)
                     if 'datatypes' in metadata:
                         datatypes = metadata['datatypes']
                         for datatypes_dict in datatypes:
@@ -90,5 +91,6 @@ class ShedCounter(object):
                             relative_path, exported_workflow_dict = workflow_tup
                             if relative_path not in processed_relative_workflow_paths:
                                 self.workflows += 1
-                                processed_relative_workflow_paths.append(relative_path)
+                                processed_relative_workflow_paths.append(
+                                    relative_path)
         self.generation_time = strftime("%b %d, %Y", gmtime())

@@ -20,13 +20,22 @@ class FilterFactory(object):
         # Prepopulate dict containing filters that are always checked,
         # other filters that get checked depending on context (e.g. coming from
         # trackster or no user found are added in build filters).
-        self.default_filters = dict(tool=[_not_hidden, _handle_authorization], section=[], label=[])
+        self.default_filters = dict(
+            tool=[_not_hidden, _handle_authorization], section=[], label=[])
         # Add dynamic filters to these default filters.
         config = toolbox.app.config
-        self.__base_modules = listify(getattr(config, "toolbox_filter_base_modules", "galaxy.tools.filters"))
-        self.__init_filters("tool", getattr(config, "tool_filters", ""), self.default_filters)
-        self.__init_filters("section", getattr(config, "tool_section_filters", ""), self.default_filters)
-        self.__init_filters("label", getattr(config, "tool_label_filters", ""), self.default_filters)
+        self.__base_modules = listify(
+            getattr(config, "toolbox_filter_base_modules",
+                    "galaxy.tools.filters"))
+        self.__init_filters("tool",
+                            getattr(config, "tool_filters", ""),
+                            self.default_filters)
+        self.__init_filters("section",
+                            getattr(config, "tool_section_filters", ""),
+                            self.default_filters)
+        self.__init_filters("label",
+                            getattr(config, "tool_label_filters", ""),
+                            self.default_filters)
 
     def build_filters(self, trans, **kwds):
         """
@@ -45,8 +54,10 @@ class FilterFactory(object):
                     elif name == 'toolbox_label_filters':
                         category = "label"
                     if category:
-                        validate = getattr(trans.app.config, 'user_%s_filters' % category, [])
-                        self.__init_filters(category, user_filters, filters, validate=validate)
+                        validate = getattr(trans.app.config,
+                                           'user_%s_filters' % category, [])
+                        self.__init_filters(
+                            category, user_filters, filters, validate=validate)
         else:
             if kwds.get("trackster", False):
                 filters["tool"].append(_has_trackster_conf)
@@ -59,7 +70,9 @@ class FilterFactory(object):
                 filter_function = self.build_filter_function(filter)
                 toolbox_filters[key].append(filter_function)
             else:
-                log.warning("Refusing to load %s filter '%s' which is not defined in config", key, filter)
+                log.warning(
+                    "Refusing to load %s filter '%s' which is not defined in config",
+                    key, filter)
         return toolbox_filters
 
     def build_filter_function(self, filter_name):
@@ -88,7 +101,8 @@ class FilterFactory(object):
             module = sys.modules[full_module_name]
             if hasattr(module, function_name):
                 return getattr(module, function_name)
-        raise Exception("Failed to find filter %s.%s" % (module_name, function_name))
+        raise Exception("Failed to find filter %s.%s" % (module_name,
+                                                         function_name))
 
 
 # Stock Filter Functions

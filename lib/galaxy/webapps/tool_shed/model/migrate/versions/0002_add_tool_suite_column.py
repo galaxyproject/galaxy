@@ -48,4 +48,5 @@ def downgrade(migrate_engine):
         Tool_table.c.suite.drop()
     except Exception as e:
         print "Dropping column suite from the tool table failed: %s" % str(e)
-        log.debug("Dropping column suite from the tool table failed: %s" % str(e))
+        log.debug(
+            "Dropping column suite from the tool table failed: %s" % str(e))

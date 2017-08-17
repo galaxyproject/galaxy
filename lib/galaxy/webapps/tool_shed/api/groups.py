@@ -38,7 +38,8 @@ class GroupsController(BaseAPIController):
         group_dicts = []
         deleted = util.asbool(deleted)
         if deleted and not trans.user_is_admin():
-            raise AdminRequiredException('Only administrators can query deleted groups.')
+            raise AdminRequiredException(
+                'Only administrators can query deleted groups.')
         for group in self.group_manager.list(trans, deleted):
             group_dicts.append(self._populate(trans, group))
         return group_dicts
@@ -68,9 +69,11 @@ class GroupsController(BaseAPIController):
                 # TODO add description field to the model
                 group_dict = self.group_manager.create(
                     trans, name=name).to_dict(
-                        view='element', value_mapper=self.__get_value_mapper(trans))
+                        view='element',
+                        value_mapper=self.__get_value_mapper(trans))
         else:
-            raise RequestParameterMissingException('Missing required parameter "name".')
+            raise RequestParameterMissingException(
+                'Missing required parameter "name".')
         return group_dict
 
     @expose_api_anonymous_and_sessionless
@@ -86,7 +89,8 @@ class GroupsController(BaseAPIController):
         decoded_id = trans.security.decode_id(encoded_id)
         group = self.group_manager.get(trans, decoded_id)
         if group is None:
-            raise ObjectNotFound('Unable to locate group record for id %s.' % (str(encoded_id)))
+            raise ObjectNotFound('Unable to locate group record for id %s.' %
+                                 (str(encoded_id)))
         return self._populate(trans, group)
 
     def _populate(self, trans, group):
@@ -95,12 +99,14 @@ class GroupsController(BaseAPIController):
         and add other characteristics like members and repositories.
         """
         model = trans.app.model
-        group_dict = group.to_dict(view='collection', value_mapper=self.__get_value_mapper(trans))
+        group_dict = group.to_dict(
+            view='collection', value_mapper=self.__get_value_mapper(trans))
         group_members = []
         group_repos = []
         total_downloads = 0
         for uga in group.users:
-            user = trans.sa_session.query(model.User).filter(model.User.table.c.id == uga.user_id).one()
+            user = trans.sa_session.query(model.User).filter(
+                model.User.table.c.id == uga.user_id).one()
             user_repos_count = 0
             for repo in trans.sa_session.query(model.Repository) \
                     .filter(model.Repository.table.c.user_id == uga.user_id) \
@@ -110,12 +116,18 @@ class GroupsController(BaseAPIController):
                     .outerjoin(model.Category.table):
                 categories = []
                 for rca in repo.categories:
-                    cat_dict = dict(name=rca.category.name, id=trans.app.security.encode_id(rca.category.id))
+                    cat_dict = dict(
+                        name=rca.category.name,
+                        id=trans.app.security.encode_id(rca.category.id))
                     categories.append(cat_dict)
-                time_repo_created_full = repo.create_time.strftime("%Y-%m-%d %I:%M %p")
-                time_repo_updated_full = repo.update_time.strftime("%Y-%m-%d %I:%M %p")
-                time_repo_created = pretty_print_time_interval(repo.create_time, True)
-                time_repo_updated = pretty_print_time_interval(repo.update_time, True)
+                time_repo_created_full = repo.create_time.strftime(
+                    "%Y-%m-%d %I:%M %p")
+                time_repo_updated_full = repo.update_time.strftime(
+                    "%Y-%m-%d %I:%M %p")
+                time_repo_created = pretty_print_time_interval(
+                    repo.create_time, True)
+                time_repo_updated = pretty_print_time_interval(
+                    repo.update_time, True)
                 approved = ''
                 ratings = []
                 for review in repo.reviews:
@@ -124,24 +136,39 @@ class GroupsController(BaseAPIController):
                     if review.approved == 'yes':
                         approved = 'yes'
                 # TODO add user ratings
-                ratings_mean = str(float(sum(ratings)) / len(ratings)) if len(ratings) > 0 else ''
+                ratings_mean = str(float(sum(ratings)) /
+                                   len(ratings)) if len(ratings) > 0 else ''
                 total_downloads += repo.times_downloaded
                 group_repos.append({
-                    'name': repo.name,
-                    'times_downloaded': repo.times_downloaded,
-                    'owner': repo.user.username,
-                    'time_created_full': time_repo_created_full,
-                    'time_created': time_repo_created,
-                    'time_updated_full': time_repo_updated_full,
-                    'time_updated': time_repo_updated,
-                    'description': repo.description,
-                    'approved': approved,
-                    'ratings_mean': ratings_mean,
-                    'categories': categories
+                    'name':
+                    repo.name,
+                    'times_downloaded':
+                    repo.times_downloaded,
+                    'owner':
+                    repo.user.username,
+                    'time_created_full':
+                    time_repo_created_full,
+                    'time_created':
+                    time_repo_created,
+                    'time_updated_full':
+                    time_repo_updated_full,
+                    'time_updated':
+                    time_repo_updated,
+                    'description':
+                    repo.description,
+                    'approved':
+                    approved,
+                    'ratings_mean':
+                    ratings_mean,
+                    'categories':
+                    categories
                 })
                 user_repos_count += 1
             encoded_user_id = trans.app.security.encode_id(repo.user.id)
-            user_repos_url = web.url_for(controller='repository', action='browse_repositories_by_user', user_id=encoded_user_id)
+            user_repos_url = web.url_for(
+                controller='repository',
+                action='browse_repositories_by_user',
+                user_id=encoded_user_id)
             time_created = pretty_print_time_interval(user.create_time, True)
             member_dict = {
                 'id': encoded_user_id,

@@ -13,19 +13,21 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 metadata = MetaData()
 
-DataManagerHistoryAssociation_table = Table("data_manager_history_association", metadata,
-                                            Column("id", Integer, primary_key=True),
-                                            Column("create_time", DateTime, default=now),
-                                            Column("update_time", DateTime, index=True, default=now, onupdate=now),
-                                            Column("history_id", Integer, ForeignKey("history.id"), index=True),
-                                            Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
+DataManagerHistoryAssociation_table = Table(
+    "data_manager_history_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, index=True, default=now, onupdate=now),
+    Column("history_id", Integer, ForeignKey("history.id"), index=True),
+    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
 
-DataManagerJobAssociation_table = Table("data_manager_job_association", metadata,
-                                        Column("id", Integer, primary_key=True),
-                                        Column("create_time", DateTime, default=now),
-                                        Column("update_time", DateTime, index=True, default=now, onupdate=now),
-                                        Column("job_id", Integer, ForeignKey("job.id"), index=True),
-                                        Column("data_manager_id", TEXT, index=True))
+DataManagerJobAssociation_table = Table(
+    "data_manager_job_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, index=True, default=now, onupdate=now),
+    Column("job_id", Integer, ForeignKey("job.id"), index=True),
+    Column("data_manager_id", TEXT, index=True))
 
 
 def upgrade(migrate_engine):
@@ -36,7 +38,8 @@ def upgrade(migrate_engine):
         DataManagerHistoryAssociation_table.create()
         log.debug("Created data_manager_history_association table")
     except Exception:
-        log.exception("Creating data_manager_history_association table failed.")
+        log.exception(
+            "Creating data_manager_history_association table failed.")
     try:
         DataManagerJobAssociation_table.create()
         log.debug("Created data_manager_job_association table")
@@ -51,7 +54,8 @@ def downgrade(migrate_engine):
         DataManagerHistoryAssociation_table.drop()
         log.debug("Dropped data_manager_history_association table")
     except Exception:
-        log.exception("Dropping data_manager_history_association table failed.")
+        log.exception(
+            "Dropping data_manager_history_association table failed.")
     try:
         DataManagerJobAssociation_table.drop()
         log.debug("Dropped data_manager_job_association table")

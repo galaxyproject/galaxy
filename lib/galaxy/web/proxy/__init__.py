@@ -22,9 +22,13 @@ SECURE_COOKIE = "galaxysession"
 class ProxyManager(object):
     def __init__(self, config):
         for option in [
-                "manage_dynamic_proxy", "dynamic_proxy_bind_port", "dynamic_proxy_bind_ip", "dynamic_proxy_debug",
-                "dynamic_proxy_external_proxy", "dynamic_proxy_prefix", "proxy_session_map", "dynamic_proxy", "cookie_path",
-                "dynamic_proxy_golang_noaccess", "dynamic_proxy_golang_clean_interval", "dynamic_proxy_golang_docker_address",
+                "manage_dynamic_proxy", "dynamic_proxy_bind_port",
+                "dynamic_proxy_bind_ip", "dynamic_proxy_debug",
+                "dynamic_proxy_external_proxy", "dynamic_proxy_prefix",
+                "proxy_session_map", "dynamic_proxy", "cookie_path",
+                "dynamic_proxy_golang_noaccess",
+                "dynamic_proxy_golang_clean_interval",
+                "dynamic_proxy_golang_docker_address",
                 "dynamic_proxy_golang_api_key"
         ]:
 
@@ -74,7 +78,8 @@ class ProxyManager(object):
             host = host[0:host.index(':')]
         scheme = trans.request.scheme
         if not self.dynamic_proxy_external_proxy:
-            proxy_url = '%s://%s:%d' % (scheme, host, self.dynamic_proxy_bind_port)
+            proxy_url = '%s://%s:%d' % (scheme, host,
+                                        self.dynamic_proxy_bind_port)
         else:
             proxy_url = '%s://%s%s' % (scheme, host, proxy_prefix)
         return {
@@ -121,7 +126,8 @@ class NodeProxyLauncher(object):
             args.append("--verbose")
 
         parent_directory = os.path.dirname(__file__)
-        path_to_application = os.path.join(parent_directory, "js", "lib", "main.js")
+        path_to_application = os.path.join(parent_directory, "js", "lib",
+                                           "main.js")
         command = [path_to_application] + args
         return command
 
@@ -131,13 +137,15 @@ class GolangProxyLauncher(object):
         args = [
             "gxproxy",  # Must be on path. TODO: wheel?
             "--listenAddr",
-            '%s:%d' % (config.dynamic_proxy_bind_ip, config.dynamic_proxy_bind_port, ),
+            '%s:%d' % (config.dynamic_proxy_bind_ip,
+                       config.dynamic_proxy_bind_port, ),
             "--listenPath",
             "/".join((config.cookie_path, config.dynamic_proxy_prefix)),
             "--cookieName",
             "galaxysession",
             "--storage",
-            config.proxy_session_map.replace('.sqlite', '.xml'),  # just in case.
+            config.proxy_session_map.replace('.sqlite',
+                                             '.xml'),  # just in case.
             "--apiKey",
             config.dynamic_proxy_golang_api_key,
             "--noAccess",
@@ -181,7 +189,8 @@ def proxy_ipc(config):
 
 
 class ProxyIpc(object):
-    def handle_requests(self, authentication, proxy_requests, route_name, container_ids, container_interface):
+    def handle_requests(self, authentication, proxy_requests, route_name,
+                        container_ids, container_interface):
         raise NotImplementedError()
 
     def fetch_requests(self, authentication, key):
@@ -192,7 +201,8 @@ class JsonFileProxyIpc(object):
     def __init__(self, proxy_session_map):
         self.proxy_session_map = proxy_session_map
 
-    def handle_requests(self, authentication, proxy_requests, route_name, container_ids, container_interface):
+    def handle_requests(self, authentication, proxy_requests, route_name,
+                        container_ids, container_interface):
         key = authentication.cookie_value
         with FileLock(self.proxy_session_map):
             if not os.path.exists(self.proxy_session_map):
@@ -228,7 +238,8 @@ class SqliteProxyIpc(object):
     def __init__(self, proxy_session_map):
         self.proxy_session_map = proxy_session_map
 
-    def handle_requests(self, authentication, proxy_requests, route_name, container_ids, container_interface):
+    def handle_requests(self, authentication, proxy_requests, route_name,
+                        container_ids, container_interface):
         key = authentication.cookie_value
         with FileLock(self.proxy_session_map):
             conn = sqlite.connect(self.proxy_session_map)
@@ -249,7 +260,9 @@ class SqliteProxyIpc(object):
                 insert = '''INSERT INTO gxproxy2
                             (key, host, port, container_ids, container_interface)
                             VALUES (?, ?, ?, ?, ?)'''
-                c.execute(insert, (key, proxy_requests.host, proxy_requests.port, json.dumps(container_ids), container_interface))
+                c.execute(insert,
+                          (key, proxy_requests.host, proxy_requests.port,
+                           json.dumps(container_ids), container_interface))
                 conn.commit()
             finally:
                 conn.close()
@@ -265,11 +278,16 @@ class SqliteProxyIpc(object):
                             WHERE key=?'''
                 c.execute(select, (key, ))
                 try:
-                    host, port, container_ids, container_interface = c.fetchone()
+                    host, port, container_ids, container_interface = c.fetchone(
+                    )
                 except TypeError:
                     log.warning('fetch_requests(): invalid key: %s', key)
                     return None
-                return ProxyMapping(host=host, port=port, container_ids=json.loads(container_ids), container_interface=container_interface)
+                return ProxyMapping(
+                    host=host,
+                    port=port,
+                    container_ids=json.loads(container_ids),
+                    container_interface=container_interface)
             finally:
                 conn.close()
 
@@ -277,15 +295,23 @@ class SqliteProxyIpc(object):
 class RestGolangProxyIpc(object):
     def __init__(self, config):
         self.config = config
-        self.api_url = 'http://127.0.0.1:%s/api?api_key=%s' % (self.config.dynamic_proxy_bind_port,
-                                                               self.config.dynamic_proxy_golang_api_key)
+        self.api_url = 'http://127.0.0.1:%s/api?api_key=%s' % (
+            self.config.dynamic_proxy_bind_port,
+            self.config.dynamic_proxy_golang_api_key)
 
-    def handle_requests(self, authentication, proxy_requests, route_name, container_ids, container_interface, sleep=1):
+    def handle_requests(self,
+                        authentication,
+                        proxy_requests,
+                        route_name,
+                        container_ids,
+                        container_interface,
+                        sleep=1):
         """Make a POST request to the GO proxy to register a route
         """
         values = {
             'FrontendPath': route_name,
-            'BackendAddr': "%s:%s" % (proxy_requests.host, proxy_requests.port),
+            'BackendAddr': "%s:%s" % (proxy_requests.host,
+                                      proxy_requests.port),
             'AuthorizedCookie': authentication.cookie_value,
             'ContainerIds': container_ids,
         }
@@ -300,13 +326,20 @@ class RestGolangProxyIpc(object):
         except urllib2.URLError as err:
             log.debug(err)
             if sleep > 5:
-                excp = "Could not contact proxy after %s seconds" % sum(range(sleep + 1))
+                excp = "Could not contact proxy after %s seconds" % sum(
+                    range(sleep + 1))
                 raise Exception(excp)
             time.sleep(sleep)
-            self.handle_requests(authentication, proxy_requests, route_name, container_ids, sleep=sleep + 1)
+            self.handle_requests(
+                authentication,
+                proxy_requests,
+                route_name,
+                container_ids,
+                sleep=sleep + 1)
         pass
 
 
-ProxyMapping = namedtuple('ProxyMapping', ['host', 'port', 'container_ids', 'container_interface'])
+ProxyMapping = namedtuple(
+    'ProxyMapping', ['host', 'port', 'container_ids', 'container_interface'])
 
 # TODO: MQ diven proxy?

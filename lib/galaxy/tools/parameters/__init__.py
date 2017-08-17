@@ -14,7 +14,8 @@ from .grouping import Conditional, Repeat, Section, UploadDataset
 REPLACE_ON_TRUTHY = object()
 
 # Some tools use the code tag and access the code base, expecting certain tool parameters to be available here.
-__all__ = ('DataCollectionToolParameter', 'DataToolParameter', 'SelectToolParameter')
+__all__ = ('DataCollectionToolParameter', 'DataToolParameter',
+           'SelectToolParameter')
 
 
 def visit_input_values(inputs,
@@ -69,19 +70,27 @@ def visit_input_values(inputs,
     True
     """
 
-    def callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None):
+    def callback_helper(input,
+                        input_values,
+                        name_prefix,
+                        label_prefix,
+                        parent_prefix,
+                        context=None,
+                        error=None):
         args = {
             'input': input,
             'parent': input_values,
             'value': input_values.get(input.name),
             'prefixed_name': '%s%s' % (name_prefix, input.name),
-            'prefixed_label': '%s%s' % (label_prefix, input.label or input.name),
+            'prefixed_label': '%s%s' % (label_prefix,
+                                        input.label or input.name),
             'prefix': parent_prefix,
             'context': context,
             'error': error
         }
         if input.name not in input_values:
-            args['error'] = 'No value found for \'%s\'.' % args.get('prefixed_label')
+            args['error'] = 'No value found for \'%s\'.' % args.get(
+                'prefixed_label')
         new_value = callback(**args)
         if no_replacement_value is REPLACE_ON_TRUTHY:
             replace = bool(new_value)
@@ -91,17 +100,30 @@ def visit_input_values(inputs,
             input_values[input.name] = new_value
 
     context = ExpressionContext(input_values, context)
-    payload = {'context': context, 'no_replacement_value': no_replacement_value}
+    payload = {
+        'context': context,
+        'no_replacement_value': no_replacement_value
+    }
     for input in inputs.values():
         if isinstance(input, Repeat) or isinstance(input, UploadDataset):
-            values = input_values[input.name] = input_values.get(input.name, [])
+            values = input_values[input.name] = input_values.get(
+                input.name, [])
             for i, d in enumerate(values):
                 d['__index__'] = i
                 new_name_prefix = name_prefix + '%s_%d|' % (input.name, i)
-                new_label_prefix = label_prefix + '%s %d > ' % (input.title, i + 1)
-                visit_input_values(input.inputs, d, callback, new_name_prefix, new_label_prefix, parent_prefix=new_name_prefix, **payload)
+                new_label_prefix = label_prefix + '%s %d > ' % (input.title,
+                                                                i + 1)
+                visit_input_values(
+                    input.inputs,
+                    d,
+                    callback,
+                    new_name_prefix,
+                    new_label_prefix,
+                    parent_prefix=new_name_prefix,
+                    **payload)
         elif isinstance(input, Conditional):
-            values = input_values[input.name] = input_values.get(input.name, {})
+            values = input_values[input.name] = input_values.get(
+                input.name, {})
             new_name_prefix = name_prefix + input.name + '|'
             case_error = None
             try:
@@ -110,8 +132,15 @@ def visit_input_values(inputs,
                 case_error = 'The selected case is unavailable/invalid.'
                 pass
             callback_helper(
-                input.test_param, values, new_name_prefix, label_prefix, parent_prefix=name_prefix, context=context, error=case_error)
-            values['__current_case__'] = input.get_current_case(values[input.test_param.name])
+                input.test_param,
+                values,
+                new_name_prefix,
+                label_prefix,
+                parent_prefix=name_prefix,
+                context=context,
+                error=case_error)
+            values['__current_case__'] = input.get_current_case(
+                values[input.test_param.name])
             visit_input_values(
                 input.cases[values['__current_case__']].inputs,
                 values,
@@ -121,11 +150,25 @@ def visit_input_values(inputs,
                 parent_prefix=name_prefix,
                 **payload)
         elif isinstance(input, Section):
-            values = input_values[input.name] = input_values.get(input.name, {})
+            values = input_values[input.name] = input_values.get(
+                input.name, {})
             new_name_prefix = name_prefix + input.name + '|'
-            visit_input_values(input.inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=name_prefix, **payload)
+            visit_input_values(
+                input.inputs,
+                values,
+                callback,
+                new_name_prefix,
+                label_prefix,
+                parent_prefix=name_prefix,
+                **payload)
         else:
-            callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix=parent_prefix, context=context)
+            callback_helper(
+                input,
+                input_values,
+                name_prefix,
+                label_prefix,
+                parent_prefix=parent_prefix,
+                context=context)
 
 
 def check_param(trans, param, incoming_value, param_values):
@@ -197,17 +240,21 @@ def params_to_incoming(incoming, inputs, input_values, app, name_prefix=""):
             for d in input_values[input.name]:
                 index = d['__index__']
                 new_name_prefix = name_prefix + '%s_%d|' % (input.name, index)
-                params_to_incoming(incoming, input.inputs, d, app, new_name_prefix)
+                params_to_incoming(incoming, input.inputs, d, app,
+                                   new_name_prefix)
         elif isinstance(input, Conditional):
             values = input_values[input.name]
             current = values['__current_case__']
             new_name_prefix = name_prefix + input.name + '|'
-            incoming[new_name_prefix + input.test_param.name] = values[input.test_param.name]
-            params_to_incoming(incoming, input.cases[current].inputs, values, app, new_name_prefix)
+            incoming[new_name_prefix
+                     + input.test_param.name] = values[input.test_param.name]
+            params_to_incoming(incoming, input.cases[current].inputs, values,
+                               app, new_name_prefix)
         elif isinstance(input, Section):
             values = input_values[input.name]
             new_name_prefix = name_prefix + input.name + '|'
-            params_to_incoming(incoming, input.inputs, values, app, new_name_prefix)
+            params_to_incoming(incoming, input.inputs, values, app,
+                               new_name_prefix)
         else:
             value = input_values.get(input.name)
             incoming[name_prefix + input.name] = value
@@ -222,8 +269,10 @@ def update_param(prefixed_name, input_values, new_value):
         match = re.match('^' + key + '_(\d+)\|(.+)', prefixed_name)
         if match and not key.endswith("|__identifier__"):
             index = int(match.group(1))
-            if isinstance(input_values[key], list) and len(input_values[key]) > index:
-                update_param(match.group(2), input_values[key][index], new_value)
+            if isinstance(input_values[key],
+                          list) and len(input_values[key]) > index:
+                update_param(
+                    match.group(2), input_values[key][index], new_value)
         else:
             match = re.match('^' + key + '\|(.+)', prefixed_name)
             if isinstance(input_values[key], dict) and match:
@@ -232,7 +281,14 @@ def update_param(prefixed_name, input_values, new_value):
                 input_values[key] = new_value
 
 
-def populate_state(request_context, inputs, incoming, state, errors={}, prefix='', context=None, check=True):
+def populate_state(request_context,
+                   inputs,
+                   incoming,
+                   state,
+                   errors={},
+                   prefix='',
+                   context=None,
+                   check=True):
     """
     Populates nested state dict from incoming parameter values.
     >>> from xml.etree.ElementTree import XML
@@ -285,21 +341,34 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
             del group_state[:]
             while True:
                 rep_prefix = '%s_%d' % (key, rep_index)
-                if not any(incoming_key.startswith(rep_prefix) for incoming_key in incoming.keys()) and rep_index >= input.min:
+                if not any(
+                        incoming_key.startswith(rep_prefix)
+                        for incoming_key in
+                        incoming.keys()) and rep_index >= input.min:
                     break
                 if rep_index < input.max:
                     new_state = {'__index__': rep_index}
                     group_state.append(new_state)
                     populate_state(
-                        request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context, check=check)
+                        request_context,
+                        input.inputs,
+                        incoming,
+                        new_state,
+                        errors,
+                        prefix=rep_prefix + '|',
+                        context=context,
+                        check=check)
                 rep_index += 1
         elif input.type == 'conditional':
             if input.value_ref and not input.value_ref_in_group:
                 test_param_key = prefix + input.test_param.name
             else:
                 test_param_key = group_prefix + input.test_param.name
-            test_param_value = incoming.get(test_param_key, group_state.get(input.test_param.name))
-            value, error = check_param(request_context, input.test_param, test_param_value, context) if check else [test_param_value, None]
+            test_param_value = incoming.get(
+                test_param_key, group_state.get(input.test_param.name))
+            value, error = check_param(
+                request_context, input.test_param, test_param_value,
+                context) if check else [test_param_value, None]
             if error:
                 errors[test_param_key] = error
             else:
@@ -317,11 +386,20 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
                         check=check)
                     group_state['__current_case__'] = current_case
                 except Exception:
-                    errors[test_param_key] = 'The selected case is unavailable/invalid.'
+                    errors[
+                        test_param_key] = 'The selected case is unavailable/invalid.'
                     pass
             group_state[input.test_param.name] = value
         elif input.type == 'section':
-            populate_state(request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check)
+            populate_state(
+                request_context,
+                input.inputs,
+                incoming,
+                group_state,
+                errors,
+                prefix=group_prefix,
+                context=context,
+                check=check)
         elif input.type == 'upload_dataset':
             d_type = input.get_datatype(request_context, context=context)
             writable_files = d_type.writable_files
@@ -330,15 +408,28 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
             while len(writable_files) > len(group_state):
                 new_state = {'__index__': len(group_state)}
                 for upload_item in input.inputs.values():
-                    new_state[upload_item.name] = upload_item.get_initial_value(request_context, context)
+                    new_state[
+                        upload_item.name] = upload_item.get_initial_value(
+                            request_context, context)
                 group_state.append(new_state)
             for i, rep_state in enumerate(group_state):
                 rep_index = rep_state['__index__']
                 rep_prefix = '%s_%d|' % (key, rep_index)
-                populate_state(request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context, check=check)
+                populate_state(
+                    request_context,
+                    input.inputs,
+                    incoming,
+                    rep_state,
+                    errors,
+                    prefix=rep_prefix,
+                    context=context,
+                    check=check)
         else:
-            param_value = _get_incoming_value(incoming, key, state.get(input.name))
-            value, error = check_param(request_context, input, param_value, context) if check else [param_value, None]
+            param_value = _get_incoming_value(incoming, key,
+                                              state.get(input.name))
+            value, error = check_param(
+                request_context, input, param_value,
+                context) if check else [param_value, None]
             if error:
                 errors[key] = error
             state[input.name] = value

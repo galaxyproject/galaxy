@@ -28,14 +28,21 @@ def persist_uploads(params):
             if isinstance(f, FieldStorage):
                 assert not isinstance(f.file, StringIO)
                 assert f.file.name != '<fdopen>'
-                local_filename = util.mkstemp_ln(f.file.name, 'upload_file_data_')
+                local_filename = util.mkstemp_ln(f.file.name,
+                                                 'upload_file_data_')
                 f.file.close()
-                upload_dataset['file_data'] = dict(filename=f.filename, local_filename=local_filename)
+                upload_dataset['file_data'] = dict(
+                    filename=f.filename, local_filename=local_filename)
             elif type(f) == dict and 'local_filename' not in f:
-                raise Exception('Uploaded file was encoded in a way not understood by Galaxy.')
-            if upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
-                upload_dataset['url_paste'], is_multi_byte = datatypes.sniff.stream_to_file(
-                    StringIO(upload_dataset['url_paste']), prefix="strio_url_paste_")
+                raise Exception(
+                    'Uploaded file was encoded in a way not understood by Galaxy.'
+                )
+            if upload_dataset['url_paste'] and upload_dataset['url_paste'].strip(
+            ) != '':
+                upload_dataset[
+                    'url_paste'], is_multi_byte = datatypes.sniff.stream_to_file(
+                        StringIO(upload_dataset['url_paste']),
+                        prefix="strio_url_paste_")
             else:
                 upload_dataset['url_paste'] = None
             new_files.append(upload_dataset)
@@ -53,11 +60,14 @@ def handle_library_params(trans, params, folder_id, replace_dataset=None):
     # See if we have any template field contents
     library_bunch.template_field_contents = {}
     template_id = params.get('template_id', None)
-    library_bunch.folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(folder_id))
+    library_bunch.folder = trans.sa_session.query(
+        trans.app.model.LibraryFolder).get(
+            trans.security.decode_id(folder_id))
     # We are inheriting the folder's info_association, so we may have received inherited contents or we may have redirected
     # here after the user entered template contents ( due to errors ).
     if template_id not in [None, 'None']:
-        library_bunch.template = trans.sa_session.query(trans.app.model.FormDefinition).get(template_id)
+        library_bunch.template = trans.sa_session.query(
+            trans.app.model.FormDefinition).get(template_id)
         for field in library_bunch.template.fields:
             field_name = field['name']
             if params.get(field_name, False):
@@ -85,20 +95,27 @@ def get_precreated_datasets(trans, params, data_obj, controller='root'):
         try:
             data = trans.sa_session.query(data_obj).get(int(id))
         except:
-            log.exception('Unable to load precreated dataset (%s) sent in upload form' % id)
+            log.exception(
+                'Unable to load precreated dataset (%s) sent in upload form' %
+                id)
             continue
         if data_obj is trans.app.model.HistoryDatasetAssociation:
             if trans.user is None and trans.galaxy_session.current_history != data.history:
-                log.error('Got a precreated dataset (%s) but it does not belong to anonymous user\'s current session (%s)' %
-                          (data.id, trans.galaxy_session.id))
+                log.error(
+                    'Got a precreated dataset (%s) but it does not belong to anonymous user\'s current session (%s)'
+                    % (data.id, trans.galaxy_session.id))
             elif data.history.user != trans.user:
-                log.error('Got a precreated dataset (%s) but it does not belong to current user (%s)' % (data.id, trans.user.id))
+                log.error(
+                    'Got a precreated dataset (%s) but it does not belong to current user (%s)'
+                    % (data.id, trans.user.id))
             else:
                 rval.append(data)
         elif data_obj is trans.app.model.LibraryDatasetDatasetAssociation:
-            if controller == 'library' and not trans.app.security_agent.can_add_library_item(current_user_roles,
-                                                                                             data.library_dataset.folder):
-                log.error('Got a precreated dataset (%s) but this user (%s) is not allowed to write to it' % (data.id, trans.user.id))
+            if controller == 'library' and not trans.app.security_agent.can_add_library_item(
+                    current_user_roles, data.library_dataset.folder):
+                log.error(
+                    'Got a precreated dataset (%s) but this user (%s) is not allowed to write to it'
+                    % (data.id, trans.user.id))
             else:
                 rval.append(data)
     return rval
@@ -141,38 +158,52 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     trans.sa_session.add(hda)
     trans.sa_session.flush()
     history.add_dataset(hda, genome_build=uploaded_dataset.dbkey)
-    permissions = trans.app.security_agent.history_get_default_permissions(history)
-    trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+    permissions = trans.app.security_agent.history_get_default_permissions(
+        history)
+    trans.app.security_agent.set_all_dataset_permissions(
+        hda.dataset, permissions)
     trans.sa_session.flush()
     return hda
 
 
-def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state=None):
+def __new_library_upload(trans,
+                         cntrller,
+                         uploaded_dataset,
+                         library_bunch,
+                         state=None):
     current_user_roles = trans.get_current_user_roles()
     if not ((trans.user_is_admin() and cntrller in ['library_admin', 'api'])
-            or trans.app.security_agent.can_add_library_item(current_user_roles, library_bunch.folder)):
+            or trans.app.security_agent.can_add_library_item(
+                current_user_roles, library_bunch.folder)):
         # This doesn't have to be pretty - the only time this should happen is if someone's being malicious.
-        raise Exception("User is not authorized to add datasets to this library.")
+        raise Exception(
+            "User is not authorized to add datasets to this library.")
     folder = library_bunch.folder
     if uploaded_dataset.get('in_folder', False):
         # Create subfolders if desired
         for name in uploaded_dataset.in_folder.split(os.path.sep):
             trans.sa_session.refresh(folder)
-            matches = [x for x in active_folders(trans, folder) if x.name == name]
+            matches = [
+                x for x in active_folders(trans, folder) if x.name == name
+            ]
             if matches:
                 folder = matches[0]
             else:
-                new_folder = trans.app.model.LibraryFolder(name=name, description='Automatically created by upload tool')
+                new_folder = trans.app.model.LibraryFolder(
+                    name=name,
+                    description='Automatically created by upload tool')
                 new_folder.genome_build = trans.app.genome_builds.default_value
                 folder.add_folder(new_folder)
                 trans.sa_session.add(new_folder)
                 trans.sa_session.flush()
-                trans.app.security_agent.copy_library_permissions(trans, folder, new_folder)
+                trans.app.security_agent.copy_library_permissions(
+                    trans, folder, new_folder)
                 folder = new_folder
     if library_bunch.replace_dataset:
         ld = library_bunch.replace_dataset
     else:
-        ld = trans.app.model.LibraryDataset(folder=folder, name=uploaded_dataset.name)
+        ld = trans.app.model.LibraryDataset(
+            folder=folder, name=uploaded_dataset.name)
         trans.sa_session.add(ld)
         trans.sa_session.flush()
         trans.app.security_agent.copy_library_permissions(trans, folder, ld)
@@ -185,9 +216,11 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
         create_dataset=True,
         sa_session=trans.sa_session)
     if uploaded_dataset.get('tag_using_filenames', False):
-        tag_from_filename = os.path.splitext(os.path.basename(uploaded_dataset.name))[0]
+        tag_from_filename = os.path.splitext(
+            os.path.basename(uploaded_dataset.name))[0]
         tag_manager = tags.GalaxyTagManager(trans.sa_session)
-        tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag_from_filename)
+        tag_manager.apply_item_tag(
+            item=ldda, user=trans.user, name='name', value=tag_from_filename)
 
     trans.sa_session.add(ldda)
     if state:
@@ -200,12 +233,14 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
     trans.app.security_agent.copy_library_permissions(trans, ld, ldda)
     if library_bunch.replace_dataset:
         # Copy the Dataset level permissions from replace_dataset to the new LibraryDatasetDatasetAssociation.dataset
-        trans.app.security_agent.copy_dataset_permissions(library_bunch.replace_dataset.library_dataset_dataset_association.dataset,
-                                                          ldda.dataset)
+        trans.app.security_agent.copy_dataset_permissions(
+            library_bunch.replace_dataset.library_dataset_dataset_association.
+            dataset, ldda.dataset)
     else:
         # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
-        trans.app.security_agent.set_all_dataset_permissions(ldda.dataset,
-                                                             trans.app.security_agent.user_get_default_permissions(trans.user))
+        trans.app.security_agent.set_all_dataset_permissions(
+            ldda.dataset,
+            trans.app.security_agent.user_get_default_permissions(trans.user))
         folder.add_library_dataset(ld, genome_build=uploaded_dataset.dbkey)
         trans.sa_session.add(folder)
         trans.sa_session.flush()
@@ -221,39 +256,63 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
         # If the user has added field contents, we'll need to create a new form_values and info_association
         # for the new library_dataset_dataset_association object.
         # Create a new FormValues object, using the template we previously retrieved
-        form_values = trans.app.model.FormValues(library_bunch.template, library_bunch.template_field_contents)
+        form_values = trans.app.model.FormValues(
+            library_bunch.template, library_bunch.template_field_contents)
         trans.sa_session.add(form_values)
         trans.sa_session.flush()
         # Create a new info_association between the current ldda and form_values
         # TODO: Currently info_associations at the ldda level are not inheritable to the associated LibraryDataset,
         # we need to figure out if this is optimal
-        info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation(ldda, library_bunch.template, form_values)
+        info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation(
+            ldda, library_bunch.template, form_values)
         trans.sa_session.add(info_association)
         trans.sa_session.flush()
     # If roles were selected upon upload, restrict access to the Dataset to those roles
     if library_bunch.roles:
         for role in library_bunch.roles:
-            dp = trans.app.model.DatasetPermissions(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, ldda.dataset, role)
+            dp = trans.app.model.DatasetPermissions(
+                trans.app.security_agent.permitted_actions.DATASET_ACCESS.
+                action, ldda.dataset, role)
             trans.sa_session.add(dp)
             trans.sa_session.flush()
     return ldda
 
 
-def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None):
+def new_upload(trans,
+               cntrller,
+               uploaded_dataset,
+               library_bunch=None,
+               history=None,
+               state=None):
     if library_bunch:
-        return __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state)
+        return __new_library_upload(trans, cntrller, uploaded_dataset,
+                                    library_bunch, state)
     else:
-        return __new_history_upload(trans, uploaded_dataset, history=history, state=state)
+        return __new_history_upload(
+            trans, uploaded_dataset, history=history, state=state)
 
 
-def get_uploaded_datasets(trans, cntrller, params, precreated_datasets, dataset_upload_inputs, library_bunch=None, history=None):
+def get_uploaded_datasets(trans,
+                          cntrller,
+                          params,
+                          precreated_datasets,
+                          dataset_upload_inputs,
+                          library_bunch=None,
+                          history=None):
     uploaded_datasets = []
     for dataset_upload_input in dataset_upload_inputs:
-        uploaded_datasets.extend(dataset_upload_input.get_uploaded_datasets(trans, params))
+        uploaded_datasets.extend(
+            dataset_upload_input.get_uploaded_datasets(trans, params))
     for uploaded_dataset in uploaded_datasets:
-        data = get_precreated_dataset(precreated_datasets, uploaded_dataset.name)
+        data = get_precreated_dataset(precreated_datasets,
+                                      uploaded_dataset.name)
         if not data:
-            data = new_upload(trans, cntrller, uploaded_dataset, library_bunch=library_bunch, history=history)
+            data = new_upload(
+                trans,
+                cntrller,
+                uploaded_dataset,
+                library_bunch=library_bunch,
+                history=history)
         else:
             data.extension = uploaded_dataset.file_type
             data.dbkey = uploaded_dataset.dbkey
@@ -272,13 +331,16 @@ def get_uploaded_datasets(trans, cntrller, params, precreated_datasets, dataset_
                     # If the user has added field contents, we'll need to create a new form_values and info_association
                     # for the new library_dataset_dataset_association object.
                     # Create a new FormValues object, using the template we previously retrieved
-                    form_values = trans.app.model.FormValues(library_bunch.template, library_bunch.template_field_contents)
+                    form_values = trans.app.model.FormValues(
+                        library_bunch.template,
+                        library_bunch.template_field_contents)
                     trans.sa_session.add(form_values)
                     trans.sa_session.flush()
                     # Create a new info_association between the current ldda and form_values
                     # TODO: Currently info_associations at the ldda level are not inheritable to the associated LibraryDataset,
                     # we need to figure out if this is optimal
-                    info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation(data, library_bunch.template, form_values)
+                    info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation(
+                        data, library_bunch.template, form_values)
                     trans.sa_session.add(info_association)
                 trans.sa_session.flush()
             else:
@@ -297,15 +359,22 @@ def create_paramfile(trans, uploaded_datasets):
     def _chown(path):
         try:
             # get username from email/username
-            pwent = trans.user.system_user_pwent(trans.app.config.real_system_username)
+            pwent = trans.user.system_user_pwent(
+                trans.app.config.real_system_username)
             cmd = shlex.split(trans.app.config.external_chown_script)
             cmd.extend([path, pwent[0], str(pwent[3])])
-            log.debug('Changing ownership of %s with: %s' % (path, ' '.join(cmd)))
-            p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            log.debug('Changing ownership of %s with: %s' % (path,
+                                                             ' '.join(cmd)))
+            p = subprocess.Popen(
+                cmd,
+                shell=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
             stdout, stderr = p.communicate()
             assert p.returncode == 0, stderr
         except Exception as e:
-            log.warning('Changing ownership of uploaded file %s failed: %s' % (path, str(e)))
+            log.warning('Changing ownership of uploaded file %s failed: %s' %
+                        (path, str(e)))
 
     # TODO: json_file should go in the working directory
     json_file = tempfile.mkstemp()
@@ -328,7 +397,10 @@ def create_paramfile(trans, uploaded_datasets):
                 metadata=uploaded_dataset.metadata,
                 primary_file=uploaded_dataset.primary_file,
                 composite_file_paths=uploaded_dataset.composite_files,
-                composite_files=dict((k, v.__dict__) for k, v in data.datatype.get_composite_files(data).items()))
+                composite_files=dict(
+                    (k, v.__dict__)
+                    for k, v in data.datatype.get_composite_files(
+                        data).items()))
         else:
             try:
                 is_binary = uploaded_dataset.datatype.is_binary
@@ -356,8 +428,10 @@ def create_paramfile(trans, uploaded_datasets):
                 is_binary=is_binary,
                 link_data_only=link_data_only,
                 uuid=uuid_str,
-                to_posix_lines=getattr(uploaded_dataset, "to_posix_lines", True),
-                auto_decompress=getattr(uploaded_dataset, "auto_decompress", True),
+                to_posix_lines=getattr(uploaded_dataset, "to_posix_lines",
+                                       True),
+                auto_decompress=getattr(uploaded_dataset, "auto_decompress",
+                                        True),
                 purge_source=purge_source,
                 space_to_tab=uploaded_dataset.space_to_tab,
                 in_place=trans.app.config.external_chown_script is None,
@@ -375,7 +449,14 @@ def create_paramfile(trans, uploaded_datasets):
     return json_file_path
 
 
-def create_job(trans, params, tool, json_file_path, data_list, folder=None, history=None, job_params=None):
+def create_job(trans,
+               params,
+               tool,
+               json_file_path,
+               data_list,
+               folder=None,
+               history=None,
+               job_params=None):
     """
     Create the upload job.
     """
@@ -414,7 +495,8 @@ def create_job(trans, params, tool, json_file_path, data_list, folder=None, hist
             try:
                 trans.app.object_store.create(dataset.dataset)
             except ObjectInvalid:
-                raise Exception('Unable to create output dataset: object store is full')
+                raise Exception(
+                    'Unable to create output dataset: object store is full')
             object_store_id = dataset.dataset.object_store_id
             trans.sa_session.add(dataset)
             # open( dataset.file_name, "w" ).close()
@@ -429,7 +511,9 @@ def create_job(trans, params, tool, json_file_path, data_list, folder=None, hist
 
     # Queue the job for execution
     trans.app.job_queue.put(job.id, job.tool_id)
-    trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+    trans.log_event(
+        "Added job to the job queue, id: %s" % str(job.id),
+        tool_id=job.tool_id)
     output = odict()
     for i, v in enumerate(data_list):
         output['output%i' % i] = v

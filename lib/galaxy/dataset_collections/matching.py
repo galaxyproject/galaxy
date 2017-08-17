@@ -42,8 +42,13 @@ class MatchingCollections(object):
         self.unlinked_structures = []
         self.collections = {}
 
-    def __attempt_add_to_linked_match(self, input_name, hdca, collection_type_description, subcollection_type):
-        structure = get_structure(hdca, collection_type_description, leaf_subcollection_type=subcollection_type)
+    def __attempt_add_to_linked_match(self, input_name, hdca,
+                                      collection_type_description,
+                                      subcollection_type):
+        structure = get_structure(
+            hdca,
+            collection_type_description,
+            leaf_subcollection_type=subcollection_type)
         if not self.linked_structure:
             self.linked_structure = structure
             self.collections[input_name] = hdca
@@ -60,7 +65,8 @@ class MatchingCollections(object):
         """Yield cross product of all unlinked datasets to linked dataset."""
         effective_structure = leaf
         for unlinked_structure in self.unlinked_structures:
-            effective_structure = effective_structure.multiply(unlinked_structure)
+            effective_structure = effective_structure.multiply(
+                unlinked_structure)
         linked_structure = self.linked_structure or leaf
         effective_structure = effective_structure.multiply(linked_structure)
         return None if effective_structure.is_leaf else effective_structure
@@ -73,13 +79,19 @@ class MatchingCollections(object):
         matching_collections = MatchingCollections()
         for input_key, to_match in sorted(collections_to_match.items()):
             hdca = to_match.hdca
-            collection_type_description = collection_type_descriptions.for_collection_type(hdca.collection.collection_type)
+            collection_type_description = collection_type_descriptions.for_collection_type(
+                hdca.collection.collection_type)
             subcollection_type = to_match.subcollection_type
 
             if to_match.linked:
-                matching_collections.__attempt_add_to_linked_match(input_key, hdca, collection_type_description, subcollection_type)
+                matching_collections.__attempt_add_to_linked_match(
+                    input_key, hdca, collection_type_description,
+                    subcollection_type)
             else:
-                structure = get_structure(hdca, collection_type_description, leaf_subcollection_type=subcollection_type)
+                structure = get_structure(
+                    hdca,
+                    collection_type_description,
+                    leaf_subcollection_type=subcollection_type)
                 matching_collections.unlinked_structures.append(structure)
 
         return matching_collections

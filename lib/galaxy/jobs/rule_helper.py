@@ -39,11 +39,15 @@ class RuleHelper(object):
             tool = job_or_tool.tool
         else:
             # Have a Job object.
-            tool = self.app.toolbox.get_tool(job_or_tool.tool_id, tool_version=job_or_tool.tool_version)
+            tool = self.app.toolbox.get_tool(
+                job_or_tool.tool_id, tool_version=job_or_tool.tool_version)
         # Can't import at top because circular import between galaxy.tools and galaxy.jobs.
         import galaxy.tools.deps.containers
-        tool_info = galaxy.tools.deps.containers.ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment)
-        container_description = self.app.container_finder.find_best_container_description(["docker"], tool_info)
+        tool_info = galaxy.tools.deps.containers.ToolInfo(
+            tool.containers, tool.requirements,
+            tool.requires_galaxy_python_environment)
+        container_description = self.app.container_finder.find_best_container_description(
+            ["docker"], tool_info)
         return container_description is not None
 
     def job_count(self, **kwds):
@@ -88,9 +92,11 @@ class RuleHelper(object):
 
         if for_destinations is not None:
             if len(for_destinations) == 1:
-                query = query.filter(model.Job.table.c.destination_id == for_destinations[0])
+                query = query.filter(
+                    model.Job.table.c.destination_id == for_destinations[0])
             else:
-                query = query.filter(model.Job.table.c.destination_id.in_(for_destinations))
+                query = query.filter(
+                    model.Job.table.c.destination_id.in_(for_destinations))
 
         if created_in_last is not None:
             end_date = datetime.now()
@@ -107,9 +113,11 @@ class RuleHelper(object):
         if for_job_states is not None:
             # Optimize the singleton case - can be much more performant in my experience.
             if len(for_job_states) == 1:
-                query = query.filter(model.Job.table.c.state == for_job_states[0])
+                query = query.filter(
+                    model.Job.table.c.state == for_job_states[0])
             else:
-                query = query.filter(model.Job.table.c.state.in_(for_job_states))
+                query = query.filter(
+                    model.Job.table.c.state.in_(for_job_states))
 
         return query
 
@@ -125,7 +133,9 @@ class RuleHelper(object):
         """
         if job_states is None:
             job_states = "queued,running"
-        from_destination_job_count = self.job_count(for_destinations=destination_ids, for_job_states=util.listify(job_states))
+        from_destination_job_count = self.job_count(
+            for_destinations=destination_ids,
+            for_job_states=util.listify(job_states))
         # Would this job push us over maximum job count before requiring
         # bursting (roughly... very roughly given many handler threads may be
         # scheduling jobs).
@@ -175,11 +185,13 @@ class RuleHelper(object):
         invocation for jobs outside of workflows.
         """
         if hash_by not in VALID_JOB_HASH_STRATEGIES:
-            message = "Do not know how to hash jobs by %s, must be one of %s" % (hash_by, VALID_JOB_HASH_STRATEGIES)
+            message = "Do not know how to hash jobs by %s, must be one of %s" % (
+                hash_by, VALID_JOB_HASH_STRATEGIES)
             raise Exception(message)
 
         if hash_by == "workflow_invocation":
-            return job.raw_param_dict().get("__workflow_invocation_uuid__", None)
+            return job.raw_param_dict().get("__workflow_invocation_uuid__",
+                                            None)
         elif hash_by == "history":
             return job.history_id
         elif hash_by == "user":

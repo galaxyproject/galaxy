@@ -59,23 +59,31 @@ class ContainerFinder(object):
         self.container_registry = ContainerRegistry(app_info)
 
     def __enabled_container_types(self, destination_info):
-        return [t for t in ALL_CONTAINER_TYPES if self.__container_type_enabled(t, destination_info)]
+        return [
+            t for t in ALL_CONTAINER_TYPES
+            if self.__container_type_enabled(t, destination_info)
+        ]
 
-    def find_best_container_description(self, enabled_container_types, tool_info):
+    def find_best_container_description(self, enabled_container_types,
+                                        tool_info):
         """Regardless of destination properties - find best container for tool.
 
         Given container types and container.ToolInfo description of the tool."""
-        container_description = self.container_registry.find_best_container_description(enabled_container_types, tool_info)
+        container_description = self.container_registry.find_best_container_description(
+            enabled_container_types, tool_info)
         return container_description
 
     def find_container(self, tool_info, destination_info, job_info):
-        enabled_container_types = self.__enabled_container_types(destination_info)
+        enabled_container_types = self.__enabled_container_types(
+            destination_info)
 
         # Short-cut everything else and just skip checks if no container type is enabled.
         if not enabled_container_types:
             return NULL_CONTAINER
 
-        def __destination_container(container_description=None, container_id=None, container_type=None):
+        def __destination_container(container_description=None,
+                                    container_id=None,
+                                    container_type=None):
             if container_description:
                 container_id = container_description.identifier
                 container_type = container_description.type
@@ -89,7 +97,8 @@ class ContainerFinder(object):
             return container
 
         if "container_override" in destination_info:
-            container_description = ContainerDescription.from_dict(destination_info["container_override"][0])
+            container_description = ContainerDescription.from_dict(
+                destination_info["container_override"][0])
             if container_description:
                 container = __destination_container(container_description)
                 if container:
@@ -99,14 +108,17 @@ class ContainerFinder(object):
         # this is likely kind of a corner case. For instance if deployers
         # do not trust the containers annotated in tools.
         for container_type in CONTAINER_CLASSES.keys():
-            container_id = self.__overridden_container_id(container_type, destination_info)
+            container_id = self.__overridden_container_id(
+                container_type, destination_info)
             if container_id:
-                container = __destination_container(container_type=container_type, container_id=container_id)
+                container = __destination_container(
+                    container_type=container_type, container_id=container_id)
                 if container:
                     return container
 
         # Otherwise lets see if we can find container for the tool.
-        container_description = self.find_best_container_description(enabled_container_types, tool_info)
+        container_description = self.find_best_container_description(
+            enabled_container_types, tool_info)
         container = __destination_container(container_description)
         if container:
             return container
@@ -114,16 +126,19 @@ class ContainerFinder(object):
         # If we still don't have a container, check to see if any container
         # types define a default container id and use that.
         if "container" in destination_info:
-            container_description = ContainerDescription.from_dict(destination_info["container"][0])
+            container_description = ContainerDescription.from_dict(
+                destination_info["container"][0])
             if container_description:
                 container = __destination_container(container_description)
                 if container:
                     return container
 
         for container_type in CONTAINER_CLASSES.keys():
-            container_id = self.__default_container_id(container_type, destination_info)
+            container_id = self.__default_container_id(container_type,
+                                                       destination_info)
             if container_id:
-                container = __destination_container(container_type=container_type, container_id=container_id)
+                container = __destination_container(
+                    container_type=container_type, container_id=container_id)
                 if container:
                     return container
 
@@ -133,11 +148,14 @@ class ContainerFinder(object):
         if not self.__container_type_enabled(container_type, destination_info):
             return None
         if "%s_container_id_override" % container_type in destination_info:
-            return destination_info.get("%s_container_id_override" % container_type)
+            return destination_info.get(
+                "%s_container_id_override" % container_type)
         if "%s_image_override" % container_type in destination_info:
-            return self.__build_container_id_from_parts(container_type, destination_info, mode="override")
+            return self.__build_container_id_from_parts(
+                container_type, destination_info, mode="override")
 
-    def __build_container_id_from_parts(self, container_type, destination_info, mode):
+    def __build_container_id_from_parts(self, container_type, destination_info,
+                                        mode):
         repo = ""
         owner = ""
         repo_key = "%s_repo_%s" % (container_type, mode)
@@ -146,7 +164,8 @@ class ContainerFinder(object):
             repo = destination_info[repo_key] + "/"
         if owner_key in destination_info:
             owner = destination_info[owner_key] + "/"
-        cont_id = repo + owner + destination_info["%s_image_%s" % (container_type, mode)]
+        cont_id = repo + owner + destination_info["%s_image_%s" %
+                                                  (container_type, mode)]
         tag_key = "%s_tag_%s" % (container_type, mode)
         if tag_key in destination_info:
             cont_id += ":" + destination_info[tag_key]
@@ -162,10 +181,17 @@ class ContainerFinder(object):
         if key in destination_info:
             return destination_info.get(key)
         elif "%s_image_default" in destination_info:
-            return self.__build_container_id_from_parts(container_type, destination_info, mode="default")
+            return self.__build_container_id_from_parts(
+                container_type, destination_info, mode="default")
         return None
 
-    def __destination_container(self, container_id, container_type, tool_info, destination_info, job_info, container_description=None):
+    def __destination_container(self,
+                                container_id,
+                                container_type,
+                                tool_info,
+                                destination_info,
+                                job_info,
+                                container_description=None):
         # TODO: ensure destination_info is dict-like
         if not self.__container_type_enabled(container_type, destination_info):
             return NULL_CONTAINER
@@ -174,10 +200,13 @@ class ContainerFinder(object):
         # container type is - there should be more thought put into this.
         # Checking which are availalbe - settings policies for what can be
         # auto-fetched, etc....
-        return CONTAINER_CLASSES[container_type](container_id, self.app_info, tool_info, destination_info, job_info, container_description)
+        return CONTAINER_CLASSES[container_type](
+            container_id, self.app_info, tool_info, destination_info, job_info,
+            container_description)
 
     def __container_type_enabled(self, container_type, destination_info):
-        return asbool(destination_info.get("%s_enabled" % container_type, False))
+        return asbool(
+            destination_info.get("%s_enabled" % container_type, False))
 
 
 class NullContainerFinder(object):
@@ -206,7 +235,8 @@ class ContainerRegistry(object):
 
     def __parse_resolver_conf_xml(self, plugin_source):
         extra_kwds = {}
-        return plugin_config.load_plugins(self.resolver_classes, plugin_source, extra_kwds)
+        return plugin_config.load_plugins(self.resolver_classes, plugin_source,
+                                          extra_kwds)
 
     def __default_containers_resolvers(self):
         default_resolvers = [
@@ -214,8 +244,10 @@ class ContainerRegistry(object):
         ]
         if self.enable_beta_mulled_containers:
             default_resolvers.extend([
-                CachedMulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
-                MulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
+                CachedMulledDockerContainerResolver(
+                    self.app_info, namespace="biocontainers"),
+                MulledDockerContainerResolver(
+                    self.app_info, namespace="biocontainers"),
                 BuildMulledDockerContainerResolver(self.app_info),
                 CachedMulledSingularityContainerResolver(self.app_info),
                 BuildMulledSingularityContainerResolver(self.app_info),
@@ -224,16 +256,21 @@ class ContainerRegistry(object):
 
     def __resolvers_dict(self):
         import galaxy.tools.deps.container_resolvers
-        return plugin_config.plugins_dict(galaxy.tools.deps.container_resolvers, 'resolver_type')
+        return plugin_config.plugins_dict(
+            galaxy.tools.deps.container_resolvers, 'resolver_type')
 
-    def find_best_container_description(self, enabled_container_types, tool_info):
+    def find_best_container_description(self, enabled_container_types,
+                                        tool_info):
         """Yield best container description of supplied types matching tool info."""
         for container_resolver in self.container_resolvers:
             if hasattr(container_resolver, "container_type"):
                 if container_resolver.container_type not in enabled_container_types:
                     continue
-            container_description = container_resolver.resolve(enabled_container_types, tool_info)
-            log.info("Checking with container resolver [%s] found description [%s]" % (container_resolver, container_description))
+            container_description = container_resolver.resolve(
+                enabled_container_types, tool_info)
+            log.info(
+                "Checking with container resolver [%s] found description [%s]"
+                % (container_resolver, container_description))
             if container_description:
                 assert container_description.type in enabled_container_types
                 return container_description
@@ -270,7 +307,10 @@ class ToolInfo(object):
     # variables they can consume (e.g. JVM options, license keys, etc..)
     # and add these to env_path_through
 
-    def __init__(self, container_descriptions=[], requirements=[], requires_galaxy_python_environment=False):
+    def __init__(self,
+                 container_descriptions=[],
+                 requirements=[],
+                 requires_galaxy_python_environment=False):
         self.container_descriptions = container_descriptions
         self.requirements = requirements
         self.requires_galaxy_python_environment = requires_galaxy_python_environment
@@ -278,7 +318,8 @@ class ToolInfo(object):
 
 
 class JobInfo(object):
-    def __init__(self, working_directory, tool_directory, job_directory, job_directory_type):
+    def __init__(self, working_directory, tool_directory, job_directory,
+                 job_directory_type):
         self.working_directory = working_directory
         self.job_directory = job_directory
         # Tool files may be remote staged - so this is unintuitively a property
@@ -289,7 +330,8 @@ class JobInfo(object):
 
 @six.add_metaclass(ABCMeta)
 class Container(object):
-    def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description):
+    def __init__(self, container_id, app_info, tool_info, destination_info,
+                 job_info, container_description):
         self.container_id = container_id
         self.app_info = app_info
         self.tool_info = tool_info
@@ -338,7 +380,8 @@ def preprocess_volumes(volumes_raw_str, container_type):
     for volume_raw_str in volumes_raw_strs:
         volume_parts = volume_raw_str.split(":")
         if len(volume_parts) > 2:
-            raise Exception("Unparsable volumes string in configuration [%s]" % volumes_raw_str)
+            raise Exception("Unparsable volumes string in configuration [%s]" %
+                            volumes_raw_str)
         if len(volume_parts) == 1:
             volume_parts.append("rw")
         volumes.append(volume_parts)
@@ -405,7 +448,8 @@ class HasDockerLikeVolumes:
 
         # Define $defaults that can easily be extended with external library and
         # index data without deployer worrying about above details.
-        variables["defaults"] = string.Template(defaults).safe_substitute(variables)
+        variables["defaults"] = string.Template(defaults).safe_substitute(
+            variables)
 
         return template.safe_substitute(variables)
 
@@ -421,7 +465,8 @@ class DockerContainer(Container, HasDockerLikeVolumes):
 
         env_directives = []
         for pass_through_var in self.tool_info.env_pass_through:
-            env_directives.append('"%s=$%s"' % (pass_through_var, pass_through_var))
+            env_directives.append('"%s=$%s"' % (pass_through_var,
+                                                pass_through_var))
 
         # Allow destinations to explicitly set environment variables just for
         # docker container. Better approach is to set for destination and then
@@ -433,13 +478,19 @@ class DockerContainer(Container, HasDockerLikeVolumes):
 
         working_directory = self.job_info.working_directory
         if not working_directory:
-            raise Exception("Cannot containerize command [%s] without defined working directory." % working_directory)
+            raise Exception(
+                "Cannot containerize command [%s] without defined working directory."
+                % working_directory)
 
-        volumes_raw = self._expand_volume_str(self.destination_info.get("docker_volumes", "$defaults"))
-        preprocessed_volumes_str = preprocess_volumes(volumes_raw, self.container_type)
+        volumes_raw = self._expand_volume_str(
+            self.destination_info.get("docker_volumes", "$defaults"))
+        preprocessed_volumes_str = preprocess_volumes(volumes_raw,
+                                                      self.container_type)
         # TODO: Remove redundant volumes...
-        volumes = docker_util.DockerVolume.volumes_from_str(preprocessed_volumes_str)
-        volumes_from = self.destination_info.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
+        volumes = docker_util.DockerVolume.volumes_from_str(
+            preprocessed_volumes_str)
+        volumes_from = self.destination_info.get(
+            "docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
 
         docker_host_props = dict(
             docker_cmd=prop("cmd", docker_util.DEFAULT_DOCKER_COMMAND),
@@ -450,9 +501,11 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         cached_image_file = self.__get_cached_image_file()
         if not cached_image_file:
             # TODO: Add option to cache it once here and create cached_image_file.
-            cache_command = docker_util.build_docker_cache_command(self.container_id, **docker_host_props)
+            cache_command = docker_util.build_docker_cache_command(
+                self.container_id, **docker_host_props)
         else:
-            cache_command = self.__cache_from_file_command(cached_image_file, docker_host_props)
+            cache_command = self.__cache_from_file_command(
+                cached_image_file, docker_host_props)
         run_command = docker_util.build_docker_run_command(
             command,
             self.container_id,
@@ -460,23 +513,32 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             volumes_from=volumes_from,
             env_directives=env_directives,
             working_directory=working_directory,
-            net=prop("net", "none"),  # By default, docker instance has networking disabled
+            net=prop(
+                "net",
+                "none"),  # By default, docker instance has networking disabled
             auto_rm=asbool(prop("auto_rm", docker_util.DEFAULT_AUTO_REMOVE)),
             set_user=prop("set_user", docker_util.DEFAULT_SET_USER),
-            run_extra_arguments=prop("run_extra_arguments", docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
+            run_extra_arguments=prop("run_extra_arguments",
+                                     docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
             **docker_host_props)
         return "%s\n%s" % (cache_command, run_command)
 
     def __cache_from_file_command(self, cached_image_file, docker_host_props):
-        images_cmd = docker_util.build_docker_images_command(truncate=False, **docker_host_props)
+        images_cmd = docker_util.build_docker_images_command(
+            truncate=False, **docker_host_props)
         load_cmd = docker_util.build_docker_load_command(**docker_host_props)
 
-        return string.Template(LOAD_CACHED_IMAGE_COMMAND_TEMPLATE).safe_substitute(
-            cached_image_file=cached_image_file, images_cmd=images_cmd, load_cmd=load_cmd)
+        return string.Template(
+            LOAD_CACHED_IMAGE_COMMAND_TEMPLATE).safe_substitute(
+                cached_image_file=cached_image_file,
+                images_cmd=images_cmd,
+                load_cmd=load_cmd)
 
     def __get_cached_image_file(self):
         container_id = self.container_id
-        cache_directory = os.path.abspath(self.__get_destination_overridable_property("container_image_cache_path"))
+        cache_directory = os.path.abspath(
+            self.__get_destination_overridable_property(
+                "container_image_cache_path"))
         cache_path = docker_cache_path(cache_directory, container_id)
         return cache_path if os.path.exists(cache_path) else None
 
@@ -517,14 +579,20 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
 
         working_directory = self.job_info.working_directory
         if not working_directory:
-            raise Exception("Cannot containerize command [%s] without defined working directory." % working_directory)
+            raise Exception(
+                "Cannot containerize command [%s] without defined working directory."
+                % working_directory)
 
-        volumes_raw = self._expand_volume_str(self.destination_info.get("singularity_volumes", "$defaults"))
-        preprocessed_volumes_str = preprocess_volumes(volumes_raw, self.container_type)
-        volumes = docker_util.DockerVolume.volumes_from_str(preprocessed_volumes_str)
+        volumes_raw = self._expand_volume_str(
+            self.destination_info.get("singularity_volumes", "$defaults"))
+        preprocessed_volumes_str = preprocess_volumes(volumes_raw,
+                                                      self.container_type)
+        volumes = docker_util.DockerVolume.volumes_from_str(
+            preprocessed_volumes_str)
 
         singularity_target_kwds = dict(
-            singularity_cmd=prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),
+            singularity_cmd=prop("cmd",
+                                 singularity_util.DEFAULT_SINGULARITY_COMMAND),
             sudo=asbool(prop("sudo", singularity_util.DEFAULT_SUDO)),
             sudo_cmd=prop("sudo_cmd", singularity_util.DEFAULT_SUDO_COMMAND), )
         run_command = singularity_util.build_singularity_run_command(
@@ -533,7 +601,9 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             volumes=volumes,
             env=env,
             working_directory=working_directory,
-            run_extra_arguments=prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
+            run_extra_arguments=prop(
+                "run_extra_arguments",
+                singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
             **singularity_target_kwds)
         return run_command
 

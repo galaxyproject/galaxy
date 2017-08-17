@@ -55,13 +55,17 @@ def upgrade(migrate_engine):
         if len(fields_list):
             for index, field in enumerate(fields_list):
                 field['name'] = 'field_%i' % index
-                field['helptext'] = field['helptext'].replace("'", "''").replace('"', "")
+                field['helptext'] = field['helptext'].replace("'",
+                                                              "''").replace(
+                                                                  '"', "")
                 field['label'] = field['label'].replace("'", "''")
             fields_json = dumps(fields_list)
             if migrate_engine.name == 'mysql':
-                cmd = "UPDATE form_definition AS f SET f.fields='%s' WHERE f.id=%i" % (fields_json, form_definition_id)
+                cmd = "UPDATE form_definition AS f SET f.fields='%s' WHERE f.id=%i" % (
+                    fields_json, form_definition_id)
             else:
-                cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" % (fields_json, form_definition_id)
+                cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" % (
+                    fields_json, form_definition_id)
             migrate_engine.execute(cmd)
     # replace the values list in the content field of the form_values table with a name:value dict
     cmd = "SELECT form_values.id, form_values.content, form_definition.fields" \
@@ -83,7 +87,8 @@ def upgrade(migrate_engine):
             for field_index, field in enumerate(fields_list):
                 field_name = field['name']
                 values_dict[field_name] = get_value(values_list, field_index)
-            cmd = "UPDATE form_values SET content='%s' WHERE id=%i" % (dumps(values_dict), form_values_id)
+            cmd = "UPDATE form_values SET content='%s' WHERE id=%i" % (
+                dumps(values_dict), form_values_id)
             migrate_engine.execute(cmd)
 
 
@@ -119,7 +124,8 @@ def downgrade(migrate_engine):
                 field_name = field['name']
                 field_value = values_dict[field_name]
                 values_list.append(field_value)
-            cmd = "UPDATE form_values SET content='%s' WHERE id=%i" % (dumps(values_list), form_values_id)
+            cmd = "UPDATE form_values SET content='%s' WHERE id=%i" % (
+                dumps(values_list), form_values_id)
             migrate_engine.execute(cmd)
     # remove name attribute from the field column of the form_definition table
     cmd = "SELECT f.id, f.fields FROM form_definition AS f"
@@ -135,7 +141,9 @@ def downgrade(migrate_engine):
                 if 'name' in field:
                     del field['name']
             if migrate_engine.name == 'mysql':
-                cmd = "UPDATE form_definition AS f SET f.fields='%s' WHERE f.id=%i" % (dumps(fields_list), form_definition_id)
+                cmd = "UPDATE form_definition AS f SET f.fields='%s' WHERE f.id=%i" % (
+                    dumps(fields_list), form_definition_id)
             else:
-                cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" % (dumps(fields_list), form_definition_id)
+                cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" % (
+                    dumps(fields_list), form_definition_id)
         migrate_engine.execute(cmd)

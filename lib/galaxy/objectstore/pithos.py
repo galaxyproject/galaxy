@@ -13,13 +13,15 @@ from galaxy.util import (
 from ..objectstore import ObjectStore
 
 try:
-    from kamaki.clients import (astakos, pithos, utils, ClientError, Client as KamakiClient)
+    from kamaki.clients import (astakos, pithos, utils, ClientError, Client as
+                                KamakiClient)
 except ImportError:
     KamakiClient = None
 
-NO_KAMAKI_ERROR_MESSAGE = ("ObjectStore configured, but no kamaki.clients dependency available."
-                           "Please install and properly configure kamaki.clients or modify Object "
-                           "Store configuration.")
+NO_KAMAKI_ERROR_MESSAGE = (
+    "ObjectStore configured, but no kamaki.clients dependency available."
+    "Please install and properly configure kamaki.clients or modify Object "
+    "Store configuration.")
 
 log = logging.getLogger(__name__)
 
@@ -32,13 +34,18 @@ def parse_config_xml(config_xml):
     """
     r = dict()
     try:
-        for tag, required_attrs, optional_attrs in (('auth', ('url', 'token', ), ('ca_certs', 'ignore_ssl', )), ('container', ('name', ),
-                                                                                                                 ('project', )), ):
+        for tag, required_attrs, optional_attrs in (('auth', ('url',
+                                                              'token', ),
+                                                     ('ca_certs',
+                                                      'ignore_ssl', )),
+                                                    ('container', ('name', ),
+                                                     ('project', )), ):
             element = config_xml.findall(tag)[0]
             required = tuple((k, element.get(k)) for k in required_attrs)
             for k, v in required:
                 if not v:
-                    msg = 'No value for {tag}:{k} in XML tree'.format(tag=tag, k=k)
+                    msg = 'No value for {tag}:{k} in XML tree'.format(
+                        tag=tag, k=k)
                     log.error(msg)
                     raise Exception(msg)
             optional = tuple((k, element.get(k)) for k in optional_attrs)
@@ -51,13 +58,16 @@ def parse_config_xml(config_xml):
             msg = 'No {tag} element in XML tree'.format(tag=tag)
             log.error(msg)
             raise Exception(msg)
-        r['extra_dirs'] = [dict(((k, e.get(k)) for k in attrs)) for e in extra_dirs]
+        r['extra_dirs'] = [
+            dict(((k, e.get(k)) for k in attrs)) for e in extra_dirs
+        ]
         if 'job_work' not in (d['type'] for d in r['extra_dirs']):
             msg = 'No value for {0}:type="job_work" in XML tree'.format(tag)
             log.error(msg)
             raise Exception(msg)
     except Exception:
-        log.exception("Malformed PithosObjectStore Configuration XML -- " "unable to continue")
+        log.exception("Malformed PithosObjectStore Configuration XML -- "
+                      "unable to continue")
         raise
     return r
 
@@ -84,7 +94,8 @@ class PithosObjectStore(ObjectStore):
         self._init_pithos()
 
         log.info('Define extra_dirs')
-        self.extra_dirs = dict((e['type'], e['path']) for e in self.config_dict['extra_dirs'])
+        self.extra_dirs = dict((e['type'], e['path'])
+                               for e in self.config_dict['extra_dirs'])
 
     def _authenticate(self):
         auth = self.config_dict['auth']
@@ -134,7 +145,8 @@ class PithosObjectStore(ObjectStore):
         # result in a path not contained in the directory path constructed here
         if alt_name:
             if not safe_relpath(alt_name):
-                log.warning('alt_name would locate path outside dir: {0}'.format(alt_name))
+                log.warning('alt_name would locate path outside dir: {0}'.
+                            format(alt_name))
                 raise ObjectInvalid("The requested object is invalid")
             # alt_name can contain parent directory references, but S3 will not
             # follow them, so if they are valid we normalize them out
@@ -180,7 +192,8 @@ class PithosObjectStore(ObjectStore):
                 # Ignore symlinks
                 if os.path.islink(path):
                     continue
-                umask_fix_perms(path, self.config.umask, 0o666, self.config.gid)
+                umask_fix_perms(path, self.config.umask, 0o666,
+                                self.config.gid)
 
     def _pull_into_cache(self, rel_path):
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
@@ -253,9 +266,11 @@ class PithosObjectStore(ObjectStore):
                 os.makedirs(cache_dir)
 
             if dir_only:
-                self.pithos.upload_from_string(rel_path, '', content_type='application/directory')
+                self.pithos.upload_from_string(
+                    rel_path, '', content_type='application/directory')
             else:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else 'dataset_{0}.dat'.format(obj.id))
+                rel_path = os.path.join(rel_path, alt_name if alt_name else
+                                        'dataset_{0}.dat'.format(obj.id))
                 new_file = os.path.join(self.staging_path, rel_path)
                 open(new_file, 'w').close()
                 self.pithos.upload_from_string(rel_path, '')
@@ -266,7 +281,9 @@ class PithosObjectStore(ObjectStore):
         :raises ObjectNotFound:
         """
         if not self.exists(obj, **kwargs):
-            raise ObjectNotFound('objectstore.empty, object does not exist: {obj}, ' 'kwargs: {kwargs}'.format(obj=obj, kwargs=kwargs))
+            raise ObjectNotFound(
+                'objectstore.empty, object does not exist: {obj}, '
+                'kwargs: {kwargs}'.format(obj=obj, kwargs=kwargs))
         return bool(self.size(obj, **kwargs))
 
     def size(self, obj, **kwargs):
@@ -280,7 +297,9 @@ class PithosObjectStore(ObjectStore):
             try:
                 return os.path.getsize(self._get_cache_path(path))
             except OSError as ex:
-                log.warning('Could not get size of file {path} in local cache,' 'will try Pithos. Error: {err}'.format(path=path, err=ex))
+                log.warning('Could not get size of file {path} in local cache,'
+                            'will try Pithos. Error: {err}'.format(
+                                path=path, err=ex))
         try:
             file = self.pithos.get_object_info(path)
         except ClientError as ce:
@@ -314,9 +333,11 @@ class PithosObjectStore(ObjectStore):
                 os.unlink(cache_path)
                 self.pithos.del_object(path)
         except OSError:
-            log.exception('{0} delete error'.format(self.get_filename(obj, **kwargs)))
+            log.exception(
+                '{0} delete error'.format(self.get_filename(obj, **kwargs)))
         except ClientError as ce:
-            log.exception('Could not delete {path} from Pithos, {err}'.format(path=path, err=ce))
+            log.exception('Could not delete {path} from Pithos, {err}'.format(
+                path=path, err=ce))
         return False
 
     def get_data(self, obj, start=0, count=-1, **kwargs):
@@ -356,14 +377,17 @@ class PithosObjectStore(ObjectStore):
             if not dir_only:
                 self._pull_into_cache(path)
                 return cache_path
-        raise ObjectNotFound('objectstore.get_filename, no cache_path: {obj}, ' 'kwargs: {kwargs}'.format(obj, kwargs))
+        raise ObjectNotFound('objectstore.get_filename, no cache_path: {obj}, '
+                             'kwargs: {kwargs}'.format(obj, kwargs))
 
     def update_from_file(self, obj, **kwargs):
         """Update the store when a file is updated"""
         if kwargs.get('create'):
             self.create(obj, **kwargs)
         if not self.exists(obj, **kwargs):
-            raise ObjectNotFound('objectstore.update_from_file, object does not exist: {obj}, ' 'kwargs: {kwargs}'.format(obj, kwargs))
+            raise ObjectNotFound(
+                'objectstore.update_from_file, object does not exist: {obj}, '
+                'kwargs: {kwargs}'.format(obj, kwargs))
 
         path = self._construct_path(obj, **kwargs)
         cache_path = self._get_cache_path(path)
@@ -375,7 +399,9 @@ class PithosObjectStore(ObjectStore):
                     shutil.copy2(source_path, cache_path)
                 self._fix_permissions(cache_path)
             except OSError:
-                log.exception('Trouble copying source file "{source}" to cache "{cache}"' ''.format(source=source_path, cache=cache_path))
+                log.exception(
+                    'Trouble copying source file "{source}" to cache "{cache}"'
+                    ''.format(source=source_path, cache=cache_path))
         else:
             with open(cache_path) as f:
                 self.pithos.upload_object(obj, f)
@@ -389,7 +415,8 @@ class PithosObjectStore(ObjectStore):
             try:
                 return self.pithos.publish_object(path)
             except ClientError as ce:
-                log.exception('Trouble generating URL for dataset "{}"'.format(path))
+                log.exception(
+                    'Trouble generating URL for dataset "{}"'.format(path))
                 log.exception('Kamaki: {0}'.format(ce))
         return None
 

@@ -10,8 +10,10 @@ log = logging.getLogger(__name__)
 STRSEP = '__ESEP__'
 
 
-def generate_repository_dependencies_key_for_repository(toolshed_base_url, repository_name, repository_owner, changeset_revision,
-                                                        prior_installation_required, only_if_compiling_contained_td):
+def generate_repository_dependencies_key_for_repository(
+        toolshed_base_url, repository_name, repository_owner,
+        changeset_revision, prior_installation_required,
+        only_if_compiling_contained_td):
     """
     Assumes tool shed is current tool shed since repository dependencies across tool sheds
     is not yet supported.
@@ -19,9 +21,13 @@ def generate_repository_dependencies_key_for_repository(toolshed_base_url, repos
     # The tool_shed portion of the key must be the value that is stored in the tool_shed_repository.tool_shed column
     # of the Galaxy database for an installed repository.  This value does not include the protocol, but does include
     # the port if there is one.
-    tool_shed = common_util.remove_protocol_from_tool_shed_url(toolshed_base_url)
-    return '%s%s%s%s%s%s%s%s%s%s%s' % (tool_shed, STRSEP, str(repository_name), STRSEP, str(repository_owner), STRSEP,
-                                       str(changeset_revision), STRSEP, str(prior_installation_required), STRSEP,
+    tool_shed = common_util.remove_protocol_from_tool_shed_url(
+        toolshed_base_url)
+    return '%s%s%s%s%s%s%s%s%s%s%s' % (tool_shed, STRSEP, str(repository_name),
+                                       STRSEP, str(repository_owner), STRSEP,
+                                       str(changeset_revision), STRSEP,
+                                       str(prior_installation_required),
+                                       STRSEP,
                                        str(only_if_compiling_contained_td))
 
 

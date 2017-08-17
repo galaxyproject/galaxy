@@ -46,7 +46,8 @@ class QualityScoreSOLiD(QualityScore):
                     else:
                         break  # EOF
                 line = line.strip()
-                if line and not line.startswith('#'):  # first non-empty non-comment line
+                if line and not line.startswith(
+                        '#'):  # first non-empty non-comment line
                     if line.startswith('>'):
                         line = fh.readline().strip()
                         if line == '' or line.startswith('>'):
@@ -55,7 +56,9 @@ class QualityScoreSOLiD(QualityScore):
                             [int(x) for x in line.split()]
                             if not (readlen):
                                 readlen = len(line.split())
-                            assert len(line.split()) == readlen  # SOLiD reads should be of the same length
+                            assert len(
+                                line.split()
+                            ) == readlen  # SOLiD reads should be of the same length
                         except:
                             break
                         goodblock += 1
@@ -69,7 +72,8 @@ class QualityScoreSOLiD(QualityScore):
         return False
 
     def set_meta(self, dataset, **kwd):
-        if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+        if self.max_optional_metadata_filesize >= 0 and dataset.get_size(
+        ) > self.max_optional_metadata_filesize:
             dataset.metadata.data_lines = None
             return
         return QualityScore.set_meta(self, dataset, **kwd)
@@ -99,7 +103,8 @@ class QualityScore454(QualityScore):
                 if not line:
                     break  # EOF
                 line = line.strip()
-                if line and not line.startswith('#'):  # first non-empty non-comment line
+                if line and not line.startswith(
+                        '#'):  # first non-empty non-comment line
                     if line.startswith('>'):
                         line = fh.readline().strip()
                         if line == '' or line.startswith('>'):

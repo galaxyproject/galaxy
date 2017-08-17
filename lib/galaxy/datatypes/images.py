@@ -215,14 +215,20 @@ class Gmaj(data.Data):
                     "debug":
                     "false",
                     "posturl":
-                    "history_add_to?%s" % "&".join("%s=%s" % (x[0], quote_plus(str(x[1])))
-                                                   for x in [('copy_access_from', dataset.id), ('history_id', dataset.history_id), (
-                                                       'ext', 'maf'), ('name', 'GMAJ Output on data %s' % dataset.hid), (
-                                                           'info', 'Added by GMAJ'), ('dbkey', dataset.dbkey)])
+                    "history_add_to?%s" % "&".join(
+                        "%s=%s" % (x[0], quote_plus(str(x[1])))
+                        for x in [('copy_access_from', dataset.id), (
+                            'history_id',
+                            dataset.history_id), ('ext', 'maf'), (
+                                'name',
+                                'GMAJ Output on data %s' % dataset.hid), (
+                                    'info', 'Added by GMAJ'), ('dbkey',
+                                                               dataset.dbkey)])
                 }
                 class_name = "edu.psu.bx.gmaj.MajApplet.class"
                 archive = "/static/gmaj/gmaj.jar"
-                dataset.peek = create_applet_tag_peek(class_name, archive, params)
+                dataset.peek = create_applet_tag_peek(class_name, archive,
+                                                      params)
                 dataset.blurb = 'GMAJ Multiple Alignment Viewer'
             else:
                 dataset.peek = "After you add this item to your history, you will be able to launch the GMAJ applet."
@@ -282,21 +288,23 @@ class Laj(data.Text):
                     "title":
                     "LAJ in Galaxy",
                     "posturl":
-                    quote_plus("history_add_to?%s" % "&".join("%s=%s" % (key, value)
-                                                              for key, value in {
-                                                                  'history_id': dataset.history_id,
-                                                                  'ext': 'lav',
-                                                                  'name': 'LAJ Output',
-                                                                  'info': 'Added by LAJ',
-                                                                  'dbkey': dataset.dbkey,
-                                                                  'copy_access_from': dataset.id
-                                                              }.items())),
+                    quote_plus("history_add_to?%s" % "&".join(
+                        "%s=%s" % (key, value)
+                        for key, value in {
+                            'history_id': dataset.history_id,
+                            'ext': 'lav',
+                            'name': 'LAJ Output',
+                            'info': 'Added by LAJ',
+                            'dbkey': dataset.dbkey,
+                            'copy_access_from': dataset.id
+                        }.items())),
                     "noseq":
                     "true"
                 }
                 class_name = "edu.psu.cse.bio.laj.LajApplet.class"
                 archive = "/static/laj/laj.jar"
-                dataset.peek = create_applet_tag_peek(class_name, archive, params)
+                dataset.peek = create_applet_tag_peek(class_name, archive,
+                                                      params)
             else:
                 dataset.peek = "After you add this item to your history, you will be able to launch the LAJ applet."
                 dataset.blurb = 'LAJ Multiple Alignment Viewer'

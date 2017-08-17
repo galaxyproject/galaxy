@@ -21,7 +21,8 @@ def create_repository(namespace, repo_name, oauth_token):
         "description": "",
         "visibility": "public",
     }
-    requests.post("https://quay.io/api/v1/repository", json=data, headers=headers)
+    requests.post(
+        "https://quay.io/api/v1/repository", json=data, headers=headers)
 
 
 def quay_versions(namespace, pkg_name):
@@ -32,14 +33,17 @@ def quay_versions(namespace, pkg_name):
         return []
 
     if 'tags' not in data:
-        raise Exception("Unexpected response from quay.io - not tags description found [%s]" % data)
+        raise Exception(
+            "Unexpected response from quay.io - not tags description found [%s]"
+            % data)
 
     return [tag for tag in data['tags'] if tag != 'latest']
 
 
 def quay_repository(namespace, pkg_name):
     if requests is None:
-        raise Exception("requets library is unavailable, functionality not available.")
+        raise Exception(
+            "requets library is unavailable, functionality not available.")
 
     assert namespace is not None
     assert pkg_name is not None
@@ -102,7 +106,9 @@ def _simple_image_name(targets, image_build=None):
     suffix = ""
     if target.version is not None:
         if image_build is not None:
-            print("WARNING: Hard-coding image build instead of using Conda build - this is not recommended.")
+            print(
+                "WARNING: Hard-coding image build instead of using Conda build - this is not recommended."
+            )
             suffix = image_build
         else:
             suffix += ":%s" % target.version
@@ -134,7 +140,9 @@ def v1_image_name(targets, image_build=None, name_override=None):
     'mulled-v1-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40'
     """
     if name_override is not None:
-        print("WARNING: Overriding mulled image name, auto-detection of 'mulled' package attributes will fail to detect result.")
+        print(
+            "WARNING: Overriding mulled image name, auto-detection of 'mulled' package attributes will fail to detect result."
+        )
         return name_override
 
     targets = list(targets)
@@ -142,7 +150,8 @@ def v1_image_name(targets, image_build=None, name_override=None):
         return _simple_image_name(targets, image_build=image_build)
     else:
         targets_order = sorted(targets, key=lambda t: t.package_name)
-        requirements_buffer = "\n".join(map(conda_build_target_str, targets_order))
+        requirements_buffer = "\n".join(
+            map(conda_build_target_str, targets_order))
         m = hashlib.sha1()
         m.update(requirements_buffer.encode())
         suffix = "" if not image_build else ":%s" % image_build
@@ -171,7 +180,9 @@ def v2_image_name(targets, image_build=None, name_override=None):
     'mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40'
     """
     if name_override is not None:
-        print("WARNING: Overriding mulled image name, auto-detection of 'mulled' package attributes will fail to detect result.")
+        print(
+            "WARNING: Overriding mulled image name, auto-detection of 'mulled' package attributes will fail to detect result."
+        )
         return name_override
 
     targets = list(targets)
@@ -179,14 +190,16 @@ def v2_image_name(targets, image_build=None, name_override=None):
         return _simple_image_name(targets, image_build=image_build)
     else:
         targets_order = sorted(targets, key=lambda t: t.package_name)
-        package_name_buffer = "\n".join(map(lambda t: t.package_name, targets_order))
+        package_name_buffer = "\n".join(
+            map(lambda t: t.package_name, targets_order))
         package_hash = hashlib.sha1()
         package_hash.update(package_name_buffer.encode())
 
         versions = map(lambda t: t.version, targets_order)
         if any(versions):
             # Only hash versions if at least one package has versions...
-            version_name_buffer = "\n".join(map(lambda t: t.version or "null", targets_order))
+            version_name_buffer = "\n".join(
+                map(lambda t: t.version or "null", targets_order))
             version_hash = hashlib.sha1()
             version_hash.update(version_name_buffer.encode())
             version_hash_str = version_hash.hexdigest()
@@ -209,5 +222,6 @@ def v2_image_name(targets, image_build=None, name_override=None):
 
 image_name = v1_image_name  # deprecated
 
-__all__ = ("build_target", "conda_build_target_str", "image_name", "mulled_tags_for", "quay_versions", "split_tag", "Target",
+__all__ = ("build_target", "conda_build_target_str", "image_name",
+           "mulled_tags_for", "quay_versions", "split_tag", "Target",
            "v1_image_name", "v2_image_name", "version_sorted", )

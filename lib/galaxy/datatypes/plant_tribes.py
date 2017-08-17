@@ -19,11 +19,13 @@ class Smat(Text):
         try:
             return dataset.peek
         except:
-            return "ESTScan scores matrices (%s)" % (nice_size(dataset.get_size()))
+            return "ESTScan scores matrices (%s)" % (
+                nice_size(dataset.get_size()))
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = "ESTScan scores matrices"
         else:
             dataset.peek = 'file does not exist'
@@ -95,7 +97,10 @@ class PlantTribes(Html):
             if os.path.exists(efp):
                 dataset.metadata.num_files = len(os.listdir(efp))
         except Exception as e:
-            log.warning("set_meta fname: %s %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown', str(e)))
+            log.warning("set_meta fname: %s %s" %
+                        (dataset.file_name
+                         if dataset and dataset.file_name else 'Unkwown',
+                         str(e)))
 
 
 class PlantTribesKsComponents(Tabular):
@@ -112,7 +117,8 @@ class PlantTribesKsComponents(Tabular):
         try:
             return dataset.peek
         except:
-            return "Significant components in the Ks distribution (%s)" % (nice_size(dataset.get_size()))
+            return "Significant components in the Ks distribution (%s)" % (
+                nice_size(dataset.get_size()))
 
     def set_meta(self, dataset, **kwd):
         """
@@ -138,7 +144,8 @@ class PlantTribesKsComponents(Tabular):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_comp == 1):
                 dataset.blurb = "1 significant component"
             else:
@@ -172,7 +179,8 @@ class PlantTribesOrtho(PlantTribes):
     file_ext = "ptortho"
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(PlantTribesOrtho, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        super(PlantTribesOrtho, self).set_peek(
+            dataset, is_multi_byte=is_multi_byte)
         dataset.blurb = "Proteins orthogroup fasta files: %d items" % dataset.metadata.num_files
 
 
@@ -184,7 +192,8 @@ class PlantTribesOrthoCodingSequence(PlantTribes):
     file_ext = "ptorthocs"
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(PlantTribesOrthoCodingSequence, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        super(PlantTribesOrthoCodingSequence, self).set_peek(
+            dataset, is_multi_byte=is_multi_byte)
         dataset.blurb = "Protein and coding sequences orthogroup fasta files: %d items" % dataset.metadata.num_files
 
 
@@ -195,7 +204,8 @@ class PlantTribesTargetedGeneFamilies(PlantTribes):
     file_ext = "pttgf"
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(PlantTribesTargetedGeneFamilies, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        super(PlantTribesTargetedGeneFamilies, self).set_peek(
+            dataset, is_multi_byte=is_multi_byte)
         dataset.blurb = "Targeted gene families"
 
 
@@ -207,7 +217,8 @@ class PlantTribesPhylogeneticTree(PlantTribes):
     file_ext = "pttree"
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(PlantTribesPhylogeneticTree, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        super(PlantTribesPhylogeneticTree, self).set_peek(
+            dataset, is_multi_byte=is_multi_byte)
         dataset.blurb = "Phylogenetic trees: %d items" % dataset.metadata.num_files
 
 
@@ -218,7 +229,8 @@ class PlantTribesPhylip(PlantTribes):
     file_ext = "ptphylip"
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(PlantTribesPhylip, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        super(PlantTribesPhylip, self).set_peek(
+            dataset, is_multi_byte=is_multi_byte)
         dataset.blurb = "Orthogroup phylip multiple sequence alignments: %d items" % dataset.metadata.num_files
 
 
@@ -229,7 +241,8 @@ class PlantTribesMultipleSequenceAlignment(PlantTribes):
     file_ext = "ptalign"
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(PlantTribesMultipleSequenceAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        super(PlantTribesMultipleSequenceAlignment, self).set_peek(
+            dataset, is_multi_byte=is_multi_byte)
         dataset.blurb = "Proteins orthogroup alignments: %d items" % dataset.metadata.num_files
 
 
@@ -240,7 +253,9 @@ class PlantTribesMultipleSequenceAlignmentCodonAlignment(PlantTribes):
     file_ext = "ptalignca"
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(PlantTribesMultipleSequenceAlignmentCodonAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        super(PlantTribesMultipleSequenceAlignmentCodonAlignment,
+              self).set_peek(
+                  dataset, is_multi_byte=is_multi_byte)
         dataset.blurb = "Protein and coding sequences orthogroup alignments: %d items" % dataset.metadata.num_files
 
 
@@ -251,7 +266,8 @@ class PlantTribesMultipleSequenceAlignmentTrimmed(PlantTribes):
     file_ext = "ptaligntrimmed"
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(PlantTribesMultipleSequenceAlignmentTrimmed, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        super(PlantTribesMultipleSequenceAlignmentTrimmed, self).set_peek(
+            dataset, is_multi_byte=is_multi_byte)
         dataset.blurb = "Trimmed proteins orthogroup alignments: %d items" % dataset.metadata.num_files
 
 
@@ -262,7 +278,9 @@ class PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment(PlantTribes):
     file_ext = "ptaligntrimmedca"
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        super(PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment,
+              self).set_peek(
+                  dataset, is_multi_byte=is_multi_byte)
         dataset.blurb = "Trimmed protein and coding sequences orthogroup alignments: %d items" % dataset.metadata.num_files
 
 
@@ -273,7 +291,8 @@ class PlantTribesMultipleSequenceAlignmentFiltered(PlantTribes):
     file_ext = "ptalignfiltered"
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(PlantTribesMultipleSequenceAlignmentFiltered, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        super(PlantTribesMultipleSequenceAlignmentFiltered, self).set_peek(
+            dataset, is_multi_byte=is_multi_byte)
         dataset.blurb = "Filtered proteins orthogroup alignments: %d items" % dataset.metadata.num_files
 
 
@@ -284,5 +303,7 @@ class PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment(PlantTribes):
     file_ext = "ptalignfilteredca"
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        super(PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment,
+              self).set_peek(
+                  dataset, is_multi_byte=is_multi_byte)
         dataset.blurb = "Filtered protein and coding sequences orthogroup alignments: %d items" % dataset.metadata.num_files

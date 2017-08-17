@@ -16,21 +16,25 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print(__doc__)
     metadata.reflect()
-    ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
+    ToolShedRepository_table = Table(
+        "tool_shed_repository", metadata, autoload=True)
     # Add the status column to the tool_shed_repository table.
     col = Column("status", TrimmedString(255))
     try:
         col.create(ToolShedRepository_table)
         assert col is ToolShedRepository_table.c.status
     except Exception:
-        log.exception("Adding status column to the tool_shed_repository table failed.")
+        log.exception(
+            "Adding status column to the tool_shed_repository table failed.")
     # Add the error_message column to the tool_shed_repository table.
     col = Column("error_message", TEXT)
     try:
         col.create(ToolShedRepository_table)
         assert col is ToolShedRepository_table.c.error_message
     except Exception:
-        log.exception("Adding error_message column to the tool_shed_repository table failed.")
+        log.exception(
+            "Adding error_message column to the tool_shed_repository table failed."
+        )
     # Update the status column value for tool_shed_repositories to the default value 'Installed'.
     cmd = "UPDATE tool_shed_repository SET status = 'Installed';"
     try:
@@ -54,12 +58,17 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
+    ToolShedRepository_table = Table(
+        "tool_shed_repository", metadata, autoload=True)
     try:
         ToolShedRepository_table.c.status.drop()
     except Exception:
-        log.exception("Dropping column status from the tool_shed_repository table failed.")
+        log.exception(
+            "Dropping column status from the tool_shed_repository table failed."
+        )
     try:
         ToolShedRepository_table.c.error_message.drop()
     except Exception:
-        log.exception("Dropping column error_message from the tool_shed_repository table failed.")
+        log.exception(
+            "Dropping column error_message from the tool_shed_repository table failed."
+        )

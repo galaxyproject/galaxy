@@ -4,7 +4,8 @@ histories.
 import logging
 
 from galaxy import exceptions, model
-from galaxy.tools.parameters.basic import (DataCollectionToolParameter, DataToolParameter)
+from galaxy.tools.parameters.basic import (DataCollectionToolParameter,
+                                           DataToolParameter)
 from galaxy.tools.parameters.grouping import (Conditional, Repeat, Section)
 from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.util.odict import odict
@@ -45,7 +46,8 @@ def extract_workflow(trans,
     for i, steps_at_level in enumerate(levorder):
         for j, index in enumerate(steps_at_level):
             step = steps[index]
-            step.position = dict(top=(base_pos + 120 * j), left=(base_pos + 220 * i))
+            step.position = dict(
+                top=(base_pos + 120 * j), left=(base_pos + 220 * i))
     # Store it
     stored = model.StoredWorkflow()
     stored.user = user
@@ -102,7 +104,8 @@ def extract_steps(trans,
         step = model.WorkflowStep()
         step.type = 'data_collection_input'
         if hid not in summary.collection_types:
-            raise exceptions.RequestParameterInvalidException("hid %s does not appear to be a collection" % hid)
+            raise exceptions.RequestParameterInvalidException(
+                "hid %s does not appear to be a collection" % hid)
         collection_type = summary.collection_types[hid]
         if dataset_collection_names:
             name = dataset_collection_names[i]
@@ -114,8 +117,11 @@ def extract_steps(trans,
     # Tool steps
     for job_id in job_ids:
         if job_id not in summary.job_id2representative_job:
-            log.warning("job_id %s not found in job_id2representative_job %s" % (job_id, summary.job_id2representative_job))
-            raise AssertionError("Attempt to create workflow with job not connected to current history")
+            log.warning("job_id %s not found in job_id2representative_job %s" %
+                        (job_id, summary.job_id2representative_job))
+            raise AssertionError(
+                "Attempt to create workflow with job not connected to current history"
+            )
         job = summary.job_id2representative_job[job_id]
         tool_inputs, associations = step_inputs(trans, job)
         step = model.WorkflowStep()
@@ -129,11 +135,13 @@ def extract_steps(trans,
         for other_hid, input_name in associations:
             if job in summary.implicit_map_jobs:
                 an_implicit_output_collection = jobs[job][0][1]
-                input_collection = an_implicit_output_collection.find_implicit_input_collection(input_name)
+                input_collection = an_implicit_output_collection.find_implicit_input_collection(
+                    input_name)
                 if input_collection:
                     other_hid = input_collection.hid
                 else:
-                    log.info("Cannot find implicit input collection for %s" % input_name)
+                    log.info("Cannot find implicit input collection for %s" %
+                             input_name)
             if other_hid in hid_to_output_pair:
                 other_step, other_name = hid_to_output_pair[other_hid]
                 conn = model.WorkflowStepConnection()
@@ -144,9 +152,11 @@ def extract_steps(trans,
                 conn.output_name = other_name
         steps.append(step)
         # Store created dataset hids
-        for assoc in (job.output_datasets + job.output_dataset_collection_instances):
+        for assoc in (
+                job.output_datasets + job.output_dataset_collection_instances):
             assoc_name = assoc.name
-            if ToolOutputCollectionPart.is_named_collection_part_name(assoc_name):
+            if ToolOutputCollectionPart.is_named_collection_part_name(
+                    assoc_name):
                 continue
             if job in summary.implicit_map_jobs:
                 hid = None
@@ -209,7 +219,8 @@ class WorkflowSummary(object):
         self.history = history
         self.warnings = set()
         self.jobs = odict()
-        self.job_id2representative_job = {}  # map a non-fake job id to its representative job
+        self.job_id2representative_job = {
+        }  # map a non-fake job id to its representative job
         self.implicit_map_jobs = []
         self.collection_types = {}
 
@@ -234,18 +245,21 @@ class WorkflowSummary(object):
     def __summarize_dataset_collection(self, dataset_collection):
         dataset_collection = self.__original_hdca(dataset_collection)
         hid = dataset_collection.hid
-        self.collection_types[hid] = dataset_collection.collection.collection_type
+        self.collection_types[
+            hid] = dataset_collection.collection.collection_type
         cja = dataset_collection.creating_job_associations
         if cja:
             # Use the "first" job to represent all mapped jobs.
             representative_assoc = cja[0]
             representative_job = representative_assoc.job
             if representative_job not in self.jobs or self.jobs[representative_job][0][1].history_content_type == "dataset":
-                self.jobs[representative_job] = [(representative_assoc.name, dataset_collection)]
+                self.jobs[representative_job] = [(representative_assoc.name,
+                                                  dataset_collection)]
                 if dataset_collection.implicit_output_name:
                     self.implicit_map_jobs.append(representative_job)
             else:
-                self.jobs[representative_job].append((representative_assoc.name, dataset_collection))
+                self.jobs[representative_job].append(
+                    (representative_assoc.name, dataset_collection))
             for assoc in cja:
                 job = assoc.job
                 self.job_id2representative_job[job.id] = representative_job
@@ -253,7 +267,8 @@ class WorkflowSummary(object):
         # tracking with creating_job_associations. Will delete at some point.
         elif dataset_collection.implicit_output_name:
             # TODO: Optimize db call
-            dataset_instance = dataset_collection.collection.dataset_instances[0]
+            dataset_instance = dataset_collection.collection.dataset_instances[
+                0]
             if not self.__check_state(dataset_instance):
                 # Just checking the state of one instance, don't need more but
                 # makes me wonder if even need this check at all?
@@ -261,7 +276,9 @@ class WorkflowSummary(object):
 
             original_hda = self.__original_hda(dataset_instance)
             if not original_hda.creating_job_associations:
-                log.warning("An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!")
+                log.warning(
+                    "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!"
+                )
                 job = DatasetCollectionCreationJob(dataset_collection)
                 self.jobs[job] = [(None, dataset_collection)]
 
@@ -314,10 +331,11 @@ class WorkflowSummary(object):
 
 
 def step_inputs(trans, job):
-    tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
+    tool = trans.app.toolbox.get_tool(
+        job.tool_id, tool_version=job.tool_version)
     param_values = job.get_param_values(
-        trans.app,
-        ignore_errors=True)  # If a tool was updated and e.g. had a text value changed to an integer, we don't want a traceback here
+        trans.app, ignore_errors=True
+    )  # If a tool was updated and e.g. had a text value changed to an integer, we don't want a traceback here
     associations = __cleanup_param_values(tool.inputs, param_values)
     tool_inputs = tool.params_to_strings(param_values, trans.app)
     return tool_inputs, associations
@@ -337,7 +355,8 @@ def __cleanup_param_values(inputs, values):
     # Recursively clean data inputs and dynamic selects
     def cleanup(prefix, inputs, values):
         for key, input in inputs.items():
-            if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
+            if isinstance(input, DataToolParameter) or isinstance(
+                    input, DataCollectionToolParameter):
                 tmp = values[key]
                 values[key] = None
                 # HACK: Nested associations are not yet working, but we
@@ -349,7 +368,8 @@ def __cleanup_param_values(inputs, values):
                     if not isinstance(tmp, list):
                         associations.append((tmp.hid, prefix + key))
                     else:
-                        associations.extend([(t.hid, prefix + key) for t in tmp])
+                        associations.extend([(t.hid, prefix + key)
+                                             for t in tmp])
 
                 # Cleanup the other deprecated crap associated with datasets
                 # as well. Worse, for nested datasets all the metadata is
@@ -363,7 +383,8 @@ def __cleanup_param_values(inputs, values):
                     group_values = values[key]
                     for i, rep_values in enumerate(group_values):
                         rep_index = rep_values['__index__']
-                        cleanup("%s%s_%d|" % (prefix, key, rep_index), input.inputs, group_values[i])
+                        cleanup("%s%s_%d|" % (prefix, key, rep_index),
+                                input.inputs, group_values[i])
             elif isinstance(input, Conditional):
                 # Scrub dynamic resource related parameters from workflows,
                 # they cause problems and the workflow probably should include
@@ -375,10 +396,12 @@ def __cleanup_param_values(inputs, values):
                 if input.name in values:
                     group_values = values[input.name]
                     current_case = group_values['__current_case__']
-                    cleanup("%s%s|" % (prefix, key), input.cases[current_case].inputs, group_values)
+                    cleanup("%s%s|" % (prefix, key),
+                            input.cases[current_case].inputs, group_values)
             elif isinstance(input, Section):
                 if input.name in values:
-                    cleanup("%s%s|" % (prefix, key), input.inputs, values[input.name])
+                    cleanup("%s%s|" % (prefix, key), input.inputs,
+                            values[input.name])
 
     cleanup("", inputs, values)
     return associations

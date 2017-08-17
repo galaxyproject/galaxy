@@ -27,7 +27,9 @@ def lint_inputs(tool_xml, lint_ctx):
         param_name = param_attrib.get("name", param_attrib.get("argument"))
         if param_type == "data":
             if "format" not in param_attrib:
-                lint_ctx.warn("Param input [%s] with no format specified - 'data' format will be assumed.", param_name)
+                lint_ctx.warn(
+                    "Param input [%s] with no format specified - 'data' format will be assumed.",
+                    param_name)
 
         if param_type == "select":
             dynamic_options = param.get("dynamic_options", None)
@@ -35,7 +37,8 @@ def lint_inputs(tool_xml, lint_ctx):
                 dynamic_options = param.find("options")
 
             select_options = _find_with_attribute(param, 'option', 'value')
-            if any(['value' not in option.attrib for option in select_options]):
+            if any(['value' not in option.attrib
+                    for option in select_options]):
                 lint_ctx.error("Option without value")
 
             if dynamic_options is None and len(select_options) == 0:
@@ -54,18 +57,25 @@ def lint_inputs(tool_xml, lint_ctx):
             continue
         first_param = conditional.find("param")
         if first_param is None:
-            lint_ctx.error("Conditional '%s' has no child <param>" % conditional_name)
+            lint_ctx.error(
+                "Conditional '%s' has no child <param>" % conditional_name)
             continue
         first_param_type = first_param.get('type')
         if first_param_type not in ['select', 'boolean']:
-            lint_ctx.warn("Conditional '%s' first param should have type=\"select\" /> or type=\"boolean\"" % conditional_name)
+            lint_ctx.warn(
+                "Conditional '%s' first param should have type=\"select\" /> or type=\"boolean\""
+                % conditional_name)
             continue
 
         if first_param_type == 'select':
-            select_options = _find_with_attribute(first_param, 'option', 'value')
+            select_options = _find_with_attribute(first_param, 'option',
+                                                  'value')
             option_ids = [option.get('value') for option in select_options]
         else:  # boolean
-            option_ids = [first_param.get('truevalue', 'true'), first_param.get('falsevalue', 'false')]
+            option_ids = [
+                first_param.get('truevalue', 'true'),
+                first_param.get('falsevalue', 'false')
+            ]
 
         if string_as_bool(first_param.get('optional', False)):
             lint_ctx.warn("Conditional test parameter cannot be optional")
@@ -78,20 +88,26 @@ def lint_inputs(tool_xml, lint_ctx):
 
         for option_id in option_ids:
             if option_id not in when_ids:
-                lint_ctx.warn("No <when /> block found for %s option '%s' inside conditional '%s'" % (first_param_type, option_id,
-                                                                                                      conditional_name))
+                lint_ctx.warn(
+                    "No <when /> block found for %s option '%s' inside conditional '%s'"
+                    % (first_param_type, option_id, conditional_name))
 
         for when_id in when_ids:
             if when_id not in option_ids:
                 if first_param_type == 'select':
-                    lint_ctx.warn("No <option /> found for when block '%s' inside conditional '%s'" % (when_id, conditional_name))
+                    lint_ctx.warn(
+                        "No <option /> found for when block '%s' inside conditional '%s'"
+                        % (when_id, conditional_name))
                 else:
-                    lint_ctx.warn("No truevalue/falsevalue found for when block '%s' inside conditional '%s'" % (when_id, conditional_name))
+                    lint_ctx.warn(
+                        "No truevalue/falsevalue found for when block '%s' inside conditional '%s'"
+                        % (when_id, conditional_name))
 
     if datasource:
         for datasource_tag in ('display', 'uihints'):
             if not any([param.tag == datasource_tag for param in inputs]):
-                lint_ctx.info("%s tag usually present in data sources" % datasource_tag)
+                lint_ctx.info(
+                    "%s tag usually present in data sources" % datasource_tag)
 
     if num_inputs:
         lint_ctx.info("Found %d input parameters.", num_inputs)

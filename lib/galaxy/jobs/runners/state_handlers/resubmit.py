@@ -18,7 +18,8 @@ MESSAGES = dict(
 
 
 def eval_condition(condition, job_state):
-    runner_state = getattr(job_state, 'runner_state', None) or JobState.runner_states.UNKNOWN_ERROR
+    runner_state = getattr(job_state, 'runner_state',
+                           None) or JobState.runner_states.UNKNOWN_ERROR
 
     attempt = 1
     now = datetime.utcnow()
@@ -35,19 +36,29 @@ def eval_condition(condition, job_state):
     seconds_running = 0
     seconds_since_queued = 0
     if last_running_state:
-        seconds_running = (now - last_running_state.create_time).total_seconds()
+        seconds_running = (
+            now - last_running_state.create_time).total_seconds()
     if last_queued_state:
-        seconds_since_queued = (now - last_queued_state.create_time).total_seconds()
+        seconds_since_queued = (
+            now - last_queued_state.create_time).total_seconds()
 
     condition_locals = {
-        "walltime_reached": runner_state == JobState.runner_states.WALLTIME_REACHED,
-        "memory_limit_reached": runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
-        "unknown_error": JobState.runner_states.UNKNOWN_ERROR,
-        "any_failure": True,
-        "any_potential_job_failure": True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
-        "attempt": attempt,
-        "seconds_running": seconds_running,
-        "seconds_since_queued": seconds_since_queued,
+        "walltime_reached":
+        runner_state == JobState.runner_states.WALLTIME_REACHED,
+        "memory_limit_reached":
+        runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
+        "unknown_error":
+        JobState.runner_states.UNKNOWN_ERROR,
+        "any_failure":
+        True,
+        "any_potential_job_failure":
+        True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
+        "attempt":
+        attempt,
+        "seconds_running":
+        seconds_running,
+        "seconds_since_queued":
+        seconds_since_queued,
     }
 
     # Small optimization to eliminate the need to parse AST and eval for simple variables.
@@ -63,17 +74,22 @@ def failure(app, job_runner, job_state):
     if not resubmit_definitions:
         return
 
-    runner_state = getattr(job_state, 'runner_state', None) or JobState.runner_states.UNKNOWN_ERROR
-    if (runner_state not in (JobState.runner_states.WALLTIME_REACHED, JobState.runner_states.MEMORY_LIMIT_REACHED,
+    runner_state = getattr(job_state, 'runner_state',
+                           None) or JobState.runner_states.UNKNOWN_ERROR
+    if (runner_state not in (JobState.runner_states.WALLTIME_REACHED,
+                             JobState.runner_states.MEMORY_LIMIT_REACHED,
                              JobState.runner_states.UNKNOWN_ERROR)):
         # not set or not a handleable runner state
         return
 
-    _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_state)
+    _handle_resubmit_definitions(resubmit_definitions, app, job_runner,
+                                 job_state)
 
 
-def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_state):
-    runner_state = getattr(job_state, 'runner_state', None) or JobState.runner_states.UNKNOWN_ERROR
+def _handle_resubmit_definitions(resubmit_definitions, app, job_runner,
+                                 job_state):
+    runner_state = getattr(job_state, 'runner_state',
+                           None) or JobState.runner_states.UNKNOWN_ERROR
 
     # Setup environment for evaluating resubmission conditions and related expression.
     expression_context = _ExpressionContext(job_state)
@@ -89,13 +105,16 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
 
         external_id = getattr(job_state, "job_id", None)
         if external_id:
-            job_log_prefix = "(%s/%s)" % (job_state.job_wrapper.job_id, job_state.job_id)
+            job_log_prefix = "(%s/%s)" % (job_state.job_wrapper.job_id,
+                                          job_state.job_id)
         else:
             job_log_prefix = "(%s)" % (job_state.job_wrapper.job_id)
 
         destination = resubmit['destination']
         log.info("%s Job will be resubmitted to '%s' because %s at "
-                 "the '%s' destination", job_log_prefix, destination, MESSAGES[runner_state], job_state.job_wrapper.job_destination.id)
+                 "the '%s' destination", job_log_prefix, destination,
+                 MESSAGES[runner_state],
+                 job_state.job_wrapper.job_destination.id)
         # fetch JobDestination for the id or tag
         if destination:
             new_destination = app.job_config.get_destination(destination)
@@ -103,13 +122,15 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
             new_destination = job_state.job_destination
 
         # Resolve dynamic if necessary
-        new_destination = (job_state.job_wrapper.job_runner_mapper.cache_job_destination(new_destination))
+        new_destination = (job_state.job_wrapper.job_runner_mapper.
+                           cache_job_destination(new_destination))
         # Reset job state
         job_state.job_wrapper.clear_working_directory()
         job_state.job_wrapper.invalidate_external_metadata()
         job = job_state.job_wrapper.get_job()
         if resubmit.get('handler', None):
-            log.debug('%s Job reassigned to handler %s', job_log_prefix, resubmit['handler'])
+            log.debug('%s Job reassigned to handler %s', job_log_prefix,
+                      resubmit['handler'])
             job.set_handler(resubmit['handler'])
             job_runner.sa_session.add(job)
             # Is this safe to do here?
@@ -127,7 +148,9 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
                 float(delay)
                 new_destination.params['__resubmit_delay_seconds'] = str(delay)
             except ValueError:
-                log.warning("Cannot delay job with delay [%s], does not appear to be a number." % delay)
+                log.warning(
+                    "Cannot delay job with delay [%s], does not appear to be a number."
+                    % delay)
         job_state.job_wrapper.set_job_destination(new_destination)
         # Clear external ID (state change below flushes the change)
         job.job_runner_external_id = None
@@ -151,7 +174,9 @@ class _ExpressionContext(object):
             return int(condition)
 
         if self._lazy_context is None:
-            runner_state = getattr(self._job_state, 'runner_state', None) or JobState.runner_states.UNKNOWN_ERROR
+            runner_state = getattr(
+                self._job_state, 'runner_state',
+                None) or JobState.runner_states.UNKNOWN_ERROR
             attempt = 1
             now = datetime.utcnow()
             last_running_state = None
@@ -167,20 +192,29 @@ class _ExpressionContext(object):
             seconds_running = 0
             seconds_since_queued = 0
             if last_running_state:
-                seconds_running = (now - last_running_state.create_time).total_seconds()
+                seconds_running = (
+                    now - last_running_state.create_time).total_seconds()
             if last_queued_state:
-                seconds_since_queued = (now - last_queued_state.create_time).total_seconds()
+                seconds_since_queued = (
+                    now - last_queued_state.create_time).total_seconds()
 
             self._lazy_context = {
-                "walltime_reached": runner_state == JobState.runner_states.WALLTIME_REACHED,
-                "memory_limit_reached": runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
-                "unknown_error": JobState.runner_states.UNKNOWN_ERROR,
-                "any_failure": True,
+                "walltime_reached":
+                runner_state == JobState.runner_states.WALLTIME_REACHED,
+                "memory_limit_reached":
+                runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
+                "unknown_error":
+                JobState.runner_states.UNKNOWN_ERROR,
+                "any_failure":
+                True,
                 "any_potential_job_failure":
                 True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
-                "attempt": attempt,
-                "seconds_running": seconds_running,
-                "seconds_since_queued": seconds_since_queued,
+                "attempt":
+                attempt,
+                "seconds_running":
+                seconds_running,
+                "seconds_since_queued":
+                seconds_since_queued,
             }
 
         # Small optimization to eliminate the need to parse AST and eval for simple variables.

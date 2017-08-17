@@ -15,9 +15,19 @@ log = logging.getLogger(__name__)
 
 class ASync(BaseUIController):
     @web.expose
-    def default(self, trans, tool_id=None, data_id=None, data_secret=None, **kwd):
+    def default(self,
+                trans,
+                tool_id=None,
+                data_id=None,
+                data_secret=None,
+                **kwd):
         """Catches the tool id and redirects as needed"""
-        return self.index(trans, tool_id=tool_id, data_id=data_id, data_secret=data_secret, **kwd)
+        return self.index(
+            trans,
+            tool_id=tool_id,
+            data_id=data_id,
+            data_secret=data_secret,
+            **kwd)
 
     @web.expose
     def index(self, trans, tool_id=None, data_secret=None, **kwd):
@@ -51,22 +61,32 @@ class ASync(BaseUIController):
         if data_id:
             if not URL:
                 return "No URL parameter was submitted for data %s" % data_id
-            data = trans.sa_session.query(trans.model.HistoryDatasetAssociation).get(data_id)
+            data = trans.sa_session.query(
+                trans.model.HistoryDatasetAssociation).get(data_id)
 
             if not data:
                 return "Data %s does not exist or has already been deleted" % data_id
 
             if STATUS == 'OK':
-                key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
+                key = hmac_new(trans.app.config.tool_secret,
+                               "%d:%d" % (data.id, data.history_id))
                 if key != data_secret:
                     return "You do not have permission to alter data %s." % data_id
                 # push the job into the queue
                 data.state = data.blurb = data.states.RUNNING
                 log.debug('executing tool %s' % tool.id)
-                trans.log_event('Async executing tool %s' % tool.id, tool_id=tool.id)
-                galaxy_url = trans.request.base + '/async/%s/%s/%s' % (tool_id, data.id, key)
+                trans.log_event(
+                    'Async executing tool %s' % tool.id, tool_id=tool.id)
+                galaxy_url = trans.request.base + '/async/%s/%s/%s' % (
+                    tool_id, data.id, key)
                 galaxy_url = params.get("GALAXY_URL", galaxy_url)
-                params = dict(URL=URL, GALAXY_URL=galaxy_url, name=data.name, info=data.info, dbkey=data.dbkey, data_type=data.ext)
+                params = dict(
+                    URL=URL,
+                    GALAXY_URL=galaxy_url,
+                    name=data.name,
+                    info=data.info,
+                    dbkey=data.dbkey,
+                    data_type=data.ext)
 
                 # Assume there is exactly one output file possible
                 TOOL_OUTPUT_TYPE = None
@@ -81,7 +101,8 @@ class ASync(BaseUIController):
                 if TOOL_OUTPUT_TYPE is None:
                     raise Exception("Error: ToolOutput object not found")
 
-                original_history = trans.sa_session.query(trans.app.model.History).get(data.history_id)
+                original_history = trans.sa_session.query(
+                    trans.app.model.History).get(data.history_id)
                 tool.execute(trans, incoming=params, history=original_history)
             else:
                 log.debug('async error -> %s' % STATUS)
@@ -115,7 +136,8 @@ class ASync(BaseUIController):
                         # a collection object does not have the 'format' attribute, so it will throw an exception
                         continue
                 if outputs_count > 1:
-                    raise Exception("Error: the tool should have just one output")
+                    raise Exception(
+                        "Error: the tool should have just one output")
 
             if GALAXY_TYPE is None:
                 raise Exception("Error: ToolOutput object not found")
@@ -132,9 +154,14 @@ class ASync(BaseUIController):
             # data.state = jobs.JOB_OK
             # history.datasets.add_dataset( data )
 
-            data = trans.app.model.HistoryDatasetAssociation(create_dataset=True, sa_session=trans.sa_session, extension=GALAXY_TYPE)
-            trans.app.security_agent.set_all_dataset_permissions(data.dataset,
-                                                                 trans.app.security_agent.history_get_default_permissions(trans.history))
+            data = trans.app.model.HistoryDatasetAssociation(
+                create_dataset=True,
+                sa_session=trans.sa_session,
+                extension=GALAXY_TYPE)
+            trans.app.security_agent.set_all_dataset_permissions(
+                data.dataset,
+                trans.app.security_agent.history_get_default_permissions(
+                    trans.history))
             data.name = GALAXY_NAME
             data.dbkey = GALAXY_BUILD
             data.info = GALAXY_INFO
@@ -146,11 +173,15 @@ class ASync(BaseUIController):
             trans.history.add_dataset(data, genome_build=GALAXY_BUILD)
             trans.sa_session.add(trans.history)
             trans.sa_session.flush()
-            trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id), tool_id=tool_id)
+            trans.log_event(
+                "Added dataset %d to history %d" % (data.id, trans.history.id),
+                tool_id=tool_id)
 
             try:
-                key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
-                galaxy_url = trans.request.base + '/async/%s/%s/%s' % (tool_id, data.id, key)
+                key = hmac_new(trans.app.config.tool_secret,
+                               "%d:%d" % (data.id, data.history_id))
+                galaxy_url = trans.request.base + '/async/%s/%s/%s' % (
+                    tool_id, data.id, key)
                 params.update({'GALAXY_URL': galaxy_url})
                 params.update({'data_id': data.id})
 
@@ -161,7 +192,8 @@ class ASync(BaseUIController):
                     url_join_char = '&'
                 else:
                     url_join_char = '?'
-                url = "%s%s%s" % (url, url_join_char, urllib.urlencode(params.flatten()))
+                url = "%s%s%s" % (url, url_join_char,
+                                  urllib.urlencode(params.flatten()))
                 log.debug("connecting to -> %s" % url)
                 trans.log_event("Async connecting to -> %s" % url)
                 text = urllib.urlopen(url).read(-1)
@@ -175,4 +207,5 @@ class ASync(BaseUIController):
 
             trans.sa_session.flush()
 
-        return trans.fill_template('root/tool_runner.mako', out_data={}, num_jobs=1, job_errors=[])
+        return trans.fill_template(
+            'root/tool_runner.mako', out_data={}, num_jobs=1, job_errors=[])

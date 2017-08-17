@@ -26,26 +26,39 @@ class Wiff(Binary):
         Binary.__init__(self, **kwd)
 
         self.add_composite_file(
-            'wiff', description='AB SCIEX files in .wiff format. This can contain all needed information or only metadata.', is_binary=True)
+            'wiff',
+            description=
+            'AB SCIEX files in .wiff format. This can contain all needed information or only metadata.',
+            is_binary=True)
 
         self.add_composite_file(
             'wiff_scan',
-            description='AB SCIEX spectra file (wiff.scan), if the corresponding .wiff file only contains metadata.',
+            description=
+            'AB SCIEX spectra file (wiff.scan), if the corresponding .wiff file only contains metadata.',
             optional='True',
             is_binary=True)
 
     def generate_primary_file(self, dataset=None):
-        rval = ['<html><head><title>Wiff Composite Dataset </title></head><p/>']
-        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+        rval = [
+            '<html><head><title>Wiff Composite Dataset </title></head><p/>'
+        ]
+        rval.append(
+            '<div>This composite dataset is composed of the following files:<p/><ul>'
+        )
+        for composite_name, composite_file in self.get_composite_files(
+                dataset=dataset).items():
             fn = composite_name
             opt_text = ''
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+                rval.append(
+                    '<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' %
+                    (fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+                rval.append(
+                    '<li><a href="%s" type="text/plain">%s</a>%s</li>' %
+                    (fn, fn, opt_text))
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
@@ -61,8 +74,10 @@ class PepXmlReport(Tabular):
     def __init__(self, **kwd):
         super(PepXmlReport, self).__init__(**kwd)
         self.column_names = [
-            'Protein', 'Peptide', 'Assumed Charge', 'Neutral Pep Mass (calculated)', 'Neutral Mass', 'Retention Time', 'Start Scan',
-            'End Scan', 'Search Engine', 'PeptideProphet Probability', 'Interprophet Probabaility'
+            'Protein', 'Peptide', 'Assumed Charge',
+            'Neutral Pep Mass (calculated)', 'Neutral Mass', 'Retention Time',
+            'Start Scan', 'End Scan', 'Search Engine',
+            'PeptideProphet Probability', 'Interprophet Probabaility'
         ]
 
     def display_peek(self, dataset):
@@ -79,11 +94,16 @@ class ProtXmlReport(Tabular):
     def __init__(self, **kwd):
         super(ProtXmlReport, self).__init__(**kwd)
         self.column_names = [
-            "Entry Number", "Group Probability", "Protein", "Protein Link", "Protein Probability", "Percent Coverage",
-            "Number of Unique Peptides", "Total Independent Spectra", "Percent Share of Spectrum ID's", "Description",
-            "Protein Molecular Weight", "Protein Length", "Is Nondegenerate Evidence", "Weight", "Precursor Ion Charge", "Peptide sequence",
-            "Peptide Link", "NSP Adjusted Probability", "Initial Probability", "Number of Total Termini", "Number of Sibling Peptides Bin",
-            "Number of Instances", "Peptide Group Designator", "Is Evidence?"
+            "Entry Number", "Group Probability", "Protein", "Protein Link",
+            "Protein Probability", "Percent Coverage",
+            "Number of Unique Peptides", "Total Independent Spectra",
+            "Percent Share of Spectrum ID's", "Description",
+            "Protein Molecular Weight", "Protein Length",
+            "Is Nondegenerate Evidence", "Weight", "Precursor Ion Charge",
+            "Peptide sequence", "Peptide Link", "NSP Adjusted Probability",
+            "Initial Probability", "Number of Total Termini",
+            "Number of Sibling Peptides Bin", "Number of Instances",
+            "Peptide Group Designator", "Is Evidence?"
         ]
 
     def display_peek(self, dataset):
@@ -111,7 +131,8 @@ class ProteomicsXml(GenericXml):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = self.blurb
         else:
             dataset.peek = 'file does not exist'
@@ -218,7 +239,8 @@ class Mgf(Text):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = 'mgf Mascot Generic Format'
         else:
             dataset.peek = 'file does not exist'
@@ -246,7 +268,8 @@ class MascotDat(Text):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = 'mascotdat Mascot Search Results'
         else:
             dataset.peek = 'file does not exist'
@@ -297,7 +320,8 @@ class ThermoRAW(Binary):
         try:
             return dataset.peek
         except:
-            return "Thermo Finnigan RAW file (%s)" % (nice_size(dataset.get_size()))
+            return "Thermo Finnigan RAW file (%s)" % (
+                nice_size(dataset.get_size()))
 
 
 Binary.register_sniffable_binary_format("thermo.raw", "raw", ThermoRAW)
@@ -331,7 +355,8 @@ class SPLibNoIndex(Text):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = 'Spectral Library without index files'
         else:
             dataset.peek = 'file does not exist'
@@ -345,29 +370,44 @@ class SPLib(Msp):
 
     def __init__(self, **kwd):
         Msp.__init__(self, **kwd)
-        self.add_composite_file('library.splib', description='Spectral Library. Contains actual library spectra', is_binary=False)
-        self.add_composite_file('library.spidx', description='Spectrum index', is_binary=False)
-        self.add_composite_file('library.pepidx', description='Peptide index', is_binary=False)
+        self.add_composite_file(
+            'library.splib',
+            description='Spectral Library. Contains actual library spectra',
+            is_binary=False)
+        self.add_composite_file(
+            'library.spidx', description='Spectrum index', is_binary=False)
+        self.add_composite_file(
+            'library.pepidx', description='Peptide index', is_binary=False)
 
     def generate_primary_file(self, dataset=None):
-        rval = ['<html><head><title>Spectral Library Composite Dataset </title></head><p/>']
-        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+        rval = [
+            '<html><head><title>Spectral Library Composite Dataset </title></head><p/>'
+        ]
+        rval.append(
+            '<div>This composite dataset is composed of the following files:<p/><ul>'
+        )
+        for composite_name, composite_file in self.get_composite_files(
+                dataset=dataset).items():
             fn = composite_name
             opt_text = ''
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+                rval.append(
+                    '<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' %
+                    (fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+                rval.append(
+                    '<li><a href="%s" type="text/plain">%s</a>%s</li>' %
+                    (fn, fn, opt_text))
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = 'splib Spectral Library Format'
         else:
             dataset.peek = 'file does not exist'
@@ -377,7 +417,9 @@ class SPLib(Msp):
         """ Determines whether the file is a SpectraST generated file.
         """
         with open(filename, 'r') as contents:
-            return Msp.next_line_starts_with(contents, "Name:") and Msp.next_line_starts_with(contents, "LibID:")
+            return Msp.next_line_starts_with(
+                contents, "Name:") and Msp.next_line_starts_with(
+                    contents, "LibID:")
 
 
 class Ms2(Text):
@@ -397,7 +439,10 @@ class Ms2(Text):
                 else:
                     break
 
-        for header_field in ['CreationDate', 'Extractor', 'ExtractorVersion', 'ExtractorOptions']:
+        for header_field in [
+                'CreationDate', 'Extractor', 'ExtractorVersion',
+                'ExtractorOptions'
+        ]:
             found_header = False
             for header_line in header_lines:
                 if header_line.startswith('H\t%s' % (header_field)):
@@ -433,19 +478,34 @@ class ImzML(Binary):
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
         """The metadata"""
-        self.add_composite_file('imzml', description='The imzML metadata component.', is_binary=False)
+        self.add_composite_file(
+            'imzml',
+            description='The imzML metadata component.',
+            is_binary=False)
         """The mass spectral data"""
-        self.add_composite_file('ibd', description='The mass spectral data component.', is_binary=True)
+        self.add_composite_file(
+            'ibd',
+            description='The mass spectral data component.',
+            is_binary=True)
 
     def generate_primary_file(self, dataset=None):
-        rval = ['<html><head><title>imzML Composite Dataset </title></head><p/>']
-        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).iteritems():
+        rval = [
+            '<html><head><title>imzML Composite Dataset </title></head><p/>'
+        ]
+        rval.append(
+            '<div>This composite dataset is composed of the following files:<p/><ul>'
+        )
+        for composite_name, composite_file in self.get_composite_files(
+                dataset=dataset).iteritems():
             fn = composite_name
             opt_text = ''
             if composite_file.get('description'):
-                rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+                rval.append(
+                    '<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' %
+                    (fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+                rval.append(
+                    '<li><a href="%s" type="text/plain">%s</a>%s</li>' %
+                    (fn, fn, opt_text))
         rval.append('</ul></div></html>')
         return "\n".join(rval)

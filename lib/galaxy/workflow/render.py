@@ -29,7 +29,9 @@ class WorkflowCanvas(object):
             self.canvas.add(box)
         for connector in self.connectors:
             self.canvas.add(connector)
-        text_style_layer = self.canvas.g(style="font-family: Helvetica, Arial, FreeSans, Sans, sans, sans-serif;")
+        text_style_layer = self.canvas.g(
+            style=
+            "font-family: Helvetica, Arial, FreeSans, Sans, sans, sans-serif;")
         for text in self.text:
             text_style_layer.add(text)
         self.canvas.add(text_style_layer)
@@ -37,22 +39,36 @@ class WorkflowCanvas(object):
 
     def add_boxes(self, step_dict, width, name_fill):
         x, y = step_dict['position']['left'], step_dict['position']['top']
-        self.boxes.append(svgwrite.shapes.Rect((x - MARGIN, y), (width, 30), fill=name_fill, stroke='#000000'))
-        box_height = (len(step_dict['data_inputs']) + len(step_dict['data_outputs'])) * LINE_SPACING + MARGIN
+        self.boxes.append(
+            svgwrite.shapes.Rect(
+                (x - MARGIN, y), (width, 30), fill=name_fill,
+                stroke='#000000'))
+        box_height = (len(step_dict['data_inputs']) +
+                      len(step_dict['data_outputs'])) * LINE_SPACING + MARGIN
         # Draw separator line.
         if len(step_dict['data_inputs']) > 0:
             box_height += LINE_SPACING
             sep_y = y + len(step_dict['data_inputs']) * LINE_SPACING + 40
-            self.text.append(svgwrite.shapes.Line((x - MARGIN, sep_y), (x + width - MARGIN, sep_y), stroke=svgwrite.rgb(0, 0, 0)))
+            self.text.append(
+                svgwrite.shapes.Line(
+                    (x - MARGIN, sep_y), (x + width - MARGIN, sep_y),
+                    stroke=svgwrite.rgb(0, 0, 0)))
         # Define an input/output box.
-        self.boxes.append(svgwrite.shapes.Rect((x - MARGIN, y + 30), (width, box_height), fill="#ffffff", stroke=svgwrite.rgb(0, 0, 0)))
+        self.boxes.append(
+            svgwrite.shapes.Rect(
+                (x - MARGIN, y + 30), (width, box_height),
+                fill="#ffffff",
+                stroke=svgwrite.rgb(0, 0, 0)))
 
-    def add_text(self, module_data_inputs, module_data_outputs, step, module_name):
+    def add_text(self, module_data_inputs, module_data_outputs, step,
+                 module_name):
         left, top = step.position['left'], step.position['top']
         x, y = left, top
         order_index = step.order_index
         max_len = len(module_name) * 1.5
-        self.text.append(svgwrite.text.Text(module_name, (x, y + 20), style='font-size:14px'))
+        self.text.append(
+            svgwrite.text.Text(
+                module_name, (x, y + 20), style='font-size:14px'))
         y += 45
         count = 0
         in_pos = self.in_pos
@@ -62,7 +78,9 @@ class WorkflowCanvas(object):
             if order_index not in in_pos:
                 in_pos[order_index] = {}
             in_pos[order_index][di['name']] = (x, cur_y)
-            self.text.append(svgwrite.text.Text(di['label'], (x, cur_y), style='font-size:10px'))
+            self.text.append(
+                svgwrite.text.Text(
+                    di['label'], (x, cur_y), style='font-size:10px'))
             count += 1
             max_len = max(max_len, len(di['label']))
         if len(module_data_inputs) > 0:
@@ -72,7 +90,9 @@ class WorkflowCanvas(object):
             if order_index not in out_pos:
                 out_pos[order_index] = {}
             out_pos[order_index][do['name']] = (x, cur_y)
-            self.text.append(svgwrite.text.Text(do['name'], (x, cur_y), style='font-size:10px'))
+            self.text.append(
+                svgwrite.text.Text(
+                    do['name'], (x, cur_y), style='font-size:10px'))
             count += 1
             max_len = max(max_len, len(do['name']))
         self.widths[order_index] = max_len * 5.5
@@ -98,10 +118,12 @@ class WorkflowCanvas(object):
                 if out_conn_index_dict:
                     key = next(iter(out_conn_index_dict.keys()))
                     out_conn_pos = self.out_pos[out_pos_index][key]
-        adjusted = (out_conn_pos[0] + self.widths[output_dict['id']], out_conn_pos[1])
+        adjusted = (out_conn_pos[0] + self.widths[output_dict['id']],
+                    out_conn_pos[1])
         self.text.append(
             svgwrite.shapes.Circle(
-                center=(out_conn_pos[0] + self.widths[output_dict['id']] - MARGIN, out_conn_pos[1] - MARGIN),
+                center=(out_conn_pos[0] + self.widths[output_dict['id']] -
+                        MARGIN, out_conn_pos[1] - MARGIN),
                 r=5,
                 fill="#ffffff",
                 stroke="#000000"))
@@ -118,7 +140,10 @@ class WorkflowCanvas(object):
             fill="black")
         marker.add(self.canvas.path(d="M 0 0 L 10 5 L 0 10 z"))
         self.canvas.defs.add(marker)
-        conn = svgwrite.shapes.Line((adjusted[0], adjusted[1] - MARGIN), (in_coords[0] - 10, in_coords[1]), stroke="#000000")
+        conn = svgwrite.shapes.Line(
+            (adjusted[0], adjusted[1] - MARGIN), (in_coords[0] - 10,
+                                                  in_coords[1]),
+            stroke="#000000")
         conn['marker-end'] = marker.get_funciri()
         self.connectors.append(conn)
 
@@ -135,7 +160,12 @@ class WorkflowCanvas(object):
             for conn, output_dict in step_dict['input_connections'].items():
                 self.add_connection(step_dict, conn, output_dict)
 
-    def populate_data_for_step(self, step, module_name, module_data_inputs, module_data_outputs, tool_errors=None):
+    def populate_data_for_step(self,
+                               step,
+                               module_name,
+                               module_data_inputs,
+                               module_data_outputs,
+                               tool_errors=None):
         step_dict = {
             'id': step.order_index,
             'data_inputs': module_data_inputs,
@@ -150,4 +180,5 @@ class WorkflowCanvas(object):
                 dict(id=conn.output_step.order_index, output_name=conn.output_name)
         step_dict['input_connections'] = input_conn_dict
         self.data.append(step_dict)
-        self.add_text(module_data_inputs, module_data_outputs, step, module_name)
+        self.add_text(module_data_inputs, module_data_outputs, step,
+                      module_name)

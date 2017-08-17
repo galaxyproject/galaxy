@@ -67,7 +67,8 @@ class Newick_Parser(Base_Parser):
                     name = nodeInfo[0]
             else:
                 name = nodeInfo[0]  # string only contains name
-            node = self.phyloTree.makeNode(name, length=length, depth=depth, bootstrap=bootstrap)
+            node = self.phyloTree.makeNode(
+                name, length=length, depth=depth, bootstrap=bootstrap)
             childrenNodes += [node]
         return childrenNodes
 
@@ -94,7 +95,8 @@ class Newick_Parser(Base_Parser):
                         if enclosingSymbol == ")" or enclosingSymbol == ":" or enclosingSymbol == ",":
                             termToReplace = newickString[end:j]
 
-                            newString += newickString[start:end] + nameMap[termToReplace]  # + "'"  "'" +
+                            newString += newickString[start:
+                                                      end] + nameMap[termToReplace]  # + "'"  "'" +
                             start = j
                             break
 
@@ -125,10 +127,12 @@ class Newick_Parser(Base_Parser):
         bracketStack = []
 
         for j in range(len(string)):
-            if string[j] == "(":  # finding the positions of all the open brackets
+            if string[
+                    j] == "(":  # finding the positions of all the open brackets
                 bracketStack.append(j)
                 continue
-            if string[j] == ")":  # finding the positions of all the closed brackets to extract claude
+            if string[
+                    j] == ")":  # finding the positions of all the closed brackets to extract claude
                 i = bracketStack.pop()
 
                 if len(bracketStack) == 0:  # is child of current node
@@ -136,33 +140,46 @@ class Newick_Parser(Base_Parser):
                     InternalNode = None
 
                     # First flat call to make nodes of the same depth but from the preceeding string.
-                    startSubstring = string[start + lenOfPreceedingInternalNodeString:i]
-                    preceedingNodes = self._makeNodesFromString(startSubstring, depth)
+                    startSubstring = string[
+                        start + lenOfPreceedingInternalNodeString:i]
+                    preceedingNodes = self._makeNodesFromString(
+                        startSubstring, depth)
                     nodes += preceedingNodes
 
                     # Then We will try to see if the substring has any internal nodes first, make it then make nodes preceeding it and succeeding it.
                     if j + 1 < len(string):
-                        stringRightOfBracket = string[j + 1:]  # Eg. '(b:0.4,a:0.3)c:0.3, stringRightOfBracket = c:0.3
+                        stringRightOfBracket = string[
+                            j +
+                            1:]  # Eg. '(b:0.4,a:0.3)c:0.3, stringRightOfBracket = c:0.3
                         match = re.search(r"[\)\,\(]", stringRightOfBracket)
                         if match:
                             indexOfNextSymbol = match.start()
-                            stringRepOfInternalNode = stringRightOfBracket[:indexOfNextSymbol]
-                            internalNodes = self._makeNodesFromString(stringRepOfInternalNode, depth)
+                            stringRepOfInternalNode = stringRightOfBracket[:
+                                                                           indexOfNextSymbol]
+                            internalNodes = self._makeNodesFromString(
+                                stringRepOfInternalNode, depth)
                             if len(internalNodes) > 0:
                                 InternalNode = internalNodes[0]
-                            lenOfPreceedingInternalNodeString = len(stringRepOfInternalNode)
+                            lenOfPreceedingInternalNodeString = len(
+                                stringRepOfInternalNode)
                         else:  # sometimes the node can be the last element of a string
-                            InternalNode = self._makeNodesFromString(string[j + 1:], depth)[0]
+                            InternalNode = self._makeNodesFromString(
+                                string[j + 1:], depth)[0]
                             lenOfPreceedingInternalNodeString = len(string) - j
                     if InternalNode is None:  # creating a generic node if it is unnamed
-                        InternalNode = self.phyloTree.makeNode("", depth=depth, isInternal=True)  # "internal-" + str(depth)
+                        InternalNode = self.phyloTree.makeNode(
+                            "", depth=depth,
+                            isInternal=True)  # "internal-" + str(depth)
                         lenOfPreceedingInternalNodeString = 0
 
                     # recussive call to make the internal claude
                     childSubString = string[i + 1:j]
-                    InternalNode.addChildNode(self.parseNode(childSubString, depth + 1))
+                    InternalNode.addChildNode(
+                        self.parseNode(childSubString, depth + 1))
 
-                    nodes.append(InternalNode)  # we append the internal node later to preserve order
+                    nodes.append(
+                        InternalNode
+                    )  # we append the internal node later to preserve order
 
                     start = j + 1
                 continue

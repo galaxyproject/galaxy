@@ -41,7 +41,11 @@ def main(interval, coverage):
                 reverse = reverse_covs[partition]
                 if forward + reverse > 0:
                     coverage.write(
-                        chrom=chrom, position=range(partitions[partition], partitions[partition + 1]), forward=forward, reverse=reverse)
+                        chrom=chrom,
+                        position=range(partitions[partition],
+                                       partitions[partition + 1]),
+                        forward=forward,
+                        reverse=reverse)
             partitions = []
             forward_covs = []
             reverse_covs = []
@@ -71,7 +75,11 @@ def main(interval, coverage):
                 reverse = reverse_covs[partition]
                 if forward + reverse > 0:
                     coverage.write(
-                        chrom=chrom, position=range(partitions[partition], partitions[partition + 1]), forward=forward, reverse=reverse)
+                        chrom=chrom,
+                        position=range(partitions[partition],
+                                       partitions[partition + 1]),
+                        forward=forward,
+                        reverse=reverse)
             partitions = partitions[start_index:]
             forward_covs = forward_covs[start_index:]
             reverse_covs = reverse_covs[start_index:]
@@ -85,11 +93,20 @@ def main(interval, coverage):
             reverse = reverse_covs[partition]
             if forward + reverse > 0:
                 coverage.write(
-                    chrom=chrom, position=range(partitions[partition], partitions[partition + 1]), forward=forward, reverse=reverse)
+                    chrom=chrom,
+                    position=range(partitions[partition], partitions[partition
+                                                                     + 1]),
+                    forward=forward,
+                    reverse=reverse)
 
 
 class CoverageWriter(object):
-    def __init__(self, out_stream=None, chromCol=0, positionCol=1, forwardCol=2, reverseCol=3):
+    def __init__(self,
+                 out_stream=None,
+                 chromCol=0,
+                 positionCol=1,
+                 forwardCol=2,
+                 reverseCol=3):
         self.out_stream = out_stream
         self.reverseCol = reverseCol
         self.nlines = 0
@@ -120,8 +137,12 @@ class CoverageWriter(object):
 if __name__ == "__main__":
     options, args = doc_optparse.parse(__doc__)
     try:
-        chr_col_1, start_col_1, end_col_1, strand_col_1 = [int(x) - 1 for x in options.cols1.split(',')]
-        chr_col_2, position_col_2, forward_col_2, reverse_col_2 = [int(x) - 1 for x in options.cols2.split(',')]
+        chr_col_1, start_col_1, end_col_1, strand_col_1 = [
+            int(x) - 1 for x in options.cols1.split(',')
+        ]
+        chr_col_2, position_col_2, forward_col_2, reverse_col_2 = [
+            int(x) - 1 for x in options.cols2.split(',')
+        ]
         in_fname, out_fname = args
     except:
         doc_optparse.exception()
@@ -129,7 +150,11 @@ if __name__ == "__main__":
     # Sort through a tempfile first
     temp_file = tempfile.NamedTemporaryFile(mode="r")
     environ['LC_ALL'] = 'POSIX'
-    commandline = "sort -f -n -k %d -k %d -k %d -o %s %s" % (chr_col_1 + 1, start_col_1 + 1, end_col_1 + 1, temp_file.name, in_fname)
+    commandline = "sort -f -n -k %d -k %d -k %d -o %s %s" % (chr_col_1 + 1,
+                                                             start_col_1 + 1,
+                                                             end_col_1 + 1,
+                                                             temp_file.name,
+                                                             in_fname)
     subprocess.check_call(commandline, shell=True)
 
     coverage = CoverageWriter(
@@ -140,7 +165,12 @@ if __name__ == "__main__":
         reverseCol=reverse_col_2, )
     temp_file.seek(0)
     interval = io.NiceReaderWrapper(
-        temp_file, chrom_col=chr_col_1, start_col=start_col_1, end_col=end_col_1, strand_col=strand_col_1, fix_strand=True)
+        temp_file,
+        chrom_col=chr_col_1,
+        start_col=start_col_1,
+        end_col=end_col_1,
+        strand_col=strand_col_1,
+        fix_strand=True)
     main(interval, coverage)
     temp_file.close()
     coverage.close()

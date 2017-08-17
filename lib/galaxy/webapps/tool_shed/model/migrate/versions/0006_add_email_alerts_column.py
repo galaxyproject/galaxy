@@ -32,8 +32,11 @@ def upgrade(migrate_engine):
         c.create(Repository_table)
         assert c is Repository_table.c.email_alerts
     except Exception as e:
-        print "Adding email_alerts column to the repository table failed: %s" % str(e)
-        log.debug("Adding email_alerts column to the repository table failed: %s" % str(e))
+        print "Adding email_alerts column to the repository table failed: %s" % str(
+            e)
+        log.debug(
+            "Adding email_alerts column to the repository table failed: %s" %
+            str(e))
 
 
 def downgrade(migrate_engine):
@@ -44,5 +47,8 @@ def downgrade(migrate_engine):
     try:
         Repository_table.c.email_alerts.drop()
     except Exception as e:
-        print "Dropping column email_alerts from the repository table failed: %s" % str(e)
-        log.debug("Dropping column email_alerts from the repository table failed: %s" % str(e))
+        print "Dropping column email_alerts from the repository table failed: %s" % str(
+            e)
+        log.debug(
+            "Dropping column email_alerts from the repository table failed: %s"
+            % str(e))

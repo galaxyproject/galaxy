@@ -20,7 +20,8 @@ class UsesHomebrewMixin:
         if not os.path.exists(recipe_path) or not os.path.isdir(recipe_path):
             return NullDependency(version=version, name=name)
 
-        commands = build_env_statements(self.cellar_root, recipe_path, relaxed=True)
+        commands = build_env_statements(
+            self.cellar_root, recipe_path, relaxed=True)
         return HomebrewDependency(commands)
 
     def _find_dep_default(self, name, version):
@@ -31,7 +32,8 @@ class UsesHomebrewMixin:
         # Just grab newest installed version - may make sense some day to find
         # the linked version instead.
         default_version = sorted(installed_versions, reverse=True)[0]
-        return self._find_dep_versioned(name, default_version, exact=version is None)
+        return self._find_dep_versioned(
+            name, default_version, exact=version is None)
 
     def _installed_versions(self, recipe):
         recipe_base_path = os.path.join(self.cellar_root, recipe)
@@ -39,17 +41,22 @@ class UsesHomebrewMixin:
             return []
 
         names = os.listdir(recipe_base_path)
-        return [n for n in names if os.path.isdir(os.path.join(recipe_base_path, n))]
+        return [
+            n for n in names
+            if os.path.isdir(os.path.join(recipe_base_path, n))
+        ]
 
 
 class UsesToolDependencyDirMixin:
     def _init_base_path(self, dependency_manager, **kwds):
-        self.base_path = os.path.abspath(kwds.get('base_path', dependency_manager.default_base_path))
+        self.base_path = os.path.abspath(
+            kwds.get('base_path', dependency_manager.default_base_path))
 
 
 class UsesInstalledRepositoriesMixin:
     def _get_installed_dependency(self, name, type, version=None, **kwds):
-        installed_tool_dependencies = kwds.get("installed_tool_dependencies") or []
+        installed_tool_dependencies = kwds.get(
+            "installed_tool_dependencies") or []
         for installed_tool_dependency in installed_tool_dependencies:
             if installed_tool_dependency.name == name and installed_tool_dependency.type == type:
                 if not version or installed_tool_dependency.version == version:

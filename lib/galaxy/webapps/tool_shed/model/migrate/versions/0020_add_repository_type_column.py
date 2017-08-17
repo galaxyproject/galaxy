@@ -43,4 +43,5 @@ def downgrade(migrate_engine):
     try:
         Repository_table.c.type.drop()
     except Exception as e:
-        print "Dropping column type from the repository table failed: %s" % str(e)
+        print "Dropping column type from the repository table failed: %s" % str(
+            e)

@@ -18,13 +18,20 @@ log = logging.getLogger(__name__)
 EXECUTION_SUCCESS_MESSAGE = "Tool [%s] created job [%s] %s"
 
 
-def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None):
+def execute(trans,
+            tool,
+            param_combinations,
+            history,
+            rerun_remap_job_id=None,
+            collection_info=None,
+            workflow_invocation_uuid=None):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
     """
     all_jobs_timer = ExecutionTimer()
-    execution_tracker = ToolExecutionTracker(tool, param_combinations, collection_info)
+    execution_tracker = ToolExecutionTracker(tool, param_combinations,
+                                             collection_info)
     app = trans.app
     execution_cache = ToolExecutionCache(trans)
 
@@ -36,7 +43,9 @@ def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, c
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params['__workflow_invocation_uuid__']
-        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, params, history, collection_info, execution_cache)
+        job, result = tool.handle_single_execution(
+            trans, rerun_remap_job_id, params, history, collection_info,
+            execution_cache)
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
             log.debug(message)
@@ -77,7 +86,8 @@ def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, c
 
         q.join()
 
-    log.debug("Executed %d job(s) for tool %s request: %s" % (job_count, tool.id, all_jobs_timer))
+    log.debug("Executed %d job(s) for tool %s request: %s" %
+              (job_count, tool.id, all_jobs_timer))
     if collection_info:
         history = history or tool.get_default_history_by_trans(trans)
         if len(param_combinations) == 0:
@@ -108,15 +118,18 @@ class ToolExecutionTracker(object):
         self.successful_jobs.append(job)
         self.output_datasets.extend(outputs)
         for output_name, output_dataset in outputs:
-            if ToolOutputCollectionPart.is_named_collection_part_name(output_name):
+            if ToolOutputCollectionPart.is_named_collection_part_name(
+                    output_name):
                 # Skip known collection outputs, these will be covered by
                 # output collections.
                 continue
             self.outputs_by_output_name[output_name].append(output_dataset)
         for job_output in job.output_dataset_collections:
-            self.outputs_by_output_name[job_output.name].append(job_output.dataset_collection)
+            self.outputs_by_output_name[job_output.name].append(
+                job_output.dataset_collection)
         for job_output in job.output_dataset_collection_instances:
-            self.output_collections.append((job_output.name, job_output.dataset_collection_instance))
+            self.output_collections.append(
+                (job_output.name, job_output.dataset_collection_instance))
 
     def record_error(self, error):
         self.failed_jobs += 1
@@ -136,9 +149,14 @@ class ToolExecutionTracker(object):
         # collection replaced with a specific dataset. Need to replace this
         # with the collection and wrap everything up so can evaluate output
         # label.
-        params.update(self.collection_info.collections)  # Replace datasets with source collections for labelling outputs.
+        params.update(
+            self.collection_info.collections
+        )  # Replace datasets with source collections for labelling outputs.
 
-        collection_names = ["collection %d" % c.hid for c in self.collection_info.collections.values()]
+        collection_names = [
+            "collection %d" % c.hid
+            for c in self.collection_info.collections.values()
+        ]
         on_text = on_text_for_names(collection_names)
 
         collections = {}
@@ -148,7 +166,9 @@ class ToolExecutionTracker(object):
             if not len(structure) == len(outputs):
                 # Output does not have the same structure, if all jobs were
                 # successfully submitted this shouldn't have happened.
-                log.warning("Problem matching up datasets while attempting to create implicit dataset collections")
+                log.warning(
+                    "Problem matching up datasets while attempting to create implicit dataset collections"
+                )
                 continue
             output = self.tool.outputs[output_name]
 
@@ -157,19 +177,27 @@ class ToolExecutionTracker(object):
                 # Switch the structure for outputs if the output specified a default_identifier_source
                 collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
 
-                source_collection = self.collection_info.collections.get(output.default_identifier_source)
+                source_collection = self.collection_info.collections.get(
+                    output.default_identifier_source)
                 if source_collection:
                     collection_type_description = collection_type_descriptions.for_collection_type(
                         source_collection.collection.collection_type)
                     _structure = structure.for_dataset_collection(
-                        source_collection.collection, collection_type_description=collection_type_description)
+                        source_collection.collection,
+                        collection_type_description=collection_type_description
+                    )
                     if structure.can_match(_structure):
-                        element_identifiers = _structure.element_identifiers_for_outputs(trans, outputs)
+                        element_identifiers = _structure.element_identifiers_for_outputs(
+                            trans, outputs)
 
             if not element_identifiers:
-                element_identifiers = structure.element_identifiers_for_outputs(trans, outputs)
+                element_identifiers = structure.element_identifiers_for_outputs(
+                    trans, outputs)
 
-            implicit_collection_info = dict(implicit_inputs=implicit_inputs, implicit_output_name=output_name, outputs=outputs)
+            implicit_collection_info = dict(
+                implicit_inputs=implicit_inputs,
+                implicit_output_name=output_name,
+                outputs=outputs)
             try:
                 output_collection_name = self.tool.tool_action.get_output_name(
                     output,
@@ -182,9 +210,11 @@ class ToolExecutionTracker(object):
                     incoming=None,
                     job_params=None, )
             except Exception:
-                output_collection_name = "%s across %s" % (self.tool.name, on_text)
+                output_collection_name = "%s across %s" % (self.tool.name,
+                                                           on_text)
 
-            child_element_identifiers = element_identifiers["element_identifiers"]
+            child_element_identifiers = element_identifiers[
+                "element_identifiers"]
             collection_type = element_identifiers["collection_type"]
             collection = trans.app.dataset_collections_service.create(
                 trans=trans,
@@ -198,7 +228,8 @@ class ToolExecutionTracker(object):
                 # collections - or we may be already recording data in some
                 # other way.
                 if job not in trans.sa_session:
-                    job = trans.sa_session.query(trans.app.model.Job).get(job.id)
+                    job = trans.sa_session.query(trans.app.model.Job).get(
+                        job.id)
                 job.add_output_dataset_collection(output_name, collection)
             collections[output_name] = collection
 

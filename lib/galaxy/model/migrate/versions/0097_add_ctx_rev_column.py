@@ -26,20 +26,25 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print(__doc__)
     metadata.reflect()
-    ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
+    ToolShedRepository_table = Table(
+        "tool_shed_repository", metadata, autoload=True)
     col = Column("ctx_rev", TrimmedString(10))
     try:
         col.create(ToolShedRepository_table)
         assert col is ToolShedRepository_table.c.ctx_rev
     except Exception:
-        log.exception("Adding ctx_rev column to the tool_shed_repository table failed.")
+        log.exception(
+            "Adding ctx_rev column to the tool_shed_repository table failed.")
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
+    ToolShedRepository_table = Table(
+        "tool_shed_repository", metadata, autoload=True)
     try:
         ToolShedRepository_table.c.ctx_rev.drop()
     except Exception:
-        log.exception("Dropping column ctx_rev from the tool_shed_repository table failed.")
+        log.exception(
+            "Dropping column ctx_rev from the tool_shed_repository table failed."
+        )

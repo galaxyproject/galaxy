@@ -14,7 +14,8 @@ except:
 
 from galaxy.web.stack import register_postfork_function
 
-RAVEN_IMPORT_MESSAGE = ('The Python raven package is required to use this ' 'feature, please install it')
+RAVEN_IMPORT_MESSAGE = ('The Python raven package is required to use this '
+                        'feature, please install it')
 
 
 class Sentry(object):
@@ -49,7 +50,8 @@ class Sentry(object):
         finally:
             # wsgi spec requires iterable to call close if it exists
             # see http://blog.dscpl.com.au/2012/10/obligations-for-calling-close-on.html
-            if iterable and hasattr(iterable, 'close') and callable(iterable.close):
+            if iterable and hasattr(iterable,
+                                    'close') and callable(iterable.close):
                 try:
                     iterable.close()
                 except Exception:

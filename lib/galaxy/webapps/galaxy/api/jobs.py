@@ -69,7 +69,8 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         if is_admin:
             query = trans.sa_session.query(trans.app.model.Job)
         else:
-            query = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.user == trans.user)
+            query = trans.sa_session.query(trans.app.model.Job).filter(
+                trans.app.model.Job.user == trans.user)
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
@@ -82,21 +83,33 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                     query = query.filter(or_(*t))
             return query
 
-        query = build_and_apply_filters(query, state, lambda s: trans.app.model.Job.state == s)
+        query = build_and_apply_filters(
+            query, state, lambda s: trans.app.model.Job.state == s)
 
-        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: trans.app.model.Job.tool_id == t)
-        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: trans.app.model.Job.tool_id.like(t))
+        query = build_and_apply_filters(
+            query,
+            kwd.get('tool_id',
+                    None), lambda t: trans.app.model.Job.tool_id == t)
+        query = build_and_apply_filters(
+            query,
+            kwd.get('tool_id_like',
+                    None), lambda t: trans.app.model.Job.tool_id.like(t))
 
-        query = build_and_apply_filters(query, kwd.get('date_range_min', None),
-                                        lambda dmin: trans.app.model.Job.table.c.update_time >= dmin)
-        query = build_and_apply_filters(query, kwd.get('date_range_max', None),
-                                        lambda dmax: trans.app.model.Job.table.c.update_time <= dmax)
+        query = build_and_apply_filters(
+            query,
+            kwd.get('date_range_min', None),
+            lambda dmin: trans.app.model.Job.table.c.update_time >= dmin)
+        query = build_and_apply_filters(
+            query,
+            kwd.get('date_range_max', None),
+            lambda dmax: trans.app.model.Job.table.c.update_time <= dmax)
 
         history_id = kwd.get('history_id', None)
         if history_id is not None:
             try:
                 decoded_history_id = self.decode_id(history_id)
-                query = query.filter(trans.app.model.Job.history_id == decoded_history_id)
+                query = query.filter(
+                    trans.app.model.Job.history_id == decoded_history_id)
             except:
                 raise exceptions.ObjectAttributeInvalidException()
 
@@ -132,7 +145,10 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         """
         job = self.__get_job(trans, id)
         is_admin = trans.user_is_admin()
-        job_dict = self.encode_all_ids(trans, job.to_dict('element', system_details=is_admin), True)
+        job_dict = self.encode_all_ids(trans,
+                                       job.to_dict(
+                                           'element', system_details=is_admin),
+                                       True)
         full_output = util.asbool(kwd.get('full', 'false'))
         if full_output:
             job_dict.update(dict(stderr=job.stderr, stdout=job.stdout))
@@ -143,7 +159,8 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                     metric_name = metric.metric_name
                     metric_value = metric.metric_value
                     metric_plugin = metric.plugin
-                    title, value = trans.app.job_metrics.format(metric_plugin, metric_name, metric_value)
+                    title, value = trans.app.job_metrics.format(
+                        metric_plugin, metric_name, metric_value)
                     return dict(
                         title=title,
                         value=value,
@@ -151,7 +168,9 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                         name=metric_name,
                         raw_value=str(metric_value), )
 
-                job_dict['job_metrics'] = [metric_to_dict(metric) for metric in job.metrics]
+                job_dict['job_metrics'] = [
+                    metric_to_dict(metric) for metric in job.metrics
+                ]
         return job_dict
 
     @expose_api
@@ -168,7 +187,8 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         :returns:   dictionary containing input dataset associations
         """
         job = self.__get_job(trans, id)
-        return self.__dictify_associations(trans, job.input_datasets, job.input_library_datasets)
+        return self.__dictify_associations(trans, job.input_datasets,
+                                           job.input_library_datasets)
 
     @expose_api
     def outputs(self, trans, id, **kwd):
@@ -184,7 +204,8 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         :returns:   dictionary containing output dataset associations
         """
         job = self.__get_job(trans, id)
-        return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+        return self.__dictify_associations(trans, job.output_datasets,
+                                           job.output_library_datasets)
 
     @expose_api_anonymous
     def build_for_rerun(self, trans, id, **kwd):
@@ -203,18 +224,24 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
 
         job = self.__get_job(trans, id)
         if not job:
-            raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
-        tool = self.app.toolbox.get_tool(job.tool_id, kwd.get('tool_version') or job.tool_version)
+            raise exceptions.ObjectNotFound(
+                "Could not access job with id '%s'" % id)
+        tool = self.app.toolbox.get_tool(job.tool_id,
+                                         kwd.get('tool_version')
+                                         or job.tool_version)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if not tool.is_workflow_compatible:
-            raise exceptions.ConfigDoesNotAllowException("Tool '%s' cannot be rerun." % (job.tool_id))
+            raise exceptions.ConfigDoesNotAllowException(
+                "Tool '%s' cannot be rerun." % (job.tool_id))
         return tool.to_json(trans, {}, job=job)
 
     def __dictify_associations(self, trans, *association_lists):
         rval = []
         for association_list in association_lists:
-            rval.extend(map(lambda a: self.__dictify_association(trans, a), association_list))
+            rval.extend(
+                map(lambda a: self.__dictify_association(trans, a),
+                    association_list))
         return rval
 
     def __dictify_association(self, trans, job_dataset_association):
@@ -222,9 +249,11 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         dataset = job_dataset_association.dataset
         if dataset:
             if isinstance(dataset, model.HistoryDatasetAssociation):
-                dataset_dict = dict(src="hda", id=trans.security.encode_id(dataset.id))
+                dataset_dict = dict(
+                    src="hda", id=trans.security.encode_id(dataset.id))
             else:
-                dataset_dict = dict(src="ldda", id=trans.security.encode_id(dataset.id))
+                dataset_dict = dict(
+                    src="ldda", id=trans.security.encode_id(dataset.id))
         return dict(name=job_dataset_association.name, dataset=dataset_dict)
 
     def __get_job(self, trans, id):
@@ -232,15 +261,19 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             decoded_job_id = self.decode_id(id)
         except Exception:
             raise exceptions.MalformedId()
-        job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
+        job = trans.sa_session.query(trans.app.model.Job).filter(
+            trans.app.model.Job.id == decoded_job_id).first()
         if job is None:
             raise exceptions.ObjectNotFound()
         if not trans.user_is_admin() and job.user != trans.user:
             if not job.output_datasets:
-                raise exceptions.ItemAccessibilityException("Job has no output datasets.")
+                raise exceptions.ItemAccessibilityException(
+                    "Job has no output datasets.")
             for data_assoc in job.output_datasets:
-                if not self.dataset_manager.is_accessible(data_assoc.dataset.dataset, trans.user):
-                    raise exceptions.ItemAccessibilityException("You are not allowed to rerun this job.")
+                if not self.dataset_manager.is_accessible(
+                        data_assoc.dataset.dataset, trans.user):
+                    raise exceptions.ItemAccessibilityException(
+                        "You are not allowed to rerun this job.")
         return job
 
     @expose_api
@@ -277,7 +310,8 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if 'inputs' not in payload:
-            raise exceptions.ObjectAttributeMissingException("No inputs defined")
+            raise exceptions.ObjectAttributeMissingException(
+                "No inputs defined")
 
         inputs = payload['inputs']
 
@@ -288,17 +322,21 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                 if 'id' in v:
                     if 'src' not in v or v['src'] == 'hda':
                         hda_id = self.decode_id(v['id'])
-                        dataset = self.hda_manager.get_accessible(hda_id, trans.user)
+                        dataset = self.hda_manager.get_accessible(
+                            hda_id, trans.user)
                     else:
-                        dataset = self.get_library_dataset_dataset_association(trans, v['id'])
+                        dataset = self.get_library_dataset_dataset_association(
+                            trans, v['id'])
                     if dataset is None:
-                        raise exceptions.ObjectNotFound("Dataset %s not found" % (v['id']))
+                        raise exceptions.ObjectNotFound(
+                            "Dataset %s not found" % (v['id']))
                     input_data[k] = dataset.dataset_id
             else:
                 input_param[k] = json.dumps(str(v))
 
-        query = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.tool_id == tool_id,
-                                                                   trans.app.model.Job.user == trans.user)
+        query = trans.sa_session.query(trans.app.model.Job).filter(
+            trans.app.model.Job.tool_id == tool_id,
+            trans.app.model.Job.user == trans.user)
 
         if 'state' not in payload:
             query = query.filter(
@@ -310,7 +348,8 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                     trans.app.model.Job.state == 'ok', ))
         else:
             if isinstance(payload['state'], string_types):
-                query = query.filter(trans.app.model.Job.state == payload['state'])
+                query = query.filter(
+                    trans.app.model.Job.state == payload['state'])
             elif isinstance(payload['state'], list):
                 o = []
                 for s in payload['state']:
@@ -319,7 +358,9 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
 
         for k, v in input_param.items():
             a = aliased(trans.app.model.JobParameter)
-            query = query.filter(and_(trans.app.model.Job.id == a.job_id, a.name == k, a.value == v))
+            query = query.filter(
+                and_(trans.app.model.Job.id == a.job_id, a.name == k, a.value
+                     == v))
 
         for k, v in input_data.items():
             # Here we are attempting to link the inputs to the underlying
@@ -329,13 +370,18 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             # still find the job
             a = aliased(trans.app.model.JobToInputDatasetAssociation)
             b = aliased(trans.app.model.HistoryDatasetAssociation)
-            query = query.filter(and_(trans.app.model.Job.id == a.job_id, a.dataset_id == b.id, b.deleted == false(), b.dataset_id == v))
+            query = query.filter(
+                and_(trans.app.model.Job.id == a.job_id, a.dataset_id == b.id,
+                     b.deleted == false(), b.dataset_id == v))
 
         out = []
         for job in query.all():
             # check to make sure none of the output files have been deleted
-            if all(list(a.dataset.deleted is False for a in job.output_datasets)):
-                out.append(self.encode_all_ids(trans, job.to_dict('element'), True))
+            if all(
+                    list(a.dataset.deleted is False
+                         for a in job.output_datasets)):
+                out.append(
+                    self.encode_all_ids(trans, job.to_dict('element'), True))
         return out
 
     @expose_api
@@ -356,11 +402,13 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             decoded_dataset_id = self.decode_id(kwd['dataset_id'])
         except Exception:
             raise exceptions.MalformedId()
-        dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(decoded_dataset_id)
+        dataset = trans.sa_session.query(
+            trans.app.model.HistoryDatasetAssociation).get(decoded_dataset_id)
 
         # Get job
         job = self.__get_job(trans, id)
-        tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
+        tool = trans.app.toolbox.get_tool(
+            job.tool_id, tool_version=job.tool_version) or None
         messages = trans.app.error_reports.default_error_plugin.submit_report(
             dataset,
             job,

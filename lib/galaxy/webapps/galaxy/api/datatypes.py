@@ -27,11 +27,15 @@ class DatatypesController(BaseAPIController):
                 if upload_only:
                     return datatypes_registry.upload_file_formats
                 else:
-                    return [ext for ext in datatypes_registry.datatypes_by_extension]
+                    return [
+                        ext
+                        for ext in datatypes_registry.datatypes_by_extension
+                    ]
             else:
                 rval = []
                 for elem in datatypes_registry.datatype_elems:
-                    if not asbool(elem.get('display_in_upload')) and upload_only:
+                    if not asbool(
+                            elem.get('display_in_upload')) and upload_only:
                         continue
                     keys = ['extension', 'description', 'description_url']
                     dictionary = {}
@@ -39,13 +43,17 @@ class DatatypesController(BaseAPIController):
                         dictionary[key] = elem.get(key)
                     extension = elem.get('extension')
                     if extension in datatypes_registry.datatypes_by_extension:
-                        composite_files = datatypes_registry.datatypes_by_extension[extension].composite_files
+                        composite_files = datatypes_registry.datatypes_by_extension[
+                            extension].composite_files
                         if composite_files:
-                            dictionary['composite_files'] = [_.dict() for _ in composite_files.itervalues()]
+                            dictionary['composite_files'] = [
+                                _.dict() for _ in composite_files.itervalues()
+                            ]
                     rval.append(dictionary)
                 return rval
         except Exception as exception:
-            log.error('could not get datatypes: %s', str(exception), exc_info=True)
+            log.error(
+                'could not get datatypes: %s', str(exception), exc_info=True)
             if not isinstance(exception, exceptions.MessageException):
                 raise exceptions.InternalServerError(str(exception))
             else:
@@ -60,7 +68,8 @@ class DatatypesController(BaseAPIController):
         try:
             ext_to_class_name = dict()
             classes = []
-            for k, v in self._datatypes_registry.datatypes_by_extension.iteritems():
+            for k, v in self._datatypes_registry.datatypes_by_extension.iteritems(
+            ):
                 c = v.__class__
                 ext_to_class_name[k] = c.__module__ + "." + c.__name__
                 classes.append(c)
@@ -77,10 +86,15 @@ class DatatypesController(BaseAPIController):
                 types = set([n])
                 visit_bases(types, c)
                 class_to_classes[n] = dict((t, True) for t in types)
-            return dict(ext_to_class_name=ext_to_class_name, class_to_classes=class_to_classes)
+            return dict(
+                ext_to_class_name=ext_to_class_name,
+                class_to_classes=class_to_classes)
 
         except Exception as exception:
-            log.error('could not get datatype mapping: %s', str(exception), exc_info=True)
+            log.error(
+                'could not get datatype mapping: %s',
+                str(exception),
+                exc_info=True)
             if not isinstance(exception, exceptions.MessageException):
                 raise exceptions.InternalServerError(str(exception))
             else:
@@ -100,7 +114,8 @@ class DatatypesController(BaseAPIController):
                     rval.append(datatype)
             return rval
         except Exception as exception:
-            log.error('could not get datatypes: %s', str(exception), exc_info=True)
+            log.error(
+                'could not get datatypes: %s', str(exception), exc_info=True)
             if not isinstance(exception, exceptions.MessageException):
                 raise exceptions.InternalServerError(str(exception))
             else:
@@ -109,7 +124,8 @@ class DatatypesController(BaseAPIController):
     @expose_api_anonymous_and_sessionless
     def converters(self, trans, **kwd):
         converters = []
-        for (source_type, targets) in self._datatypes_registry.datatype_converters.iteritems():
+        for (source_type, targets
+             ) in self._datatypes_registry.datatype_converters.iteritems():
             for target_type in targets:
                 converters.append({
                     'source': source_type,

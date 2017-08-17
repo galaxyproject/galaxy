@@ -5,7 +5,11 @@ from sqlalchemy import and_, false, true
 log = logging.getLogger(__name__)
 
 
-def in_tool_dict(tool_dict, exact_matches_checked, tool_id=None, tool_name=None, tool_version=None):
+def in_tool_dict(tool_dict,
+                 exact_matches_checked,
+                 tool_id=None,
+                 tool_name=None,
+                 tool_version=None):
     found = False
     if tool_id and not tool_name and not tool_version:
         tool_dict_tool_id = tool_dict['id'].lower()
@@ -65,27 +69,45 @@ def make_same_length(list1, list2):
     return list1, list2
 
 
-def search_ids_names(tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names):
+def search_ids_names(tool_dict, exact_matches_checked, match_tuples,
+                     repository_metadata, tool_ids, tool_names):
     for i, tool_id in enumerate(tool_ids):
         tool_name = tool_names[i]
-        if in_tool_dict(tool_dict, exact_matches_checked, tool_id=tool_id, tool_name=tool_name):
-            match_tuples.append((repository_metadata.repository_id, repository_metadata.changeset_revision))
+        if in_tool_dict(
+                tool_dict,
+                exact_matches_checked,
+                tool_id=tool_id,
+                tool_name=tool_name):
+            match_tuples.append((repository_metadata.repository_id,
+                                 repository_metadata.changeset_revision))
     return match_tuples
 
 
-def search_ids_versions(tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions):
+def search_ids_versions(tool_dict, exact_matches_checked, match_tuples,
+                        repository_metadata, tool_ids, tool_versions):
     for i, tool_id in enumerate(tool_ids):
         tool_version = tool_versions[i]
-        if in_tool_dict(tool_dict, exact_matches_checked, tool_id=tool_id, tool_version=tool_version):
-            match_tuples.append((repository_metadata.repository_id, repository_metadata.changeset_revision))
+        if in_tool_dict(
+                tool_dict,
+                exact_matches_checked,
+                tool_id=tool_id,
+                tool_version=tool_version):
+            match_tuples.append((repository_metadata.repository_id,
+                                 repository_metadata.changeset_revision))
     return match_tuples
 
 
-def search_names_versions(tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions):
+def search_names_versions(tool_dict, exact_matches_checked, match_tuples,
+                          repository_metadata, tool_names, tool_versions):
     for i, tool_name in enumerate(tool_names):
         tool_version = tool_versions[i]
-        if in_tool_dict(tool_dict, exact_matches_checked, tool_name=tool_name, tool_version=tool_version):
-            match_tuples.append((repository_metadata.repository_id, repository_metadata.changeset_revision))
+        if in_tool_dict(
+                tool_dict,
+                exact_matches_checked,
+                tool_name=tool_name,
+                tool_version=tool_version):
+            match_tuples.append((repository_metadata.repository_id,
+                                 repository_metadata.changeset_revision))
     return match_tuples
 
 
@@ -111,54 +133,86 @@ def search_repository_metadata(app,
                 for tool_dict in tools:
                     if tool_ids and not tool_names and not tool_versions:
                         for tool_id in tool_ids:
-                            if in_tool_dict(tool_dict, exact_matches_checked, tool_id=tool_id):
-                                match_tuples.append((repository_metadata.repository_id, repository_metadata.changeset_revision))
+                            if in_tool_dict(
+                                    tool_dict,
+                                    exact_matches_checked,
+                                    tool_id=tool_id):
+                                match_tuples.append(
+                                    (repository_metadata.repository_id,
+                                     repository_metadata.changeset_revision))
                     elif tool_names and not tool_ids and not tool_versions:
                         for tool_name in tool_names:
-                            if in_tool_dict(tool_dict, exact_matches_checked, tool_name=tool_name):
-                                match_tuples.append((repository_metadata.repository_id, repository_metadata.changeset_revision))
+                            if in_tool_dict(
+                                    tool_dict,
+                                    exact_matches_checked,
+                                    tool_name=tool_name):
+                                match_tuples.append(
+                                    (repository_metadata.repository_id,
+                                     repository_metadata.changeset_revision))
                     elif tool_versions and not tool_ids and not tool_names:
                         for tool_version in tool_versions:
-                            if in_tool_dict(tool_dict, exact_matches_checked, tool_version=tool_version):
-                                match_tuples.append((repository_metadata.repository_id, repository_metadata.changeset_revision))
+                            if in_tool_dict(
+                                    tool_dict,
+                                    exact_matches_checked,
+                                    tool_version=tool_version):
+                                match_tuples.append(
+                                    (repository_metadata.repository_id,
+                                     repository_metadata.changeset_revision))
                     elif tool_ids and tool_names and not tool_versions:
                         if len(tool_ids) == len(tool_names):
-                            match_tuples = search_ids_names(tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids,
-                                                            tool_names)
+                            match_tuples = search_ids_names(
+                                tool_dict, exact_matches_checked, match_tuples,
+                                repository_metadata, tool_ids, tool_names)
                         elif len(tool_ids) == 1 or len(tool_names) == 1:
-                            tool_ids, tool_names = make_same_length(tool_ids, tool_names)
-                            match_tuples = search_ids_names(tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids,
-                                                            tool_names)
+                            tool_ids, tool_names = make_same_length(
+                                tool_ids, tool_names)
+                            match_tuples = search_ids_names(
+                                tool_dict, exact_matches_checked, match_tuples,
+                                repository_metadata, tool_ids, tool_names)
                         else:
                             ok = False
                     elif tool_ids and tool_versions and not tool_names:
                         if len(tool_ids) == len(tool_versions):
-                            match_tuples = search_ids_versions(tool_dict, exact_matches_checked, match_tuples, repository_metadata,
-                                                               tool_ids, tool_versions)
+                            match_tuples = search_ids_versions(
+                                tool_dict, exact_matches_checked, match_tuples,
+                                repository_metadata, tool_ids, tool_versions)
                         elif len(tool_ids) == 1 or len(tool_versions) == 1:
-                            tool_ids, tool_versions = make_same_length(tool_ids, tool_versions)
-                            match_tuples = search_ids_versions(tool_dict, exact_matches_checked, match_tuples, repository_metadata,
-                                                               tool_ids, tool_versions)
+                            tool_ids, tool_versions = make_same_length(
+                                tool_ids, tool_versions)
+                            match_tuples = search_ids_versions(
+                                tool_dict, exact_matches_checked, match_tuples,
+                                repository_metadata, tool_ids, tool_versions)
                         else:
                             ok = False
                     elif tool_versions and tool_names and not tool_ids:
                         if len(tool_versions) == len(tool_names):
-                            match_tuples = search_names_versions(tool_dict, exact_matches_checked, match_tuples, repository_metadata,
-                                                                 tool_names, tool_versions)
+                            match_tuples = search_names_versions(
+                                tool_dict, exact_matches_checked, match_tuples,
+                                repository_metadata, tool_names, tool_versions)
                         elif len(tool_versions) == 1 or len(tool_names) == 1:
-                            tool_versions, tool_names = make_same_length(tool_versions, tool_names)
-                            match_tuples = search_names_versions(tool_dict, exact_matches_checked, match_tuples, repository_metadata,
-                                                                 tool_names, tool_versions)
+                            tool_versions, tool_names = make_same_length(
+                                tool_versions, tool_names)
+                            match_tuples = search_names_versions(
+                                tool_dict, exact_matches_checked, match_tuples,
+                                repository_metadata, tool_names, tool_versions)
                         else:
                             ok = False
                     elif tool_versions and tool_names and tool_ids:
-                        if len(tool_versions) == len(tool_names) and len(tool_names) == len(tool_ids):
+                        if len(tool_versions) == len(tool_names) and len(
+                                tool_names) == len(tool_ids):
                             for i, tool_version in enumerate(tool_versions):
                                 tool_name = tool_names[i]
                                 tool_id = tool_ids[i]
                                 if in_tool_dict(
-                                        tool_dict, exact_matches_checked, tool_id=tool_id, tool_name=tool_name, tool_version=tool_version):
-                                    match_tuples.append((repository_metadata.repository_id, repository_metadata.changeset_revision))
+                                        tool_dict,
+                                        exact_matches_checked,
+                                        tool_id=tool_id,
+                                        tool_name=tool_name,
+                                        tool_version=tool_version):
+                                    match_tuples.append(
+                                        (repository_metadata.repository_id,
+                                         repository_metadata.changeset_revision
+                                         ))
                         else:
                             ok = False
     elif workflow_names or all_workflows:
@@ -173,11 +227,19 @@ def search_repository_metadata(app,
                 # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
                 if workflow_names:
                     workflow_tups = metadata.get('workflows', [])
-                    workflows = [workflow_tup[1] for workflow_tup in workflow_tups]
+                    workflows = [
+                        workflow_tup[1] for workflow_tup in workflow_tups
+                    ]
                     for workflow_dict in workflows:
                         for workflow_name in workflow_names:
-                            if in_workflow_dict(workflow_dict, exact_matches_checked, workflow_name):
-                                match_tuples.append((repository_metadata.repository_id, repository_metadata.changeset_revision))
+                            if in_workflow_dict(workflow_dict,
+                                                exact_matches_checked,
+                                                workflow_name):
+                                match_tuples.append(
+                                    (repository_metadata.repository_id,
+                                     repository_metadata.changeset_revision))
                 elif all_workflows:
-                    match_tuples.append((repository_metadata.repository_id, repository_metadata.changeset_revision))
+                    match_tuples.append(
+                        (repository_metadata.repository_id,
+                         repository_metadata.changeset_revision))
     return ok, match_tuples

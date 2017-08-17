@@ -31,17 +31,24 @@ handler.setFormatter(formatter)
 log.addHandler(handler)
 metadata = MetaData()
 
-FormDefinitionCurrent_table = Table('form_definition_current', metadata,
-                                    Column("id", Integer, primary_key=True),
-                                    Column("create_time", DateTime, default=now),
-                                    Column("update_time", DateTime, default=now, onupdate=now),
-                                    Column("latest_form_id", Integer, index=True), Column("deleted", Boolean, index=True, default=False))
+FormDefinitionCurrent_table = Table(
+    'form_definition_current', metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("latest_form_id", Integer, index=True),
+    Column("deleted", Boolean, index=True, default=False))
 
 FormDefinition_table = Table('form_definition', metadata,
                              Column("id", Integer, primary_key=True),
                              Column("create_time", DateTime, default=now),
-                             Column("update_time", DateTime, default=now, onupdate=now),
-                             Column("name", TrimmedString(255), nullable=False),
+                             Column(
+                                 "update_time",
+                                 DateTime,
+                                 default=now,
+                                 onupdate=now),
+                             Column(
+                                 "name", TrimmedString(255), nullable=False),
                              Column("desc", TEXT),
                              Column(
                                  "form_definition_current_id",
@@ -53,53 +60,106 @@ FormDefinition_table = Table('form_definition', metadata,
 FormValues_table = Table('form_values', metadata,
                          Column("id", Integer, primary_key=True),
                          Column("create_time", DateTime, default=now),
-                         Column("update_time", DateTime, default=now, onupdate=now),
-                         Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True), Column("content", JSONType()))
+                         Column(
+                             "update_time",
+                             DateTime,
+                             default=now,
+                             onupdate=now),
+                         Column(
+                             "form_definition_id",
+                             Integer,
+                             ForeignKey("form_definition.id"),
+                             index=True), Column("content", JSONType()))
 
 RequestType_table = Table('request_type', metadata,
                           Column("id", Integer, primary_key=True),
                           Column("create_time", DateTime, default=now),
-                          Column("update_time", DateTime, default=now, onupdate=now),
+                          Column(
+                              "update_time",
+                              DateTime,
+                              default=now,
+                              onupdate=now),
                           Column("name", TrimmedString(255), nullable=False),
                           Column("desc", TEXT),
-                          Column("request_form_id", Integer, ForeignKey("form_definition.id"), index=True),
-                          Column("sample_form_id", Integer, ForeignKey("form_definition.id"), index=True))
+                          Column(
+                              "request_form_id",
+                              Integer,
+                              ForeignKey("form_definition.id"),
+                              index=True),
+                          Column(
+                              "sample_form_id",
+                              Integer,
+                              ForeignKey("form_definition.id"),
+                              index=True))
 
-Request_table = Table('request', metadata,
-                      Column("id", Integer, primary_key=True),
-                      Column("create_time", DateTime, default=now),
-                      Column("update_time", DateTime, default=now, onupdate=now),
-                      Column("name", TrimmedString(255), nullable=False),
-                      Column("desc", TEXT),
-                      Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-                      Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True),
-                      Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                      Column("library_id", Integer, ForeignKey("library.id"), index=True),
-                      Column("deleted", Boolean, index=True, default=False))
+Request_table = Table(
+    'request', metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("name", TrimmedString(255), nullable=False),
+    Column("desc", TEXT),
+    Column(
+        "form_values_id", Integer, ForeignKey("form_values.id"), index=True),
+    Column(
+        "request_type_id", Integer, ForeignKey("request_type.id"), index=True),
+    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column("library_id", Integer, ForeignKey("library.id"), index=True),
+    Column("deleted", Boolean, index=True, default=False))
 
 Sample_table = Table('sample', metadata,
                      Column("id", Integer, primary_key=True),
                      Column("create_time", DateTime, default=now),
-                     Column("update_time", DateTime, default=now, onupdate=now),
+                     Column(
+                         "update_time", DateTime, default=now, onupdate=now),
                      Column("name", TrimmedString(255), nullable=False),
                      Column("desc", TEXT),
-                     Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-                     Column("request_id", Integer, ForeignKey("request.id"), index=True),
+                     Column(
+                         "form_values_id",
+                         Integer,
+                         ForeignKey("form_values.id"),
+                         index=True),
+                     Column(
+                         "request_id",
+                         Integer,
+                         ForeignKey("request.id"),
+                         index=True),
                      Column("deleted", Boolean, index=True, default=False))
 
 SampleState_table = Table('sample_state', metadata,
                           Column("id", Integer, primary_key=True),
                           Column("create_time", DateTime, default=now),
-                          Column("update_time", DateTime, default=now, onupdate=now),
+                          Column(
+                              "update_time",
+                              DateTime,
+                              default=now,
+                              onupdate=now),
                           Column("name", TrimmedString(255), nullable=False),
-                          Column("desc", TEXT), Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True))
+                          Column("desc", TEXT),
+                          Column(
+                              "request_type_id",
+                              Integer,
+                              ForeignKey("request_type.id"),
+                              index=True))
 
 SampleEvent_table = Table('sample_event', metadata,
                           Column("id", Integer, primary_key=True),
                           Column("create_time", DateTime, default=now),
-                          Column("update_time", DateTime, default=now, onupdate=now),
-                          Column("sample_id", Integer, ForeignKey("sample.id"), index=True),
-                          Column("sample_state_id", Integer, ForeignKey("sample_state.id"), index=True), Column("comment", TEXT))
+                          Column(
+                              "update_time",
+                              DateTime,
+                              default=now,
+                              onupdate=now),
+                          Column(
+                              "sample_id",
+                              Integer,
+                              ForeignKey("sample.id"),
+                              index=True),
+                          Column(
+                              "sample_state_id",
+                              Integer,
+                              ForeignKey("sample_state.id"),
+                              index=True), Column("comment", TEXT))
 
 
 def upgrade(migrate_engine):
@@ -121,13 +181,15 @@ def upgrade(migrate_engine):
     if FormDefinitionCurrent_table is not None and FormDefinition_table is not None:
         try:
             cons = ForeignKeyConstraint(
-                [FormDefinitionCurrent_table.c.latest_form_id], [FormDefinition_table.c.id],
+                [FormDefinitionCurrent_table.c.latest_form_id],
+                [FormDefinition_table.c.id],
                 name='form_definition_current_latest_form_id_fk')
             # Create the constraint
             cons.create()
         except Exception:
             log.exception(
-                "Adding foreign key constraint 'form_definition_current_latest_form_id_fk' to table 'form_definition_current' failed.")
+                "Adding foreign key constraint 'form_definition_current_latest_form_id_fk' to table 'form_definition_current' failed."
+            )
     try:
         FormValues_table.create()
     except Exception:

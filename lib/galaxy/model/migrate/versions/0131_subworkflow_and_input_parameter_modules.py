@@ -18,18 +18,26 @@ WorkflowInvocationToSubworkflowInvocationAssociation_table = Table(
     Column("workflow_invocation_id", Integer),
     Column("subworkflow_invocation_id", Integer),
     Column("workflow_step_id", Integer),
-    ForeignKeyConstraint(['workflow_invocation_id'], ['workflow_invocation.id'], name='fk_wfi_swi_wfi'),
-    ForeignKeyConstraint(['subworkflow_invocation_id'], ['workflow_invocation.id'], name='fk_wfi_swi_swi'),
-    ForeignKeyConstraint(['workflow_step_id'], ['workflow_step.id'], name='fk_wfi_swi_ws'))
+    ForeignKeyConstraint(
+        ['workflow_invocation_id'], ['workflow_invocation.id'],
+        name='fk_wfi_swi_wfi'),
+    ForeignKeyConstraint(
+        ['subworkflow_invocation_id'], ['workflow_invocation.id'],
+        name='fk_wfi_swi_swi'),
+    ForeignKeyConstraint(
+        ['workflow_step_id'], ['workflow_step.id'], name='fk_wfi_swi_ws'))
 
-WorkflowRequestInputStepParameter_table = Table("workflow_request_input_step_parameter", metadata,
-                                                Column("id", Integer, primary_key=True),
-                                                Column("workflow_invocation_id", Integer),
-                                                Column("workflow_step_id", Integer),
-                                                Column("parameter_value", JSONType),
-                                                ForeignKeyConstraint(
-                                                    ['workflow_invocation_id'], ['workflow_invocation.id'], name='fk_wfreq_isp_wfi'),
-                                                ForeignKeyConstraint(['workflow_step_id'], ['workflow_step.id'], name='fk_wfreq_isp_ws'))
+WorkflowRequestInputStepParameter_table = Table(
+    "workflow_request_input_step_parameter", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_invocation_id", Integer),
+    Column("workflow_step_id", Integer),
+    Column("parameter_value", JSONType),
+    ForeignKeyConstraint(
+        ['workflow_invocation_id'], ['workflow_invocation.id'],
+        name='fk_wfreq_isp_wfi'),
+    ForeignKeyConstraint(
+        ['workflow_step_id'], ['workflow_step.id'], name='fk_wfreq_isp_ws'))
 
 TABLES = [
     WorkflowInvocationToSubworkflowInvocationAssociation_table,
@@ -37,9 +45,14 @@ TABLES = [
 ]
 
 INDEXES = [
-    Index("ix_wfinv_swfinv_wfi", WorkflowInvocationToSubworkflowInvocationAssociation_table.c.workflow_invocation_id),
-    Index("ix_wfinv_swfinv_swfi", WorkflowInvocationToSubworkflowInvocationAssociation_table.c.subworkflow_invocation_id),
-    Index("ix_wfreq_inputstep_wfi", WorkflowRequestInputStepParameter_table.c.workflow_invocation_id)
+    Index("ix_wfinv_swfinv_wfi",
+          WorkflowInvocationToSubworkflowInvocationAssociation_table.c.
+          workflow_invocation_id),
+    Index("ix_wfinv_swfinv_swfi",
+          WorkflowInvocationToSubworkflowInvocationAssociation_table.c.
+          subworkflow_invocation_id),
+    Index("ix_wfreq_inputstep_wfi",
+          WorkflowRequestInputStepParameter_table.c.workflow_invocation_id)
 ]
 
 
@@ -48,15 +61,31 @@ def upgrade(migrate_engine):
     print(__doc__)
     metadata.reflect()
     if migrate_engine.name in ['postgres', 'postgresql']:
-        subworkflow_id_column = Column("subworkflow_id", Integer, ForeignKey("workflow.id"), nullable=True)
-        input_subworkflow_step_id_column = Column("input_subworkflow_step_id", Integer, ForeignKey("workflow_step.id"), nullable=True)
-        parent_workflow_id_column = Column("parent_workflow_id", Integer, ForeignKey("workflow.id"), nullable=True)
+        subworkflow_id_column = Column(
+            "subworkflow_id",
+            Integer,
+            ForeignKey("workflow.id"),
+            nullable=True)
+        input_subworkflow_step_id_column = Column(
+            "input_subworkflow_step_id",
+            Integer,
+            ForeignKey("workflow_step.id"),
+            nullable=True)
+        parent_workflow_id_column = Column(
+            "parent_workflow_id",
+            Integer,
+            ForeignKey("workflow.id"),
+            nullable=True)
     else:
-        subworkflow_id_column = Column("subworkflow_id", Integer, nullable=True)
-        input_subworkflow_step_id_column = Column("input_subworkflow_step_id", Integer, nullable=True)
-        parent_workflow_id_column = Column("parent_workflow_id", Integer, nullable=True)
+        subworkflow_id_column = Column(
+            "subworkflow_id", Integer, nullable=True)
+        input_subworkflow_step_id_column = Column(
+            "input_subworkflow_step_id", Integer, nullable=True)
+        parent_workflow_id_column = Column(
+            "parent_workflow_id", Integer, nullable=True)
     __add_column(subworkflow_id_column, "workflow_step", metadata)
-    __add_column(input_subworkflow_step_id_column, "workflow_step_connection", metadata)
+    __add_column(input_subworkflow_step_id_column, "workflow_step_connection",
+                 metadata)
     __add_column(parent_workflow_id_column, "workflow", metadata)
     workflow_output_label_column = Column("label", TrimmedString(255))
     workflow_output_uuid_column = Column("uuid", UUIDType, nullable=True)
@@ -79,7 +108,8 @@ def downgrade(migrate_engine):
     __drop_column("subworkflow_id", "workflow_step", metadata)
     __drop_column("parent_workflow_id", "workflow", metadata)
 
-    __drop_column("input_subworkflow_step_id", "workflow_step_connection", metadata)
+    __drop_column("input_subworkflow_step_id", "workflow_step_connection",
+                  metadata)
 
     __drop_column("label", "workflow_output", metadata)
     __drop_column("uuid", "workflow_output", metadata)

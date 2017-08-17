@@ -16,7 +16,8 @@ from galaxy.webapps.galaxy.controllers.user import User as BaseUser
 class User(BaseUser):
     @web.expose
     def index(self, trans, cntrller='user', **kwd):
-        return trans.fill_template('/webapps/tool_shed/user/index.mako', cntrller=cntrller)
+        return trans.fill_template(
+            '/webapps/tool_shed/user/index.mako', cntrller=cntrller)
 
     @web.expose
     def manage_user_info(self, trans, cntrller, **kwd):
@@ -24,11 +25,13 @@ class User(BaseUser):
         params = util.Params(kwd)
         user_id = params.get('id', None)
         if user_id:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
+            user = trans.sa_session.query(trans.app.model.User).get(
+                trans.security.decode_id(user_id))
         else:
             user = trans.user
         if not user:
-            raise AssertionError("The user id (%s) is not valid" % str(user_id))
+            raise AssertionError(
+                "The user id (%s) is not valid" % str(user_id))
         email = util.restore_text(params.get('email', user.email))
         username = util.restore_text(params.get('username', ''))
         if not username:
@@ -55,7 +58,11 @@ class User(BaseUser):
             message = "Generated a new web API key"
             status = "done"
         return trans.fill_template(
-            '/webapps/tool_shed/user/api_keys.mako', cntrller=cntrller, user=trans.user, message=message, status=status)
+            '/webapps/tool_shed/user/api_keys.mako',
+            cntrller=cntrller,
+            user=trans.user,
+            message=message,
+            status=status)
 
     # For REMOTE_USER, we need the ability to just edit the username
     @web.expose
@@ -67,7 +74,8 @@ class User(BaseUser):
         status = params.get('status', 'done')
         user_id = params.get('user_id', None)
         if user_id and is_admin:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
+            user = trans.sa_session.query(trans.app.model.User).get(
+                trans.security.decode_id(user_id))
         else:
             user = trans.user
         if user and params.get('change_username_button', False):
@@ -82,7 +90,12 @@ class User(BaseUser):
                 trans.sa_session.flush()
                 message = 'The username has been updated with the changes.'
         return trans.fill_template(
-            '/webapps/tool_shed/user/username.mako', cntrller=cntrller, user=user, username=user.username, message=message, status=status)
+            '/webapps/tool_shed/user/username.mako',
+            cntrller=cntrller,
+            user=user,
+            username=user.username,
+            message=message,
+            status=status)
 
     @web.expose
     def edit_info(self, trans, cntrller, **kwd):
@@ -95,8 +108,10 @@ class User(BaseUser):
         status = params.get('status', 'done')
         user_id = params.get('user_id', None)
         if user_id and is_admin:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
-        elif user_id and (not trans.user or trans.user.id != trans.security.decode_id(user_id)):
+            user = trans.sa_session.query(trans.app.model.User).get(
+                trans.security.decode_id(user_id))
+        elif user_id and (not trans.user or
+                          trans.user.id != trans.security.decode_id(user_id)):
             message = 'Invalid user id'
             status = 'error'
             user = None
@@ -116,7 +131,8 @@ class User(BaseUser):
             else:
                 if (user.email != email):
                     # The user's private role name must match the user's login ( email )
-                    private_role = trans.app.security_agent.get_private_user_role(user)
+                    private_role = trans.app.security_agent.get_private_user_role(
+                        user)
                     private_role.name = email
                     private_role.description = 'Private role for ' + email
                     # Change the email itself
@@ -127,7 +143,8 @@ class User(BaseUser):
                         user.active = False
                         trans.sa_session.add(user)
                         trans.sa_session.flush()
-                        is_activation_sent = self.send_verification_email(trans, user.email, user.username)
+                        is_activation_sent = self.send_verification_email(
+                            trans, user.email, user.username)
                         if is_activation_sent:
                             message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
                         else:
@@ -143,15 +160,17 @@ class User(BaseUser):
             # Edit user information - webapp MUST BE 'galaxy'
             user_type_fd_id = params.get('user_type_fd_id', 'none')
             if user_type_fd_id not in ['none']:
-                user_type_form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(
-                    trans.security.decode_id(user_type_fd_id))
+                user_type_form_definition = trans.sa_session.query(
+                    trans.app.model.FormDefinition).get(
+                        trans.security.decode_id(user_type_fd_id))
             elif user.values:
                 user_type_form_definition = user.values.form_definition
             else:
                 # User was created before any of the user_info forms were created
                 user_type_form_definition = None
             if user_type_form_definition:
-                values = self.get_form_values(trans, user, user_type_form_definition, **kwd)
+                values = self.get_form_values(trans, user,
+                                              user_type_form_definition, **kwd)
             else:
                 values = {}
             flush_needed = False
@@ -161,7 +180,8 @@ class User(BaseUser):
                 trans.sa_session.add(user.values)
                 flush_needed = True
             elif values:
-                form_values = trans.model.FormValues(user_type_form_definition, values)
+                form_values = trans.model.FormValues(user_type_form_definition,
+                                                     values)
                 trans.sa_session.add(form_values)
                 user.values = form_values
                 flush_needed = True
@@ -176,7 +196,12 @@ class User(BaseUser):
             kwd['message'] = util.sanitize_text(message)
         if status:
             kwd['status'] = status
-        return trans.response.send_redirect(web.url_for(controller='user', action='manage_user_info', cntrller=cntrller, **kwd))
+        return trans.response.send_redirect(
+            web.url_for(
+                controller='user',
+                action='manage_user_info',
+                cntrller=cntrller,
+                **kwd))
 
     @web.expose
     def change_password(self, trans, token=None, **kwd):
@@ -194,14 +219,19 @@ class User(BaseUser):
             token_result = None
             if token:
                 # If a token was supplied, validate and set user
-                token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
-                if token_result and token_result.expiration_time > datetime.utcnow():
+                token_result = trans.sa_session.query(
+                    trans.app.model.PasswordResetToken).get(token)
+                if token_result and token_result.expiration_time > datetime.utcnow(
+                ):
                     user = token_result.user
                 else:
-                    return trans.show_error_message("Invalid or expired password reset token, please request a new one.")
+                    return trans.show_error_message(
+                        "Invalid or expired password reset token, please request a new one."
+                    )
             else:
                 # The user is changing their own password, validate their current password
-                (ok, message) = trans.app.auth_manager.check_change_password(trans.user, current)
+                (ok, message) = trans.app.auth_manager.check_change_password(
+                    trans.user, current)
                 if ok:
                     user = trans.user
                 else:
@@ -230,7 +260,8 @@ class User(BaseUser):
                     trans.sa_session.flush()
                     trans.log_event("User change password")
                     if kwd.get('display_top', False) == 'True':
-                        return trans.response.send_redirect(url_for('/', message='Password has been changed'))
+                        return trans.response.send_redirect(
+                            url_for('/', message='Password has been changed'))
                     else:
                         return trans.show_ok_message(
                             'The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).'

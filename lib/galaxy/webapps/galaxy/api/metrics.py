@@ -48,7 +48,8 @@ class MetricsController(BaseAPIController):
         """
         user_id = trans.user.id if trans.user else None
         session_id = trans.galaxy_session.id if trans.galaxy_session else None
-        parsed_gen = self._parse_metrics(payload.get('metrics', None), user_id, session_id)
+        parsed_gen = self._parse_metrics(
+            payload.get('metrics', None), user_id, session_id)
         self._send_metrics(trans, parsed_gen)
         response = self._get_server_pong(trans)
         return response
@@ -69,7 +70,12 @@ class MetricsController(BaseAPIController):
         for metric in metrics:
             label = metric['namespace']
             time = self._deserialize_isoformat_date(metric['time'])
-            kwargs = {'level': metric['level'], 'args': metric['args'], 'user': user_id, 'session': session_id}
+            kwargs = {
+                'level': metric['level'],
+                'args': metric['args'],
+                'user': user_id,
+                'session': session_id
+            }
             yield (label, time, kwargs)
 
     def _send_metrics(self, trans, metrics):
@@ -81,7 +87,8 @@ class MetricsController(BaseAPIController):
         """
         if trans.app.trace_logger:
             for label, time, kwargs in metrics:
-                trans.app.trace_logger.log(label, event_time=int(time), **kwargs)
+                trans.app.trace_logger.log(
+                    label, event_time=int(time), **kwargs)
         elif self.debugging:
             for label, time, kwargs in metrics:
                 log.debug('%s %s %s', label, time, kwargs)

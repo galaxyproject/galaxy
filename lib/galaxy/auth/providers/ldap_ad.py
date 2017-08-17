@@ -35,8 +35,8 @@ def _parse_ldap_options(ldap, options_unparsed):
             key, value = opt.split("=")
         except ValueError:
             log.warning(
-                "LDAP authenticate: Invalid syntax '%s' inside <ldap-options> element. Syntax should be option1=value1,option2=value2" %
-                opt)
+                "LDAP authenticate: Invalid syntax '%s' inside <ldap-options> element. Syntax should be option1=value1,option2=value2"
+                % opt)
             continue
 
         try:
@@ -49,15 +49,21 @@ def _parse_ldap_options(ldap, options_unparsed):
                 pair.append(name)
 
         except ValueError:
-            log.warning("LDAP authenticate: Invalid parameter pair %s=%s. '%s' doesn't start with prefix %s", key, value, n, prefix)
+            log.warning(
+                "LDAP authenticate: Invalid parameter pair %s=%s. '%s' doesn't start with prefix %s",
+                key, value, n, prefix)
             continue
 
         except AttributeError:
-            log.warning("LDAP authenticate: Invalid parameter pair %s=%s. '%s' is not available in module ldap", key, value, n)
+            log.warning(
+                "LDAP authenticate: Invalid parameter pair %s=%s. '%s' is not available in module ldap",
+                key, value, n)
             continue
 
         else:
-            log.debug("LDAP authenticate: Valid LDAP option pair %s=%s -> %s=%s", key, value, *pair)
+            log.debug(
+                "LDAP authenticate: Valid LDAP option pair %s=%s -> %s=%s",
+                key, value, *pair)
             ldap_options.append(pair)
 
     return ldap_options
@@ -87,11 +93,15 @@ class LDAP(AuthProvider):
 
         if _get_bool(options, 'login-use-username', False):
             if username is None:
-                log.debug('LDAP authenticate: username must be used to login, cannot be None')
+                log.debug(
+                    'LDAP authenticate: username must be used to login, cannot be None'
+                )
                 return (failure_mode, '', '')
         else:
             if email is None:
-                log.debug('LDAP authenticate: email must be used to login, cannot be None')
+                log.debug(
+                    'LDAP authenticate: email must be used to login, cannot be None'
+                )
                 return (failure_mode, '', '')
 
         try:
@@ -126,12 +136,17 @@ class LDAP(AuthProvider):
                 l.protocol_version = 3
 
                 if 'search-user' in options:
-                    l.simple_bind_s(_get_subs(options, 'search-user', params), _get_subs(options, 'search-password', params))
+                    l.simple_bind_s(
+                        _get_subs(options, 'search-user', params),
+                        _get_subs(options, 'search-password', params))
                 else:
                     l.simple_bind_s()
 
                 # setup search
-                attributes = [_.strip().format(**params) for _ in options['search-fields'].split(',')]
+                attributes = [
+                    _.strip().format(**params)
+                    for _ in options['search-fields'].split(',')
+                ]
                 suser = l.search_ext_s(
                     _get_subs(options, 'search-base', params),
                     ldap.SCOPE_SUBTREE,
@@ -142,11 +157,13 @@ class LDAP(AuthProvider):
 
                 # parse results
                 if suser is None or len(suser) == 0:
-                    log.warning('LDAP authenticate: search returned no results')
+                    log.warning(
+                        'LDAP authenticate: search returned no results')
                     return (failure_mode, '', '')
                 dn, attrs = suser[0]
                 log.debug(("LDAP authenticate: dn is %s" % dn))
-                log.debug(("LDAP authenticate: search attributes are %s" % attrs))
+                log.debug(
+                    ("LDAP authenticate: search attributes are %s" % attrs))
                 if hasattr(attrs, 'has_key'):
                     for attr in attributes:
                         if attr in attrs:
@@ -164,7 +181,8 @@ class LDAP(AuthProvider):
             l = ldap.initialize(_get_subs(options, 'server', params))
             l.protocol_version = 3
             bind_password = _get_subs(options, 'bind-password', params)
-            l.simple_bind_s(_get_subs(options, 'bind-user', params), bind_password)
+            l.simple_bind_s(
+                _get_subs(options, 'bind-user', params), bind_password)
             try:
                 whoami = l.whoami_s()
             except ldap.PROTOCOL_ERROR:
@@ -179,13 +197,15 @@ class LDAP(AuthProvider):
             return (failure_mode, '', '')
 
         log.debug('LDAP authentication successful')
-        return (True, _get_subs(options, 'auto-register-email', params), _get_subs(options, 'auto-register-username', params))
+        return (True, _get_subs(options, 'auto-register-email', params),
+                _get_subs(options, 'auto-register-username', params))
 
     def authenticate_user(self, user, password, options):
         """
         See abstract method documentation.
         """
-        return self.authenticate(user.email, user.username, password, options)[0]
+        return self.authenticate(user.email, user.username, password,
+                                 options)[0]
 
 
 class ActiveDirectory(LDAP):

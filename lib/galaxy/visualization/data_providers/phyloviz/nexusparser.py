@@ -57,7 +57,9 @@ class Nexus_Parser(Newick_Parser):
 
                 if intranslateBlock:
                     mappingLine = self.splitLinebyWhitespaces(line)
-                    key, value = mappingLine[1], mappingLine[2].replace(",", "").replace("'", "")  # replacing illegal json characters
+                    key, value = mappingLine[1], mappingLine[2].replace(
+                        ",", "").replace(
+                            "'", "")  # replacing illegal json characters
                     self.nameMapping[key] = value
 
                 # Extracting newick Trees
@@ -70,11 +72,14 @@ class Nexus_Parser(Newick_Parser):
                     if newick == "":  # Empty lines can be found in tree blocks
                         continue
 
-                    currPhyloTree = self._parseNewickToJson(newick, treeName, nameMap=self.nameMapping)
+                    currPhyloTree = self._parseNewickToJson(
+                        newick, treeName, nameMap=self.nameMapping)
 
                     self.phyloTrees.append(currPhyloTree)
                     treeIndex = len(self.phyloTrees) - 1
-                    treeNames.append((treeName, treeIndex))  # appending name of tree, and its index
+                    treeNames.append(
+                        (treeName,
+                         treeIndex))  # appending name of tree, and its index
                     continue
 
         return self.phyloTrees, treeNames

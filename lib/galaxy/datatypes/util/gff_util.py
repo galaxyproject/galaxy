@@ -34,7 +34,16 @@ class GFFInterval(GenomicInterval):
         if not fix_strand and fields[strand_col] == '.':
             unknown_strand = True
             fields[strand_col] = '+'
-        GenomicInterval.__init__(self, reader, fields, chrom_col, start_col, end_col, strand_col, default_strand, fix_strand=fix_strand)
+        GenomicInterval.__init__(
+            self,
+            reader,
+            fields,
+            chrom_col,
+            start_col,
+            end_col,
+            strand_col,
+            default_strand,
+            fix_strand=fix_strand)
         if unknown_strand:
             self.strand = '.'
             self.fields[strand_col] = '.'
@@ -42,7 +51,8 @@ class GFFInterval(GenomicInterval):
         # Handle feature, score column.
         self.feature_col = feature_col
         if self.feature_col >= self.nfields:
-            raise MissingFieldError("No field for feature_col (%d)" % feature_col)
+            raise MissingFieldError(
+                "No field for feature_col (%d)" % feature_col)
         self.feature = self.fields[self.feature_col]
         self.score_col = score_col
         if self.score_col >= self.nfields:
@@ -54,7 +64,8 @@ class GFFInterval(GenomicInterval):
 
     def copy(self):
         return GFFInterval(self.reader,
-                           list(self.fields), self.chrom_col, self.feature_col, self.start_col, self.end_col, self.strand_col,
+                           list(self.fields), self.chrom_col, self.feature_col,
+                           self.start_col, self.end_col, self.strand_col,
                            self.score_col, self.strand)
 
 
@@ -94,7 +105,9 @@ class GFFFeature(GFFInterval):
         for interval in self.intervals:
             # Error checking. NOTE: intervals need not share the same strand.
             if interval.chrom != self.chrom:
-                raise ValueError("interval chrom does not match self chrom: %s != %s" % (interval.chrom, self.chrom))
+                raise ValueError(
+                    "interval chrom does not match self chrom: %s != %s" %
+                    (interval.chrom, self.chrom))
             # Set start, end of interval.
             if interval.start < self.start:
                 self.start = interval.start
@@ -164,7 +177,9 @@ class GFFIntervalToBEDReaderWrapper(NiceReaderWrapper):
         return interval
 
 
-class GFFReaderWrapper(Iterator, NiceReaderWrapper):  # Iterator can be removed after bx-python library is ported to Python3
+class GFFReaderWrapper(
+        Iterator, NiceReaderWrapper
+):  # Iterator can be removed after bx-python library is ported to Python3
     """
     Reader wrapper for GFF files.
 
@@ -190,7 +205,14 @@ class GFFReaderWrapper(Iterator, NiceReaderWrapper):  # Iterator can be removed 
                  convert_to_bed_coord=False,
                  **kwargs):
         NiceReaderWrapper.__init__(
-            self, reader, chrom_col=chrom_col, start_col=start_col, end_col=end_col, strand_col=strand_col, fix_strand=fix_strand, **kwargs)
+            self,
+            reader,
+            chrom_col=chrom_col,
+            start_col=start_col,
+            end_col=end_col,
+            strand_col=strand_col,
+            fix_strand=fix_strand,
+            **kwargs)
         self.feature_col = feature_col
         self.score_col = score_col
         self.convert_to_bed_coord = convert_to_bed_coord
@@ -223,12 +245,14 @@ class GFFReaderWrapper(Iterator, NiceReaderWrapper):  # Iterator can be removed 
         def handle_parse_error(e):
             """ Actions to take when ParseError found. """
             if self.outstream:
-                if self.print_delegate and hasattr(self.print_delegate, "__call__"):
+                if self.print_delegate and hasattr(self.print_delegate,
+                                                   "__call__"):
                     self.print_delegate(self.outstream, e, self)
             self.skipped += 1
             # no reason to stuff an entire bad file into memmory
             if self.skipped < 10:
-                self.skipped_lines.append((self.linenum, self.current_line, str(e)))
+                self.skipped_lines.append((self.linenum, self.current_line,
+                                           str(e)))
 
             # For debugging, uncomment this to propogate parsing exceptions up.
             # I.e. the underlying reason for an unexpected StopIteration exception
@@ -262,11 +286,13 @@ class GFFReaderWrapper(Iterator, NiceReaderWrapper):  # Iterator can be removed 
             return return_val
 
         # Initialize feature identifier from seed.
-        feature_group = self.seed_interval.attributes.get('group', None)  # For GFF
+        feature_group = self.seed_interval.attributes.get('group',
+                                                          None)  # For GFF
         # For GFF3
         feature_id = self.seed_interval.attributes.get('ID', None)
         # For GTF.
-        feature_transcript_id = self.seed_interval.attributes.get('transcript_id', None)
+        feature_transcript_id = self.seed_interval.attributes.get(
+            'transcript_id', None)
 
         # Read all intervals associated with seed.
         feature_intervals = []
@@ -302,7 +328,9 @@ class GFFReaderWrapper(Iterator, NiceReaderWrapper):  # Iterator can be removed 
             # GFF3 test:
             parent_id = interval.attributes.get('Parent', None)
             cur_id = interval.attributes.get('ID', None)
-            if (cur_id and cur_id == feature_id) or (parent_id and parent_id == feature_id):
+            if (cur_id
+                    and cur_id == feature_id) or (parent_id
+                                                  and parent_id == feature_id):
                 part_of = True
             # GTF test:
             transcript_id = interval.attributes.get('transcript_id', None)
@@ -431,7 +459,8 @@ def parse_gff3_attributes(attr_str):
     for tag_value_pair in attributes_list:
         pair = tag_value_pair.strip().split("=")
         if len(pair) == 1:
-            raise Exception("Attribute '%s' does not contain a '='" % tag_value_pair)
+            raise Exception(
+                "Attribute '%s' does not contain a '='" % tag_value_pair)
         if pair == '':
             continue
         tag = pair[0].strip()
@@ -514,7 +543,8 @@ def read_unordered_gtf(iterator, strict=False):
         chroms_features[feature.chrom].append(feature)
 
     # Sort features by chrom, start position.
-    chroms_features_sorted = sorted(chroms_features.values(), key=lambda _: _[0].chrom)
+    chroms_features_sorted = sorted(
+        chroms_features.values(), key=lambda _: _[0].chrom)
     for features in chroms_features_sorted:
         features.sort(key=lambda _: _.start)
 

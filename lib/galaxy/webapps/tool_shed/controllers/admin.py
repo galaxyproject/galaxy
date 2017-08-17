@@ -36,9 +36,17 @@ class AdminController(BaseUIController, Admin):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "view_or_manage_repository":
-                return trans.response.send_redirect(web.url_for(controller='repository', action='browse_repositories', **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='repository',
+                        action='browse_repositories',
+                        **kwd))
             elif operation == "edit_repository":
-                return trans.response.send_redirect(web.url_for(controller='repository', action='edit_repository', **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='repository',
+                        action='edit_repository',
+                        **kwd))
             elif operation == "repositories_by_user":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
@@ -52,7 +60,8 @@ class AdminController(BaseUIController, Admin):
                     # The received id is the repository id, so we need to get the id of the user
                     # that uploaded the repository.
                     repository_id = kwd.get('id', None)
-                    repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
+                    repository = repository_util.get_repository_in_tool_shed(
+                        trans.app, repository_id)
                     kwd['f-email'] = repository.user.email
             elif operation == "repositories_by_category":
                 # Eliminate the current filters if any exist.
@@ -65,7 +74,11 @@ class AdminController(BaseUIController, Admin):
             elif operation == "receive email alerts":
                 if kwd['id']:
                     kwd['caller'] = 'browse_repositories'
-                    return trans.response.send_redirect(web.url_for(controller='repository', action='set_email_alerts', **kwd))
+                    return trans.response.send_redirect(
+                        web.url_for(
+                            controller='repository',
+                            action='set_email_alerts',
+                            **kwd))
                 else:
                     del kwd['operation']
             elif operation == 'delete':
@@ -81,8 +94,10 @@ class AdminController(BaseUIController, Admin):
         for k, v in kwd.items():
             changeset_revision_str = 'changeset_revision_'
             if k.startswith(changeset_revision_str):
-                repository_id = trans.security.encode_id(int(k.lstrip(changeset_revision_str)))
-                repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
+                repository_id = trans.security.encode_id(
+                    int(k.lstrip(changeset_revision_str)))
+                repository = repository_util.get_repository_in_tool_shed(
+                    trans.app, repository_id)
                 if repository.tip(trans.app) != v:
                     return trans.response.send_redirect(
                         web.url_for(
@@ -105,12 +120,17 @@ class AdminController(BaseUIController, Admin):
                 # The received id is a RepositoryMetadata object id, so we need to get the
                 # associated Repository and redirect to view_or_manage_repository with the
                 # changeset_revision.
-                repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, kwd['id'])
+                repository_metadata = metadata_util.get_repository_metadata_by_id(
+                    trans.app, kwd['id'])
                 repository = repository_metadata.repository
                 kwd['id'] = trans.security.encode_id(repository.id)
                 kwd['changeset_revision'] = repository_metadata.changeset_revision
                 kwd['operation'] = 'view_or_manage_repository'
-                return trans.response.send_redirect(web.url_for(controller='repository', action='browse_repositories', **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='repository',
+                        action='browse_repositories',
+                        **kwd))
         return self.repository_metadata_grid(trans, **kwd)
 
     @web.expose
@@ -129,16 +149,27 @@ class AdminController(BaseUIController, Admin):
                 status = 'error'
             else:
                 # Create the category
-                category = trans.app.model.Category(name=name, description=description)
+                category = trans.app.model.Category(
+                    name=name, description=description)
                 trans.sa_session.add(category)
                 trans.sa_session.flush()
                 # Update the Tool Shed's repository registry.
                 trans.app.repository_registry.add_category_entry(category)
-                message = "Category '%s' has been created" % escape(category.name)
+                message = "Category '%s' has been created" % escape(
+                    category.name)
                 status = 'done'
-                trans.response.send_redirect(web.url_for(controller='admin', action='manage_categories', message=message, status=status))
+                trans.response.send_redirect(
+                    web.url_for(
+                        controller='admin',
+                        action='manage_categories',
+                        message=message,
+                        status=status))
         return trans.fill_template(
-            '/webapps/tool_shed/category/create_category.mako', name=name, description=description, message=message, status=status)
+            '/webapps/tool_shed/category/create_category.mako',
+            name=name,
+            description=description,
+            message=message,
+            status=status)
 
     @web.expose
     @web.require_admin
@@ -152,7 +183,8 @@ class AdminController(BaseUIController, Admin):
             count = 0
             deleted_repositories = ""
             for repository_id in ids:
-                repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
+                repository = repository_util.get_repository_in_tool_shed(
+                    trans.app, repository_id)
                 if repository:
                     if not repository.deleted:
                         # Mark all installable repository_metadata records as not installable.
@@ -172,14 +204,20 @@ class AdminController(BaseUIController, Admin):
                         count += 1
                         deleted_repositories += " %s " % repository.name
             if count:
-                message = "Deleted %d %s: %s" % (count, inflector.cond_plural(len(ids), "repository"), escape(deleted_repositories))
+                message = "Deleted %d %s: %s" % (
+                    count, inflector.cond_plural(len(ids), "repository"),
+                    escape(deleted_repositories))
             else:
                 message = "All selected repositories were already marked deleted."
         else:
             message = "No repository ids received for deleting."
             status = 'error'
         trans.response.send_redirect(
-            web.url_for(controller='admin', action='browse_repositories', message=util.sanitize_text(message), status=status))
+            web.url_for(
+                controller='admin',
+                action='browse_repositories',
+                message=util.sanitize_text(message),
+                status=status))
 
     @web.expose
     @web.require_admin
@@ -191,17 +229,23 @@ class AdminController(BaseUIController, Admin):
             ids = util.listify(id)
             count = 0
             for repository_metadata_id in ids:
-                repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, repository_metadata_id)
+                repository_metadata = metadata_util.get_repository_metadata_by_id(
+                    trans.app, repository_metadata_id)
                 trans.sa_session.delete(repository_metadata)
                 trans.sa_session.flush()
                 count += 1
             if count:
-                message = "Deleted %d repository metadata %s" % (count, inflector.cond_plural(len(ids), "record"))
+                message = "Deleted %d repository metadata %s" % (
+                    count, inflector.cond_plural(len(ids), "record"))
         else:
             message = "No repository metadata ids received for deleting."
             status = 'error'
         trans.response.send_redirect(
-            web.url_for(controller='admin', action='browse_repository_metadata', message=util.sanitize_text(message), status=status))
+            web.url_for(
+                controller='admin',
+                action='browse_repository_metadata',
+                message=util.sanitize_text(message),
+                status=status))
 
     @web.expose
     @web.require_admin
@@ -212,7 +256,12 @@ class AdminController(BaseUIController, Admin):
         id = kwd.get('id', None)
         if not id:
             message = "No category ids received for editing"
-            trans.response.send_redirect(web.url_for(controller='admin', action='manage_categories', message=message, status='error'))
+            trans.response.send_redirect(
+                web.url_for(
+                    controller='admin',
+                    action='manage_categories',
+                    message=message,
+                    status='error'))
         category = suc.get_category(trans.app, id)
         original_category_name = str(category.name)
         original_category_description = str(category.description)
@@ -224,7 +273,8 @@ class AdminController(BaseUIController, Admin):
                 if not new_name:
                     message = 'Enter a valid name'
                     status = 'error'
-                elif original_category_name != new_name and suc.get_category_by_name(trans.app, new_name):
+                elif original_category_name != new_name and suc.get_category_by_name(
+                        trans.app, new_name):
                     message = 'A category with that name already exists'
                     status = 'error'
                 else:
@@ -239,12 +289,22 @@ class AdminController(BaseUIController, Admin):
                 trans.sa_session.flush()
                 if original_category_name != new_name:
                     # Update the Tool Shed's repository registry.
-                    trans.app.repository_registry.edit_category_entry(original_category_name, new_name)
-                message = "The information has been saved for category '%s'" % escape(category.name)
+                    trans.app.repository_registry.edit_category_entry(
+                        original_category_name, new_name)
+                message = "The information has been saved for category '%s'" % escape(
+                    category.name)
                 status = 'done'
                 return trans.response.send_redirect(
-                    web.url_for(controller='admin', action='manage_categories', message=message, status=status))
-        return trans.fill_template('/webapps/tool_shed/category/edit_category.mako', category=category, message=message, status=status)
+                    web.url_for(
+                        controller='admin',
+                        action='manage_categories',
+                        message=message,
+                        status=status))
+        return trans.fill_template(
+            '/webapps/tool_shed/category/edit_category.mako',
+            category=category,
+            message=message,
+            status=status)
 
     @web.expose
     @web.require_admin
@@ -254,19 +314,33 @@ class AdminController(BaseUIController, Admin):
             # What we've done is rendered the search box for the RepositoryGrid on the grid.mako
             # template for the CategoryGrid.  See ~/templates/webapps/tool_shed/category/grid.mako.
             # Since we are searching repositories and not categories, redirect to browse_repositories().
-            return trans.response.send_redirect(web.url_for(controller='admin', action='browse_repositories', **kwd))
+            return trans.response.send_redirect(
+                web.url_for(
+                    controller='admin', action='browse_repositories', **kwd))
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "create":
-                return trans.response.send_redirect(web.url_for(controller='admin', action='create_category', **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='admin', action='create_category', **kwd))
             elif operation == "delete":
-                return trans.response.send_redirect(web.url_for(controller='admin', action='mark_category_deleted', **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='admin',
+                        action='mark_category_deleted',
+                        **kwd))
             elif operation == "undelete":
-                return trans.response.send_redirect(web.url_for(controller='admin', action='undelete_category', **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='admin', action='undelete_category', **kwd))
             elif operation == "purge":
-                return trans.response.send_redirect(web.url_for(controller='admin', action='purge_category', **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='admin', action='purge_category', **kwd))
             elif operation == "edit":
-                return trans.response.send_redirect(web.url_for(controller='admin', action='edit_category', **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='admin', action='edit_category', **kwd))
         return self.manage_category_grid(trans, **kwd)
 
     @web.expose
@@ -277,7 +351,10 @@ class AdminController(BaseUIController, Admin):
         if 'regenerate_statistics_button' in kwd:
             trans.app.shed_counter.generate_statistics()
             message = "Successfully regenerated statistics"
-        return trans.fill_template('/webapps/tool_shed/admin/statistics.mako', message=message, status=status)
+        return trans.fill_template(
+            '/webapps/tool_shed/admin/statistics.mako',
+            message=message,
+            status=status)
 
     @web.expose
     @web.require_admin
@@ -288,7 +365,8 @@ class AdminController(BaseUIController, Admin):
         # We currently only have a single role associated with a repository, the repository admin role.
         repository_role_association = role.repositories[0]
         repository = repository_role_association.repository
-        associations_dict = repository_util.handle_role_associations(trans.app, role, repository, **kwd)
+        associations_dict = repository_util.handle_role_associations(
+            trans.app, role, repository, **kwd)
         in_users = associations_dict.get('in_users', [])
         out_users = associations_dict.get('out_users', [])
         in_groups = associations_dict.get('in_groups', [])
@@ -309,15 +387,21 @@ class AdminController(BaseUIController, Admin):
 
     @web.expose
     @web.require_admin
-    def reset_metadata_on_selected_repositories_in_tool_shed(self, trans, **kwd):
-        rmm = repository_metadata_manager.RepositoryMetadataManager(trans.app, trans.user)
+    def reset_metadata_on_selected_repositories_in_tool_shed(
+            self, trans, **kwd):
+        rmm = repository_metadata_manager.RepositoryMetadataManager(
+            trans.app, trans.user)
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            message, status = rmm.reset_metadata_on_selected_repositories(**kwd)
+            message, status = rmm.reset_metadata_on_selected_repositories(
+                **kwd)
         else:
             message = escape(util.restore_text(kwd.get('message', '')))
             status = kwd.get('status', 'done')
         repositories_select_field = rmm.build_repository_ids_select_field(
-            name='repository_ids', multiple=True, display='checkboxes', my_writable=False)
+            name='repository_ids',
+            multiple=True,
+            display='checkboxes',
+            my_writable=False)
         return trans.fill_template(
             '/webapps/tool_shed/common/reset_metadata_on_selected_repositories.mako',
             repositories_select_field=repositories_select_field,
@@ -335,7 +419,8 @@ class AdminController(BaseUIController, Admin):
             count = 0
             undeleted_repositories = ""
             for repository_id in ids:
-                repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
+                repository = repository_util.get_repository_in_tool_shed(
+                    trans.app, repository_id)
                 if repository:
                     if repository.deleted:
                         # Inspect all repository_metadata records to determine those that are installable, and mark
@@ -360,13 +445,19 @@ class AdminController(BaseUIController, Admin):
                         count += 1
                         undeleted_repositories += " %s" % repository.name
             if count:
-                message = "Undeleted %d %s: %s" % (count, inflector.cond_plural(count, "repository"), undeleted_repositories)
+                message = "Undeleted %d %s: %s" % (
+                    count, inflector.cond_plural(count, "repository"),
+                    undeleted_repositories)
             else:
                 message = "No selected repositories were marked deleted, so they could not be undeleted."
         else:
             message = "No repository ids received for undeleting."
         trans.response.send_redirect(
-            web.url_for(controller='admin', action='browse_repositories', message=util.sanitize_text(message), status='done'))
+            web.url_for(
+                controller='admin',
+                action='browse_repositories',
+                message=util.sanitize_text(message),
+                status='done'))
 
     @web.expose
     @web.require_admin
@@ -390,7 +481,11 @@ class AdminController(BaseUIController, Admin):
         else:
             message = "No category ids received for deleting."
         trans.response.send_redirect(
-            web.url_for(controller='admin', action='manage_categories', message=util.sanitize_text(message), status='done'))
+            web.url_for(
+                controller='admin',
+                action='manage_categories',
+                message=util.sanitize_text(message),
+                status='done'))
 
     @web.expose
     @web.require_admin
@@ -413,11 +508,16 @@ class AdminController(BaseUIController, Admin):
                         trans.sa_session.delete(rca)
                     trans.sa_session.flush()
                     purged_categories += " %s " % category.name
-            message = "Purged %d categories: %s" % (count, escape(purged_categories))
+            message = "Purged %d categories: %s" % (count,
+                                                    escape(purged_categories))
         else:
             message = "No category ids received for purging."
         trans.response.send_redirect(
-            web.url_for(controller='admin', action='manage_categories', message=util.sanitize_text(message), status='done'))
+            web.url_for(
+                controller='admin',
+                action='manage_categories',
+                message=util.sanitize_text(message),
+                status='done'))
 
     @web.expose
     @web.require_admin
@@ -438,8 +538,13 @@ class AdminController(BaseUIController, Admin):
                     trans.app.repository_registry.add_category_entry(category)
                     count += 1
                     undeleted_categories += " %s" % category.name
-            message = "Undeleted %d categories: %s" % (count, escape(undeleted_categories))
+            message = "Undeleted %d categories: %s" % (
+                count, escape(undeleted_categories))
         else:
             message = "No category ids received for undeleting."
         trans.response.send_redirect(
-            web.url_for(controller='admin', action='manage_categories', message=util.sanitize_text(message), status='done'))
+            web.url_for(
+                controller='admin',
+                action='manage_categories',
+                message=util.sanitize_text(message),
+                status='done'))

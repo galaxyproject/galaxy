@@ -43,24 +43,41 @@ class FormsGrid(grids.Grid):
             model_class=model.FormDefinition,
             link=(lambda item: iff(item.deleted, None, dict(operation="view_latest_form_definition", id=item.id))),
             attach_popup=True,
-            filterable="advanced"),
+            filterable="advanced"
+        ),
         DescriptionColumn("Description", key='desc', model_class=model.FormDefinition, filterable="advanced"),
         TypeColumn("Type"),
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
     ]
     columns.append(
         grids.MulticolFilterColumn(
-            "Search", cols_to_filter=[columns[0], columns[1]], key="free-text-search", visible=False, filterable="standard"))
+            "Search",
+            cols_to_filter=[columns[0], columns[1]],
+            key="free-text-search",
+            visible=False,
+            filterable="standard"))
     operations = [
-        grids.GridOperation("Edit", allow_multiple=False, condition=(lambda item: not item.deleted)),
-        grids.GridOperation("Delete", allow_multiple=True, condition=(lambda item: not item.deleted)),
+        grids.GridOperation(
+            "Edit",
+            allow_multiple=False,
+            condition=(lambda item: not item.deleted)),
+        grids.GridOperation(
+            "Delete",
+            allow_multiple=True,
+            condition=(lambda item: not item.deleted)),
         grids.GridOperation("Undelete", condition=(lambda item: item.deleted)),
     ]
-    global_actions = [grids.GridAction("Create new form", dict(controller='forms', action='create_form_definition'))]
+    global_actions = [
+        grids.GridAction("Create new form",
+                         dict(
+                             controller='forms',
+                             action='create_form_definition'))
+    ]
 
     def build_initial_query(self, trans, **kwargs):
-        return trans.sa_session.query(self.model_class).join(model.FormDefinition,
-                                                             self.model_class.latest_form_id == model.FormDefinition.id)
+        return trans.sa_session.query(self.model_class).join(
+            model.FormDefinition,
+            self.model_class.latest_form_id == model.FormDefinition.id)
 
 
 class Forms(BaseUIController):
@@ -85,7 +102,11 @@ class Forms(BaseUIController):
             operation = kwd['operation'].lower()
             if not kwd.get('id', None):
                 return trans.response.send_redirect(
-                    web.url_for(controller='forms', action='browse_form_definitions', status='error', message="Invalid form ID"))
+                    web.url_for(
+                        controller='forms',
+                        action='browse_form_definitions',
+                        status='error',
+                        message="Invalid form ID"))
             if operation == "view_latest_form_definition":
                 return self.view_latest_form_definition(trans, **kwd)
             elif operation == "delete":
@@ -106,8 +127,14 @@ class Forms(BaseUIController):
                                                       .get(trans.security.decode_id(form_definition_current_id))
         except:
             return trans.response.send_redirect(
-                web.url_for(controller='forms', action='browse_form_definitions', message='Invalid form', status='error'))
-        return trans.fill_template('/admin/forms/view_form_definition.mako', form_definition=form_definition_current.latest_form)
+                web.url_for(
+                    controller='forms',
+                    action='browse_form_definitions',
+                    message='Invalid form',
+                    status='error'))
+        return trans.fill_template(
+            '/admin/forms/view_form_definition.mako',
+            form_definition=form_definition_current.latest_form)
 
     @web.expose
     @web.require_admin
@@ -117,7 +144,8 @@ class Forms(BaseUIController):
         status = params.get('status', 'done')
         self.__imported_from_file = False
         if params.get('create_form_button', False):
-            form_definition, message = self.save_form_definition(trans, form_definition_current_id=None, **kwd)
+            form_definition, message = self.save_form_definition(
+                trans, form_definition_current_id=None, **kwd)
             if not form_definition:
                 return trans.response.send_redirect(
                     web.url_for(
@@ -126,24 +154,41 @@ class Forms(BaseUIController):
                         message=message,
                         status='error',
                         name=util.restore_text(params.get('name', '')),
-                        description=util.restore_text(params.get('description', ''))))
+                        description=util.restore_text(
+                            params.get('description', ''))))
             if self.__imported_from_file:
                 return trans.response.send_redirect(
-                    web.url_for(controller='forms', action='edit_form_definition', id=trans.security.encode_id(form_definition.current.id)))
+                    web.url_for(
+                        controller='forms',
+                        action='edit_form_definition',
+                        id=trans.security.encode_id(
+                            form_definition.current.id)))
             else:
                 return trans.response.send_redirect(
                     web.url_for(
                         controller='forms',
                         action='edit_form_definition',
-                        id=trans.security.encode_id(form_definition.current.id),
+                        id=trans.security.encode_id(
+                            form_definition.current.id),
                         add_field_button='Add field',
                         name=form_definition.name,
                         description=form_definition.desc,
                         form_type_select_field=form_definition.type))
-        inputs = [('Name', TextField('name', 40, util.restore_text(params.get('name', '')))), ('Description', TextField(
-            'description', 40, util.restore_text(params.get('description', '')))), ('Type', self.__build_form_types_widget(
-                trans, selected=params.get('form_type', 'none'))), ('Import from csv file (Optional)', FileField('file_data', 40, ''))]
-        return trans.fill_template('/admin/forms/create_form.mako', inputs=inputs, message=message, status=status)
+        inputs = [('Name',
+                   TextField('name', 40,
+                             util.restore_text(params.get('name', '')))),
+                  ('Description', TextField(
+                      'description', 40,
+                      util.restore_text(params.get('description', '')))),
+                  ('Type', self.__build_form_types_widget(
+                      trans, selected=params.get('form_type', 'none'))),
+                  ('Import from csv file (Optional)', FileField(
+                      'file_data', 40, ''))]
+        return trans.fill_template(
+            '/admin/forms/create_form.mako',
+            inputs=inputs,
+            message=message,
+            status=status)
 
     @web.expose
     @web.require_admin
@@ -158,10 +203,16 @@ class Forms(BaseUIController):
         message = util.restore_text(params.get('message', ''))
         status = params.get('status', 'done')
         try:
-            form_definition_current = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(trans.security.decode_id(kwd['id']))
+            form_definition_current = trans.sa_session.query(
+                trans.app.model.FormDefinitionCurrent).get(
+                    trans.security.decode_id(kwd['id']))
         except:
             return trans.response.send_redirect(
-                web.url_for(controller='forms', action='browse_form_definitions', message='Invalid form', status='error'))
+                web.url_for(
+                    controller='forms',
+                    action='browse_form_definitions',
+                    message='Invalid form',
+                    status='error'))
         form_definition = form_definition_current.latest_form
         # TODO: eliminate the need for this refresh param.
         if params.get('refresh', False):
@@ -173,7 +224,10 @@ class Forms(BaseUIController):
         # Save changes
         if params.get('save_changes_button', False):
             new_form_definition, message = self.save_form_definition(
-                trans, form_definition_current_id=form_definition.form_definition_current.id, **kwd)
+                trans,
+                form_definition_current_id=form_definition.
+                form_definition_current.id,
+                **kwd)
             # if validation error encountered while saving the form, show the
             # unsaved form, with the error message
             if not new_form_definition:
@@ -206,10 +260,12 @@ class Forms(BaseUIController):
             del current_form['fields'][index]
         # Add SelectField option
         elif 'Add' in kwd.values():
-            current_form, status, message = self.__add_select_field_option(trans=trans, current_form=current_form, **kwd)
+            current_form, status, message = self.__add_select_field_option(
+                trans=trans, current_form=current_form, **kwd)
         # Remove SelectField option
         elif 'Remove' in kwd.values():
-            current_form, status, message = self.__remove_select_field_option(trans=trans, current_form=current_form, **kwd)
+            current_form, status, message = self.__remove_select_field_option(
+                trans=trans, current_form=current_form, **kwd)
         return self.show_editable_form_definition(
             trans=trans,
             form_definition=form_definition,
@@ -253,7 +309,8 @@ class Forms(BaseUIController):
             index = 0
             while True:
                 if 'grid_layout%i' % index in kwd:
-                    grid_name = util.restore_text(params.get('grid_layout%i' % index, ''))
+                    grid_name = util.restore_text(
+                        params.get('grid_layout%i' % index, ''))
                     layout.append(grid_name)
                     index = index + 1
                 else:
@@ -273,9 +330,13 @@ class Forms(BaseUIController):
             fields = fields
         else:
             fields, layout = self.__import_fields(trans, csv_file, form_type)
-        return dict(name=name, desc=desc, type=form_type, layout=layout, fields=fields)
+        return dict(
+            name=name, desc=desc, type=form_type, layout=layout, fields=fields)
 
-    def save_form_definition(self, trans, form_definition_current_id=None, **kwd):
+    def save_form_definition(self,
+                             trans,
+                             form_definition_current_id=None,
+                             **kwd):
         '''
         This method saves the current form
         '''
@@ -292,11 +353,13 @@ class Forms(BaseUIController):
             if not VALID_FIELDNAME_RE.match(field['name']):
                 return None, "'%s' is not a valid field name." % field['name']
             if field['name'] in field_names_dict:
-                return None, "Each field name must be unique in the form definition. '%s' is not unique." % field['name']
+                return None, "Each field name must be unique in the form definition. '%s' is not unique." % field[
+                    'name']
             else:
                 field_names_dict[field['name']] = 1
         # if type is sample form, it should have at least one layout grid
-        if current_form['type'] == trans.app.model.FormDefinition.types.SAMPLE and not len(current_form['layout']):
+        if current_form['type'] == trans.app.model.FormDefinition.types.SAMPLE and not len(
+                current_form['layout']):
             current_form['layout'] = ['Layout1']
         # create a new form definition
         form_definition = trans.app.model.FormDefinition(
@@ -309,7 +372,9 @@ class Forms(BaseUIController):
         if form_definition_current_id:  # save changes to the existing form
             # change the pointer in the form_definition_current table to point
             # to this new record
-            form_definition_current = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(form_definition_current_id)
+            form_definition_current = trans.sa_session.query(
+                trans.app.model.FormDefinitionCurrent).get(
+                    form_definition_current_id)
         else:  # create a new form
             form_definition_current = trans.app.model.FormDefinitionCurrent()
         # create corresponding row in the form_definition_current table
@@ -317,10 +382,18 @@ class Forms(BaseUIController):
         form_definition_current.latest_form = form_definition
         trans.sa_session.add(form_definition_current)
         trans.sa_session.flush()
-        message = "The new form named '%s' has been created. " % (form_definition.name)
+        message = "The new form named '%s' has been created. " % (
+            form_definition.name)
         return form_definition, message
 
-    def show_editable_form_definition(self, trans, form_definition, current_form, message='', status='done', response_redirect=None, **kwd):
+    def show_editable_form_definition(self,
+                                      trans,
+                                      form_definition,
+                                      current_form,
+                                      message='',
+                                      status='done',
+                                      response_redirect=None,
+                                      **kwd):
         """
         Displays the form and any of the changes made to it in edit mode. In this method
         all the widgets are build for all name, description and all the fields of a form
@@ -328,17 +401,25 @@ class Forms(BaseUIController):
         """
         util.Params(kwd)
         # name & description
-        form_details = [('Name', TextField('name', 40, current_form['name'])), ('Description', TextField(
-            'description', 40, current_form['desc'])), ('Type', HiddenField('form_type_select_field', current_form['type']))]
+        form_details = [('Name', TextField(
+            'name', 40, current_form['name'])), ('Description', TextField(
+                'description', 40,
+                current_form['desc'])), ('Type', HiddenField(
+                    'form_type_select_field', current_form['type']))]
         form_layout = []
         if current_form['type'] == trans.app.model.FormDefinition.types.SAMPLE:
             for index, layout_name in enumerate(current_form['layout']):
-                form_layout.append(TextField('grid_layout%i' % index, 40, layout_name))
+                form_layout.append(
+                    TextField('grid_layout%i' % index, 40, layout_name))
         # fields
         field_details = []
         for field_index, field in enumerate(current_form['fields']):
             field_widgets = self.build_form_definition_field_widgets(
-                trans=trans, layout_grids=current_form['layout'], field_index=field_index, field=field, form_type=current_form['type'])
+                trans=trans,
+                layout_grids=current_form['layout'],
+                field_index=field_index,
+                field=field,
+                form_type=current_form['type'])
             field_details.append(field_widgets)
         return trans.fill_template(
             '/admin/forms/edit_form_definition.mako',
@@ -358,16 +439,25 @@ class Forms(BaseUIController):
         id_list = util.listify(kwd['id'])
         for id in id_list:
             try:
-                form_definition_current = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(trans.security.decode_id(id))
+                form_definition_current = trans.sa_session.query(
+                    trans.app.model.FormDefinitionCurrent).get(
+                        trans.security.decode_id(id))
             except:
                 return trans.response.send_redirect(
-                    web.url_for(controller='forms', action='browse_form_definitions', message='Invalid form', status='error'))
+                    web.url_for(
+                        controller='forms',
+                        action='browse_form_definitions',
+                        message='Invalid form',
+                        status='error'))
             form_definition_current.deleted = True
             trans.sa_session.add(form_definition_current)
             trans.sa_session.flush()
         return trans.response.send_redirect(
             web.url_for(
-                controller='forms', action='browse_form_definitions', message='%i forms have been deleted.' % len(id_list), status='done'))
+                controller='forms',
+                action='browse_form_definitions',
+                message='%i forms have been deleted.' % len(id_list),
+                status='done'))
 
     @web.expose
     @web.require_admin
@@ -375,30 +465,43 @@ class Forms(BaseUIController):
         id_list = util.listify(kwd['id'])
         for id in id_list:
             try:
-                form_definition_current = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(trans.security.decode_id(id))
+                form_definition_current = trans.sa_session.query(
+                    trans.app.model.FormDefinitionCurrent).get(
+                        trans.security.decode_id(id))
             except:
                 return trans.response.send_redirect(
-                    web.url_for(controller='forms', action='browse_form_definitions', message='Invalid form', status='error'))
+                    web.url_for(
+                        controller='forms',
+                        action='browse_form_definitions',
+                        message='Invalid form',
+                        status='error'))
             form_definition_current.deleted = False
             trans.sa_session.add(form_definition_current)
             trans.sa_session.flush()
         return trans.response.send_redirect(
             web.url_for(
-                controller='forms', action='browse_form_definitions', message='%i forms have been undeleted.' % len(id_list),
+                controller='forms',
+                action='browse_form_definitions',
+                message='%i forms have been undeleted.' % len(id_list),
                 status='done'))
 
-    def build_form_definition_field_widgets(self, trans, layout_grids, field_index, field, form_type):
+    def build_form_definition_field_widgets(self, trans, layout_grids,
+                                            field_index, field, form_type):
         '''
         This method returns a list of widgets which describes a form definition field. This
         includes the field label, helptext, type, selectfield options, required/optional & layout
         '''
         # field label
-        label = TextField('field_label_' + str(field_index), 40, field['label'])
+        label = TextField('field_label_' + str(field_index), 40,
+                          field['label'])
         # help text
-        helptext = TextField('field_helptext_' + str(field_index), 40, field['helptext'])
+        helptext = TextField('field_helptext_' + str(field_index), 40,
+                             field['helptext'])
         # field type
         field_type_select_field = SelectField(
-            'field_type_' + str(field_index), refresh_on_change=True, refresh_on_change_values=[SelectField.__name__])
+            'field_type_' + str(field_index),
+            refresh_on_change=True,
+            refresh_on_change_values=[SelectField.__name__])
         # fill up the field type selectfield options
         field_type_options = []
         # if the form is for defining samples, then use the sample field types
@@ -406,23 +509,36 @@ class Forms(BaseUIController):
         if form_type == trans.model.FormDefinition.types.SAMPLE:
             for supported_field_type in trans.model.Sample.supported_field_types:
                 if supported_field_type.__name__ == field['type']:
-                    field_type_select_field.add_option(supported_field_type.__name__, supported_field_type.__name__, selected=True)
+                    field_type_select_field.add_option(
+                        supported_field_type.__name__,
+                        supported_field_type.__name__,
+                        selected=True)
                     if supported_field_type.__name__ == SelectField.__name__:
                         # when field type is Selectfield, add option Textfields
-                        field_type_options = self.__build_field_type_select_field_options(field, field_index)
+                        field_type_options = self.__build_field_type_select_field_options(
+                            field, field_index)
                 else:
-                    field_type_select_field.add_option(supported_field_type.__name__, supported_field_type.__name__)
+                    field_type_select_field.add_option(
+                        supported_field_type.__name__,
+                        supported_field_type.__name__)
         else:
             for supported_field_type in trans.model.FormDefinition.supported_field_types:
                 if supported_field_type.__name__ == field['type']:
-                    field_type_select_field.add_option(supported_field_type.__name__, supported_field_type.__name__, selected=True)
+                    field_type_select_field.add_option(
+                        supported_field_type.__name__,
+                        supported_field_type.__name__,
+                        selected=True)
                     if supported_field_type.__name__ == SelectField.__name__:
                         # when field type is Selectfield, add option Textfields
-                        field_type_options = self.__build_field_type_select_field_options(field, field_index)
+                        field_type_options = self.__build_field_type_select_field_options(
+                            field, field_index)
                 else:
-                    field_type_select_field.add_option(supported_field_type.__name__, supported_field_type.__name__)
+                    field_type_select_field.add_option(
+                        supported_field_type.__name__,
+                        supported_field_type.__name__)
         # required/optional radio button
-        required = SelectField('field_required_' + str(field_index), display='radio')
+        required = SelectField(
+            'field_required_' + str(field_index), display='radio')
         if field['required'] == 'required':
             required.add_option('Required', 'required', selected=True)
             required.add_option('Optional', 'optional')
@@ -431,24 +547,36 @@ class Forms(BaseUIController):
             required.add_option('Optional', 'optional', selected=True)
         # layout grid option select_field
         if layout_grids and form_type == trans.model.FormDefinition.types.SAMPLE:
-            layout_select_field = SelectField('field_layout_' + str(field_index))
+            layout_select_field = SelectField('field_layout_' +
+                                              str(field_index))
             for index, grid_name in enumerate(layout_grids):
-                if str(field.get('layout', None)) == str(index):  # existing behavior: integer indexes are stored as strings.
+                if str(field.get('layout', None)) == str(
+                        index
+                ):  # existing behavior: integer indexes are stored as strings.
                     grid_selected = True
                 else:
                     grid_selected = False
-                layout_select_field.add_option("%i. %s" % (index + 1, grid_name), index, selected=grid_selected)
+                layout_select_field.add_option(
+                    "%i. %s" % (index + 1, grid_name),
+                    index,
+                    selected=grid_selected)
         # default value
-        default_value = TextField('field_default_' + str(field_index), 40, field.get('default', ''))
+        default_value = TextField('field_default_' + str(field_index), 40,
+                                  field.get('default', ''))
         # field name
         name = TextField('field_name_' + str(field_index), 40, field['name'])
         name_helptext = "The field name must be unique for each field and must contain only alphanumeric characters and underscore ."
         if layout_grids and form_type == trans.model.FormDefinition.types.SAMPLE:
-            return [('Field label', label), ('Help text', helptext), ('Type', field_type_select_field, "Add options below",
-                                                                      field_type_options), ('Default value', default_value), ('', required),
-                    ('Select the grid layout to place this field', layout_select_field), ('Field name', name, name_helptext)]
-        return [('Field label', label), ('Help text', helptext), ('Type', field_type_select_field, "Add options below", field_type_options),
-                ('Default value', default_value), ('', required), ('Field name', name, name_helptext)]
+            return [('Field label', label), ('Help text', helptext),
+                    ('Type', field_type_select_field, "Add options below",
+                     field_type_options), ('Default value',
+                                           default_value), ('', required),
+                    ('Select the grid layout to place this field',
+                     layout_select_field), ('Field name', name, name_helptext)]
+        return [('Field label', label), ('Help text', helptext),
+                ('Type', field_type_select_field, "Add options below",
+                 field_type_options), ('Default value', default_value),
+                ('', required), ('Field name', name, name_helptext)]
 
     def __build_field_type_select_field_options(self, field, field_index):
         '''
@@ -457,8 +585,11 @@ class Forms(BaseUIController):
         field_type_options = []
         if field['selectlist']:
             for ctr, option in enumerate(field['selectlist']):
-                option_textfield = TextField('field_' + str(field_index) + '_option_' + str(ctr), 40, option)
-                field_type_options.append(('Option ' + str(ctr + 1), option_textfield))
+                option_textfield = TextField(
+                    'field_' + str(field_index) + '_option_' + str(ctr), 40,
+                    option)
+                field_type_options.append(('Option ' + str(ctr + 1),
+                                           option_textfield))
         return field_type_options
 
     def __add_select_field_option(self, trans, current_form, **kwd):
@@ -532,7 +663,8 @@ class Forms(BaseUIController):
         params = util.Params(kwd)
         label = util.restore_text(params.get('field_label_%i' % index, ''))
         name = util.restore_text(params.get('field_name_%i' % index, ''))
-        helptext = util.restore_text(params.get('field_helptext_%i' % index, ''))
+        helptext = util.restore_text(
+            params.get('field_helptext_%i' % index, ''))
         required = params.get('field_required_%i' % index, False)
         field_type = util.restore_text(params.get('field_type_%i' % index, ''))
         layout = params.get('field_layout_%i' % index, '0')
@@ -606,7 +738,11 @@ class Forms(BaseUIController):
         except:
             return trans.response.send_redirect(
                 web.url_for(
-                    controller='forms', action='create_form', status='error', message='Error in importing <b>%s</b> file' % csv_file.file))
+                    controller='forms',
+                    action='create_form',
+                    status='error',
+                    message='Error in importing <b>%s</b> file' %
+                    csv_file.file))
         self.__imported_from_file = True
         return fields, list(layouts)
 
@@ -628,7 +764,8 @@ class Forms(BaseUIController):
     def __build_form_types_widget(self, trans, selected='none'):
         form_type_select_field = SelectField('form_type_select_field')
         if selected == 'none':
-            form_type_select_field.add_option('Select one', 'none', selected=True)
+            form_type_select_field.add_option(
+                'Select one', 'none', selected=True)
         else:
             form_type_select_field.add_option('Select one', 'none')
         fd_types = trans.app.model.FormDefinition.types.items()

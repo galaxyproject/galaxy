@@ -54,8 +54,10 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         self.config.check()
         config.configure_logging(self.config)
         self.configure_fluent_log()
-        self.config.reload_sanitize_whitelist(explicit='sanitize_whitelist_file' in kwargs)
-        self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
+        self.config.reload_sanitize_whitelist(
+            explicit='sanitize_whitelist_file' in kwargs)
+        self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(
+            self.config)
         # control_worker *can* be initialized with a queue, but here we don't
         # want to and we'll allow postfork to bind and start it.
         self.control_worker = GalaxyQueueWorker(self)
@@ -67,11 +69,15 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
         check_migrate_tools = self.config.check_migrate_tools
-        self._configure_models(check_migrate_databases=True, check_migrate_tools=check_migrate_tools, config_file=config_file)
+        self._configure_models(
+            check_migrate_databases=True,
+            check_migrate_tools=check_migrate_tools,
+            config_file=config_file)
 
         # Manage installed tool shed repositories.
         from tool_shed.galaxy_install import installed_repository_manager
-        self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager(self)
+        self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager(
+            self)
 
         self._configure_datatypes_registry(self.installed_repository_manager)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
@@ -86,7 +92,8 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)
         # Load dbkey / genome build manager
-        self._configure_genome_builds(data_table_name="__dbkeys__", load_old_style=True)
+        self._configure_genome_builds(
+            data_table_name="__dbkeys__", load_old_style=True)
 
         # Genomes
         self.genomes = Genomes(self)
@@ -95,10 +102,12 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
 
         # Initialize job metrics manager, needs to be in place before
         # config so per-destination modifications can be made.
-        self.job_metrics = job_metrics.JobMetrics(self.config.job_metrics_config_file, app=self)
+        self.job_metrics = job_metrics.JobMetrics(
+            self.config.job_metrics_config_file, app=self)
 
         # Initialize error report plugins.
-        self.error_reports = ErrorReports(self.config.error_report_file, app=self)
+        self.error_reports = ErrorReports(
+            self.config.error_report_file, app=self)
 
         # Initialize the job management configuration
         self.job_config = jobs.JobConfiguration(self)
@@ -113,9 +122,11 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         # Load Data Manager
         self.data_managers = DataManagers(self)
         # Load the update repository manager.
-        self.update_repository_manager = update_repository_manager.UpdateRepositoryManager(self)
+        self.update_repository_manager = update_repository_manager.UpdateRepositoryManager(
+            self)
         # Load proprietary datatype converters and display applications.
-        self.installed_repository_manager.load_proprietary_converters_and_display_applications()
+        self.installed_repository_manager.load_proprietary_converters_and_display_applications(
+        )
         # Load datatype display applications defined in local datatypes_conf.xml
         self.datatypes_registry.load_display_applications(self)
         # Load datatype converters defined in local datatypes_conf.xml
@@ -126,7 +137,9 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         load_lib_tools(self.toolbox)
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = VisualizationsRegistry(
-            self, directories_setting=self.config.visualization_plugins_directory, template_cache_dir=self.config.template_cache)
+            self,
+            directories_setting=self.config.visualization_plugins_directory,
+            template_cache_dir=self.config.template_cache)
         # Tours registry
         self.tour_registry = ToursRegistry(self.config.tour_config_dir)
         # Webhooks registry
@@ -134,7 +147,8 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent(
-            model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions)
+            model=self.security_agent.model,
+            permitted_actions=self.security_agent.permitted_actions)
         # Load quota management.
         if self.config.enable_quotas:
             self.quota_agent = galaxy.quota.QuotaAgent(self.model)
@@ -145,8 +159,10 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         # Container for OpenID authentication routines
         if self.config.enable_openid:
             from galaxy.web.framework import openid_manager
-            self.openid_manager = openid_manager.OpenIDManager(self.config.openid_consumer_cache_path)
-            self.openid_providers = OpenIDProviders.from_file(self.config.openid_config_file)
+            self.openid_manager = openid_manager.OpenIDManager(
+                self.config.openid_consumer_cache_path)
+            self.openid_providers = OpenIDProviders.from_file(
+                self.config.openid_config_file)
         else:
             self.openid_providers = OpenIDProviders()
         from galaxy import auth
@@ -155,9 +171,13 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         # postfork if using uWSGI)
         if self.config.use_heartbeat:
             if heartbeat.Heartbeat:
-                self.heartbeat = heartbeat.Heartbeat(self.config, period=self.config.heartbeat_interval, fname=self.config.heartbeat_log)
+                self.heartbeat = heartbeat.Heartbeat(
+                    self.config,
+                    period=self.config.heartbeat_interval,
+                    fname=self.config.heartbeat_log)
                 self.heartbeat.daemon = True
-                self.application_stack.register_postfork_function(self.heartbeat.start)
+                self.application_stack.register_postfork_function(
+                    self.heartbeat.start)
         self.sentry_client = None
         if self.config.sentry_dsn:
 
@@ -165,7 +185,8 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
                 import raven
                 self.sentry_client = raven.Client(self.config.sentry_dsn)
 
-            self.application_stack.register_postfork_function(postfork_sentry_client)
+            self.application_stack.register_postfork_function(
+                postfork_sentry_client)
 
         # Transfer manager client
         if self.config.get_bool('enable_beta_job_managers', False):
@@ -180,12 +201,14 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         self.job_stop_queue = self.job_manager.job_stop_queue
         self.proxy_manager = ProxyManager(self.config)
         # Initialize the external service types
-        self.external_service_types = external_service_types.ExternalServiceTypesCollection(self.config.external_service_type_config_file,
-                                                                                            self.config.external_service_type_path, self)
+        self.external_service_types = external_service_types.ExternalServiceTypesCollection(
+            self.config.external_service_type_config_file,
+            self.config.external_service_type_path, self)
 
         from galaxy.workflow import scheduling_manager
         # Must be initialized after job_config.
-        self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
+        self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(
+            self)
 
         # Configure handling of signals
         handlers = {}
@@ -220,10 +243,12 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
     def configure_fluent_log(self):
         if self.config.fluent_log:
             from galaxy.util.log.fluent_log import FluentTraceLogger
-            self.trace_logger = FluentTraceLogger('galaxy', self.config.fluent_host, self.config.fluent_port)
+            self.trace_logger = FluentTraceLogger(
+                'galaxy', self.config.fluent_host, self.config.fluent_port)
         else:
             self.trace_logger = None
 
     def is_job_handler(self):
         return (self.config.track_jobs_in_database
-                and self.job_config.is_handler(self.config.server_name)) or not self.config.track_jobs_in_database
+                and self.job_config.is_handler(self.config.server_name)
+                ) or not self.config.track_jobs_in_database

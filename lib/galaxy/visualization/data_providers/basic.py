@@ -40,7 +40,13 @@ class BaseDataProvider(object):
         """
         raise Exception("Unimplemented Function")
 
-    def get_data(self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs):
+    def get_data(self,
+                 chrom,
+                 start,
+                 end,
+                 start_val=0,
+                 max_vals=sys.maxint,
+                 **kwargs):
         """
         Returns data as specified by kwargs. start_val is the first element to
         return and max_vals indicates the number of values to return.
@@ -62,7 +68,8 @@ class ColumnDataProvider(BaseDataProvider):
     """ Data provider for columnar data """
     MAX_LINES_RETURNED = 30000
 
-    def __init__(self, original_dataset, max_lines_returned=MAX_LINES_RETURNED):
+    def __init__(self, original_dataset,
+                 max_lines_returned=MAX_LINES_RETURNED):
         # Compatibility check.
         if not isinstance(original_dataset.datatype, Tabular):
             raise Exception("Data provider can only be used with tabular data")
@@ -72,7 +79,12 @@ class ColumnDataProvider(BaseDataProvider):
         # allow throttling
         self.max_lines_returned = max_lines_returned
 
-    def get_data(self, columns=None, start_val=0, max_vals=None, skip_comments=True, **kwargs):
+    def get_data(self,
+                 columns=None,
+                 start_val=0,
+                 max_vals=None,
+                 skip_comments=True,
+                 **kwargs):
         """
         Returns data from specified columns in dataset. Format is list of lists
         where each list is a line of data.
@@ -95,23 +107,34 @@ class ColumnDataProvider(BaseDataProvider):
 
         # skip comment lines (if any/avail)
         # pre: should have original_dataset and
-        if (skip_comments and self.original_dataset.metadata.comment_lines and start_val < self.original_dataset.metadata.comment_lines):
+        if (skip_comments and self.original_dataset.metadata.comment_lines
+                and start_val < self.original_dataset.metadata.comment_lines):
             start_val = int(self.original_dataset.metadata.comment_lines)
 
         # columns is an array of ints for now (should handle column names later)
         columns = loads(columns)
         for column in columns:
             assert ((column < self.original_dataset.metadata.columns)
-                    and (column >= 0)), ("column index (%d) must be positive and less" % (column) + " than the number of columns: %d" %
-                                         (self.original_dataset.metadata.columns))
+                    and (column >= 0)), (
+                        "column index (%d) must be positive and less" %
+                        (column) + " than the number of columns: %d" %
+                        (self.original_dataset.metadata.columns))
         # print columns, start_val, max_vals, skip_comments, kwargs
 
         # set up the response, column lists
         response = {}
         response['data'] = data = [[] for column in columns]
-        response['meta'] = meta = [{'min': None, 'max': None, 'count': 0, 'sum': 0} for column in columns]
+        response['meta'] = meta = [{
+            'min': None,
+            'max': None,
+            'count': 0,
+            'sum': 0
+        } for column in columns]
 
-        column_types = [self.original_dataset.metadata.column_types[column] for column in columns]
+        column_types = [
+            self.original_dataset.metadata.column_types[column]
+            for column in columns
+        ]
 
         # function for casting by column_types
         def cast_val(val, type):
@@ -153,10 +176,12 @@ class ColumnDataProvider(BaseDataProvider):
 
                         # if numeric, maintain min, max, sum
                         if (column_type == 'float' or column_type == 'int'):
-                            if ((meta[index]['min'] is None) or (column_val < meta[index]['min'])):
+                            if ((meta[index]['min'] is None)
+                                    or (column_val < meta[index]['min'])):
                                 meta[index]['min'] = column_val
 
-                            if ((meta[index]['max'] is None) or (column_val > meta[index]['max'])):
+                            if ((meta[index]['max'] is None)
+                                    or (column_val > meta[index]['max'])):
                                 meta[index]['max'] = column_val
 
                             meta[index]['sum'] += column_val
@@ -181,7 +206,8 @@ class ColumnDataProvider(BaseDataProvider):
                 sorted_data = sorted(response['data'][index])
                 middle_index = (count / 2) - 1
                 if count % 2 == 0:
-                    meta['median'] = ((sorted_data[middle_index] + sorted_data[(middle_index + 1)]) / 2.0)
+                    meta['median'] = ((sorted_data[middle_index] +
+                                       sorted_data[(middle_index + 1)]) / 2.0)
 
                 else:
                     meta['median'] = sorted_data[middle_index]

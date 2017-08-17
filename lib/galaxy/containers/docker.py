@@ -107,7 +107,10 @@ class DockerCLIInterface(DockerInterface):
         if self._conf.force_tlsverify:
             global_kwopts.append('--tlsverify')
         self._docker_command = self._conf['command_template'].format(
-            executable=self._conf['executable'], global_kwopts=' '.join(global_kwopts), subcommand='{subcommand}', args='{args}')
+            executable=self._conf['executable'],
+            global_kwopts=' '.join(global_kwopts),
+            subcommand='{subcommand}',
+            args='{args}')
 
     def _stringify_kwopt_docker_volumes(self, flag, val):
         """The docker API will take a volumes argument in many formats, try to
@@ -126,7 +129,10 @@ class DockerCLIInterface(DockerInterface):
                     # {'/host/vol': {'bind': '/container/vol'}}
                     # {'/host/vol': {'bind': '/container/vol', 'mode': 'rw'}}
                     mode = guestopts.get('mode', '')
-                    l.append('{vol}:{bind}{mode}'.format(vol=hostvol, bind=guestopts['bind'], mode=':' + mode if mode else ''))
+                    l.append('{vol}:{bind}{mode}'.format(
+                        vol=hostvol,
+                        bind=guestopts['bind'],
+                        mode=':' + mode if mode else ''))
         return self._stringify_kwopt_list(flag, l)
 
     @property
@@ -135,7 +141,8 @@ class DockerCLIInterface(DockerInterface):
         return self._conf.image
 
     def _run_docker(self, subcommand, args=None, verbose=False):
-        command = self._docker_command.format(subcommand=subcommand, args=args or '')
+        command = self._docker_command.format(
+            subcommand=subcommand, args=args or '')
         return self._run_command(command, verbose=verbose)
 
     #
@@ -148,8 +155,11 @@ class DockerCLIInterface(DockerInterface):
 
     def run(self, command, image=None, **kwopts):
         args = '{kwopts} {image} {command}'.format(
-            kwopts=self._stringify_kwopts(kwopts), image=image or self._default_image, command=command if command else '').strip()
-        container_id = self._run_docker(subcommand='run', args=args, verbose=True)
+            kwopts=self._stringify_kwopts(kwopts),
+            image=image or self._default_image,
+            command=command if command else '').strip()
+        container_id = self._run_docker(
+            subcommand='run', args=args, verbose=True)
         return DockerContainer.from_id(self, container_id)
 
     @docker_json
@@ -158,7 +168,8 @@ class DockerCLIInterface(DockerInterface):
             return self._run_docker(subcommand='inspect', args=container_id)
         except ContainerCLIError as exc:
             msg = "Invalid container id: %s" % container_id
-            if exc.stdout == '[]' and exc.stderr == 'Error: no such object: {container_id}'.format(container_id=container_id):
+            if exc.stdout == '[]' and exc.stderr == 'Error: no such object: {container_id}'.format(
+                    container_id=container_id):
                 log.warning(msg)
                 return []
             else:
@@ -170,7 +181,8 @@ class DockerCLIInterface(DockerInterface):
             return self._run_docker(subcommand='image inspect', args=image)
         except ContainerCLIError as exc:
             msg = "%s not pulled, cannot get digest" % image
-            if exc.stdout == '[]' and exc.stderr == 'Error: no such image: {image}'.format(image=image):
+            if exc.stdout == '[]' and exc.stderr == 'Error: no such image: {image}'.format(
+                    image=image):
                 log.warning(msg, image)
                 return []
             else:

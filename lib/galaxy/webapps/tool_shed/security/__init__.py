@@ -21,7 +21,8 @@ class RBACAgent:
     permitted_actions = Bunch()
 
     def associate_components(self, **kwd):
-        raise Exception('No valid method of associating provided components: %s' % kwd)
+        raise Exception(
+            'No valid method of associating provided components: %s' % kwd)
 
     def associate_user_role(self, user, role):
         raise Exception('No valid method of associating a user with a role')
@@ -31,7 +32,10 @@ class RBACAgent:
         When getting permitted actions from an untrusted source like a
         form, ensure that they match our actual permitted actions.
         """
-        return filter(lambda x: x is not None, [self.permitted_actions.get(action_string) for action_string in permitted_action_strings])
+        return filter(lambda x: x is not None, [
+            self.permitted_actions.get(action_string)
+            for action_string in permitted_action_strings
+        ])
 
     def create_private_user_role(self, user):
         raise Exception("Unimplemented Method")
@@ -48,7 +52,9 @@ class RBACAgent:
         return self.permitted_actions.__dict__.values()
 
     def get_item_actions(self, action, item):
-        raise Exception('No valid method of retrieving action (%s) for item %s.' % (action, item))
+        raise Exception(
+            'No valid method of retrieving action (%s) for item %s.' % (action,
+                                                                        item))
 
     def get_private_user_role(self, user):
         raise Exception("Unimplemented Method")
@@ -90,8 +96,10 @@ class CommunityRBACAgent(RBACAgent):
             if 'group' in kwd:
                 return self.associate_group_role(kwd['group'], kwd['role'])
         elif 'repository' in kwd:
-            return self.associate_repository_category(kwd['repository'], kwd['category'])
-        raise Exception('No valid method of associating provided components: %s' % kwd)
+            return self.associate_repository_category(kwd['repository'],
+                                                      kwd['category'])
+        raise Exception(
+            'No valid method of associating provided components: %s' % kwd)
 
     def associate_group_role(self, group, role):
         assoc = self.model.GroupRoleAssociation(group, role)
@@ -119,7 +127,10 @@ class CommunityRBACAgent(RBACAgent):
 
     def create_private_user_role(self, user):
         # Create private role
-        role = self.model.Role(name=user.email, description='Private Role for ' + user.email, type=self.model.Role.types.PRIVATE)
+        role = self.model.Role(
+            name=user.email,
+            description='Private Role for ' + user.email,
+            type=self.model.Role.types.PRIVATE)
         self.sa_session.add(role)
         self.sa_session.flush()
         # Add user to role
@@ -128,7 +139,10 @@ class CommunityRBACAgent(RBACAgent):
 
     def get_item_actions(self, action, item):
         # item must be one of: Dataset, Library, LibraryFolder, LibraryDataset, LibraryDatasetDatasetAssociation
-        return [permission for permission in item.actions if permission.action == action.action]
+        return [
+            permission for permission in item.actions
+            if permission.action == action.action
+        ]
 
     def get_private_user_role(self, user, auto_create=False):
         role = self.sa_session.query(self.model.Role) \
@@ -148,7 +162,11 @@ class CommunityRBACAgent(RBACAgent):
                                            self.model.Role.table.c.type == self.model.Role.types.SYSTEM)) \
                               .first()
 
-    def set_entity_group_associations(self, groups=None, users=None, roles=None, delete_existing_assocs=True):
+    def set_entity_group_associations(self,
+                                      groups=None,
+                                      users=None,
+                                      roles=None,
+                                      delete_existing_assocs=True):
         if groups is None:
             groups = []
         if users is None:
@@ -165,7 +183,12 @@ class CommunityRBACAgent(RBACAgent):
             for user in users:
                 self.associate_components(group=group, user=user)
 
-    def set_entity_role_associations(self, roles=None, users=None, groups=None, repositories=None, delete_existing_assocs=True):
+    def set_entity_role_associations(self,
+                                     roles=None,
+                                     users=None,
+                                     groups=None,
+                                     repositories=None,
+                                     delete_existing_assocs=True):
         if roles is None:
             roles = []
         if users is None:
@@ -184,7 +207,11 @@ class CommunityRBACAgent(RBACAgent):
             for group in groups:
                 self.associate_components(group=group, role=role)
 
-    def set_entity_user_associations(self, users=None, roles=None, groups=None, delete_existing_assocs=True):
+    def set_entity_user_associations(self,
+                                     users=None,
+                                     roles=None,
+                                     groups=None,
+                                     delete_existing_assocs=True):
         if users is None:
             users = []
         if roles is None:
@@ -256,7 +283,8 @@ class CommunityRBACAgent(RBACAgent):
                     return repository_reviewer_role in roles
         return False
 
-    def user_can_browse_component_review(self, app, repository, component_review, user):
+    def user_can_browse_component_review(self, app, repository,
+                                         component_review, user):
         if component_review and user:
             if self.can_push(app, user, repository):
                 # A user with write permission on the repository can access private/public component reviews.
@@ -273,5 +301,8 @@ def get_permitted_actions(filter=None):
     if filter is None:
         return RBACAgent.permitted_actions
     tmp_bunch = Bunch()
-    [tmp_bunch.__dict__.__setitem__(k, v) for k, v in RBACAgent.permitted_actions.items() if k.startswith(filter)]
+    [
+        tmp_bunch.__dict__.__setitem__(k, v)
+        for k, v in RBACAgent.permitted_actions.items() if k.startswith(filter)
+    ]
     return tmp_bunch

@@ -44,7 +44,10 @@ class ToolParameterSanitizer(object):
     True
     """
 
-    VALID_PRESET = {'default': (string.letters + string.digits + " -=_.()/+*^,:?!"), 'none': ''}
+    VALID_PRESET = {
+        'default': (string.letters + string.digits + " -=_.()/+*^,:?!"),
+        'none': ''
+    }
     MAPPING_PRESET = {'default': galaxy.util.mapped_chars, 'none': {}}
     DEFAULT_INVALID_CHAR = 'X'
 
@@ -55,11 +58,14 @@ class ToolParameterSanitizer(object):
         # TODO: Add ability to generically specify a method to use for sanitizing input via specification in tool XML
         rval = ToolParameterSanitizer()
         rval._invalid_char = elem.get('invalid_char', cls.DEFAULT_INVALID_CHAR)
-        rval.sanitize = galaxy.util.string_as_bool(elem.get('sanitize', 'True'))
+        rval.sanitize = galaxy.util.string_as_bool(
+            elem.get('sanitize', 'True'))
         for valid_elem in elem.findall('valid'):
-            rval._valid_chars = rval.get_valid_by_name(valid_elem.get('initial', 'default'))
+            rval._valid_chars = rval.get_valid_by_name(
+                valid_elem.get('initial', 'default'))
             for action_elem in valid_elem:
-                preset = rval.get_valid_by_name(action_elem.get('preset', 'none'))
+                preset = rval.get_valid_by_name(
+                    action_elem.get('preset', 'none'))
                 valid_value = [val for val in action_elem.get('value', [])]
                 if action_elem.tag.lower() == 'add':
                     for val in preset + valid_value:
@@ -70,13 +76,16 @@ class ToolParameterSanitizer(object):
                         while val in rval._valid_chars:
                             rval._valid_chars.remove(val)
                 else:
-                    log.debug('Invalid action tag in valid: %s' % action_elem.tag)
+                    log.debug(
+                        'Invalid action tag in valid: %s' % action_elem.tag)
         for mapping_elem in elem.findall('mapping'):
-            rval._mapped_chars = rval.get_mapping_by_name(mapping_elem.get('initial', 'default'))
+            rval._mapped_chars = rval.get_mapping_by_name(
+                mapping_elem.get('initial', 'default'))
             for action_elem in mapping_elem:
                 map_source = action_elem.get('source', None)
                 map_target = action_elem.get('target', None)
-                preset = rval.get_mapping_by_name(action_elem.get('preset', 'none'))
+                preset = rval.get_mapping_by_name(
+                    action_elem.get('preset', 'none'))
                 if action_elem.tag.lower() == 'add':
                     rval._mapped_chars.update(preset)
                     if None not in [map_source, map_target]:
@@ -88,7 +97,8 @@ class ToolParameterSanitizer(object):
                     if map_source is not None and map_key in rval._mapped_chars:
                         del rval._mapped_chars[map_key]
                 else:
-                    log.debug('Invalid action tag in mapping: %s' % action_elem.tag)
+                    log.debug(
+                        'Invalid action tag in mapping: %s' % action_elem.tag)
         return rval
 
     @classmethod
@@ -124,7 +134,8 @@ class ToolParameterSanitizer(object):
 
     def __init__(self):
         self._valid_chars = []  # List of valid characters
-        self._mapped_chars = {}  # Replace a char with a any number of characters
+        self._mapped_chars = {
+        }  # Replace a char with a any number of characters
         self._invalid_char = self.DEFAULT_INVALID_CHAR  # Replace invalid characters with this character
         self.sanitize = True  # Simply pass back the passed in value
 
@@ -158,4 +169,5 @@ class ToolParameterSanitizer(object):
         elif isinstance(value, list):
             return list(map(self.sanitize_text, value))
         else:
-            raise Exception('Unknown parameter type (%s:%s)' % (type(value), value))
+            raise Exception('Unknown parameter type (%s:%s)' % (type(value),
+                                                                value))

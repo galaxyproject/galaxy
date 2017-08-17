@@ -38,28 +38,39 @@ class SearchController(BaseAPIController, SharableItemSecurityMixin):
                         append = True
                     if not append:
                         if type(item) in [
-                                trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation,
+                                trans.app.model.LibraryFolder, trans.app.model.
+                                LibraryDatasetDatasetAssociation,
                                 trans.app.model.LibraryDataset
                         ]:
-                            if (trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), item, trans.user)):
+                            if (trans.app.security_agent.
+                                    can_access_library_item(
+                                        trans.get_current_user_roles(), item,
+                                        trans.user)):
                                 append = True
                         elif type(item) in [trans.app.model.Job]:
-                            if item.used_id == trans.user or trans.user_is_admin():
+                            if item.used_id == trans.user or trans.user_is_admin(
+                            ):
                                 append = True
-                        elif type(item) in [trans.app.model.Page, trans.app.model.StoredWorkflow]:
+                        elif type(item) in [
+                                trans.app.model.Page,
+                                trans.app.model.StoredWorkflow
+                        ]:
                             try:
-                                if self.security_check(trans, item, False, True):
+                                if self.security_check(trans, item, False,
+                                                       True):
                                     append = True
                             except ItemAccessibilityException:
                                 append = False
                         elif type(item) in [trans.app.model.PageRevision]:
                             try:
-                                if self.security_check(trans, item.page, False, True):
+                                if self.security_check(trans, item.page, False,
+                                                       True):
                                     append = True
                             except ItemAccessibilityException:
                                 append = False
                         elif hasattr(item, 'dataset'):
-                            if trans.app.security_agent.can_access_dataset(current_user_roles, item.dataset):
+                            if trans.app.security_agent.can_access_dataset(
+                                    current_user_roles, item.dataset):
                                 append = True
 
                     if append:

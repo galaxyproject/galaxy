@@ -19,10 +19,14 @@ class RetryActionExecutor(object):
         # Pulsar.
         # http://ask.github.io/kombu/reference/kombu.connection.html#kombu.connection.BrokerConnection.ensure_connection
         raw_max_retries = kwds.get("max_retries", DEFAULT_MAX_RETRIES)
-        self.max_retries = None if not raw_max_retries else int(raw_max_retries)
-        self.interval_start = float(kwds.get("interval_start", DEFAULT_INTERVAL_START))
-        self.interval_step = float(kwds.get("interval_step", DEFAULT_INTERVAL_STEP))
-        self.interval_max = float(kwds.get("interval_max", DEFAULT_INTERVAL_MAX))
+        self.max_retries = None if not raw_max_retries else int(
+            raw_max_retries)
+        self.interval_start = float(
+            kwds.get("interval_start", DEFAULT_INTERVAL_START))
+        self.interval_step = float(
+            kwds.get("interval_step", DEFAULT_INTERVAL_STEP))
+        self.interval_max = float(
+            kwds.get("interval_max", DEFAULT_INTERVAL_MAX))
         self.errback = kwds.get("errback", self.__default_errback)
         self.catch = kwds.get("catch", DEFAULT_CATCH)
 
@@ -49,13 +53,25 @@ class RetryActionExecutor(object):
 
     def __default_errback(self, exc, interval, description=None):
         description = description or self.default_description
-        log.info("Failed to execute %s, retrying in %s seconds.", description, interval, exc_info=True)
+        log.info(
+            "Failed to execute %s, retrying in %s seconds.",
+            description,
+            interval,
+            exc_info=True)
 
 
 # Following functions are derived from Kombu versions @
 # https://github.com/celery/kombu/blob/master/kombu/utils/__init__.py
 # BSD License (https://github.com/celery/kombu/blob/master/LICENSE)
-def _retry_over_time(fun, catch, args=[], kwargs={}, errback=None, max_retries=None, interval_start=2, interval_step=2, interval_max=30):
+def _retry_over_time(fun,
+                     catch,
+                     args=[],
+                     kwargs={},
+                     errback=None,
+                     max_retries=None,
+                     interval_start=2,
+                     interval_step=2,
+                     interval_max=30):
     """Retry the function over and over until max retries is exceeded.
 
     For each retry we sleep a for a while before we try again, this interval
@@ -76,14 +92,20 @@ def _retry_over_time(fun, catch, args=[], kwargs={}, errback=None, max_retries=N
 
     """
     retries = 0
-    interval_range = __fxrange(interval_start, interval_max + interval_start, interval_step, repeatlast=True)
+    interval_range = __fxrange(
+        interval_start,
+        interval_max + interval_start,
+        interval_step,
+        repeatlast=True)
     for retries in count():
         try:
             return fun(*args, **kwargs)
         except catch as exc:
             if max_retries and retries >= max_retries:
                 raise
-            tts = float(errback(exc, interval_range, retries) if errback else next(interval_range))
+            tts = float(
+                errback(exc, interval_range, retries)
+                if errback else next(interval_range))
             if tts:
                 sleep(tts)
 

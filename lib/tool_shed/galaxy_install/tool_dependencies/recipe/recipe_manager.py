@@ -45,8 +45,10 @@ class StepManager(object):
 
     def load_step_handlers(self):
         step_handlers_by_type = dict(
-            assert_directory_executable=step_handler.AssertDirectoryExecutable(self.app),
-            assert_directory_exists=step_handler.AssertDirectoryExists(self.app),
+            assert_directory_executable=step_handler.AssertDirectoryExecutable(
+                self.app),
+            assert_directory_exists=step_handler.AssertDirectoryExists(
+                self.app),
             assert_file_executable=step_handler.AssertFileExecutable(self.app),
             assert_file_exists=step_handler.AssertFileExists(self.app),
             autoconf=step_handler.Autoconf(self.app),
@@ -61,17 +63,20 @@ class StepManager(object):
             move_file=step_handler.MoveFile(self.app),
             regex_replace=step_handler.RegexReplace(self.app),
             set_environment=step_handler.SetEnvironment(self.app),
-            set_environment_for_install=step_handler.SetEnvironmentForInstall(self.app),
+            set_environment_for_install=step_handler.SetEnvironmentForInstall(
+                self.app),
             setup_perl_environment=step_handler.SetupPerlEnvironment(self.app),
             setup_r_environment=step_handler.SetupREnvironment(self.app),
             setup_ruby_environment=step_handler.SetupRubyEnvironment(self.app),
-            setup_python_environment=step_handler.SetupPythonEnvironment(self.app),
+            setup_python_environment=step_handler.SetupPythonEnvironment(
+                self.app),
             setup_virtualenv=step_handler.SetupVirtualEnv(self.app),
             shell_command=step_handler.ShellCommand(self.app),
             template_command=step_handler.TemplateCommand(self.app))
         return step_handlers_by_type
 
-    def prepare_step(self, tool_dependency, action_type, action_elem, action_dict, install_environment, is_binary_download):
+    def prepare_step(self, tool_dependency, action_type, action_elem,
+                     action_dict, install_environment, is_binary_download):
         """
         Prepare the recipe step for later execution.  This generally alters the received action_dict
         with new information needed during this step's execution.

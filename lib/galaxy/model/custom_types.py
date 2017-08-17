@@ -61,7 +61,8 @@ class JSONType(sqlalchemy.types.TypeDecorator):
 
     def load_dialect_impl(self, dialect):
         if dialect.name == "mysql":
-            return dialect.type_descriptor(sqlalchemy.dialects.mysql.MEDIUMBLOB)
+            return dialect.type_descriptor(
+                sqlalchemy.dialects.mysql.MEDIUMBLOB)
         else:
             return self.impl
 
@@ -129,18 +130,24 @@ class MutationObj(Mutable):
                 for val in state_dict['ext.mutable.values']:
                     val._parents[state.obj()] = key
 
-        sqlalchemy.event.listen(parent_cls, 'load', load, raw=True, propagate=True)
-        sqlalchemy.event.listen(parent_cls, 'refresh', load, raw=True, propagate=True)
-        sqlalchemy.event.listen(attribute, 'set', set, raw=True, retval=True, propagate=True)
-        sqlalchemy.event.listen(parent_cls, 'pickle', pickle, raw=True, propagate=True)
-        sqlalchemy.event.listen(parent_cls, 'unpickle', unpickle, raw=True, propagate=True)
+        sqlalchemy.event.listen(
+            parent_cls, 'load', load, raw=True, propagate=True)
+        sqlalchemy.event.listen(
+            parent_cls, 'refresh', load, raw=True, propagate=True)
+        sqlalchemy.event.listen(
+            attribute, 'set', set, raw=True, retval=True, propagate=True)
+        sqlalchemy.event.listen(
+            parent_cls, 'pickle', pickle, raw=True, propagate=True)
+        sqlalchemy.event.listen(
+            parent_cls, 'unpickle', unpickle, raw=True, propagate=True)
 
 
 class MutationDict(MutationObj, dict):
     @classmethod
     def coerce(cls, key, value):
         """Convert plain dictionary to MutationDict"""
-        self = MutationDict((k, MutationObj.coerce(key, v)) for (k, v) in value.items())
+        self = MutationDict((k, MutationObj.coerce(key, v))
+                            for (k, v) in value.items())
         self._key = key
         return self
 
@@ -174,7 +181,8 @@ class MutationList(MutationObj, list):
         self.changed()
 
     def __setslice__(self, start, stop, values):
-        list.__setslice__(self, start, stop, (MutationObj.coerce(self._key, v) for v in values))
+        list.__setslice__(self, start, stop, (MutationObj.coerce(self._key, v)
+                                              for v in values))
         self.changed()
 
     def __delitem__(self, idx):
@@ -189,7 +197,8 @@ class MutationList(MutationObj, list):
         return MutationList(MutationObj.coerce(self._key, self[:]))
 
     def __deepcopy__(self, memo):
-        return MutationList(MutationObj.coerce(self._key, copy.deepcopy(self[:])))
+        return MutationList(
+            MutationObj.coerce(self._key, copy.deepcopy(self[:])))
 
     def append(self, value):
         list.append(self, MutationObj.coerce(self._key, value))
@@ -215,7 +224,9 @@ class MutationList(MutationObj, list):
 
 MutationObj.associate_with(JSONType)
 
-metadata_pickler = AliasPickleModule({("cookbook.patterns", "Bunch"): ("galaxy.util.bunch", "Bunch")})
+metadata_pickler = AliasPickleModule({
+    ("cookbook.patterns", "Bunch"): ("galaxy.util.bunch", "Bunch")
+})
 
 
 def total_size(o, handlers={}, verbose=False):
@@ -234,7 +245,14 @@ def total_size(o, handlers={}, verbose=False):
     def dict_handler(d):
         return chain.from_iterable(d.items())
 
-    all_handlers = {tuple: iter, list: iter, deque: iter, dict: dict_handler, set: iter, frozenset: iter}
+    all_handlers = {
+        tuple: iter,
+        list: iter,
+        deque: iter,
+        dict: dict_handler,
+        set: iter,
+        frozenset: iter
+    }
     all_handlers.update(handlers)  # user handlers take precedence
     seen = set()  # track which object id's have already been seen
     default_size = getsizeof(0)  # estimate sizeof object without __sizeof__
@@ -267,7 +285,9 @@ class MetadataType(JSONType):
                     sz = total_size(v)
                     if sz > app.app.config.max_metadata_value_size:
                         del value[k]
-                        log.warning('Refusing to bind metadata key %s due to size (%s)' % (k, sz))
+                        log.warning(
+                            'Refusing to bind metadata key %s due to size (%s)'
+                            % (k, sz))
             value = json_encoder.encode(value)
         return value
 

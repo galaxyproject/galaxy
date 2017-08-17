@@ -37,7 +37,8 @@ def upgrade(migrate_engine):
             col.create(User_table, index_name='ix_user_form_values_id')
             assert col is User_table.c.form_values_id
         except Exception:
-            log.exception("Adding column 'form_values_id' to galaxy_user table failed.")
+            log.exception(
+                "Adding column 'form_values_id' to galaxy_user table failed.")
         try:
             FormValues_table = Table("form_values", metadata, autoload=True)
         except NoSuchTableError:
@@ -47,11 +48,15 @@ def upgrade(migrate_engine):
             # Add 1 foreign key constraint to the form_values table
             if User_table is not None and FormValues_table is not None:
                 try:
-                    cons = ForeignKeyConstraint([User_table.c.form_values_id], [FormValues_table.c.id], name='user_form_values_id_fk')
+                    cons = ForeignKeyConstraint(
+                        [User_table.c.form_values_id], [FormValues_table.c.id],
+                        name='user_form_values_id_fk')
                     # Create the constraint
                     cons.create()
                 except Exception:
-                    log.exception("Adding foreign key constraint 'user_form_values_id_fk' to table 'galaxy_user' failed.")
+                    log.exception(
+                        "Adding foreign key constraint 'user_form_values_id_fk' to table 'galaxy_user' failed."
+                    )
 
 
 def downgrade(migrate_engine):

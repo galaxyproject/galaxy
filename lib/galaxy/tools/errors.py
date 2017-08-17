@@ -131,11 +131,14 @@ class ErrorReporter(object):
         if not isinstance(hda, model.HistoryDatasetAssociation):
             hda_id = hda
             try:
-                hda = sa_session.query(model.HistoryDatasetAssociation).get(hda_id)
+                hda = sa_session.query(
+                    model.HistoryDatasetAssociation).get(hda_id)
                 assert hda is not None, ValueError("No HDA yet")
             except Exception:
-                hda = sa_session.query(model.HistoryDatasetAssociation).get(app.security.decode_id(hda_id))
-        assert isinstance(hda, model.HistoryDatasetAssociation), ValueError("Bad value provided for HDA (%s)." % (hda))
+                hda = sa_session.query(model.HistoryDatasetAssociation).get(
+                    app.security.decode_id(hda_id))
+        assert isinstance(hda, model.HistoryDatasetAssociation), ValueError(
+            "Bad value provided for HDA (%s)." % (hda))
         self.hda = hda
         # Get the associated job
         self.job = hda.creating_job
@@ -148,19 +151,29 @@ class ErrorReporter(object):
             roles = user.all_roles()
         else:
             roles = []
-        return self.app.security_agent.can_access_dataset(roles, self.hda.dataset)
+        return self.app.security_agent.can_access_dataset(
+            roles, self.hda.dataset)
 
     def create_report(self, user, email='', message='', **kwd):
         hda = self.hda
         job = self.job
         host = web.url_for('/', qualified=True)
         history_id_encoded = self.app.security.encode_id(hda.history_id)
-        history_view_link = web.url_for(controller="history", action="view", id=history_id_encoded, qualified=True)
+        history_view_link = web.url_for(
+            controller="history",
+            action="view",
+            id=history_id_encoded,
+            qualified=True)
         hda_id_encoded = self.app.security.encode_id(hda.id)
-        hda_show_params_link = web.url_for(controller="dataset", action="show_params", dataset_id=hda_id_encoded, qualified=True)
+        hda_show_params_link = web.url_for(
+            controller="dataset",
+            action="show_params",
+            dataset_id=hda_id_encoded,
+            qualified=True)
         # Build the email message
         if user and user.email != email:
-            email_str = "'%s' (providing preferred contact email '%s')" % (user.email, email)
+            email_str = "'%s' (providing preferred contact email '%s')" % (
+                user.email, email)
         else:
             email_str = "'%s'" % (email or 'anonymously')
 
@@ -189,14 +202,17 @@ class ErrorReporter(object):
             email_str=email_str,
             message=util.unicodify(message))
 
-        self.report = string.Template(error_report_template).safe_substitute(report_variables)
+        self.report = string.Template(error_report_template).safe_substitute(
+            report_variables)
 
         # Escape all of the content  for use in the HTML report
         for parameter in report_variables.keys():
             if report_variables[parameter] is not None:
-                report_variables[parameter] = cgi.escape(unicodify(report_variables[parameter]))
+                report_variables[parameter] = cgi.escape(
+                    unicodify(report_variables[parameter]))
 
-        self.html_report = string.Template(error_report_template_html).safe_substitute(report_variables)
+        self.html_report = string.Template(
+            error_report_template_html).safe_substitute(report_variables)
 
     def _send_report(self, user, email=None, message=None, **kwd):
         return self.report
@@ -210,24 +226,34 @@ class ErrorReporter(object):
 class EmailErrorReporter(ErrorReporter):
     def _send_report(self, user, email=None, message=None, **kwd):
         smtp_server = self.app.config.smtp_server
-        assert smtp_server, ValueError("Mail is not configured for this galaxy instance")
+        assert smtp_server, ValueError(
+            "Mail is not configured for this galaxy instance")
         to_address = self.app.config.error_email_to
-        assert to_address, ValueError("Error reporting has been disabled for this galaxy instance")
+        assert to_address, ValueError(
+            "Error reporting has been disabled for this galaxy instance")
 
         frm = to_address
         # Check email a bit
         email = email or ''
         email = email.strip()
         parts = email.split()
-        if len(parts) == 1 and len(email) > 0 and self._can_access_dataset(user):
+        if len(parts) == 1 and len(email) > 0 and self._can_access_dataset(
+                user):
             to = to_address + ", " + email
         else:
             to = to_address
         subject = "Galaxy tool error report from %s" % email
         try:
-            subject = "%s (%s)" % (subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id)
+            subject = "%s (%s)" % (subject, self.app.toolbox.get_tool(
+                self.job.tool_id, self.job.tool_version).old_id)
         except Exception:
             pass
 
         # Send it
-        return util.send_mail(frm, to, subject, self.report, self.app.config, html=self.html_report)
+        return util.send_mail(
+            frm,
+            to,
+            subject,
+            self.report,
+            self.app.config,
+            html=self.html_report)

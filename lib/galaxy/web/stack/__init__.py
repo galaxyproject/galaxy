@@ -19,10 +19,12 @@ try:
 except:
     uwsgi_postfork = lambda x: x  # noqa: E731
     if uwsgi is not None and hasattr(uwsgi, 'numproc'):
-        print("WARNING: This is a uwsgi process but the uwsgidecorators library"
-              " is unavailable.  This is likely due to using an external (not"
-              " in Galaxy's virtualenv) uwsgi and you may experience errors. "
-              "HINT:\n  {venv}/bin/pip install uwsgidecorators".format(venv=os.environ.get('VIRTUAL_ENV', '/path/to/venv')))
+        print(
+            "WARNING: This is a uwsgi process but the uwsgidecorators library"
+            " is unavailable.  This is likely due to using an external (not"
+            " in Galaxy's virtualenv) uwsgi and you may experience errors. "
+            "HINT:\n  {venv}/bin/pip install uwsgidecorators".format(
+                venv=os.environ.get('VIRTUAL_ENV', '/path/to/venv')))
 
 log = logging.getLogger(__name__)
 
@@ -100,5 +102,7 @@ def register_postfork_function(f, *args, **kwargs):
 
 @uwsgi_postfork
 def _do_postfork():
-    for f, args, kwargs in [t for t in UWSGIApplicationStack.postfork_functions]:
+    for f, args, kwargs in [
+            t for t in UWSGIApplicationStack.postfork_functions
+    ]:
         f(*args, **kwargs)

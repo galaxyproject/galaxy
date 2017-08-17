@@ -24,7 +24,10 @@ except ImportError:
     Core = None
 
 if __name__ == '__main__':
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
+    sys.path.insert(
+        0,
+        os.path.abspath(
+            os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
 from galaxy.util.properties import nice_config_parser
 from galaxy.util import safe_makedirs
@@ -40,10 +43,14 @@ MISSING_FILTER_TYPE_MESSAGE = "Missing filter type for section [%s], it will be 
 UNHANDLED_FILTER_TYPE_MESSAGE = "Unhandled filter type encountered [%s] for section [%s]."
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
 YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ")
-RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ")
+RST_DESCRIPTION_WRAPPER = TextWrapper(
+    initial_indent="    ", subsequent_indent="    ")
 UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
 
-App = namedtuple("App", ["config_paths", "default_port", "expected_app_factories", "destination", "schema_path", "uwsgi_module"])
+App = namedtuple("App", [
+    "config_paths", "default_port", "expected_app_factories", "destination",
+    "schema_path", "uwsgi_module"
+])
 
 UWSGI_OPTIONS = OrderedDict([
     ('http', {
@@ -98,22 +105,29 @@ class _OptionAction(object):
 
 class _DeprecatedAndDroppedAction(_OptionAction):
     def converted(self, args, app_desc, key, value):
-        print("Option [%s] has been deprecated and dropped. It is not included in converted configuration." % key)
+        print(
+            "Option [%s] has been deprecated and dropped. It is not included in converted configuration."
+            % key)
         return DROP_OPTION_VALUE
 
     def lint(self, args, app_desc, key, value):
-        print("Option [%s] has been deprecated. Option should be dropped without replacement." % key)
+        print(
+            "Option [%s] has been deprecated. Option should be dropped without replacement."
+            % key)
 
 
 class _PasteAppFactoryAction(_OptionAction):
     def converted(self, args, app_desc, key, value):
         if value not in app_desc.expected_app_factories:
-            raise Exception("Ending convert process - unknown paste factory encountered [%s]" % value)
+            raise Exception(
+                "Ending convert process - unknown paste factory encountered [%s]"
+                % value)
         return DROP_OPTION_VALUE
 
     def lint(self, args, app_desc, key, value):
         if value not in app_desc.expected_app_factories:
-            print("Problem - unknown paste app factory encountered [%s]" % value)
+            print(
+                "Problem - unknown paste app factory encountered [%s]" % value)
 
 
 class _ProductionNotReady(_OptionAction):
@@ -129,7 +143,9 @@ class _ProductionNotReady(_OptionAction):
 
 class _HandleFilterWithAction(_OptionAction):
     def converted(self, args, app_desc, key, value):
-        print("filter-with converted to prefixed module load of uwsgi module, dropping from converted configuration")
+        print(
+            "filter-with converted to prefixed module load of uwsgi module, dropping from converted configuration"
+        )
         return DROP_OPTION_VALUE
 
 
@@ -220,7 +236,9 @@ class AppSchema(Schema):
 GALAXY_APP = App(
     ["universe_wsgi.ini", "config/galaxy.ini"],
     "8080",
-    ["galaxy.web.buildapp:app_factory"],  # TODO: Galaxy could call factory a few different things and they'd all be fine.
+    [
+        "galaxy.web.buildapp:app_factory"
+    ],  # TODO: Galaxy could call factory a few different things and they'd all be fine.
     "config/galaxy.yml",
     "lib/galaxy/webapps/galaxy/config_schema.yml",
     'galaxy.webapps.galaxy.buildapp:uwsgi_app()', )
@@ -255,10 +273,20 @@ def main(argv=None):
 
 def _arg_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument('action', metavar='ACTION', type=str, choices=ACTIONS.keys(), help='action to perform')
-    parser.add_argument('app', metavar='APP', type=str, nargs="?", help=APP_DESCRIPTION)
+    parser.add_argument(
+        'action',
+        metavar='ACTION',
+        type=str,
+        choices=ACTIONS.keys(),
+        help='action to perform')
+    parser.add_argument(
+        'app', metavar='APP', type=str, nargs="?", help=APP_DESCRIPTION)
     parser.add_argument('--add-comments', default=False, action="store_true")
-    parser.add_argument('--dry-run', default=False, action="store_true", help=DRY_RUN_DESCRIPTION)
+    parser.add_argument(
+        '--dry-run',
+        default=False,
+        action="store_true",
+        help=DRY_RUN_DESCRIPTION)
     parser.add_argument('--galaxy_root', default=".", type=str)
     return parser
 
@@ -292,7 +320,9 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
 
 
 def _build_uwsgi_schema(args, app_desc):
-    req = urllib2.Request('https://raw.githubusercontent.com/unbit/uwsgi-docs/master/Options.rst')
+    req = urllib2.Request(
+        'https://raw.githubusercontent.com/unbit/uwsgi-docs/master/Options.rst'
+    )
     response = urllib2.urlopen(req)
     rst_options = response.read()
     last_line = None
@@ -319,7 +349,14 @@ def _build_uwsgi_schema(args, app_desc):
             option["desc"] = line.split(":", 1)[1]
 
         last_line = line
-    schema = {"type": "map", "desc": "uwsgi definition, see http://uwsgi-docs.readthedocs.io/en/latest/Options.html", "mapping": options}
+    schema = {
+        "type":
+        "map",
+        "desc":
+        "uwsgi definition, see http://uwsgi-docs.readthedocs.io/en/latest/Options.html",
+        "mapping":
+        options
+    }
     path = os.path.join(args.galaxy_root, UWSGI_SCHEMA_PATH)
     contents = _ordered_dump(schema)
     _write_to_file(args, contents, path)
@@ -331,7 +368,8 @@ def _find_config(args, app_desc):
         path = None
 
         for possible_ini_config_rel in app_desc.config_paths:
-            possible_ini_config = os.path.join(args.galaxy_root, possible_ini_config_rel)
+            possible_ini_config = os.path.join(args.galaxy_root,
+                                               possible_ini_config_rel)
             if os.path.exists(possible_ini_config):
                 path = possible_ini_config
 
@@ -415,7 +453,9 @@ class GzipFilter(object):
 def _run_conversion(args, app_desc):
     ini_config = _find_config(args, app_desc)
     if ini_config and not _is_ini(ini_config):
-        _warn("Cannot convert YAML file %s, this option is only for ini config files." % ini_config)
+        _warn(
+            "Cannot convert YAML file %s, this option is only for ini config files."
+            % ini_config)
         sys.exit(1)
     elif not ini_config:
         _warn("Failed to find a config to convert - exiting without changes.")
@@ -446,12 +486,14 @@ def _run_conversion(args, app_desc):
             elif filter_type == "egg:Paste#gzip":
                 filters[filter_name] = GzipFilter(filter_name)
             else:
-                message = UNHANDLED_FILTER_TYPE_MESSAGE % (filter_type, section)
+                message = UNHANDLED_FILTER_TYPE_MESSAGE % (filter_type,
+                                                           section)
                 _warn(message)
                 continue
 
     if not server_section:
-        _warn("No server section found, using default uwsgi server definition.")
+        _warn(
+            "No server section found, using default uwsgi server definition.")
         server_config = OrderedDict()
     else:
         server_config = OrderedDict(p.items(server_section))
@@ -467,7 +509,8 @@ def _run_conversion(args, app_desc):
                     _warn("Unknown filter found [%s], exiting..." % value)
                     sys.exit(1)
 
-    uwsgi_dict = _server_paste_to_uwsgi(app_desc, server_config, applied_filters)
+    uwsgi_dict = _server_paste_to_uwsgi(app_desc, server_config,
+                                        applied_filters)
 
     app_dict = OrderedDict({})
     schema = app_desc.schema
@@ -522,11 +565,12 @@ def _build_sample_yaml(args, app_desc):
             if not isinstance(field_value, six.string_types):
                 continue
 
-            new_field_value = string.Template(field_value).safe_substitute(**{
-                'default_port': str(app_desc.default_port),
-                'app_name': app_desc.app_name,
-                'uwsgi_module': app_desc.uwsgi_module,
-            })
+            new_field_value = string.Template(field_value).safe_substitute(
+                **{
+                    'default_port': str(app_desc.default_port),
+                    'app_name': app_desc.app_name,
+                    'uwsgi_module': app_desc.uwsgi_module,
+                })
             value[field] = new_field_value
     _write_sample_section(args, f, 'uwsgi', Schema(options), as_comment=False)
     _write_sample_section(args, f, app_desc.app_name, schema)
@@ -607,7 +651,9 @@ def _server_paste_to_uwsgi(app_desc, server_config, applied_filters):
     host = server_config.get("host", "127.0.0.1")
 
     if server_config.get("use", "egg:Paste#http") != "egg:Paste#http":
-        raise Exception("Unhandled paste server 'use' value [%s], file must be manually migrate.")
+        raise Exception(
+            "Unhandled paste server 'use' value [%s], file must be manually migrate."
+        )
 
     uwsgi_dict["http"] = "%s:%s" % (host, port)
     # default changing from 10 to 8
@@ -652,7 +698,8 @@ def _ordered_load(stream):
         loader.flatten_mapping(node)
         return OrderedDict(loader.construct_pairs(node))
 
-    OrderedLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
+    OrderedLoader.add_constructor(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
     OrderedLoader.add_constructor('!include', OrderedLoader.include)
 
     return yaml.load(stream, OrderedLoader)
@@ -663,7 +710,8 @@ def _ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
         pass
 
     def _dict_representer(dumper, data):
-        return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
+        return dumper.represent_mapping(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
 
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
     return yaml.dump(data, stream, OrderedDumper, **kwds)

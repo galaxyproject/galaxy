@@ -68,8 +68,11 @@ class Node(dictobj.DictionaryObject):
         super(Node, self).__init__()
 
         children = kwargs.get('children', {})
-        if len(filter(lambda key: not isinstance(children[key], Node), children)):
-            raise TypeError("One or more children were not instances of '%s'" % Node.__name__)
+        if len(
+                filter(lambda key: not isinstance(children[key], Node),
+                       children)):
+            raise TypeError("One or more children were not instances of '%s'" %
+                            Node.__name__)
         if 'children' in kwargs:
             del kwargs['children']
         self._items['children'] = dictobj.MutableDictionaryObject(children)
@@ -114,7 +117,8 @@ class JSTree(dictobj.DictionaryObject):
 
     """
         if len(filter(lambda p: not isinstance(p, Path), paths)):
-            raise TypeError("All paths must be instances of '%s'" % Path.__name__)
+            raise TypeError(
+                "All paths must be instances of '%s'" % Path.__name__)
 
         super(JSTree, self).__init__()
 
@@ -127,7 +131,8 @@ class JSTree(dictobj.DictionaryObject):
                     opt = copy.deepcopy(kwargs)
                     if len(subpaths) - 1 == i:
                         oid = path.id
-                        opt.update(path.options) if path.options is not None else None
+                        opt.update(
+                            path.options) if path.options is not None else None
                     else:
                         oid = None
                     curr.children[subpath] = Node(subpath, oid, **opt)
@@ -157,4 +162,7 @@ class JSTree(dictobj.DictionaryObject):
     list of dictionaries, each of which are our internal nodes.
 
     """
-        return [self._root.children[k].jsonData() for k in sorted(self._root.children)]
+        return [
+            self._root.children[k].jsonData()
+            for k in sorted(self._root.children)
+        ]

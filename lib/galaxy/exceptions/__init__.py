@@ -190,7 +190,14 @@ class NotImplemented(MessageException):
 
 
 class ContainerCLIError(Exception):
-    def __init__(self, msg=None, stdout=None, stderr=None, returncode=None, command=None, subprocess_command=None, **kwargs):
+    def __init__(self,
+                 msg=None,
+                 stdout=None,
+                 stderr=None,
+                 returncode=None,
+                 command=None,
+                 subprocess_command=None,
+                 **kwargs):
         super(ContainerCLIError, self).__init__(msg, **kwargs)
         self.stdout = stdout
         self.stderr = stderr

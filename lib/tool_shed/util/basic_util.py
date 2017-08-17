@@ -54,7 +54,8 @@ def evaluate_template(text, install_environment):
     tool dependency.  The value of the received install_dir is the root installation directory of
     the tool_dependency.
     """
-    return Template(text).safe_substitute(get_env_var_values(install_environment))
+    return Template(text).safe_substitute(
+        get_env_var_values(install_environment))
 
 
 def get_env_var_values(install_environment):
@@ -67,7 +68,8 @@ def get_env_var_values(install_environment):
     temporary directory where the tool dependency compilation/installation is being processed.
     """
     env_var_dict = {}
-    env_var_dict['REPOSITORY_INSTALL_DIR'] = install_environment.tool_shed_repository_install_dir
+    env_var_dict[
+        'REPOSITORY_INSTALL_DIR'] = install_environment.tool_shed_repository_install_dir
     env_var_dict['INSTALL_DIR'] = install_environment.install_dir
     env_var_dict['TMP_WORK_DIR'] = install_environment.tmp_work_dir
     env_var_dict['system_install'] = install_environment.install_dir
@@ -114,7 +116,8 @@ def remove_dir(dir):
 def size_string(raw_text, size=MAX_DISPLAY_SIZE):
     """Return a subset of a string (up to MAX_DISPLAY_SIZE) translated to a safe string for display in a browser."""
     if raw_text and len(raw_text) >= size:
-        large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % nice_size(size)
+        large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % nice_size(
+            size)
         raw_text = '%s%s' % (raw_text[0:size], large_str)
     return raw_text or ''
 

@@ -18,19 +18,37 @@ class EnvManager(object):
         tool_dependency_install_dir = install_environment.install_dir
         tool_shed_repository_install_dir = install_environment.tool_shed_repository_install_dir
         if elem.text and elem.text.find('REPOSITORY_INSTALL_DIR') >= 0:
-            if tool_shed_repository_install_dir and elem.text.find('$REPOSITORY_INSTALL_DIR') != -1:
-                env_var_text = elem.text.replace('$REPOSITORY_INSTALL_DIR', tool_shed_repository_install_dir)
-                return dict(name=env_var_name, action=env_var_action, value=env_var_text)
+            if tool_shed_repository_install_dir and elem.text.find(
+                    '$REPOSITORY_INSTALL_DIR') != -1:
+                env_var_text = elem.text.replace(
+                    '$REPOSITORY_INSTALL_DIR',
+                    tool_shed_repository_install_dir)
+                return dict(
+                    name=env_var_name,
+                    action=env_var_action,
+                    value=env_var_text)
             else:
-                env_var_text = elem.text.replace('$REPOSITORY_INSTALL_DIR', tool_dependency_install_dir)
-                return dict(name=env_var_name, action=env_var_action, value=env_var_text)
+                env_var_text = elem.text.replace('$REPOSITORY_INSTALL_DIR',
+                                                 tool_dependency_install_dir)
+                return dict(
+                    name=env_var_name,
+                    action=env_var_action,
+                    value=env_var_text)
         if elem.text and elem.text.find('INSTALL_DIR') >= 0:
             if tool_dependency_install_dir:
-                env_var_text = elem.text.replace('$INSTALL_DIR', tool_dependency_install_dir)
-                return dict(name=env_var_name, action=env_var_action, value=env_var_text)
+                env_var_text = elem.text.replace('$INSTALL_DIR',
+                                                 tool_dependency_install_dir)
+                return dict(
+                    name=env_var_name,
+                    action=env_var_action,
+                    value=env_var_text)
             else:
-                env_var_text = elem.text.replace('$INSTALL_DIR', tool_shed_repository_install_dir)
-                return dict(name=env_var_name, action=env_var_action, value=env_var_text)
+                env_var_text = elem.text.replace(
+                    '$INSTALL_DIR', tool_shed_repository_install_dir)
+                return dict(
+                    name=env_var_name,
+                    action=env_var_action,
+                    value=env_var_text)
         # Allow for environment variables that contain neither REPOSITORY_INSTALL_DIR nor INSTALL_DIR
         # since there may be command line parameters that are tuned for a Galaxy instance.  Allowing them
         # to be set in one location rather than being hard coded into each tool config is the best approach.
@@ -46,7 +64,8 @@ class EnvManager(object):
 
     def get_env_shell_file_path(self, installation_directory):
         env_shell_file_name = 'env.sh'
-        default_location = os.path.abspath(os.path.join(installation_directory, env_shell_file_name))
+        default_location = os.path.abspath(
+            os.path.join(installation_directory, env_shell_file_name))
         if os.path.exists(default_location):
             return default_location
         for root, dirs, files in os.walk(installation_directory):
@@ -68,8 +87,9 @@ class EnvManager(object):
         if toolshed and repository_name and repository_owner and changeset_revision:
             # The protocol is not stored, but the port is if it exists.
             toolshed = common_util.remove_protocol_from_tool_shed_url(toolshed)
-            repository = repository_util.get_repository_for_dependency_relationship(self.app, toolshed, repository_name, repository_owner,
-                                                                                    changeset_revision)
+            repository = repository_util.get_repository_for_dependency_relationship(
+                self.app, toolshed, repository_name, repository_owner,
+                changeset_revision)
             if repository:
                 for sub_elem in elem:
                     tool_dependency_type = sub_elem.tag
@@ -84,10 +104,13 @@ class EnvManager(object):
                                     tool_dependency.version == tool_dependency_version:
                                 break
                         if tool_dependency:
-                            installation_directory = tool_dependency.installation_directory(self.app)
-                            env_shell_file_path = self.get_env_shell_file_path(installation_directory)
+                            installation_directory = tool_dependency.installation_directory(
+                                self.app)
+                            env_shell_file_path = self.get_env_shell_file_path(
+                                installation_directory)
                             if env_shell_file_path:
-                                env_shell_file_paths.append(env_shell_file_path)
+                                env_shell_file_paths.append(
+                                    env_shell_file_path)
                             else:
                                 error_message = "Skipping tool dependency definition because unable to locate env.sh file for tool dependency "
                                 error_message += "type %s, name %s, version %s for repository %s" % \
@@ -116,7 +139,8 @@ class EnvManager(object):
             log.debug(error_message)
         return env_shell_file_paths
 
-    def get_env_shell_file_paths_from_setup_environment_elem(self, all_env_shell_file_paths, elem, action_dict):
+    def get_env_shell_file_paths_from_setup_environment_elem(
+            self, all_env_shell_file_paths, elem, action_dict):
         """
         Parse an XML tag set to discover all child repository dependency tags and define the path to an env.sh file associated
         with the repository (this requires the repository dependency to be in an installed state).  The received action_dict
@@ -136,7 +160,8 @@ class EnvManager(object):
         # </action>
         for action_elem in elem:
             if action_elem.tag == 'repository':
-                env_shell_file_paths = self.get_env_shell_file_paths(action_elem)
+                env_shell_file_paths = self.get_env_shell_file_paths(
+                    action_elem)
                 all_env_shell_file_paths.extend(env_shell_file_paths)
         if all_env_shell_file_paths:
             action_dict['env_shell_file_paths'] = all_env_shell_file_paths

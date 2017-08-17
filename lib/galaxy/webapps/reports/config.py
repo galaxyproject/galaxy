@@ -26,23 +26,35 @@ class Configuration(object):
         self.config_dict = kwargs
         self.root = kwargs.get('root_dir', '.')
         # Database related configuration
-        self.database = resolve_path(kwargs.get("database_file", "database/universe.sqlite"), self.root)
+        self.database = resolve_path(
+            kwargs.get("database_file", "database/universe.sqlite"), self.root)
         self.database_connection = kwargs.get("database_connection", False)
         self.database_engine_options = get_database_engine_options(kwargs)
         # Where dataset files are stored
-        self.file_path = resolve_path(kwargs.get("file_path", "database/files"), self.root)
-        self.new_file_path = resolve_path(kwargs.get("new_file_path", "database/tmp"), self.root)
-        self.id_secret = kwargs.get("id_secret", "USING THE DEFAULT IS NOT SECURE!")
-        self.use_remote_user = string_as_bool(kwargs.get("use_remote_user", "False"))
-        self.require_login = string_as_bool(kwargs.get("require_login", "False"))
-        self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
-        self.template_cache = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates/reports"), self.root)
-        self.allow_user_creation = string_as_bool(kwargs.get("allow_user_creation", "True"))
-        self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
+        self.file_path = resolve_path(
+            kwargs.get("file_path", "database/files"), self.root)
+        self.new_file_path = resolve_path(
+            kwargs.get("new_file_path", "database/tmp"), self.root)
+        self.id_secret = kwargs.get("id_secret",
+                                    "USING THE DEFAULT IS NOT SECURE!")
+        self.use_remote_user = string_as_bool(
+            kwargs.get("use_remote_user", "False"))
+        self.require_login = string_as_bool(
+            kwargs.get("require_login", "False"))
+        self.template_path = resolve_path(
+            kwargs.get("template_path", "templates"), self.root)
+        self.template_cache = resolve_path(
+            kwargs.get("template_cache_path",
+                       "database/compiled_templates/reports"), self.root)
+        self.allow_user_creation = string_as_bool(
+            kwargs.get("allow_user_creation", "True"))
+        self.allow_user_deletion = string_as_bool(
+            kwargs.get("allow_user_deletion", "False"))
         self.log_actions = string_as_bool(kwargs.get('log_actions', 'False'))
         self.brand = kwargs.get('brand', None)
         # Configuration for the message box directly below the masthead.
-        self.message_box_visible = string_as_bool(kwargs.get('message_box_visible', False))
+        self.message_box_visible = string_as_bool(
+            kwargs.get('message_box_visible', False))
         self.message_box_content = kwargs.get('message_box_content', None)
         self.message_box_class = kwargs.get('message_box_class', 'info')
         self.wiki_url = kwargs.get('wiki_url', 'https://galaxyproject.org/')
@@ -100,7 +112,8 @@ def configure_logging(config):
     Allow some basic logging configuration to be read from the cherrpy
     config.
     """
-    format = config.get("log_format", "%(name)s %(levelname)s %(asctime)s %(message)s")
+    format = config.get("log_format",
+                        "%(name)s %(levelname)s %(asctime)s %(message)s")
     level = logging._levelNames[config.get("log_level", "DEBUG")]
     destination = config.get("log_destination", "stdout")
     log.info("Logging at '%s' level to '%s'" % (level, destination))

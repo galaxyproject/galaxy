@@ -26,7 +26,9 @@ DEFAULT_CONF = {'_default_': {'type': DEFAULT_CONTAINER_TYPE}}
 log = logging.getLogger(__name__)
 
 
-class ContainerPort(namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr', 'hostport'))):
+class ContainerPort(
+        namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr',
+                                     'hostport'))):
     """Named tuple representing ports published by a container, with attributes:
 
     :ivar       port:       Port number (inside the container)
@@ -155,9 +157,13 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
                     'flag': self._guess_kwopt_flag(opt),
                     'type': self._guess_kwopt_type(val),
                 }
-                log.warning("option '%s' not in %s.option_map, guessing flag '%s' type '%s'", opt, self.__class__.__name__, optdef['flag'],
-                            optdef['type'])
-            opts.append(getattr(self, '_stringify_kwopt_' + optdef['type'])(optdef['flag'], val))
+                log.warning(
+                    "option '%s' not in %s.option_map, guessing flag '%s' type '%s'",
+                    opt, self.__class__.__name__, optdef['flag'],
+                    optdef['type'])
+            opts.append(
+                getattr(self, '_stringify_kwopt_' + optdef['type'])(optdef[
+                    'flag'], val))
         return ' '.join(opts)
 
     def _stringify_kwopt_boolean(self, flag, val):
@@ -175,7 +181,10 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
         """
         if isinstance(val, string_types):
             return self._stringify_kwopt_string(flag, val)
-        return ' '.join(['{flag} {value}'.format(flag=flag, value=shlex_quote(str(v))) for v in val])
+        return ' '.join([
+            '{flag} {value}'.format(flag=flag, value=shlex_quote(str(v)))
+            for v in val
+        ])
 
     def _stringify_kwopt_list_of_kvpairs(self, flag, val):
         """
@@ -204,12 +213,17 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
         if verbose:
             log.debug('running command: [%s]', command)
         command_list = self._normalize_command(command)
-        p = subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+        p = subprocess.Popen(
+            command_list,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            close_fds=True)
         stdout, stderr = p.communicate()
         if p.returncode == 0:
             return stdout.strip()
         else:
-            msg = "Command '{}' returned non-zero exit status {}".format(command, p.returncode)
+            msg = "Command '{}' returned non-zero exit status {}".format(
+                command, p.returncode)
             log.error(msg + ': ' + stderr.strip())
             raise ContainerCLIError(
                 msg,
@@ -232,7 +246,9 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
 
     def set_kwopts_name(self, kwopts):
         if self._name_prefix is not None:
-            name = '{prefix}{name}'.format(prefix=self._name_prefix, name=kwopts.get('name', uuid.uuid4().hex))
+            name = '{prefix}{name}'.format(
+                prefix=self._name_prefix,
+                name=kwopts.get('name', uuid.uuid4().hex))
             kwopts['name'] = name
 
     def validate_config(self):
@@ -254,7 +270,8 @@ class ContainerInterfaceConfig(dict):
         try:
             return self[name]
         except KeyError:
-            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
+            raise AttributeError("'%s' object has no attribute '%s'" %
+                                 (self.__class__.__name__, name))
 
     def get(self, name, default):
         try:
@@ -281,7 +298,8 @@ def build_container_interfaces(containers_config_file, containers_conf=None):
     for k, conf in containers_conf.items():
         container_type = conf.get('type', DEFAULT_CONTAINER_TYPE)
         assert container_type in interface_classes, "unknown container interface type: %s" % container_type
-        interfaces[k] = interface_classes[container_type](conf, k, containers_config_file)
+        interfaces[k] = interface_classes[container_type](
+            conf, k, containers_config_file)
     return interfaces
 
 
@@ -300,7 +318,9 @@ def parse_containers_config(containers_config_file):
             conf.update(c.get('containers', {}))
     except (OSError, IOError) as exc:
         if exc.errno == errno.ENOENT:
-            log.warning("config file '%s' does not exist, running with default config", containers_config_file)
+            log.warning(
+                "config file '%s' does not exist, running with default config",
+                containers_config_file)
         else:
             raise
     return conf

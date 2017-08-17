@@ -23,7 +23,8 @@ class TransferManager(object):
     def __init__(self, app):
         self.app = app
         self.sa_session = app.model.context.current
-        self.command = 'python %s' % os.path.abspath(os.path.join(os.getcwd(), 'scripts', 'transfer.py'))
+        self.command = 'python %s' % os.path.abspath(
+            os.path.join(os.getcwd(), 'scripts', 'transfer.py'))
         if app.config.get_bool('enable_job_recovery', True):
             # Only one Galaxy server process should be able to recover jobs! (otherwise you'll have nasty race conditions)
             self.running = True
@@ -41,10 +42,12 @@ class TransferManager(object):
         elif protocol == 'scp':
             # TODO: add more checks here?
             if 'sample_dataset_id' not in kwd:
-                raise Exception('Missing required parameter "sample_dataset_id".')
+                raise Exception(
+                    'Missing required parameter "sample_dataset_id".')
             if 'file_path' not in kwd:
                 raise Exception('Missing required parameter "file_path".')
-        transfer_job = self.app.model.TransferJob(state=self.app.model.TransferJob.states.NEW, params=kwd)
+        transfer_job = self.app.model.TransferJob(
+            state=self.app.model.TransferJob.states.NEW, params=kwd)
         self.sa_session.add(transfer_job)
         self.sa_session.flush()
         return transfer_job
@@ -70,13 +73,19 @@ class TransferManager(object):
             # non-blocking method.
             cmd = '%s %s' % (self.command, tj.id)
             log.debug('Transfer command is: %s' % cmd)
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            p = subprocess.Popen(
+                cmd,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
             p.wait()
             output = p.stdout.read(32768)
             if p.returncode != 0:
-                log.error('Spawning transfer job failed: %s: %s' % (tj.id, output))
+                log.error('Spawning transfer job failed: %s: %s' % (tj.id,
+                                                                    output))
                 tj.state = tj.states.ERROR
-                tj.info = 'Spawning transfer job failed: %s' % output.splitlines()[-1]
+                tj.info = 'Spawning transfer job failed: %s' % output.splitlines(
+                )[-1]
                 self.sa_session.add(tj)
                 self.sa_session.flush()
 
@@ -92,10 +101,16 @@ class TransferManager(object):
                     sock.connect(('localhost', tj.socket))
                     sock.send(json.dumps(request))
                     response = sock.recv(8192)
-                    valid, response = validate_jsonrpc_response(response, id=request['id'])
+                    valid, response = validate_jsonrpc_response(
+                        response, id=request['id'])
                     if not valid:
                         # No valid response received, make some pseudo-json-rpc
-                        raise Exception(dict(code=128, message='Did not receive valid response from transfer daemon for state'))
+                        raise Exception(
+                            dict(
+                                code=128,
+                                message=
+                                'Did not receive valid response from transfer daemon for state'
+                            ))
                     if 'error' in response:
                         # Response was valid but Request resulted in an error
                         raise Exception(response['error'])
@@ -111,16 +126,24 @@ class TransferManager(object):
                     self.sa_session.refresh(tj)
                     error = e.args
                     if type(error) != dict:
-                        error = dict(code=256, message='Error connecting to transfer daemon', data=str(e))
-                    rval.append(dict(transfer_job_id=tj.id, state=tj.state, error=error))
+                        error = dict(
+                            code=256,
+                            message='Error connecting to transfer daemon',
+                            data=str(e))
+                    rval.append(
+                        dict(
+                            transfer_job_id=tj.id, state=tj.state,
+                            error=error))
             else:
                 self.sa_session.refresh(tj)
                 rval.append(dict(transfer_job_id=tj.id, state=tj.state))
         for tj_state in rval:
             if tj_state['state'] in self.app.model.TransferJob.terminal_states:
-                log.debug('Transfer job %s is in terminal state: %s' % (tj_state['transfer_job_id'], tj_state['state']))
+                log.debug('Transfer job %s is in terminal state: %s' %
+                          (tj_state['transfer_job_id'], tj_state['state']))
             elif tj_state['state'] == self.app.model.TransferJob.states.PROGRESS and 'percent' in tj_state:
-                log.debug('Transfer job %s is %s%% complete' % (tj_state['transfer_job_id'], tj_state['percent']))
+                log.debug('Transfer job %s is %s%% complete' %
+                          (tj_state['transfer_job_id'], tj_state['percent']))
         if len(rval) == 1:
             return rval[0]
         return rval
@@ -129,7 +152,8 @@ class TransferManager(object):
         log.info('Transfer job restarter starting up...')
         while self.running:
             dead = []
-            self.sa_session.expunge_all()  # our session is threadlocal so this is safe.
+            self.sa_session.expunge_all(
+            )  # our session is threadlocal so this is safe.
             for tj in self.sa_session.query(self.app.model.TransferJob) \
                           .filter(self.app.model.TransferJob.state == self.app.model.TransferJob.states.RUNNING):
                 if not tj.pid:
@@ -148,7 +172,9 @@ class TransferManager(object):
                 except:
                     self.sa_session.refresh(tj)
                     if tj.state == tj.states.RUNNING:
-                        log.error('Transfer job %s is marked as running but pid %s appears to be dead.' % (tj.id, tj.pid))
+                        log.error(
+                            'Transfer job %s is marked as running but pid %s appears to be dead.'
+                            % (tj.id, tj.pid))
                         dead.append(tj)
             if dead:
                 self.run(dead)

@@ -21,7 +21,10 @@ class ProvidesAppContext(object):
         Application-level logging of user actions.
         """
         if self.app.config.log_actions:
-            action = self.app.model.UserAction(action=action, context=context, params=text_type(dumps(params)))
+            action = self.app.model.UserAction(
+                action=action,
+                context=context,
+                params=text_type(dumps(params)))
             try:
                 if user:
                     action.user = user
@@ -99,7 +102,8 @@ class ProvidesAppContext(object):
         return self.app.install_model
 
     def request_types(self):
-        if self.sa_session.query(self.app.model.RequestType).filter_by(deleted=False).count() > 0:
+        if self.sa_session.query(self.app.model.RequestType).filter_by(
+                deleted=False).count() > 0:
             return True
         return False
 
@@ -130,7 +134,11 @@ class ProvidesUserContext(object):
         return self.user and self.user.email in self.app.config.admin_users_list
 
     def user_can_do_run_as(self):
-        run_as_users = [user for user in self.app.config.get("api_allow_run_as", "").split(",") if user]
+        run_as_users = [
+            user
+            for user in self.app.config.get("api_allow_run_as", "").split(",")
+            if user
+        ]
         if not run_as_users:
             return False
         user_in_run_as_users = self.user and self.user.email in run_as_users
@@ -148,9 +156,10 @@ class ProvidesUserContext(object):
             identifier_attr = self.app.config.ftp_upload_dir_identifier
             identifier_value = getattr(self.user, identifier_attr)
             template = self.app.config.ftp_upload_dir_template
-            path = string.Template(template).safe_substitute(dict(
-                ftp_upload_dir=base_dir,
-                ftp_upload_dir_identifier=identifier_value, ))
+            path = string.Template(template).safe_substitute(
+                dict(
+                    ftp_upload_dir=base_dir,
+                    ftp_upload_dir_identifier=identifier_value, ))
             return path
 
 
