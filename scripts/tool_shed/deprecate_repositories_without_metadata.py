@@ -106,7 +106,7 @@ def deprecate_repositories(app, cutoff_time, days=14, info_only=False, verbose=F
     # empty, and will not be checked.
     metadata_records = sa.select([distinct(app.model.RepositoryMetadata.table.c.repository_id)],
                                  from_obj=app.model.RepositoryMetadata.table) \
-    .execute()
+        .execute()
     for metadata_record in metadata_records:
         repository_ids_to_not_check.append(metadata_record.repository_id)
     # Get the repositories that are A) not present in the above list, and b) older than the specified time.

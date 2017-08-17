@@ -89,8 +89,7 @@ class RequestsGrid(grids.Grid):
         StateColumn("State",
                     key='state',
                     filterable="advanced",
-                    link=(lambda item: iff(item.deleted, None, dict(operation="view_request_history", id=item.id)))
-                     )
+                    link=(lambda item: iff(item.deleted, None, dict(operation="view_request_history", id=item.id))))
     ]
     columns.append(grids.MulticolFilterColumn("Search",
                                               cols_to_filter=[columns[0], columns[1]],

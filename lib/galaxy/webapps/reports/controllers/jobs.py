@@ -412,8 +412,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
             jobs.append((row_dayname,
                          row_day,
                          row.total_jobs,
-                         row.date
-                           ))
+                         row.date))
 
         pages_found = ceil(len(jobs) / float(entries))
         page_specs = PageSpec(entries, offset, page, pages_found)
@@ -515,8 +514,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
             jobs.append((row_dayname,
                          row_day,
                          row.total_jobs,
-                         row.date
-                           ))
+                         row.date))
 
         pages_found = ceil(len(jobs) / float(entries))
         page_specs = PageSpec(entries, offset, page, pages_found)
@@ -993,8 +991,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                                               model.Job.table.c.tool_id.label('tool_id')),
                                              whereclause=sa.and_(model.Job.table.c.state == 'error',
                                                                  model.Job.table.c.user_id != monitor_user_id),
-                                             from_obj=[model.Job.table]
-                                              )
+                                             from_obj=[model.Job.table])
 
         currday = date.today()
         trends = dict()

@@ -87,8 +87,8 @@ class Library(BaseUIController):
         }
         return trans.fill_template('galaxy.panels.mako',
                                    config={
-                                        'title': 'Data Libraries',
-                                        'app': app})
+                                       'title': 'Data Libraries',
+                                       'app': app})
 
     @web.expose
     def index(self, trans, **kwd):

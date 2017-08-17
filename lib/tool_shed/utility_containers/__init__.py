@@ -239,8 +239,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                                tool_dependencies=None,
                                valid_tools=None,
                                workflows=None,
-                               valid_data_managers=None
-                                )
+                               valid_data_managers=None)
         if repository_metadata:
             metadata = repository_metadata.metadata
             lock = threading.Lock()

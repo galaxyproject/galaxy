@@ -234,12 +234,12 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         from galaxy.webapps.tool_shed.framework.middleware.remoteuser import RemoteUser
         app = wrap_if_allowed(app, stack, RemoteUser,
                               kwargs=dict(
-                                   maildomain=conf.get('remote_user_maildomain', None),
-                                   display_servers=util.listify(conf.get('display_servers', '')),
-                                   admin_users=conf.get('admin_users', '').split(','),
-                                   remote_user_header=conf.get('remote_user_header', 'HTTP_REMOTE_USER'),
-                                   remote_user_secret_header=conf.get('remote_user_secret', None),
-                                   normalize_remote_user_email=conf.get('normalize_remote_user_email', False)))
+                                  maildomain=conf.get('remote_user_maildomain', None),
+                                  display_servers=util.listify(conf.get('display_servers', '')),
+                                  admin_users=conf.get('admin_users', '').split(','),
+                                  remote_user_header=conf.get('remote_user_header', 'HTTP_REMOTE_USER'),
+                                  remote_user_secret_header=conf.get('remote_user_secret', None),
+                                  normalize_remote_user_email=conf.get('normalize_remote_user_email', False)))
     # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):

@@ -1475,14 +1475,13 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
         if not hasattr(self, '_active_datasets_and_roles'):
             db_session = object_session(self)
             query = (db_session.query(HistoryDatasetAssociation)
-                     .filter(HistoryDatasetAssociation.table.c.history_id == self.id)
-                     .filter(not_(HistoryDatasetAssociation.deleted))
-                     .order_by(HistoryDatasetAssociation.table.c.hid.asc())
-                     .options(joinedload("dataset"),
-                              joinedload("dataset.actions"),
-                              joinedload("dataset.actions.role"),
-                              joinedload("tags"),
-                                ))
+                .filter(HistoryDatasetAssociation.table.c.history_id == self.id)
+                .filter(not_(HistoryDatasetAssociation.deleted))
+                .order_by(HistoryDatasetAssociation.table.c.hid.asc())
+                .options(joinedload("dataset"),
+                         joinedload("dataset.actions"),
+                         joinedload("dataset.actions.role"),
+                         joinedload("tags")))
             self._active_datasets_and_roles = query.all()
         return self._active_datasets_and_roles
 

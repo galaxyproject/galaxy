@@ -654,8 +654,7 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
         # Subquery to get average rating for each item.
         ave_rating_subquery = trans.sa_session.query(fk_col,
                                                      func.avg(item_rating_assoc_class.table.c.rating).label('avg_rating')) \
-        .group_by(fk_col) \
-        .subquery()
+            .group_by(fk_col).subquery()
         # Integrate subquery into main query.
         query = query.outerjoin((ave_rating_subquery, referent_col == ave_rating_subquery.columns[fk_col.name]))
         # Sort using subquery results; use coalesce to avoid null values.

@@ -246,5 +246,4 @@ class User(BaseUser):
                                    token=token,
                                    status=status,
                                    message=message,
-                                   display_top=kwd.get('redirect_home', False)
-                                    )
+                                   display_top=kwd.get('redirect_home', False))

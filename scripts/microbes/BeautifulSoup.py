@@ -407,8 +407,7 @@ class Tag(PageElement):
                              "quot": '"',
                              "amp": "&",
                              "lt": "<",
-                             "gt": ">"
-                              }
+                             "gt": ">"}
     # An RE for finding ampersands that aren't the start of of a
     # numeric entity.
     BARE_AMPERSAND = re.compile("&(?!#\d+;|#x[0-9a-fA-F]+;|\w+;)")

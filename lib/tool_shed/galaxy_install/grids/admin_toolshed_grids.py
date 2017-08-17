@@ -167,8 +167,8 @@ class InstalledRepositoryGrid(grids.Grid):
                                                  not item.deleted and
                                                  item.revision_update_available and
                                                  item.status not in [
-                                                        tool_shed_install.ToolShedRepository.installation_status.ERROR,
-                                                        tool_shed_install.ToolShedRepository.installation_status.NEW]),
+                                                     tool_shed_install.ToolShedRepository.installation_status.ERROR,
+                                                     tool_shed_install.ToolShedRepository.installation_status.NEW]),
                                       allow_multiple=False,
                                       url_args=dict(controller='admin_toolshed',
                                                     action='browse_repositories',

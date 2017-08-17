@@ -374,8 +374,7 @@ class ActionBox(object):
                "EmailAction": EmailAction,
                "DeleteIntermediatesAction": DeleteIntermediatesAction,
                "TagDatasetAction": TagDatasetAction,
-               "RemoveTagDatasetAction": RemoveTagDatasetAction,
-                }
+               "RemoveTagDatasetAction": RemoveTagDatasetAction}
     public_actions = ['RenameDatasetAction', 'ChangeDatatypeAction',
                       'ColumnSetAction', 'EmailAction',
                       'DeleteIntermediatesAction', 'TagDatasetAction',

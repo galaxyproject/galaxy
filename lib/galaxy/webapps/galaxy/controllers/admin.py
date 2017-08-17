@@ -590,7 +590,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             for typ in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
                 default_options.append(('Yes, ' + typ, typ))
             return {'title'  : 'Create Quota',
-                    'inputs' : [{
+                    'inputs' : [
+                        {
                             'name'    : 'name',
                             'label'   : 'Name'
                         }, {
@@ -610,8 +611,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                             'options' : default_options,
                             'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
                         },
-                            build_select_input('in_groups', 'Groups', all_groups, []),
-                            build_select_input('in_users', 'Users', all_users, [])]}
+                        build_select_input('in_groups', 'Groups', all_groups, []),
+                        build_select_input('in_users', 'Users', all_users, [])]}
         else:
             try:
                 quota, message = self._create_quota(util.Params(payload), decode_id=trans.security.decode_id)
@@ -1518,7 +1519,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             in_groups = []
             all_groups = []
             for role in trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.deleted == false()) \
-            .order_by(trans.app.model.Role.table.c.name):
+                    .order_by(trans.app.model.Role.table.c.name):
                 if role in [x.role for x in user.roles]:
                     in_roles.append(trans.security.encode_id(role.id))
                 if role.type != trans.app.model.Role.types.PRIVATE:
@@ -1528,7 +1529,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     # precaution, since for a period of time we were including private roles in the form fields.
                     all_roles.append((role.name, trans.security.encode_id(role.id)))
             for group in trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.deleted == false()) \
-            .order_by(trans.app.model.Group.table.c.name):
+                    .order_by(trans.app.model.Group.table.c.name):
                 if group in [x.group for x in user.groups]:
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))

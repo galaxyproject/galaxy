@@ -328,8 +328,7 @@ class FilterableMixin:
                         'type': 'number',
                         'index': filter_col,
                         'tool_id': 'Filter1',
-                        'tool_exp_name': 'c5'
-                          }]
+                        'tool_exp_name': 'c5'}]
 
         return filters
 
@@ -838,8 +837,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
         filters = []
         filters.append({'name': 'Mapping Quality',
                         'type': 'number',
-                        'index': filter_col}
-                        )
+                        'index': filter_col})
         return filters
 
     def write_data_to_file(self, regions, filename):
@@ -1028,8 +1026,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
                                     qname,
                                     [pair['start'], pair['end'], pair['cigar'], pair['strand'], pair['seq']],
                                     [read.pos, read.pos + read_len, read.cigar, strand, seq],
-                                    None, [pair['mapq'], read.mapq]
-                                      ])
+                                    None, [pair['mapq'], read.mapq]])
                     del paired_pending[qname]
                 else:
                     # Insert first of pair.
@@ -1674,8 +1671,7 @@ def package_gff_feature(feature, no_detail=False, filter_cols=[]):
                # No notion of thick start, end in GFF, so make everything
                # thick.
                feature.start,
-               feature.end
-                ]
+               feature.end]
 
     # HACK: ignore interval with name 'transcript' from feature.
     # Cufflinks puts this interval in each of its transcripts,

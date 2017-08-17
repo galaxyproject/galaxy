@@ -111,10 +111,10 @@ mapper(install_model.ToolDependency, install_model.ToolDependency.table)
 
 mapper(install_model.ToolVersion, install_model.ToolVersion.table,
        properties=dict(
-            parent_tool_association=relation(install_model.ToolVersionAssociation,
-                                             primaryjoin=(install_model.ToolVersion.table.c.id == install_model.ToolVersionAssociation.table.c.tool_id)),
-            child_tool_association=relation(install_model.ToolVersionAssociation,
-                                            primaryjoin=(install_model.ToolVersion.table.c.id == install_model.ToolVersionAssociation.table.c.parent_id))))
+           parent_tool_association=relation(install_model.ToolVersionAssociation,
+                                            primaryjoin=(install_model.ToolVersion.table.c.id == install_model.ToolVersionAssociation.table.c.tool_id)),
+           child_tool_association=relation(install_model.ToolVersionAssociation,
+                                           primaryjoin=(install_model.ToolVersion.table.c.id == install_model.ToolVersionAssociation.table.c.parent_id))))
 
 mapper(install_model.ToolVersionAssociation, install_model.ToolVersionAssociation.table)
 

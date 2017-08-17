@@ -916,7 +916,7 @@ class Admin(object):
         in_groups = []
         out_groups = []
         for role in trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.deleted == false()) \
-        .order_by(trans.app.model.Role.table.c.name):
+                .order_by(trans.app.model.Role.table.c.name):
             if role in [x.role for x in user.roles]:
                 in_roles.append((role.id, role.name))
             elif role.type != trans.app.model.Role.types.PRIVATE:
@@ -926,7 +926,7 @@ class Admin(object):
                 # precaution, since for a period of time we were including private roles in the form fields.
                 out_roles.append((role.id, role.name))
         for group in trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.deleted == false()) \
-        .order_by(trans.app.model.Group.table.c.name):
+                .order_by(trans.app.model.Group.table.c.name):
             if group in [x.group for x in user.groups]:
                 in_groups.append((group.id, group.name))
             else:

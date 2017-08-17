@@ -382,8 +382,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return form(url_for(controller='workflow', action='rename', id=trans.security.encode_id(stored.id)),
                         "Rename workflow",
                         submit_text="Rename",
-                        use_panels=True
-                         ).add_text("new_name", "Workflow Name", value=to_unicode(stored.name))
+                        use_panels=True) \
+                .add_text("new_name", "Workflow Name", value=to_unicode(stored.name))
 
     @web.expose
     @web.require_login("use Galaxy workflows")

@@ -626,10 +626,10 @@ class GalaxyRBACAgent(RBACAgent):
         library_access_action = self.permitted_actions.LIBRARY_ACCESS.action
         restricted_library_ids = [lp.library_id for lp in trans.sa_session.query(trans.model.LibraryPermissions)
                                   .filter(trans.model.LibraryPermissions.table.c.action == library_access_action).distinct()]
-        accessible_restricted_library_ids = [lp.library_id for lp in trans.sa_session.query(
-                                              trans.model.LibraryPermissions).filter(
-                                              and_(trans.model.LibraryPermissions.table.c.action == library_access_action,
-                                              trans.model.LibraryPermissions.table.c.role_id.in_(current_user_role_ids)))]
+        accessible_restricted_library_ids = [lp.library_id for lp in trans.sa_session.query(trans.model.LibraryPermissions)
+            .filter(and_(
+                trans.model.LibraryPermissions.table.c.action == library_access_action,
+                trans.model.LibraryPermissions.table.c.role_id.in_(current_user_role_ids)))]
         # Filter to get libraries accessible by the current user.  Get both
         # public libraries and restricted libraries accessible by the current user.
         for library in trans.sa_session.query(trans.model.Library) \
@@ -946,14 +946,12 @@ class GalaxyRBACAgent(RBACAgent):
         accessible_request_types = []
         current_user_role_ids = [role.id for role in user.all_roles()]
         request_type_access_action = self.permitted_actions.REQUEST_TYPE_ACCESS.action
-        restricted_request_type_ids = [rtp.request_type_id for rtp in trans.sa_session.query(
-                                        trans.model.RequestTypePermissions).filter(
-                                        trans.model.RequestTypePermissions.table.c.action == request_type_access_action).distinct()
-                                        ]
-        accessible_restricted_request_type_ids = [rtp.request_type_id for rtp in trans.sa_session.query(
-                                                   trans.model.RequestTypePermissions).filter(
-                                                   and_(trans.model.RequestTypePermissions.table.c.action == request_type_access_action,
-                                                        trans.model.RequestTypePermissions.table.c.role_id.in_(current_user_role_ids)))]
+        restricted_request_type_ids = [rtp.request_type_id for rtp in trans.sa_session.query(trans.model.RequestTypePermissions)
+            .filter(trans.model.RequestTypePermissions.table.c.action == request_type_access_action).distinct()]
+        accessible_restricted_request_type_ids = [rtp.request_type_id for rtp in trans.sa_session.query(trans.model.RequestTypePermissions)
+            .filter(and_(
+                trans.model.RequestTypePermissions.table.c.action == request_type_access_action,
+                trans.model.RequestTypePermissions.table.c.role_id.in_(current_user_role_ids)))]
         # Filter to get libraries accessible by the current user.  Get both
         # public libraries and restricted libraries accessible by the current user.
         for request_type in trans.sa_session.query(trans.model.RequestType) \

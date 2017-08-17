@@ -213,17 +213,17 @@ mapper(Group, Group.table,
 
 mapper(Role, Role.table,
        properties=dict(
-            repositories=relation(RepositoryRoleAssociation,
-                                  primaryjoin=((Role.table.c.id == RepositoryRoleAssociation.table.c.role_id) & (RepositoryRoleAssociation.table.c.repository_id == Repository.table.c.id))),
-            users=relation(UserRoleAssociation,
-                           primaryjoin=((Role.table.c.id == UserRoleAssociation.table.c.role_id) & (UserRoleAssociation.table.c.user_id == User.table.c.id))),
-            groups=relation(GroupRoleAssociation,
-                            primaryjoin=((Role.table.c.id == GroupRoleAssociation.table.c.role_id) & (GroupRoleAssociation.table.c.group_id == Group.table.c.id)))))
+           repositories=relation(RepositoryRoleAssociation,
+                                 primaryjoin=((Role.table.c.id == RepositoryRoleAssociation.table.c.role_id) & (RepositoryRoleAssociation.table.c.repository_id == Repository.table.c.id))),
+           users=relation(UserRoleAssociation,
+                          primaryjoin=((Role.table.c.id == UserRoleAssociation.table.c.role_id) & (UserRoleAssociation.table.c.user_id == User.table.c.id))),
+           groups=relation(GroupRoleAssociation,
+                           primaryjoin=((Role.table.c.id == GroupRoleAssociation.table.c.role_id) & (GroupRoleAssociation.table.c.group_id == Group.table.c.id)))))
 
 mapper(RepositoryRoleAssociation, RepositoryRoleAssociation.table,
        properties=dict(
-            repository=relation(Repository),
-            role=relation(Role)))
+           repository=relation(Repository),
+           role=relation(Role)))
 
 mapper(UserGroupAssociation, UserGroupAssociation.table,
        properties=dict(user=relation(User, backref="groups"),
@@ -231,16 +231,16 @@ mapper(UserGroupAssociation, UserGroupAssociation.table,
 
 mapper(UserRoleAssociation, UserRoleAssociation.table,
        properties=dict(
-            user=relation(User, backref="roles"),
-            non_private_roles=relation(User,
-                                       backref="non_private_roles",
-                                       primaryjoin=((User.table.c.id == UserRoleAssociation.table.c.user_id) & (UserRoleAssociation.table.c.role_id == Role.table.c.id) & not_(Role.table.c.name == User.table.c.email))),
-            role=relation(Role)))
+           user=relation(User, backref="roles"),
+           non_private_roles=relation(User,
+                                      backref="non_private_roles",
+                                      primaryjoin=((User.table.c.id == UserRoleAssociation.table.c.user_id) & (UserRoleAssociation.table.c.role_id == Role.table.c.id) & not_(Role.table.c.name == User.table.c.email))),
+           role=relation(Role)))
 
 mapper(GroupRoleAssociation, GroupRoleAssociation.table,
        properties=dict(
-            group=relation(Group, backref="roles"),
-            role=relation(Role)))
+           group=relation(Group, backref="roles"),
+           role=relation(Role)))
 
 mapper(GalaxySession, GalaxySession.table,
        properties=dict(user=relation(User)))
@@ -256,21 +256,21 @@ mapper(Category, Category.table,
 
 mapper(Repository, Repository.table,
        properties=dict(
-            categories=relation(RepositoryCategoryAssociation),
-            ratings=relation(RepositoryRatingAssociation, order_by=desc(RepositoryRatingAssociation.table.c.update_time), backref="repositories"),
-            user=relation(User),
-            downloadable_revisions=relation(RepositoryMetadata,
-                                            primaryjoin=((Repository.table.c.id == RepositoryMetadata.table.c.repository_id) & (RepositoryMetadata.table.c.downloadable == true())),
-                                            order_by=desc(RepositoryMetadata.table.c.update_time)),
-            metadata_revisions=relation(RepositoryMetadata,
-                                        order_by=desc(RepositoryMetadata.table.c.update_time)),
-            roles=relation(RepositoryRoleAssociation),
-            reviews=relation(RepositoryReview,
-                             primaryjoin=((Repository.table.c.id == RepositoryReview.table.c.repository_id))),
-            reviewers=relation(User,
-                               secondary=RepositoryReview.table,
-                               primaryjoin=(Repository.table.c.id == RepositoryReview.table.c.repository_id),
-                               secondaryjoin=(RepositoryReview.table.c.user_id == User.table.c.id))))
+           categories=relation(RepositoryCategoryAssociation),
+           ratings=relation(RepositoryRatingAssociation, order_by=desc(RepositoryRatingAssociation.table.c.update_time), backref="repositories"),
+           user=relation(User),
+           downloadable_revisions=relation(RepositoryMetadata,
+                                           primaryjoin=((Repository.table.c.id == RepositoryMetadata.table.c.repository_id) & (RepositoryMetadata.table.c.downloadable == true())),
+                                           order_by=desc(RepositoryMetadata.table.c.update_time)),
+           metadata_revisions=relation(RepositoryMetadata,
+                                       order_by=desc(RepositoryMetadata.table.c.update_time)),
+           roles=relation(RepositoryRoleAssociation),
+           reviews=relation(RepositoryReview,
+                            primaryjoin=((Repository.table.c.id == RepositoryReview.table.c.repository_id))),
+           reviewers=relation(User,
+                              secondary=RepositoryReview.table,
+                              primaryjoin=(Repository.table.c.id == RepositoryReview.table.c.repository_id),
+                              secondaryjoin=(RepositoryReview.table.c.user_id == User.table.c.id))))
 
 mapper(RepositoryMetadata, RepositoryMetadata.table,
        properties=dict(repository=relation(Repository),
@@ -306,8 +306,8 @@ mapper(RepositoryRatingAssociation, RepositoryRatingAssociation.table,
 
 mapper(RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
        properties=dict(
-            category=relation(Category),
-            repository=relation(Repository)))
+           category=relation(Category),
+           repository=relation(Repository)))
 
 
 def init(file_path, url, engine_options={}, create_tables=False):

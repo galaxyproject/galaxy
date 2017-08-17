@@ -41,10 +41,9 @@ class PageListGrid(grids.Grid):
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
     ]
     columns.append(grids.MulticolFilterColumn(
-                    "Search",
-                    cols_to_filter=[columns[0], columns[2]],
-                    key="free-text-search", visible=False, filterable="standard")
-                    )
+        "Search",
+        cols_to_filter=[columns[0], columns[2]],
+        key="free-text-search", visible=False, filterable="standard"))
     global_actions = [
         grids.GridAction("Add new page", dict(action='create'), target="inbound")
     ]

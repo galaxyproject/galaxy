@@ -49,8 +49,7 @@ class HistoryListGrid(grids.Grid):
                                 .filter(model.HistoryDatasetAssociation.history_id == history.id,
                                         model.HistoryDatasetAssociation.visible == true(),
                                         model.HistoryDatasetAssociation.deleted == false(),
-                                        model.Dataset.state.in_(states_to_show))
-                                 )
+                                        model.Dataset.state.in_(states_to_show)))
 
             # Create HTML.
             rval = ''

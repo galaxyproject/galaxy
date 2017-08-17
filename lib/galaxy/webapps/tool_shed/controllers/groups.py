@@ -16,5 +16,5 @@ class Group(BaseUIController):
         }
         return trans.fill_template('/webapps/tool_shed/group/index.mako',
                                    config={
-                                        'title': 'Tool Shed Groups',
-                                        'app': app})
+                                       'title': 'Tool Shed Groups',
+                                       'app': app})

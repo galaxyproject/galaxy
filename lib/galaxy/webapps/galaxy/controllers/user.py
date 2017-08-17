@@ -1046,8 +1046,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                    token=token,
                                    status=status,
                                    message=message,
-                                   display_top=kwd.get('redirect_home', False)
-                                    )
+                                   display_top=kwd.get('redirect_home', False))
 
     @web.expose
     @web.require_admin

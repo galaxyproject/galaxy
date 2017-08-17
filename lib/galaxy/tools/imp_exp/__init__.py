@@ -217,8 +217,8 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                     """ Hook to 'decode' an HDA; method uses history and HID to get the HDA represented by
                         the encoded object. This only works because HDAs are created above. """
                     if obj_dct.get('__HistoryDatasetAssociation__', False):
-                            return self.sa_session.query(model.HistoryDatasetAssociation
-                                                          ).filter_by(history=new_history, hid=obj_dct['hid']).first()
+                            return self.sa_session.query(model.HistoryDatasetAssociation) \
+                                .filter_by(history=new_history, hid=obj_dct['hid']).first()
                     return obj_dct
                 jobs_attrs = loads(jobs_attr_str, object_hook=as_hda)
 
@@ -276,8 +276,8 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                     # Connect jobs to output datasets.
                     for output_hid in job_attrs['output_datasets']:
                         # print "%s job has output dataset %i" % (imported_job.id, output_hid)
-                        output_hda = self.sa_session.query(model.HistoryDatasetAssociation
-                                                            ).filter_by(history=new_history, hid=output_hid).first()
+                        output_hda = self.sa_session.query(model.HistoryDatasetAssociation) \
+                            .filter_by(history=new_history, hid=output_hid).first()
                         if output_hda:
                             imported_job.add_output_dataset(output_hda.name, output_hda)
 

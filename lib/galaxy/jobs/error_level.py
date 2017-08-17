@@ -19,7 +19,6 @@ class StdioErrorLevel(object):
     @staticmethod
     def desc(error_level):
         err_msg = "Unknown error"
-        if (error_level > 0 and
-            error_level <= StdioErrorLevel.MAX):
+        if error_level > 0 and error_level <= StdioErrorLevel.MAX:
             err_msg = StdioErrorLevel.descs[error_level]
         return err_msg

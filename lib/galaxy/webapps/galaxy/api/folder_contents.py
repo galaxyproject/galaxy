@@ -109,8 +109,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                                         is_unrestricted=is_unrestricted,
                                         is_private=is_private,
                                         can_manage=can_manage,
-                                        file_size=nice_size
-                                          ))
+                                        file_size=nice_size))
                 if content_item.library_dataset_dataset_association.message:
                     return_item.update(dict(message=content_item.library_dataset_dataset_association.message))
 
@@ -120,8 +119,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                                     name=content_item.name,
                                     update_time=update_time,
                                     create_time=create_time,
-                                    deleted=content_item.deleted
-                                      ))
+                                    deleted=content_item.deleted))
             folder_contents.append(return_item)
 
         # Return the reversed path so it starts with the library node.

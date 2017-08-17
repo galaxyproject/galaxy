@@ -400,7 +400,7 @@ class JobHandlerQueue(object):
                     pass  # No history, should not happen with an anon user
         # Check total walltime limits
         if (state == JOB_READY and
-            "delta" in self.app.job_config.limits.total_walltime):
+                "delta" in self.app.job_config.limits.total_walltime):
             jobs_to_check = self.sa_session.query(model.Job).filter(
                 model.Job.user_id == job.user.id,
                 model.Job.update_time >= datetime.datetime.now() -
