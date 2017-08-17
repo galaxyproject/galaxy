@@ -124,11 +124,11 @@ class UserListGrid(grids.Grid):
         grids.GridOperation("Manage Roles and Groups",
                             condition=(lambda item: not item.deleted),
                             allow_multiple=False,
-                            url_args=dict(action="forms/manage_roles_and_groups_for_user")),
+                            url_args=dict(action="form/manage_roles_and_groups_for_user")),
         grids.GridOperation("Reset Password",
                             condition=(lambda item: not item.deleted),
                             allow_multiple=True,
-                            url_args=dict(action="forms/reset_user_password"),
+                            url_args=dict(action="form/reset_user_password"),
                             target="top"),
         grids.GridOperation("Recalculate Disk Usage",
                             condition=(lambda item: not item.deleted),
@@ -189,7 +189,7 @@ class RoleListGrid(grids.Grid):
     columns = [
         NameColumn("Name",
                    key="name",
-                   link=(lambda item: dict(action="forms/manage_users_and_groups_for_role", id=item.id, webapp="galaxy")),
+                   link=(lambda item: dict(action="form/manage_users_and_groups_for_role", id=item.id, webapp="galaxy")),
                    model_class=model.Role,
                    attach_popup=True,
                    filterable="advanced",
@@ -216,12 +216,12 @@ class RoleListGrid(grids.Grid):
                                               visible=False,
                                               filterable="standard"))
     global_actions = [
-        grids.GridAction("Add new role", url_args=dict(action="forms/create_role"))
+        grids.GridAction("Add new role", url_args=dict(action="form/create_role"))
     ]
     operations = [grids.GridOperation("Edit",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/rename_role")),
+                                      url_args=dict(action="form/rename_role")),
                   grids.GridOperation("Delete",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=True),
@@ -275,7 +275,7 @@ class GroupListGrid(grids.Grid):
     columns = [
         NameColumn("Name",
                    key="name",
-                   link=(lambda item: dict(action="forms/manage_users_and_roles_for_group", id=item.id, webapp="galaxy")),
+                   link=(lambda item: dict(action="form/manage_users_and_roles_for_group", id=item.id, webapp="galaxy")),
                    model_class=model.Group,
                    attach_popup=True,
                    filterable="advanced"),
@@ -291,12 +291,12 @@ class GroupListGrid(grids.Grid):
                                               visible=False,
                                               filterable="standard"))
     global_actions = [
-        grids.GridAction("Add new group", url_args=dict(action="forms/create_group"))
+        grids.GridAction("Add new group", url_args=dict(action="form/create_group"))
     ]
     operations = [grids.GridOperation("Rename",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/rename_group")),
+                                      url_args=dict(action="form/rename_group")),
                   grids.GridOperation("Delete",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=True),
@@ -359,7 +359,7 @@ class QuotaListGrid(grids.Grid):
     columns = [
         NameColumn("Name",
                    key="name",
-                   link=(lambda item: dict(action="forms/edit_quota", id=item.id)),
+                   link=(lambda item: dict(action="form/edit_quota", id=item.id)),
                    model_class=model.Quota,
                    attach_popup=True,
                    filterable="advanced"),
@@ -384,28 +384,28 @@ class QuotaListGrid(grids.Grid):
                                               visible=False,
                                               filterable="standard"))
     global_actions = [
-        grids.GridAction("Add new quota", dict(action='forms/create_quota'))
+        grids.GridAction("Add new quota", dict(action="form/create_quota"))
     ]
     operations = [grids.GridOperation("Rename",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/rename_quota")),
+                                      url_args=dict(action="form/rename_quota")),
                   grids.GridOperation("Change amount",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/edit_quota")),
+                                      url_args=dict(action="form/edit_quota")),
                   grids.GridOperation("Manage users and groups",
                                       condition=(lambda item: not item.default and not item.deleted),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/manage_users_and_groups_for_quota")),
+                                      url_args=dict(action="form/manage_users_and_groups_for_quota")),
                   grids.GridOperation("Set as different type of default",
                                       condition=(lambda item: item.default),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/set_quota_default")),
+                                      url_args=dict(action="form/set_quota_default")),
                   grids.GridOperation("Set as default",
                                       condition=(lambda item: not item.default and not item.deleted),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/set_quota_default")),
+                                      url_args=dict(action="form/set_quota_default")),
                   grids.GridOperation("Unset as default",
                                       condition=(lambda item: item.default and not item.deleted),
                                       allow_multiple=False),

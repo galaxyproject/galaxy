@@ -21,7 +21,7 @@ window.app = function app( options, bootstrapped ){
             '(/)admin(/)groups' : 'show_groups',
             '(/)admin(/)tool_versions' : 'show_tool_versions',
             '(/)admin(/)quotas' : 'show_quotas',
-            '(/)admin(/)forms(/)(:form_id)' : 'show_forms'
+            '(/)admin(/)form(/)(:form_id)' : 'show_form'
         },
 
         authenticate: function( args, name ) {
@@ -48,7 +48,7 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new GridView( { url_base: Galaxy.root + 'admin/quotas_list', url_data: Galaxy.params, dict_format: true } ) );
         },
 
-        show_forms : function( form_id ) {
+        show_form : function( form_id ) {
             var id = '?id=' + QueryStringParsing.get( 'id' );
             var form_defs = {
                 reset_user_password: {
