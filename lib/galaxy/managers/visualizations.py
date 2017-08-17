@@ -9,10 +9,10 @@ from galaxy import model
 from galaxy.managers import sharable
 
 import logging
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
-class VisualizationManager( sharable.SharableModelManager ):
+class VisualizationManager(sharable.SharableModelManager):
     """
     Handle operations outside and between visualizations and other models.
     """
@@ -27,10 +27,10 @@ class VisualizationManager( sharable.SharableModelManager ):
     annotation_assoc = model.VisualizationAnnotationAssociation
     rating_assoc = model.VisualizationRatingAssociation
 
-    def __init__( self, app, *args, **kwargs ):
+    def __init__(self, app, *args, **kwargs):
         """
         """
-        super( VisualizationManager, self ).__init__( app, *args, **kwargs )
+        super(VisualizationManager, self).__init__(app, *args, **kwargs)
 
     # def copy( self, trans, visualization, user, **kwargs ):
     #    """
@@ -38,40 +38,40 @@ class VisualizationManager( sharable.SharableModelManager ):
     #    pass
 
 
-class VisualizationSerializer( sharable.SharableModelSerializer ):
+class VisualizationSerializer(sharable.SharableModelSerializer):
     """
     Interface/service object for serializing visualizations into dictionaries.
     """
     model_manager_class = VisualizationManager
     SINGLE_CHAR_ABBR = 'v'
 
-    def __init__( self, app ):
-        super( VisualizationSerializer, self ).__init__( app )
+    def __init__(self, app):
+        super(VisualizationSerializer, self).__init__(app)
         self.visualization_manager = self.manager
 
         self.default_view = 'summary'
-        self.add_view( 'summary', [] )
-        self.add_view( 'detailed', [] )
+        self.add_view('summary', [])
+        self.add_view('detailed', [])
 
-    def add_serializers( self ):
-        super( VisualizationSerializer, self ).add_serializers()
+    def add_serializers(self):
+        super(VisualizationSerializer, self).add_serializers()
         self.serializers.update({
         })
 
 
-class VisualizationDeserializer( sharable.SharableModelDeserializer ):
+class VisualizationDeserializer(sharable.SharableModelDeserializer):
     """
     Interface/service object for validating and deserializing
     dictionaries into visualizations.
     """
     model_manager_class = VisualizationManager
 
-    def __init__( self, app ):
-        super( VisualizationDeserializer, self ).__init__( app )
+    def __init__(self, app):
+        super(VisualizationDeserializer, self).__init__(app)
         self.visualization_manager = self.manager
 
-    def add_deserializers( self ):
-        super( VisualizationDeserializer, self ).add_deserializers()
+    def add_deserializers(self):
+        super(VisualizationDeserializer, self).add_deserializers()
         self.deserializers.update({
         })
-        self.deserializable_keyset.update( self.deserializers.keys() )
+        self.deserializable_keyset.update(self.deserializers.keys())

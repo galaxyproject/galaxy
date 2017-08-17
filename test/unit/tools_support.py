@@ -25,16 +25,16 @@ datatypes_registry.load_datatypes()
 galaxy.model.set_datatypes_registry(datatypes_registry)
 
 
-class UsesApp( object ):
+class UsesApp(object):
 
-    def setup_app( self ):
+    def setup_app(self):
         self.test_directory = tempfile.mkdtemp()
-        self.app = galaxy_mock.MockApp( )
+        self.app = galaxy_mock.MockApp()
         self.app.config.new_file_path = os.path.join(self.test_directory, "new_files")
         self.app.config.admin_users = "mary@example.com"
 
-    def tear_down_app( self ):
-        shutil.rmtree( self.test_directory )
+    def tear_down_app(self):
+        shutil.rmtree(self.test_directory)
 
 
 # Simple tool with just one text parameter and output.
@@ -66,7 +66,7 @@ SIMPLE_CAT_TOOL_CONTENTS = '''<tool id="${tool_id}" name="Test Tool" version="$v
 '''
 
 
-class UsesTools( object ):
+class UsesTools(object):
 
     def _init_tool(
         self,
@@ -77,30 +77,30 @@ class UsesTools( object ):
         tool_id="test_tool",
     ):
         self._init_app_for_tools()
-        self.tool_file = os.path.join( self.test_directory, filename )
-        contents_template = string.Template( tool_contents )
-        tool_contents = contents_template.safe_substitute( dict( version=version, profile=profile, tool_id=tool_id ) )
-        self.__write_tool( tool_contents )
-        return self.__setup_tool( )
+        self.tool_file = os.path.join(self.test_directory, filename)
+        contents_template = string.Template(tool_contents)
+        tool_contents = contents_template.safe_substitute(dict(version=version, profile=profile, tool_id=tool_id))
+        self.__write_tool(tool_contents)
+        return self.__setup_tool()
 
-    def _init_app_for_tools( self ):
+    def _init_app_for_tools(self):
         self.app.config.drmaa_external_runjob_script = ""
         self.app.config.tool_secret = "testsecret"
         self.app.config.track_jobs_in_database = False
         self.app.job_config["get_job_tool_configurations"] = lambda ids: [Bunch(handler=Bunch())]
 
-    def __setup_tool( self ):
-        tool_source = get_tool_source( self.tool_file )
+    def __setup_tool(self):
+        tool_source = get_tool_source(self.tool_file)
         try:
             self.tool = create_tool_from_source(self.app, tool_source, config_file=self.tool_file)
         except Exception:
             self.tool = None
-        if getattr( self, "tool_action", None and self.tool):
+        if getattr(self, "tool_action", None and self.tool):
             self.tool.tool_action = self.tool_action
         return self.tool
 
-    def __write_tool( self, contents ):
-        open( self.tool_file, "w" ).write( contents )
+    def __write_tool(self, contents):
+        open(self.tool_file, "w").write(contents)
 
 
 class MockContext(object):
@@ -108,7 +108,7 @@ class MockContext(object):
     def __init__(self, model_objects=None):
         self.expunged_all = False
         self.flushed = False
-        self.model_objects = model_objects or defaultdict( lambda: {} )
+        self.model_objects = model_objects or defaultdict(lambda: {})
         self.created_objects = []
         self.current = self
 
@@ -137,4 +137,4 @@ class MockQuery(object):
         return self.class_objects.get(id, None)
 
 
-__all__ = ( 'UsesApp', )
+__all__ = ('UsesApp', )

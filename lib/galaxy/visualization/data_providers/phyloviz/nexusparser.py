@@ -21,7 +21,7 @@ class Nexus_Parser(Newick_Parser):
         Nexus can store multiple trees
         """
 
-        with open( filename, "rt") as nex_file:
+        with open(filename, "rt") as nex_file:
             nexlines = nex_file.readlines()
 
         rowCount = 0
@@ -75,7 +75,7 @@ class Nexus_Parser(Newick_Parser):
 
                     self.phyloTrees.append(currPhyloTree)
                     treeIndex = len(self.phyloTrees) - 1
-                    treeNames.append( (treeName, treeIndex) )    # appending name of tree, and its index
+                    treeNames.append((treeName, treeIndex))    # appending name of tree, and its index
                     continue
 
         return self.phyloTrees, treeNames

@@ -1,7 +1,7 @@
-class TraceLogger( object ):
+class TraceLogger(object):
 
-    def __init__( self, name ):
+    def __init__(self, name):
         self.name = name
 
-    def log( **kwargs ):
-        raise TypeError( "Abstract Method" )
+    def log(**kwargs):
+        raise TypeError("Abstract Method")

@@ -67,7 +67,7 @@ class TransLogger(object):
                 if name.lower() == 'content-length':
                     bytes = value
             self.write_log(environ, method, req_uri, start, status, bytes)
-            return start_response( status, headers, exc_info )
+            return start_response(status, headers, exc_info)
         return self.application(environ, replacement_start_response)
 
     def write_log(self, environ, method, req_uri, start, status, bytes):

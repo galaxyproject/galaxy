@@ -117,7 +117,7 @@ class ToolConfItem(object):
     def labels(self):
         labels = None
         if "labels" in self.attributes:
-            labels = [ label.strip() for label in self.attributes["labels"].split( "," ) ]
+            labels = [label.strip() for label in self.attributes["labels"].split(",")]
         return labels
 
 

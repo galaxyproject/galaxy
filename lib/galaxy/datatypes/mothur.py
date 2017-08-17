@@ -734,7 +734,7 @@ class CountTable(Tabular):
 
         headers = get_headers(dataset.file_name, sep='\t', count=1)
         colnames = headers[0]
-        dataset.metadata.column_types = ['str'] + (['int'] * ( len(headers[0]) - 1))
+        dataset.metadata.column_types = ['str'] + (['int'] * (len(headers[0]) - 1))
         if len(colnames) > 1:
             dataset.metadata.columns = len(colnames)
         if len(colnames) > 2:

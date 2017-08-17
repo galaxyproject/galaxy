@@ -73,7 +73,7 @@ def _build_dependency_manager_no_config(kwargs):
             dependency_manager_kwds['tool_dependency_cache_dir'] = tool_dependency_cache_dir
             dependency_manager = CachedDependencyManager(**dependency_manager_kwds)
         else:
-            dependency_manager = DependencyManager( **dependency_manager_kwds )
+            dependency_manager = DependencyManager(**dependency_manager_kwds)
 
     return dependency_manager
 

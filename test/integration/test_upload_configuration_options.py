@@ -41,7 +41,7 @@ class NonAdminsCannotPasteFilePathTestCase(BaseCheckUploadContentConfigurationTe
         payload = self.dataset_populator.upload_payload(
             self.history_id, 'file://%s/1.RData' % TEST_DATA_DIRECTORY, ext="binary"
         )
-        create_response = self._post( "tools", data=payload )
+        create_response = self._post("tools", data=payload)
         # Ideally this would be 403 but the tool API endpoint isn't using
         # the newer API decorator that handles those details.
         assert create_response.status_code >= 400
@@ -59,7 +59,7 @@ class AdminsCanPasteFilePathsTestCase(BaseCheckUploadContentConfigurationTestCas
         payload = self.dataset_populator.upload_payload(
             self.history_id, 'file://%s/random-file' % TEST_DATA_DIRECTORY,
         )
-        create_response = self._post( "tools", data=payload )
+        create_response = self._post("tools", data=payload)
         # Ideally this would be 403 but the tool API endpoint isn't using
         # the newer API decorator that handles those details.
         assert create_response.status_code == 200

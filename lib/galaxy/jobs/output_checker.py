@@ -3,10 +3,11 @@ from .error_level import StdioErrorLevel
 import traceback
 
 from logging import getLogger
-log = getLogger( __name__ )
+
+log = getLogger(__name__)
 
 
-def check_output( tool, stdout, stderr, tool_exit_code, job ):
+def check_output(tool, stdout, stderr, tool_exit_code, job):
     """
     Check the output of a tool - given the stdout, stderr, and the tool's
     exit code, return True if the tool exited succesfully and False
@@ -31,8 +32,7 @@ def check_output( tool, stdout, stderr, tool_exit_code, job ):
         # then we assume that the tool writer overwrote the default
         # behavior of just setting an error if there is *anything* on
         # stderr.
-        if ( len( tool.stdio_regexes ) > 0 or
-             len( tool.stdio_exit_codes ) > 0 ):
+        if len(tool.stdio_regexes) > 0 or len(tool.stdio_exit_codes) > 0:
             # Check the exit code ranges in the order in which
             # they were specified. Each exit_code is a StdioExitCode
             # that includes an applicable range. If the exit code was in
@@ -41,24 +41,23 @@ def check_output( tool, stdout, stderr, tool_exit_code, job ):
             max_error_level = StdioErrorLevel.NO_ERROR
             if tool_exit_code is not None:
                 for stdio_exit_code in tool.stdio_exit_codes:
-                    if ( tool_exit_code >= stdio_exit_code.range_start and
-                         tool_exit_code <= stdio_exit_code.range_end ):
+                    if (tool_exit_code >= stdio_exit_code.range_start and
+                            tool_exit_code <= stdio_exit_code.range_end):
                         # Tack on a generic description of the code
                         # plus a specific code description. For example,
                         # this might prepend "Job 42: Warning (Out of Memory)\n".
                         code_desc = stdio_exit_code.desc
-                        if ( None is code_desc ):
+                        if None is code_desc:
                             code_desc = ""
-                        tool_msg = ( "%s: Exit code %d (%s)" % (
-                                     StdioErrorLevel.desc( stdio_exit_code.error_level ),
-                                     tool_exit_code,
-                                     code_desc ) )
-                        log.info( "Job %s: %s" % (job.get_id_tag(), tool_msg) )
+                        tool_msg = ("%s: Exit code %d (%s)" % (
+                            StdioErrorLevel.desc(stdio_exit_code.error_level),
+                            tool_exit_code,
+                            code_desc))
+                        log.info("Job %s: %s" % (job.get_id_tag(), tool_msg))
                         stderr = tool_msg + "\n" + stderr
-                        max_error_level = max( max_error_level,
-                                               stdio_exit_code.error_level )
-                        if ( max_error_level >=
-                             StdioErrorLevel.FATAL ):
+                        max_error_level = max(max_error_level,
+                                              stdio_exit_code.error_level)
+                        if max_error_level >= StdioErrorLevel.FATAL:
                             break
 
             if max_error_level < StdioErrorLevel.FATAL:
@@ -78,32 +77,30 @@ def check_output( tool, stdout, stderr, tool_exit_code, job ):
                     #       o If it was fatal, then we're done - break.
                     # Repeat the stdout stuff for stderr.
                     # TODO: Collapse this into a single function.
-                    if ( regex.stdout_match ):
-                        regex_match = re.search( regex.match, stdout,
-                                                 re.IGNORECASE )
-                        if ( regex_match ):
-                            rexmsg = __regex_err_msg( regex_match, regex)
-                            log.info( "Job %s: %s"
-                                      % ( job.get_id_tag(), rexmsg ) )
+                    if regex.stdout_match:
+                        regex_match = re.search(regex.match, stdout,
+                                                re.IGNORECASE)
+                        if regex_match:
+                            rexmsg = __regex_err_msg(regex_match, regex)
+                            log.info("Job %s: %s"
+                                     % (job.get_id_tag(), rexmsg))
                             stdout = rexmsg + "\n" + stdout
-                            max_error_level = max( max_error_level,
-                                                   regex.error_level )
-                            if ( max_error_level >=
-                                 StdioErrorLevel.FATAL ):
+                            max_error_level = max(max_error_level,
+                                                  regex.error_level)
+                            if max_error_level >= StdioErrorLevel.FATAL:
                                 break
 
-                    if ( regex.stderr_match ):
-                        regex_match = re.search( regex.match, stderr,
-                                                 re.IGNORECASE )
-                        if ( regex_match ):
-                            rexmsg = __regex_err_msg( regex_match, regex)
-                            log.info( "Job %s: %s"
-                                      % ( job.get_id_tag(), rexmsg ) )
+                    if regex.stderr_match:
+                        regex_match = re.search(regex.match, stderr,
+                                                re.IGNORECASE)
+                        if regex_match:
+                            rexmsg = __regex_err_msg(regex_match, regex)
+                            log.info("Job %s: %s"
+                                     % (job.get_id_tag(), rexmsg))
                             stderr = rexmsg + "\n" + stderr
-                            max_error_level = max( max_error_level,
-                                                   regex.error_level )
-                            if ( max_error_level >=
-                                 StdioErrorLevel.FATAL ):
+                            max_error_level = max(max_error_level,
+                                                  regex.error_level)
+                            if max_error_level >= StdioErrorLevel.FATAL:
                                 break
 
             # If we encountered a fatal error, then we'll need to set the
@@ -131,25 +128,25 @@ def check_output( tool, stdout, stderr, tool_exit_code, job ):
     # On any exception, return True.
     except:
         tb = traceback.format_exc()
-        log.warning( "Tool check encountered unexpected exception; " +
-                     "assuming tool was successful: " + tb )
+        log.warning("Tool check encountered unexpected exception; " +
+                    "assuming tool was successful: " + tb)
         success = True
 
     # Store the modified stdout and stderr in the job:
     if job is not None:
-        job.set_streams( stdout, stderr )
+        job.set_streams(stdout, stderr)
 
     return success
 
 
-def __regex_err_msg( match, regex ):
+def __regex_err_msg(match, regex):
     """
     Return a message about the match on tool output using the given
     ToolStdioRegex regex object. The regex_match is a MatchObject
     that will contain the string matched on.
     """
     # Get the description for the error level:
-    err_msg = StdioErrorLevel.desc( regex.error_level ) + ": "
+    err_msg = StdioErrorLevel.desc(regex.error_level) + ": "
     # If there's a description for the regular expression, then use it.
     # Otherwise, we'll take the first 256 characters of the match.
     if None is not regex.desc:
@@ -160,7 +157,7 @@ def __regex_err_msg( match, regex ):
         err_msg += "Matched on "
         # TODO: Move the constant 256 somewhere else besides here.
         if mend - mstart > 256:
-            err_msg += match.string[ mstart : mstart + 256 ] + "..."
+            err_msg += match.string[mstart : mstart + 256] + "..."
         else:
-            err_msg += match.string[ mstart: mend ]
+            err_msg += match.string[mstart: mend]
     return err_msg

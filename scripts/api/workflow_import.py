@@ -25,7 +25,7 @@ def main():
         print('usage: %s key galaxy_url workflow_file' % os.path.basename(sys.argv[0]))
         sys.exit(1)
     # print display( api_key, api_base_url + "/api/workflows" )
-    submit( api_key, api_url, data, return_formatted=False )
+    submit(api_key, api_url, data, return_formatted=False)
 
 
 if __name__ == '__main__':

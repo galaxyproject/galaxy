@@ -61,7 +61,7 @@ def load_app_properties(
             if config_section is None:
                 config_section = "app:main"
             parser = nice_config_parser(config_file)
-            properties.update( dict( parser.items( config_section ) ) )
+            properties.update(dict(parser.items(config_section)))
         else:
             if config_section is None:
                 config_section = "galaxy"
@@ -72,13 +72,13 @@ def load_app_properties(
 
     override_prefix = "%sOVERRIDE_" % config_prefix
     for key in os.environ:
-        if key.startswith( override_prefix ):
-            config_key = key[ len( override_prefix ): ].lower()
-            properties[ config_key ] = os.environ[ key ]
-        elif key.startswith( config_prefix ):
-            config_key = key[ len( config_prefix ): ].lower()
+        if key.startswith(override_prefix):
+            config_key = key[len(override_prefix):].lower()
+            properties[config_key] = os.environ[key]
+        elif key.startswith(config_prefix):
+            config_key = key[len(config_prefix):].lower()
             if config_key not in properties:
-                properties[ config_key ] = os.environ[ key ]
+                properties[config_key] = os.environ[key]
 
     return properties
 

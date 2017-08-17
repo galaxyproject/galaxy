@@ -76,7 +76,7 @@ class ToolCache(object):
 
     def cache_tool(self, config_filename, tool):
         tool_hash = md5_hash_file(config_filename)
-        tool_id = str( tool.id )
+        tool_id = str(tool.id)
         self._hash_by_tool_paths[config_filename] = tool_hash
         self._mod_time_by_path[config_filename] = os.path.getmtime(config_filename)
         self._tool_paths_by_id[tool_id] = config_filename

@@ -297,7 +297,7 @@ def do_release(argv):
     open(next_release_file, "w").write(next_announce.encode("utf-8"))
     releases_index = _release_file("index.rst")
     releases_index_contents = open(releases_index, "r").read()
-    releases_index_contents = releases_index_contents.replace(".. annoucements\n", ".. annoucements\n   " + next_version + "_announce\n" )
+    releases_index_contents = releases_index_contents.replace(".. annoucements\n", ".. annoucements\n   " + next_version + "_announce\n")
     with open(releases_index, "w") as f:
         f.write(releases_index_contents)
 
@@ -446,7 +446,7 @@ def main(argv):
 
     def extend(from_str, line, source=history):
         from_str += "\n"
-        return source.replace(from_str, from_str + line + "\n" )
+        return source.replace(from_str, from_str + line + "\n")
 
     ident = argv[1]
 
@@ -545,7 +545,7 @@ def _text_target(github, pull_request):
 
     is_some_kind_of_enhancement = is_enhancement or is_feature or is_small_enhancement
 
-    if not( is_bug or is_some_kind_of_enhancement or is_minor or is_merge ):
+    if not(is_bug or is_some_kind_of_enhancement or is_minor or is_merge):
         print("No kind/ or minor or merge label found for %s" % _pr_to_str(pull_request))
         text_target = None
 
