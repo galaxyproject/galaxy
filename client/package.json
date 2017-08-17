@@ -11,7 +11,6 @@
   },
   "license": "AFL-3.0",
   "dependencies": {
-    "ajv": "^5.2.2",
     "amdi18n-loader": "^0.6.1",
     "babel-core": "^6.24.0",
     "babel-loader": "^7.1.1",
