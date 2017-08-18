@@ -68,8 +68,8 @@ class SentryPlugin(ErrorPlugin):
                 # User information here also places email links + allows seeing
                 # a list of affected users in the tags/filtering.
                 'user': {
+                    'name': user.username,
                     'email': user.email,
-                    'id': user.id,
                 },
                 # This allows us to link to the dataset info page in case
                 # anything is missing from this report.
