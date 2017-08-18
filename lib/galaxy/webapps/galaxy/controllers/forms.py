@@ -45,8 +45,7 @@ class FormsGrid(grids.Grid):
         NameColumn("Name",
                    key="name",
                    model_class=model.FormDefinition,
-                   link=(lambda item: iff(item.deleted, None, dict(operation="view_latest_form_definition",
-                                                                   id=item.id))),
+                   link=(lambda item: iff(item.deleted, None, dict(action="view_latest_form_definition", id=item.id))),
                    attach_popup=True,
                    filterable="advanced"),
         DescriptionColumn("Description",
@@ -66,7 +65,7 @@ class FormsGrid(grids.Grid):
                                               visible=False,
                                               filterable="standard"))
     operations = [
-        grids.GridOperation("Edit", allow_multiple=False, condition=(lambda item: not item.deleted)),
+        grids.GridOperation("Edit", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action="edit_form_definition")),
         grids.GridOperation("Delete", allow_multiple=True, condition=(lambda item: not item.deleted)),
         grids.GridOperation("Undelete", condition=(lambda item: item.deleted)),
     ]
@@ -102,14 +101,10 @@ class Forms(BaseUIController):
                 return message_exception(trans, 'Invalid form id (%s) received.' % str(id))
             ids = util.listify(id)
             operation = kwd['operation'].lower()
-            if operation == "view_latest_form_definition":
-                return self.view_latest_form_definition(trans, **kwd)
-            elif operation == 'delete':
+            if operation == 'delete':
                 message, status = self._delete_form(trans, ids)
             elif operation == 'undelete':
                 message, status = self._undelete_form(trans, ids)
-            elif operation == "edit":
-                return self.edit_form_definition(trans, **kwd)
         if message and status:
             kwd['message'] = util.sanitize_text(message)
             kwd['status'] = status
@@ -125,8 +120,8 @@ class Forms(BaseUIController):
             form_definition_current = trans.sa_session.query(trans.app.model.FormDefinitionCurrent) \
                                                       .get(trans.security.decode_id(form_definition_current_id))
         except:
-            return trans.response.send_redirect(web.url_for(controller='forms',
-                                                            action='browse_form_definitions',
+            return trans.response.send_redirect(web.url_for(controller='admin',
+                                                            action='forms',
                                                             message='Invalid form',
                                                             status='error'))
         return trans.fill_template('/admin/forms/view_form_definition.mako',
@@ -184,8 +179,8 @@ class Forms(BaseUIController):
         try:
             form_definition_current = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(trans.security.decode_id(kwd['id']))
         except:
-            return trans.response.send_redirect(web.url_for(controller='forms',
-                                                            action='browse_form_definitions',
+            return trans.response.send_redirect(web.url_for(controller='admin',
+                                                            action='forms',
                                                             message='Invalid form',
                                                             status='error'))
         form_definition = form_definition_current.latest_form
