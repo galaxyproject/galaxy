@@ -244,7 +244,8 @@ def process_args(args):
     parser.add_argument('-c', '--data_conf', type=str,
                         help="Galaxy data types conf file for mapping file types", required=True)
     parser.add_argument('-t', '--token', type=str,
-                        help="Optional OpenID/GenomeSpace token if not passed in as part of the URL as URLs^Token", required=False)
+                        help="Optional OpenID/GenomeSpace token if not passed in as part of the URL as URLs^Token."
+                        " If none, the environment variable GS_TOKEN will be respected.", required=False)
 
     args = parser.parse_args(args[1:])
     return args
@@ -252,7 +253,7 @@ def process_args(args):
 
 def main():
     args = process_args(sys.argv)
-    download_from_genomespace_importer(args.json_parameter_file, args.galaxy_root, args.data_conf, args.token)
+    download_from_genomespace_importer(args.json_parameter_file, args.galaxy_root, args.data_conf, args.token or os.environ.get("GS_TOKEN"))
 
 
 if __name__ == "__main__":
