@@ -176,7 +176,37 @@ class Forms(BaseUIController):
             fd_types = trans.app.model.FormDefinition.types.items()
             fd_types.sort()
             ff_types = [(t.__name__.replace( 'Field', ''), t.__name__) for t in trans.model.FormDefinition.supported_field_types]
-            return {
+            field_dict = [{
+                'name'    : 'name',
+                'label'   : 'Name',
+                'value'   : 'field_name',
+                'help'    : 'The field name must be unique for each field and must contain only alphanumeric characters and underscore.'
+            },{
+                'name'    : 'label',
+                'label'   : 'Label',
+                'value'   : 'Field label'
+            },{
+                'name'    : 'helptext',
+                'label'   : 'Help Text'
+            },{
+                'name'    : 'type',
+                'label'   : 'Type',
+                'type'    : 'select',
+                'options' : ff_types
+            },{
+                'name'    : 'options',
+                'label'   : 'Options',
+                'help'    : '*Only for select field, provide comma-separated options.'
+            },{
+                'name'    : 'default',
+                'label'   : 'Default value'
+            },{
+                'name'    : 'required',
+                'label'   : 'Required',
+                'type'    : 'boolean',
+                'value'   : 'false'
+            }]
+            form_dict = {
                 'title'  : 'Edit form for \'%s\'' % (util.sanitize_text(latest_form.name)),
                 'inputs' : [{
                     'name'    : 'name',
@@ -196,38 +226,13 @@ class Forms(BaseUIController):
                     'name'    : 'fields',
                     'title'   : 'Field',
                     'type'    : 'repeat',
-                    'inputs'  : [{
-                        'name'    : 'name',
-                        'label'   : 'Name',
-                        'value'   : 'field_name',
-                        'help'    : 'The field name must be unique for each field and must contain only alphanumeric characters and underscore.'
-                    },{
-                        'name'    : 'label',
-                        'label'   : 'Label',
-                        'value'   : 'Field label'
-                    },{
-                        'name'    : 'helptext',
-                        'label'   : 'Help Text'
-                    },{
-                        'name'    : 'type',
-                        'label'   : 'Type',
-                        'type'    : 'select',
-                        'options' : ff_types
-                    },{
-                        'name'    : 'options',
-                        'label'   : 'Options',
-                        'help'    : '*Only for select field, provide comma-separated options.'
-                    },{
-                        'name'    : 'default',
-                        'label'   : 'Default value'
-                    },{
-                        'name'    : 'required',
-                        'label'   : 'Required',
-                        'type'    : 'boolean',
-                        'value'   : 'false'
-                    }]
+                    'inputs'  : field_dict
                 }]
             }
+            print self.get_saved_form(latest_form)
+
+
+            return form_dict
         else:
             try:
                 return {'message': self._edit_quota(quota, util.Params(payload))}
