@@ -318,24 +318,24 @@ class WorkflowProgress(object):
                 remaining_steps.append((step, invocation_step))
         return remaining_steps
 
-    def replacement_for_tool_input(self, step, input, prefixed_name):
-        """ For given workflow 'step' that has had input_connections_by_name
-        populated fetch the actual runtime input for the given tool 'input'.
-        """
+    def replacement_for_input(self, step, input_dict):
         replacement = modules.NO_REPLACEMENT
+        prefixed_name = input_dict["name"]
+        multiple = input_dict["multiple"]
         if prefixed_name in step.input_connections_by_name:
             connection = step.input_connections_by_name[prefixed_name]
-            if input.type == "data" and input.multiple:
+            if input_dict["input_type"] == "dataset" and multiple:
                 replacement = [self.replacement_for_connection(c) for c in connection]
                 # If replacement is just one dataset collection, replace tool
-                # input with dataset collection - tool framework will extract
+                # input_dict with dataset collection - tool framework will extract
                 # datasets properly.
                 if len(replacement) == 1:
                     if isinstance(replacement[0], model.HistoryDatasetCollectionAssociation):
                         replacement = replacement[0]
             else:
-                is_data = input.type in ["data", "data_collection"]
+                is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
                 replacement = self.replacement_for_connection(connection[0], is_data=is_data)
+
         return replacement
 
     def replacement_for_connection(self, connection, is_data=True):
