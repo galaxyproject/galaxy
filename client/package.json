@@ -35,6 +35,7 @@
     "gulp-watch": "^4.3.11",
     "jquery": "1.12",
     "jshint": "^2.9.4",
+    "raven-js": "^3.17.0",
     "webpack": "^3.5.5"
   },
   "scripts": {

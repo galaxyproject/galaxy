@@ -11,11 +11,15 @@ var cached = require('gulp-cached');
 
 var paths = {
     node_modules: './node_modules',
-    scripts: ['galaxy/scripts/**/*.js',
-              '!galaxy/scripts/apps/**/*.js',
-               '!galaxy/scripts/libs/**/*.js'
+    scripts: [
+        'galaxy/scripts/**/*.js',
+        '!galaxy/scripts/apps/**/*.js',
+        '!galaxy/scripts/libs/**/*.js'
     ],
-    lib_locs: {'jquery':['dist/jquery.js', 'jquery/jquery.js']},
+    lib_locs: {
+        'jquery':['dist/jquery.js', 'jquery/jquery.js'],
+        'raven-js': ['dist/raven.js', 'raven.js'],
+    },
     libs: ['galaxy/scripts/libs/**/*.js']
 };
 
