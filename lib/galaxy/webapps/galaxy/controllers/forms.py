@@ -188,7 +188,7 @@ class Forms(BaseUIController):
                 'value'   : 'Field label'
             },{
                 'name'    : 'helptext',
-                'label'   : 'Help Text'
+                'label'   : 'Help text'
             },{
                 'name'    : 'type',
                 'label'   : 'Type',
@@ -197,7 +197,7 @@ class Forms(BaseUIController):
             },{
                 'name'    : 'selectlist',
                 'label'   : 'Options',
-                'help'    : '*Only for select field, provide comma-separated options.'
+                'help'    : '*Only for fields which allow multiple selections, provide comma-separated values.'
             },{
                 'name'    : 'default',
                 'label'   : 'Default value'
