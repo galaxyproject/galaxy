@@ -2,7 +2,7 @@
 <tool name="GenomeSpace Importer" id="genomespace_importer" require_login="False" version="0.0.5">
     <description> - receive data from GenomeSpace</description>
     <command><![CDATA[
-        export PYTHONPATH=$__root_dir__/lib:\$PYTHONPATH && python $__tool_directory__/genomespace_importer.py
+        python $__tool_directory__/genomespace_importer.py
         #set $input_file = $URL.split('^')[0] if '^' in $URL else $URL
         #set $token = $URL.split('^')[1] if '^' in $URL and $URL.split('^')[1] else $__user__.preferences.get('genomespace_token', None)
 
