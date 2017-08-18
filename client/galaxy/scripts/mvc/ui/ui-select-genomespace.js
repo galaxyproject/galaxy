@@ -16,7 +16,6 @@ var View = Backbone.View.extend({
         this.browse_button = new Ui.ButtonIcon({
             title       : 'Browse',
             icon        : 'fa fa-sign-in',
-            floating    : 'left',
             tooltip     : 'Browse GenomeSpace',
             onclick     : function() {
                 self.browseGenomeSpace();
