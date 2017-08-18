@@ -1,37 +1,59 @@
 """
 API operations on User objects.
 """
-import logging
 import json
+import logging
 import random
 import re
 import socket
-
 from datetime import datetime
-from markupsafe import escape
-from sqlalchemy import false, true, and_, or_
 
+import six
 import yaml
+from markupsafe import escape
+from sqlalchemy import (
+    and_,
+    false,
+    or_,
+    true
+)
 
-from galaxy import exceptions, util, web
-from galaxy.exceptions import MessageException, ObjectInvalid
+from galaxy import (
+    exceptions,
+    util,
+    web
+)
+from galaxy.exceptions import (
+    MessageException,
+    ObjectInvalid
+)
 from galaxy.managers import users
-from galaxy.security.validate_user_input import validate_email
-from galaxy.security.validate_user_input import validate_password
-from galaxy.security.validate_user_input import validate_publicname
-from galaxy.web import url_for
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import CreatesApiKeysMixin
-from galaxy.web.base.controller import CreatesUsersMixin
-from galaxy.web.base.controller import UsesTagsMixin
-from galaxy.web.base.controller import BaseUIController
-from galaxy.web.base.controller import UsesFormDefinitionsMixin
-from galaxy.web.form_builder import AddressField
+from galaxy.security.validate_user_input import (
+    validate_email,
+    validate_password,
+    validate_publicname
+)
 from galaxy.tools.toolbox.filters import FilterFactory
-from galaxy.util import docstring_trim, listify, hash_util
+from galaxy.util import (
+    docstring_trim,
+    hash_util,
+    listify
+)
 from galaxy.util.odict import odict
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous as expose_api_anonymous,
+    url_for
+)
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    BaseUIController,
+    CreatesApiKeysMixin,
+    CreatesUsersMixin,
+    UsesFormDefinitionsMixin,
+    UsesTagsMixin
+)
+from galaxy.web.form_builder import AddressField
 
 
 log = logging.getLogger(__name__)
@@ -262,7 +284,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             with open(path, 'r') as stream:
                 config = yaml.load(stream)
         except:
-            log.warn('Config file (%s) could not be found or is malformed.' % path)
+            log.warning('Config file (%s) could not be found or is malformed.' % path)
             return {}
 
         return config['preferences'] if config else {}
@@ -541,7 +563,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
 
     def _validate_email_publicname(self, email, username):
         ''' Validate email and username using regex '''
-        if email == '' or not isinstance(email, basestring):
+        if email == '' or not isinstance(email, six.string_types):
             return 'Please provide your email address.'
         if not re.match('^[a-z0-9\-]{3,255}$', username):
             return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.'
@@ -615,9 +637,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         """
         user = self._get_user(trans, id)
         roles = user.all_roles()
-        permitted_actions = trans.app.model.Dataset.permitted_actions.items()
         inputs = []
-        for index, action in permitted_actions:
+        for index, action in trans.app.model.Dataset.permitted_actions.items():
             inputs.append({'type': 'select',
                            'multiple': True,
                            'optional': True,
@@ -634,9 +655,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         Set the user's default permissions for the new histories
         """
         user = self._get_user(trans, id)
-        permitted_actions = trans.app.model.Dataset.permitted_actions.items()
         permissions = {}
-        for index, action in permitted_actions:
+        for index, action in trans.app.model.Dataset.permitted_actions.items():
             action_id = trans.app.security_agent.get_action(action.action).action
             permissions[action_id] = [trans.sa_session.query(trans.app.model.Role).get(x) for x in (payload.get(index) or [])]
         trans.app.security_agent.user_set_default_permissions(user, permissions)

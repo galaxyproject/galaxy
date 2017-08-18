@@ -39,10 +39,9 @@ from .output_checker import check_output
 
 log = logging.getLogger(__name__)
 
-# This file, if created in the job's working directory, will be used for
-# setting advanced metadata properties on the job and its associated outputs.
-# This interface is currently experimental, is only used by the upload tool,
-# and should eventually become API'd
+# Legacy definition - this is read by certain misbehaving tool wrappers
+# that import Galaxy internals - but it shouldn't be used in Galaxy's code
+# itself.
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
 
 # Override with config.default_job_shell.
@@ -1213,7 +1212,7 @@ class JobWrapper(object, HasResourceParameters):
 
         job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
-            context = self.get_dataset_finish_context(job_context, dataset_assoc.dataset.dataset)
+            context = self.get_dataset_finish_context(job_context, dataset_assoc)
             # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
             # lets not allow this to occur
             # need to update all associated output hdas, i.e. history was shared with job running
@@ -1387,10 +1386,11 @@ class JobWrapper(object, HasResourceParameters):
             tool_working_directory = self.working_directory
         collected_datasets = {
             'children': self.tool.collect_child_datasets(out_data, tool_working_directory),
-            'primary': self.tool.collect_primary_datasets(out_data, tool_working_directory, input_ext, input_dbkey)
+            'primary': self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
         }
         self.tool.collect_dynamic_collections(
             out_collections,
+            self.get_tool_provided_job_metadata(),
             job_working_directory=tool_working_directory,
             inp_data=inp_data,
             job=job,
@@ -1621,40 +1621,19 @@ class JobWrapper(object, HasResourceParameters):
         if self.tool_provided_job_metadata is not None:
             return self.tool_provided_job_metadata
 
-        # Look for JSONified job metadata
-        self.tool_provided_job_metadata = []
-        meta_file = os.path.join(self.tool_working_directory, TOOL_PROVIDED_JOB_METADATA_FILE)
-        # LEGACY: Remove in 17.XX
-        if not os.path.exists(meta_file):
-            # Maybe this is a legacy job, use the job working directory instead
-            meta_file = os.path.join(self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE)
-
-        if os.path.exists(meta_file):
-            for line in open(meta_file, 'r'):
-                try:
-                    line = loads(line)
-                    assert 'type' in line
-                except:
-                    log.exception('(%s) Got JSON data from tool, but data is improperly formatted or no "type" key in data' % self.job_id)
-                    log.debug('Offending data was: %s' % line)
-                    continue
-                # Set the dataset id if it's a dataset entry and isn't set.
-                # This isn't insecure.  We loop the job's output datasets in
-                # the finish method, so if a tool writes out metadata for a
-                # dataset id that it doesn't own, it'll just be ignored.
-                if line['type'] == 'dataset' and 'dataset_id' not in line:
-                    try:
-                        line['dataset_id'] = self.get_output_file_id(line['dataset'])
-                    except KeyError:
-                        log.warning('(%s) Tool provided job dataset-specific metadata without specifying a dataset' % self.job_id)
-                        continue
-                self.tool_provided_job_metadata.append(line)
+        self.tool_provided_job_metadata = self.tool.tool_provided_metadata(self)
         return self.tool_provided_job_metadata
 
-    def get_dataset_finish_context(self, job_context, dataset):
-        for meta in self.get_tool_provided_job_metadata():
-            if meta['type'] == 'dataset' and meta['dataset_id'] == dataset.id:
-                return ExpressionContext(meta, job_context)
+    def get_dataset_finish_context(self, job_context, output_dataset_assoc):
+        meta = {}
+        tool_provided_metadata = self.get_tool_provided_job_metadata()
+        if hasattr(tool_provided_metadata, "get_meta_by_dataset_id"):
+            meta = tool_provided_metadata.get_meta_by_dataset_id(output_dataset_assoc.dataset.dataset.id)
+        elif hasattr(tool_provided_metadata, "get_meta_by_name"):
+            meta = tool_provided_metadata.get_meta_by_name(output_dataset_assoc.name)
+
+        if meta:
+            return ExpressionContext(meta, job_context)
         return job_context
 
     def invalidate_external_metadata(self):
@@ -1674,7 +1653,7 @@ class JobWrapper(object, HasResourceParameters):
         if set_extension:
             for output_dataset_assoc in job.output_datasets:
                 if output_dataset_assoc.dataset.ext == 'auto':
-                    context = self.get_dataset_finish_context(dict(), output_dataset_assoc.dataset.dataset)
+                    context = self.get_dataset_finish_context(dict(), output_dataset_assoc)
                     output_dataset_assoc.dataset.extension = context.get('ext', 'data')
             self.sa_session.flush()
         if tmp_dir is None:
@@ -1698,7 +1677,7 @@ class JobWrapper(object, HasResourceParameters):
                                                                         config_root=config_root,
                                                                         config_file=config_file,
                                                                         datatypes_config=datatypes_config,
-                                                                        job_metadata=os.path.join(self.tool_working_directory, TOOL_PROVIDED_JOB_METADATA_FILE),
+                                                                        job_metadata=os.path.join(self.tool_working_directory, self.tool.provided_metadata_file),
                                                                         max_metadata_value_size=self.app.config.max_metadata_value_size,
                                                                         **kwds)
         if resolve_metadata_dependencies:

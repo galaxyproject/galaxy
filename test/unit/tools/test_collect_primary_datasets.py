@@ -7,6 +7,7 @@ from galaxy import (
     model,
     util
 )
+from galaxy.tools.parameters.output_collect import LegacyToolProvidedMetadata, NullToolProvidedMetadata
 from galaxy.tools.parser import output_collection_def
 
 
@@ -250,7 +251,13 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
     def _collect(self, job_working_directory=None):
         if not job_working_directory:
             job_working_directory = self.test_directory
-        return self.tool.collect_primary_datasets(self.outputs, job_working_directory, "txt", input_dbkey="btau")
+        meta_file = os.path.join(self.test_directory, "galaxy.json")
+        if not os.path.exists(meta_file):
+            tool_provided_metadata = NullToolProvidedMetadata()
+        else:
+            tool_provided_metadata = LegacyToolProvidedMetadata(None, meta_file)
+
+        return self.tool.collect_primary_datasets(self.outputs, tool_provided_metadata, job_working_directory, "txt", input_dbkey="btau")
 
     def _replace_output_collectors(self, xml_str):
         # Rewrite tool as if it had been created with output containing

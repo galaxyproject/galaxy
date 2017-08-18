@@ -1,5 +1,6 @@
-<tool id="tool_provided_metadata_1" name="tool_provided_metadata_1">
-    <!-- Demonstrate setting simple dataset metadata for output datasets via galaxy.json for legacy tools (galaxy.json structure changes for profile >= 17.09 tools). -->
+<tool id="tool_provided_metadata_8" name="tool_provided_metadata_8" version="1.0.0" profile="17.09">
+    <!-- Demonstrate reverting tools with new profiles to older galaxy.json style
+         using provided_metadata_style attribute on outputs. -->
     <command>
       echo "This is a line of text." > $out1;
       cp $c1 galaxy.json;
@@ -10,7 +11,7 @@
     <inputs>
         <param name="input1" type="data" label="Input Dataset"/>
     </inputs>
-    <outputs>
+    <outputs provided_metadata_style="legacy">
         <!-- Set format="auto" to read from galaxy.json, use auto_format="true"
              to sniff. -->
         <data name="out1" format="auto" />

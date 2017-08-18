@@ -148,6 +148,22 @@ class ToolSource(object):
     def parse_input_pages(self):
         """ Return a PagesSource representing inputs by page for tool. """
 
+    def parse_provided_metadata_style(self):
+        """Return style of tool provided metadata file (e.g. galaxy.json).
+
+        A value of of "default" indicates the newer galaxy.json style
+        (the default for XML-based tools with profile >= 17.09) and a value
+        of "legacy" indicates the older galaxy.json style.
+
+        A short description of these two styles can be found at
+        https://github.com/galaxyproject/galaxy/pull/4437.
+        """
+        return "default"
+
+    def parse_provided_metadata_file(self):
+        """Return location of provided metadata file (e.g. galaxy.json)."""
+        return "galaxy.json"
+
     @abstractmethod
     def parse_outputs(self, tool):
         """ Return a pair of output and output collections ordered

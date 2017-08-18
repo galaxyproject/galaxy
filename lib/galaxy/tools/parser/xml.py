@@ -197,6 +197,26 @@ class XmlToolSource(ToolSource):
     def parse_input_pages(self):
         return XmlPagesSource(self.root)
 
+    def parse_provided_metadata_style(self):
+        style = None
+        out_elem = self.root.find("outputs")
+        if out_elem and "provided_metadata_style" in out_elem.attrib:
+            style = out_elem.attrib["provided_metadata_style"]
+
+        if style is None:
+            style = "legacy" if self.parse_profile() < "17.09" else "default"
+
+        assert style in ["legacy", "default"]
+        return style
+
+    def parse_provided_metadata_file(self):
+        provided_metadata_file = "galaxy.json"
+        out_elem = self.root.find("outputs")
+        if out_elem and "provided_metadata_file" in out_elem.attrib:
+            provided_metadata_file = out_elem.attrib["provided_metadata_file"]
+
+        return provided_metadata_file
+
     def parse_outputs(self, tool):
         out_elem = self.root.find("outputs")
         outputs = odict()
