@@ -176,7 +176,8 @@ class Forms(BaseUIController):
             fd_types = trans.app.model.FormDefinition.types.items()
             fd_types.sort()
             ff_types = [(t.__name__.replace( 'Field', ''), t.__name__) for t in trans.model.FormDefinition.supported_field_types]
-            field_dict = [{
+            field_cache = []
+            field_inputs = [{
                 'name'    : 'name',
                 'label'   : 'Name',
                 'value'   : 'field_name',
@@ -194,7 +195,7 @@ class Forms(BaseUIController):
                 'type'    : 'select',
                 'options' : ff_types
             },{
-                'name'    : 'options',
+                'name'    : 'selectlist',
                 'label'   : 'Options',
                 'help'    : '*Only for select field, provide comma-separated options.'
             },{
@@ -226,12 +227,19 @@ class Forms(BaseUIController):
                     'name'    : 'fields',
                     'title'   : 'Field',
                     'type'    : 'repeat',
-                    'inputs'  : field_dict
+                    'cache'   : field_cache,
+                    'inputs'  : field_inputs
                 }]
             }
-            print self.get_saved_form(latest_form)
-
-
+            for field in latest_form.fields:
+                new_field = copy.deepcopy(field_inputs)
+                for field_input in new_field:
+                    field_value = field.get(field_input['name'])
+                    if field_value:
+                        if isinstance( field_value, list ):
+                            field_value = ','.join(field_value)
+                        field_input['value'] = str(field_value)
+                field_cache.append(new_field)
             return form_dict
         else:
             try:
