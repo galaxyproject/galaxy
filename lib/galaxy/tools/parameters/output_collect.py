@@ -7,7 +7,8 @@ import operator
 import os
 import re
 
-from galaxy import jobs
+from collections import namedtuple
+
 from galaxy import util
 from galaxy.tools.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
@@ -23,9 +24,99 @@ DATASET_ID_TOKEN = "DATASET_ID"
 log = logging.getLogger(__name__)
 
 
+class NullToolProvidedMetadata(object):
+
+    def get_new_datasets(self, output_name):
+        return []
+
+    def get_new_dataset_meta_by_basename(self, output_name, basename):
+        return {}
+
+
+class LegacyToolProvidedMetadata(object):
+
+    def __init__(self, job_wrapper, meta_file):
+        self.job_wrapper = job_wrapper
+        self.tool_provided_job_metadata = []
+
+        with open(meta_file, 'r') as f:
+            for line in f:
+                try:
+                    line = json.loads(line)
+                    assert 'type' in line
+                except Exception:
+                    log.exception('(%s) Got JSON data from tool, but data is improperly formatted or no "type" key in data' % job_wrapper.job_id)
+                    log.debug('Offending data was: %s' % line)
+                    continue
+                # Set the dataset id if it's a dataset entry and isn't set.
+                # This isn't insecure.  We loop the job's output datasets in
+                # the finish method, so if a tool writes out metadata for a
+                # dataset id that it doesn't own, it'll just be ignored.
+                if line['type'] == 'dataset' and 'dataset_id' not in line:
+                    try:
+                        line['dataset_id'] = job_wrapper.get_output_file_id(line['dataset'])
+                    except KeyError:
+                        log.warning('(%s) Tool provided job dataset-specific metadata without specifying a dataset' % job_wrapper.job_id)
+                        continue
+                self.tool_provided_job_metadata.append(line)
+
+    def get_meta_by_dataset_id(self, dataset_id):
+        for meta in self.tool_provided_job_metadata:
+            if meta['type'] == 'dataset' and meta['dataset_id'] == dataset_id:
+                return meta
+
+    def get_new_dataset_meta_by_basename(self, output_name, basename):
+        for meta in self.tool_provided_job_metadata:
+            if meta['type'] == 'new_primary_dataset' and meta['filename'] == basename:
+                return meta
+
+    def get_new_datasets(self, output_name):
+        log.warning("Called get_new_datasets with legacy tool metadata provider - that is unimplemented.")
+        return []
+
+
+class ToolProvidedMetadata(object):
+
+    def __init__(self, job_wrapper, meta_file):
+        self.job_wrapper = job_wrapper
+        with open(meta_file, 'r') as f:
+            self.tool_provided_job_metadata = json.load(f)
+
+    def get_meta_by_name(self, name):
+        return self.tool_provided_job_metadata.get(name, {})
+
+    def get_new_dataset_meta_by_basename(self, output_name, basename):
+        datasets = self.tool_provided_job_metadata.get(output_name, {}).get("datasets", [])
+        for meta in datasets:
+            if meta['filename'] == basename:
+                return meta
+
+    def get_new_datasets(self, output_name):
+        datasets = self.tool_provided_job_metadata.get(output_name, {}).get("datasets", [])
+        if not datasets:
+            elements = self.tool_provided_job_metadata.get(output_name, {}).get("elements", [])
+            if elements:
+                datasets = self._elements_to_datasets(elements)
+        return datasets
+
+    def _elements_to_datasets(self, elements, level=0):
+        for element in elements:
+            extra_kwds = {"identifier_%d" % level: element["name"]}
+            if "elements" in element:
+                for inner_element in self._elements_to_datasets(element["elements"], level=level + 1):
+                    dataset = extra_kwds.copy()
+                    dataset.update(inner_element)
+                    yield dataset
+            else:
+                dataset = extra_kwds
+                extra_kwds.update(element)
+                yield extra_kwds
+
+
 def collect_dynamic_collections(
     tool,
     output_collections,
+    tool_provided_metadata,
     job_working_directory,
     inp_data={},
     job=None,
@@ -34,6 +125,7 @@ def collect_dynamic_collections(
     collections_service = tool.app.dataset_collections_service
     job_context = JobContext(
         tool,
+        tool_provided_metadata,
         job,
         job_working_directory,
         inp_data,
@@ -71,13 +163,14 @@ def collect_dynamic_collections(
 
 class JobContext(object):
 
-    def __init__(self, tool, job, job_working_directory, inp_data, input_dbkey):
+    def __init__(self, tool, tool_provided_metadata, job, job_working_directory, inp_data, input_dbkey):
         self.inp_data = inp_data
         self.input_dbkey = input_dbkey
         self.app = tool.app
         self.sa_session = tool.sa_session
         self.job = job
         self.job_working_directory = job_working_directory
+        self.tool_provided_metadata = tool_provided_metadata
 
     @property
     def permissions(self):
@@ -90,10 +183,10 @@ class JobContext(object):
             permissions = self.app.security_agent.history_get_default_permissions(self.job.history)
         return permissions
 
-    def find_files(self, collection, dataset_collectors):
+    def find_files(self, output_name, collection, dataset_collectors):
         filenames = odict.odict()
-        for path, extra_file_collector in walk_over_extra_files(dataset_collectors, self.job_working_directory, collection):
-            filenames[path] = extra_file_collector
+        for discovered_file in discover_files(output_name, self.tool_provided_metadata, dataset_collectors, self.job_working_directory, collection):
+            filenames[discovered_file.path] = discovered_file
         return filenames
 
     def populate_collection_elements(self, collection, root_collection_builder, output_collection_def):
@@ -103,12 +196,13 @@ class JobContext(object):
         #    <sort regex="example.(\d+).fastq" by="1:numerical" />
         #    <sort regex="part_(\d+)_sample_([^_]+).fastq" by="2:lexical,1:numerical" />
         dataset_collectors = map(dataset_collector, output_collection_def.dataset_collector_descriptions)
-        filenames = self.find_files(collection, dataset_collectors)
+        output_name = output_collection_def.name
+        filenames = self.find_files(output_name, collection, dataset_collectors)
 
         element_datasets = []
-        for filename, extra_file_collector in filenames.items():
+        for filename, discovered_file in filenames.items():
             create_dataset_timer = ExecutionTimer()
-            fields_match = extra_file_collector.match(collection, os.path.basename(filename))
+            fields_match = discovered_file.match
             if not fields_match:
                 raise Exception("Problem parsing metadata fields for file %s" % filename)
             element_identifiers = fields_match.element_identifiers
@@ -164,7 +258,7 @@ class JobContext(object):
             # Associate new dataset with job
             if job:
                 element_identifier_str = ":".join(element_identifiers)
-                # Below was changed from '__new_primary_file_%s|%s__' % ( name, designation )
+                # Below was changed from '__new_primary_file_%s|%s__' % (name, designation )
                 assoc = app.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, element_identifier_str), dataset)
                 assoc.job = self.job
             sa_session.add(assoc)
@@ -212,16 +306,16 @@ class JobContext(object):
         return primary_data
 
 
-def collect_primary_datasets(tool, output, job_working_directory, input_ext, input_dbkey="?"):
+def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_directory, input_ext, input_dbkey="?"):
     app = tool.app
     sa_session = tool.sa_session
     new_primary_datasets = {}
     try:
-        galaxy_json_path = os.path.join(job_working_directory, "working", jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
+        galaxy_json_path = os.path.join(job_working_directory, "working", tool.provide_metadata_file)
         # LEGACY: Remove in 17.XX
         if not os.path.exists(galaxy_json_path):
             # Maybe this is a legacy job, use the job working directory instead
-            galaxy_json_path = os.path.join(job_working_directory, jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
+            galaxy_json_path = os.path.join(job_working_directory, tool.provide_metadata_file)
         json_file = open(galaxy_json_path, 'r')
         for line in json_file:
             line = json.loads(line)
@@ -231,8 +325,7 @@ def collect_primary_datasets(tool, output, job_working_directory, input_ext, inp
         # This should not be considered an error or warning condition, this file is optional
         pass
     # Loop through output file names, looking for generated primary
-    # datasets in form of:
-    #     'primary_associatedWithDatasetID_designation_visibility_extension(_DBKEY)'
+    # datasets in form specified by discover dataset patterns or in tool provided metadata.
     primary_output_assigned = False
     new_outdata_name = None
     primary_datasets = {}
@@ -245,12 +338,17 @@ def collect_primary_datasets(tool, output, job_working_directory, input_ext, inp
                 # only use old-style matching (glob instead of regex and only
                 # using default collector - if enabled).
                 for filename in glob.glob(os.path.join(app.config.new_file_path, "primary_%i_*" % outdata.id)):
-                    filenames[filename] = DEFAULT_DATASET_COLLECTOR
+                    filenames[filename] = DiscoveredFile(
+                        filename,
+                        DEFAULT_DATASET_COLLECTOR,
+                        DEFAULT_DATASET_COLLECTOR.match(outdata, os.path.basename(filename))
+                    )
         if 'job_working_directory' in app.config.collect_outputs_from:
-            for path, extra_file_collector in walk_over_extra_files(dataset_collectors, job_working_directory, outdata):
-                filenames[path] = extra_file_collector
-        for filename_index, (filename, extra_file_collector) in enumerate(filenames.items()):
-            fields_match = extra_file_collector.match(outdata, os.path.basename(filename))
+            for discovered_file in discover_files(name, tool_provided_metadata, dataset_collectors, job_working_directory, outdata):
+                filenames[discovered_file.path] = discovered_file
+        for filename_index, (filename, discovered_file) in enumerate(filenames.items()):
+            extra_file_collector = discovered_file.collector
+            fields_match = discovered_file.match
             if not fields_match:
                 # Before I guess pop() would just have thrown an IndexError
                 raise Exception("Problem parsing metadata fields for file %s" % filename)
@@ -294,8 +392,10 @@ def collect_primary_datasets(tool, output, job_working_directory, input_ext, inp
                 sa_session.add(assoc)
                 sa_session.flush()
             primary_data.state = outdata.state
+            # TODO: should be able to disambiguate files in different directories...
+            new_primary_filename = os.path.split(filename)[-1]
+            new_primary_datasets_attributes = tool_provided_metadata.get_new_dataset_meta_by_basename(name, new_primary_filename)
             # add tool/metadata provided information
-            new_primary_datasets_attributes = new_primary_datasets.get(os.path.split(filename)[-1], {})
             if new_primary_datasets_attributes:
                 dataset_att_by_name = dict(ext='extension')
                 for att_set in ['name', 'info', 'ext', 'dbkey']:
@@ -348,14 +448,39 @@ def collect_primary_datasets(tool, output, job_working_directory, input_ext, inp
     return primary_datasets
 
 
+DiscoveredFile = namedtuple('DiscoveredFile', ['path', 'collector', 'match'])
+
+
+def discover_files(output_name, tool_provided_metadata, extra_file_collectors, job_working_directory, matchable):
+    if extra_file_collectors and extra_file_collectors[0].discover_via == "tool_provided_metadata":
+        # just load entries from tool provided metadata...
+        assert len(extra_file_collectors) == 1
+        extra_file_collector = extra_file_collectors[0]
+        target_directory = discover_target_directory(extra_file_collector, job_working_directory)
+        for dataset in tool_provided_metadata.get_new_datasets(output_name):
+            filename = dataset["filename"]
+            path = os.path.join(target_directory, filename)
+            yield DiscoveredFile(path, extra_file_collector, JsonCollectedDatasetMatch(dataset, extra_file_collector, filename, path=path))
+    else:
+        for (match, collector) in walk_over_extra_files(extra_file_collectors, job_working_directory, matchable):
+            yield DiscoveredFile(match.path, collector, match)
+
+
+def discover_target_directory(extra_file_collector, job_working_directory):
+    directory = job_working_directory
+    if extra_file_collector.directory:
+        directory = os.path.join(directory, extra_file_collector.directory)
+        if not util.in_directory(directory, job_working_directory):
+            raise Exception("Problem with tool configuration, attempting to pull in datasets from outside working directory.")
+    return directory
+
+
 def walk_over_extra_files(extra_file_collectors, job_working_directory, matchable):
+
     for extra_file_collector in extra_file_collectors:
+        assert extra_file_collector.discover_via == "pattern"
         matches = []
-        directory = job_working_directory
-        if extra_file_collector.directory:
-            directory = os.path.join(directory, extra_file_collector.directory)
-            if not util.in_directory(directory, job_working_directory):
-                raise Exception("Problem with tool configuration, attempting to pull in datasets from outside working directory.")
+        directory = discover_target_directory(extra_file_collector, job_working_directory)
         if not os.path.isdir(directory):
             continue
         for filename in os.listdir(directory):
@@ -367,7 +492,7 @@ def walk_over_extra_files(extra_file_collectors, job_working_directory, matchabl
                 matches.append(match)
 
         for match in extra_file_collector.sort(matches):
-            yield match.path, extra_file_collector
+            yield match, extra_file_collector
 
 
 def dataset_collector(dataset_collection_description):
@@ -376,12 +501,27 @@ def dataset_collector(dataset_collection_description):
         # treated like a singleton.
         return DEFAULT_DATASET_COLLECTOR
     else:
-        return DatasetCollector(dataset_collection_description)
+        if dataset_collection_description.discover_via == "pattern":
+            return DatasetCollector(dataset_collection_description)
+        else:
+            return ToolMetadataDatasetCollector(dataset_collection_description)
+
+
+class ToolMetadataDatasetCollector(object):
+
+    def __init__(self, dataset_collection_description):
+        self.discover_via = dataset_collection_description.discover_via
+        self.default_dbkey = dataset_collection_description.default_dbkey
+        self.default_ext = dataset_collection_description.default_ext
+        self.default_visible = dataset_collection_description.default_visible
+        self.directory = dataset_collection_description.directory
+        self.assign_primary_output = dataset_collection_description.assign_primary_output
 
 
 class DatasetCollector(object):
 
     def __init__(self, dataset_collection_description):
+        self.discover_via = dataset_collection_description.discover_via
         # dataset_collection_description is an abstract description
         # built from the tool parsing module - see galaxy.tools.parser.output_colleciton_def
         self.sort_key = dataset_collection_description.sort_key
@@ -394,18 +534,18 @@ class DatasetCollector(object):
         self.directory = dataset_collection_description.directory
         self.assign_primary_output = dataset_collection_description.assign_primary_output
 
-    def pattern_for_dataset(self, dataset_instance=None):
+    def _pattern_for_dataset(self, dataset_instance=None):
         token_replacement = r'\d+'
         if dataset_instance:
             token_replacement = str(dataset_instance.id)
         return self.pattern.replace(DATASET_ID_TOKEN, token_replacement)
 
     def match(self, dataset_instance, filename, path=None):
-        pattern = self.pattern_for_dataset(dataset_instance)
+        pattern = self._pattern_for_dataset(dataset_instance)
         re_match = re.match(pattern, filename)
         match_object = None
         if re_match:
-            match_object = CollectedDatasetMatch(re_match, self, filename, path=path)
+            match_object = RegexCollectedDatasetMatch(re_match, self, filename, path=path)
         return match_object
 
     def sort(self, matches):
@@ -425,26 +565,25 @@ def _compose(f, g):
     return lambda x: f(g(x))
 
 
-class CollectedDatasetMatch(object):
+class JsonCollectedDatasetMatch(object):
 
-    def __init__(self, re_match, collector, filename, path=None):
-        self.re_match = re_match
+    def __init__(self, as_dict, collector, filename, path=None):
+        self.as_dict = as_dict
         self.collector = collector
         self.filename = filename
         self.path = path
 
     @property
     def designation(self):
-        re_match = self.re_match
-        # If collecting nested collection, grap identifier_0,
+        # If collecting nested collection, grab identifier_0,
         # identifier_1, etc... and join on : to build designation.
         element_identifiers = self.raw_element_identifiers
         if element_identifiers:
             return ":".join(element_identifiers)
-        elif "designation" in re_match.groupdict():
-            return re_match.group("designation")
-        elif "name" in re_match.groupdict():
-            return re_match.group("name")
+        elif "designation" in self.as_dict:
+            return self.as_dict.get("designation")
+        elif "name" in self.as_dict:
+            return self.as_dict.get("name")
         else:
             return None
 
@@ -454,13 +593,12 @@ class CollectedDatasetMatch(object):
 
     @property
     def raw_element_identifiers(self):
-        re_match = self.re_match
         identifiers = []
         i = 0
         while True:
             key = "identifier_%d" % i
-            if key in re_match.groupdict():
-                identifiers.append(re_match.group(key))
+            if key in self.as_dict:
+                identifiers.append(self.as_dict.get(key))
             else:
                 break
             i += 1
@@ -471,32 +609,30 @@ class CollectedDatasetMatch(object):
     def name(self):
         """ Return name or None if not defined by the discovery pattern.
         """
-        re_match = self.re_match
-        name = None
-        if "name" in re_match.groupdict():
-            name = re_match.group("name")
-        return name
+        return self.as_dict.get("name")
 
     @property
     def dbkey(self):
-        try:
-            return self.re_match.group("dbkey")
-        except IndexError:
-            return self.collector.default_dbkey
+        return self.as_dict.get("dbkey", self.collector.default_dbkey)
 
     @property
     def ext(self):
-        try:
-            return self.re_match.group("ext")
-        except IndexError:
-            return self.collector.default_ext
+        return self.as_dict.get("ext", self.collector.default_ext)
 
     @property
     def visible(self):
         try:
-            return self.re_match.group("visible").lower() == "visible"
-        except IndexError:
+            return self.as_dict["visible"].lower() == "visible"
+        except KeyError:
             return self.collector.default_visible
+
+
+class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):
+
+    def __init__(self, re_match, collector, filename, path=None):
+        super(RegexCollectedDatasetMatch, self).__init__(
+            re_match.groupdict(), collector, filename, path=path
+        )
 
 
 UNSET = object()
