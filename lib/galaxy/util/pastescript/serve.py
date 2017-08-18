@@ -19,19 +19,20 @@
 from __future__ import print_function
 
 import atexit
-import ConfigParser
 import errno
 import logging
 import optparse
 import os
 import re
+import signal
 import subprocess
 import sys
 import textwrap
 import threading
 import time
-
 from logging.config import fileConfig
+
+from six.moves import configparser
 
 from .loadwsgi import loadapp, loadserver
 
@@ -351,7 +352,7 @@ class Command(object):
         ConfigParser defaults are specified for the special ``__file__``
         and ``here`` variables, similar to PasteDeploy config loading.
         """
-        parser = ConfigParser.ConfigParser()
+        parser = configparser.ConfigParser()
         parser.read([config_file])
         if parser.has_section('loggers'):
             config_file = os.path.abspath(config_file)
@@ -747,7 +748,6 @@ class ServeCommand(Command):
         for j in range(10):
             if not live_pidfile(pid_file):
                 break
-            import signal
             os.kill(pid, signal.SIGTERM)
             time.sleep(1)
         else:
@@ -803,7 +803,6 @@ class ServeCommand(Command):
                     return 1
             finally:
                 if proc is not None and hasattr(os, 'kill'):
-                    import signal
                     try:
                         os.kill(proc.pid, signal.SIGTERM)
                     except (OSError, IOError):
@@ -1005,10 +1004,6 @@ def _turn_sigterm_into_systemexit():
     """
     Attempts to turn a SIGTERM exception into a SystemExit exception.
     """
-    try:
-        import signal
-    except ImportError:
-        return
 
     def handle_term(signo, frame):
         raise SystemExit
