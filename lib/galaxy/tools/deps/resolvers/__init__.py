@@ -1,4 +1,6 @@
 """The module defines the abstract interface for dealing tool dependency resolution plugins."""
+import os
+
 from abc import (
     ABCMeta,
     abstractmethod,
@@ -91,6 +93,11 @@ class MappableDependencyResolver:
         if mapping_files:
             mapping_files = listify(mapping_files)
             for mapping_file in mapping_files:
+                if not os.path.exists(mapping_file):
+                    if not mapping_file.endswith(".sample"):
+                        raise Exception("Failed to find configured dependency resolver mapping file [%s]" % mapping_file)
+
+                    continue
                 mappings.extend(MappableDependencyResolver._mapping_file_to_list(mapping_file))
         self._mappings = mappings
 

@@ -27,6 +27,7 @@ DEFAULT_MODULE_PATH = '/usr/share/modules/modulefiles'
 DEFAULT_INDICATOR = '(default)'
 DEFAULT_MODULE_PREFETCH = "true"
 UNKNOWN_FIND_BY_MESSAGE = "ModuleDependencyResolver does not know how to find modules by [%s], find_by should be one of %s"
+NO_SUCH_MODULECMD_MESSAGE = "No such modulecmd executable [%s] could be found, the module dependency resolver is misconfigured."
 
 
 class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
@@ -154,7 +155,10 @@ class AvailModuleChecker(object):
                 yield module_name, module_version
 
     def __module_avail_output(self):
-        avail_command = [self.module_dependency_resolver.modulecmd, 'sh', 'avail']
+        modulecmd = self.module_dependency_resolver.modulecmd
+        if not exists(modulecmd):
+            raise Exception(NO_SUCH_MODULECMD_MESSAGE % modulecmd)
+        avail_command = [modulecmd, 'sh', 'avail']
         return Popen(avail_command, stderr=PIPE, env={'MODULEPATH': self.modulepath}).communicate()[1]
 
 

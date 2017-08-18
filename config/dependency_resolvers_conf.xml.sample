@@ -24,6 +24,7 @@
   * find_by - directory or avail - use the DirectoryModuleChecker or AvailModuleChecker
   * prefetch - default: true - in the AvailModuleChecker prefetch module info with 'module avail'
   * default_indicator - default: '(default)' - what indicate to the AvailModuleChecker that a module is the default version
+  * mapping_files - default config/environment_modules_mapping.yml - yaml configuration describing mapping from tool requirement names and versions to environment module names and versions
   -->
   <!-- other resolvers
   <tool_shed_tap />
