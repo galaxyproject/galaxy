@@ -8,7 +8,6 @@
   ],
   "homepage": "usegalaxy.org",
   "dependencies": {
-    "jquery": "~1.12",
     "ravenjs": "~3",
     "underscore": "~1",
     "backbone": "~1.3",

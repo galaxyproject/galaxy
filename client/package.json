@@ -33,6 +33,7 @@
     "gulp-sourcemaps": "^2.5.1",
     "gulp-uglify": "^3.0.0",
     "gulp-watch": "^4.3.11",
+    "jquery": "1.12",
     "jshint": "^2.9.4",
     "webpack": "^3.5.5"
   },
