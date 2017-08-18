@@ -65,7 +65,7 @@ class FormsGrid(grids.Grid):
                                               visible=False,
                                               filterable="standard"))
     operations = [
-        grids.GridOperation("Edit", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action="edit_form_definition")),
+        grids.GridOperation("Edit", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(controller="admin", action="form/edit_form")),
         grids.GridOperation("Delete", allow_multiple=True, condition=(lambda item: not item.deleted)),
         grids.GridOperation("Undelete", condition=(lambda item: item.deleted)),
     ]
@@ -164,9 +164,76 @@ class Forms(BaseUIController):
                                    message=message,
                                    status=status)
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def edit_form_definition(self, trans, response_redirect=None, **kwd):
+    def edit_form(self, trans, payload=None, **kwd):
+        id = kwd.get('id')
+        if not id:
+            return message_exception(trans, 'No form id received for editing.')
+        form = get_form(trans, id)
+        latest_form = form.latest_form
+        if trans.request.method == 'GET':
+            fd_types = trans.app.model.FormDefinition.types.items()
+            fd_types.sort()
+            ff_types = [(t.__name__.replace( 'Field', ''), t.__name__) for t in trans.model.FormDefinition.supported_field_types]
+            return {
+                'title'  : 'Edit form for \'%s\'' % (util.sanitize_text(latest_form.name)),
+                'inputs' : [{
+                    'name'    : 'name',
+                    'label'   : 'Name',
+                    'value'   : latest_form.name
+                }, {
+                    'name'    : 'desc',
+                    'label'   : 'Description',
+                    'value'   : latest_form.desc
+                }, {
+                    'name'    : 'type',
+                    'type'    : 'select',
+                    'options' : [('None', 'none')] + [(ft[1], ft[1]) for ft in fd_types],
+                    'label'   : 'Type',
+                    'value'   : latest_form.type
+                }, {
+                    'name'    : 'fields',
+                    'title'   : 'Field',
+                    'type'    : 'repeat',
+                    'inputs'  : [{
+                        'name'    : 'name',
+                        'label'   : 'Name',
+                        'value'   : 'field_name',
+                        'help'    : 'The field name must be unique for each field and must contain only alphanumeric characters and underscore.'
+                    },{
+                        'name'    : 'label',
+                        'label'   : 'Label',
+                        'value'   : 'Field label'
+                    },{
+                        'name'    : 'helptext',
+                        'label'   : 'Help Text'
+                    },{
+                        'name'    : 'type',
+                        'label'   : 'Type',
+                        'type'    : 'select',
+                        'options' : ff_types
+                    },{
+                        'name'    : 'options',
+                        'label'   : 'Options',
+                        'help'    : '*Only for select field, provide comma-separated options.'
+                    },{
+                        'name'    : 'default',
+                        'label'   : 'Default value'
+                    },{
+                        'name'    : 'required',
+                        'label'   : 'Required',
+                        'type'    : 'boolean',
+                        'value'   : 'false'
+                    }]
+                }]
+            }
+        else:
+            try:
+                return {'message': self._edit_quota(quota, util.Params(payload))}
+            except Exception as e:
+                return message_exception(trans, str(e))
+
         '''
         This callback method is for handling form editing.  The value of response_redirect
         should be an URL that is defined by the caller.  This allows for redirecting as desired
