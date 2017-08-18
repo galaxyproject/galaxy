@@ -108,8 +108,8 @@ class Forms(BaseUIController):
         if message and status:
             kwd['message'] = util.sanitize_text(message)
             kwd['status'] = status
-        kwd[ 'dict_format' ] = True
-        return self.forms_grid( trans, **kwd )
+        kwd['dict_format'] = True
+        return self.forms_grid(trans, **kwd)
 
     @web.expose
     @web.require_admin
