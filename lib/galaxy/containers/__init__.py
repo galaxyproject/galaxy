@@ -121,7 +121,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
         self._key = key
         self._containers_config_file = containers_config_file
         mro = reversed(self.__class__.__mro__)
-        mro.next()
+        next(mro)
         self._conf = ContainerInterfaceConfig()
         for c in mro:
             self._conf.update(c.conf_defaults)
@@ -310,7 +310,7 @@ def parse_containers_config(containers_config_file):
             conf.update(c.get('containers', {}))
     except (OSError, IOError) as exc:
         if exc.errno == errno.ENOENT:
-            log.warning("config file '%s' does not exist, running with default config", containers_config_file)
+            log.debug("config file '%s' does not exist, running with default config", containers_config_file)
         else:
             raise
     return conf
@@ -320,10 +320,8 @@ def _get_interface_modules():
     interfaces = []
     modules = submodules(sys.modules[__name__])
     for module in modules:
-        classes = filter(
-            lambda x: inspect.isclass(x)
-                      and not x == ContainerInterface           # noqa: E131
-                      and issubclass(x, ContainerInterface),    # noqa: E131
-            [getattr(module, x) for x in dir(module)])
+        module_names = [getattr(module, _) for _ in dir(module)]
+        classes = [_ for _ in module_names if inspect.isclass(_) and
+            not _ == ContainerInterface and issubclass(_, ContainerInterface)]
         interfaces.extend(classes)
-    return dict([(x.container_type, x) for x in interfaces])
+    return dict((x.container_type, x) for x in interfaces)

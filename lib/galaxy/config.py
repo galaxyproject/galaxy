@@ -246,7 +246,7 @@ class Configuration(object):
         self.cleanup_job = kwargs.get("cleanup_job", "always")
         preserve_python_environment = kwargs.get("preserve_python_environment", "legacy_only")
         if preserve_python_environment not in ["legacy_only", "legacy_and_local", "always"]:
-            log.warn("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
+            log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             preserve_python_environment = "legacy_only"
         self.preserve_python_environment = preserve_python_environment
         # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
