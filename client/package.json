@@ -36,6 +36,7 @@
     "jquery": "1.12",
     "jshint": "^2.9.4",
     "raven-js": "^3.17.0",
+    "underscore": "^1.8.3",
     "webpack": "^3.5.5"
   },
   "scripts": {

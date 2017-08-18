@@ -19,6 +19,7 @@ var paths = {
     lib_locs: {
         'jquery':['dist/jquery.js', 'jquery/jquery.js'],
         'raven-js': ['dist/raven.js', 'raven.js'],
+        'underscore': [ 'underscore.js', 'underscore.js' ],
     },
     libs: ['galaxy/scripts/libs/**/*.js']
 };
