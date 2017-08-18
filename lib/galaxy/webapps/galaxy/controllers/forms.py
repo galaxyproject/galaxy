@@ -306,7 +306,14 @@ class Forms(BaseUIController):
         '''
         This method saves the current form
         '''
+
         # check the form for invalid inputs
+        if not util.restore_text(params.name):
+            message_exception( trans, 'Form name must be filled.' )
+        # form type
+        if util.restore_text(params.form_type_select_field) == 'none':
+            message_exception( trans, 'Form type must be selected.' )
+
         flag, message = self.__validate_form(**kwd)
         if not flag:
             return None, message
@@ -409,36 +416,6 @@ class Forms(BaseUIController):
                                                             message='Error in importing <b>%s</b> file' % csv_file.file))
         self.__imported_from_file = True
         return fields, list(layouts)
-
-    def __validate_form(self, **kwd):
-        '''
-        This method checks the following text inputs are filled out by the user
-        - the name of form
-        - form type
-        '''
-        params = util.Params(kwd)
-        # form name
-        if not util.restore_text(params.name):
-            return None, 'Form name must be filled.'
-        # form type
-        if util.restore_text(params.form_type_select_field) == 'none':
-            return None, 'Form type must be selected.'
-        return True, ''
-
-    def __build_form_types_widget(self, trans, selected='none'):
-        form_type_select_field = SelectField('form_type_select_field')
-        if selected == 'none':
-            form_type_select_field.add_option('Select one', 'none', selected=True)
-        else:
-            form_type_select_field.add_option('Select one', 'none')
-        fd_types = trans.app.model.FormDefinition.types.items()
-        fd_types.sort()
-        for ft in fd_types:
-            if selected == ft[1]:
-                form_type_select_field.add_option(ft[1], ft[1], selected=True)
-            else:
-                form_type_select_field.add_option(ft[1], ft[1])
-        return form_type_select_field
 
 # ---- Utility methods -------------------------------------------------------
 
