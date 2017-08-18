@@ -92,22 +92,23 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
     def _upload_yaml_workflow(self, has_yaml, **kwds):
         return self.workflow_populator.upload_yaml_workflow(has_yaml, **kwds)
 
-    def _setup_workflow_run(self, workflow, inputs_by='step_id', history_id=None):
-        uploaded_workflow_id = self.workflow_populator.create_workflow(workflow)
+    def _setup_workflow_run(self, workflow=None, inputs_by='step_id', history_id=None, workflow_id=None):
+        if not workflow_id:
+            workflow_id = self.workflow_populator.create_workflow( workflow )
         if not history_id:
             history_id = self.dataset_populator.new_history()
         hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
         hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6")
         workflow_request = dict(
             history="hist_id=%s" % history_id,
-            workflow_id=uploaded_workflow_id,
+            workflow_id=workflow_id,
         )
         label_map = {
             'WorkflowInput1': self._ds_entry(hda1),
             'WorkflowInput2': self._ds_entry(hda2)
         }
         if inputs_by == 'step_id':
-            ds_map = self._build_ds_map(uploaded_workflow_id, label_map)
+            ds_map = self._build_ds_map(workflow_id, label_map)
             workflow_request["ds_map"] = ds_map
         elif inputs_by == "step_index":
             index_map = {
@@ -1815,6 +1816,50 @@ steps:
         step_response = self._get("workflows/%s/usage/%s/steps/%s" % (workflow_id, invocation_id, step_id))
         self._assert_status_code_is(step_response, 200)
         self._assert_has_keys(step_response.json(), "id", "order_index")
+
+    @skip_without_tool("cat1")
+    def test_invocations_accessible_imported_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_usage", publish=True)
+        with self._different_user():
+            other_import_response = self.__import_workflow(workflow_id)
+            self._assert_status_code_is(other_import_response, 200)
+            other_id = other_import_response.json()["id"]
+            workflow_request, history_id = self._setup_workflow_run(workflow_id=other_id)
+            response = self._get("workflows/%s/usage" % other_id)
+            self._assert_status_code_is(response, 200)
+            assert len(response.json()) == 0
+            run_workflow_response = self._post("workflows", data=workflow_request)
+            self._assert_status_code_is(run_workflow_response, 200)
+            usage_details_response = self._get("workflows/%s/usage/%s" % (other_id, history_id))
+            self._assert_status_code_is(usage_details_response, 200)
+
+    @skip_without_tool("cat1")
+    def test_invocations_accessible_published_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_usage", publish=True)
+        with self._different_user():
+            workflow_request, history_id = self._setup_workflow_run(workflow_id=workflow_id)
+            workflow_request['workflow_id'] = workflow_request.pop('workflow_id')
+            response = self._get("workflows/%s/usage" % workflow_id)
+            self._assert_status_code_is(response, 200)
+            assert len(response.json()) == 0
+            run_workflow_response = self._post("workflows", data=workflow_request)
+            self._assert_status_code_is(run_workflow_response, 200)
+            usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, history_id))
+            self._assert_status_code_is(usage_details_response, 200)
+
+    @skip_without_tool("cat1")
+    def test_invocations_not_accessible_by_different_user_for_published_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_usage", publish=True)
+        workflow_request, history_id = self._setup_workflow_run(workflow_id=workflow_id)
+        workflow_request['workflow_id'] = workflow_request.pop('workflow_id')
+        response = self._get("workflows/%s/usage" % workflow_id)
+        self._assert_status_code_is(response, 200)
+        assert len(response.json()) == 0
+        run_workflow_response = self._post("workflows", data=workflow_request)
+        self._assert_status_code_is(run_workflow_response, 200)
+        with self._different_user():
+            usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, history_id))
+            self._assert_status_code_is(usage_details_response, 403)
 
     def _update_workflow(self, workflow_id, workflow_object):
         data = dict(
