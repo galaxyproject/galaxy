@@ -94,7 +94,7 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
 
     def _setup_workflow_run(self, workflow=None, inputs_by='step_id', history_id=None, workflow_id=None):
         if not workflow_id:
-            workflow_id = self.workflow_populator.create_workflow( workflow )
+            workflow_id = self.workflow_populator.create_workflow(workflow)
         if not history_id:
             history_id = self.dataset_populator.new_history()
         hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
@@ -1830,7 +1830,9 @@ steps:
             assert len(response.json()) == 0
             run_workflow_response = self._post("workflows", data=workflow_request)
             self._assert_status_code_is(run_workflow_response, 200)
-            usage_details_response = self._get("workflows/%s/usage/%s" % (other_id, history_id))
+            run_workflow_response = run_workflow_response.json()
+            invocation_id = run_workflow_response['id']
+            usage_details_response = self._get("workflows/%s/usage/%s" % (other_id, invocation_id))
             self._assert_status_code_is(usage_details_response, 200)
 
     @skip_without_tool("cat1")
@@ -1844,7 +1846,9 @@ steps:
             assert len(response.json()) == 0
             run_workflow_response = self._post("workflows", data=workflow_request)
             self._assert_status_code_is(run_workflow_response, 200)
-            usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, history_id))
+            run_workflow_response = run_workflow_response.json()
+            invocation_id = run_workflow_response['id']
+            usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, invocation_id))
             self._assert_status_code_is(usage_details_response, 200)
 
     @skip_without_tool("cat1")
@@ -1857,8 +1861,10 @@ steps:
         assert len(response.json()) == 0
         run_workflow_response = self._post("workflows", data=workflow_request)
         self._assert_status_code_is(run_workflow_response, 200)
+        run_workflow_response = run_workflow_response.json()
+        invocation_id = run_workflow_response['id']
         with self._different_user():
-            usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, history_id))
+            usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, invocation_id))
             self._assert_status_code_is(usage_details_response, 403)
 
     def _update_workflow(self, workflow_id, workflow_object):
