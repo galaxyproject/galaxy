@@ -116,12 +116,13 @@ class WorkflowsManager(object):
         return True
 
     def get_invocation(self, trans, decoded_invocation_id):
-        try:
-            workflow_invocation = trans.sa_session.query(
-                self.app.model.WorkflowInvocation
-            ).get(decoded_invocation_id)
-        except Exception:
-            raise exceptions.ObjectNotFound()
+        workflow_invocation = trans.sa_session.query(
+            self.app.model.WorkflowInvocation
+        ).get(decoded_invocation_id)
+        if not workflow_invocation:
+            encoded_wfi_id = trans.security.encode_id(decoded_invocation_id)
+            message = "'%s' is not a valid workflow invocation id" % encoded_wfi_id
+            raise exceptions.ObjectNotFound(message)
         self.check_security(trans, workflow_invocation, check_ownership=True, check_accessible=False)
         return workflow_invocation
 
