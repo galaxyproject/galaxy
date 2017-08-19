@@ -278,8 +278,11 @@ class Forms(BaseUIController):
                 if '%s%s' % (prefix, 'label') in payload:
                     field_attributes = ['name', 'label', 'helptext', 'required', 'type', 'selectlist', 'default']
                     field_dict = {attr: payload.get('%s%s' % (prefix, attr)) for attr in field_attributes}
-                    #field_selectlist = field_dict['selectlist']
-                    #field_selectlist = field_selectlist.split(',') if field_selectlist else []
+                    field_dict['visible']=True
+                    if isinstance(field_dict['selectlist'], basestring):
+                        field_dict['selectlist'] = field_dict['selectlist'].split(',')
+                    else:
+                        field_dict['selectlist'] = []
                     fields.append(field_dict)
                     index = index + 1
                 else:
