@@ -167,18 +167,21 @@ class WorkflowsManager(object):
         return workflow_invocation_step
 
     def build_invocations_query(self, trans, decoded_stored_workflow_id):
-        try:
-            stored_workflow = trans.sa_session.query(
-                self.app.model.StoredWorkflow
-            ).get(decoded_stored_workflow_id)
-        except Exception:
+        """Get invocations owned by the current user."""
+        stored_workflow = trans.sa_session.query(
+            self.app.model.StoredWorkflow
+        ).get(decoded_stored_workflow_id)
+        if not stored_workflow:
             raise exceptions.ObjectNotFound()
-        self.check_security(trans, stored_workflow, check_ownership=True, check_accessible=False)
-        return trans.sa_session.query(
+        invocations = trans.sa_session.query(
             model.WorkflowInvocation
         ).filter_by(
             workflow_id=stored_workflow.latest_workflow_id
         )
+        return [inv for inv in invocations if self.check_security(trans,
+                                                                  inv,
+                                                                  check_ownership=True,
+                                                                  check_accessible=False)]
 
 
 CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", "missing_tools"])
