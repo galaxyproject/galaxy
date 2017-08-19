@@ -242,96 +242,76 @@ class Forms(BaseUIController):
                 field_cache.append(new_field)
             return form_dict
         else:
+            new_form, message = self.save_form_definition( trans, id, payload )
+            if new_form is None:
+                return message_exception(trans, message)
+            return message_exception(trans, message)
             try:
-                return {'message': self._edit_quota(quota, util.Params(payload))}
+                return {'message': 'The form \'%s\' has been updated with the changes.' % latest_form.name}
             except Exception as e:
                 return message_exception(trans, str(e))
 
-                    new_form_definition, message = self.save_form_definition(trans, form_definition_current_id=form_definition.form_definition_current.id, **kwd)
-            # if validation error encountered while saving the form, show the
-            # unsaved form, with the error message
-            if not new_form_definition:
-                status = 'error'
-            else:
-                # everything went fine. form saved successfully. Show the saved form or redirect
-                # to response_redirect if appropriate.
-                if response_redirect:
-                    return trans.response.send_redirect(response_redirect)
-                form_definition = new_form_definition
-                current_form = self.get_saved_form(form_definition)
-                message = "The form '%s' has been updated with the changes." % form_definition.name
-
-    def get_current_form(self, trans, **kwd):
+    def get_current_form(self, trans, payload=None, **kwd):
         '''
         This method gets all the unsaved user-entered form details and returns a
         dictionary containing the name, desc, type, layout & fields of the form
         '''
-        params = util.Params(kwd)
-        name = util.restore_text(params.name)
-        desc = util.restore_text(params.description) or ""
-        form_type = util.restore_text(params.form_type_select_field)
+        name = payload.get('name')
+        desc = payload.get('desc') or ''
+        type = payload.get('type')
         # get the user entered layout grids in it is a sample form definition
         layout = []
-        if form_type == trans.model.FormDefinition.types.SAMPLE:
-            index = 0
-            while True:
-                if 'grid_layout%i' % index in kwd:
-                    grid_name = util.restore_text(params.get('grid_layout%i' % index, ''))
-                    layout.append(grid_name)
-                    index = index + 1
-                else:
-                    break
+        index = 0
+        #while True:
+        #    if 'layout_%i' % index in payload:
+        #        layout.append(payload.get('grid_layout%i' % index))
+        #        index = index + 1
+        #    else:
+        #        break
         # for csv file import
-        csv_file = params.get('file_data', '')
+        csv_file = payload.get('file_data', '')
         fields = []
         if csv_file == '':
-            # get the user entered fields
             index = 0
             while True:
-                if 'field_label_%i' % index in kwd:
-                    fields.append(self.__get_field(index, **kwd))
+                prefix = 'fields_%i|' % index
+                if '%s%s' % (prefix, 'label') in payload:
+                    field_attributes = ['name', 'label', 'helptext', 'required', 'type', 'selectlist', 'default']
+                    field_dict = {attr: payload.get('%s%s' % (prefix, attr)) for attr in field_attributes}
+                    #field_selectlist = field_dict['selectlist']
+                    #field_selectlist = field_selectlist.split(',') if field_selectlist else []
+                    fields.append(field_dict)
                     index = index + 1
                 else:
                     break
-            fields = fields
         else:
             fields, layout = self.__import_fields(trans, csv_file, form_type)
         return dict(name=name,
                     desc=desc,
-                    type=form_type,
+                    type=type,
                     layout=layout,
                     fields=fields)
 
-    def save_form_definition(self, trans, form_definition_current_id=None, **kwd):
+    def save_form_definition(self, trans, form_id=None, payload=None, **kwd):
         '''
-        This method saves the current form
+        This method saves a form given an id
         '''
-
-        # check the form for invalid inputs
-        if not util.restore_text(params.name):
-            message_exception( trans, 'Form name must be filled.' )
-        # form type
-        if util.restore_text(params.form_type_select_field) == 'none':
-            message_exception( trans, 'Form type must be selected.' )
-
-        flag, message = self.__validate_form(**kwd)
-        if not flag:
-            return None, message
-        current_form = self.get_current_form(trans, **kwd)
+        if not payload.get('name'):
+            return None, 'Please provide a form name.'
+        if payload.get('none'):
+            return None, 'Please select a form type.'
+        current_form = self.get_current_form(trans, payload)
         # validate fields
         field_names_dict = {}
         for field in current_form['fields']:
             if not field['label']:
-                return None, "All the field labels must be completed."
+                return None, 'All the field labels must be completed.'
             if not VALID_FIELDNAME_RE.match(field['name']):
-                return None, "'%s' is not a valid field name." % field['name']
+                return None, '\'%s\' is not a valid field name.' % field['name']
             if field['name'] in field_names_dict:
-                return None, "Each field name must be unique in the form definition. '%s' is not unique." % field['name']
+                return None, 'Each field name must be unique in the form definition. \'%s\' is not unique.' % field['name']
             else:
                 field_names_dict[field['name']] = 1
-        # if type is sample form, it should have at least one layout grid
-        if current_form['type'] == trans.app.model.FormDefinition.types.SAMPLE and not len(current_form['layout']):
-            current_form['layout'] = ['Layout1']
         # create a new form definition
         form_definition = trans.app.model.FormDefinition(name=current_form['name'],
                                                          desc=current_form['desc'],
@@ -339,19 +319,19 @@ class Forms(BaseUIController):
                                                          form_definition_current=None,
                                                          form_type=current_form['type'],
                                                          layout=current_form['layout'])
-        if form_definition_current_id:  # save changes to the existing form
-            # change the pointer in the form_definition_current table to point
-            # to this new record
-            form_definition_current = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(form_definition_current_id)
-        else:  # create a new form
+        # save changes to the existing form
+        if form_id:
+            form_definition_current = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(trans.security.decode_id(form_id))
+            if form_definition_current is None:
+                return None, 'Invalid form id (%s) provided. Cannot save form.' % form_id
+        else:
             form_definition_current = trans.app.model.FormDefinitionCurrent()
         # create corresponding row in the form_definition_current table
         form_definition.form_definition_current = form_definition_current
         form_definition_current.latest_form = form_definition
         trans.sa_session.add(form_definition_current)
         trans.sa_session.flush()
-        message = "The new form named '%s' has been created. " % (form_definition.name)
-        return form_definition, message
+        return form_definition, 'The new form named \'%s\' has been created.' % (form_definition.name)
 
     @web.expose
     @web.require_admin
