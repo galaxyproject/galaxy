@@ -78,16 +78,6 @@ class FormsGrid(grids.Grid):
 
 
 class Forms(BaseUIController):
-    # Empty TextField
-    empty_field = {'name': '',
-                   'label': '',
-                   'helptext': '',
-                   'visible': True,
-                   'required': False,
-                   'type': model.TextField.__name__,
-                   'selectlist': [],
-                   'layout': 'none',
-                   'default': ''}
     forms_grid = FormsGrid()
 
     @web.expose_api
@@ -247,7 +237,7 @@ class Forms(BaseUIController):
                 return message_exception(trans, message)
             return message_exception(trans, message)
             try:
-                return {'message': 'The form \'%s\' has been updated with the changes.' % latest_form.name}
+                return {'message': 'The form %s has been updated with the changes.' % latest_form.name}
             except Exception as e:
                 return message_exception(trans, str(e))
 
@@ -310,9 +300,9 @@ class Forms(BaseUIController):
             if not field['label']:
                 return None, 'All the field labels must be completed.'
             if not VALID_FIELDNAME_RE.match(field['name']):
-                return None, '\'%s\' is not a valid field name.' % field['name']
+                return None, '%s is not a valid field name.' % field['name']
             if field['name'] in field_names_dict:
-                return None, 'Each field name must be unique in the form definition. \'%s\' is not unique.' % field['name']
+                return None, 'Each field name must be unique in the form definition. %s is not unique.' % field['name']
             else:
                 field_names_dict[field['name']] = 1
         # create a new form definition
@@ -334,7 +324,7 @@ class Forms(BaseUIController):
         form_definition_current.latest_form = form_definition
         trans.sa_session.add(form_definition_current)
         trans.sa_session.flush()
-        return form_definition, 'The new form named \'%s\' has been created.' % (form_definition.name)
+        return form_definition, 'The new form named %s has been created.' % (form_definition.name)
 
     @web.expose
     @web.require_admin
@@ -401,16 +391,6 @@ class Forms(BaseUIController):
         return fields, list(layouts)
 
 # ---- Utility methods -------------------------------------------------------
-
-def build_select_input(name, label, options, value):
-    return {'type'      : 'select',
-            'multiple'  : True,
-            'optional'  : True,
-            'individual': True,
-            'name'      : name,
-            'label'     : label,
-            'options'   : options,
-            'value'     : value}
 
 def message_exception(trans, message):
     trans.response.status = 400
