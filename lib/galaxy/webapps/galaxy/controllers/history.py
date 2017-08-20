@@ -120,7 +120,7 @@ class HistoryListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All')),
     ]
     default_filter = dict(name="All", deleted="False", tags="All", sharing="All")
-    num_rows_per_page = 10
+    num_rows_per_page = 15
     preserve_state = False
     use_async = True
     use_paging = True
