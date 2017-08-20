@@ -87,7 +87,7 @@ class WorkflowsManager(object):
         workflowinvocations. Throw an exception or returns True if user has
         needed level of access.
         """
-        if not check_ownership or check_accessible:
+        if not check_ownership and not check_accessible:
             return True
 
         # If given an invocation verify ownership of invocation
