@@ -235,11 +235,7 @@ class Forms(BaseUIController):
             new_form, message = self.save_form_definition( trans, id, payload )
             if new_form is None:
                 return message_exception(trans, message)
-            return message_exception(trans, message)
-            try:
-                return {'message': 'The form %s has been updated with the changes.' % latest_form.name}
-            except Exception as e:
-                return message_exception(trans, str(e))
+            return {'message': 'The form %s has been updated with the changes.' % latest_form.name}
 
     def get_current_form(self, trans, payload=None, **kwd):
         '''
@@ -269,6 +265,7 @@ class Forms(BaseUIController):
                     field_attributes = ['name', 'label', 'helptext', 'required', 'type', 'selectlist', 'default']
                     field_dict = {attr: payload.get('%s%s' % (prefix, attr)) for attr in field_attributes}
                     field_dict['visible']=True
+                    field_dict['required'] = field_dict['required'] == 'true'
                     if isinstance(field_dict['selectlist'], basestring):
                         field_dict['selectlist'] = field_dict['selectlist'].split(',')
                     else:
