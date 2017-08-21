@@ -67,6 +67,17 @@ class Configuration(object):
             if not os.path.isdir(path):
                 raise ConfigurationError("Directory does not exist: %s" % path)
 
+    @property
+    def sentry_dsn_public( self ):
+        """
+        Sentry URL with private key removed for use in client side scripts,
+        sentry server will need to be configured to accept events
+        """
+        if self.sentry_dsn:
+            return re.sub( r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn )
+        else:
+            return None
+
 
 def get_database_engine_options(kwargs):
     """
