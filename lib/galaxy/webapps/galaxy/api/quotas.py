@@ -125,7 +125,7 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         params = self.get_quota_params(payload)
 
         try:
-            message = self._mark_quota_deleted(quota, params)
+            message = self._delete_quota(quota, params)
             if util.string_as_bool(payload.get('purge', False)):
                 message += self._purge_quota(quota, params)
         except ActionInputError as e:
