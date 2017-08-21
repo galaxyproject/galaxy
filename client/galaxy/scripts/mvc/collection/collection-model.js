@@ -122,7 +122,8 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( Datase
             // (a little silly since this api endpoint *also* points at hdas)
             return Galaxy.root + 'api/datasets';
         }
-        return Galaxy.root + 'api/histories/' + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
+        return Galaxy.root + 'api/histories/' + this.get( 'history_id' ) + '/contents/' + this.get( 'id' ) +
+            '/hdca_id/' + this.get( 'parent_hdca_id' ) + '/element-identifier/' + this.get( 'element_identifier' );
     },
 
     defaults : _.extend( {},

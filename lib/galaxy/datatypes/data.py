@@ -17,7 +17,10 @@ import six
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
 from galaxy.util import compression_utils
-from galaxy.util import FILENAME_VALID_CHARS
+from galaxy.util import (
+    DISPLAY_NAME_VALID_CHARS,
+    FILENAME_VALID_CHARS
+)
 from galaxy.util import inflector
 from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
@@ -41,6 +44,7 @@ valid_strand = ['+', '-', '.']
 
 DOWNLOAD_FILENAME_PATTERN_DATASET = "Galaxy${hid}-[${name}].${ext}"
 DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}__${element_identifier}].${ext}"
+DISPLAY_FILENAME_PATTERN_COLLECTION_ELEMENT = "${hdca_hid}: ${hdca_name} - ${element_identifier}.${ext}"
 
 
 class DataMeta(abc.ABCMeta):
@@ -318,7 +322,7 @@ class Data(object):
     def _serve_raw(self, trans, dataset, to_ext, **kwd):
         trans.response.headers['Content-Length'] = int(os.stat(dataset.file_name).st_size)
         trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
-        filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
+        filename = self.get_download_filename(dataset, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
         return open(dataset.file_name)
 
@@ -409,7 +413,7 @@ class Data(object):
                 return self._archive_composite_dataset(trans, data, **kwd)
             else:
                 trans.response.headers['Content-Length'] = int(os.stat(data.file_name).st_size)
-                filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
+                filename = self.get_download_filename(data, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
                 trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
                 return open(data.file_name)
@@ -437,28 +441,46 @@ class Data(object):
                                               truncated_data=open(data.file_name).read(max_peek_size),
                                               data=data)
 
-    def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None):
-        def escape(raw_identifier):
-            return ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in raw_identifier)[0:150]
+    @classmethod
+    def get_download_filename(cls, dataset, to_ext, hdca=None, element_identifier=None):
+        return cls._fill_filename_template(filename_pattern=DOWNLOAD_FILENAME_PATTERN_DATASET,
+                                           filename_pattern_collection_element=DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT,
+                                           valid_chars=FILENAME_VALID_CHARS,
+                                           dataset=dataset,
+                                           to_ext=to_ext,
+                                           hdca=hdca,
+                                           element_identifier=element_identifier)
+
+    @classmethod
+    def get_display_filename(cls, dataset, to_ext, hdca=None, element_identifier=None):
+        return cls._fill_filename_template(filename_pattern=None,
+                                           filename_pattern_collection_element=DISPLAY_FILENAME_PATTERN_COLLECTION_ELEMENT,
+                                           valid_chars=DISPLAY_NAME_VALID_CHARS,
+                                           dataset=dataset,
+                                           to_ext=to_ext,
+                                           hdca=hdca,
+                                           element_identifier=element_identifier)
+
+    @staticmethod
+    def _fill_filename_template(filename_pattern, filename_pattern_collection_element, valid_chars, dataset, to_ext, hdca=None, element_identifier=None):
+        def escape(raw_identifier, valid_chars):
+            return ''.join(c in valid_chars and c or '_' for c in raw_identifier)[0:150]
 
         if not to_ext:
             to_ext = dataset.extension
 
         template_values = {
-            "name": escape(dataset.name),
+            "name": escape(dataset.name, valid_chars=valid_chars),
             "ext": to_ext,
             "hid": dataset.hid,
         }
 
-        filename_pattern = DOWNLOAD_FILENAME_PATTERN_DATASET
-
         if hdca is not None:
             # Use collection context to build up filename.
+            filename_pattern = filename_pattern_collection_element
             template_values["element_identifier"] = element_identifier
-            template_values["hdca_name"] = escape(hdca.name)
+            template_values["hdca_name"] = escape(hdca.name, valid_chars=valid_chars)
             template_values["hdca_hid"] = hdca.hid
-
-            filename_pattern = DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT
 
         return string.Template(filename_pattern).substitute(**template_values)
 

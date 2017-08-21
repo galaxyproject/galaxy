@@ -365,7 +365,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             keys = self._view_to_keys('inaccessible')
         return super(HDASerializer, self).serialize(hda, keys, user=user, **context)
 
-    def serialize_display_apps(self, hda, key, trans=None, **context):
+    def serialize_display_apps(self, hda, key, trans=None, hdca_id=None, element_identifier=None, **context):
         """
         Return dictionary containing new-style display app urls.
         """
@@ -374,11 +374,16 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
             app_links = []
             for link_app in display_app.links.itervalues():
-                app_links.append({
+                app_link = {
                     'target': link_app.url.get('target_frame', '_blank'),
                     'href': link_app.get_display_url(hda, trans),
                     'text': gettext.gettext(link_app.name)
-                })
+                }
+                if hdca_id:
+                    hdca = self.app.dataset_collections_service.get_dataset_collection_instance(trans, "history", hdca_id)
+                    displayname = datatypes.data.Data.get_display_filename(dataset=hda, to_ext=None, hdca=hdca, element_identifier=element_identifier)
+                    app_link['href'] += "?displayname=%s" % displayname
+                app_links.append(app_link)
             if app_links:
                 display_apps.append(dict(label=display_app.name, links=app_links))
 

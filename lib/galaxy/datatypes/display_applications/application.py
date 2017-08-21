@@ -73,10 +73,11 @@ class DisplayApplicationLink(object):
         rval[DEFAULT_DATASET_NAME] = data  # always have the display dataset name available
         return rval
 
-    def build_parameter_dict(self, data, dataset_hash, user_hash, trans, app_kwds):
+    def build_parameter_dict(self, data, displayname, dataset_hash, user_hash, trans, app_kwds):
         other_values = self.get_inital_values(data, trans)
         other_values['DATASET_HASH'] = dataset_hash
         other_values['USER_HASH'] = user_hash
+        other_values['DISPLAYNAME'] = displayname
         ready = True
         for name, param in self.parameters.items():
             assert name not in other_values, "The display parameter '%s' has been defined more than once." % name
@@ -198,13 +199,14 @@ class DynamicDisplayApplicationBuilder(object):
 
 
 class PopulatedDisplayApplicationLink(object):
-    def __init__(self, display_application_link, data, dataset_hash, user_hash, trans, app_kwds):
+    def __init__(self, display_application_link, data, displayname, dataset_hash, user_hash, trans, app_kwds):
         self.link = display_application_link
         self.data = data
+        self.displayname = displayname
         self.dataset_hash = dataset_hash
         self.user_hash = user_hash
         self.trans = trans
-        self.ready, self.parameters = self.link.build_parameter_dict(self.data, self.dataset_hash, self.user_hash, trans, app_kwds)
+        self.ready, self.parameters = self.link.build_parameter_dict(self.data, self.displayname, self.dataset_hash, self.user_hash, trans, app_kwds)
 
     def display_ready(self):
         return self.ready
@@ -301,10 +303,10 @@ class DisplayApplication(object):
         except Exception as e:
             log.error("Error loading a set of Dynamic Display Application links: %s", e)
 
-    def get_link(self, link_name, data, dataset_hash, user_hash, trans, app_kwds):
+    def get_link(self, link_name, data, displayname, dataset_hash, user_hash, trans, app_kwds):
         # returns a link object with data knowledge to generate links
         self._check_and_reload()
-        return PopulatedDisplayApplicationLink(self.links[link_name], data, dataset_hash, user_hash, trans, app_kwds)
+        return PopulatedDisplayApplicationLink(self.links[link_name], data, displayname, dataset_hash, user_hash, trans, app_kwds)
 
     def filter_by_dataset(self, data, trans):
         self._check_and_reload()

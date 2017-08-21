@@ -66,6 +66,7 @@ DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
 BINARY_CHARS = [NULL_CHAR]
 FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+DISPLAY_NAME_VALID_CHARS = "%s%s" % (FILENAME_VALID_CHARS, ' ')
 
 
 def remove_protocol_from_url(url):

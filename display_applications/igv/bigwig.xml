@@ -75,9 +75,9 @@
 		</param>
         <param type="template" name="redirect_url" strip="True">
             #if $site_id.startswith( 'local_' )
-                ${site_link}?file=${bigwig_file.qp}&amp;merge=true&amp;name=${qp( $bigwig_file.name )}
+                ${site_link}?file=${bigwig_file.qp}&amp;merge=true&amp;name=${qp( $DISPLAYNAME or $bigwig_file.name )}
             #elif $site_id.startswith( 'web_link_' ):
-                ${site_link}?sessionURL=${bigwig_file.qp}&amp;merge=true&amp;name=${qp( $bigwig_file.name )}
+                ${site_link}?sessionURL=${bigwig_file.qp}&amp;merge=true&amp;name=${qp( $DISPLAYNAME or $bigwig_file.name )}
             #else:
                 ${jnlp.url}
             #end if

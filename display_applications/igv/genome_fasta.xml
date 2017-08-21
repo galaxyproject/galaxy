@@ -73,9 +73,9 @@
         <param type="data" name="fai_file" dataset="fasta_file" url="galaxy_${DATASET_HASH}.fasta.fai" format="fai" />
         <param type="template" name="redirect_url" strip="True" >
             #if $site_id.startswith( 'local_' )
-                ${site_link}?genome=${fasta_file.qp}&amp;merge=true&amp;name=name=${qp( ( $fasta_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
+                ${site_link}?genome=${fasta_file.qp}&amp;merge=true&amp;name=name=${qp( ( $DISPLAYNAME or $fasta_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
             #elif $site_id.startswith( 'web_link_' ):
-${site_link}?sessionURL=${fasta_file.qp}&amp;genome=${fasta_file.qp}&amp;merge=true&amp;name=${qp( ( $fasta_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
+${site_link}?sessionURL=${fasta_file.qp}&amp;genome=${fasta_file.qp}&amp;merge=true&amp;name=${qp( ( $DISPLAYNAME or $fasta_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
             #else:
                 ${jnlp.url}
             #end if
@@ -85,7 +85,7 @@ ${site_link}?sessionURL=${fasta_file.qp}&amp;genome=${fasta_file.qp}&amp;merge=t
         <!-- Our input data table is one line per dbkey -->
         <filter>${ $dataset.dbkey == $value }</filter>
         <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
-        <url>http://www.broadinstitute.org/igv/projects/current/igv.php?sessionURL=${fasta_file.qp}&amp;genome=${fasta_file.dbkey}&amp;merge=true&amp;name=${qp( ( $fasta_file.name or $DATASET_HASH ).replace( ',', ';' ) )}</url>
+        <url>http://www.broadinstitute.org/igv/projects/current/igv.php?sessionURL=${fasta_file.qp}&amp;genome=${fasta_file.dbkey}&amp;merge=true&amp;name=${qp( ( $DISPLAYNAME or $fasta_file.name or $DATASET_HASH ).replace( ',', ';' ) )}</url>
         <param type="data" name="fasta_file" url="galaxy_${DATASET_HASH}.${dataset.ext}" />
     </dynamic_links>
 </display>

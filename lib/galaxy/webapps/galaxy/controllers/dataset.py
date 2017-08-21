@@ -824,7 +824,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return trans.show_error_message("You are not allowed to view this dataset at external sites.  Please contact your Galaxy administrator to acquire management permissions for this dataset.")
 
     @web.expose
-    def display_application(self, trans, dataset_id=None, user_id=None, app_name=None, link_name=None, app_action=None, action_param=None, action_param_extra=None, **kwds):
+    def display_application(self, trans, dataset_id=None, user_id=None, app_name=None, link_name=None, app_action=None, action_param=None, displayname=None, action_param_extra=None, **kwds):
         """Access to external display applications"""
         # Build list of parameters to pass in to display application logic (app_kwds)
         app_kwds = {}
@@ -859,7 +859,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 return paste.httpexceptions.HTTPNotFound("The requested display application (%s) is not available." % (app_name))
             dataset_hash, user_hash = encode_dataset_user(trans, data, user)
             try:
-                display_link = display_app.get_link(link_name, data, dataset_hash, user_hash, trans, app_kwds)
+                display_link = display_app.get_link(link_name, data, displayname, dataset_hash, user_hash, trans, app_kwds)
             except Exception as e:
                 log.debug("Error generating display_link: %s", e)
                 # User can sometimes recover from, e.g. conversion errors by fixing input metadata, so use conflict
