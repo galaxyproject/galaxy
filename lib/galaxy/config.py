@@ -229,9 +229,9 @@ class Configuration(object):
         self.remote_user_secret = kwargs.get("remote_user_secret", None)
         self.require_login = string_as_bool(kwargs.get("require_login", "False"))
         self.fetch_url_whitelist_ips = [
-            ipaddress.ip_network(unicodify(ip.strip())) # If it has a slash, assume 127.0.0.1/24 notation
+            ipaddress.ip_network(unicodify(ip.strip()))  # If it has a slash, assume 127.0.0.1/24 notation
             if '/' in ip else
-            ipaddress.ip_address(unicodify(ip.strip())) # Otherwise interpret it as an ip address.
+            ipaddress.ip_address(unicodify(ip.strip()))  # Otherwise interpret it as an ip address.
             for ip in kwargs.get("fetch_url_whitelist", "").split(',')
             if len(ip.strip()) > 0
         ]
