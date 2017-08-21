@@ -133,7 +133,31 @@ var TagsEditor = Backbone.View
 });
 
 // =============================================================================
+
+var WorkflowTagsEditor = TagsEditor.extend({
+        _template : function(){
+        return [
+            this._renderNametags(),
+            // set up initial tags by adding as CSV to input vals (necc. to init select2)
+            // '<input class="tags-input" value="', this.tagsToCSV(), '" />'
+        ].join( ' ' );
+    },
+
+    _renderNametags : function(){
+        var tags = this.model.get('tags');
+        var rendered_array = [];
+        _.each(tags, function(tag) {
+            tag = tag.indexOf("name:") == 0 ? tag.slice(5) : tag ;
+            console.log(tag);
+            rendered_array.push( '<span class="label label-info">' + tag + '</span>');
+        });
+        console.log(rendered_array);
+        return rendered_array;
+    },
+});
+
 return {
-    TagsEditor : TagsEditor
+    TagsEditor : TagsEditor,
+    WorkflowTagsEditor: WorkflowTagsEditor,
 };
 });

@@ -1,5 +1,5 @@
 /** Workflow view */
-define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
+define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-model"  ], function( Utils, Ui, TAGS, WorkflowModel ) {
 
     /** Build messages after user action */
     function build_messages() {
@@ -36,6 +36,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
                 $el_workflow.append( self._templateActionButtons() );
                 if( workflows.length > 0) {
                     $el_workflow.append( self._templateWorkflowTable( self, workflows) );
+                    self._renderTags(self, workflows);
                     self.adjust_actiondropdown( $el_workflow );
                     // Register delete and run workflow events
                     _.each( workflows, function( wf ) {
@@ -48,6 +49,29 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
                 else {
                     $el_workflow.append( self._templateNoWorkflow() );
                 }
+            });
+        },
+
+
+
+        _renderTags : function( self, workflows ){
+        self.tag_editors = [];
+        console.log('render workflows');
+        _.each( workflows, function ( wf ) {
+            // console.log(wf);
+            var wf_model = new WorkflowModel( { id: wf.id,
+                                                name: wf.name,
+                                                tags: wf.tags } );
+            console.log(wf_model);
+            var el =  $.find( '.' + wf.id + '.tags-display' );
+            var tag_editor = new TAGS.WorkflowTagsEditor({
+            model           : wf_model,
+            el              : el});
+
+            tag_editor.toggle( true );
+            tag_editor.render();
+            self.tag_editors.push(tag_editor) ;
+
             });
         },
 
@@ -148,6 +172,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
             tableHtml = tableHtml + '<table class="table colored"><thead>' +
                     '<tr class="header">' +
                         '<th>Name</th>' +
+                        '<th>Tags</th>' +
                         '<th>Owner</th>' +
                         '<th># of Steps</th>' +
                         '<th>Published</th>' +
@@ -164,6 +189,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
                                      self._templateActions( wf ) +
                                  '</div>' +
                               '</td>' +
+                              '<td>' + '<div class="' + wf.id + ' tags-display"></div>' + '</td>' +
                               '<td>' + ( wf.owner === Galaxy.user.attributes.username ? "You" : wf.owner ) +'</td>' +
                               '<td>' + wf.number_of_steps + '</td>' +
                               '<td>' + ( wf.published ? "Yes" : "No" ) + '</td>' +
