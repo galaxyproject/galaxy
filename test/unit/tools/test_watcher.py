@@ -64,11 +64,11 @@ class Toolbox(object):
     def __init__(self):
         self.reloaded = {}
 
-    def reload_tool_by_id( self, tool_id ):
-        self.reloaded[ tool_id ] = True
+    def reload_tool_by_id(self, tool_id):
+        self.reloaded[tool_id] = True
 
     def was_reloaded(self, tool_id):
-        return self.reloaded.get( tool_id, False )
+        return self.reloaded.get(tool_id, False)
 
 
 class CallbackRecorder(object):

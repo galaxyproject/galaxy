@@ -52,7 +52,7 @@ class Wiff(Binary):
         return "\n".join(rval)
 
 
-Binary.register_sniffable_binary_format("wiff", "wiff", Wiff )
+Binary.register_sniffable_binary_format("wiff", "wiff", Wiff)
 
 
 class PepXmlReport(Tabular):
@@ -303,7 +303,7 @@ class ThermoRAW(Binary):
             return "Thermo Finnigan RAW file (%s)" % (nice_size(dataset.get_size()))
 
 
-Binary.register_sniffable_binary_format("thermo.raw", "raw", ThermoRAW )
+Binary.register_sniffable_binary_format("thermo.raw", "raw", ThermoRAW)
 
 
 class Msp(Text):
@@ -327,14 +327,14 @@ class Msp(Text):
             return lines[0].startswith("Name:") and lines[1].startswith("MW:")
 
 
-class SPLibNoIndex( Text ):
+class SPLibNoIndex(Text):
     """SPlib without index file """
     file_ext = "splib_noindex"
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = 'Spectral Library without index files'
         else:
             dataset.peek = 'file does not exist'

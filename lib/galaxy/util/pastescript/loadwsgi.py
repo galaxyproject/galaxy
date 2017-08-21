@@ -723,6 +723,7 @@ class FuncLoader(_Loader):
     Dot notation is supported in both the module and function name, e.g.:
         use = call:my.module.path:object.method
     """
+
     def __init__(self, spec):
         self.spec = spec
         if ':' not in spec:

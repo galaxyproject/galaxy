@@ -41,7 +41,7 @@ define([], function() {
         if (search_term == "") return this;
         var lowercase_term = search_term.toLowerCase();
         return this.filter(function(data) {
-          lowercase_name = data.get("name").toLowerCase();
+          var lowercase_name = data.get("name").toLowerCase();
           return lowercase_name.indexOf(lowercase_term) !== -1;
         });
       },

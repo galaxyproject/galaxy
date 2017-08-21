@@ -17,7 +17,7 @@ from check_python import check_python
 try:
     check_python()
 except:
-    sys.exit( 1 )
+    sys.exit(1)
 
 if 'LOG_TEMPFILES' in os.environ:
     from log_tempfile import TempFile

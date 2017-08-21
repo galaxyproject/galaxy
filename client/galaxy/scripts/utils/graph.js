@@ -387,8 +387,8 @@ Graph.prototype.createEdge = function( sourceName, targetName, directed, data ){
     var isReflexive = sourceName === targetName;
     if( !this.allowReflexiveEdges && isReflexive ){ return null; }
 
-    sourceVertex = this.vertices[ sourceName ];
-    targetVertex = this.vertices[ targetName ];
+    var sourceVertex = this.vertices[ sourceName ];
+    var targetVertex = this.vertices[ targetName ];
     //note: silently ignores edges from/to unknown vertices
     if( !( sourceVertex && targetVertex ) ){ return null; }
 

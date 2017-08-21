@@ -53,7 +53,7 @@
         }
 
         // prepare request
-        xhr = new XMLHttpRequest();
+        var xhr = new XMLHttpRequest();
         xhr.open('POST', cnf.url, true);
         xhr.setRequestHeader('Accept', 'application/json');
         xhr.setRequestHeader('Cache-Control', 'no-cache');

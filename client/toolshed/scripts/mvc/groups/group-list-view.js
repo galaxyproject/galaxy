@@ -114,7 +114,7 @@ var GroupListView = Backbone.View.extend({
 // MMMMMMMMMMMMMMMMMM
 
     templateGroupsList: function(){
-        tmpl_array = [];
+        var tmpl_array = [];
 
         tmpl_array.push('<div id="groups">');
         tmpl_array.push('</div>');

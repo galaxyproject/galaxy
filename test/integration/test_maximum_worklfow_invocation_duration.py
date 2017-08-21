@@ -16,10 +16,10 @@ class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTest
 
     framework_tool_and_types = True
 
-    def setUp( self ):
-        super( MaximumWorkflowInvocationDurationTestCase, self ).setUp()
-        self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
-        self.workflow_populator = WorkflowPopulator( self.galaxy_interactor )
+    def setUp(self):
+        super(MaximumWorkflowInvocationDurationTestCase, self).setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -35,8 +35,8 @@ class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTest
         }
         request = {}
         request["history"] = "hist_id=%s" % history_id
-        request[ "inputs" ] = dumps(index_map)
-        request[ "inputs_by" ] = 'step_index'
+        request["inputs"] = dumps(index_map)
+        request["inputs_by"] = 'step_index'
         url = "workflows/%s/invocations" % (workflow_id)
         invocation_response = self._post(url, data=request)
         invocation_url = url + "/" + invocation_response.json()["id"]

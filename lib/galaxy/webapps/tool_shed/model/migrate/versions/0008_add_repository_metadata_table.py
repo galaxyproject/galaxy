@@ -11,23 +11,23 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
 from galaxy.model.custom_types import JSONType, TrimmedString
 
 now = datetime.datetime.utcnow
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler( sys.stdout )
+handler = logging.StreamHandler(sys.stdout)
 format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter( format )
-handler.setFormatter( formatter )
-log.addHandler( handler )
+formatter = logging.Formatter(format)
+handler.setFormatter(formatter)
+log.addHandler(handler)
 
 metadata = MetaData()
 
-RepositoryMetadata_table = Table( "repository_metadata", metadata,
-                                  Column( "id", Integer, primary_key=True ),
-                                  Column( "create_time", DateTime, default=now ),
-                                  Column( "update_time", DateTime, default=now, onupdate=now ),
-                                  Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
-                                  Column( "changeset_revision", TrimmedString( 255 ), index=True ),
-                                  Column( "metadata", JSONType, nullable=True ) )
+RepositoryMetadata_table = Table("repository_metadata", metadata,
+                                 Column("id", Integer, primary_key=True),
+                                 Column("create_time", DateTime, default=now),
+                                 Column("update_time", DateTime, default=now, onupdate=now),
+                                 Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
+                                 Column("changeset_revision", TrimmedString(255), index=True),
+                                 Column("metadata", JSONType, nullable=True))
 
 
 def upgrade(migrate_engine):
@@ -39,7 +39,7 @@ def upgrade(migrate_engine):
         RepositoryMetadata_table.create()
     except Exception as e:
         print str(e)
-        log.debug( "Creating repository_metadata table failed: %s" % str( e ) )
+        log.debug("Creating repository_metadata table failed: %s" % str(e))
 
 
 def downgrade(migrate_engine):
@@ -50,4 +50,4 @@ def downgrade(migrate_engine):
         RepositoryMetadata_table.drop()
     except Exception as e:
         print str(e)
-        log.debug( "Dropping repository_metadata table failed: %s" % str( e ) )
+        log.debug("Dropping repository_metadata table failed: %s" % str(e))

@@ -63,7 +63,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                 if (queue_key === undefined) {
                     queue_key = toolshed_util.queueKey(repository_metadata);
                 }
-                repository_queue = JSON.parse(localStorage.repositories);
+                var repository_queue = JSON.parse(localStorage.repositories);
                 if (repository_queue.hasOwnProperty(queue_key)) {
                     delete repository_queue[queue_key];
                     localStorage.repositories = JSON.stringify(repository_queue);
@@ -82,7 +82,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         },
 
         loadFromQueue: function(queue_key) {
-            repository_queue = JSON.parse(localStorage.repositories);
+            var repository_queue = JSON.parse(localStorage.repositories);
             if (repository_queue.hasOwnProperty(queue_key)) {
                 return repository_queue[queue_key];
             }

@@ -754,7 +754,7 @@ class CML(GenericXml):
                     if line.lstrip().startswith('<?xml version="1.0"?>') or \
                        line.lstrip().startswith('<cml xmlns="http://www.xml-cml.org/schema') or \
                        line.lstrip().startswith('</cml>'):
-                            continue
+                        continue
                     lines.append(line)
                     if line.lstrip().startswith('</molecule>'):
                         yield lines
