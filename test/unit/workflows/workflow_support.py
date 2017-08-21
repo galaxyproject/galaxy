@@ -18,6 +18,7 @@ class MockTrans(object):
     def save_workflow(self, workflow):
         stored_workflow = model.StoredWorkflow()
         stored_workflow.latest_workflow = workflow
+        workflow.stored_workflow = stored_workflow
         stored_workflow.user = self.user
         self.sa_session.add(stored_workflow)
         self.sa_session.flush()
