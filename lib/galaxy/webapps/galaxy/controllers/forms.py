@@ -214,6 +214,11 @@ class Forms(BaseUIController):
                     'label'   : 'Type',
                     'value'   : latest_form.type
                 }, {
+                    'name'    : 'file',
+                    'label'   : 'Import from csv',
+                    'type'    : 'upload',
+                    'help'    : 'Import fields from csv-file (FORMAT: label, helptext, required=True/False, type, default, selectlist).'
+                }, {
                     'name'    : 'fields',
                     'title'   : 'Field',
                     'type'    : 'repeat',
@@ -255,7 +260,7 @@ class Forms(BaseUIController):
         #    else:
         #        break
         # for csv file import
-        csv_file = payload.get('file_data', '')
+        csv_file = payload.get('file', '')
         fields = []
         if csv_file == '':
             index = 0
@@ -275,7 +280,7 @@ class Forms(BaseUIController):
                 else:
                     break
         else:
-            fields, layout = self.__import_fields(trans, csv_file, form_type)
+            fields = self._import_fields(trans, csv_file, form_type)
         return dict(name=name,
                     desc=desc,
                     type=type,
@@ -343,49 +348,28 @@ class Forms(BaseUIController):
             trans.sa_session.flush()
         return ('Undeleted %i form(s).' % len(ids), 'done')
 
-    def __import_fields(self, trans, csv_file, form_type):
-        '''
-        "company","name of the company", "True", "required", "TextField",,
-        "due date","turnaround time", "True", "optional", "SelectField","24 hours, 1 week, 1 month"
-        '''
+    def _import_fields(self, trans, csv_file):
         import csv
         fields = []
-        layouts = set()
         try:
             reader = csv.reader(csv_file.file)
             index = 1
             for row in reader:
-                if len(row) < 7:  # ignore bogus rows
-                    continue
-                options = row[5].split(',')
-                if len(row) >= 8:
-                    fields.append({'name': '%i_field_name' % index,
-                                   'label': row[0],
-                                   'helptext': row[1],
-                                   'visible': row[2],
-                                   'required': row[3],
-                                   'type': row[4],
-                                   'selectlist': options,
-                                   'layout': row[6],
-                                   'default': row[7]})
-                    layouts.add(row[6])
-                else:
-                    fields.append({'name': '%i_field_name' % index,
-                                   'label': row[0],
-                                   'helptext': row[1],
-                                   'visible': row[2],
-                                   'required': row[3],
-                                   'type': row[4],
-                                   'selectlist': options,
-                                   'default': row[6]})
+                if len(row) >= 6:
+                    fields.append({'name'       : '%i_field_name' % index,
+                                   'label'      : row[0],
+                                   'helptext'   : row[1],
+                                   'required'   : row[2].tolower() == 'true',
+                                   'type'       : row[3],
+                                   'default'    : row[4],
+                                   'selectlist' : row[5].split(',')})
                 index = index + 1
         except:
             return trans.response.send_redirect(web.url_for(controller='forms',
                                                             action='create_form',
                                                             status='error',
                                                             message='Error in importing <b>%s</b> file' % csv_file.file))
-        self.__imported_from_file = True
-        return fields, list(layouts)
+        return fields
 
 # ---- Utility methods -------------------------------------------------------
 
