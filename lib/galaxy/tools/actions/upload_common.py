@@ -33,6 +33,7 @@ def validate_url(url, ip_whitelist):
         parsed_url = parsed_url[parsed_url.rindex('@') + 1:]
     # Percent encoded colons and other characters will not be resolved as such
     # so we don't have to either.
+    log.debug("Validating url %s", parsed_url)
 
     # Sometimes the netloc will contain the port which is not desired, so we
     # need to extract that.
@@ -46,17 +47,25 @@ def validate_url(url, ip_whitelist):
             # However if it ends with a ']' then there is no port after it and
             # they've wrapped it in brackets just for fun.
             if ']' in parsed_url and not parsed_url.endswith(']'):
-                port = parsed_url[parsed_url.rindex(':') + 1:]
-                # If that +1 throws a range error, we don't care, their url
+                # If this +1 throws a range error, we don't care, their url
                 # shouldn't end with a colon.
+                idx = parsed_url.rindex(':')
+                # We parse as an int and let this fail ungracefully if parsing
+                # fails because we desire to fail closed rather than open.
+                port = int(parsed_url[idx + 1:])
+                parsed_url = parsed_url[:idx]
             else:
                 # Plain ipv6 without port
                 pass
         else:
             # This should finally be ipv4 with port. It cannot be IPv6 as that
             # was caught by earlier cases, and it cannot be due to credentials.
-            port = parsed_url[parsed_url.rindex(':') + 1:]
+            idx = parsed_url.rindex(':')
+            port = int(parsed_url[idx + 1:])
+            parsed_url = parsed_url[:idx]
 
+    # safe to log out, no credentials/request path, just an IP + port
+    log.debug("parsed url, port: %s : %s", parsed_url, port)
     # Call getaddrinfo to resolve hostname into tuples containing IPs.
     addrinfo = socket.getaddrinfo(parsed_url, port)
     # Get the IP addresses that this entry resolves to (uniquely)
