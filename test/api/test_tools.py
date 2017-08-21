@@ -221,10 +221,10 @@ class ToolsTestCase(api.ApiTestCase):
         test_data = test_data_response.json()
         assert len(test_data) == 3
 
-    def test_upload_composite_as_tar(self):
-        with self.dataset_populator.test_history() as history_id:
-            tar_path = self.test_data_resolver.get_filename("testdir.tar")
-            tar_f = open(tar_path, "rb")
+    @uses_test_history(require_new=False)
+    def test_upload_composite_as_tar(self, history_id):
+        tar_path = self.test_data_resolver.get_filename("testdir.tar")
+        with open(tar_path, "rb") as tar_f:
             payload = self.dataset_populator.upload_payload(history_id, "Test123",
                 extra_inputs={
                     "files_1|file_data": tar_f,
@@ -239,8 +239,40 @@ class ToolsTestCase(api.ApiTestCase):
             content = self.dataset_populator.get_history_dataset_content(history_id, dataset=dataset)
             assert content.strip() == "Test123"
             extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset["id"])
-            assert len(extra_files) == 1, extra_files
-            assert False
+            assert len(extra_files) == 5, extra_files
+            expected_contents = {
+                "testdir": "Directory",
+                "testdir/c": "Directory",
+                "testdir/a": "File",
+                "testdir/b": "File",
+                "testdir/c/d": "File",
+            }
+            found_files = set()
+            for extra_file in extra_files:
+                path = extra_file["path"]
+                assert path in expected_contents
+                assert extra_file["class"] == expected_contents[path]
+                found_files.add(path)
+
+            assert len(found_files) == 5, found_files
+
+    @uses_test_history(require_new=False)
+    def test_upload_composite_from_bad_tar(self, history_id):
+        tar_path = self.test_data_resolver.get_filename("unsafe.tar")
+        with open(tar_path, "rb") as tar_f:
+            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+                extra_inputs={
+                    "files_1|file_data": tar_f,
+                    "files_1|NAME": "composite",
+                    "file_count": "2",
+                    "force_composite": "True",
+                }
+            )
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response, assert_ok=False)
+            dataset = run_response.json()["outputs"][0]
+            details = self.dataset_populator.get_history_dataset_details(history_id, dataset=dataset, assert_ok=False)
+            assert details["state"] == "error"
 
     def test_unzip_collection(self):
         with self.dataset_populator.test_history() as history_id:

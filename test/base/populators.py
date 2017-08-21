@@ -366,6 +366,12 @@ class BaseDatasetPopulator(object):
         assert details_response.status_code == 200
         return details_response.json()
 
+    def get_history_dataset_extra_files(self, history_id, **kwds):
+        dataset_id = self.__history_content_id(history_id, **kwds)
+        details_response = self._get_contents_request(history_id, "/%s/extra_files" % dataset_id)
+        assert details_response.status_code == 200, details_response.content
+        return details_response.json()
+
     def get_history_collection_details(self, history_id, **kwds):
         hdca_id = self.__history_content_id(history_id, **kwds)
         details_response = self._get_contents_request(history_id, "/dataset_collections/%s" % hdca_id)
