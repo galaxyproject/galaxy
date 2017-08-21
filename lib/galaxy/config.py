@@ -4,9 +4,9 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
+import ipaddress
 import logging
 import logging.config
-import ipaddress
 import os
 import re
 import signal
