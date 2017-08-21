@@ -1,6 +1,8 @@
+import ipaddress
 import logging
 import os
 import shlex
+import socket
 import subprocess
 import tempfile
 from cgi import FieldStorage
@@ -8,16 +10,91 @@ from json import dumps
 
 from six import StringIO
 from sqlalchemy.orm import eagerload_all
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 
 from galaxy import datatypes, util
 from galaxy.exceptions import ObjectInvalid
 from galaxy.managers import tags
+from galaxy.util import unicodify
 from galaxy.util.odict import odict
 
 log = logging.getLogger(__name__)
 
 
-def persist_uploads(params):
+def validate_url(url, ip_whitelist):
+    # Extract hostname component
+    parsed_url = urlparse(url).netloc
+    # If credentials are in this URL, we need to strip those.
+    if parsed_url.count('@') > 0:
+        # credentials.
+        parsed_url = parsed_url[parsed_url.rindex('@') + 1:]
+    # Percent encoded colons and other characters will not be resolved as such
+    # so we don't have to either.
+
+    # Sometimes the netloc will contain the port which is not desired, so we
+    # need to extract that.
+    port = None
+    # However, it could ALSO be an IPv6 address they've supplied.
+    if ':' in parsed_url:
+        # IPv6 addresses have colons in them already (it seems like always more than two)
+        if parsed_url.count(':') >= 2:
+            # Since IPv6 already use colons extensively, they wrap it in
+            # brackets when there is a port, e.g. http://[2001:db8:1f70::999:de8:7648:6e8]:100/
+            # However if it ends with a ']' then there is no port after it and
+            # they've wrapped it in brackets just for fun.
+            if ']' in parsed_url and not parsed_url.endswith(']'):
+                port = parsed_url[parsed_url.rindex(':') + 1:]
+                # If that +1 throws a range error, we don't care, their url
+                # shouldn't end with a colon.
+            else:
+                # Plain ipv6 without port
+                pass
+        else:
+            # This should finally be ipv4 with port. It cannot be IPv6 as that
+            # was caught by earlier cases, and it cannot be due to credentials.
+            port = parsed_url[parsed_url.rindex(':') + 1:]
+
+    # Call getaddrinfo to resolve hostname into tuples containing IPs.
+    addrinfo = socket.getaddrinfo(parsed_url, port)
+    # Get the IP addresses that this entry resolves to (uniquely)
+    # We drop:
+    #   AF_* family: It will resolve to AF_INET or AF_INET6, getaddrinfo(3) doesn't even mention AF_UNIX,
+    #   socktype: We don't care if a stream/dgram/raw protocol
+    #   protocol: we don't care if it is tcp or udp.
+    addrinfo_results = set([info[4][0] for info in addrinfo])
+    # There may be multiple (e.g. IPv4 + IPv6 or DNS round robin). Any one of these
+    # could resolve to a local addresses (and could be returned by chance),
+    # therefore we must check them all.
+    for raw_ip in addrinfo_results:
+        # Convert to an IP object so we can tell if it is in private space.
+        ip = ipaddress.ip_address(unicodify(raw_ip))
+        # If this is a private address
+        if ip.is_private:
+            results = []
+            # If this IP is not anywhere in the whitelist
+            for whitelisted in ip_whitelist:
+                # If it's an IP address range (rather than a single one...)
+                if hasattr(whitelisted, 'subnets'):
+                    results.append(ip in whitelisted)
+                else:
+                    results.append(ip == whitelisted)
+
+            if any(results):
+                # If we had any True, then THIS (and ONLY THIS) IP address that
+                # that specific DNS entry resolved to is in whitelisted and
+                # safe to access. But we cannot exit here, we must ensure that
+                # all IPs that that DNS entry resolves to are likewise safe.
+                pass
+            else:
+                # Otherwise, we deny access.
+                raise Exception("Access to this address in not permitted by server configuration")
+    return url
+
+
+def persist_uploads(params, trans):
     """
     Turn any uploads in the submitted form to persisted files.
     """
@@ -35,7 +112,10 @@ def persist_uploads(params):
             elif type(f) == dict and 'local_filename' not in f:
                 raise Exception('Uploaded file was encoded in a way not understood by Galaxy.')
             if upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
-                upload_dataset['url_paste'], is_multi_byte = datatypes.sniff.stream_to_file(StringIO(upload_dataset['url_paste']), prefix="strio_url_paste_")
+                upload_dataset['url_paste'], is_multi_byte = datatypes.sniff.stream_to_file(
+                    StringIO(validate_url(upload_dataset['url_paste'], trans.app.config.fetch_url_whitelist_ips)),
+                    prefix="strio_url_paste_"
+                )
             else:
                 upload_dataset['url_paste'] = None
             new_files.append(upload_dataset)

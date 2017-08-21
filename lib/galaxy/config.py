@@ -226,6 +226,13 @@ class Configuration(object):
         self.remote_user_logout_href = kwargs.get("remote_user_logout_href", None)
         self.remote_user_secret = kwargs.get("remote_user_secret", None)
         self.require_login = string_as_bool(kwargs.get("require_login", "False"))
+        self.fetch_url_whitelist_ips = [
+            ipaddress.ip_network(ip.strip()) # If it has a slash, assume 127.0.0.1/24 notation
+            if '/' in ip else
+            ipaddress.ip_address(ip.strip()) # Otherwise interpret it as an ip address.
+            for ip in kwargs.get("fetch_url_whitelist", "").split(',')
+            if len(ip.strip()) > 0
+        ]
         self.allow_user_creation = string_as_bool(kwargs.get("allow_user_creation", "True"))
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
         self.allow_user_dataset_purge = string_as_bool(kwargs.get("allow_user_dataset_purge", "True"))
