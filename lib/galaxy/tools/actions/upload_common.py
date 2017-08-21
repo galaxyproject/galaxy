@@ -25,6 +25,10 @@ log = logging.getLogger(__name__)
 
 
 def validate_url(url, ip_whitelist):
+    # If it doesn't look like a URL, ignore it.
+    if not (url.lstrip().startswith('http://') or url.lstrip().startswith('https://')):
+        return url
+
     # Extract hostname component
     parsed_url = urlparse(url).netloc
     # If credentials are in this URL, we need to strip those.
@@ -33,7 +37,6 @@ def validate_url(url, ip_whitelist):
         parsed_url = parsed_url[parsed_url.rindex('@') + 1:]
     # Percent encoded colons and other characters will not be resolved as such
     # so we don't have to either.
-    log.debug("Validating url %s", parsed_url)
 
     # Sometimes the netloc will contain the port which is not desired, so we
     # need to extract that.
