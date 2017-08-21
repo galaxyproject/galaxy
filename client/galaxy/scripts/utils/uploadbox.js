@@ -65,11 +65,14 @@
             if (xhr.readyState == xhr.DONE) {
                 // parse response
                 var response = null;
+                var extra_info = "";
                 if (xhr.responseText) {
                     try {
                         response = jQuery.parseJSON(xhr.responseText);
+                        extra_info = response.err_msg;
                     } catch (e) {
                         response = xhr.responseText;
+                        extra_info = response;
                     }
                 }
                 // pass any error to the error option
@@ -82,7 +85,7 @@
                     } else if (!text) {
                         text = cnf.error_default;
                     }
-                    cnf.error(text + ' (' + xhr.status + ')');
+                    cnf.error(text + ' (' + xhr.status + '). ' + extra_info);
                 } else {
                     cnf.success(response);
                 }
