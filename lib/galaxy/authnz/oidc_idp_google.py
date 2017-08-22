@@ -119,7 +119,7 @@ class OIDCIdPGoogle(IdentityProvider):
         flow = client.flow_from_clientsecrets(
             self.client_secret_file,
             scope=['openid', 'email', 'profile'],
-            redirect_uri = self.redirect_uri)
+            redirect_uri=self.redirect_uri)
         # Exchanges an authorization code for OAuth2Credentials.
         # The credentials object holds refresh and access tokens
         # that authorize access to a single user's data.

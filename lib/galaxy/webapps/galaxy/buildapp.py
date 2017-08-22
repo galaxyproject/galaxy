@@ -76,11 +76,7 @@ def paste_app_factory(global_conf, **kwargs):
     # Force /activate to go to the controller
     webapp.add_route('/activate', controller='user', action='activate')
 
-    # OAuth2.0 endpoints. 
-    webapp.add_route('/oauth2authentication/google', controller='oauth2', action='google_authn')
-    webapp.add_route('/oauth2callback/google', controller='oauth2', action='google_callback')
-
-    # OAuth2.0 endpoints. 
+    # OAuth2.0 endpoints.
     webapp.add_route('/oauth2authentication/google', controller='oauth2', action='google_authn')
     webapp.add_route('/oauth2callback/google', controller='oauth2', action='google_callback')
 

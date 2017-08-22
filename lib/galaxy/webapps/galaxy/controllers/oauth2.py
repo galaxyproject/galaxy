@@ -8,6 +8,7 @@ log = logging.getLogger(__name__)
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 
+
 class OAuth2(BaseUIController):
 
     @web.expose
@@ -20,6 +21,6 @@ class OAuth2(BaseUIController):
 
     @web.expose
     def google_callback(self, trans, **kwargs):
-        if trans.app.authnz_manager.callback( "Google", kwargs['state'], kwargs['code'], trans) is False:
+        if trans.app.authnz_manager.callback("Google", kwargs['state'], kwargs['code'], trans) is False:
             # TODO: inform the user why he/she is being re-authenticated.
             self.google_authn(trans)
