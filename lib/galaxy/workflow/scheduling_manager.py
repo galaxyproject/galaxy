@@ -8,6 +8,7 @@ import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.util import plugin_config
 from galaxy.util.handlers import ConfiguresHandlers
+from galaxy.web.stack.message import WorkflowSchedulingMessage
 
 log = logging.getLogger(__name__)
 
@@ -31,6 +32,10 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
         self.__handlers_configured = False
         self.workflow_schedulers = {}
         self.active_workflow_schedulers = {}
+        # TODO: this should not hardcode the job handlers pool
+        self.__handler_pool = self.app.application_stack.pools.JOB_HANDLERS
+        # TODO: and we need a better way to indicate messaging should
+        self.__use_stack_messages = app.application_stack.has_pool(self.__handler_pool)
         # Passive workflow schedulers won't need to be monitored I guess.
 
         self.request_monitor = None
@@ -45,9 +50,14 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
             self.__start_schedulers()
             if self.active_workflow_schedulers:
                 self.__start_request_monitor()
+            if self.__use_stack_messages:
+                WorkflowSchedulingMessage().bind_default_handler(self, '_handle_message')
+                self.app.application_stack.register_message_handler(
+                    self._handle_message,
+                    name=WorkflowSchedulingMessage.target)
         else:
-            # Process should not schedule workflows - do nothing.
-            pass
+            # Process should not schedule workflows but should check for any unassigned to handlers
+            self.__startup_recovery()
 
         # When assinging handlers to workflows being queued - use job_conf
         # if not explicit workflow scheduling handlers have be specified or
@@ -56,6 +66,29 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
             self.__has_handlers = self
         else:
             self.__has_handlers = app.job_config
+
+    def __startup_recovery(self):
+        sa_session = self.app.model.context
+        if self.__use_stack_messages:
+            for workflow_invocation in model.WorkflowInvocation.poll_active_workflow_ids(
+                    sa_session,
+                    handler=None,
+                ):
+                log.info("(%s) Handler unassigned at startup, queueing workflow invocation via stack messaging for pool"
+                         " [%s]", workflow_invocation.id, self.__handler_pool)
+                msg = WorkflowSchedulingMessage(task='setup', workflow_invocation_id=workflow_invocation.id)
+
+    def _handle_setup_msg(self, workflow_invocation_id=None):
+        sa_session = self.app.model.context
+        workflow_invocation = sa_session.query(model.WorkflowInvocation).get(workflow_invocation_id)
+        if workflow_invocation.handler is None:
+            workflow_invocation.handler = self.app.config.server_name
+            sa_session.add(workflow_invocation)
+            sa_session.flush()
+        else:
+            log.warning("(%s) Handler '%s' received setup message for workflow invocation but handler '%s' is"
+                        " already assigned, ignoring", workflow_invocation.id, self.app.config.server_name,
+                        workflow_invocation.handler)
 
     def _is_workflow_handler(self):
         # If we have explicitly configured handlers, check them.
@@ -90,14 +123,24 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
         workflow_invocation.state = model.WorkflowInvocation.states.NEW
         scheduler = request_params.get("scheduler", None) or self.default_scheduler_id
         handler = self._get_handler(workflow_invocation.history.id)
-        log.info("Queueing workflow invocation for handler [%s]" % handler)
 
+        if handler is None and not self.__use_stack_messages:
+            raise RuntimeError("Unable to set a handler for workflow invocation '%s'" % workflow_invocation.id)
+
+        log.info("Queueing workflow invocation for handler [%s]", handler)
         workflow_invocation.scheduler = scheduler
         workflow_invocation.handler = handler
 
         sa_session = self.app.model.context
         sa_session.add(workflow_invocation)
         sa_session.flush()
+
+        if handler is None and self.__use_stack_messages:
+            log.info("(%s) Queueing workflow invocation via stack messaging for pool [%s]",
+                     workflow_invocation.id, self.__handler_pool)
+            msg = WorkflowSchedulingMessage(task='setup', workflow_invocation_id=workflow_invocation.id)
+            self.app.application_stack.send_message(self.__handler_pool, msg)
+
         return workflow_invocation
 
     def __start_schedulers(self):

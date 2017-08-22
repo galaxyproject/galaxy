@@ -87,7 +87,8 @@ class JobHandlerQueue(object):
         # Start the queue
         self.monitor_thread.start()
         # The stack code is initialized in the application
-        self.app.application_stack.register_message_handler(self.handle_msg, name=JobHandlerMessage.target)
+        JobHandlerMessage().bind_default_handler(self, '_handle_message')
+        self.app.application_stack.register_message_handler(self._handle_message, name=JobHandlerMessage.target)
         log.info("job handler queue started")
 
     def job_wrapper(self, job, use_persisted_destination=False):
@@ -644,17 +645,19 @@ class JobHandlerQueue(object):
         else:
             log.warning("(%s) Handler '%s' received setup message but handler '%s' is already assigned, ignoring", job.id, self.app.config.server_name, job.handler)
 
-    def handle_msg(self, msg):
-        try:
-            getattr(self, '_handle_%s_msg' % msg.task)(**msg.params)
-        except:
-            log.exception( "Exception in mule message handling" )
-
     def put(self, job_id, tool_id):
         """Add a job to the queue (by job identifier)"""
         if not self.track_jobs_in_database:
             self.queue.put((job_id, tool_id))
             self.sleeper.wake()
+        else:
+            # Workflow invocations farmed out to workers will submit jobs through here. If a handler is unassigned, we
+            # will submit for one, or else claim it ourself. TODO: This should be moved to a higher level as it's now
+            # implemented here and in MessageJobQueue
+            job = self.sa_session.query(model.Job).get(job_id)
+            if job.handler is None and self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS):
+                msg = JobHandlerMessage(task='setup', job_id=job_id)
+                self.app.application_stack.send_message(self.app.application_stack.pools.JOB_HANDLERS, msg)
 
     def shutdown(self):
         """Attempts to gracefully shut down the worker thread"""
