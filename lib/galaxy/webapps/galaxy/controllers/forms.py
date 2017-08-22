@@ -1,4 +1,5 @@
 import copy
+import csv
 import logging
 import re
 
@@ -49,7 +50,7 @@ class FormsGrid(grids.Grid):
                    attach_popup=True,
                    filterable="advanced"),
         DescriptionColumn("Description",
-                          key='desc',
+                          key="desc",
                           model_class=model.FormDefinition,
                           filterable="advanced"),
         TypeColumn("Type"),
@@ -70,7 +71,7 @@ class FormsGrid(grids.Grid):
         grids.GridOperation("Undelete", condition=(lambda item: item.deleted)),
     ]
     global_actions = [
-        grids.GridAction("Create new form", dict(controller='admin', action='forms/create_form'))
+        grids.GridAction("Create new form", dict(controller="admin", action="form/create_form"))
     ]
 
     def build_initial_query(self, trans, **kwargs):
@@ -119,40 +120,55 @@ class Forms(BaseUIController):
 
     @web.expose_api
     @web.require_admin
-    def create_form(self, trans, **kwd):
-        params = util.Params(kwd)
-        message = util.restore_text(params.get('message', ''))
-        status = params.get('status', 'done')
-        self.__imported_from_file = False
-        if params.get('create_form_button', False):
-            form_definition, message = self.save_form_definition(trans, form_definition_current_id=None, **kwd)
-            if not form_definition:
-                return trans.response.send_redirect(web.url_for(controller='forms',
-                                                                action='create_form_definition',
-                                                                message=message,
-                                                                status='error',
-                                                                name=util.restore_text(params.get('name', '')),
-                                                                description=util.restore_text(params.get('description', ''))))
-            if self.__imported_from_file:
-                return trans.response.send_redirect(web.url_for(controller='forms',
-                                                                action='edit_form_definition',
-                                                                id=trans.security.encode_id(form_definition.current.id)))
-            else:
-                return trans.response.send_redirect(web.url_for(controller='forms',
-                                                                action='edit_form_definition',
-                                                                id=trans.security.encode_id(form_definition.current.id),
-                                                                add_field_button='Add field',
-                                                                name=form_definition.name,
-                                                                description=form_definition.desc,
-                                                                form_type_select_field=form_definition.type))
-        inputs = [('Name', TextField('name', 40, util.restore_text(params.get('name', '')))),
-                  ('Description', TextField('description', 40, util.restore_text(params.get('description', '')))),
-                  ('Type', self.__build_form_types_widget(trans, selected=params.get('form_type', 'none'))),
-                  ('Import from csv file (Optional)', FileField('file_data', 40, ''))]
-        return trans.fill_template('/admin/forms/create_form.mako',
-                                   inputs=inputs,
-                                   message=message,
-                                   status=status)
+    def create_form(self, trans, payload=None, **kwd):
+        if trans.request.method == 'GET':
+            fd_types = trans.app.model.FormDefinition.types.items()
+            fd_types.sort()
+            return {
+                'title'         : 'Create new form',
+                'submit_title'  : 'Create',
+                'inputs'        : [{
+                    'name'    : 'name',
+                    'label'   : 'Name'
+                }, {
+                    'name'    : 'desc',
+                    'label'   : 'Description'
+                }, {
+                    'name'    : 'type',
+                    'type'    : 'select',
+                    'options' : [('None', 'none')] + [(ft[1], ft[1]) for ft in fd_types],
+                    'label'   : 'Type'
+                }, {
+                    'name'    : 'csv_file',
+                    'label'   : 'Import from CSV',
+                    'type'    : 'upload',
+                    'help'    : 'Import fields from CSV-file with the following format: Label, Help, Type, Value, Options, Required=True/False.'
+                }]
+            }
+        else:
+            # csv-file format: label, helptext, type, default, selectlist, required '''
+            csv_file = payload.get('csv_file')
+            index = 0
+            if csv_file:
+                lines = csv_file.splitlines()
+                for line in lines:
+                    row = line.split(',')
+                    if len(row) >= 6:
+                        prefix = 'fields_%i|' % index
+                        payload['%s%s' % ( prefix, 'name' )] = '%i_imported_field' % (index + 1)
+                        payload['%s%s' % ( prefix, 'label' )] = row[0]
+                        payload['%s%s' % ( prefix, 'helptext' )] = row[1]
+                        payload['%s%s' % ( prefix, 'type' )] = row[2]
+                        payload['%s%s' % ( prefix, 'default' )] = row[3]
+                        payload['%s%s' % ( prefix, 'selectlist' )] = row[4].split(',')
+                        payload['%s%s' % ( prefix, 'required' )] = row[5].lower() == 'true'
+                    index = index + 1
+            new_form, message = self.save_form_definition(trans, None, payload)
+            if new_form is None:
+                return message_exception(trans, message)
+            imported = (' with %i imported fields' % index) if index > 0 else ''
+            message = 'The form \'%s\' has been created%s.' % (payload.get('name'), imported)
+            return {'message': util.sanitize_text(message)}
 
     @web.expose_api
     @web.require_admin
@@ -185,12 +201,12 @@ class Forms(BaseUIController):
                 'type'    : 'select',
                 'options' : ff_types
             },{
+                'name'    : 'default',
+                'label'   : 'Default value'
+            },{
                 'name'    : 'selectlist',
                 'label'   : 'Options',
                 'help'    : '*Only for fields which allow multiple selections, provide comma-separated values.'
-            },{
-                'name'    : 'default',
-                'label'   : 'Default value'
             },{
                 'name'    : 'required',
                 'label'   : 'Required',
@@ -214,11 +230,6 @@ class Forms(BaseUIController):
                     'label'   : 'Type',
                     'value'   : latest_form.type
                 }, {
-                    'name'    : 'file',
-                    'label'   : 'Import from csv',
-                    'type'    : 'upload',
-                    'help'    : 'Import fields from csv-file (FORMAT: label, helptext, required=True/False, type, default, selectlist).'
-                }, {
                     'name'    : 'fields',
                     'title'   : 'Field',
                     'type'    : 'repeat',
@@ -240,7 +251,8 @@ class Forms(BaseUIController):
             new_form, message = self.save_form_definition( trans, id, payload )
             if new_form is None:
                 return message_exception(trans, message)
-            return {'message': 'The form %s has been updated with the changes.' % latest_form.name}
+            message = 'The form \'%s\' has been updated with the changes.' % payload.get('name')
+            return {'message': util.sanitize_text(message)}
 
     def get_current_form(self, trans, payload=None, **kwd):
         '''
@@ -250,41 +262,27 @@ class Forms(BaseUIController):
         name = payload.get('name')
         desc = payload.get('desc') or ''
         type = payload.get('type')
-        # get the user entered layout grids in it is a sample form definition
-        layout = []
-        index = 0
-        #while True:
-        #    if 'layout_%i' % index in payload:
-        #        layout.append(payload.get('grid_layout%i' % index))
-        #        index = index + 1
-        #    else:
-        #        break
-        # for csv file import
-        csv_file = payload.get('file', '')
         fields = []
-        if csv_file == '':
-            index = 0
-            while True:
-                prefix = 'fields_%i|' % index
-                if '%s%s' % (prefix, 'label') in payload:
-                    field_attributes = ['name', 'label', 'helptext', 'required', 'type', 'selectlist', 'default']
-                    field_dict = {attr: payload.get('%s%s' % (prefix, attr)) for attr in field_attributes}
-                    field_dict['visible']=True
-                    field_dict['required'] = field_dict['required'] == 'true'
-                    if isinstance(field_dict['selectlist'], basestring):
-                        field_dict['selectlist'] = field_dict['selectlist'].split(',')
-                    else:
-                        field_dict['selectlist'] = []
-                    fields.append(field_dict)
-                    index = index + 1
+        index = 0
+        while True:
+            prefix = 'fields_%i|' % index
+            if '%s%s' % (prefix, 'label') in payload:
+                field_attributes = ['name', 'label', 'helptext', 'required', 'type', 'selectlist', 'default']
+                field_dict = {attr: payload.get('%s%s' % (prefix, attr)) for attr in field_attributes}
+                field_dict['visible']=True
+                field_dict['required'] = field_dict['required'] == 'true'
+                if isinstance(field_dict['selectlist'], basestring):
+                    field_dict['selectlist'] = field_dict['selectlist'].split(',')
                 else:
-                    break
-        else:
-            fields = self._import_fields(trans, csv_file, form_type)
+                    field_dict['selectlist'] = []
+                fields.append(field_dict)
+                index = index + 1
+            else:
+                break
         return dict(name=name,
                     desc=desc,
                     type=type,
-                    layout=layout,
+                    layout=[],
                     fields=fields)
 
     def save_form_definition(self, trans, form_id=None, payload=None, **kwd):
@@ -293,7 +291,7 @@ class Forms(BaseUIController):
         '''
         if not payload.get('name'):
             return None, 'Please provide a form name.'
-        if payload.get('none'):
+        if payload.get('type') == 'none':
             return None, 'Please select a form type.'
         current_form = self.get_current_form(trans, payload)
         # validate fields
@@ -326,7 +324,7 @@ class Forms(BaseUIController):
         form_definition_current.latest_form = form_definition
         trans.sa_session.add(form_definition_current)
         trans.sa_session.flush()
-        return form_definition, 'The new form named %s has been created.' % (form_definition.name)
+        return form_definition, None
 
     @web.expose
     @web.require_admin
@@ -347,29 +345,6 @@ class Forms(BaseUIController):
             trans.sa_session.add(form)
             trans.sa_session.flush()
         return ('Undeleted %i form(s).' % len(ids), 'done')
-
-    def _import_fields(self, trans, csv_file):
-        import csv
-        fields = []
-        try:
-            reader = csv.reader(csv_file.file)
-            index = 1
-            for row in reader:
-                if len(row) >= 6:
-                    fields.append({'name'       : '%i_field_name' % index,
-                                   'label'      : row[0],
-                                   'helptext'   : row[1],
-                                   'required'   : row[2].tolower() == 'true',
-                                   'type'       : row[3],
-                                   'default'    : row[4],
-                                   'selectlist' : row[5].split(',')})
-                index = index + 1
-        except:
-            return trans.response.send_redirect(web.url_for(controller='forms',
-                                                            action='create_form',
-                                                            status='error',
-                                                            message='Error in importing <b>%s</b> file' % csv_file.file))
-        return fields
 
 # ---- Utility methods -------------------------------------------------------
 
