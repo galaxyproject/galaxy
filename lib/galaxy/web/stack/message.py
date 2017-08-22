@@ -9,44 +9,51 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class ApplicationStackMessageEncoder(json.JSONEncoder):
-    def encode(self, o):
-        if isinstance(o, AttributeDict):
-            return o.serialize(self)
-        return json.JSONEncoder.encode(self, o)
+class ApplicationStackMessageDispatcher(object):
+    def __init__(self):
+        self.__funcs = {}
+
+    def __func_name(self, func, name):
+        if not name:
+            name = func.__name__
+        return name
+
+    def register_func(self, func, name=None):
+        name = self.__func_name(func, name)
+        self.__funcs[name] = func
+
+    def deregister_func(self, func=None, name=None):
+        name = self.__func_name(func, name)
+        del self.__funcs[name]
+
+    @property
+    def handler_count(self):
+        return len(self.__funcs)
+
+    def dispatch(self, msg_str):
+        msg = decode(msg_str)
+        try:
+            msg.validate()
+        except AssertionError as exc:
+            log.error('Invalid message received: %s, error: %s', msg_str, exc)
+            return
+        if msg.target not in self.__funcs:
+            log.error("Received message with target '%s' but no functions were registered with that name. Params were: %s", msg.target, msg.params)
+        else:
+            self.__funcs[msg.target](msg)
 
 
 class ApplicationStackMessage(dict):
+    target = None
+
     def __init__(self, target=None, params=None, **kwargs):
-        """Any extra kwargs override values in params
-        """
-        self['target'] = target
+        self['target'] = target or self.__class__.target
         self['params'] = params or {}
         for k, v in kwargs.items():
             self['params'][k] = v
 
-    #@classmethod
-    #def from_string(cls, s)
-    #    #kwargs['object_hook'] = ApplicationStackMessage
-    #    d = json.loads(s)
-    #    return cls(json.loads(s, *args, **kwargs))
-
     def validate(self):
         assert self['target'] is not None, "Missing 'target' parameter"
-
-    def serialize(self, encoder):
-        #return json.JSONEncoder.encode(encoder, ApplicationStackMessage.clean(self))
-        self.validate()
-        return json.JSONEncoder.encode(encoder, self)
-
-    def dumps(self, *args, **kwargs):
-        #kwargs['cls'] = AttributeStackMessageEncoder
-        return json.dumps(self, *args, **kwargs)
-
-    def dump(self, fp, *args, **kwargs):
-        #raise Exception("This isn't using the Encoder, what gives?")
-        #kwargs['cls'] = AttributeStackMessageEncoder
-        return json.dump(self, fp, *args, **kwargs)
 
     @property
     def target(self):
@@ -64,22 +71,14 @@ class ApplicationStackMessage(dict):
     def set_params(self, params):
         self['params'] = params
 
-    #property
-    #def class(self):
-    #    return globals()[self['cls']]
-
     def encode(self):
         self['__classname__'] = self.__class__.__name__
         return json.dumps(self)
 
 
-# when we add additional messages this should become generalized and subclassed
+# TODO: when additional messages are added we should refactor and improve validation and param/task separation (but not all msgs may use task)
 class JobHandlerMessage(ApplicationStackMessage):
     target = 'job_handler'
-
-    def __init__(self, target=None, params=None, **kwargs):
-        super(JobHandlerMessage, self).__init__(params=params, **kwargs)
-        self['target'] = self.target
 
     def validate(self):
         super(JobHandlerMessage, self).validate()

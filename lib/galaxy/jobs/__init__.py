@@ -166,15 +166,6 @@ class JobConfiguration(object, ConfiguresHandlers):
         except Exception as e:
             raise config_exception(e, job_config_file)
 
-    def __config_default_handlers(self):
-        """This is a stop-gap solution until the job conf loading is rewritten
-        for YAML job conf support.
-        """
-        # FIXME: this will not support the case where uWSGI is being used w/o handler mules
-        if self.app.application_stack.handle_jobs:
-            self.handlers[self.app.config.server_name] = (self.app.config.server_name,)
-            self.default_handler_id = self.app.config.server_name
-
     def __parse_job_conf_xml(self, tree):
         """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).
 
@@ -212,13 +203,18 @@ class JobConfiguration(object, ConfiguresHandlers):
         handlers_conf = root.find('handlers')
         self._init_handlers(handlers_conf)
 
-        # Must define at least one handler to have a default.
-        if not self.handlers:
-            self.__config_default_handlers()
-            log.info("No handlers defined or empty handlers group, will use default handlers: %s", self.handlers)
-        else:
-            # Determine the default handler(s)
-            self.default_handler_id = self.__get_default(handlers, list(self.handlers.keys()))
+        # Determine the default handler(s)
+        try:
+            self.default_handler_id = self._get_default(self.app.config, handlers_conf, list(self.handlers.keys()))
+        except:
+            log.info('No default handler specified in job config, will check for job handlers managed by application stack')
+        if ((self.default_handler_id is None
+             or (len(self.handlers) == 1 and self.app.config.server_name.startswith(self.handlers.keys()[0])))
+            and self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS)):
+            # Shortcut for compatibility with existing job confs that use the default handlers block
+            # There are no defined handlers or there's only one handler and it's this server, and the stack has a handler pool
+            self.handlers = {}
+            self.default_handler_id = None
 
         # Parse destinations
         destinations = root.find('destinations')
@@ -352,7 +348,14 @@ class JobConfiguration(object, ConfiguresHandlers):
             self.runner_plugins.append(dict(id=runner, load=runner, workers=self.app.config.cluster_job_queue_workers))
 
         # Set the handlers
-        self.__config_default_handlers()
+        if self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS):
+            self.default_handler_id = None
+        else:
+            for id in self.app.config.job_handlers:
+                self.handlers[id] = (id,)
+
+            self.handlers['default_job_handlers'] = self.app.config.default_job_handlers
+            self.default_handler_id = 'default_job_handlers'
 
         # Set tool handler configs
         for id, tool_handlers in self.app.config.tool_handlers.items():

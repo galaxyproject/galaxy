@@ -23,27 +23,19 @@ class JobManager(object):
 
     def __init__(self, app):
         self.app = app
-        self.job_handler = NoopHandler()
-        self.job_stop_queue = NoopQueue()
-        if app.application_stack.setup_jobs_with_msg:
-            # defer setup to postfork
-            log.debug('######### registering manager init function')
-            self.app.application_stack.register_postfork_function(self.init)
-        else:
-            self.init()
-
-    def init(self):
-        log.debug("Initializing job manager interface")
+        self.job_lock = False
         if self.app.is_job_handler():
             log.debug("Starting job handler")
-            self.job_handler = handler.JobHandler(self.app)
+            self.job_handler = handler.JobHandler(app)
             self.job_stop_queue = self.job_handler.job_stop_queue
-        elif self.app.application_stack.setup_jobs_with_msg:
-            # not a handler, but notification is via the application stack
-            self.job_handler = MessageJobHandler( self.app )
+        elif app.application_stack.has_pool(app.application_stack.pools.JOB_HANDLERS):
+            log.debug("Initializing job handler messaging interface")
+            self.job_handler = MessageJobHandler(app)
+            self.job_stop_queue = NoopQueue()
+        else:
+            self.job_handler = NoopHandler()
             self.job_stop_queue = NoopQueue()
         self.job_queue = self.job_handler.job_queue
-        self.job_lock = False
 
     def start(self):
         self.job_handler.start()
@@ -64,21 +56,19 @@ class NoopHandler(object):
         pass
 
 
-class MessageJobHandler( object ):
+class MessageJobHandler(NoopHandler):
     """
     Implements the JobHandler interface but just to send setup messages on startup
 
     TODO: It should be documented that starting two Galaxy uWSGI master processes simultaneously would result in a race condition that *could* cause two handlers to pick up the same job.
 
-    The recommended config for now will be webless/main handlers if running more than one uWSGI (master) process
+    The recommended config for now will be webless handlers if running more than one uWSGI (master) process
     """
     def __init__(self, app):
+        # This runs in the web (main) process pre-fork
         self.app = app
         self.job_queue = MessageJobQueue(app)
         self.job_stop_queue = NoopQueue()
-
-    def start(self):
-        # This runs in the web (main) process pre-fork
         jobs_at_startup = self.app.model.context.query(Job).enable_eagerloads(False) \
             .filter((Job.state == Job.states.NEW) & (Job.handler == null())).all()
         if jobs_at_startup:
@@ -86,11 +76,8 @@ class MessageJobHandler( object ):
         for job in jobs_at_startup:
             self.job_queue.put(job.id, job.tool_id)
 
-    def shutdown(self, *args):
-        pass
 
-
-class MessageJobQueue(object):
+class MessageJobQueue(NoopQueue):
     """
     Implements the JobQueue / JobStopQueue interface but only sends messages to the actual job queue
     """
@@ -99,11 +86,4 @@ class MessageJobQueue(object):
 
     def put(self, job_id, tool_id):
         msg = JobHandlerMessage(task='setup', job_id=job_id)
-        # TODO: send to a specific pool
-        self.app.application_stack.send_message(self.app.application_stack.purposes.JOB_HANDLER, msg)
-
-    def put_stop(self, *args):
-        pass
-
-    def shutdown(self):
-        pass
+        self.app.application_stack.send_message(self.app.application_stack.pools.JOB_HANDLERS, msg)

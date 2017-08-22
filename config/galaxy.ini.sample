@@ -1228,6 +1228,9 @@ use_interactive = True
 # be configured through the job configuration file.
 #job_config_file = config/job_conf.xml
 
+### TODO: These options will move to a stack config section in the YAML config
+### file
+
 # Some application stacks that Galaxy run under (such as uWSGI) can start
 # arbitrary Galaxy server processes to perform functions asynchronously from
 # the Galaxy web server process(es). Such stacks may give you the option to

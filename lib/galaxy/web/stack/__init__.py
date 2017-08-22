@@ -17,61 +17,15 @@ try:
 except ImportError:
     uwsgi = None
 
-#try:
-#    from uwsgidecorators import postfork as uwsgi_postfork
-#except:
-#    uwsgi_postfork = lambda x: x    # noqa: E731
-#    if uwsgi is not None and hasattr(uwsgi, 'numproc'):
-#        print("WARNING: This is a uwsgi process but the uwsgidecorators library"
-#              " is unavailable.  This is likely due to using an external (not"
-#              " in Galaxy's virtualenv) uwsgi and you may experience errors. "
-#              "HINT:\n  {venv}/bin/pip install uwsgidecorators".format(
-#                  venv=os.environ.get('VIRTUAL_ENV', '/path/to/venv')))
-
 from six import string_types
 
-from .message import ApplicationStackMessage, JobHandlerMessage, decode
+from .message import ApplicationStackMessage, ApplicationStackMessageDispatcher, JobHandlerMessage, decode
 from .transport import ApplicationStackTransport, UWSGIFarmMessageTransport
 
 from galaxy.util.bunch import Bunch
-from galaxy.util.configdict import parse_config
 
 
 log = logging.getLogger(__name__)
-
-
-class ApplicationStackMessageDispatcher(object):
-    def __init__(self):
-        self.__funcs = {}
-
-    def __func_name(self, func, name):
-        if not name:
-            name = func.__name__
-        return name
-
-    def register_func(self, func, name=None):
-        name = self.__func_name(func, name)
-        self.__funcs[name] = func
-
-    def deregister_func(self, func=None, name=None):
-        name = self.__func_name(func, name)
-        del self.__funcs[name]
-
-    @property
-    def handler_count(self):
-        return len(self.__funcs)
-
-    def dispatch(self, msg_str):
-        msg = decode(msg_str)
-        try:
-            msg.validate()
-        except AssertionError as exc:
-            log.error('######## Invalid message received: %s, error: %s', msg_str, exc)
-            return
-        if msg.target not in self.__funcs:
-            log.error("######## Received message with target '%s' but no functions were registered with that name. Params were: %s", msg.target, msg.params)
-        else:
-            self.__funcs[msg.target](msg)
 
 
 class ApplicationStackLogFilter(logging.Filter):
@@ -91,30 +45,16 @@ class UWSGILogFilter(logging.Filter):
 class ApplicationStack(object):
     name = None
     prohibited_middleware = frozenset()
-    # TODO: this is a fairly clunky way of handling these cases
-    setup_jobs_with_msg = False # used in galaxy.jobs.manager to determine whether jobs should be sent via message
-    handle_jobs = False         # used by galaxy.jobs to determine whether this process handles jobs
-
     transport_class = ApplicationStackTransport
     log_filter_class = ApplicationStackLogFilter
+    # TODO: this belongs in the pool configuration
+    server_name_template = '{server_name}'
 
-    purposes = Bunch(
-        WEB_WORKER = 'web-worker',
-        JOB_HANDLER = 'job-handler',
+    # used both to route jobs to a pool with this name and indicate whether or
+    # not a stack is using messaging for handler assignment
+    pools = Bunch(
+        JOB_HANDLERS = 'job-handlers',
     )
-
-    default_conf = {
-        'processes': 1,
-        'threads': 4,
-        'server_name': '{server_name}',
-        'workers': [],
-        'pools': [],
-    }
-
-    web_worker_pool = {
-        'name': 'web-workers',
-        'purpose': 'web-worker',
-    }
 
     @classmethod
     def register_postfork_function(cls, f, *args, **kwargs):
@@ -122,65 +62,29 @@ class ApplicationStack(object):
 
     def __init__(self, app=None):
         self.app = app
-        # FIXME: hardcoded path
-        self._conf = parse_config('config/stack_conf.yml', 'stack', default=self.default_conf)
-        self.server_name_template = '{server_name}'
-        self.pools = []
-        self.pool_names = []
-        self._purposes = []
-
-    def _postfork_init(self):
-        self.pools = []
-        self.pool_names = []
-        self._purposes = []
-        for pool in self._conf.get('pools', []) + [ApplicationStack.web_worker_pool]:
-            if self.in_pool(pool['name']):
-                self.pools.append(pool)
-                self.pool_names.append(pool['name'])
-                self._purposes.append(pool['purpose'])
-        for pool in self.pools:
-            if pool.get('server_name', None):
-                self.server_name_template = pool['server_name']
-                break
-        else:
-            if self._conf.get('server_name', None):
-                # default if the process is not in a pool and there is an unpooled server name set in the conf
-                self.server_name_template = self._conf['server_name']
-            if self.pools:
-                # default if the process is in a pool
-                self.server_name_template = '{server_name}.{pool_name}.{process_num}'
 
     def start(self):
-        self._postfork_init()
-
-    @property
-    def pool_name(self):
-        # TODO: in the future, allow for mapping job handlers in the job conf by something other than server_name, such
-        # as pool name and process number. but for now, the job-handlers pool should be the first one specified under a
-        # worker set's 'pools' list, if more than one pool is specified for a given worker set
-        try:
-            return self.pool_names[0]
-        except:
-            return None
-
-    def in_pool(self, pool_name):
-        return None
-
-    def has_purpose(self, purpose):
-        return purpose in self._purposes
-
-    def workers(self):
-        return []
-
-
-
-
-
+        # TODO: with a stack config the pools could be parsed here
+        pass
 
     def allowed_middleware(self, middleware):
         if hasattr(middleware, '__name__'):
             middleware = middleware.__name__
         return middleware not in self.prohibited_middleware
+
+    def workers(self):
+        return []
+
+    @property
+    def pool_name(self):
+        # TODO: ideally jobs would be mappable to handlers by pool name
+        return None
+
+    def has_pool(self, pool_name):
+        return False
+
+    def in_pool(self, pool_name):
+        return False
 
     def set_server_name(self, app, caller_tmpl_dict):
         tmpl_dict = {
@@ -193,10 +97,10 @@ class ApplicationStack(object):
         }
         tmpl_dict.update(caller_tmpl_dict)
         app.config.server_name = self.server_name_template.format(**tmpl_dict)
-        log.debug('######## server_name is: %s', app.config.server_name)
+        log.debug('server_name set to: %s', app.config.server_name)
 
     def set_postfork_server_name(self, app):
-        self.set_server_name(app, tmpl_dict, {})
+        self.set_server_name(app, {})
 
     def register_message_handler(self, func, name=None):
         pass
@@ -207,13 +111,6 @@ class ApplicationStack(object):
     def send_message(self, dest, msg=None, target=None, params=None, **kwargs):
         pass
 
-    def send_purpose_message(self, purpose, **kwargs):
-        for pool in self.pools:
-            if purpose == pool['purpose']:
-                return self.send_message(pool['name'], **kwargs)
-        else:
-            raise RuntimeError('No pools defined for purpose: %s', purpose)
-
     def shutdown(self):
         pass
 
@@ -223,9 +120,6 @@ class MessageApplicationStack(ApplicationStack):
         super(MessageApplicationStack, self).__init__(app=app)
         self.dispatcher = ApplicationStackMessageDispatcher()
         self.transport = self.transport_class(app, stack=self, dispatcher=self.dispatcher)
-        #if app:
-        #    log.debug('######## registering self.start')
-        #    self.register_postfork_function(self.start)
 
     def start(self):
         super(MessageApplicationStack, self).start()
@@ -262,28 +156,11 @@ class UWSGIApplicationStack(MessageApplicationStack):
         'wrap_in_static',
         'EvalException',
     ])
-    setup_jobs_with_msg = True
-
     transport_class = UWSGIFarmMessageTransport
     log_filter_class = UWSGILogFilter
-    # FIXME: this is copied into UWSGIFarmMessageTransport
-    shutdown_msg = '__SHUTDOWN__'
-    postfork_functions = []
+    server_name_template = '{server_name}.{id}'
 
-    default_conf = {
-        'processes': 1,
-        'threads': 4,
-        'server_name': '{server_name}.{process_num}',
-        'workers': [{
-            'load': 'lib/galaxy/main.py',
-            'processes': 1,
-            'pools': ['job-handlers']
-        }],
-        'pools': [{
-            'name': 'job-handlers',
-            'purpose': 'job-handler',
-        }]
-    }
+    postfork_functions = []
 
     @classmethod
     def register_postfork_function(cls, f, *args, **kwargs):
@@ -291,50 +168,42 @@ class UWSGIApplicationStack(MessageApplicationStack):
             cls.postfork_functions.append((f, args, kwargs))
         else:
             # mules are forked from the master and run the master's postfork functions immediately before the forked
-            # process is replaced. that is prevented in the _do_uwsgi_postfork function, and because mules are
-            # standalone non-forking processes, they should run postfork functions immediately
+            # process is replaced. that is prevented in the _do_uwsgi_postfork function, and because programmed mules
+            # are standalone non-forking processes, they should run postfork functions immediately
             f(*args, **kwargs)
 
     def __init__(self, app=None):
-        super(UWSGIApplicationStack, self).__init__(app=app)
         self._farms_dict = None
         self._mules_list = None
-        self._is_mule = None
+        super(UWSGIApplicationStack, self).__init__(app=app)
 
     def __register_signal_handlers(self):
         for name in ('TERM', 'INT', 'HUP'):
-            log.debug('######## registered signal handler for SIG%s', name)
             sig = getattr(signal, 'SIG%s' % name)
             signal.signal(sig, self._handle_signal)
 
     def _handle_signal(self, signum, frame):
-        if signum == signal.SIGTERM:
-            log.info('######## Mule %s received SIGTERM, shutting down gracefully', uwsgi.mule_id())
-            self.shutdown()
-        elif signum == signal.SIGINT:
-            log.info('######## Mule %s received SIGINT, shutting down immediately', uwsgi.mule_id())
-            self.shutdown()
-            # This terminates the application loop in the handler entrypoint
-            self.app.exit = True
+        # uWSGI always sends SIGINT even if the master received SIGTERM
+        if signum in (signal.SIGTERM, signal.SIGINT):
+            log.info('Received SIGTERM/SIGINT, shutting down gracefully')
         elif signum == signal.SIGHUP:
-            log.debug('######## Mule %s received SIGHUP, restarting', uwsgi.mule_id())
-            self.shutdown()
-            # uWSGI master will restart us
-            self.app.exit = True
+            log.debug('Received SIGHUP, restarting')
+        self.shutdown()
+        # this terminates the application loop in the mule script, in the case of HUP, uWSGI will restart the mule
+        self.app.exit = True
 
-    def in_pool(self, pool_name):
-        if uwsgi.worker_id() > 0 and pool_name == ApplicationStack.web_worker_pool['name']:
-            return True
-        else:
-            return self._in_farm(pool_name)
-            #return self.transport._farm_name == pool_name
-
-    def workers(self):
-        return uwsgi.workers()
-
-    # FIXME: these are copied into UWSGIFarmMessageTransport
     @property
-    def _farms(self):
+    def _configured_mules(self):
+        if self._mules_list is None:
+            self._mules_list = _uwsgi_configured_mules()
+        return self._mules_list
+
+    @property
+    def _is_mule(self):
+        return uwsgi.mule_id() > 0
+
+    @property
+    def _configured_farms(self):
         if self._farms_dict is None:
             self._farms_dict = {}
             farms = uwsgi.opt.get('farm', [])
@@ -345,57 +214,54 @@ class UWSGIApplicationStack(MessageApplicationStack):
         return self._farms_dict
 
     @property
-    def _mules(self):
-        if self._mules_list is None:
-            self._mules_list = []
-            mules = uwsgi.opt.get('mule', [])
-            self._mules_list = [mules] if isinstance(mules, string_types) or mules is True else mules
-        return self._mules_list
+    def _farms(self):
+        farms = []
+        for farm, mules in self._configured_farms.items():
+            if uwsgi.mule_id() in mules:
+                farms.append(farm)
+        return farms
 
-    def _in_farm(self, farm_name):
-        return uwsgi.mule_id() in self._farms.get(farm_name, [])
+    @property
+    def _farm_name(self):
+        try:
+            return self._farms[0]
+        except IndexError:
+            return None
 
     def start(self):
-        self._is_mule = uwsgi.mule_id() > 0
+        # Does a generalized `is_worker` attribute make sense? Hard to say w/o other stack paradigms.
         if self._is_mule:
             self.__register_signal_handlers()
         super(UWSGIApplicationStack, self).start()
+
+    def has_pool(self, pool_name):
+        return pool_name in self._configured_farms
+
+    def in_pool(self, pool_name):
+        if not self._is_mule:
+            return False
+        else:
+            return pool_name in self._farms
+
+    def workers(self):
+        return uwsgi.workers()
 
     def set_postfork_server_name(self, app):
         tmpl_dict = {
             'id': 'worker%s' % uwsgi.worker_id() if uwsgi.mule_id() == 0 else 'mule%s' % uwsgi.mule_id(),
         }
-        if uwsgi.mule_id() == 0:
-            tmpl_dict['process_num'] = uwsgi.worker_id()
-        elif self.pool_name in self._farms:
-            tmpl_dict['process_num'] = self._farms[self.pool_name].index(uwsgi.mule_id()) + 1
-            log.debug('######## self._farms[self.pool_name]: %s', self._farms[self.pool_name])
         self.set_server_name(app, tmpl_dict)
 
-    #@property
-    #def pool_name(self):
-    #    # could get this from self._conf, or could get it from uwsgi.opts
-    #    return self.transport._farm_name
-
     def shutdown(self):
-        log.debug('######## STACK SHUTDOWN CALLED')
         super(UWSGIApplicationStack, self).shutdown()
-        # FIXME: blech
-        if not self._is_mule:
-            for farm in self._farms:
-                for mule in self._mules:
-                    # This will possibly generate more than we need, but that's ok
-                    self.transport.send_message(self.shutdown_msg, farm)
 
 
 class PasteApplicationStack(ApplicationStack):
     name = 'Python Paste'
-    handle_jobs = True
 
 
 class WeblessApplicationStack(ApplicationStack):
     name = 'Webless'
-    handle_jobs = True
 
 
 def application_stack_class():
@@ -425,22 +291,19 @@ def register_postfork_function(f, *args, **kwargs):
     application_stack_class().register_postfork_function(f, *args, **kwargs)
 
 
-def _mules():
+def _uwsgi_configured_mules():
     mules = uwsgi.opt.get('mule', [])
     return [mules] if isinstance(mules, string_types) or mules is True else mules
 
 
-#@uwsgi_postfork
 def _do_uwsgi_postfork():
-    import os
-    # FIXME: _mules duplicated again
-    for i, mule in enumerate(_mules()):
+    for i, mule in enumerate(_uwsgi_configured_mules()):
         if mule is not True and i + 1 == uwsgi.mule_id():
             # mules will inherit the postfork function list and call them immediately upon fork, but programmed mules
             # should not do that (they will call the postfork functions in-place as they start up after exec())
             UWSGIApplicationStack.postfork_functions = []
-    log.debug('######## postfork called, pid %s mule %s functions are: %s' % (os.getpid(), uwsgi.mule_id(), UWSGIApplicationStack.postfork_functions))
     for f, args, kwargs in [t for t in UWSGIApplicationStack.postfork_functions]:
+        log.debug('Calling postfork function: %s', f)
         f(*args, **kwargs)
 
 

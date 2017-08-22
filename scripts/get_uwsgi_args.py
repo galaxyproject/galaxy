@@ -12,7 +12,6 @@ from galaxy.config import (
     parse_dependency_options,
 )
 from galaxy.script import main_factory
-from galaxy.util.configdict import parse_config
 
 
 DESCRIPTION = "Script to determine uWSGI command line arguments."
@@ -20,9 +19,6 @@ COMMAND_TEMPLATE = '{virtualenv}--ini-paste {galaxy_ini} --paste-logger --die-on
 
 
 def _get_uwsgi_args(args, kwargs):
-    # FIXME: hardcoded
-    stack_conf = parse_config('config/stack_conf.yml', 'stack', {})
-    # FIXME: these belong in stack conf
     handlerct = int(kwargs.get('job_handler_count', 1))
     pool_name = kwargs.get('job_handler_pool_name', 'job-handlers')
     virtualenv = os.environ.get('VIRTUAL_ENV', None)
