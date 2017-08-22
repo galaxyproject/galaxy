@@ -47,7 +47,7 @@ class OIDCIdPGoogle(IdentityProvider):
 
         # Include the following parameter only if we need 'incremental authorization',
         # however, current application scenario does not seem to require it.
-        # flow.params[ 'include_granted_scopes' ] = "true"
+        # flow.params['include_granted_scopes'] = "true"
 
         # A anti-forgery state token. This token will be sent back from Google upon user authentication.
         state_token = hashlib.sha256(str(trans.user.username)).hexdigest()
@@ -105,9 +105,9 @@ class OIDCIdPGoogle(IdentityProvider):
             trans.sa_session.flush()
             return False  # results in re-authentication.
         if query_result.count() == 0:
-            log.critical( "Found `0` records for user `{}` authentication against `{}` identity provider;"
-                          " an improperly initiated authentication flow. Now prompting re-authentication.".format(
-                trans.user.username, self.provider))
+            log.critical("Found `0` records for user `{}` authentication against `{}` identity provider; "
+                         "an improperly initiated authentication flow. Now prompting re-authentication."
+                         .format(trans.user.username, self.provider))
             return False  # results in re-authentication.
             # A callback should follow a request from Galaxy; and if a request was (successfully) made by Galaxy,
             # the a record in the `galaxy_user_oauth2` table with valid `user_id`, `provider`, and `state_token`

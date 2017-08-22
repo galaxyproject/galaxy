@@ -122,7 +122,7 @@ class AuthnzManager(object):
         """
         if provider in self.providers:
             try:
-                return self.providers[ provider ].authenticate( trans )
+                return self.providers[provider].authenticate(trans)
             except:
                 raise
         else:
