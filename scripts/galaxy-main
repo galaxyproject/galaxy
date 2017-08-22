@@ -16,28 +16,15 @@ defaults logging to a single file with the following:
 
 galaxy-main -d --server-name handler0 --daemon-log-file=handler0-daemon.log --pid-file handler0.pid --log-file handler0.log
 
-Server names can be templated with the following keys:
-
-    - {mule_id}: a number starting at 1 that increments for each defined mule (if running as a uWSGI mule)
-    - {hostname}: system's hostname up to (but not including) the first dot
-    - {fqdn}: system's fully qualified domain name
-
 This can also be used to start Galaxy as a uWSGI mule, e.g. for job handling:
 
 uwsgi ... --py-call-osafterfork --mule=lib/galaxy/main.py --mule=lib/galaxy/main.py --farm=job-handlers:1,2
 
 The --py-call-osafterfork allows for proper shutdown on SIGTERM/SIGINT.
-
-uWSGI mules cannot be provided with arguments, so configuration can be performed via environment variables.
-
-By default, mules will be assigned the server name `mule.{mule_id}`. You can control this with the
-$GALAXY_SERVER_NAME_TEMPLATE environment variable, which is only processed by this script, so it does not affect the
-server name of the main uWSGI process(es) which serve web requests.
 """
 import functools
 import logging
 import os
-import socket
 import sys
 import time
 from argparse import ArgumentParser
@@ -71,13 +58,6 @@ DEFAULT_INIS = ["config/galaxy.ini", "universe_wsgi.ini", "config/galaxy.ini.sam
 DEFAULT_PID = "galaxy.pid"
 DEFAULT_VERBOSE = True
 DESCRIPTION = "Daemonized entry point for Galaxy."
-
-SERVER_NAME_TEMPLATE_MAP = {
-    'mule_id': uwsgi.mule_id() if uwsgi else 'none',
-    'hostname': socket.gethostname().split('.', 1)[0],
-    'fqdn': socket.getfqdn()
-}
-MULE_SERVER_NAME_DEFAULT = 'mule.{mule_id}'
 
 
 def load_galaxy_app(
@@ -163,15 +143,6 @@ def find_ini(supplied_ini, galaxy_root):
 
     return guess
 
-# FIXME: probably don't need this now that server names are fixed up in app. Do we really need fine grained control over mule names? Maybe for multihost mules? Do we support multihost mules? Could set the mule server name template in galaxy.ini...
-def set_server_name(server_name):
-    default = None if not uwsgi else MULE_SERVER_NAME_DEFAULT
-    if not server_name:
-        server_name = os.environ.get('GALAXY_SERVER_NAME_TEMPLATE', default)
-    if server_name:
-        os.environ["GALAXY_CONFIG_SERVER_NAME"] = server_name.format(**SERVER_NAME_TEMPLATE_MAP)
-
-
 def ini_path_from_uwsgi():
     if uwsgi:
         if 'ini-paste' in uwsgi.opt:
@@ -242,7 +213,8 @@ def main():
     args = arg_parser.parse_args()
     if args.log_file:
         os.environ["GALAXY_CONFIG_LOG_DESTINATION"] = os.path.abspath(args.log_file)
-    #set_server_name(args.server_name)
+    if args.server_name:
+        os.environ["GALAXY_CONFIG_SERVER_NAME"] = args.server_name
     pid_file = args.pid_file
 
     log.setLevel(logging.DEBUG)
