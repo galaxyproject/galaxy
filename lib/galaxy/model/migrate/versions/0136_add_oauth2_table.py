@@ -7,23 +7,23 @@ import logging
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
 UserOAuth2Table = Table(
     "galaxy_user_oauth2", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=False, index=True ),
-    Column( "provider", TEXT, nullable=False ),
-    Column( "state_token", TEXT, nullable=False, index=True ),
-    Column( "id_token", TEXT ),
-    Column( "refresh_token", TEXT ),
-    Column( "expiration_date", DateTime ),
-    Column( "access_token", TEXT ) )
+    Column("id", Integer, primary_key=True),
+    Column("user_id", Integer, ForeignKey("galaxy_user.id"), nullable=False, index=True),
+    Column("provider", TEXT, nullable=False),
+    Column("state_token", TEXT, nullable=False, index=True),
+    Column("id_token", TEXT),
+    Column("refresh_token", TEXT),
+    Column("expiration_date", DateTime),
+    Column("access_token", TEXT))
 
 
-def upgrade( migrate_engine ):
-    print( __doc__ )
+def upgrade(migrate_engine):
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
 
@@ -31,10 +31,10 @@ def upgrade( migrate_engine ):
     try:
         UserOAuth2Table.create()
     except Exception as e:
-        log.exception( "Creating UserOAuth2 table failed: %s" % str( e ) )
+        log.exception("Creating UserOAuth2 table failed: %s" % str(e))
 
 
-def downgrade( migrate_engine ):
+def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
@@ -42,4 +42,4 @@ def downgrade( migrate_engine ):
     try:
         UserOAuth2Table.drop()
     except Exception as e:
-        log.exception( "Dropping UserOAuth2 table failed: %s" % str( e ) )
+        log.exception("Dropping UserOAuth2 table failed: %s" % str(e))
