@@ -10,11 +10,8 @@ module.exports = function( grunt ){
 
         // where to move fetched bower components into the build structure (libName: [ bower-location, libs-location ])
         libraryLocations = {
-            'backbone':       [ 'backbone.js', 'backbone.js' ],
-            'requirejs':      [ 'require.js', 'require.js' ],
             'd3':             [ 'd3.js', 'd3.js' ],
             'bib2json':       [ 'Parser.js', 'bibtex.js' ],
-
             'farbtastic':     [ 'src/farbtastic.js', 'farbtastic.js' ],
             'jQTouch':        [ 'src/reference/jqtouch.js', 'jquery/jqtouch.js' ],
             'bootstrap-tour': [ 'build/js/bootstrap-tour.js', 'bootstrap-tour.js' ],

@@ -38,6 +38,7 @@
     "jquery-migrate": "~1.4",
     "jshint": "^2.9.4",
     "raven-js": "^3.17.0",
+    "requirejs": "2",
     "underscore": "^1.8.3",
     "webpack": "^3.5.5"
   },
