@@ -252,7 +252,7 @@ class Forms(BaseUIController):
             new_form, message = self.save_form_definition( trans, id, payload )
             if new_form is None:
                 return message_exception(trans, message)
-            message = 'The form \'%s\' has been updated with the changes.' % payload.get('name')
+            message = 'The form \'%s\' has been updated.' % payload.get('name')
             return {'message': util.sanitize_text(message)}
 
     def get_current_form(self, trans, payload=None, **kwd):
