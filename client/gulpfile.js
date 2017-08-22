@@ -20,7 +20,8 @@ var paths = {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
         // not be necessary.
-        'jquery':['dist/jquery.js', 'jquery/jquery.js'],
+        'backbone': [ 'backbone.js', 'backbone.js' ],
+        'jquery': ['dist/jquery.js', 'jquery/jquery.js'],
         'jquery-migrate': [ 'dist/jquery-migrate.js', 'jquery/jquery.migrate.js' ],
         'raven-js': ['dist/raven.js', 'raven.js'],
         'underscore': [ 'underscore.js', 'underscore.js' ],
