@@ -66,7 +66,7 @@ class WorkflowsManager(object):
         stored_workflow = self.get_stored_workflow(trans, workflow_id)
 
         # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin():
+        if stored_workflow.user != trans.user and not trans.user_is_admin() and not stored_workflow.published:
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 message = "Workflow is not owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
@@ -87,12 +87,17 @@ class WorkflowsManager(object):
         workflowinvocations. Throw an exception or returns True if user has
         needed level of access.
         """
-        if not check_ownership or check_accessible:
+        if not check_ownership and not check_accessible:
             return True
 
-        # If given an invocation follow to workflow...
+        # If given an invocation verify ownership of invocation
         if isinstance(has_workflow, model.WorkflowInvocation):
-            has_workflow = has_workflow.workflow
+            # We use the the owner of the history that is associated to the invocation as a proxy
+            # for the owner of the invocation.
+            if trans.user != has_workflow.history.user and not trans.user_is_admin():
+                raise exceptions.ItemOwnershipException()
+            else:
+                return True
 
         # stored workflow contains security stuff - follow that workflow to
         # that unless given a stored workflow.
@@ -111,12 +116,13 @@ class WorkflowsManager(object):
         return True
 
     def get_invocation(self, trans, decoded_invocation_id):
-        try:
-            workflow_invocation = trans.sa_session.query(
-                self.app.model.WorkflowInvocation
-            ).get(decoded_invocation_id)
-        except Exception:
-            raise exceptions.ObjectNotFound()
+        workflow_invocation = trans.sa_session.query(
+            self.app.model.WorkflowInvocation
+        ).get(decoded_invocation_id)
+        if not workflow_invocation:
+            encoded_wfi_id = trans.security.encode_id(decoded_invocation_id)
+            message = "'%s' is not a valid workflow invocation id" % encoded_wfi_id
+            raise exceptions.ObjectNotFound(message)
         self.check_security(trans, workflow_invocation, check_ownership=True, check_accessible=False)
         return workflow_invocation
 
@@ -161,18 +167,21 @@ class WorkflowsManager(object):
         return workflow_invocation_step
 
     def build_invocations_query(self, trans, decoded_stored_workflow_id):
-        try:
-            stored_workflow = trans.sa_session.query(
-                self.app.model.StoredWorkflow
-            ).get(decoded_stored_workflow_id)
-        except Exception:
+        """Get invocations owned by the current user."""
+        stored_workflow = trans.sa_session.query(
+            self.app.model.StoredWorkflow
+        ).get(decoded_stored_workflow_id)
+        if not stored_workflow:
             raise exceptions.ObjectNotFound()
-        self.check_security(trans, stored_workflow, check_ownership=True, check_accessible=False)
-        return trans.sa_session.query(
+        invocations = trans.sa_session.query(
             model.WorkflowInvocation
         ).filter_by(
             workflow_id=stored_workflow.latest_workflow_id
         )
+        return [inv for inv in invocations if self.check_security(trans,
+                                                                  inv,
+                                                                  check_ownership=True,
+                                                                  check_accessible=False)]
 
 
 CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", "missing_tools"])
