@@ -17,7 +17,11 @@ var paths = {
         '!galaxy/scripts/libs/**/*.js'
     ],
     lib_locs: {
+        // This is a stepping stone towards having all this staged
+        // automatically.  Eventually, this dictionary and staging step will
+        // not be necessary.
         'jquery':['dist/jquery.js', 'jquery/jquery.js'],
+        'jquery-migrate': [ 'dist/jquery-migrate.js', 'jquery/jquery.migrate.js' ],
         'raven-js': ['dist/raven.js', 'raven.js'],
         'underscore': [ 'underscore.js', 'underscore.js' ],
     },
@@ -42,6 +46,8 @@ gulp.task('stage-libs', function(){
             console.log(p1 + " -> " + p2);
             del.sync(p2);
             fs.createReadStream(p1).pipe(fs.createWriteStream(p2));
+        } else {
+            console.log(p1 + " does not exist, this is an error.");
         }
     });
 });

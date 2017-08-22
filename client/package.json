@@ -34,6 +34,7 @@
     "gulp-uglify": "^3.0.0",
     "gulp-watch": "^4.3.11",
     "jquery": "1.12",
+    "jquery-migrate": "~1.4",
     "jshint": "^2.9.4",
     "raven-js": "^3.17.0",
     "underscore": "^1.8.3",
