@@ -1,5 +1,5 @@
 /** Workflow view */
-define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-model"  ], function( Utils, Ui, TAGS, WorkflowModel ) {
+define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-model"  ], function( Utils, Ui, TAGS, WORKFLOWS ) {
 
     /** Build messages after user action */
     function build_messages() {
@@ -13,19 +13,91 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
         };
         $el_message.empty().html( new Ui.Message( response ).$el );
     }
- 
+
+
+    /** View of the individual workflows */
+
+    var WorkflowItemView = Backbone.View.extend({
+        tagName: 'tr', // name of (orphan) root tag in this.el
+        initialize: function(){
+            _.bindAll(this, 'render', 'render_row', 'render_tag_editor', '_templateActions'); // every function that uses 'this' as the current object should be in here
+
+
+
+        },
+        render: function(){
+            $(this.el).html(this.render_row());
+            return this; // for chainable calls, like .render().el
+        },
+
+        render_row: function() {
+            var show_in_tool_panel = this.model.get("show_in_tool_panel");
+            var wf_id = this.model.id;
+            var checkbox_html = '<input type="checkbox" class="show-in-tool-panel" '+ ( show_in_tool_panel ? 'checked="' + show_in_tool_panel + '"' : "" ) +' value="' + wf_id + '">';
+            var trHtml =  '<td>' +
+                             '<div class="dropdown">' +
+                                 '<button class="menubutton" type="button" data-toggle="dropdown">' +
+                                     _.escape( this.model.get("name") ) + '<span class="caret"></span>' +
+                                 '</button>' +
+                                 this._templateActions( ) +
+                             '</div>' +
+                          '</td>' +
+                          '<td><span>' + '<div class="' + wf_id + ' tags-display"></div>' + '</td>' +
+                          '<td>' + ( this.model.get('owner') === Galaxy.user.attributes.username ? "You" : this.model.get('owner') ) +'</span></td>' +
+                          '<td>' + this.model.get("number_of_steps") + '</td>' +
+                          '<td>' + ( this.model.get("published") ? "Yes" : "No" ) + '</td>' +
+                          '<td>'+ checkbox_html + '</td>';
+            return trHtml;
+        },
+
+        render_tag_editor: function(){
+            tag_editor = new TAGS.WorkflowTagsEditor({
+            model           : this.model,
+            el              : $.find( '.' + this.model.id + '.tags-display' )});
+
+            tag_editor.toggle( true );
+            tag_editor.render();
+        },
+
+        /** Template for user actions for workflows */
+        _templateActions: function( ) {
+            if( this.model.get("owner") === Galaxy.user.attributes.username ) {
+                return '<ul class="dropdown-menu action-dpd">' +
+                           '<li><a href="'+ Galaxy.root +'workflow/editor?id='+ this.model.id +'">Edit</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/run?id='+ this.model.id +'">Run</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/sharing?id='+ this.model.id +'">Share or Download</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/copy?id='+ this.model.id +'">Copy</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/rename?id='+ this.model.id +'">Rename</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/display_by_id?id='+ this.model.id +'">View</a></li>' +
+                           '<li><a class="link-confirm-'+ this.model.id +'" href="'+ Galaxy.root +'workflow/delete?id='+ this.model.id +'">Delete</a></li>' +
+                      '</ul>';
+            }
+            else {
+                return '<ul class="dropdown-menu action-dpd">' +
+                         '<li><a href="'+ Galaxy.root +'workflow/display_by_username_and_slug?username='+ workflow.owner +'&slug='+ workflow.slug +'">View</a></li>' +
+                         '<li><a href="'+ Galaxy.root +'workflow/run?id='+ this.model.id +'">Run</a></li>' +
+                         '<li><a href="'+ Galaxy.root +'workflow/copy?id='+ this.model.id +'">Copy</a></li>' +
+                         '<li><a class="link-confirm-shared-'+ this.model.id +'" href="'+ Galaxy.root +'workflow/sharing?unshare_me=True&id='+ this.model.id +'">Remove</a></li>' +
+                      '</ul>';
+            }
+        },
+
+
+    });
+
     /** View of the main workflow list page */
-    var View = Backbone.View.extend({
+    var WorkflowListView = Backbone.View.extend({
 
         initialize: function() {
             this.setElement( '<div/>' );
+            this.collection = new WORKFLOWS.WorkflowCollection();
+            this.collection.bind('add', this.appendItem); // collection event binder
             this.render();
         },
 
         render: function() {
             var self = this,
                 min_query_length = 3;
-            $.getJSON( Galaxy.root + 'api/workflows/', function( workflows ) {
                 var $el_workflow = null;
                 // Add workflow header
                 self.$el.empty().append( self._templateHeader() );
@@ -34,45 +106,25 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
                 $el_workflow = self.$( '.user-workflows' );
                 // Add the actions buttons
                 $el_workflow.append( self._templateActionButtons() );
-                if( workflows.length > 0) {
-                    $el_workflow.append( self._templateWorkflowTable( self, workflows) );
-                    self._renderTags(self, workflows);
-                    self.adjust_actiondropdown( $el_workflow );
-                    // Register delete and run workflow events
-                    _.each( workflows, function( wf ) {
-                        self.confirm_delete( wf );
-                    });
-                    self.register_show_tool_menu();
-                    // Register search workflow event
-                    self.search_workflow( self.$( '.search-wf' ), self.$( '.workflow-search tr' ), min_query_length );
-                }
-                else {
-                    $el_workflow.append( self._templateNoWorkflow() );
-                }
-            });
+                var workflows = this.collection;
+                console.log(workflows);
+                $el_workflow.append(self._templateWorkflowTable());
+                self.adjust_actiondropdown( $el_workflow );
+                // Register delete and run workflow events
+                // _.each( workflows, function( wf ) {
+                //    self.confirm_delete( wf );
+                //});
+                self.register_show_tool_menu();
+                // Register search workflow event
+                self.search_workflow( self.$( '.search-wf' ), self.$( '.workflow-search tr' ), min_query_length );
         },
 
-
-
-        _renderTags : function( self, workflows ){
-        self.tag_editors = [];
-        console.log('render workflows');
-        _.each( workflows, function ( wf ) {
-            // console.log(wf);
-            var wf_model = new WorkflowModel( { id: wf.id,
-                                                name: wf.name,
-                                                tags: wf.tags } );
-            console.log(wf_model);
-            var el =  $.find( '.' + wf.id + '.tags-display' );
-            var tag_editor = new TAGS.WorkflowTagsEditor({
-            model           : wf_model,
-            el              : el});
-
-            tag_editor.toggle( true );
-            tag_editor.render();
-            self.tag_editors.push(tag_editor) ;
-
+        appendItem: function(item){
+            var workflowItemView = new WorkflowItemView({
+                model: item
             });
+            self.$( '.user-workflows' ).find('tbody.workflow-search').append(workflowItemView.render().el);
+            workflowItemView.render_tag_editor();
         },
 
         // Save the workflow as an item in Tool panel
@@ -167,9 +219,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
         },
 
         /** Template for workflow table */
-        _templateWorkflowTable: function( self, workflows ) {
-            var tableHtml = "", trHtml = "";
-            tableHtml = tableHtml + '<table class="table colored"><thead>' +
+        _templateWorkflowTable: function( self ) {
+            var tableHtml = '<table class="table colored"><thead>' +
                     '<tr class="header">' +
                         '<th>Name</th>' +
                         '<th>Tags</th>' +
@@ -178,49 +229,10 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
                         '<th>Published</th>' +
                         '<th>Show in tools panel</th>' +
                     '</tr></thead>';
-            _.each( workflows, function( wf ) {
-                var checkbox_html = '<input type="checkbox" class="show-in-tool-panel" '+ ( wf.show_in_tool_panel ? 'checked="' + wf.show_in_tool_panel + '"' : "" ) +' value="' + wf.id + '">';
-                trHtml = trHtml + '<tr>' +
-                             '<td>' +
-                                 '<div class="dropdown">' +
-                                     '<button class="menubutton" type="button" data-toggle="dropdown">' +
-                                         _.escape( wf.name ) + '<span class="caret"></span>' +
-                                     '</button>' +
-                                     self._templateActions( wf ) +
-                                 '</div>' +
-                              '</td>' +
-                              '<td>' + '<div class="' + wf.id + ' tags-display"></div>' + '</td>' +
-                              '<td>' + ( wf.owner === Galaxy.user.attributes.username ? "You" : wf.owner ) +'</td>' +
-                              '<td>' + wf.number_of_steps + '</td>' +
-                              '<td>' + ( wf.published ? "Yes" : "No" ) + '</td>' +
-                              '<td>'+ checkbox_html +'</td>' +
-                         '</tr>';
-            });
-            return tableHtml + '<tbody class="workflow-search">' + trHtml + '</tbody></table>';
+            return tableHtml + '<tbody class="workflow-search">' + '</tbody></table>';
         },
 
-        /** Template for user actions for workflows */
-        _templateActions: function( workflow ) {
-            if( workflow.owner === Galaxy.user.attributes.username ) {
-                return '<ul class="dropdown-menu action-dpd">' +
-                           '<li><a href="'+ Galaxy.root +'workflow/editor?id='+ workflow.id +'">Edit</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'workflow/run?id='+ workflow.id +'">Run</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'workflow/sharing?id='+ workflow.id +'">Share or Download</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'workflow/rename?id='+ workflow.id +'">Rename</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'workflow/display_by_id?id='+ workflow.id +'">View</a></li>' +
-                           '<li><a class="link-confirm-'+ workflow.id +'" href="'+ Galaxy.root +'workflow/delete?id='+ workflow.id +'">Delete</a></li>' +
-                      '</ul>';
-            }
-            else {
-                return '<ul class="dropdown-menu action-dpd">' +
-                         '<li><a href="'+ Galaxy.root +'workflow/display_by_username_and_slug?username='+ workflow.owner +'&slug='+ workflow.slug +'">View</a></li>' +
-                         '<li><a href="'+ Galaxy.root +'workflow/run?id='+ workflow.id +'">Run</a></li>' +
-                         '<li><a href="'+ Galaxy.root +'workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
-                         '<li><a class="link-confirm-shared-'+ workflow.id +'" href="'+ Galaxy.root +'workflow/sharing?unshare_me=True&id='+ workflow.id +'">Remove</a></li>' +
-                      '</ul>';
-            }
-        },
+
 
         /** Main template */
         _templateHeader: function() {
@@ -294,7 +306,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
     });
 
     return {
-        View  : View,
+        View  : WorkflowListView,
         ImportWorkflowView : ImportWorkflowView
     };
 });

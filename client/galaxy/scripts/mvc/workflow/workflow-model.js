@@ -10,11 +10,18 @@ var logNamespace = 'workflow';
  *  @name Citation
  *  @augments Backbone.Model
  */
-var WorkflowModel = Backbone.Model.extend( baseMVC.LoggableMixin ).extend({
+var WorkflowItem = Backbone.Model.extend( baseMVC.LoggableMixin ).extend({
     _logNamespace : logNamespace,
+
+    urlRoot: '/api/workflows',
 
     defaults : {
         content: ''
+    },
+
+    toJSON: function(){
+    // need to overwrite this as endpoint expects the 'workflow' key in payload
+    return {workflow : this.attributes};
     },
 
     initialize: function() {
@@ -29,10 +36,21 @@ var WorkflowModel = Backbone.Model.extend( baseMVC.LoggableMixin ).extend({
     }
 });
 
+var WorkflowCollection = Backbone.Collection.extend({
+    model: WorkflowItem,
+    url: '/api/workflows',
+
+    initialize: function () {
+        this.fetch();
+    }
+  });
 
 //==============================================================================
 
-return WorkflowModel;
+return {
+    WorkflowItem: WorkflowItem,
+    WorkflowCollection: WorkflowCollection,
+};
 
 
 });
