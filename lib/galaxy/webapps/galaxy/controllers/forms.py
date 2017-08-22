@@ -7,7 +7,7 @@ from markupsafe import escape
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.form_builder import FileField, TextField, HiddenField, SelectField
-from galaxy.web.framework.helpers import iff, grids
+from galaxy.web.framework.helpers import grids, iff, time_ago
 
 log = logging.getLogger(__name__)
 
@@ -32,12 +32,12 @@ class FormsGrid(grids.Grid):
         def get_value(self, trans, grid, user):
             if user.deleted:
                 return "deleted"
-            return ""
+            return "active"
 
     # Grid definition
     title = "Forms"
     model_class = model.FormDefinitionCurrent
-    default_sort_key = "-create_time"
+    default_sort_key = "-update_time"
     num_rows_per_page = 50
     preserve_state = True
     use_paging = True
@@ -54,6 +54,7 @@ class FormsGrid(grids.Grid):
                           model_class=model.FormDefinition,
                           filterable="advanced"),
         TypeColumn("Type"),
+        grids.GridColumn("Last Updated", key="update_time", format=time_ago),
         StatusColumn("Status"),
         grids.DeletedColumn("Deleted",
                             key="deleted",
