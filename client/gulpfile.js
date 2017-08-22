@@ -22,6 +22,7 @@ var paths = {
         // not be necessary.
         'backbone': [ 'backbone.js', 'backbone.js' ],
         'd3': [ 'd3.js', 'd3.js' ],
+        'bib2json': [ 'Parser.js', 'bibtex.js' ],
         'jquery': ['dist/jquery.js', 'jquery/jquery.js'],
         'jquery-migrate': [ 'dist/jquery-migrate.js', 'jquery/jquery.migrate.js' ],
         'raven-js': ['dist/raven.js', 'raven.js'],
