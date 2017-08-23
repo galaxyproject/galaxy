@@ -20,7 +20,7 @@ class ModelMapping(Bunch):
 
     def __init__(self, model_modules, engine):
         self.engine = engine
-        context = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
+        context = scoped_session(sessionmaker(autoflush=False, autocommit=True))
         # For backward compatibility with "context.current"
         # deprecated?
         context.current = context
@@ -36,7 +36,7 @@ class ModelMapping(Bunch):
         super(ModelMapping, self).__init__(**model_classes)
 
         context.remove()
-        context.configure( bind=engine )
+        context.configure(bind=engine)
 
     @property
     def Session(self):

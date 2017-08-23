@@ -171,7 +171,7 @@ App.app_name = property(_app_name)
 App.sample_destination = property(_sample_destination)
 App.schema = property(_schema)
 
-OptionValue = namedtuple("OptionValue", ["name", "value", "option"] )
+OptionValue = namedtuple("OptionValue", ["name", "value", "option"])
 
 
 UNKNOWN_OPTION = {

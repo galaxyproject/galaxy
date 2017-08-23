@@ -10,10 +10,10 @@ from galaxy.tools.deps import views
 
 
 import logging
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
-class ToolDependenciesAPIController( BaseAPIController ):
+class ToolDependenciesAPIController(BaseAPIController):
 
     def __init__(self, app):
         super(ToolDependenciesAPIController, self).__init__(app)

@@ -16,7 +16,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                 var all_done = true;
                 _.some(self.model.models, function(repository) {
                     repo_id = repository.get('id');
-                    repo_status = repository.get('status').toLowerCase();
+                    var repo_status = repository.get('status').toLowerCase();
                     if (terminal_states.indexOf(repo_status) === -1) {
                         all_done = false;
                         return true;

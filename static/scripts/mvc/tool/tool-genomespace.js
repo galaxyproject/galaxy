@@ -1,0 +1,2 @@
+"use strict";define([],function(){return{openFileBrowser:function(e){var a=window.Galaxy.config.genomespace_ui_url+"upload/loadUrlToGenomespace.html?getLocation=true",o=window.open(a,"GenomeSpace File Browser","height=360px,width=600px");successCalBack=e.successCallback,window.addEventListener("message",function(e){successCalBack(e.data)},!1),o.focus(),null!=e.errorCallback&&(o.setCallbackOnGSUploadError=config.errorCallback)}}});
+//# sourceMappingURL=../../../maps/mvc/tool/tool-genomespace.js.map

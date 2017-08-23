@@ -23,34 +23,34 @@ import argparse
 from common import get, submit
 
 
-def main( options ):
+def main(options):
     api_key = options.api
-    from_tool_shed = options.from_tool_shed.rstrip( '/' )
-    to_tool_shed = options.to_tool_shed.rstrip( '/' )
+    from_tool_shed = options.from_tool_shed.rstrip('/')
+    to_tool_shed = options.to_tool_shed.rstrip('/')
     # Get the categories from the specified Tool Shed.
     url = '%s/api/categories' % from_tool_shed
-    category_dicts = get( url )
+    category_dicts = get(url)
     create_response_dicts = []
     for category_dict in category_dicts:
-        name = category_dict.get( 'name', None )
-        description = category_dict.get( 'description', None )
+        name = category_dict.get('name', None)
+        description = category_dict.get('description', None)
         if name is not None and description is not None:
-            data = dict( name=name,
-                         description=description )
+            data = dict(name=name,
+                        description=description)
             url = '%s/api/categories' % to_tool_shed
             try:
-                response = submit( url, data, api_key )
+                response = submit(url, data, api_key)
             except Exception as e:
-                response = str( e )
-                print "Error attempting to create category using URL: ", url, " exception: ", str( e )
-            create_response_dict = dict( response=response )
-            create_response_dicts.append( create_response_dict )
+                response = str(e)
+                print "Error attempting to create category using URL: ", url, " exception: ", str(e)
+            create_response_dict = dict(response=response)
+            create_response_dicts.append(create_response_dict)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser( description='Retrieve a list of categories from a Tool Shed and create them in another Tool Shed.' )
-    parser.add_argument( "-a", "--api", dest="api", required=True, help="API Key for Tool Shed in which categories will be created" )
-    parser.add_argument( "-f", "--from_tool_shed", dest="from_tool_shed", required=True, help="URL of Tool Shed from which to retrieve the categories" )
-    parser.add_argument( "-t", "--to_tool_shed", dest="to_tool_shed", required=True, help="URL of Tool Shed in which to create the categories" )
+    parser = argparse.ArgumentParser(description='Retrieve a list of categories from a Tool Shed and create them in another Tool Shed.')
+    parser.add_argument("-a", "--api", dest="api", required=True, help="API Key for Tool Shed in which categories will be created")
+    parser.add_argument("-f", "--from_tool_shed", dest="from_tool_shed", required=True, help="URL of Tool Shed from which to retrieve the categories")
+    parser.add_argument("-t", "--to_tool_shed", dest="to_tool_shed", required=True, help="URL of Tool Shed in which to create the categories")
     options = parser.parse_args()
-    main( options )
+    main(options)

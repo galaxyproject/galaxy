@@ -7,35 +7,35 @@ from galaxy.model.metadata import MetadataCollection
 
 
 class RecursiveNone:
-    def __str__( self ):
+    def __str__(self):
         return "None"
 
-    def __repr__( self ):
-        return str( self )
+    def __repr__(self):
+        return str(self)
 
-    def __getattr__( self, name ):
+    def __getattr__(self, name):
         value = RecursiveNone()
-        setattr( self, name, value )
+        setattr(self, name, value)
         return value
 
-    def __nonzero__( self ):
+    def __nonzero__(self):
         return False
 
 
-class NoneDataset( RecursiveNone ):
-    def __init__( self, datatypes_registry=None, ext='data', dbkey='?' ):
+class NoneDataset(RecursiveNone):
+    def __init__(self, datatypes_registry=None, ext='data', dbkey='?'):
         self.ext = self.extension = ext
         self.dbkey = dbkey
         if datatypes_registry is None:
             # Default Value Required for unit tests
             datatypes_registry = Registry()
             datatypes_registry.load_datatypes()
-        self.datatype = datatypes_registry.get_datatype_by_extension( ext )
+        self.datatype = datatypes_registry.get_datatype_by_extension(ext)
         self._metadata = None
-        self.metadata = MetadataCollection( self )
+        self.metadata = MetadataCollection(self)
 
-    def __getattr__( self, name ):
+    def __getattr__(self, name):
         return "None"
 
-    def missing_meta( self ):
+    def missing_meta(self):
         return False

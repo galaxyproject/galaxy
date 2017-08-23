@@ -10,7 +10,7 @@ from markupsafe import escape
 
 from galaxy.util import send_mail
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 class DefaultJobAction(object):
@@ -51,9 +51,9 @@ class EmailAction(DefaultJobAction):
         to = job.user.email
         subject = "Galaxy workflow step notification '%s'" % (job.history.name)
         outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
-        body = "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime( "%I:%M" ))
+        body = "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime("%I:%M"))
         try:
-            send_mail( frm, to, subject, body, app.config )
+            send_mail(frm, to, subject, body, app.config)
         except Exception as e:
             log.error("EmailAction PJA Failed, exception: %s" % e)
 
@@ -73,7 +73,7 @@ class ChangeDatatypeAction(DefaultJobAction):
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
-                app.datatypes_registry.change_datatype( dataset_assoc.dataset, action.action_arguments['newtype'])
+                app.datatypes_registry.change_datatype(dataset_assoc.dataset, action.action_arguments['newtype'])
 
     @classmethod
     def get_short_str(cls, pja):
@@ -195,7 +195,7 @@ class HideDatasetAction(DefaultJobAction):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
-            if dataset_assoc.dataset.state != dataset_assoc.dataset.states.ERROR and ( action.output_name == '' or dataset_assoc.name == action.output_name ):
+            if dataset_assoc.dataset.state != dataset_assoc.dataset.states.ERROR and (action.output_name == '' or dataset_assoc.name == action.output_name):
                 dataset_assoc.dataset.visible = False
 
     @classmethod
@@ -248,7 +248,7 @@ class SetMetadataAction(DefaultJobAction):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for data in job.output_datasets:
-            data.set_metadata( action.action_arguments['newtype'] )
+            data.set_metadata(action.action_arguments['newtype'])
 
 
 class DeleteIntermediatesAction(DefaultJobAction):
@@ -336,7 +336,7 @@ class TagDatasetAction(DefaultJobAction):
             if tags:
                 for dataset_assoc in job.output_datasets:
                     if action.output_name == '' or dataset_assoc.name == action.output_name:
-                        cls._execute( app, job.user, dataset_assoc.dataset, tags)
+                        cls._execute(app, job.user, dataset_assoc.dataset, tags)
             sa_session.flush()
 
     @classmethod
@@ -346,10 +346,10 @@ class TagDatasetAction(DefaultJobAction):
     @classmethod
     def get_short_str(cls, pja):
         if pja.action_arguments and pja.action_arguments.get('tags', ''):
-            return "%s tag(s) '%s' %s '%s'." % ( cls.action,
-                                                 escape(pja.action_arguments['tags']),
-                                                 cls.direction,
-                                                 escape(pja.output_name))
+            return "%s tag(s) '%s' %s '%s'." % (cls.action,
+                                                escape(pja.action_arguments['tags']),
+                                                cls.direction,
+                                                escape(pja.output_name))
         else:
             return "%s Tag action used without a tag specified.  No tag will be added." % cls.action
 
@@ -367,15 +367,14 @@ class RemoveTagDatasetAction(TagDatasetAction):
 
 class ActionBox(object):
 
-    actions = { "RenameDatasetAction": RenameDatasetAction,
-                "HideDatasetAction": HideDatasetAction,
-                "ChangeDatatypeAction": ChangeDatatypeAction,
-                "ColumnSetAction": ColumnSetAction,
-                "EmailAction": EmailAction,
-                "DeleteIntermediatesAction": DeleteIntermediatesAction,
-                "TagDatasetAction": TagDatasetAction,
-                "RemoveTagDatasetAction": RemoveTagDatasetAction,
-                }
+    actions = {"RenameDatasetAction": RenameDatasetAction,
+               "HideDatasetAction": HideDatasetAction,
+               "ChangeDatatypeAction": ChangeDatatypeAction,
+               "ColumnSetAction": ColumnSetAction,
+               "EmailAction": EmailAction,
+               "DeleteIntermediatesAction": DeleteIntermediatesAction,
+               "TagDatasetAction": TagDatasetAction,
+               "RemoveTagDatasetAction": RemoveTagDatasetAction}
     public_actions = ['RenameDatasetAction', 'ChangeDatatypeAction',
                       'ColumnSetAction', 'EmailAction',
                       'DeleteIntermediatesAction', 'TagDatasetAction',

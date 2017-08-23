@@ -34,14 +34,14 @@ class InteractiveEnvironmentRequest(object):
 
         self.attr = Bunch()
         self.attr.viz_id = plugin.name
-        self.attr.history_id = trans.security.encode_id( trans.history.id )
+        self.attr.history_id = trans.security.encode_id(trans.history.id)
         self.attr.galaxy_config = trans.app.config
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
         self.attr.root = web.url_for("/")
         self.attr.app_root = self.attr.root + "plugins/interactive_environments/" + self.attr.viz_id + "/static/"
         self.attr.import_volume = True
 
-        plugin_path = os.path.abspath( plugin.path )
+        plugin_path = os.path.abspath(plugin.path)
 
         # Store our template and configuration path
         self.attr.our_config_dir = os.path.join(plugin_path, "config")
@@ -62,14 +62,14 @@ class InteractiveEnvironmentRequest(object):
         self.notebook_pw = self.generate_password(length=24)
 
         ie_parent_temp_dir = self.attr.viz_config.get("docker", "docker_galaxy_temp_dir") or None
-        self.temp_dir = os.path.abspath( tempfile.mkdtemp( dir=ie_parent_temp_dir ) )
+        self.temp_dir = os.path.abspath(tempfile.mkdtemp(dir=ie_parent_temp_dir))
 
         if self.attr.viz_config.getboolean("docker", "wx_tempdir"):
             # Ensure permissions are set
             try:
-                os.chmod( self.temp_dir, os.stat(self.temp_dir).st_mode | stat.S_IXOTH )
+                os.chmod(self.temp_dir, os.stat(self.temp_dir).st_mode | stat.S_IXOTH)
             except Exception:
-                log.error( "Could not change permissions of tmpdir %s" % self.temp_dir )
+                log.error("Could not change permissions of tmpdir %s" % self.temp_dir)
                 # continue anyway
 
         # This duplicates the logic in the proxy manager
@@ -133,10 +133,10 @@ class InteractiveEnvironmentRequest(object):
             'docker_connect_port': None,
         }
         viz_config = configparser.SafeConfigParser(default_dict)
-        conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
-        if not os.path.exists( conf_path ):
+        conf_path = os.path.join(self.attr.our_config_dir, self.attr.viz_id + ".ini")
+        if not os.path.exists(conf_path):
             conf_path = "%s.sample" % conf_path
-        viz_config.read( conf_path )
+        viz_config.read(conf_path)
         self.attr.viz_config = viz_config
 
         def _boolean_option(option, default=False):
@@ -177,7 +177,7 @@ class InteractiveEnvironmentRequest(object):
         """
         trans = self.trans
         request = trans.request
-        api_key = api_keys.ApiKeyManager( trans.app ).get_or_create_api_key( trans.user )
+        api_key = api_keys.ApiKeyManager(trans.app).get_or_create_api_key(trans.user)
         conf_file = {
             'history_id': self.attr.history_id,
             'api_key': api_key,
@@ -247,12 +247,15 @@ class InteractiveEnvironmentRequest(object):
     def volume(self, host_path, container_path, **kwds):
         return DockerVolume(host_path, container_path, **kwds)
 
-    def _get_env_for_run(self, env_override=None):
+    def _get_env_for_run(self, env_override=None, env_keep_case=None):
         if env_override is None:
             env_override = {}
         conf = self.get_conf_dict()
         conf.update(env_override)
-        return dict((key.upper(), item) for key, item in conf.items())
+        if env_keep_case:
+            return dict([(key, item) for key, item in conf.items()])
+
+        return dict([(key.upper(), item) for key, item in conf.items()])
 
     def _get_import_volume_for_run(self):
         if self.use_volumes and self.attr.import_volume:
@@ -262,13 +265,13 @@ class InteractiveEnvironmentRequest(object):
     def _get_name_for_run(self):
         return CONTAINER_NAME_PREFIX + uuid.uuid4().hex
 
-    def docker_cmd(self, image, env_override=None, volumes=None):
+    def docker_cmd(self, image, env_override=None, env_keep_case=None, volumes=None):
         """
             Generate and return the docker command to execute
         """
         if volumes is None:
             volumes = []
-        env = self._get_env_for_run(env_override)
+        env = self._get_env_for_run(env_override, env_keep_case)
         import_volume_def = self._get_import_volume_for_run()
         env_str = ' '.join('-e "%s=%s"' % (key, item) for key, item in env.items())
         volume_str = ' '.join('-v "%s"' % volume for volume in volumes) if self.use_volumes else ''
@@ -306,7 +309,7 @@ class InteractiveEnvironmentRequest(object):
         else:
             return True
 
-    def container_run_args(self, image, env_override=None, volumes=None):
+    def container_run_args(self, image, env_override=None, env_keep_case=None, volumes=None):
         if volumes is None:
             volumes = []
         import_volume_def = self._get_import_volume_for_run()
@@ -314,7 +317,7 @@ class InteractiveEnvironmentRequest(object):
             volumes.append(import_volume_def)
         args = {
             'image': image,
-            'environment': self._get_env_for_run(env_override),
+            'environment': self._get_env_for_run(env_override, env_keep_case),
             'volumes': volumes,
             'name': self._get_name_for_run(),
             'detach': True,
@@ -360,28 +363,28 @@ class InteractiveEnvironmentRequest(object):
             port_mapping = port_mappings[0]
         return port_mapping
 
-    def _launch_legacy(self, image, env_override, volumes):
+    def _launch_legacy(self, image, env_override, env_keep_case, volumes):
         """Legacy launch method for use when the container interface is not enabled
         """
-        raw_cmd = self.docker_cmd(image, env_override=env_override, volumes=volumes)
+        raw_cmd = self.docker_cmd(image, env_override=env_override, env_keep_case=env_keep_case, volumes=volumes)
 
         log.info("Starting docker container for IE {0} with command [{1}]".format(
             self.attr.viz_id,
             raw_cmd
         ))
-        p = Popen( raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+        p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
-            log.error( "%s\n%s" % (stdout, stderr) )
+            log.error("%s\n%s" % (stdout, stderr))
             return None
         else:
             container_id = stdout.strip()
-            log.debug( "Container id: %s" % container_id)
+            log.debug("Container id: %s" % container_id)
             inspect_data = self.inspect_container(container_id)
             port_mappings = self.get_container_port_mapping(inspect_data)
             self.attr.docker_hostname = self.get_container_host(inspect_data)
             host_port = self._find_port_mapping(port_mappings)[-1]
-            log.debug( "Container host/port: %s:%s", self.attr.docker_hostname, host_port )
+            log.debug("Container host/port: %s:%s", self.attr.docker_hostname, host_port)
 
             # Now we configure our proxy_requst object and we manually specify
             # the port to map to and ensure the proxy is available.
@@ -394,7 +397,7 @@ class InteractiveEnvironmentRequest(object):
                 container_ids=[container_id],
             )
             # These variables then become available for use in templating URLs
-            self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
+            self.attr.proxy_url = self.attr.proxy_request['proxy_url']
             # Commented out because it needs to be documented and visible that
             # this variable was moved here. Usually would remove commented
             # code, but again, needs to be clear where this went. Remove at a
@@ -404,10 +407,10 @@ class InteractiveEnvironmentRequest(object):
             # go through the proxy we ship.
             # self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
 
-    def _launch_container_interface(self, image, env_override, volumes):
+    def _launch_container_interface(self, image, env_override, env_keep_case, volumes):
         """Launch method for use when the container interface is enabled
         """
-        run_args = self.container_run_args(image, env_override, volumes)
+        run_args = self.container_run_args(image, env_override, env_keep_case, volumes)
         container = self.attr.container_interface.run_in_container(None, **run_args)
         container_port = self._find_port_mapping(container.ports)
         log.debug("Container '%s' accessible at: %s:%s", container.id, container_port.hostaddr, container_port.hostport)
@@ -420,9 +423,9 @@ class InteractiveEnvironmentRequest(object):
             container_ids=[container.id],
             container_interface=self.attr.container_interface.key
         )
-        self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
+        self.attr.proxy_url = self.attr.proxy_request['proxy_url']
 
-    def launch(self, image=None, additional_ids=None, env_override=None, volumes=None):
+    def launch(self, image=None, additional_ids=None, env_override=None, volumes=None, env_keep_case=None):
         """Launch a docker image.
 
         :type image: str
@@ -437,6 +440,9 @@ class InteractiveEnvironmentRequest(object):
 
         :type env_override: dict
         :param env_override: dictionary of environment variables to add.
+
+        :type env_keep_case: bool
+        :param env_keep_case: if True, don't uppercase value of env_override
 
         :type volumes: list of galaxy.tools.deps.docker_util.DockerVolume
         :param volumes: dictionary of docker volume mounts
@@ -461,9 +467,9 @@ class InteractiveEnvironmentRequest(object):
             volumes += self._idsToVolumes(additional_ids)
 
         if self.attr.container_interface is None:
-            self._launch_legacy(image, env_override, volumes)
+            self._launch_legacy(image, env_override, env_keep_case, volumes)
         else:
-            self._launch_container_interface(image, env_override, volumes)
+            self._launch_container_interface(image, env_override, env_keep_case, volumes)
 
     def inspect_container(self, container_id):
         """Runs docker inspect on a container and returns json response as python dictionary inspect_data.
@@ -483,7 +489,7 @@ class InteractiveEnvironmentRequest(object):
         p = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
-            log.error( "%s\n%s" % (stdout, stderr) )
+            log.error("%s\n%s" % (stdout, stderr))
             return None
 
         inspect_data = json.loads(stdout)

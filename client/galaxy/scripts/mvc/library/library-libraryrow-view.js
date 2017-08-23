@@ -64,7 +64,7 @@ var LibraryRowView = Backbone.View.extend({
    * the filling of the row template of given library.
    */
   prepareButtons: function(library){
-    vis_config = this.element_visibility_config;
+    var vis_config = this.element_visibility_config;
 
     if (this.edit_mode === false){
       vis_config.save_library_btn = false;

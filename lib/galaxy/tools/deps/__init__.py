@@ -23,13 +23,13 @@ from .resolvers.conda import CondaDependencyResolver
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 CONFIG_VAL_NOT_FOUND = object()
 
 
-def build_dependency_manager( config ):
-    if getattr( config, "use_tool_dependencies", False ):
+def build_dependency_manager(config):
+    if getattr(config, "use_tool_dependencies", False):
         dependency_manager_kwds = {
             'default_base_path': config.tool_dependency_dir,
             'conf_file': config.dependency_resolvers_config_file,
@@ -38,27 +38,27 @@ def build_dependency_manager( config ):
         if getattr(config, "use_cached_dependency_manager", False):
             dependency_manager = CachedDependencyManager(**dependency_manager_kwds)
         else:
-            dependency_manager = DependencyManager( **dependency_manager_kwds )
+            dependency_manager = DependencyManager(**dependency_manager_kwds)
     else:
         dependency_manager = NullDependencyManager()
 
     return dependency_manager
 
 
-class NullDependencyManager( object ):
+class NullDependencyManager(object):
     dependency_resolvers = []
 
     def uses_tool_shed_dependencies(self):
         return False
 
-    def dependency_shell_commands( self, requirements, **kwds ):
+    def dependency_shell_commands(self, requirements, **kwds):
         return []
 
-    def find_dep( self, name, version=None, type='package', **kwds ):
+    def find_dep(self, name, version=None, type='package', **kwds):
         return NullDependency(version=version, name=name)
 
 
-class DependencyManager( object ):
+class DependencyManager(object):
     """
     A DependencyManager attempts to resolve named and versioned dependencies by
     searching for them under a list of directories. Directories should be
@@ -69,19 +69,20 @@ class DependencyManager( object ):
     and should each contain a file 'env.sh' which can be sourced to make the
     dependency available in the current shell environment.
     """
-    def __init__( self, default_base_path, conf_file=None, app_config={} ):
+
+    def __init__(self, default_base_path, conf_file=None, app_config={}):
         """
         Create a new dependency manager looking for packages under the paths listed
         in `base_paths`.  The default base path is app.config.tool_dependency_dir.
         """
-        if not os.path.exists( default_base_path ):
-            log.warning( "Path '%s' does not exist, ignoring", default_base_path )
-        if not os.path.isdir( default_base_path ):
-            log.warning( "Path '%s' is not directory, ignoring", default_base_path )
+        if not os.path.exists(default_base_path):
+            log.warning("Path '%s' does not exist, ignoring", default_base_path)
+        if not os.path.isdir(default_base_path):
+            log.warning("Path '%s' is not directory, ignoring", default_base_path)
         self.__app_config = app_config
-        self.default_base_path = os.path.abspath( default_base_path )
+        self.default_base_path = os.path.abspath(default_base_path)
         self.resolver_classes = self.__resolvers_dict()
-        self.dependency_resolvers = self.__build_dependency_resolvers( conf_file )
+        self.dependency_resolvers = self.__build_dependency_resolvers(conf_file)
 
     def get_resolver_option(self, resolver, key, explicit_resolver_options={}):
         """Look in resolver-specific settings for option and then fallback to global settings.
@@ -107,7 +108,7 @@ class DependencyManager( object ):
             value = default
         return value
 
-    def dependency_shell_commands( self, requirements, **kwds ):
+    def dependency_shell_commands(self, requirements, **kwds):
         requirement_to_dependency = self.requirements_to_dependencies(requirements, **kwds)
         return [dependency.shell_commands(requirement) for requirement, dependency in requirement_to_dependency.items()]
 
@@ -160,7 +161,7 @@ class DependencyManager( object ):
                 if requirement in requirement_to_dependency:
                     continue
 
-                dependency = resolver.resolve( requirement, **kwds )
+                dependency = resolver.resolve(requirement, **kwds)
                 if require_exact and not dependency.exact:
                     continue
 
@@ -174,9 +175,9 @@ class DependencyManager( object ):
         return requirement_to_dependency
 
     def uses_tool_shed_dependencies(self):
-        return any( map( lambda r: isinstance( r, ToolShedPackageDependencyResolver ), self.dependency_resolvers ) )
+        return any(map(lambda r: isinstance(r, ToolShedPackageDependencyResolver), self.dependency_resolvers))
 
-    def find_dep( self, name, version=None, type='package', **kwds ):
+    def find_dep(self, name, version=None, type='package', **kwds):
         log.debug('Find dependency %s version %s' % (name, version))
         requirements = ToolRequirements([ToolRequirement(name=name, version=version, type=type)])
         dep_dict = self._requirements_to_dependencies_dict(requirements, **kwds)
@@ -185,16 +186,16 @@ class DependencyManager( object ):
         else:
             return NullDependency(name=name, version=version)
 
-    def __build_dependency_resolvers( self, conf_file ):
+    def __build_dependency_resolvers(self, conf_file):
         if not conf_file:
             return self.__default_dependency_resolvers()
-        if not os.path.exists( conf_file ):
-            log.debug( "Unable to find config file '%s'", conf_file)
+        if not os.path.exists(conf_file):
+            log.debug("Unable to find config file '%s'", conf_file)
             return self.__default_dependency_resolvers()
-        plugin_source = plugin_config.plugin_source_from_path( conf_file )
-        return self.__parse_resolver_conf_xml( plugin_source )
+        plugin_source = plugin_config.plugin_source_from_path(conf_file)
+        return self.__parse_resolver_conf_xml(plugin_source)
 
-    def __default_dependency_resolvers( self ):
+    def __default_dependency_resolvers(self):
         return [
             ToolShedPackageDependencyResolver(self),
             GalaxyPackageDependencyResolver(self),
@@ -206,12 +207,12 @@ class DependencyManager( object ):
     def __parse_resolver_conf_xml(self, plugin_source):
         """
         """
-        extra_kwds = dict( dependency_manager=self )
-        return plugin_config.load_plugins( self.resolver_classes, plugin_source, extra_kwds )
+        extra_kwds = dict(dependency_manager=self)
+        return plugin_config.load_plugins(self.resolver_classes, plugin_source, extra_kwds)
 
-    def __resolvers_dict( self ):
+    def __resolvers_dict(self):
         import galaxy.tools.deps.resolvers
-        return plugin_config.plugins_dict( galaxy.tools.deps.resolvers, 'resolver_type' )
+        return plugin_config.plugins_dict(galaxy.tools.deps.resolvers, 'resolver_type')
 
 
 class CachedDependencyManager(DependencyManager):
@@ -235,7 +236,7 @@ class CachedDependencyManager(DependencyManager):
                 return
         [dep.build_cache(hashed_dependencies_dir) for dep in cacheable_dependencies]
 
-    def dependency_shell_commands( self, requirements, **kwds ):
+    def dependency_shell_commands(self, requirements, **kwds):
         """
         Runs a set of requirements through the dependency resolvers and returns
         a list of commands required to activate the dependencies. If dependencies

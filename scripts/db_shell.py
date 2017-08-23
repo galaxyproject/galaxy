@@ -33,8 +33,8 @@ from galaxy.model.orm.scripts import get_config
 if sys.version_info > (3,):
     long = int
 
-db_url = get_config( sys.argv )['db_url']
-sa_session = init( '/tmp/', db_url ).context
+db_url = get_config(sys.argv)['db_url']
+sa_session = init('/tmp/', db_url).context
 
 
 # Helper function for debugging sqlalchemy queries...
@@ -50,7 +50,7 @@ def printquery(statement, bind=None):
     if isinstance(statement, sqlalchemy.orm.Query):
         if bind is None:
             bind = statement.session.get_bind(
-                statement._mapper_zero_or_none() )
+                statement._mapper_zero_or_none())
         statement = statement.statement
     elif bind is None:
         bind = statement.bind

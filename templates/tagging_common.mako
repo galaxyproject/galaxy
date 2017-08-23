@@ -132,7 +132,14 @@
     %>
 
     ## Build HTML.
-    ${self.render_tagging_element_html(elt_id=elt_id, tags=item_tags, editable=editable, use_toggle_link=use_toggle_link, input_size=input_size, in_form=in_form, render_add_tag_button=render_add_tag_button)}
+    <%
+    if len(item_tags) > 3:
+        # If item has more than 3 tags show a link to see tags instead of displaying them all
+        use_toggle_link = True
+    else:
+        use_toggle_link = False
+    %>
+    ${self.render_tagging_element_html(elt_id=elt_id, tags=item_tags, editable=editable, use_toggle_link=use_toggle_link,  input_size=input_size, in_form=in_form, render_add_tag_button=render_add_tag_button)}
 
     ## Build script that augments tags using progressive javascript.
     <script type="text/javascript">

@@ -31,23 +31,23 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         cls._test_driver.tear_down()
         cls._app_available = False
 
-    def test_dependency_before_install( self ):
+    def test_dependency_before_install(self):
         """
         Test that dependency is not installed (response['dependency_type'] == 'null').
         """
         data = GNUPLOT
-        create_response = self._get( "dependency_resolvers/dependency", data=data, admin=True )
-        self._assert_status_code_is( create_response, 200 )
+        create_response = self._get("dependency_resolvers/dependency", data=data, admin=True)
+        self._assert_status_code_is(create_response, 200)
         response = create_response.json()
         assert response['dependency_type'] is None and response['exact']
 
-    def test_dependency_install( self ):
+    def test_dependency_install(self):
         """
         Test installation of GNUPLOT dependency.
         """
         data = GNUPLOT
-        create_response = self._post( "dependency_resolvers/dependency", data=data, admin=True )
-        self._assert_status_code_is( create_response, 200 )
+        create_response = self._post("dependency_resolvers/dependency", data=data, admin=True)
+        self._assert_status_code_is(create_response, 200)
         response = create_response.json()
         self._assert_dependency_type(response)
 
@@ -63,18 +63,18 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         response = create_response.json()
         self._assert_dependency_type(response, exact=False)
 
-    def test_dependency_status_installed_exact( self ):
+    def test_dependency_status_installed_exact(self):
         """
         GET request to dependency_resolvers/dependency with GNUPLOT dependency.
         Should be installed through conda (response['dependency_type'] == 'conda').
         """
         data = GNUPLOT
-        create_response = self._get( "dependency_resolvers/dependency", data=data, admin=True )
-        self._assert_status_code_is( create_response, 200 )
+        create_response = self._get("dependency_resolvers/dependency", data=data, admin=True)
+        self._assert_status_code_is(create_response, 200)
         response = create_response.json()
         self._assert_dependency_type(response)
 
-    def test_legacy_r_mapping( self ):
+    def test_legacy_r_mapping(self):
         """
         """
         tool_id = "legacy_R"
@@ -83,17 +83,17 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         endpoint = "tools/%s/install_dependencies" % tool_id
         data = {'id': tool_id}
         create_response = self._post(endpoint, data=data, admin=True)
-        self._assert_status_code_is( create_response, 200 )
+        self._assert_status_code_is(create_response, 200)
         payload = dataset_populator.run_tool_payload(
             tool_id=tool_id,
             inputs={},
             history_id=history_id,
         )
-        create_response = self._post( "tools", data=payload )
-        self._assert_status_code_is( create_response, 200 )
-        dataset_populator.wait_for_history( history_id, assert_ok=True )
+        create_response = self._post("tools", data=payload)
+        self._assert_status_code_is(create_response, 200)
+        dataset_populator.wait_for_history(history_id, assert_ok=True)
 
-    def test_dependency_status_installed_not_exact( self ):
+    def test_dependency_status_installed_not_exact(self):
         """
         GET request to dependency_resolvers/dependency with GNUPLOT dependency.
         Should be installed through conda (response['dependency_type'] == 'conda'),
@@ -101,29 +101,29 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         """
         data = GNUPLOT.copy()
         data['version'] = '4.9999'
-        create_response = self._get( "dependency_resolvers/dependency", data=data, admin=True )
-        self._assert_status_code_is( create_response, 200 )
+        create_response = self._get("dependency_resolvers/dependency", data=data, admin=True)
+        self._assert_status_code_is(create_response, 200)
         response = create_response.json()
         self._assert_dependency_type(response, exact=False)
 
-    def test_conda_install_through_tools_api( self ):
+    def test_conda_install_through_tools_api(self):
         tool_id = 'mulled_example_multi_1'
         endpoint = "tools/%s/install_dependencies" % tool_id
         data = {'id': tool_id}
         create_response = self._post(endpoint, data=data, admin=True)
-        self._assert_status_code_is( create_response, 200 )
+        self._assert_status_code_is(create_response, 200)
         response = create_response.json()
         assert any([True for d in response if d['dependency_type'] == 'conda'])
         endpoint = "tools/%s/build_dependency_cache" % tool_id
         create_response = self._post(endpoint, data=data, admin=True)
-        self._assert_status_code_is( create_response, 200 )
+        self._assert_status_code_is(create_response, 200)
 
     def test_uninstall_through_tools_api(self):
         tool_id = 'mulled_example_multi_1'
         endpoint = "tools/%s/dependencies" % tool_id
         data = {'id': tool_id}
         create_response = self._post(endpoint, data=data, admin=True)
-        self._assert_status_code_is( create_response, 200 )
+        self._assert_status_code_is(create_response, 200)
         response = create_response.json()
         assert any([True for d in response if d['dependency_type'] == 'conda'])
         endpoint = "tools/%s/dependencies" % tool_id
@@ -132,7 +132,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         response = create_response.json()
         assert not [True for d in response if d['dependency_type'] == 'conda']
 
-    def test_conda_clean( self ):
+    def test_conda_clean(self):
         endpoint = 'dependency_resolvers/clean'
         create_response = self._post(endpoint, data={}, admin=True)
         self._assert_status_code_is(create_response, 200)

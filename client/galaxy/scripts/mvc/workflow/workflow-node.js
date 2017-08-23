@@ -223,11 +223,15 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             $.each( data.data_outputs, function( i, output ) {
                 if (!nodeView.outputViews[output.name]) {
                     nodeView.addDataOutput(output);  // add data output if it does not yet exist
+                } else {
+                    // the output already exists, but the output formats may have changed.
+                    // Therefore we update the datatypes and destroy invalid connections.
+                    node.output_terminals[ output.name ].datatypes = output.extensions;
+                    node.output_terminals[ output.name ].destroyInvalidConnections();
                 }
             });
             this.tool_state = data.tool_state;
             this.config_form = data.config_form;
-            this.force_refresh = this.config_form && this.tool_version !== this.config_form.version;
             this.tool_version = this.config_form && this.config_form.version;
             this.errors = data.errors;
             this.annotation = data['annotation'];
@@ -277,7 +281,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.app.workflow.node_changed( this );
         },
         markChanged: function() {
-            this.app.workflow.node_changed( this, this.force_refresh );
+            this.app.workflow.node_changed( this );
         }
     });
     return Node;

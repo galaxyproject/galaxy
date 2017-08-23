@@ -19,7 +19,7 @@ REVISION_KEYS = [
 ]
 
 
-class VisualizationsApiTestCase( api.ApiTestCase ):
+class VisualizationsApiTestCase(api.ApiTestCase):
 
     def test_index_and_show(self):
         self._create_viz()  # to ensure on exists to index

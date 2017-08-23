@@ -10,16 +10,16 @@ from galaxy.web import (
 )
 from galaxy.web.base.controller import BaseAPIController
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
-class ToursController( BaseAPIController ):
+class ToursController(BaseAPIController):
 
-    def __init__( self, app ):
-        super( ToursController, self ).__init__( app )
+    def __init__(self, app):
+        super(ToursController, self).__init__(app)
 
     @expose_api_anonymous_and_sessionless
-    def index( self, trans, **kwd ):
+    def index(self, trans, **kwd):
         """
         *GET /api/tours/
         Displays available tours
@@ -27,7 +27,7 @@ class ToursController( BaseAPIController ):
         return self.app.tour_registry.tours_by_id_with_description()
 
     @expose_api_anonymous_and_sessionless
-    def show( self, trans, tour_id, **kwd ):
+    def show(self, trans, tour_id, **kwd):
         """
         load_config( self, trans, Tour_config_file, **kwd )
         * GET /api/tours/{tour_id}:
@@ -40,7 +40,7 @@ class ToursController( BaseAPIController ):
 
     @expose_api
     @require_admin
-    def update_tour( self, trans, tour_id, **kwd ):
+    def update_tour(self, trans, tour_id, **kwd):
         """
         This simply reloads tours right now.  It's a quick hack.
 

@@ -24,7 +24,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         },
 
         bindEvents: function() {
-            var that = this;
+            var that = this, repository_id;
             $('.show_wf_repo').on('click', function() {
                 var tool_ids = $(this).attr('data-toolids');
                 var toolshed = $(this).attr('data-shed');

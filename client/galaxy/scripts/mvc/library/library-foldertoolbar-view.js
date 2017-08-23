@@ -161,7 +161,8 @@ var FolderToolbarView = Backbone.View.extend({
       var folderDetails = this.serialize_new_folder();
       if (this.validate_new_folder(folderDetails)){
           var folder = new mod_library_model.FolderAsModel();
-          url_items = Backbone.history.fragment.split('/');
+          var url_items = Backbone.history.fragment.split('/'),
+              current_folder_id;
           if(url_items.indexOf('page') > -1){
             current_folder_id = url_items[url_items.length-3];
           }else {
@@ -317,7 +318,7 @@ var FolderToolbarView = Backbone.View.extend({
   updateProgress: function(){
       this.progress += this.progressStep;
       $( '.progress-bar-import' ).width( Math.round( this.progress ) + '%' );
-      txt_representation = Math.round( this.progress ) + '% Complete';
+      var txt_representation = Math.round( this.progress ) + '% Complete';
       $( '.completion_span' ).text( txt_representation );
   },
 
@@ -431,7 +432,7 @@ var FolderToolbarView = Backbone.View.extend({
         url      :  Galaxy.root + "api/datatypes?extension_only=False",
         success  :  function( datatypes ) {
                         that.list_extensions = [];
-                        for (key in datatypes) {
+                        for (var key in datatypes) {
                             that.list_extensions.push({
                                 id              : datatypes[key].extension,
                                 text            : datatypes[key].extension,
@@ -450,7 +451,7 @@ var FolderToolbarView = Backbone.View.extend({
         url     :    Galaxy.root + "api/genomes",
         success : function( genomes ) {
                     that.list_genomes = [];
-                    for ( key in genomes ) {
+                    for (var key in genomes ) {
                         that.list_genomes.push({
                             id      : genomes[key][1],
                             text    : genomes[key][0]
@@ -615,7 +616,7 @@ var FolderToolbarView = Backbone.View.extend({
       this.modal.disableButton('Import');
       paths = paths.split('\n');
       for (var i = paths.length - 1; i >= 0; i--) {
-        trimmed = paths[i].trim();
+        var trimmed = paths[i].trim();
         if (trimmed.length!==0){
           valid_paths.push(trimmed);
         }
@@ -674,7 +675,7 @@ var FolderToolbarView = Backbone.View.extend({
   importFromJstreePath: function ( that, options ){
     var all_nodes = $( '#jstree_browser' ).jstree().get_selected( true );
     // remove the disabled elements that could have been trigerred with the 'select all'
-    selected_nodes = _.filter(all_nodes, function(node){ return node.state.disabled == false; })
+    var selected_nodes = _.filter(all_nodes, function(node){ return node.state.disabled == false; })
     var preserve_dirs = this.modal.$el.find( '.preserve-checkbox' ).is( ':checked' );
     var link_data = this.modal.$el.find( '.link-checkbox' ).is( ':checked' );
     var file_type = this.select_extension.value();
@@ -752,7 +753,7 @@ var FolderToolbarView = Backbone.View.extend({
         }
       });
       for ( var i = history_item_ids.length - 1; i >= 0; i-- ) {
-        history_item_id = history_item_ids[i];
+        var history_item_id = history_item_ids[i];
         var folder_item = new mod_library_model.Item();
         folder_item.url = Galaxy.root + 'api/folders/' + this.options.id + '/contents';
         if (history_item_types[i] === 'collection') {

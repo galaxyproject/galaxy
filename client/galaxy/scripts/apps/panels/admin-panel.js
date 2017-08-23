@@ -54,7 +54,8 @@ var AdminPanel = Backbone.View.extend({
                 url     : 'admin/package_tool'
             },{
                 title   : 'Tool lineage',
-                url     : 'admin/tool_versions'
+                url     : 'admin/tool_versions',
+                target  : '__use_router__'
             },{
                 title   : 'Reload a tool\'s configuration',
                 url     : 'admin/reload_tool'
@@ -79,7 +80,8 @@ var AdminPanel = Backbone.View.extend({
                 target  : '__use_router__'
             },{
                 title   : 'Groups',
-                url     : 'admin/groups'
+                url     : 'admin/groups',
+                target  : '__use_router__'
             },{
                 title   : 'Roles',
                 url     : 'admin/roles',
@@ -97,6 +99,7 @@ var AdminPanel = Backbone.View.extend({
             items : [ {
                 title   : 'Quotas',
                 url     : 'admin/quotas',
+                target  : '__use_router__',
                 enabled : self.config.enable_quotas
             },{
                 title   : 'Data libraries',

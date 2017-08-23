@@ -118,7 +118,7 @@ def parse_arguments():
         cp = configparser.ConfigParser()
         cp.readfp(open(args.config))
         uri = cp.get('app:main', 'database_connection')
-        names = { 'database': 'dbname', 'username': 'user' }
+        names = {'database': 'dbname', 'username': 'user'}
         args.connect_args = url.make_url(uri).translate_connect_args(**names)
     else:
         args.connect_args = {}
@@ -223,9 +223,9 @@ def query(tool_id=None, user=None, like=None, source='metrics',
     print('Query returned %d rows' % cur.rowcount)
 
     if source == 'metrics':
-        times = numpy.array([ r[0] for r in cur if r[0] ])
+        times = numpy.array([r[0] for r in cur if r[0]])
     elif source == 'history':
-        times = numpy.array([ r[0].total_seconds() for r in cur if r[0] ])
+        times = numpy.array([r[0].total_seconds() for r in cur if r[0]])
 
     print('Collected %d times' % times.size)
 
