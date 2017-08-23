@@ -58,11 +58,11 @@ psutil==4.1.0
 pulsar-galaxy-lib==0.7.0.dev5
 
 # sqlalchemy-migrate and dependencies
-sqlalchemy-migrate==0.10.0
+sqlalchemy-migrate==0.11.0
 decorator==4.0.2
 Tempita==0.5.3dev
 sqlparse==0.1.16
-pbr==1.8.0
+pbr==2.0.0
 
 # svgwrite and dependencies
 svgwrite==1.1.6
