@@ -25,6 +25,7 @@ log = logging.getLogger(__name__)
 DEFAULT_LMOD_PATH = getenv('LMOD_CMD')
 DEFAULT_SETTARG_PATH = getenv('LMOD_SETTARG_CMD')
 DEFAULT_MODULEPATH = getenv('MODULEPATH')
+DEFAULT_MAPPING_FILE = 'config/lmod_modules_mapping.yml'
 INVALID_LMOD_PATH_MSG = "The following LMOD executable could not be found: %s. Either your LMOD Dependency Resolver is misconfigured or LMOD is improperly installed on your system !"
 EMPTY_MODULEPATH_MSG = "No valid LMOD MODULEPATH defined ! Either your LMOD Dependency Resolver is misconfigured or LMOD is improperly installed on your system !"
 
@@ -35,12 +36,21 @@ class LmodDependencyResolver(DependencyResolver, MappableDependencyResolver):
     resolver_type = "lmod"
 
     def __init__(self, dependency_manager, **kwds):
+        # Mapping file management
+        self._set_default_mapping_file(kwds)
         self._setup_mapping(dependency_manager, **kwds)
+
+        # Other attributes
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         self.lmodexec = kwds.get('lmodexec', DEFAULT_LMOD_PATH)
         self.settargexec = kwds.get('settargexec', DEFAULT_SETTARG_PATH)
         self.modulepath = kwds.get('modulepath', DEFAULT_MODULEPATH)
         self.module_checker = AvailModuleChecker(self, self.modulepath)
+
+    def _set_default_mapping_file(self, resolver_attributes):
+        if not resolver_attributes.has_key('mapping_files'):
+            if exists(DEFAULT_MAPPING_FILE):
+                resolver_attributes['mapping_files'] = DEFAULT_MAPPING_FILE
 
     def resolve(self, requirement, **kwds):
         requirement = self._expand_mappings(requirement)
