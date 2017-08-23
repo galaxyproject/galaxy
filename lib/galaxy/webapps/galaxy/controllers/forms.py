@@ -156,13 +156,13 @@ class Forms(BaseUIController):
                     row = line.split(',')
                     if len(row) >= 6:
                         prefix = 'fields_%i|' % index
-                        payload['%s%s' % ( prefix, 'name' )] = '%i_imported_field' % (index + 1)
-                        payload['%s%s' % ( prefix, 'label' )] = row[0]
-                        payload['%s%s' % ( prefix, 'helptext' )] = row[1]
-                        payload['%s%s' % ( prefix, 'type' )] = row[2]
-                        payload['%s%s' % ( prefix, 'default' )] = row[3]
-                        payload['%s%s' % ( prefix, 'selectlist' )] = row[4].split(',')
-                        payload['%s%s' % ( prefix, 'required' )] = row[5].lower() == 'true'
+                        payload['%s%s' % (prefix, 'name')] = '%i_imported_field' % (index + 1)
+                        payload['%s%s' % (prefix, 'label')] = row[0]
+                        payload['%s%s' % (prefix, 'helptext')] = row[1]
+                        payload['%s%s' % (prefix, 'type')] = row[2]
+                        payload['%s%s' % (prefix, 'default')] = row[3]
+                        payload['%s%s' % (prefix, 'selectlist')] = row[4].split(',')
+                        payload['%s%s' % (prefix, 'required')] = row[5].lower() == 'true'
                     index = index + 1
             new_form, message = self.save_form_definition(trans, None, payload)
             if new_form is None:
@@ -182,33 +182,33 @@ class Forms(BaseUIController):
         if trans.request.method == 'GET':
             fd_types = trans.app.model.FormDefinition.types.items()
             fd_types.sort()
-            ff_types = [(t.__name__.replace( 'Field', ''), t.__name__) for t in trans.model.FormDefinition.supported_field_types]
+            ff_types = [(t.__name__.replace('Field', ''), t.__name__) for t in trans.model.FormDefinition.supported_field_types]
             field_cache = []
             field_inputs = [{
                 'name'    : 'name',
                 'label'   : 'Name',
                 'value'   : 'field_name',
                 'help'    : 'The field name must be unique for each field and must contain only alphanumeric characters and underscore.'
-            },{
+            }, {
                 'name'    : 'label',
                 'label'   : 'Label',
                 'value'   : 'Field label'
-            },{
+            }, {
                 'name'    : 'helptext',
                 'label'   : 'Help text'
-            },{
+            }, {
                 'name'    : 'type',
                 'label'   : 'Type',
                 'type'    : 'select',
                 'options' : ff_types
-            },{
+            }, {
                 'name'    : 'default',
                 'label'   : 'Default value'
-            },{
+            }, {
                 'name'    : 'selectlist',
                 'label'   : 'Options',
                 'help'    : '*Only for fields which allow multiple selections, provide comma-separated values.'
-            },{
+            }, {
                 'name'    : 'required',
                 'label'   : 'Required',
                 'type'    : 'boolean',
@@ -243,13 +243,13 @@ class Forms(BaseUIController):
                 for field_input in new_field:
                     field_value = field.get(field_input['name'])
                     if field_value:
-                        if isinstance( field_value, list ):
+                        if isinstance(field_value, list):
                             field_value = ','.join(field_value)
                         field_input['value'] = str(field_value)
                 field_cache.append(new_field)
             return form_dict
         else:
-            new_form, message = self.save_form_definition( trans, id, payload )
+            new_form, message = self.save_form_definition(trans, id, payload)
             if new_form is None:
                 return message_exception(trans, message)
             message = 'The form \'%s\' has been updated.' % payload.get('name')
@@ -270,7 +270,7 @@ class Forms(BaseUIController):
             if '%s%s' % (prefix, 'label') in payload:
                 field_attributes = ['name', 'label', 'helptext', 'required', 'type', 'selectlist', 'default']
                 field_dict = {attr: payload.get('%s%s' % (prefix, attr)) for attr in field_attributes}
-                field_dict['visible']=True
+                field_dict['visible'] = True
                 field_dict['required'] = field_dict['required'] == 'true'
                 if isinstance(field_dict['selectlist'], basestring):
                     field_dict['selectlist'] = field_dict['selectlist'].split(',')
@@ -349,9 +349,11 @@ class Forms(BaseUIController):
 
 # ---- Utility methods -------------------------------------------------------
 
+
 def message_exception(trans, message):
     trans.response.status = 400
     return {'err_msg': util.sanitize_text(message)}
+
 
 def get_form(trans, form_id):
     """Get a FormDefinition from the database by id."""
