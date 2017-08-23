@@ -27,17 +27,17 @@ except:
 _cp1252 = {
     unichr(128): unichr(8364),  # euro sign
     unichr(130): unichr(8218),  # single low-9 quotation mark
-    unichr(131): unichr( 402),  # latin small letter f with hook
+    unichr(131): unichr(402),  # latin small letter f with hook
     unichr(132): unichr(8222),  # double low-9 quotation mark
     unichr(133): unichr(8230),  # horizontal ellipsis
     unichr(134): unichr(8224),  # dagger
     unichr(135): unichr(8225),  # double dagger
-    unichr(136): unichr( 710),  # modifier letter circumflex accent
+    unichr(136): unichr(710),  # modifier letter circumflex accent
     unichr(137): unichr(8240),  # per mille sign
-    unichr(138): unichr( 352),  # latin capital letter s with caron
+    unichr(138): unichr(352),  # latin capital letter s with caron
     unichr(139): unichr(8249),  # single left-pointing angle quotation mark
-    unichr(140): unichr( 338),  # latin capital ligature oe
-    unichr(142): unichr( 381),  # latin capital letter z with caron
+    unichr(140): unichr(338),  # latin capital ligature oe
+    unichr(142): unichr(381),  # latin capital letter z with caron
     unichr(145): unichr(8216),  # left single quotation mark
     unichr(146): unichr(8217),  # right single quotation mark
     unichr(147): unichr(8220),  # left double quotation mark
@@ -45,13 +45,13 @@ _cp1252 = {
     unichr(149): unichr(8226),  # bullet
     unichr(150): unichr(8211),  # en dash
     unichr(151): unichr(8212),  # em dash
-    unichr(152): unichr( 732),  # small tilde
+    unichr(152): unichr(732),  # small tilde
     unichr(153): unichr(8482),  # trade mark sign
-    unichr(154): unichr( 353),  # latin small letter s with caron
+    unichr(154): unichr(353),  # latin small letter s with caron
     unichr(155): unichr(8250),  # single right-pointing angle quotation mark
-    unichr(156): unichr( 339),  # latin small ligature oe
-    unichr(158): unichr( 382),  # latin small letter z with caron
-    unichr(159): unichr( 376)}  # latin capital letter y with diaeresis
+    unichr(156): unichr(339),  # latin small ligature oe
+    unichr(158): unichr(382),  # latin small letter z with caron
+    unichr(159): unichr(376)}  # latin capital letter y with diaeresis
 
 
 class _BaseHTMLProcessor(sgmllib.SGMLParser):
@@ -316,9 +316,9 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
     svg_attr_map = None
     svg_elem_map = None
 
-    acceptable_svg_properties = [ 'fill', 'fill-opacity', 'fill-rule',
-                                  'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin',
-                                  'stroke-opacity']
+    acceptable_svg_properties = ['fill', 'fill-opacity', 'fill-rule',
+                                 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin',
+                                 'stroke-opacity']
 
     def reset(self):
         _BaseHTMLProcessor.reset(self)

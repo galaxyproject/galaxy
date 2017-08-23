@@ -18,6 +18,7 @@ return Backbone.View.extend({
 
     // Initialize
     initialize: function(grid_config) {
+        this.grid = new GridModel();
         this.dict_format = grid_config.dict_format;
         var self = this;
         window.add_tag_to_grid_filter = function( tag_name, tag_value ){
@@ -35,7 +36,7 @@ return Backbone.View.extend({
         if ( this.dict_format ) {
             this.setElement('<div/>');
             if ( grid_config.url_base && !grid_config.items ) {
-                var url_data = {};
+                var url_data = grid_config.url_data || {};
                 _.each(grid_config.filters, function(v, k) {
                     url_data['f-' + k] = v;
                 });
@@ -43,7 +44,7 @@ return Backbone.View.extend({
                     url     : grid_config.url_base + '?' + $.param( url_data ),
                     success : function( response ) {
                         response.embedded = grid_config.embedded;
-                        response.filters  = grid_config.filters;
+                        response.filters  = grid_config.filters || {};
                         self.init_grid( response );
                     }
                 });
@@ -77,8 +78,7 @@ return Backbone.View.extend({
 
     // Initialize
     init_grid: function(grid_config) {
-        // link grid model
-        this.grid = new GridModel(grid_config);
+        this.grid.set( grid_config );
 
         // get options
         var options = this.grid.attributes;
@@ -456,13 +456,18 @@ return Backbone.View.extend({
         });
 
         // execute operation
-        this.execute({
-            operation: operation_name,
-            id: item_ids,
-            confirmation_text: confirmation_text
-        });
-
-        // return
+        var options = {
+            operation           : operation_name,
+            id                  : item_ids,
+            confirmation_text   : confirmation_text
+        };
+        if ( operation.target == 'top' ) {
+            options = _.extend( options, {
+                href   : operation.href,
+                target : operation.target
+            });
+        }
+        this.execute( options );
         return true;
     },
 
@@ -542,7 +547,9 @@ return Backbone.View.extend({
             });
 
             // Do operation. If operation cannot be performed asynchronously, redirect to location.
-            if (this.grid.can_async_op(operation) || this.dict_format) {
+            if ( target == 'top' ) {
+                window.top.location = href + '?' + $.param( this.grid.get_url_data() );
+            } else if ( this.grid.can_async_op(operation) || this.dict_format ) {
                 this.update_grid();
             } else {
                 this.go_to(target, href);
@@ -576,7 +583,7 @@ return Backbone.View.extend({
         this.grid.set('async', false);
 
         // get slide status
-        advanced_search = this.$el.find('#advanced-search').is(':visible');
+        var advanced_search = this.$el.find('#advanced-search').is(':visible');
         this.grid.set('advanced_search', advanced_search);
 
         // get default url
@@ -625,6 +632,7 @@ return Backbone.View.extend({
                 // backup
                 var embedded = self.grid.get('embedded');
                 var insert = self.grid.get('insert');
+                var advanced_search = self.$el.find('#advanced-search').is(':visible');
 
                 // request new configuration
                 var json = self.dict_format ? response_text : $.parseJSON(response_text);
@@ -632,6 +640,7 @@ return Backbone.View.extend({
                 // update
                 json.embedded = embedded;
                 json.insert = insert;
+                json.advanced_search = advanced_search;
 
                 // Initialize new grid config
                 self.init_grid(json);

@@ -4,7 +4,7 @@ define([], function() {
         var shed_url = this.shed_url;
         var base_url = Galaxy.root + 'api/tool_shed/search';
         $.get(base_url, {term: request.term, tool_shed_url: shed_url}, function(data) {
-            result_list = that.shedParser(data);
+            var result_list = that.shedParser(data);
             response(result_list);
         });
 
@@ -16,7 +16,7 @@ define([], function() {
         $.each(hits, function(hit) {
             var record = hits[hit];
             var label = record.repository.name + ' by ' + record.repository.repo_owner_username + ': ' + record.repository.description;
-            result = {value: record.repository.id, label: label};
+            var result = {value: record.repository.id, label: label};
             results.push(result);
         });
         return results;
@@ -37,8 +37,8 @@ define([], function() {
 
     var queueLength = function() {
         if (localStorage.hasOwnProperty('repositories')) {
-            repo_queue = JSON.parse(localStorage.repositories);
-            queue_length = Object.keys(repo_queue).length;
+            var repo_queue = JSON.parse(localStorage.repositories);
+            var queue_length = Object.keys(repo_queue).length;
             return queue_length;
         }
         else {

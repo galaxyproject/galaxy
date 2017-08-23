@@ -16,7 +16,7 @@ AST_NODE_TYPE_WHITELIST = [
 
 
 BUILTIN_AND_MATH_FUNCTIONS = 'abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor'.split('|')
-STRING_AND_LIST_METHODS = [ name for name in dir('') + dir([]) if not name.startswith('_') ]
+STRING_AND_LIST_METHODS = [name for name in dir('') + dir([]) if not name.startswith('_')]
 VALID_FUNCTIONS = BUILTIN_AND_MATH_FUNCTIONS + STRING_AND_LIST_METHODS
 
 
@@ -28,14 +28,14 @@ def _check_name(ast_node, allowed_variables=[]):
     return name in VALID_FUNCTIONS
 
 
-def _check_attribute( ast_node ):
+def _check_attribute(ast_node):
     attribute_name = ast_node.attr
     if attribute_name not in STRING_AND_LIST_METHODS:
         return False
     return True
 
 
-def _check_call( ast_node ):
+def _check_call(ast_node):
     # If we are calling a function or method, it better be a math,
     # string or list function.
     ast_func = ast_node.func
@@ -44,7 +44,7 @@ def _check_call( ast_node ):
         if ast_func.id not in BUILTIN_AND_MATH_FUNCTIONS:
             return False
     elif ast_func_class == 'Attribute':
-        if not _check_attribute( ast_func ):
+        if not _check_attribute(ast_func):
             return False
     else:
         return False

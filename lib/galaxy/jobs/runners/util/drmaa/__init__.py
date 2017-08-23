@@ -11,6 +11,7 @@ class DrmaaSessionFactory(object):
     """
     Abstraction used to production DrmaaSession wrappers.
     """
+
     def __init__(self):
         self.session_constructor = Session
 

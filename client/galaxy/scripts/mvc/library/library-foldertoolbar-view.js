@@ -161,8 +161,13 @@ var FolderToolbarView = Backbone.View.extend({
       var folderDetails = this.serialize_new_folder();
       if (this.validate_new_folder(folderDetails)){
           var folder = new mod_library_model.FolderAsModel();
-          url_items = Backbone.history.fragment.split('/');
-          current_folder_id = url_items[url_items.length-1];
+          var url_items = Backbone.history.fragment.split('/'),
+              current_folder_id;
+          if(url_items.indexOf('page') > -1){
+            current_folder_id = url_items[url_items.length-3];
+          }else {
+            current_folder_id = url_items[url_items.length-1];
+          }
           folder.url = folder.urlRoot + current_folder_id ;
 
           folder.save(folderDetails, {
@@ -313,7 +318,7 @@ var FolderToolbarView = Backbone.View.extend({
   updateProgress: function(){
       this.progress += this.progressStep;
       $( '.progress-bar-import' ).width( Math.round( this.progress ) + '%' );
-      txt_representation = Math.round( this.progress ) + '% Complete';
+      var txt_representation = Math.round( this.progress ) + '% Complete';
       $( '.completion_span' ).text( txt_representation );
   },
 
@@ -427,7 +432,7 @@ var FolderToolbarView = Backbone.View.extend({
         url      :  Galaxy.root + "api/datatypes?extension_only=False",
         success  :  function( datatypes ) {
                         that.list_extensions = [];
-                        for (key in datatypes) {
+                        for (var key in datatypes) {
                             that.list_extensions.push({
                                 id              : datatypes[key].extension,
                                 text            : datatypes[key].extension,
@@ -446,7 +451,7 @@ var FolderToolbarView = Backbone.View.extend({
         url     :    Galaxy.root + "api/genomes",
         success : function( genomes ) {
                     that.list_genomes = [];
-                    for ( key in genomes ) {
+                    for (var key in genomes ) {
                         that.list_genomes.push({
                             id      : genomes[key][1],
                             text    : genomes[key][0]
@@ -611,7 +616,7 @@ var FolderToolbarView = Backbone.View.extend({
       this.modal.disableButton('Import');
       paths = paths.split('\n');
       for (var i = paths.length - 1; i >= 0; i--) {
-        trimmed = paths[i].trim();
+        var trimmed = paths[i].trim();
         if (trimmed.length!==0){
           valid_paths.push(trimmed);
         }
@@ -670,11 +675,12 @@ var FolderToolbarView = Backbone.View.extend({
   importFromJstreePath: function ( that, options ){
     var all_nodes = $( '#jstree_browser' ).jstree().get_selected( true );
     // remove the disabled elements that could have been trigerred with the 'select all'
-    selected_nodes = _.filter(all_nodes, function(node){ return node.state.disabled == false; })
+    var selected_nodes = _.filter(all_nodes, function(node){ return node.state.disabled == false; })
     var preserve_dirs = this.modal.$el.find( '.preserve-checkbox' ).is( ':checked' );
     var link_data = this.modal.$el.find( '.link-checkbox' ).is( ':checked' );
     var file_type = this.select_extension.value();
     var dbkey = this.select_genome.value();
+    var tag_using_filenames = this.modal.$el.find( '.tag-files' ).is( ':checked' );
     var selection_type = selected_nodes[0].type;
     var paths = [];
     if ( selected_nodes.length < 1 ){
@@ -694,13 +700,15 @@ var FolderToolbarView = Backbone.View.extend({
                                           link_data: link_data,
                                           source: full_source,
                                           file_type: file_type,
-                                          dbkey: dbkey } );
+                                          dbkey: dbkey,
+                                          tag_using_filenames: tag_using_filenames } );
       } else if ( selection_type === 'file' ){
         var full_source = options.source + '_file';
         this.chainCallImportingUserdirFiles( { paths : paths,
                                                file_type: file_type,
                                                dbkey: dbkey,
-                                               source: full_source } );
+                                               source: full_source,
+                                               tag_using_filenames: tag_using_filenames } );
       }
     }
   },
@@ -745,7 +753,7 @@ var FolderToolbarView = Backbone.View.extend({
         }
       });
       for ( var i = history_item_ids.length - 1; i >= 0; i-- ) {
-        history_item_id = history_item_ids[i];
+        var history_item_id = history_item_ids[i];
         var folder_item = new mod_library_model.Item();
         folder_item.url = Galaxy.root + 'api/folders/' + this.options.id + '/contents';
         if (history_item_types[i] === 'collection') {
@@ -794,9 +802,10 @@ var FolderToolbarView = Backbone.View.extend({
   },
 
   /**
-   * Take the array of paths and createa request for each of them
+   * Take the array of paths and create a request for each of them
    * calling them in chain. Update the progress bar in between each.
-   * @param  {array} paths           paths relative to user folder on Galaxy
+   * @param  {array} paths                    paths relative to user folder on Galaxy
+   * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
    */
   chainCallImportingUserdirFiles: function( options ){
 
@@ -815,7 +824,8 @@ var FolderToolbarView = Backbone.View.extend({
                                                        '&source=' + options.source +
                                                        '&path=' + popped_item +
                                                        '&file_type=' + options.file_type +
-                                                       '&dbkey=' + options.dbkey ) )
+                                                       '&dbkey=' + options.dbkey +
+                                                       '&tag_using_filenames=' + options.tag_using_filenames ) )
     promise.done( function( response ){
               that.updateProgress();
               that.chainCallImportingUserdirFiles( options );
@@ -830,11 +840,12 @@ var FolderToolbarView = Backbone.View.extend({
   /**
    * Take the array of paths and createa request for each of them
    * calling them in chain. Update the progress bar in between each.
-   * @param  {array} paths           paths relative to Galaxy root folder
-   * @param  {boolean} preserve_dirs indicates whether to preserve folder structure
-   * @param  {boolean} link_data     copy files to Galaxy or link instead
-   * @param  {str} source            string representing what type of folder
-   *                                 is the source of import
+   * @param  {array} paths                    paths relative to Galaxy root folder
+   * @param  {boolean} preserve_dirs          indicates whether to preserve folder structure
+   * @param  {boolean} link_data              copy files to Galaxy or link instead
+   * @param  {str} source                     string representing what type of folder
+   *                                          is the source of import
+   * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
    */
   chainCallImportingFolders: function( options ){
     // TODO need to check which paths to call
@@ -856,7 +867,8 @@ var FolderToolbarView = Backbone.View.extend({
                                                           '&preserve_dirs=' + options.preserve_dirs +
                                                           '&link_data=' + options.link_data +
                                                           '&file_type=' + options.file_type +
-                                                          '&dbkey=' + options.dbkey ) )
+                                                          '&dbkey=' + options.dbkey +
+                                                          '&tag_using_filenames=' + options.tag_using_filenames ) )
     promise.done(function(response){
               that.updateProgress();
               that.chainCallImportingFolders( options );
@@ -1341,7 +1353,13 @@ var FolderToolbarView = Backbone.View.extend({
       '<div>',
         'Type: <span id="library_extension_select" class="library-extension-select" />',
         'Genome: <span id="library_genome_select" class="library-genome-select" />',
-        '</div>',
+      '</div>',
+      '<div>',
+         '<label class="checkbox-inline tag-files">',
+            'Tag datasets based on file names.',
+            '<input class="tag-files" type="checkbox" value="tag_using_filenames" checked="checked">',
+         '</label>',
+      '</div>',
     '</div>'
     ].join(''));
   },

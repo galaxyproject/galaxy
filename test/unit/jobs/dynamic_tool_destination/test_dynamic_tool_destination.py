@@ -11,60 +11,60 @@ from galaxy.jobs.mapper import JobMappingException
 from . import mockGalaxy as mg
 from . import ymltests as yt
 
-theApp = mg.App( "waffles_default", "test_spec")
+theApp = mg.App("waffles_default", "test_spec")
 script_dir = os.path.dirname(__file__)
 
 # ======================Jobs====================================
 zeroJob = mg.Job()
 
 emptyJob = mg.Job()
-emptyJob.add_input_dataset( mg.InputDataset("input1", mg.Dataset( (script_dir + "/data/test.empty"), "txt", 14)) )
+emptyJob.add_input_dataset(mg.InputDataset("input1", mg.Dataset((script_dir + "/data/test.empty"), "txt", 14)))
 
 failJob = mg.Job()
-failJob.add_input_dataset( mg.InputDataset("input1", mg.Dataset( (script_dir + "/data/test1.full"), "txt", 15)) )
+failJob.add_input_dataset(mg.InputDataset("input1", mg.Dataset((script_dir + "/data/test1.full"), "txt", 15)))
 
 msfileJob = mg.Job()
-msfileJob.add_input_dataset( mg.InputDataset("input1", mg.Dataset( (script_dir + "/data/not_here.full"), "txt", 15)) )
+msfileJob.add_input_dataset(mg.InputDataset("input1", mg.Dataset((script_dir + "/data/not_here.full"), "txt", 15)))
 
 notfileinpJob = mg.Job()
-msfileJob.add_input_dataset( mg.InputDataset("input1", mg.NotAFile() ) )
+msfileJob.add_input_dataset(mg.InputDataset("input1", mg.NotAFile()))
 
 runJob = mg.Job()
-runJob.add_input_dataset( mg.InputDataset("input1", mg.Dataset( (script_dir + "/data/test3.full"), "txt", 15)) )
+runJob.add_input_dataset(mg.InputDataset("input1", mg.Dataset((script_dir + "/data/test3.full"), "txt", 15)))
 
 argJob = mg.Job()
-argJob.add_input_dataset( mg.InputDataset("input1", mg.Dataset( (script_dir + "/data/test3.full"), "txt", 15)) )
-argJob.set_arg_value( "careful", True )
+argJob.add_input_dataset(mg.InputDataset("input1", mg.Dataset((script_dir + "/data/test3.full"), "txt", 15)))
+argJob.set_arg_value("careful", True)
 
 argNotFoundJob = mg.Job()
-argNotFoundJob.add_input_dataset( mg.InputDataset("input1", mg.Dataset( (script_dir + "/data/test3.full"), "txt", 15)) )
-argNotFoundJob.set_arg_value( "careful", False )
+argNotFoundJob.add_input_dataset(mg.InputDataset("input1", mg.Dataset((script_dir + "/data/test3.full"), "txt", 15)))
+argNotFoundJob.set_arg_value("careful", False)
 
 dbJob = mg.Job()
-dbJob.add_input_dataset( mg.InputDataset("input1", mg.Dataset( (script_dir + "/data/test.fasta"), "fasta", 10)) )
+dbJob.add_input_dataset(mg.InputDataset("input1", mg.Dataset((script_dir + "/data/test.fasta"), "fasta", 10)))
 
 dbcountJob = mg.Job()
-dbcountJob.add_input_dataset( mg.InputDataset("input1", mg.Dataset( (script_dir + "/data/test.fasta"), "fasta", None)) )
+dbcountJob.add_input_dataset(mg.InputDataset("input1", mg.Dataset((script_dir + "/data/test.fasta"), "fasta", None)))
 
 # ======================Tools===================================
-vanillaTool = mg.Tool( 'test' )
+vanillaTool = mg.Tool('test')
 
-unTool = mg.Tool( 'unregistered' )
+unTool = mg.Tool('unregistered')
 
-overlapTool = mg.Tool( 'test_overlap' )
+overlapTool = mg.Tool('test_overlap')
 
-defaultTool = mg.Tool( 'test_tooldefault' )
+defaultTool = mg.Tool('test_tooldefault')
 
-dbTool = mg.Tool( 'test_db' )
-dbinfTool = mg.Tool( 'test_db_high' )
+dbTool = mg.Tool('test_db')
+dbinfTool = mg.Tool('test_db_high')
 
-argTool = mg.Tool( 'test_arguments' )
+argTool = mg.Tool('test_arguments')
 
-noVBTool = mg.Tool( 'test_no_verbose' )
+noVBTool = mg.Tool('test_no_verbose')
 
-usersTool = mg.Tool( 'test_users' )
+usersTool = mg.Tool('test_users')
 
-numinputsTool = mg.Tool( 'test_num_input_datasets' )
+numinputsTool = mg.Tool('test_num_input_datasets')
 
 # =======================YML file================================
 path = script_dir + "/data/tool_destination.yml"
@@ -159,10 +159,10 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_filesize_run(self, l):
-        job = map_tool_to_destination( runJob, theApp, vanillaTool, "user@email.com", True, path )
-        self.assertEquals( job, 'Destination1' )
-        priority_job = map_tool_to_destination( runJob, theApp, vanillaTool, "user@email.com", True, priority_path )
-        self.assertEquals( priority_job, 'Destination1_high' )
+        job = map_tool_to_destination(runJob, theApp, vanillaTool, "user@email.com", True, path)
+        self.assertEquals(job, 'Destination1')
+        priority_job = map_tool_to_destination(runJob, theApp, vanillaTool, "user@email.com", True, priority_path)
+        self.assertEquals(priority_job, 'Destination1_high')
 
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -181,10 +181,10 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_default_tool(self, l):
-        job = map_tool_to_destination( runJob, theApp, defaultTool, "user@email.com", True, path )
-        self.assertEquals( job, 'waffles_default' )
-        priority_job = map_tool_to_destination( runJob, theApp, defaultTool, "user@email.com", True, priority_path )
-        self.assertEquals( priority_job, 'waffles_default_high' )
+        job = map_tool_to_destination(runJob, theApp, defaultTool, "user@email.com", True, path)
+        self.assertEquals(job, 'waffles_default')
+        priority_job = map_tool_to_destination(runJob, theApp, defaultTool, "user@email.com", True, priority_path)
+        self.assertEquals(priority_job, 'waffles_default_high')
 
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -199,10 +199,10 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_arguments_tool(self, l):
-        job = map_tool_to_destination( argJob, theApp, argTool, "user@email.com", True, path )
-        self.assertEquals( job, 'Destination6' )
-        priority_job = map_tool_to_destination( argJob, theApp, argTool, "user@email.com", True, priority_path )
-        self.assertEquals( priority_job, 'Destination6_med' )
+        job = map_tool_to_destination(argJob, theApp, argTool, "user@email.com", True, path)
+        self.assertEquals(job, 'Destination6')
+        priority_job = map_tool_to_destination(argJob, theApp, argTool, "user@email.com", True, priority_path)
+        self.assertEquals(priority_job, 'Destination6_med')
 
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -215,10 +215,10 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_arguments_arg_not_found(self, l):
-        job = map_tool_to_destination( argNotFoundJob, theApp, argTool, "user@email.com", True, path )
-        self.assertEquals( job, 'waffles_default' )
-        priority_job = map_tool_to_destination( argNotFoundJob, theApp, argTool, "user@email.com", True, priority_path )
-        self.assertEquals( priority_job, 'waffles_default_high' )
+        job = map_tool_to_destination(argNotFoundJob, theApp, argTool, "user@email.com", True, path)
+        self.assertEquals(job, 'waffles_default')
+        priority_job = map_tool_to_destination(argNotFoundJob, theApp, argTool, "user@email.com", True, priority_path)
+        self.assertEquals(priority_job, 'waffles_default_high')
 
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -231,10 +231,10 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_tool_not_found(self, l):
-        job = map_tool_to_destination( runJob, theApp, unTool, "user@email.com", True, path )
-        self.assertEquals( job, 'waffles_default' )
-        priority_job = map_tool_to_destination( runJob, theApp, unTool, "user@email.com", True, priority_path )
-        self.assertEquals( priority_job, 'waffles_default_high' )
+        job = map_tool_to_destination(runJob, theApp, unTool, "user@email.com", True, path)
+        self.assertEquals(job, 'waffles_default')
+        priority_job = map_tool_to_destination(runJob, theApp, unTool, "user@email.com", True, priority_path)
+        self.assertEquals(priority_job, 'waffles_default_high')
 
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -249,10 +249,10 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_fasta(self, l):
-        job = map_tool_to_destination( dbJob, theApp, dbTool, "user@email.com", True, path )
-        self.assertEquals( job, 'Destination4' )
-        priority_job = map_tool_to_destination( dbJob, theApp, dbTool, "user@email.com", True, priority_path )
-        self.assertEquals( priority_job, 'Destination4_high' )
+        job = map_tool_to_destination(dbJob, theApp, dbTool, "user@email.com", True, path)
+        self.assertEquals(job, 'Destination4')
+        priority_job = map_tool_to_destination(dbJob, theApp, dbTool, "user@email.com", True, priority_path)
+        self.assertEquals(priority_job, 'Destination4_high')
 
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -269,10 +269,10 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_fasta_count(self, l):
-        job = map_tool_to_destination( dbcountJob, theApp, dbTool, "user@email.com", True, path )
-        self.assertEquals( job, 'Destination4' )
-        priority_job = map_tool_to_destination( dbcountJob, theApp, dbTool, "user@email.com", True, priority_path )
-        self.assertEquals( priority_job, 'Destination4_high' )
+        job = map_tool_to_destination(dbcountJob, theApp, dbTool, "user@email.com", True, path)
+        self.assertEquals(job, 'Destination4')
+        priority_job = map_tool_to_destination(dbcountJob, theApp, dbTool, "user@email.com", True, priority_path)
+        self.assertEquals(priority_job, 'Destination4_high')
 
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -289,8 +289,8 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_no_verbose(self, l):
-        job = map_tool_to_destination( runJob, theApp, noVBTool, "user@email.com", True, no_verbose_path )
-        self.assertEquals( job, 'Destination1' )
+        job = map_tool_to_destination(runJob, theApp, noVBTool, "user@email.com", True, no_verbose_path)
+        self.assertEquals(job, 'Destination1')
 
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_no_verbose' with 'Destination1'.")
@@ -298,8 +298,8 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_authorized_user(self, l):
-        job = map_tool_to_destination( runJob, theApp, usersTool, "user@email.com", True, users_test_path )
-        self.assertEquals( job, 'special_cluster' )
+        job = map_tool_to_destination(runJob, theApp, usersTool, "user@email.com", True, users_test_path)
+        self.assertEquals(job, 'special_cluster')
 
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_users' with 'special_cluster'."),
@@ -307,8 +307,8 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_unauthorized_user(self, l):
-        job = map_tool_to_destination( runJob, theApp, usersTool, "userblah@email.com", True, users_test_path )
-        self.assertEquals( job, 'lame_cluster' )
+        job = map_tool_to_destination(runJob, theApp, usersTool, "userblah@email.com", True, users_test_path)
+        self.assertEquals(job, 'lame_cluster')
 
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_users' with 'lame_cluster'.")
@@ -711,63 +711,63 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     def test_str_to_bytes_valid(self):
         self.assertEqual(dt.str_to_bytes("-1"), -1)
-        self.assertEqual(dt.str_to_bytes( "1" ), value)
-        self.assertEqual(dt.str_to_bytes( 156 ), 156)
-        self.assertEqual(dt.str_to_bytes( "1 B" ), value)
-        self.assertEqual(dt.str_to_bytes( "1 KB" ), valueK)
-        self.assertEqual(dt.str_to_bytes( "1 MB" ), valueM)
-        self.assertEqual(dt.str_to_bytes( "1 gB" ), valueG)
-        self.assertEqual(dt.str_to_bytes( "1 Tb" ), valueT)
-        self.assertEqual(dt.str_to_bytes( "1 pb" ), valueP)
-        self.assertEqual(dt.str_to_bytes( "1 EB" ), valueE)
-        self.assertEqual(dt.str_to_bytes( "1 ZB" ), valueZ)
-        self.assertEqual(dt.str_to_bytes( "1 YB" ), valueY)
+        self.assertEqual(dt.str_to_bytes("1"), value)
+        self.assertEqual(dt.str_to_bytes(156), 156)
+        self.assertEqual(dt.str_to_bytes("1 B"), value)
+        self.assertEqual(dt.str_to_bytes("1 KB"), valueK)
+        self.assertEqual(dt.str_to_bytes("1 MB"), valueM)
+        self.assertEqual(dt.str_to_bytes("1 gB"), valueG)
+        self.assertEqual(dt.str_to_bytes("1 Tb"), valueT)
+        self.assertEqual(dt.str_to_bytes("1 pb"), valueP)
+        self.assertEqual(dt.str_to_bytes("1 EB"), valueE)
+        self.assertEqual(dt.str_to_bytes("1 ZB"), valueZ)
+        self.assertEqual(dt.str_to_bytes("1 YB"), valueY)
 
 # ==============================Testing bytes_to_str=============================
     @log_capture()
     def test_bytes_to_str_invalid(self, l):
         testValue = ""
-        self.assertRaises( ValueError, dt.bytes_to_str, testValue )
+        self.assertRaises(ValueError, dt.bytes_to_str, testValue)
         testValue = "5564fads"
-        self.assertRaises( ValueError, dt.bytes_to_str, testValue )
+        self.assertRaises(ValueError, dt.bytes_to_str, testValue)
         testValue = "45.0.1"
-        self.assertRaises( ValueError, dt.bytes_to_str, testValue )
-        self.assertRaises( ValueError, dt.bytes_to_str, "1 024" )
+        self.assertRaises(ValueError, dt.bytes_to_str, testValue)
+        self.assertRaises(ValueError, dt.bytes_to_str, "1 024")
 
     def test_bytes_to_str_valid(self):
         self.assertEqual(dt.bytes_to_str(-1), "Infinity")
-        self.assertEqual(dt.bytes_to_str( value), "1.00 B")
-        self.assertEqual(dt.bytes_to_str( valueK), "1.00 KB")
-        self.assertEqual(dt.bytes_to_str( valueM), "1.00 MB")
-        self.assertEqual(dt.bytes_to_str( valueG), "1.00 GB")
-        self.assertEqual(dt.bytes_to_str( valueT ), "1.00 TB")
-        self.assertEqual(dt.bytes_to_str( valueP ), "1.00 PB")
-        self.assertEqual(dt.bytes_to_str( valueE ), "1.00 EB")
-        self.assertEqual(dt.bytes_to_str( valueZ ), "1.00 ZB")
-        self.assertEqual(dt.bytes_to_str( valueY ), "1.00 YB")
+        self.assertEqual(dt.bytes_to_str(value), "1.00 B")
+        self.assertEqual(dt.bytes_to_str(valueK), "1.00 KB")
+        self.assertEqual(dt.bytes_to_str(valueM), "1.00 MB")
+        self.assertEqual(dt.bytes_to_str(valueG), "1.00 GB")
+        self.assertEqual(dt.bytes_to_str(valueT), "1.00 TB")
+        self.assertEqual(dt.bytes_to_str(valueP), "1.00 PB")
+        self.assertEqual(dt.bytes_to_str(valueE), "1.00 EB")
+        self.assertEqual(dt.bytes_to_str(valueZ), "1.00 ZB")
+        self.assertEqual(dt.bytes_to_str(valueY), "1.00 YB")
 
-        self.assertEqual(dt.bytes_to_str( 10, "B" ), "10.00 B")
-        self.assertEqual(dt.bytes_to_str( 1000000, "KB" ), "976.56 KB")
-        self.assertEqual(dt.bytes_to_str( 1000000000, "MB" ), "953.67 MB")
-        self.assertEqual(dt.bytes_to_str( 1000000000000, "GB" ), "931.32 GB")
-        self.assertEqual(dt.bytes_to_str( 1000000000000000, "TB" ), "909.49 TB")
-        self.assertEqual(dt.bytes_to_str( 1000000000000000000, "PB" ), "888.18 PB")
-        self.assertEqual(dt.bytes_to_str( 1000000000000000000000, "EB" ), "867.36 EB")
-        self.assertEqual(dt.bytes_to_str( 1000000000000000000000000, "ZB" ), "847.03 ZB")
+        self.assertEqual(dt.bytes_to_str(10, "B"), "10.00 B")
+        self.assertEqual(dt.bytes_to_str(1000000, "KB"), "976.56 KB")
+        self.assertEqual(dt.bytes_to_str(1000000000, "MB"), "953.67 MB")
+        self.assertEqual(dt.bytes_to_str(1000000000000, "GB"), "931.32 GB")
+        self.assertEqual(dt.bytes_to_str(1000000000000000, "TB"), "909.49 TB")
+        self.assertEqual(dt.bytes_to_str(1000000000000000000, "PB"), "888.18 PB")
+        self.assertEqual(dt.bytes_to_str(1000000000000000000000, "EB"), "867.36 EB")
+        self.assertEqual(dt.bytes_to_str(1000000000000000000000000, "ZB"), "847.03 ZB")
 
-        self.assertEqual(dt.bytes_to_str( value, "KB" ), "1.00 B")
-        self.assertEqual(dt.bytes_to_str( valueK, "MB" ), "1.00 KB")
-        self.assertEqual(dt.bytes_to_str( valueM, "GB" ), "1.00 MB")
-        self.assertEqual(dt.bytes_to_str( valueG, "TB" ), "1.00 GB")
-        self.assertEqual(dt.bytes_to_str( valueT, "PB" ), "1.00 TB")
-        self.assertEqual(dt.bytes_to_str( valueP, "EB" ), "1.00 PB")
-        self.assertEqual(dt.bytes_to_str( valueE, "ZB" ), "1.00 EB")
-        self.assertEqual(dt.bytes_to_str( valueZ, "YB" ), "1.00 ZB")
+        self.assertEqual(dt.bytes_to_str(value, "KB"), "1.00 B")
+        self.assertEqual(dt.bytes_to_str(valueK, "MB"), "1.00 KB")
+        self.assertEqual(dt.bytes_to_str(valueM, "GB"), "1.00 MB")
+        self.assertEqual(dt.bytes_to_str(valueG, "TB"), "1.00 GB")
+        self.assertEqual(dt.bytes_to_str(valueT, "PB"), "1.00 TB")
+        self.assertEqual(dt.bytes_to_str(valueP, "EB"), "1.00 PB")
+        self.assertEqual(dt.bytes_to_str(valueE, "ZB"), "1.00 EB")
+        self.assertEqual(dt.bytes_to_str(valueZ, "YB"), "1.00 ZB")
 
-        self.assertEqual(dt.bytes_to_str( "1" ), "1.00 B")
-        self.assertEqual(dt.bytes_to_str( "\t\t1000000" ), "976.56 KB")
-        self.assertEqual(dt.bytes_to_str( "1000000000\n" ), "953.67 MB")
-        self.assertEqual(dt.bytes_to_str( 1024, "fda" ), "1.00 KB")
+        self.assertEqual(dt.bytes_to_str("1"), "1.00 B")
+        self.assertEqual(dt.bytes_to_str("\t\t1000000"), "976.56 KB")
+        self.assertEqual(dt.bytes_to_str("1000000000\n"), "953.67 MB")
+        self.assertEqual(dt.bytes_to_str(1024, "fda"), "1.00 KB")
 
 
 if __name__ == '__main__':

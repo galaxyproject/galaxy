@@ -13,20 +13,20 @@ from galaxy.web import _future_expose_api as expose_api
 from galaxy.util import sanitize_html
 
 import logging
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
-class BaseAnnotationsController( BaseAPIController, UsesStoredWorkflowMixin, UsesAnnotations ):
+class BaseAnnotationsController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnnotations):
 
     @expose_api
-    def index( self, trans, **kwd ):
+    def index(self, trans, **kwd):
         idnum = kwd[self.tagged_item_id]
         item = self._get_item_from_id(trans, idnum)
         if item is not None:
-            return self.get_item_annotation_str( trans.sa_session, trans.get_user(), item )
+            return self.get_item_annotation_str(trans.sa_session, trans.get_user(), item)
 
     @expose_api
-    def create( self, trans, payload, **kwd ):
+    def create(self, trans, payload, **kwd):
         if "text" not in payload:
             return ""
         idnum = kwd[self.tagged_item_id]
@@ -34,22 +34,22 @@ class BaseAnnotationsController( BaseAPIController, UsesStoredWorkflowMixin, Use
         if item is not None:
             new_annotation = payload.get("text")
             # TODO: sanitize on display not entry
-            new_annotation = sanitize_html.sanitize_html( new_annotation, 'utf-8', 'text/html' )
+            new_annotation = sanitize_html.sanitize_html(new_annotation, 'utf-8', 'text/html')
 
-            self.add_item_annotation( trans.sa_session, trans.get_user(), item, new_annotation )
+            self.add_item_annotation(trans.sa_session, trans.get_user(), item, new_annotation)
             trans.sa_session.flush()
             return new_annotation
         return ""
 
     @expose_api
-    def delete( self, trans, **kwd ):
+    def delete(self, trans, **kwd):
         idnum = kwd[self.tagged_item_id]
         item = self._get_item_from_id(trans, idnum)
         if item is not None:
-            return self.delete_item_annotation( trans.sa_session, trans.get_user(), item )
+            return self.delete_item_annotation(trans.sa_session, trans.get_user(), item)
 
     @expose_api
-    def undelete( self, trans, **kwd ):
+    def undelete(self, trans, **kwd):
         raise exceptions.NotImplemented()
 
 
@@ -57,35 +57,35 @@ class HistoryAnnotationsController(BaseAnnotationsController):
     controller_name = "history_annotations"
     tagged_item_id = "history_id"
 
-    def __init__( self, app ):
-        super( HistoryAnnotationsController, self ).__init__( app )
-        self.history_manager = managers.histories.HistoryManager( app )
+    def __init__(self, app):
+        super(HistoryAnnotationsController, self).__init__(app)
+        self.history_manager = managers.histories.HistoryManager(app)
 
     def _get_item_from_id(self, trans, idstr):
-        decoded_idstr = self.decode_id( idstr )
-        history = self.history_manager.get_accessible( decoded_idstr, trans.user, current_history=trans.history )
+        decoded_idstr = self.decode_id(idstr)
+        history = self.history_manager.get_accessible(decoded_idstr, trans.user, current_history=trans.history)
         return history
 
 
-class HistoryContentAnnotationsController( BaseAnnotationsController ):
+class HistoryContentAnnotationsController(BaseAnnotationsController):
     controller_name = "history_content_annotations"
     tagged_item_id = "history_content_id"
 
-    def __init__( self, app ):
-        super( HistoryContentAnnotationsController, self ).__init__( app )
-        self.hda_manager = managers.hdas.HDAManager( app )
+    def __init__(self, app):
+        super(HistoryContentAnnotationsController, self).__init__(app)
+        self.hda_manager = managers.hdas.HDAManager(app)
 
     def _get_item_from_id(self, trans, idstr):
-        decoded_idstr = self.decode_id( idstr )
-        hda = self.hda_manager.get_accessible( decoded_idstr, trans.user )
-        hda = self.hda_manager.error_if_uploading( hda )
+        decoded_idstr = self.decode_id(idstr)
+        hda = self.hda_manager.get_accessible(decoded_idstr, trans.user)
+        hda = self.hda_manager.error_if_uploading(hda)
         return hda
 
 
-class WorkflowAnnotationsController( BaseAnnotationsController ):
+class WorkflowAnnotationsController(BaseAnnotationsController):
     controller_name = "workflow_annotations"
     tagged_item_id = "workflow_id"
 
     def _get_item_from_id(self, trans, idstr):
-        hda = self.get_stored_workflow( trans, idstr )
+        hda = self.get_stored_workflow(trans, idstr)
         return hda

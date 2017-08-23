@@ -8,8 +8,8 @@ import six
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 
 
-@six.add_metaclass(ABCMeta)
 @six.python_2_unicode_compatible
+@six.add_metaclass(ABCMeta)
 class ToolSource(object):
     """ This interface represents an abstract source to parse tool
     information from.
@@ -148,6 +148,22 @@ class ToolSource(object):
     def parse_input_pages(self):
         """ Return a PagesSource representing inputs by page for tool. """
 
+    def parse_provided_metadata_style(self):
+        """Return style of tool provided metadata file (e.g. galaxy.json).
+
+        A value of of "default" indicates the newer galaxy.json style
+        (the default for XML-based tools with profile >= 17.09) and a value
+        of "legacy" indicates the older galaxy.json style.
+
+        A short description of these two styles can be found at
+        https://github.com/galaxyproject/galaxy/pull/4437.
+        """
+        return "default"
+
+    def parse_provided_metadata_file(self):
+        """Return location of provided metadata file (e.g. galaxy.json)."""
+        return "galaxy.json"
+
     @abstractmethod
     def parse_outputs(self, tool):
         """ Return a pair of output and output collections ordered
@@ -196,6 +212,7 @@ class PagesSource(object):
     Pages are deprecated so ideally this outer list will always
     be exactly a singleton.
     """
+
     def __init__(self, page_sources):
         self.page_sources = page_sources
 
@@ -261,7 +278,7 @@ class InputSource(object):
         """ Return boolean indicating wheter parameter is optional. """
         if default is None:
             default = self.default_optional
-        return self.get_bool( "optional", default )
+        return self.get_bool("optional", default)
 
     def parse_dynamic_options_elem(self):
         """ Return an XML elemnt describing dynamic options.
@@ -291,14 +308,15 @@ class InputSource(object):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
 
-class ToolStdioRegex( object ):
+class ToolStdioRegex(object):
     """
     This is a container for the <stdio> element's regex subelement.
     The regex subelement has a "match" attribute, a "sources"
     attribute that contains "output" and/or "error", and a "level"
     attribute that contains "warning" or "fatal".
     """
-    def __init__( self ):
+
+    def __init__(self):
         self.match = ""
         self.stdout_match = False
         self.stderr_match = False
@@ -307,52 +325,53 @@ class ToolStdioRegex( object ):
         self.desc = ""
 
 
-class ToolStdioExitCode( object ):
+class ToolStdioExitCode(object):
     """
     This is a container for the <stdio> element's <exit_code> subelement.
     The exit_code element has a range of exit codes and the error level.
     """
-    def __init__( self ):
-        self.range_start = float( "-inf" )
-        self.range_end = float( "inf" )
+
+    def __init__(self):
+        self.range_start = float("-inf")
+        self.range_end = float("inf")
         # TODO: Define a common class or constant for error level:
         self.error_level = "fatal"
         self.desc = ""
 
 
-class TestCollectionDef( object ):
+class TestCollectionDef(object):
     # TODO: do not require XML directly here.
 
-    def __init__( self, elem, parse_param_elem ):
+    def __init__(self, elem, parse_param_elem):
         self.elements = []
-        attrib = dict( elem.attrib )
-        self.collection_type = attrib[ "type" ]
-        self.name = attrib.get( "name", "Unnamed Collection" )
-        for element in elem.findall( "element" ):
-            element_attrib = dict( element.attrib )
-            element_identifier = element_attrib[ "name" ]
-            nested_collection_elem = element.find( "collection" )
+        attrib = dict(elem.attrib)
+        self.collection_type = attrib["type"]
+        self.name = attrib.get("name", "Unnamed Collection")
+        for element in elem.findall("element"):
+            element_attrib = dict(element.attrib)
+            element_identifier = element_attrib["name"]
+            nested_collection_elem = element.find("collection")
             if nested_collection_elem is not None:
-                self.elements.append( ( element_identifier, TestCollectionDef( nested_collection_elem, parse_param_elem ) ) )
+                self.elements.append((element_identifier, TestCollectionDef(nested_collection_elem, parse_param_elem)))
             else:
-                self.elements.append( ( element_identifier, parse_param_elem( element ) ) )
+                self.elements.append((element_identifier, parse_param_elem(element)))
 
-    def collect_inputs( self ):
+    def collect_inputs(self):
         inputs = []
         for element in self.elements:
-            value = element[ 1 ]
-            if isinstance( value, TestCollectionDef ):
-                inputs.extend( value.collect_inputs() )
+            value = element[1]
+            if isinstance(value, TestCollectionDef):
+                inputs.extend(value.collect_inputs())
             else:
-                inputs.append( value )
+                inputs.append(value)
         return inputs
 
 
-class TestCollectionOutputDef( object ):
+class TestCollectionOutputDef(object):
 
-    def __init__( self, name, attrib, element_tests ):
+    def __init__(self, name, attrib, element_tests):
         self.name = name
-        self.collection_type = attrib.get( "type", None )
+        self.collection_type = attrib.get("type", None)
         count = attrib.get("count", None)
         self.count = int(count) if count is not None else None
         self.attrib = attrib

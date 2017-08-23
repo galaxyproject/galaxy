@@ -11,8 +11,8 @@ $.ui.plugin.add("draggable", "scrollPanel", {
             panel = o.panel,
             panel_pos = panel.position(),
             panel_w = panel.width(),
-            panel_h = panel.height()
-            viewport = panel.parent();
+            panel_h = panel.height(),
+            viewport = panel.parent(),
             viewport_w = viewport.width(),
             viewport_h = viewport.height(),
             element_w = element.width(),

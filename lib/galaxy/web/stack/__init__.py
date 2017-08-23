@@ -102,5 +102,5 @@ def register_postfork_function(f, *args, **kwargs):
 
 @uwsgi_postfork
 def _do_postfork():
-    for f, args, kwargs in [ t for t in UWSGIApplicationStack.postfork_functions ]:
+    for f, args, kwargs in [t for t in UWSGIApplicationStack.postfork_functions]:
         f(*args, **kwargs)

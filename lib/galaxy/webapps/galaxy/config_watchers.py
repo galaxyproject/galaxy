@@ -24,7 +24,7 @@ class ConfigWatchers(object):
         self.tool_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_toolbox(self.app), tool_cache=self.app.tool_cache)
         self.data_manager_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_data_managers(self.app))
         self.tool_data_watcher = get_tool_data_dir_watcher(self.app.tool_data_tables, config=self.app.config)
-        self.tool_watcher = get_tool_watcher( self, app.config )
+        self.tool_watcher = get_tool_watcher(self, app.config)
         self.start()
 
     def start(self):

@@ -75,6 +75,7 @@ class PithosObjectStore(ObjectStore):
     Object store that stores objects as items in a Pithos+ container.
     Cache is ignored for the time being.
     """
+
     def __init__(self, config, config_xml):
         if KamakiClient is None:
             raise Exception(NO_KAMAKI_ERROR_MESSAGE)

@@ -19,11 +19,11 @@ from sqlalchemy.types import (
 from galaxy import app
 from galaxy.util.aliaspickler import AliasPickleModule
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 # Default JSON encoder and decoder
-json_encoder = json.JSONEncoder( sort_keys=True )
-json_decoder = json.JSONDecoder( )
+json_encoder = json.JSONEncoder(sort_keys=True)
+json_decoder = json.JSONDecoder()
 
 
 def _sniffnfix_pg9_hex(value):
@@ -33,8 +33,8 @@ def _sniffnfix_pg9_hex(value):
     try:
         if value[0] == 'x':
             return binascii.unhexlify(value[1:])
-        elif value.startswith( '\\x' ):
-            return binascii.unhexlify( value[2:] )
+        elif value.startswith('\\x'):
+            return binascii.unhexlify(value[2:])
         else:
             return value
     except Exception:
@@ -61,7 +61,7 @@ class JSONType(sqlalchemy.types.TypeDecorator):
 
     def process_result_value(self, value, dialect):
         if value is not None:
-            value = json_decoder.decode( str( _sniffnfix_pg9_hex( value ) ) )
+            value = json_decoder.decode(str(_sniffnfix_pg9_hex(value)))
         return value
 
     def load_dialect_impl(self, dialect):
@@ -70,11 +70,11 @@ class JSONType(sqlalchemy.types.TypeDecorator):
         else:
             return self.impl
 
-    def copy_value( self, value ):
-        return copy.deepcopy( value )
+    def copy_value(self, value):
+        return copy.deepcopy(value)
 
-    def compare_values( self, x, y ):
-        return ( x == y )
+    def compare_values(self, x, y):
+        return (x == y)
 
 
 class MutationObj(Mutable):
@@ -219,9 +219,9 @@ class MutationList(MutationObj, list):
 
 MutationObj.associate_with(JSONType)
 
-metadata_pickler = AliasPickleModule( {
-    ( "cookbook.patterns", "Bunch" ): ( "galaxy.util.bunch", "Bunch" )
-} )
+metadata_pickler = AliasPickleModule({
+    ("cookbook.patterns", "Bunch"): ("galaxy.util.bunch", "Bunch")
+})
 
 
 def total_size(o, handlers={}, verbose=False):
@@ -239,12 +239,12 @@ def total_size(o, handlers={}, verbose=False):
     def dict_handler(d):
         return chain.from_iterable(d.items())
 
-    all_handlers = { tuple: iter,
-                     list: iter,
-                     deque: iter,
-                     dict: dict_handler,
-                     set: iter,
-                     frozenset: iter }
+    all_handlers = {tuple: iter,
+                    list: iter,
+                    deque: iter,
+                    dict: dict_handler,
+                    set: iter,
+                    frozenset: iter}
     all_handlers.update(handlers)     # user handlers take precedence
     seen = set()                      # track which object id's have already been seen
     default_size = getsizeof(0)       # estimate sizeof object without __sizeof__
@@ -264,7 +264,7 @@ def total_size(o, handlers={}, verbose=False):
     return sizeof(o)
 
 
-class MetadataType( JSONType ):
+class MetadataType(JSONType):
     """
     Backward compatible metadata type. Can read pickles or JSON, but always
     writes in JSON.
@@ -281,17 +281,17 @@ class MetadataType( JSONType ):
             value = json_encoder.encode(value)
         return value
 
-    def process_result_value( self, value, dialect ):
+    def process_result_value(self, value, dialect):
         if value is None:
             return None
         ret = None
         try:
-            ret = metadata_pickler.loads( str( value ) )
+            ret = metadata_pickler.loads(str(value))
             if ret:
-                ret = dict( ret.__dict__ )
+                ret = dict(ret.__dict__)
         except:
             try:
-                ret = json_decoder.decode( str( _sniffnfix_pg9_hex(value) ) )
+                ret = json_decoder.decode(str(_sniffnfix_pg9_hex(value)))
             except:
                 ret = None
         return ret
@@ -328,10 +328,10 @@ class UUIDType(TypeDecorator):
             return uuid.UUID(value)
 
 
-class TrimmedString( TypeDecorator ):
+class TrimmedString(TypeDecorator):
     impl = String
 
-    def process_bind_param( self, value, dialect ):
+    def process_bind_param(self, value, dialect):
         """Automatically truncate string values"""
         if self.impl.length and value is not None:
             value = value[0:self.impl.length]

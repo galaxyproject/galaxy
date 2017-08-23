@@ -1,11 +1,12 @@
 var jQuery = require( 'jquery' ),
     $ = jQuery,
     GalaxyApp = require( 'galaxy' ).GalaxyApp,
-    QUERY_STRING = require( 'utils/query-string-parsing' ),
+    Router = require( 'layout/router' ),
     ToolPanel = require( './panels/tool-panel' ),
     HistoryPanel = require( './panels/history-panel' ),
     Page = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
+    FormWrapper = require( 'mvc/form/form-wrapper' ),
     UserPreferences = require( 'mvc/user/user-preferences' ),
     CustomBuilds = require( 'mvc/user/user-custom-builds' ),
     Tours = require( 'mvc/tours' ),
@@ -13,10 +14,11 @@ var jQuery = require( 'jquery' ),
     GridShared = require( 'mvc/grid/grid-shared' ),
     Workflows = require( 'mvc/workflow/workflow' ),
     HistoryList = require( 'mvc/history/history-list' ),
-    WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' ),
     ToolFormComposite = require( 'mvc/tool/tool-form-composite' ),
     Utils = require( 'utils/utils' ),
-    Ui = require( 'mvc/ui/ui-misc' );
+    Ui = require( 'mvc/ui/ui-misc' ),
+    DatasetError = require( 'mvc/dataset/dataset-error' ),
+    DatasetEditAttributes = require('mvc/dataset/dataset-edit-attributes');
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -32,53 +34,9 @@ var jQuery = require( 'jquery' ),
 window.app = function app( options, bootstrapped ){
     window.Galaxy = new GalaxyApp( options, bootstrapped );
     Galaxy.debug( 'analysis app' );
-    Galaxy.params = Galaxy.config.params;
-
-    var routingMessage = Backbone.View.extend({
-        initialize: function(options) {
-            this.message = options.message || "Undefined Message";
-            this.msg_status = options.type || 'info';
-            this.render();
-		},
-        render: function(){
-            this.$el.html(_.escape(this.message)).addClass(this.msg_status + "message");
-        }
-    });
 
     /** Routes */
-    var Router = Backbone.Router.extend({
-        // TODO: not many client routes at this point - fill and remove from server.
-        // since we're at root here, this may be the last to be routed entirely on the client.
-        initialize : function( page, options ){
-            this.page = page;
-            this.options = options;
-        },
-
-        /** helper to push a new navigation state */
-        push: function( url, data ) {
-            data = data || {};
-            data.__identifer = Math.random().toString( 36 ).substr( 2 );
-            if ( !$.isEmptyObject( data ) ) {
-                url += url.indexOf( '?' ) == -1 ? '?' : '&';
-                url += $.param( data , true );
-            }
-            this.navigate( url, { 'trigger': true } );
-        },
-
-        /** override to parse query string into obj and send to each route */
-        execute: function( callback, args, name ){
-            Galaxy.debug( 'router execute:', callback, args, name );
-            var queryObj = QUERY_STRING.parse( args.pop() );
-            args.push( queryObj );
-            if( callback ){
-                if ( this.authenticate( args, name ) ) {
-                    callback.apply( this, args );
-                } else {
-                    this.loginRequired();
-                }
-            }
-        },
-
+    var AnalysisRouter = Router.extend({
         routes : {
             '(/)' : 'home',
             '(/)root*' : 'home',
@@ -92,21 +50,17 @@ window.app = function app( options, bootstrapped ){
             '(/)workflows/list_published(/)' : 'show_workflows_published',
             '(/)histories(/)(:action_id)' : 'show_histories',
             '(/)datasets(/)list(/)' : 'show_datasets',
-            '(/)workflow/configure_menu(/)' : 'show_configure_menu',
             '(/)workflow/import_workflow' : 'show_import_workflow',
-            '(/)custom_builds' : 'show_custom_builds'
+            '(/)custom_builds' : 'show_custom_builds',
+            '(/)datasets/edit': 'show_dataset_edit_attributes',
+            '(/)datasets/error': 'show_dataset_error'
         },
 
         require_login: [
             'show_user',
             'show_user_form',
-            'show_workflows',
-            'show_configure_menu'
+            'show_workflows'
         ],
-
-        loginRequired: function() {
-            this.page.display( new routingMessage({type: 'error', message: "You must be logged in to make this request."}) );
-        },
 
         authenticate: function( args, name ) {
             return ( Galaxy.user && Galaxy.user.id ) || this.require_login.indexOf( name ) == -1;
@@ -125,7 +79,8 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_user_form : function( form_id ) {
-            this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+            var model = new UserPreferences.Model( { user_id: Galaxy.params.id } );
+            this.page.display( new FormWrapper.View ( model.get( form_id ) ) );
         },
 
         show_visualizations : function( action_id ) {
@@ -160,10 +115,6 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new Workflows.ImportWorkflowView() );
         },
 
-        show_configure_menu : function(){
-            this.page.display( new WorkflowsConfigureMenu.View() );
-        },
-
         show_custom_builds : function() {
             var self = this;
             var historyPanel = this.page.historyPanel.historyView;
@@ -172,6 +123,14 @@ window.app = function app( options, bootstrapped ){
                 return;
             }
             this.page.display( new CustomBuilds.View() );
+        },
+
+        show_dataset_edit_attributes : function() {
+            this.page.display( new DatasetEditAttributes.View() );
+        },
+
+        show_dataset_error : function() {
+            this.page.display( new DatasetError.View() );
         },
 
         /**  */
@@ -233,17 +192,10 @@ window.app = function app( options, bootstrapped ){
 
     // render and start the router
     $(function(){
-
         Galaxy.page = new Page.View( _.extend( options, {
             Left   : ToolPanel,
             Right  : HistoryPanel,
-            Router : Router
+            Router : AnalysisRouter
         } ) );
-
-        // start the router - which will call any of the routes above
-        Backbone.history.start({
-            root        : Galaxy.root,
-            pushState   : true,
-        });
     });
 };

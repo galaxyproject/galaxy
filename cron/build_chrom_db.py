@@ -38,7 +38,7 @@ def getchrominfo(url, db):
         "hgta_doTopSubmit": "get info"})
     page = urlopen(URL)
     for line in page:
-        line = line.rstrip( "\r\n" )
+        line = line.rstrip("\r\n")
         if line.startswith("#"):
             continue
         fields = line.split("\t")

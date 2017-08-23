@@ -17,7 +17,7 @@ except ImportError:
 from galaxy.util.hash_util import md5_hash_file
 from galaxy.web.stack import register_postfork_function
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 def get_observer_class(config_value, default, monitor_what_str):
@@ -94,7 +94,7 @@ class ToolConfWatcher(object):
 
     def check(self):
         """Check for changes in self.paths or self.cache and call the event handler."""
-        hashes = { key: None for key in self.paths.keys() }
+        hashes = {key: None for key in self.paths.keys()}
         while self._active:
             do_reload = False
             with self._lock:
@@ -175,19 +175,19 @@ class ToolWatcher(object):
         self.observer.schedule(self.event_handler, dir, recursive=False)
 
     def watch_file(self, tool_file, tool_id):
-        tool_file = os.path.abspath( tool_file )
+        tool_file = os.path.abspath(tool_file)
         self.tool_file_ids[tool_file] = tool_id
-        tool_dir = os.path.dirname( tool_file )
+        tool_dir = os.path.dirname(tool_file)
         if tool_dir not in self.monitored_dirs:
-            self.monitored_dirs[ tool_dir ] = tool_dir
-            self.monitor( tool_dir )
+            self.monitored_dirs[tool_dir] = tool_dir
+            self.monitor(tool_dir)
 
     def watch_directory(self, tool_dir, callback):
-        tool_dir = os.path.abspath( tool_dir )
+        tool_dir = os.path.abspath(tool_dir)
         self.tool_dir_callbacks[tool_dir] = callback
         if tool_dir not in self.monitored_dirs:
-            self.monitored_dirs[ tool_dir ] = tool_dir
-            self.monitor( tool_dir )
+            self.monitored_dirs[tool_dir] = tool_dir
+            self.monitor(tool_dir)
 
 
 class ToolDataWatcher(object):
@@ -211,10 +211,10 @@ class ToolDataWatcher(object):
         self.observer.schedule(self.event_handler, dir, recursive=True)
 
     def watch_directory(self, tool_data_dir):
-        tool_data_dir = os.path.abspath( tool_data_dir )
+        tool_data_dir = os.path.abspath(tool_data_dir)
         if tool_data_dir not in self.monitored_dirs:
-            self.monitored_dirs[ tool_data_dir ] = tool_data_dir
-            self.monitor( tool_data_dir )
+            self.monitored_dirs[tool_data_dir] = tool_data_dir
+            self.monitor(tool_data_dir)
 
 
 class LocFileEventHandler(FileSystemEventHandler):
@@ -229,8 +229,8 @@ class LocFileEventHandler(FileSystemEventHandler):
         # modified events will only have src path, move events will
         # have dest_path and src_path but we only care about dest. So
         # look at dest if it exists else use src.
-        path = getattr( event, 'dest_path', None ) or event.src_path
-        path = os.path.abspath( path )
+        path = getattr(event, 'dest_path', None) or event.src_path
+        path = os.path.abspath(path)
         if path.endswith(".loc"):
             cur_hash = md5_hash_file(path)
             if self.loc_watcher.path_hash.get(path) == cur_hash:
@@ -252,22 +252,22 @@ class ToolFileEventHandler(FileSystemEventHandler):
         # modified events will only have src path, move events will
         # have dest_path and src_path but we only care about dest. So
         # look at dest if it exists else use src.
-        path = getattr( event, 'dest_path', None ) or event.src_path
-        path = os.path.abspath( path )
-        tool_id = self.tool_watcher.tool_file_ids.get( path, None )
+        path = getattr(event, 'dest_path', None) or event.src_path
+        path = os.path.abspath(path)
+        tool_id = self.tool_watcher.tool_file_ids.get(path, None)
         if tool_id:
             try:
                 self.tool_watcher.toolbox.reload_tool_by_id(tool_id)
             except Exception:
                 pass
         elif path.endswith(".xml"):
-            directory = os.path.dirname( path )
-            dir_callback = self.tool_watcher.tool_dir_callbacks.get( directory, None )
+            directory = os.path.dirname(path)
+            dir_callback = self.tool_watcher.tool_dir_callbacks.get(directory, None)
             if dir_callback:
                 tool_file = event.src_path
-                tool_id = dir_callback( tool_file )
+                tool_id = dir_callback(tool_file)
                 if tool_id:
-                    self.tool_watcher.tool_file_ids[ tool_file ] = tool_id
+                    self.tool_watcher.tool_file_ids[tool_file] = tool_id
 
 
 class NullWatcher(object):

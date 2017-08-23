@@ -8,7 +8,7 @@ from __future__ import print_function
 import os
 import sys
 
-assert sys.version_info[:2] >= ( 2, 4 )
+assert sys.version_info[:2] >= (2, 4)
 
 
 def usage(prog):
@@ -29,21 +29,21 @@ def main():
         sys.exit()
     infile = sys.argv[1]
     outfile = infile + ".removed.log"
-    out = open( outfile, 'w' )
+    out = open(outfile, 'w')
 
     print("# The following renamed datasets have been removed from disk", file=out)
     i = 0
     removed_files = 0
-    for i, line in enumerate( open( infile ) ):
-        line = line.rstrip( '\r\n' )
-        if line and line.startswith( '/var/opt/galaxy' ):
+    for i, line in enumerate(open(infile)):
+        line = line.rstrip('\r\n')
+        if line and line.startswith('/var/opt/galaxy'):
             try:
-                os.unlink( line )
+                os.unlink(line)
                 print(line, file=out)
                 removed_files += 1
             except Exception as exc:
-                print("# Error, exception " + str( exc ) + " caught attempting to remove " + line, file=out)
-    print("# Removed " + str( removed_files ) + " files", file=out)
+                print("# Error, exception " + str(exc) + " caught attempting to remove " + line, file=out)
+    print("# Removed " + str(removed_files) + " files", file=out)
 
 
 if __name__ == "__main__":

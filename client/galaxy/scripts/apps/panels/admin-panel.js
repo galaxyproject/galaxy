@@ -54,7 +54,8 @@ var AdminPanel = Backbone.View.extend({
                 url     : 'admin/package_tool'
             },{
                 title   : 'Tool lineage',
-                url     : 'admin/tool_versions'
+                url     : 'admin/tool_versions',
+                target  : '__use_router__'
             },{
                 title   : 'Reload a tool\'s configuration',
                 url     : 'admin/reload_tool'
@@ -75,13 +76,16 @@ var AdminPanel = Backbone.View.extend({
             title : 'User Management',
             items : [ {
                 title   : 'Users',
-                url     : 'admin/users'
+                url     : 'admin/users',
+                target  : '__use_router__'
             },{
                 title   : 'Groups',
-                url     : 'admin/groups'
+                url     : 'admin/groups',
+                target  : '__use_router__'
             },{
                 title   : 'Roles',
-                url     : 'admin/roles'
+                url     : 'admin/roles',
+                target  : '__use_router__'
             },{
                 title   : 'API keys',
                 url     : 'userskeys/all_users'
@@ -95,13 +99,15 @@ var AdminPanel = Backbone.View.extend({
             items : [ {
                 title   : 'Quotas',
                 url     : 'admin/quotas',
+                target  : '__use_router__',
                 enabled : self.config.enable_quotas
             },{
                 title   : 'Data libraries',
                 url     : 'library_admin/browse_libraries'
             },{
                 title   : 'Roles',
-                url     : 'admin/roles'
+                url     : 'admin/roles',
+                target  : '__use_router__'
             },{
                 title   : 'Local data',
                 url     : 'data_manager'
@@ -139,10 +145,13 @@ var AdminPanel = Backbone.View.extend({
             var $entries = $section.find( '.ui-side-section-body' );
             _.each( category.get( 'items' ), function( item ) {
                 if ( item.enabled === undefined || item.enabled ) {
-                    $entries.append( $( '<div/>' ).addClass( 'ui-side-section-body-title' )
-                                                  .append( $( '<a/>' ).attr({
-                                                                href    : self.root + item.url,
-                                                                target  : 'galaxy_main' }).text( _l( item.title ) ) ) );
+                    var $link = $( '<a/>' ).attr( { href : self.root + item.url } ).text( _l( item.title ) );
+                    if ( item.target == '__use_router__' ) {
+                        $link.on( 'click', function( e ) { e.preventDefault(); self.page.router.push( item.url ); } );
+                    } else {
+                        $link.attr( 'target', 'galaxy_main' );
+                    }
+                    $entries.append( $( '<div/>' ).addClass( 'ui-side-section-body-title' ).append( $link ) );
                 }
             });
             self.$el.append( $section );

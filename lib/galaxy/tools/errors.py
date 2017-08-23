@@ -67,7 +67,7 @@ error_report_template_html = """
 <h3>Error Localization</h3>
 <table style="margin:1em">
     <tbody>
-        <tr><td>Dataset</td><td>${dataset_id} (${dataset_id_encoded})</td></tr>
+        <tr><td>Dataset</td><td><a href="${hda_show_params_link}">${dataset_id} (${dataset_id_encoded})</a></td></tr>
         <tr style="background-color: #f2f2f2"><td>History</td><td><a href="${history_view_link}">${history_id} (${history_id_encoded})</a></td></tr>
         <tr><td>Failed Job</td><td>${hid}: ${history_item_name} (${hda_id_encoded})</td></tr>
     </tbody>
@@ -84,7 +84,7 @@ ${message}
 
 <h3>Detailed Job Information</h3>
 
-Job environment and execution information is available at the job <a href="${hda_show_params_link}">Info Page</a>.
+Job environment and execution information is available at the job <a href="${hda_show_params_link}">info page</a>.
 
 <table style="margin:1em">
     <tbody>
@@ -128,18 +128,18 @@ This is an automated message. Do not reply to this address.
 """
 
 
-class ErrorReporter( object ):
-    def __init__( self, hda, app ):
+class ErrorReporter(object):
+    def __init__(self, hda, app):
         # Get the dataset
         sa_session = app.model.context
-        if not isinstance( hda, model.HistoryDatasetAssociation ):
+        if not isinstance(hda, model.HistoryDatasetAssociation):
             hda_id = hda
             try:
-                hda = sa_session.query( model.HistoryDatasetAssociation ).get( hda_id )
-                assert hda is not None, ValueError( "No HDA yet" )
+                hda = sa_session.query(model.HistoryDatasetAssociation).get(hda_id)
+                assert hda is not None, ValueError("No HDA yet")
             except Exception:
-                hda = sa_session.query( model.HistoryDatasetAssociation ).get( app.security.decode_id( hda_id ) )
-        assert isinstance( hda, model.HistoryDatasetAssociation ), ValueError( "Bad value provided for HDA (%s)." % ( hda ) )
+                hda = sa_session.query(model.HistoryDatasetAssociation).get(app.security.decode_id(hda_id))
+        assert isinstance(hda, model.HistoryDatasetAssociation), ValueError("Bad value provided for HDA (%s)." % (hda))
         self.hda = hda
         # Get the associated job
         self.job = hda.creating_job
@@ -147,21 +147,21 @@ class ErrorReporter( object ):
         self.tool_id = self.job.tool_id
         self.report = None
 
-    def _can_access_dataset( self, user ):
+    def _can_access_dataset(self, user):
         if user:
             roles = user.all_roles()
         else:
             roles = []
-        return self.app.security_agent.can_access_dataset( roles, self.hda.dataset )
+        return self.app.security_agent.can_access_dataset(roles, self.hda.dataset)
 
-    def create_report( self, user, email='', message='', **kwd ):
+    def create_report(self, user, email='', message='', **kwd):
         hda = self.hda
         job = self.job
-        host = web.url_for( '/', qualified=True )
-        history_id_encoded = self.app.security.encode_id( hda.history_id )
-        history_view_link = web.url_for( controller="history", action="view", id=history_id_encoded, qualified=True )
-        hda_id_encoded = self.app.security.encode_id( hda.id )
-        hda_show_params_link = web.url_for( controller="dataset", action="show_params", dataset_id=hda_id_encoded, qualified=True )
+        host = web.url_for('/', qualified=True)
+        history_id_encoded = self.app.security.encode_id(hda.history_id)
+        history_view_link = web.url_for(controller="history", action="view", id=history_id_encoded, qualified=True)
+        hda_id_encoded = self.app.security.encode_id(hda.id)
+        hda_show_params_link = web.url_for(controller="dataset", action="show_params", dataset_id=hda_id_encoded, qualified=True)
         # Build the email message
         if user and user.email != email:
             email_str = "'%s' (providing preferred contact email '%s')" % (user.email, email)
@@ -170,7 +170,7 @@ class ErrorReporter( object ):
 
         report_variables = dict(
             host=host,
-            dataset_id_encoded=self.app.security.encode_id( hda.dataset_id ),
+            dataset_id_encoded=self.app.security.encode_id(hda.dataset_id),
             dataset_id=hda.dataset_id,
             history_id_encoded=history_id_encoded,
             history_id=hda.history_id,
@@ -179,60 +179,60 @@ class ErrorReporter( object ):
             history_item_name=hda.get_display_name(),
             history_view_link=history_view_link,
             hda_show_params_link=hda_show_params_link,
-            job_id_encoded=self.app.security.encode_id( job.id ),
+            job_id_encoded=self.app.security.encode_id(job.id),
             job_id=job.id,
             tool_version=job.tool_version,
             job_tool_id=job.tool_id,
             job_tool_version=hda.tool_version,
             job_runner_external_id=job.job_runner_external_id,
             job_command_line=job.command_line,
-            job_stderr=util.unicodify( job.stderr ),
-            job_stdout=util.unicodify( job.stdout ),
-            job_info=util.unicodify( job.info ),
-            job_traceback=util.unicodify( job.traceback ),
+            job_stderr=util.unicodify(job.stderr),
+            job_stdout=util.unicodify(job.stdout),
+            job_info=util.unicodify(job.info),
+            job_traceback=util.unicodify(job.traceback),
             email_str=email_str,
-            message=util.unicodify( message )
+            message=util.unicodify(message)
         )
 
-        self.report = string.Template( error_report_template ).safe_substitute( report_variables )
+        self.report = string.Template(error_report_template).safe_substitute(report_variables)
 
         # Escape all of the content  for use in the HTML report
         for parameter in report_variables.keys():
             if report_variables[parameter] is not None:
                 report_variables[parameter] = cgi.escape(unicodify(report_variables[parameter]))
 
-        self.html_report = string.Template( error_report_template_html ).safe_substitute( report_variables )
+        self.html_report = string.Template(error_report_template_html).safe_substitute(report_variables)
 
-    def _send_report( self, user, email=None, message=None, **kwd ):
+    def _send_report(self, user, email=None, message=None, **kwd):
         return self.report
 
-    def send_report( self, user, email=None, message=None, **kwd ):
+    def send_report(self, user, email=None, message=None, **kwd):
         if self.report is None:
-            self.create_report( user, email=email, message=message, **kwd )
-        return self._send_report( user, email=email, message=message, **kwd )
+            self.create_report(user, email=email, message=message, **kwd)
+        return self._send_report(user, email=email, message=message, **kwd)
 
 
-class EmailErrorReporter( ErrorReporter ):
-    def _send_report( self, user, email=None, message=None, **kwd ):
+class EmailErrorReporter(ErrorReporter):
+    def _send_report(self, user, email=None, message=None, **kwd):
         smtp_server = self.app.config.smtp_server
-        assert smtp_server, ValueError( "Mail is not configured for this galaxy instance" )
+        assert smtp_server, ValueError("Mail is not configured for this galaxy instance")
         to_address = self.app.config.error_email_to
-        assert to_address, ValueError( "Error reporting has been disabled for this galaxy instance" )
+        assert to_address, ValueError("Error reporting has been disabled for this galaxy instance")
 
         frm = to_address
         # Check email a bit
         email = email or ''
         email = email.strip()
         parts = email.split()
-        if len( parts ) == 1 and len( email ) > 0 and self._can_access_dataset( user ):
+        if len(parts) == 1 and len(email) > 0 and self._can_access_dataset(user):
             to = to_address + ", " + email
         else:
             to = to_address
         subject = "Galaxy tool error report from %s" % email
         try:
-            subject = "%s (%s)" % ( subject, self.app.toolbox.get_tool( self.job.tool_id, self.job.tool_version ).old_id )
+            subject = "%s (%s)" % (subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id)
         except Exception:
             pass
 
         # Send it
-        return util.send_mail( frm, to, subject, self.report, self.app.config, html=self.html_report )
+        return util.send_mail(frm, to, subject, self.report, self.app.config, html=self.html_report)

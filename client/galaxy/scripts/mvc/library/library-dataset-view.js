@@ -497,7 +497,7 @@ var LibraryDatasetView = Backbone.View.extend({
    * Extract the role ids from Select2 elements's 'data'
    */
   _extractIds: function(roles_list){
-    ids_list = [];
+    var ids_list = [];
     for (var i = roles_list.length - 1; i >= 0; i--) {
       ids_list.push(roles_list[i].id);
     };
@@ -531,7 +531,7 @@ var LibraryDatasetView = Backbone.View.extend({
     mod_utils.get({
         url      :  Galaxy.root + "api/datatypes?extension_only=False",
         success  :  function( datatypes ) {
-                        for (key in datatypes) {
+                        for (var key in datatypes) {
                             that.list_extensions.push({
                                 id              : datatypes[key].extension,
                                 text            : datatypes[key].extension,
@@ -548,7 +548,7 @@ var LibraryDatasetView = Backbone.View.extend({
     mod_utils.get({
         url     :    Galaxy.root + "api/genomes",
         success : function( genomes ) {
-                    for ( key in genomes ) {
+                    for (var key in genomes ) {
                         that.list_genomes.push({
                             id      : genomes[key][1],
                             text    : genomes[key][0]
@@ -721,6 +721,12 @@ var LibraryDatasetView = Backbone.View.extend({
             '<td scope="row"><%= _.escape(item.get("misc_info")) %></td>',
           '</tr>',
         '<% } %>',
+        '<% if (item.get("tags")) { %>',
+          '<tr>',
+            '<th scope="row">Tags</th>',
+            '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
+          '</tr>',
+        '<% } %>',
       '</table>',
 
     '<div>',
@@ -850,6 +856,12 @@ var LibraryDatasetView = Backbone.View.extend({
               '<td scope="row"><%= _.escape(ldda.get("misc_info")) %></td>',
             '</tr>',
           '<% } %>',
+          '<% if (item.get("tags")) { %>',
+            '<tr>',
+              '<th scope="row">Tags</th>',
+              '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
+            '</tr>',
+          '<% } %>',
         '</table>',
         '<div>',
           '<pre class="peek">',
@@ -951,6 +963,13 @@ var LibraryDatasetView = Backbone.View.extend({
             '<th scope="row">Miscellaneous blurb</th>',
             '<td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>',
           '</tr>',
+          //TODO: add functionality to modify tags here
+          '<% if (item.get("tags")) { %>',
+            '<tr>',
+              '<th scope="row">Tags</th>',
+              '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
+            '</tr>',
+          '<% } %>',
         '</table>',
         '<div>',
           '<pre class="peek">',

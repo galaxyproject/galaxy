@@ -102,7 +102,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
                  job_log_prefix,
                  destination,
                  MESSAGES[runner_state],
-                 job_state.job_wrapper.job_destination.id )
+                 job_state.job_wrapper.job_destination.id)
         # fetch JobDestination for the id or tag
         if destination:
             new_destination = app.job_config.get_destination(destination)
@@ -121,7 +121,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
                       job_log_prefix,
                       resubmit['handler'])
             job.set_handler(resubmit['handler'])
-            job_runner.sa_session.add( job )
+            job_runner.sa_session.add(job)
             # Is this safe to do here?
             job_runner.sa_session.flush()
         # Cache the destination to prevent rerunning dynamic after

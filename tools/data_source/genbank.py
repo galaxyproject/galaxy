@@ -6,7 +6,7 @@ import textwrap
 
 from Bio import GenBank
 
-assert sys.version_info[:2] >= ( 2, 4 )
+assert sys.version_info[:2] >= (2, 4)
 
 
 def make_fasta(rec):

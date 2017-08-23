@@ -7,10 +7,10 @@ from galaxy.tools.parameters import basic
 from galaxy.util import bunch
 
 
-class BaseParameterTestCase( TestCase, tools_support.UsesApp ):
+class BaseParameterTestCase(TestCase, tools_support.UsesApp):
 
     def setUp(self):
-        self.setup_app( mock_model=False )
+        self.setup_app()
         self.mock_tool = bunch.Bunch(
             app=self.app,
             tool_type="default",
@@ -19,11 +19,11 @@ class BaseParameterTestCase( TestCase, tools_support.UsesApp ):
 
     def _parameter_for(self, **kwds):
         content = kwds["xml"]
-        param_xml = XML( content )
-        return basic.ToolParameter.build( self.mock_tool, param_xml )
+        param_xml = XML(content)
+        return basic.ToolParameter.build(self.mock_tool, param_xml)
 
 
-class ParameterParsingTestCase( BaseParameterTestCase ):
+class ParameterParsingTestCase(BaseParameterTestCase):
     """ Test the parsing of XML for most parameter types - in many
     ways these are not very good tests since they break the abstraction
     established by the tools. The docs tests in basic.py are better but
@@ -105,8 +105,8 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
         assert param.name == "intp"
         assert param.value == "9"
         assert param.type == "integer"
-        param.validate( 8 )
-        self.assertRaises(Exception, lambda: param.validate( 10 ))
+        param.validate(8)
+        self.assertRaises(Exception, lambda: param.validate(10))
 
     def test_float_params(self):
         param = self._parameter_for(xml="""
@@ -115,8 +115,8 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
         assert param.name == "floatp"
         assert param.value == "9"
         assert param.type == "float"
-        param.validate( 8.1 )
-        self.assertRaises(Exception, lambda: param.validate( 10.0 ))
+        param.validate(8.1)
+        self.assertRaises(Exception, lambda: param.validate(10.0))
 
     def test_boolean_params(self):
         param = self._parameter_for(xml="""

@@ -18,6 +18,12 @@
   <tool file="tool_provided_metadata_1.xml" />
   <tool file="tool_provided_metadata_2.xml" />
   <tool file="tool_provided_metadata_3.xml" />
+  <tool file="tool_provided_metadata_4.xml" />
+  <tool file="tool_provided_metadata_5.xml" />
+  <tool file="tool_provided_metadata_6.xml" />
+  <tool file="tool_provided_metadata_7.xml" />
+  <tool file="tool_provided_metadata_8.xml" />
+  <tool file="tool_provided_metadata_9.xml" />
   <tool file="inputs_as_json.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
@@ -25,6 +31,7 @@
   <tool file="composite_output.xml" />
   <tool file="composite_output_tests.xml" />
   <tool file="unicode_stream.xml" />
+  <tool file="vcf_bgzip.xml" />
   <tool file="metadata.xml" />
   <tool file="metadata_bam.xml" />
   <tool file="metadata_bcf.xml" />
@@ -78,6 +85,7 @@
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
   <tool file="explicit_conversion.xml" />
+  <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="identifier_multiple_in_conditional.xml" />
@@ -98,6 +106,8 @@
   <tool file="collection_optional_param.xml" />
   <tool file="collection_split_on_column.xml" />
   <tool file="collection_creates_dynamic_nested.xml" />
+  <tool file="collection_creates_dynamic_nested_from_json.xml" />
+  <tool file="collection_creates_dynamic_nested_from_json_elements.xml" />
   <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="collection_type_source.xml" />
   <tool file="collection_creates_list_fail.xml" />
@@ -148,6 +158,7 @@
   <tool file="${model_tools_path}/zip_collection.xml" />
   <tool file="${model_tools_path}/filter_failed_collection.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
+  <tool file="${model_tools_path}/sort_collection_list.xml" />
   <tool file="${model_tools_path}/merge_collection.xml" />
   <tool file="${model_tools_path}/relabel_from_file.xml" />
   <tool file="${model_tools_path}/filter_from_file.xml" />

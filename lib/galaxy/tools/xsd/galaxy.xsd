@@ -3559,6 +3559,30 @@ the ``<inputs>`` documentation.
     <xs:sequence>
       <xs:group ref="OutputsElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
+    <xs:attribute name="provided_metadata_style" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+          Style used for tool provided metadata file (i.e.
+          [galaxy.json](http://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata))
+          - this can be either "legacy" or "default". The default of tools with
+          a profile of 17.09 or newer are "default", and "legacy" for older and
+          tools and tools without a specified profile. A discussion of the
+          differences between the styles can be found at
+          https://github.com/galaxyproject/galaxy/pull/4437.
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="provided_metadata_file" type="xs:string" default="galaxy.json">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+          Path relative to tool's working directory to load tool provided
+          metadata from. This metadata can describe dynamic datasets to load,
+          dynamic collection contents, as well as simple metadata (e.g. name, dbkey, etc...) and datatype specific metadata for declared outputs.
+          More information can be found [here](http://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata). The
+          default is galaxy.json.
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:group name="OutputsElement">
     <xs:choice>
@@ -3691,6 +3715,12 @@ The valid values for format can be found in
     <xs:attribute name="format_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This sets the data type of the output file to be the same format as that of a tool input dataset.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="default_identifier_source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Sets the source of element identifier to the specified input.
+This only applies to collections that are mapped over a non-collection input and that have equivalent structures.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="metadata_source" type="xs:string">
@@ -3867,7 +3897,12 @@ More information can be found on Planemo's documentation for
 [multiple output files](https://planemo.readthedocs.io/en/latest/writing_advanced.html#multiple-output-files).
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:attribute name="pattern" type="xs:string" use="required">
+    <xs:attribute name="from_provided_metadata" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort must not be set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="pattern" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Regular expression used to find filenames and parse dynamic properties.</xs:documentation>
       </xs:annotation>
@@ -3915,7 +3950,12 @@ Galaxy, including:
 
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:attribute name="pattern" type="xs:string" use="required">
+    <xs:attribute name="from_provided_metadata" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort must not be set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="pattern" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Regular expression used to find filenames and parse dynamic properties.</xs:documentation>
       </xs:annotation>

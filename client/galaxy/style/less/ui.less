@@ -34,6 +34,12 @@
 @ui-margin-horizontal-small: 4px;
 @ui-margin-horizontal-large: 10px;
 
+// helpers
+.ui-clear-float {
+    clear: both !important;
+    float: none !important;
+}
+
 // margins
 .ui-margin-top {
     padding-top: @ui-margin-vertical !important;
@@ -94,6 +100,7 @@
     margin-bottom: 0px;
     width: 100%;
     display: none;
+    word-wrap: break-word;
 }
 
 .ui-modal {
@@ -135,6 +142,7 @@
 
 // buttons
 .ui-button-default {
+    float: right;
     .icon {
         font-size: 1.1em;
     }
@@ -154,6 +162,7 @@
     &:extend(.no-highlight);
     height: auto !important;
     width: auto !important;
+    float: right;
     ul {
         i {
             width: 1.2em;
@@ -195,6 +204,7 @@
     height: inherit !important;
     width: inherit !important;
     padding-right: 3px !important;
+    float: right;
 }
 
 // side panel
@@ -424,6 +434,7 @@
 
 .ui-form-help {
     overflow: auto;
+    word-wrap: break-word;
 }
 
 .ui-form-info {
@@ -851,10 +862,12 @@
         .ui-button-icon {
             margin-top: 3px;
             margin-right: 5px;
+            float: left;
         }
     }
     .ui-list-message, .ui-list-portlet {
         clear: both;
+        padding-top: 1px;
     }
     .ui-list-id {
         cursor: pointer;
@@ -863,6 +876,34 @@
             font-size: 1.2em;
             margin-right: 5px;
         }
+    }
+}
+
+.ui-gs-select-file {
+    .ui-gs-filename-textbox {
+        float: right;
+        width: ~'calc(100% - 76px)';
+    }
+    .ui-gs-token-textbox {
+        float: right;
+        width: ~'calc(100% - 76px)';
+    }
+    .ui-gs-browse-button {
+        float: left;
+        .ui-button-icon {
+            margin-top: 3px;
+            margin-right: 5px;
+        }
+    }
+    .ui-gs-token-label {
+        margin-top: 5px;            
+        margin-left: 32px;
+        margin-right: 5px;
+        float: left;
+    }
+    .ui-gs-token-field {
+        clear: both;
+        padding-top: 5px;
     }
 }
 
