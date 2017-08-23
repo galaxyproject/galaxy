@@ -6,7 +6,6 @@ import re
 from markupsafe import escape
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, web
-from galaxy.web.form_builder import FileField, TextField, HiddenField, SelectField
 from galaxy.web.framework.helpers import grids, iff, time_ago
 
 log = logging.getLogger(__name__)
