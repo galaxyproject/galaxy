@@ -27,21 +27,21 @@ from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
 NO_BOTO_ERROR_MESSAGE = ("Cloud object store is configured, but no boto dependency available."
                          "Please install and properly configure boto or modify object store configuration.")
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
 
 
-class Cloud( ObjectStore ):
+class Cloud(ObjectStore):
     """
     Object store that stores objects as items in an cloud storage. A local
     cache exists that is used as an intermediate location for files between
     Galaxy and the cloud storage.
     """
-    def __init__( self, config, config_xml ):
-        super( Cloud, self ).__init__( config )
+    def __init__(self, config, config_xml):
+        super(Cloud, self).__init__(config)
         self.staging_path = self.config.file_path
         self.transfer_progress = 0
-        self._parse_config_xml( config_xml )
+        self._parse_config_xml(config_xml)
         self._configure_connection()
         self.bucket = self._get_bucket(self.bucket)
         # Clean cache only if value is set in galaxy.ini
@@ -60,7 +60,7 @@ class Cloud( ObjectStore ):
         except OSError:
             self.use_axel = False
 
-    def _configure_connection( self ):
+    def _configure_connection(self):
         log.debug("Configuring AWS-S3 Connection")
         aws_config = {'aws_access_key': self.access_key,
                       'aws_secret_key': self.secret_key}
@@ -424,8 +424,8 @@ class Cloud( ObjectStore ):
         if self.exists(obj, **kwargs):
             return bool(self.size(obj, **kwargs) > 0)
         else:
-            raise ObjectNotFound( 'objectstore.empty, object does not exist: %s, kwargs: %s'
-                                 % ( str( obj ), str( kwargs ) ) )
+            raise ObjectNotFound('objectstore.empty, object does not exist: %s, kwargs: %s'
+                                 % (str(obj), str(kwargs)))
 
     def size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
@@ -522,8 +522,9 @@ class Cloud( ObjectStore ):
         # even if it does not exist.
         # if dir_only:
         #     return cache_path
-        raise ObjectNotFound( 'objectstore.get_filename, no cache_path: %s, kwargs: %s'
-                              % ( str( obj ), str( kwargs ) ) )
+        raise ObjectNotFound('objectstore.get_filename, no cache_path: %s, kwargs: %s'
+                             % (str(obj), str(kwargs)))
+
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
@@ -548,8 +549,8 @@ class Cloud( ObjectStore ):
             # Update the file on cloud
             self._push_to_os(rel_path, source_file)
         else:
-            raise ObjectNotFound( 'objectstore.update_from_file, object does not exist: %s, kwargs: %s'
-                                  % ( str( obj ), str( kwargs ) ) )
+            raise ObjectNotFound('objectstore.update_from_file, object does not exist: %s, kwargs: %s'
+                                 % (str(obj), str(kwargs)))
 
     def get_object_url(self, obj, **kwargs):
         if self.exists(obj, **kwargs):
