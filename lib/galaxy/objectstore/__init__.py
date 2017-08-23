@@ -722,6 +722,9 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     elif store == 's3':
         from .s3 import S3ObjectStore
         return S3ObjectStore(config=config, config_xml=config_xml)
+    elif store == 'cloud':
+        from .cloud import Cloud
+        return Cloud(config=config, config_xml=config_xml)
     elif store == 'swift':
         from .s3 import SwiftObjectStore
         return SwiftObjectStore(config=config, config_xml=config_xml)
