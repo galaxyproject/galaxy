@@ -2648,10 +2648,6 @@ jpeg-js@^0.1.1:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/jpeg-js/-/jpeg-js-0.1.2.tgz#135b992c0575c985cfa0f494a3227ed238583ece"
 
-jqt@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/jqt/-/jqt-1.0.1.tgz#483dcb7a41ffae4e7625cdc2ee4e8442d6908ed3"
-
 jquery-migrate@~1.4:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/jquery-migrate/-/jquery-migrate-1.4.1.tgz#85152f3ec99a95625f4f7d0bcf62e9b8638f5a76"

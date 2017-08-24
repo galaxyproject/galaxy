@@ -36,7 +36,6 @@
     "gulp-sourcemaps": "^2.5.1",
     "gulp-uglify": "^3.0.0",
     "gulp-watch": "^4.3.11",
-    "jqt": "^1.0.1",
     "jquery": "1.12",
     "jquery-migrate": "~1.4",
     "jshint": "^2.9.4",
