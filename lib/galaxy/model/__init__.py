@@ -2673,32 +2673,6 @@ class Library(object, Dictifiable, HasName):
             active_folders.extend(self.get_active_folders(active_folder, folders))
         return sort_by_attr(active_folders, 'id')
 
-    def get_info_association(self, restrict=False, inherited=False):
-        if self.info_association:
-            if not inherited or self.info_association[0].inheritable:
-                return self.info_association[0], inherited
-            else:
-                return None, inherited
-        return None, inherited
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templates - the returned value for
-        # inherited is not applicable at the library level.  The get_contents
-        # param is passed by callers that are inheriting a template - these
-        # are usually new library datsets for which we want to include template
-        # fields on the upload form, but not necessarily the contents of the
-        # inherited template saved for the parent.
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            template = info_association.template
-            if get_contents:
-                # See if we have any field contents
-                info = info_association.info
-                if info:
-                    return template.get_widgets(trans.user, contents=info.content)
-            return template.get_widgets(trans.user)
-        return []
-
     def get_access_roles(self, trans):
         roles = []
         for lp in self.actions:
@@ -2729,51 +2703,6 @@ class LibraryFolder(object, Dictifiable, HasName):
         folder.order_id = self.item_count
         self.item_count += 1
 
-    def get_info_association(self, restrict=False, inherited=False):
-        # If restrict is True, we will return this folder's info_association, not inheriting.
-        # If restrict is False, we'll return the next available info_association in the
-        # inheritable hierarchy if it is "inheritable".  True is also returned if the
-        # info_association was inherited and False if not.  This enables us to eliminate
-        # displaying any contents of the inherited template.
-        if self.info_association:
-            if not inherited or self.info_association[0].inheritable:
-                return self.info_association[0], inherited
-            else:
-                return None, inherited
-        if restrict:
-            return None, inherited
-        if self.parent:
-            return self.parent.get_info_association(inherited=True)
-        if self.library_root:
-            return self.library_root[0].get_info_association(inherited=True)
-        return None, inherited
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templates.  The get_contents
-        # param is passed by callers that are inheriting a template - these
-        # are usually new library datsets for which we want to include template
-        # fields on the upload form.
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            if inherited:
-                template = info_association.template.current.latest_form
-            else:
-                template = info_association.template
-            # See if we have any field contents, but only if the info_association was
-            # not inherited ( we do not want to display the inherited contents ).
-            # (gvk: 8/30/10) Based on conversations with Dan, we agreed to ALWAYS inherit
-            # contents.  We'll use this behavior until we hear from the community that
-            # contents should not be inherited.  If we don't hear anything for a while,
-            # eliminate the old commented out behavior.
-            # if not inherited and get_contents:
-            if get_contents:
-                info = info_association.info
-                if info:
-                    return template.get_widgets(trans.user, info.content)
-            else:
-                return template.get_widgets(trans.user)
-        return []
-
     @property
     def activatable_library_datasets(self):
         # This needs to be a list
@@ -2781,13 +2710,6 @@ class LibraryFolder(object, Dictifiable, HasName):
 
     def to_dict(self, view='collection', value_mapper=None):
         rval = super(LibraryFolder, self).to_dict(view=view, value_mapper=value_mapper)
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            if inherited:
-                template = info_association.template.current.latest_form
-            else:
-                template = info_association.template
-            rval['data_template'] = template.name
         rval['library_path'] = self.library_path
         rval['parent_library_id'] = self.parent_library.id
         return rval
@@ -2998,19 +2920,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName):
     def has_manage_permissions_roles(self, trans):
         return self.dataset.has_manage_permissions_roles(trans)
 
-    def get_info_association(self, restrict=False, inherited=False):
-        # If restrict is True, we will return this ldda's info_association whether it
-        # exists or not ( in which case None will be returned ).  If restrict is False,
-        # we'll return the next available info_association in the inheritable hierarchy.
-        # True is also returned if the info_association was inherited, and False if not.
-        # This enables us to eliminate displaying any contents of the inherited template.
-        # SM: Accessing self.info_association can cause a query to be emitted
-        if self.info_association:
-            return self.info_association[0], inherited
-        if restrict:
-            return None, inherited
-        return self.library_dataset.folder.get_info_association(inherited=True)
-
     def to_dict(self, view='collection'):
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
@@ -3054,33 +2963,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName):
                 val = getattr(ldda.datatype, name)
             rval['metadata_' + name] = val
         return rval
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templatesThe get_contents
-        # param is passed by callers that are inheriting a template - these
-        # are usually new library datsets for which we want to include template
-        # fields on the upload form, but not necessarily the contents of the
-        # inherited template saved for the parent.
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            if inherited:
-                template = info_association.template.current.latest_form
-            else:
-                template = info_association.template
-            # See if we have any field contents, but only if the info_association was
-            # not inherited ( we do not want to display the inherited contents ).
-            # (gvk: 8/30/10) Based on conversations with Dan, we agreed to ALWAYS inherit
-            # contents.  We'll use this behavior until we hear from the community that
-            # contents should not be inherited.  If we don't hear anything for a while,
-            # eliminate the old commented out behavior.
-            # if not inherited and get_contents:
-            if get_contents:
-                info = info_association.info
-                if info:
-                    return template.get_widgets(trans.user, info.content)
-            else:
-                return template.get_widgets(trans.user)
-        return []
 
     def templates_dict(self, use_name=False):
         """
@@ -4289,12 +4171,7 @@ class MetadataFile(StorableObject):
 class FormDefinition(object, Dictifiable):
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField]
-    types = Bunch(REQUEST='Sequencing Request Form',
-                  SAMPLE='Sequencing Sample Form',
-                  EXTERNAL_SERVICE='External Service Information Form',
-                  RUN_DETAILS_TEMPLATE='Sample run details template',
-                  LIBRARY_INFO_TEMPLATE='Library information template',
-                  USER_INFO='User Information')
+    types = Bunch(USER_INFO='User Information')
     dict_collection_visible_keys = ('id', 'name')
     dict_element_visible_keys = ('id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout')
 
@@ -4716,23 +4593,6 @@ class RequestType(object, Dictifiable):
             return self.run[0]
         return None
 
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templates.  The get_contents param
-        # is passed by callers that are inheriting a template - these are
-        # usually new samples for which we want to include template fields,
-        # but not necessarily the contents of the inherited template.
-        rtra = self.run_details
-        if rtra:
-            run = rtra.run
-            template = run.template
-            if get_contents:
-                # See if we have any field contents
-                info = run.info
-                if info:
-                    return template.get_widgets(trans.user, contents=info.content)
-            return template.get_widgets(trans.user)
-        return []
-
 
 class RequestTypeExternalServiceAssociation(object):
     def __init__(self, request_type, external_service):
@@ -4842,32 +4702,6 @@ class Sample(object, Dictifiable):
             return self.runs[0]
         # Inherit this sample's RequestType run details, if one exists.
         return self.request.type.run_details
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # Samples have a one-to-many relationship with run details, so we return the
-        # widgets for last associated template.  The get_contents param will populate
-        # the widget fields with values from the template inherited from the sample's
-        # RequestType.
-        template = None
-        if self.runs:
-            # The self.runs mapper orders descending on update_time.
-            run = self.runs[0].run
-            template = run.template
-        if template is None:
-            # There are no run details associated with this sample, so inherit the
-            # run details template from the sample's RequestType.
-            rtra = self.request.type.run_details
-            if rtra:
-                run = rtra.run
-                template = run.template
-        if template:
-            if get_contents:
-                # See if we have any field contents
-                info = run.info
-                if info:
-                    return template.get_widgets(trans.user, contents=info.content)
-            return template.get_widgets(trans.user)
-        return []
 
     def populate_external_services(self, param_dict=None, trans=None):
         if self.request and self.request.type:
