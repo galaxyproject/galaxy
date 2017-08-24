@@ -45,7 +45,7 @@ class FormsGrid(grids.Grid):
         NameColumn("Name",
                    key="name",
                    model_class=model.FormDefinition,
-                   link=(lambda item: iff(item.deleted, None, dict(action="view_form", id=item.id))),
+                   link=(lambda item: iff(item.deleted, None, dict(controller="admin", action="form/edit_form", id=item.id))),
                    attach_popup=True,
                    filterable="advanced"),
         DescriptionColumn("Description",
@@ -66,7 +66,6 @@ class FormsGrid(grids.Grid):
                                               visible=False,
                                               filterable="standard"))
     operations = [
-        grids.GridOperation("Edit", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(controller="admin", action="form/edit_form")),
         grids.GridOperation("Delete", allow_multiple=True, condition=(lambda item: not item.deleted)),
         grids.GridOperation("Undelete", condition=(lambda item: item.deleted)),
     ]
@@ -101,22 +100,6 @@ class Forms(BaseUIController):
             kwd['status'] = status
         kwd['dict_format'] = True
         return self.forms_grid(trans, **kwd)
-
-    @web.expose_api
-    @web.require_admin
-    def view_form(self, trans, **kwd):
-        '''Displays the layout of the latest version of the form definition'''
-        form_definition_current_id = kwd.get('id', None)
-        try:
-            form_definition_current = trans.sa_session.query(trans.app.model.FormDefinitionCurrent) \
-                                                      .get(trans.security.decode_id(form_definition_current_id))
-        except:
-            return trans.response.send_redirect(web.url_for(controller='admin',
-                                                            action='forms',
-                                                            message='Invalid form',
-                                                            status='error'))
-        return trans.fill_template('/admin/forms/view_form_definition.mako',
-                                   form_definition=form_definition_current.latest_form)
 
     @web.expose_api
     @web.require_admin
