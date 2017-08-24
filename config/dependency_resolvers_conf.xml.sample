@@ -26,6 +26,7 @@
    - All the above attributes are optional
    - The value of the lmodexec attribute can't just be "module" because module is actually a bash function and not the real LMOD binary (see the result of the "type module" command)
    - The value of the modulepath attribute can also be a semicolon separated list of path
+   - In versionless mode, only modules marked as Default will be listed by the "avail" command (The -d option is used)
    - If the config folder of your Galaxy instance contains a file called "lmod_modules_mapping.yml" (based on the lmod_modules_mapping.yml.sample file) it will be taken into consideration automatically
   -->
   <!--
