@@ -420,15 +420,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #citation_cache_data_dir = database/citations/data
 #citation_cache_lock_dir = database/citations/lock
 
-# External service types config file, defining what types of external_services
-# configurations are available in Galaxy (.sample is used if default does not
-# exist).
-#external_service_type_config_file = config/external_service_types_conf.xml
-
-# Path to the directory containing the external_service_types defined in the
-# config.
-#external_service_type_path = external_service_types
-
 # Tools with a number of outputs not known until runtime can write these
 # outputs to a directory for collection by Galaxy when the job is done.
 # Previously, this directory was new_file_path, but using one global directory
