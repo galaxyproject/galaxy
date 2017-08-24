@@ -20,15 +20,18 @@ from galaxy.util import (
     umask_fix_perms,
 )
 from galaxy.util.sleeper import Sleeper
-
 from ..objectstore import convert_bytes, ObjectStore
-from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
-
-NO_BOTO_ERROR_MESSAGE = ("Cloud object store is configured, but no boto dependency available."
-                         "Please install and properly configure boto or modify object store configuration.")
 
 log = logging.getLogger(__name__)
 logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
+
+try:
+    from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
+except ImportError:
+    log.error("Could not import CloudBridge.")
+
+NO_BOTO_ERROR_MESSAGE = ("Cloud object store is configured, but no boto dependency available."
+                         "Please install and properly configure boto or modify object store configuration.")
 
 
 class Cloud(ObjectStore):
