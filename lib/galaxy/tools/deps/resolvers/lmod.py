@@ -29,6 +29,7 @@ DEFAULT_MAPPING_FILE = 'config/lmod_modules_mapping.yml'
 INVALID_LMOD_PATH_MSG = "The following LMOD executable could not be found: %s. Either your LMOD Dependency Resolver is misconfigured or LMOD is improperly installed on your system !"
 EMPTY_MODULEPATH_MSG = "No valid LMOD MODULEPATH defined ! Either your LMOD Dependency Resolver is misconfigured or LMOD is improperly installed on your system !"
 
+
 class LmodDependencyResolver(DependencyResolver, MappableDependencyResolver):
     """Dependency resolver based on the LMOD environment modules system"""
 
@@ -48,7 +49,7 @@ class LmodDependencyResolver(DependencyResolver, MappableDependencyResolver):
         self.module_checker = AvailModuleChecker(self, self.modulepath)
 
     def _set_default_mapping_file(self, resolver_attributes):
-        if not resolver_attributes.has_key('mapping_files'):
+        if 'mapping_files' not in resolver_attributes:
             if exists(DEFAULT_MAPPING_FILE):
                 resolver_attributes['mapping_files'] = DEFAULT_MAPPING_FILE
 
@@ -76,7 +77,6 @@ class AvailModuleChecker(object):
     def __init__(self, lmod_dependency_resolver, modulepath):
         self.lmod_dependency_resolver = lmod_dependency_resolver
         self.modulepath = modulepath
-
 
     def has_module(self, module, version):
         # In versionless mode we only get the list of default modules
