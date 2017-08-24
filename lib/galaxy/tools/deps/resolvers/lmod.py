@@ -167,11 +167,11 @@ class LmodDependency(Dependency):
         # - Set the MODULEPATH environment variable
         command = 'MODULEPATH=%s; ' % (self.lmod_dependency_resolver.modulepath)
         command += 'export MODULEPATH; '
-        # - Execute the "module load" command
-        command += 'eval `%s load %s`; ' % (self.lmod_dependency_resolver.lmodexec, module_to_load)
+        # - Execute the "module load" command (or rather the "/path/to/lmod load" command)
+        command += 'eval `%s load %s` ' % (self.lmod_dependency_resolver.lmodexec, module_to_load)
         # - Execute the "settarg" command in addition if needed
         if self.lmod_dependency_resolver.settargexec is not None:
-            command += 'eval `%s -s sh`' % (self.lmod_dependency_resolver.settargexec)
+            command += '&& eval `%s -s sh`' % (self.lmod_dependency_resolver.settargexec)
 
         return command
 
