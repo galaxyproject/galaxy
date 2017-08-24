@@ -1497,15 +1497,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             message = 'Usage has changed by %s to %s.' % (nice_size(new - current), nice_size(new))
         return (message, 'done')
 
-    @web.expose
-    @web.require_admin
-    def name_autocomplete_data(self, trans, q=None, limit=None, timestamp=None):
-        """Return autocomplete data for user emails"""
-        ac_data = ""
-        for user in trans.sa_session.query(trans.app.model.User).filter_by(deleted=False).filter(func.lower(trans.app.model.User.email).like(q.lower() + "%")):
-            ac_data = ac_data + user.email + "\n"
-        return ac_data
-
     @web.expose_api
     @web.require_admin
     def manage_roles_and_groups_for_user(self, trans, payload=None, **kwd):
