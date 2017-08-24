@@ -247,15 +247,13 @@ class InteractiveEnvironmentRequest(object):
     def volume(self, host_path, container_path, **kwds):
         return DockerVolume(host_path, container_path, **kwds)
 
-    def _get_env_for_run(self, env_override=None, env_keep_case=None):
+    def _get_env_for_run(self, env_override=None):
         if env_override is None:
             env_override = {}
         conf = self.get_conf_dict()
+        conf = dict([(key.upper(), item) for key, item in conf.items()])
         conf.update(env_override)
-        if env_keep_case:
-            return dict([(key, item) for key, item in conf.items()])
-
-        return dict([(key.upper(), item) for key, item in conf.items()])
+        return conf
 
     def _get_import_volume_for_run(self):
         if self.use_volumes and self.attr.import_volume:
@@ -265,13 +263,13 @@ class InteractiveEnvironmentRequest(object):
     def _get_name_for_run(self):
         return CONTAINER_NAME_PREFIX + uuid.uuid4().hex
 
-    def docker_cmd(self, image, env_override=None, env_keep_case=None, volumes=None):
+    def docker_cmd(self, image, env_override=None, volumes=None):
         """
             Generate and return the docker command to execute
         """
         if volumes is None:
             volumes = []
-        env = self._get_env_for_run(env_override, env_keep_case)
+        env = self._get_env_for_run(env_override)
         import_volume_def = self._get_import_volume_for_run()
         env_str = ' '.join('-e "%s=%s"' % (key, item) for key, item in env.items())
         volume_str = ' '.join('-v "%s"' % volume for volume in volumes) if self.use_volumes else ''
@@ -309,7 +307,7 @@ class InteractiveEnvironmentRequest(object):
         else:
             return True
 
-    def container_run_args(self, image, env_override=None, env_keep_case=None, volumes=None):
+    def container_run_args(self, image, env_override=None, volumes=None):
         if volumes is None:
             volumes = []
         import_volume_def = self._get_import_volume_for_run()
@@ -317,7 +315,7 @@ class InteractiveEnvironmentRequest(object):
             volumes.append(import_volume_def)
         args = {
             'image': image,
-            'environment': self._get_env_for_run(env_override, env_keep_case),
+            'environment': self._get_env_for_run(env_override),
             'volumes': volumes,
             'name': self._get_name_for_run(),
             'detach': True,
@@ -363,10 +361,10 @@ class InteractiveEnvironmentRequest(object):
             port_mapping = port_mappings[0]
         return port_mapping
 
-    def _launch_legacy(self, image, env_override, env_keep_case, volumes):
+    def _launch_legacy(self, image, env_override, volumes):
         """Legacy launch method for use when the container interface is not enabled
         """
-        raw_cmd = self.docker_cmd(image, env_override=env_override, env_keep_case=env_keep_case, volumes=volumes)
+        raw_cmd = self.docker_cmd(image, env_override=env_override, volumes=volumes)
 
         log.info("Starting docker container for IE {0} with command [{1}]".format(
             self.attr.viz_id,
@@ -407,10 +405,10 @@ class InteractiveEnvironmentRequest(object):
             # go through the proxy we ship.
             # self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
 
-    def _launch_container_interface(self, image, env_override, env_keep_case, volumes):
+    def _launch_container_interface(self, image, env_override, volumes):
         """Launch method for use when the container interface is enabled
         """
-        run_args = self.container_run_args(image, env_override, env_keep_case, volumes)
+        run_args = self.container_run_args(image, env_override, volumes)
         container = self.attr.container_interface.run_in_container(None, **run_args)
         container_port = self._find_port_mapping(container.ports)
         log.debug("Container '%s' accessible at: %s:%s", container.id, container_port.hostaddr, container_port.hostport)
@@ -425,7 +423,7 @@ class InteractiveEnvironmentRequest(object):
         )
         self.attr.proxy_url = self.attr.proxy_request['proxy_url']
 
-    def launch(self, image=None, additional_ids=None, env_override=None, volumes=None, env_keep_case=None):
+    def launch(self, image=None, additional_ids=None, env_override=None, volumes=None):
         """Launch a docker image.
 
         :type image: str
@@ -440,9 +438,6 @@ class InteractiveEnvironmentRequest(object):
 
         :type env_override: dict
         :param env_override: dictionary of environment variables to add.
-
-        :type env_keep_case: bool
-        :param env_keep_case: if True, don't uppercase value of env_override
 
         :type volumes: list of galaxy.tools.deps.docker_util.DockerVolume
         :param volumes: dictionary of docker volume mounts
@@ -467,9 +462,9 @@ class InteractiveEnvironmentRequest(object):
             volumes += self._idsToVolumes(additional_ids)
 
         if self.attr.container_interface is None:
-            self._launch_legacy(image, env_override, env_keep_case, volumes)
+            self._launch_legacy(image, env_override, volumes)
         else:
-            self._launch_container_interface(image, env_override, env_keep_case, volumes)
+            self._launch_container_interface(image, env_override, volumes)
 
     def inspect_container(self, container_id):
         """Runs docker inspect on a container and returns json response as python dictionary inspect_data.
