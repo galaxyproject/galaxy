@@ -1097,7 +1097,7 @@ class WorkflowModuleInjector(object):
         step.state = state
         if step.type == "subworkflow":
             subworkflow = step.subworkflow
-            populate_module_and_state(self.trans, subworkflow, param_map={}, )
+            populate_module_and_state(self.trans, subworkflow, param_map={})
         return step_errors
 
 
