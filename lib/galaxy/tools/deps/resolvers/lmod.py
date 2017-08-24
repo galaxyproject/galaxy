@@ -79,8 +79,8 @@ class AvailModuleChecker(object):
         self.modulepath = modulepath
 
     def has_module(self, module, version):
-        # In versionless mode we only get the list of default modules
-        # We get the full module list otherwise
+        # When version is None (No specific version required by the wrapper -or- versionless is set to 'true'), we only get the list of default modules
+        # We get the full list of modules otherwise
         if version is None:
             available_modules = self.__get_list_of_available_modules(True)
         else:
