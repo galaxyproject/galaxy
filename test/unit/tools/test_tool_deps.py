@@ -304,7 +304,7 @@ Mothur/1.33.3
 Mothur/1.36.1
 Mothur/1.38.1.1
 ''')
-        resolver = LmodDependencyResolver(_SimpleDependencyManager(), lmodexec=lmod_script)
+        resolver = LmodDependencyResolver(_SimpleDependencyManager(), lmodexec=lmod_script, modulepath='/path/to/modulefiles')
 
         lmod = resolver.resolve(ToolRequirement(name="Infernal", version=None, type="package"))
         assert lmod.module_name == "Infernal"
@@ -326,7 +326,7 @@ BlastPlus/2.4.0+
 Infernal/1.1.2
 Mothur/1.36.1
 ''')
-        resolver = LmodDependencyResolver(_SimpleDependencyManager(), lmodexec=lmod_script, versionless='true')
+        resolver = LmodDependencyResolver(_SimpleDependencyManager(), lmodexec=lmod_script, versionless='true', modulepath='/path/to/modulefiles')
 
         lmod = resolver.resolve(ToolRequirement(name="Infernal", version=None, type="package"))
         assert lmod.module_name == "Infernal"
@@ -374,7 +374,7 @@ Mothur/1.38.1.1
     version: 1.38.1.1
 ''')
 
-        resolver = LmodDependencyResolver(_SimpleDependencyManager(), lmodexec=lmod_script, mapping_files=mapping_file)
+        resolver = LmodDependencyResolver(_SimpleDependencyManager(), lmodexec=lmod_script, mapping_files=mapping_file, modulepath='/path/to/modulefiles')
 
         lmod = resolver.resolve(ToolRequirement(name="BlastPlus", version="2.2.31+", type="package"))
         assert lmod.module_name == "BlastPlus"
@@ -418,7 +418,7 @@ if [ "$2" != "foomodule/1.0" ]; then
 fi
 echo 'FOO="bar"'
 ''')
-        resolver = Bunch(lmodexec=mock_lmodexec, settargexec=None, modulepath='/something')
+        resolver = Bunch(lmodexec=mock_lmodexec, settargexec=None, modulepath='/path/to/modulefiles')
         dependency = LmodDependency(resolver, "foomodule", "1.0")
         __assert_foo_exported(dependency.shell_commands(Bunch(type="package")))
 
