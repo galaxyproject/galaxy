@@ -26,7 +26,41 @@ var AdminPanel = Backbone.View.extend({
             },{
                 title   : 'Manage jobs',
                 url     : 'admin/jobs'
+            },{
+                title   : 'Local data',
+                url     : 'data_manager'
             } ]
+        },{
+            title : 'User Management',
+            items : [ {
+                title   : 'Users',
+                url     : 'admin/users',
+                target  : '__use_router__'
+            },{
+                title   : 'Quotas',
+                url     : 'admin/quotas',
+                target  : '__use_router__',
+                enabled : self.config.enable_quotas
+            },{
+                title   : 'Groups',
+                url     : 'admin/groups',
+                target  : '__use_router__'
+            },{
+                title   : 'Roles',
+                url     : 'admin/roles',
+                target  : '__use_router__'
+            },{
+                title   : 'Forms',
+                url     : 'admin/forms',
+                target  : '__use_router__'
+            },{
+                title   : 'API keys',
+                url     : 'userskeys/all_users'
+            },{
+                title   : 'Impersonate a user',
+                url     : 'admin/impersonate',
+                enabled : self.config.allow_user_impersonation
+            }]
         },{
             title : 'Tools and Tool Shed',
             items : [ {
@@ -71,68 +105,6 @@ var AdminPanel = Backbone.View.extend({
             },{
                 title   : 'Manage Tool Dependencies',
                 url     : 'admin/manage_tool_dependencies'
-            } ]
-        },{
-            title : 'User Management',
-            items : [ {
-                title   : 'Users',
-                url     : 'admin/users',
-                target  : '__use_router__'
-            },{
-                title   : 'Groups',
-                url     : 'admin/groups',
-                target  : '__use_router__'
-            },{
-                title   : 'Roles',
-                url     : 'admin/roles',
-                target  : '__use_router__'
-            },{
-                title   : 'API keys',
-                url     : 'userskeys/all_users'
-            },{
-                title   : 'Impersonate a user',
-                url     : 'admin/impersonate',
-                enabled : self.config.allow_user_impersonation
-            } ]
-        },{
-            title : 'Data',
-            items : [ {
-                title   : 'Quotas',
-                url     : 'admin/quotas',
-                target  : '__use_router__',
-                enabled : self.config.enable_quotas
-            },{
-                title   : 'Data libraries',
-                url     : 'library_admin/browse_libraries'
-            },{
-                title   : 'Roles',
-                url     : 'admin/roles',
-                target  : '__use_router__'
-            },{
-                title   : 'Local data',
-                url     : 'data_manager'
-            } ]
-        },{
-            title : 'Form Definitions',
-            items : [ {
-                title   : 'Form definitions',
-                url     : 'admin/forms',
-                target  : '__use_router__'
-            } ]
-        },{
-            title : 'Sample Tracking',
-            items : [ {
-                title   : 'Sequencers and external services',
-                url     : 'external_service/browse_external_services'
-            },{
-                title   : 'Request types',
-                url     : 'request_type/browse_request_types'
-            },{
-                title   : 'Sequencing requests',
-                url     : 'requests_admin/browse_requests'
-            },{
-                title   : 'Find samples',
-                url     : 'requests_common/find_samples?cntrller=requests_admin'
             } ]
         }]);
         this.setElement( this._template() );
