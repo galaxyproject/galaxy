@@ -13,7 +13,6 @@
     "farbtastic": "~2.0.0-alpha.1",
     "toastr": "~2.1.0",
     "jQTouch": "git://github.com/senchalabs/jQTouch#~1.0.0",
-    "bib2json": "git://github.com/galaxyproject/bib2json#galaxy",
     "jquery-form": "~3.46.0",
     "jquery-autocomplete": "git://github.com/dyve/jquery-autocomplete",
     "select2": "~3.5.2",
