@@ -6,7 +6,6 @@ import inspect
 import logging
 import os
 import signal
-import socket
 import threading
 
 # The uwsgi module is automatically injected by the parent uwsgi
@@ -23,6 +22,7 @@ from .message import ApplicationStackMessage, ApplicationStackMessageDispatcher,
 from .transport import ApplicationStackTransport, UWSGIFarmMessageTransport
 
 from galaxy.util.bunch import Bunch
+from galaxy.util.facts import get_facts
 
 
 log = logging.getLogger(__name__)
@@ -86,21 +86,15 @@ class ApplicationStack(object):
     def in_pool(self, pool_name):
         return False
 
-    def set_server_name(self, app, caller_tmpl_dict):
-        tmpl_dict = {
-            'server_name': app.config.server_name,
-            'pool_name': self.pool_name,
-            'process_num': 1,
-            'id': 1,
-            'hostname': socket.gethostname().split('.', 1)[0],
-            'fqdn': socket.getfqdn(),
-        }
-        tmpl_dict.update(caller_tmpl_dict)
-        app.config.server_name = self.server_name_template.format(**tmpl_dict)
-        log.debug('server_name set to: %s', app.config.server_name)
+    @property
+    def facts(self):
+        facts = get_facts(config=self.app.config)
+        facts.update({'pool_name': self.pool_name})
+        return facts
 
     def set_postfork_server_name(self, app):
-        self.set_server_name(app, {})
+        app.config.server_name = self.server_name_template.format(**self.facts)
+        log.debug('server_name set to: %s', app.config.server_name)
 
     def register_message_handler(self, func, name=None):
         pass
@@ -158,7 +152,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
     ])
     transport_class = UWSGIFarmMessageTransport
     log_filter_class = UWSGILogFilter
-    server_name_template = '{server_name}.{id}'
+    server_name_template = '{server_name}.{server_id}'
 
     postfork_functions = []
 
@@ -246,11 +240,11 @@ class UWSGIApplicationStack(MessageApplicationStack):
     def workers(self):
         return uwsgi.workers()
 
-    def set_postfork_server_name(self, app):
-        tmpl_dict = {
-            'id': 'worker%s' % uwsgi.worker_id() if uwsgi.mule_id() == 0 else 'mule%s' % uwsgi.mule_id(),
-        }
-        self.set_server_name(app, tmpl_dict)
+    @property
+    def facts(self):
+        facts = super(UWSGIApplicationStack, self).facts
+        facts.update({'server_id': 'worker%s' % uwsgi.worker_id() if uwsgi.mule_id() == 0 else 'mule%s' % uwsgi.mule_id()})
+        return facts
 
     def shutdown(self):
         super(UWSGIApplicationStack, self).shutdown()
