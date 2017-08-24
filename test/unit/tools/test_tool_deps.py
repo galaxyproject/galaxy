@@ -20,8 +20,8 @@ from galaxy.tools.deps.requirements import (
 )
 from galaxy.tools.deps.resolvers import NullDependency
 from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
-from galaxy.tools.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
 from galaxy.tools.deps.resolvers.lmod import LmodDependency, LmodDependencyResolver
+from galaxy.tools.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
 from galaxy.util.bunch import Bunch
 
 
