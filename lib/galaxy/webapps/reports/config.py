@@ -1,6 +1,7 @@
 """Universe configuration builder."""
 import logging
 import os
+import re
 import sys
 
 from six.moves import configparser
@@ -66,6 +67,17 @@ class Configuration(object):
         for path in self.root, self.file_path, self.template_path:
             if not os.path.isdir(path):
                 raise ConfigurationError("Directory does not exist: %s" % path)
+
+    @property
+    def sentry_dsn_public(self):
+        """
+        Sentry URL with private key removed for use in client side scripts,
+        sentry server will need to be configured to accept events
+        """
+        if self.sentry_dsn:
+            return re.sub(r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn)
+        else:
+            return None
 
 
 def get_database_engine_options(kwargs):
