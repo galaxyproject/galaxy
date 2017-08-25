@@ -98,11 +98,6 @@ class ProvidesAppContext(object):
     def install_model(self):
         return self.app.install_model
 
-    def request_types(self):
-        if self.sa_session.query(self.app.model.RequestType).filter_by(deleted=False).count() > 0:
-            return True
-        return False
-
 
 class ProvidesUserContext(object):
     """ For transaction-like objects to provide Galaxy convience layer for
