@@ -679,7 +679,6 @@ class BaseVcf(Tabular):
     track_type = "VariantTrack"
     data_sources = {"data": "tabix", "index": "bigwig"}
 
-    file_ext = 'vcf'
     column_names = ['Chrom', 'Pos', 'ID', 'Ref', 'Alt', 'Qual', 'Filter', 'Info', 'Format', 'data']
 
     MetadataElement(name="columns", default=10, desc="Number of columns", readonly=True, visible=False)
@@ -735,12 +734,12 @@ class BaseVcf(Tabular):
         return self.genomic_region_dataprovider(dataset, **settings)
 
 
-class Vcf (BaseVcf):
-    extension = 'vcf'
+class Vcf(BaseVcf):
+    file_ext = 'vcf'
 
 
 class VcfGz(BaseVcf, binary.Binary):
-    extension = 'vcf.gz'
+    file_ext = 'vcf_bgzip'
     compressed = True
 
     MetadataElement(name="tabix_index", desc="Vcf Index File", param=metadata.FileParameter, file_ext="tbi", readonly=True, no_value=None, visible=False, optional=True)
