@@ -31,12 +31,14 @@ from galaxy.util import (
     safe_str_cmp
 )
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.properties import nice_config_parser
 from galaxy.web.framework import (
     base,
     formbuilder,
     helpers,
     url_for
 )
+from galaxy.web.stack import get_app_kwds
 
 log = logging.getLogger(__name__)
 
@@ -961,17 +963,29 @@ def build_native_uwsgi_app(paste_factory, config_section):
     """uwsgi can load paste factories with --ini-paste, but this builds non-paste uwsgi apps.
 
     In particular these are useful with --yaml or --json for config."""
+    '''
     import uwsgi
     uwsgi_opt = uwsgi.opt
     config_file = uwsgi_opt.get("yaml") or uwsgi_opt.get("json")
+    # legacy, support loading ini uWSGI config without --ini-paste but with the app config under Paste's [app:main] section
+    if config_file is None and uwsgi_opt.get("ini"):
+        config_file = uwsgi_opt.get("ini")
+        parser = nice_config_parser(config_file)
+        if not parser.has_section(config_section) and parser.has_section("app:main"):
+            config_section = "app:main"
+    # support no uWSGI config file or separate app config file, requires setting galaxy_config_file in the uWSGI config
+    config_file = uwsgi_opt.get("galaxy_config_file") or config_file
+
     if not config_file:
         # Probably loaded via --ini-paste - expect paste app.
         return None
+    '''
+    app_kwds = get_app_kwds(config_section, for_paste_app=True)
+    if not app_kwds:
+        # Probably loaded via --ini-paste - expect paste app
+        return None
 
-    uwsgi_app = paste_factory(uwsgi.opt, load_app_kwds={
-        "config_file": config_file,
-        "config_section": config_section,
-    })
+    uwsgi_app = paste_factory(uwsgi.opt, load_app_kwds=**app_kwds)
     return uwsgi_app
 
 

@@ -45,6 +45,8 @@ try:
 except ImportError:
     uwsgi = None
 
+from six import string_types
+
 REQUIRES_DAEMONIZE_MESSAGE = "Attempted to use Galaxy in daemon mode, but daemonize is unavailable."
 
 log = logging.getLogger(__name__)
@@ -99,7 +101,7 @@ def load_galaxy_app(
 
 def app_loop(args, log):
     try:
-        config_builder = GalaxyConfigBuilder(args, ini_path=ini_path_from_uwsgi())
+        config_builder = GalaxyConfigBuilder(args, config_file=config_file_from_uwsgi())
         galaxy_app = load_galaxy_app(
             config_builder,
             config_env=True,
@@ -143,12 +145,24 @@ def find_ini(supplied_ini, galaxy_root):
 
     return guess
 
-def ini_path_from_uwsgi():
+def config_file_from_uwsgi(app_name=None):
     if uwsgi:
+        for opt in ('yaml', 'json'):
+            if opt in uwsgi.opt:
+                return (uwsgi.opt[opt], app_name or 'galaxy')
+        if 'ini' in uwsgi.opt:
+            # FIXME: refactor (to properties) with galaxy.web.framework.webapp:build_native_uwsgi_app
         if 'ini-paste' in uwsgi.opt:
-            return uwsgi.opt['ini-paste']
+            app_name = 'app:%s' % app_name if app_name else 'app:%s' % DEFAULT_INI_APP
+            return (uwsgi.opt['ini-paste'], app_name)
+
+
+
+        # FIXME: still need this in get_app_kwds
         elif 'set' in uwsgi.opt:
-            for k, v in [x.split('=', 1) for x in uwsgi.opt['set']]:
+            set_options = uwsgi.opt['set']
+            set_options = [set_options] if isinstance(set_options, string_types) else set_options
+            for k, v in [x.split('=', 1) for x in set_options]:
                 if k == 'galaxy_config_file':
                     return v
     return None
@@ -159,31 +173,32 @@ class GalaxyConfigBuilder(object):
     """
 
     def __init__(self, args=None, **kwds):
-        ini_path = kwds.get("ini_path", None) or (args and args.ini_path)
-        # If given app_conf_path - use that - else we need to ensure we have an
-        # ini path.
-        if not ini_path:
+        config_file = kwds.get("config_file", None) or (args and args.config_file) or (args and args.ini_path)
+        # If given app_conf_path - use that - else we need to ensure we have a
+        # config file path.
+        if not config_file:
             galaxy_root = kwds.get("galaxy_root", GALAXY_ROOT_DIR)
-            ini_path = find_ini(ini_path, galaxy_root)
-            ini_path = absolute_config_path(ini_path, galaxy_root=galaxy_root)
-        self.ini_path = ini_path
+            config_file = find_config(config_file, galaxy_root)
+            config_file = absolute_config_path(config_file, galaxy_root=galaxy_root)
+        self.config_file = config_file
         self.app_name = kwds.get("app") or (args and args.app) or DEFAULT_INI_APP
         self.log_file = (args and args.log_file)
 
     @classmethod
     def populate_options(cls, arg_parser):
-        arg_parser.add_argument("-c", "--ini-path", default=None, help="Galaxy ini config file (defaults to config/galaxy.ini)")
-        arg_parser.add_argument("--app", default=DEFAULT_INI_APP, help="app section in ini file (defaults to main)")
+        arg_parser.add_argument("-c", "--config-file", default=None, help="Galaxy config file (defaults to config/galaxy.ini)")
+        arg_parser.add_argument("--ini-path", default=None, help="DEPRECATED: use -c/--config-file")
+        arg_parser.add_argument("--app", default=None, help="app section in ini file (defaults to 'galaxy' for YAML/JSON, 'main' (w/ 'app:' prepended) for INI")
         arg_parser.add_argument("-d", "--daemonize", default=False, help="Daemonzie process", action="store_true")
         arg_parser.add_argument("--daemon-log-file", default=None, help="log file for daemon script ")
-        arg_parser.add_argument("--log-file", default=None, help="Galaxy log file (overrides log configuration in ini_path if set)")
+        arg_parser.add_argument("--log-file", default=None, help="Galaxy log file (overrides log configuration in config_file if set)")
         arg_parser.add_argument("--pid-file", default=DEFAULT_PID, help="pid file (default is %s)" % DEFAULT_PID)
         arg_parser.add_argument("--server-name", default=None, help="set a galaxy server name")
 
     def app_kwds(self):
         config = dict(
-            ini_file=self.ini_path,
-            ini_section="app:%s" % self.app_name,
+            config_file=self.config_file,
+            config_section="app:%s" % self.app_name,
         )
         return config
 
@@ -211,6 +226,8 @@ def main():
     arg_parser = ArgumentParser(description=DESCRIPTION)
     GalaxyConfigBuilder.populate_options(arg_parser)
     args = arg_parser.parse_args()
+    if args.ini_path and not args.config_file:
+        args.config_file = args.ini_path
     if args.log_file:
         os.environ["GALAXY_CONFIG_LOG_DESTINATION"] = os.path.abspath(args.log_file)
     if args.server_name:

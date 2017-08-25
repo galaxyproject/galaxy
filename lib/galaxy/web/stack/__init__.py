@@ -49,12 +49,18 @@ class ApplicationStack(object):
     log_filter_class = ApplicationStackLogFilter
     # TODO: this belongs in the pool configuration
     server_name_template = '{server_name}'
+    default_app_name = 'main'
 
     # used both to route jobs to a pool with this name and indicate whether or
     # not a stack is using messaging for handler assignment
     pools = Bunch(
         JOB_HANDLERS = 'job-handlers',
     )
+
+    @staticmethod
+    def get_app_kwds(config_section, app_name=None, for_paste_app=False):
+        # TODO: how to implement for Paste/webless
+        return {}
 
     @classmethod
     def register_postfork_function(cls, f, *args, **kwargs):
@@ -155,6 +161,33 @@ class UWSGIApplicationStack(MessageApplicationStack):
     server_name_template = '{server_name}.{server_id}'
 
     postfork_functions = []
+
+    @staticmethod
+    def get_app_kwds(config_section, app_name=None, for_paste_app=False):
+        kwds = {
+            'config_file': None,
+            'config_section': config_section,
+        }
+        # used by webless mules started under uWSGI
+        uwsgi_opt = uwsgi.opt
+        app_section = 'app:%s' % app_name if app_name else 'app:%s' % self.default_app_name
+        config_file = uwsgi_opt.get("yaml") or uwsgi_opt.get("json")
+        # legacy, support loading ini uWSGI config without --ini-paste but with the app config under Paste's [app:main] section
+        if config_file is None and uwsgi_opt.get("ini"):
+            config_file = uwsgi_opt["ini"]
+            parser = nice_config_parser(config_file)
+            if not parser.has_section(config_section) and parser.has_section(app_section):
+                kwds['config_section'] = app_section
+        if config_file is None and for_paste_app:
+            return None
+        if config_file is None and uwsgi_opt.get("ini-paste"):
+            config_file = uwsgi_opt.get("ini") or uwsgi_opt.get("ini-paste")
+            kwds['config_section'] = app_section
+        if config_file is None:
+            return None
+        kwds['config_file'] = config_file
+        return kwds
+
 
     @classmethod
     def register_postfork_function(cls, f, *args, **kwargs):
@@ -283,6 +316,10 @@ def application_stack_log_filter():
 
 def register_postfork_function(f, *args, **kwargs):
     application_stack_class().register_postfork_function(f, *args, **kwargs)
+
+
+def get_app_kwds(config_section):
+    return application_stack_class().get_app_kwds(config_section)
 
 
 def _uwsgi_configured_mules():

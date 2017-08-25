@@ -578,6 +578,8 @@ class Configuration(object):
         self.api_folders = string_as_bool(kwargs.get('api_folders', False))
         # This is for testing new library browsing capabilities.
         self.new_lib_browse = string_as_bool(kwargs.get('new_lib_browse', False))
+        # Logging configuration with logging.config.configDict:
+        self.logging = kwargs.get('logging', {})
         # Error logging with sentry
         self.sentry_dsn = kwargs.get('sentry_dsn', None)
         # Statistics and profiling with statsd
@@ -878,7 +880,7 @@ def configure_logging(config):
     else:
         paste_configures_logging = False
     auto_configure_logging = not paste_configures_logging and string_as_bool(config.get("auto_configure_logging", "True"))
-    if auto_configure_logging:
+    if auto_configure_logging and not config.logging:
         format = config.get("log_format", "%(name)s %(levelname)s %(asctime)s %(message)s")
         level = logging._levelNames[config.get("log_level", "DEBUG")]
         destination = config.get("log_destination", "stdout")
@@ -907,9 +909,11 @@ def configure_logging(config):
         handler.setFormatter(formatter)
         handler.addFilter(application_stack_log_filter()())
         root.addHandler(handler)
-    else:
-        for h in root.handlers:
-            h.addFilter(application_stack_log_filter()())
+    elif auto_configure_logging and config.logging:
+        # TODO: template filename here
+        logging.config.dictConfig(config.logging)
+    for h in root.handlers:
+        h.addFilter(application_stack_log_filter()())
     # If sentry is configured, also log to it
     if getattr(config, "sentry_dsn", None):
         from raven.handlers.logging import SentryHandler

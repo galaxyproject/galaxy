@@ -6,12 +6,6 @@ import sys
 import threading
 import atexit
 
-try:
-    import configparser
-except:
-    import ConfigParser as configparser
-
-
 import galaxy.app
 import galaxy.model
 import galaxy.model.mapping
@@ -38,16 +32,13 @@ class GalaxyWebApplication(galaxy.web.framework.webapp.WebApplication):
     pass
 
 
-def app_factory(global_conf, **kwargs):
-    return paste_app_factory(global_conf, **kwargs)
-
-
-def paste_app_factory(global_conf, **kwargs):
+def app_factory(global_conf, load_app_kwds={}, **kwargs):
     """
     Return a wsgi application serving the root object
     """
     kwargs = load_app_properties(
-        kwds=kwargs
+        kwds=kwargs,
+        **load_app_kwds
     )
     # Create the Galaxy application unless passed in
     if 'app' in kwargs:
@@ -161,22 +152,12 @@ def paste_app_factory(global_conf, **kwargs):
     return webapp
 
 
-def uwsgi_app_factory():
-    # TODO: synchronize with galaxy.web.framework.webapp.build_native_uwsgi_app - should
-    # at least be using nice_config_parser for instance.
-    import uwsgi
-    root = os.path.abspath(uwsgi.opt.get('galaxy_root', os.getcwd()))
-    config_file = uwsgi.opt.get('galaxy_config_file', os.path.join(root, 'config', 'galaxy.ini'))
-    global_conf = {
-        '__file__': config_file if os.path.exists(__file__) else None,
-        'here': root}
-    parser = configparser.ConfigParser()
-    parser.read(config_file)
-    try:
-        kwargs = dict(parser.items('app:main'))
-    except configparser.NoSectionError:
-        kwargs = {}
-    return app_factory(global_conf, **kwargs)
+def uwsgi_app():
+    return galaxy.web.framework.webapp.build_native_uwsgi_app(app_factory, "galaxy")
+
+
+# For backwards compatibility
+uwsgi_app_factory = uwsgi_app
 
 
 def postfork_setup():
