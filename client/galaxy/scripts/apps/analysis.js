@@ -103,7 +103,8 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new GridShared.View( { action_id: action_id, plural: 'Pages', item: 'page' } ) );
         },
 
-        show_workflows : function(){
+        show_workflows : function() {
+            this.update_window_title( 'Workflow home' );
             this.page.display( new Workflows.View() );
         },
 
@@ -131,6 +132,10 @@ window.app = function app( options, bootstrapped ){
 
         show_dataset_error : function() {
             this.page.display( new DatasetError.View() );
+        },
+
+        update_window_title: function( title_text ) {
+            window.document.title = title_text;
         },
 
         /**  */
