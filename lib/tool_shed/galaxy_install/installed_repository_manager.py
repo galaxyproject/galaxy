@@ -42,6 +42,13 @@ class InstalledRepositoryManager(object):
         self.tool_configs = self.app.config.tool_configs
         if self.app.config.migrated_tools_config not in self.tool_configs:
             self.tool_configs.append(self.app.config.migrated_tools_config)
+
+        self.tool_trees = []
+        for tool_config in self.tool_configs:
+            tree, error_message = xml_util.parse_xml(tool_config)
+            log.error(error_message)
+            self.tool_trees.append(tree)
+
         self.installed_repository_dicts = []
         # Keep an in-memory dictionary whose keys are tuples defining tool_shed_repository objects (whose status is 'Installed')
         # and whose values are a list of tuples defining tool_shed_repository objects (whose status can be anything) required by
@@ -572,8 +579,7 @@ class InstalledRepositoryManager(object):
                 str(repository.installed_changeset_revision))
 
     def get_repository_install_dir(self, tool_shed_repository):
-        for tool_config in self.tool_configs:
-            tree, error_message = xml_util.parse_xml(tool_config)
+        for tree in self.tool_trees:
             if tree is None:
                 return None
             root = tree.getroot()
