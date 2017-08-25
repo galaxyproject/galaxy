@@ -46,7 +46,8 @@ class InstalledRepositoryManager(object):
         self.tool_trees = []
         for tool_config in self.tool_configs:
             tree, error_message = xml_util.parse_xml(tool_config)
-            log.error(error_message)
+            if error_message:
+                log.error(error_message)
             self.tool_trees.append(tree)
 
         self.installed_repository_dicts = []
