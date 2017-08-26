@@ -61,12 +61,12 @@ class HistoryGridTestCase(SeleniumTestCase):
         assert histories == [HISTORY1_NAME]
         self.unset_filter('name', HISTORY1_NAME)
 
-        # TODO: Search by annotation
-        # annotation = HISTORY3_ANNOT.split(' ')[0]
-        # self.set_filter(annot_filter_selector, annotation)
-        # histories = self.get_histories()
-        # assert histories == [HISTORY3_NAME]
-        # self.unset_filter('annotation', annotation)
+        # Search by annotation
+        annotation = HISTORY3_ANNOT.split(' ')[0]
+        self.set_filter(annot_filter_selector, annotation)
+        histories = self.get_histories()
+        assert histories == [HISTORY3_NAME]
+        self.unset_filter('annotation', annotation)
 
         # Search by owner
         owner = USER2_EMAIL.split('@')[0]
@@ -150,8 +150,7 @@ class HistoryGridTestCase(SeleniumTestCase):
         tag_area_selector = self.test_data['historyPanel']['selectors'] \
             ['history']['tagArea']
 
-        tag_area = self.driver.find_element_by_css_selector(tag_area_selector)
-        if not tag_area.is_displayed():
+        if not self.is_displayed(tag_area_selector):
             tag_icon = self.wait_for_selector(tag_icon_selector)
             tag_icon.click()
             time.sleep(.5)
@@ -171,24 +170,23 @@ class HistoryGridTestCase(SeleniumTestCase):
         anno_area_selector = self.test_data['historyPanel']['selectors'] \
             ['history']['annoArea']
 
-        annon_icon = self.wait_for_selector(anno_icon_selector)
-        annon_icon.click()
+        if not self.is_displayed(anno_area_selector):
+            annon_icon = self.wait_for_selector(anno_icon_selector)
+            annon_icon.click()
 
+        anno_area_selector += ' .annotation'
         annon_area = self.wait_for_selector(anno_area_selector)
+        time.sleep(.5)
+        annon_area.click()
 
-        # TODO: complete the function
+        area_editable_selector = anno_area_selector + ' textarea'
+        done_button_selector = anno_area_selector + ' button'
+        annon_area_editable = self.wait_for_selector(area_editable_selector)
+        anno_done_button = self.wait_for_selector(done_button_selector)
 
-        # annon_area.click()
-
-        # anno_area_editable_selector = anno_area_selector + ' textarea'
-        # # anno_done_button_selector = anno_area_selector + ' button'
-        # annon_area_editable = self.wait_for_selector(
-        #     anno_area_editable_selector)
-        # # anno_done_button = self.wait_for_selector(anno_done_button_selector)
-
-        # annon_area_editable.click()
-        # annon_area_editable.send_keys('some annotation')
-        # # anno_done_button.click()
+        annon_area_editable.click()
+        annon_area_editable.send_keys(annotation)
+        anno_done_button.click()
 
     def setup_users_and_histories(self):
         self.register(USER1_EMAIL)
@@ -198,7 +196,7 @@ class HistoryGridTestCase(SeleniumTestCase):
 
         self.create_history(HISTORY3_NAME)
         self.set_tags(HISTORY3_TAGS)
-        # self.set_annotation(HISTORY3_ANNOT)
+        self.set_annotation(HISTORY3_ANNOT)
         self.publish_current_history()
         self.logout_if_needed()
 
@@ -244,3 +242,7 @@ class HistoryGridTestCase(SeleniumTestCase):
         edit_title_input_selector = self.test_data['historyPanel'] \
             ['selectors']['history']['nameEditableTextInput']
         return self.wait_for_selector(edit_title_input_selector)
+
+    def is_displayed(self, selector):
+        element = self.driver.find_element_by_css_selector(selector)
+        return element.is_displayed()
