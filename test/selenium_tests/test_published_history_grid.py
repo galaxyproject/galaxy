@@ -12,6 +12,7 @@ HISTORY2_NAME = 'Second'
 HISTORY3_NAME = 'Third'
 HISTORY1_TAGS = ['tag1', 'tag2']
 HISTORY2_TAGS = ['tag3']
+HISTORY3_TAGS = ['tag1']
 HISTORY3_ANNOT = 'some description'
 
 
@@ -78,7 +79,7 @@ class HistoryGridTestCase(SeleniumTestCase):
         # Search by tags
         self.set_filter(tags_filter_selector, HISTORY1_TAGS[0])
         histories = self.get_histories()
-        assert histories == [HISTORY1_NAME]
+        assert histories == [HISTORY3_NAME, HISTORY1_NAME]
         self.unset_filter('tags', HISTORY1_TAGS[0])
 
     @selenium_test
@@ -96,6 +97,28 @@ class HistoryGridTestCase(SeleniumTestCase):
         sort_link.click()
         histories = self.get_histories()
         assert histories == [HISTORY1_NAME, HISTORY3_NAME, HISTORY2_NAME]
+
+    @selenium_test
+    def test_history_grid_tag_click(self):
+        self.navigate_to_published_histories_page()
+
+        tags = None
+        grid = self.wait_for_selector('#grid-table-body')
+        for row in grid.find_elements_by_tag_name('tr'):
+            cell = row.find_elements_by_tag_name('td')[0]  # Name
+            if cell.text == HISTORY1_NAME:
+                tags = row.find_elements_by_tag_name('td')[4]  # Tags
+                break
+        assert tags is not None
+
+        tag_button_selector = '.tag-area > .tag-button:first-child > .tag-name'
+        tag_button = tags.find_element_by_css_selector(tag_button_selector)
+        assert tag_button.text == HISTORY1_TAGS[0]
+
+        tag_button.click()
+
+        histories = self.get_histories()
+        assert histories == [HISTORY3_NAME, HISTORY1_NAME]
 
     def get_histories(self):
         time.sleep(1.5)
@@ -175,6 +198,7 @@ class HistoryGridTestCase(SeleniumTestCase):
         self.publish_current_history()
 
         self.create_history(HISTORY3_NAME)
+        self.set_tags(HISTORY3_TAGS)
         # self.set_annotation(HISTORY3_ANNOT)
         self.publish_current_history()
         self.logout_if_needed()
