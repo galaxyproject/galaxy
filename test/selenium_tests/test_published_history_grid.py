@@ -1,7 +1,5 @@
 import time
 
-# import requests
-
 from .framework import SeleniumTestCase, selenium_test
 
 # Test case data
@@ -10,6 +8,7 @@ USER2_EMAIL = 'test_user2@test.test'
 HISTORY1_NAME = 'First'
 HISTORY2_NAME = 'Second'
 HISTORY3_NAME = 'Third'
+HISTORY4_NAME = 'Four'
 HISTORY1_TAGS = ['tag1', 'tag2']
 HISTORY2_TAGS = ['tag3']
 HISTORY3_TAGS = ['tag1']
@@ -17,12 +16,6 @@ HISTORY3_ANNOT = 'some description'
 
 
 class HistoryGridTestCase(SeleniumTestCase):
-
-    # @selenium_test
-    # def test_history_grid_accessible(self):
-    #     full_url = self.build_url('histories/list_published')
-    #     response = requests.get(full_url)
-    #     assert response.status_code == 200
 
     @selenium_test
     def test_history_grid_histories(self):
@@ -39,9 +32,15 @@ class HistoryGridTestCase(SeleniumTestCase):
         search_input = self.wait_for_selector(input_selector)
         search_input.send_keys(HISTORY1_NAME)
         self.send_enter(search_input)
-
         histories = self.get_histories()
         assert histories == [HISTORY1_NAME]
+
+        self.unset_filter('free-text-search', HISTORY1_NAME)
+        search_input = self.wait_for_selector(input_selector)
+        search_input.send_keys(HISTORY4_NAME)
+        self.send_enter(search_input)
+        histories = self.get_histories()
+        assert histories == ['No Items']
 
     @selenium_test
     def test_history_grid_search_advanced(self):
