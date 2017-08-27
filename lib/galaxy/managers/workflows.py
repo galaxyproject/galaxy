@@ -205,7 +205,7 @@ class WorkflowContentsManager(UsesAnnotations):
         exact_tools=False,
     ):
         # Put parameters in workflow mode
-        trans.workflow_building_mode = True
+        trans.workflow_building_mode = workflow_building_modes.ENABLED
         # If there's a source, put it in the workflow name.
         if source and source != 'API':
             name = "%s (imported from %s)" % (data['name'], source)
@@ -257,7 +257,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def update_workflow_from_dict(self, trans, stored_workflow, workflow_data):
         # Put parameters in workflow mode
-        trans.workflow_building_mode = True
+        trans.workflow_building_mode = workflow_building_modes.ENABLED
 
         workflow, missing_tool_tups = self._workflow_from_dict(
             trans,

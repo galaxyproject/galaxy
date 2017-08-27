@@ -18,6 +18,7 @@ from galaxy import web
 from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
+from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util import unicodify, FILENAME_VALID_CHARS
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
@@ -633,7 +634,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         encode it as a json string that can be read by the workflow editor
         web interface.
         """
-        trans.workflow_building_mode = True
+        trans.workflow_building_mode = workflow_building_modes.ENABLED
         stored = self.get_stored_workflow(trans, id, check_ownership=True, check_accessible=False)
         workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
         return workflow_contents_manager.workflow_to_dict(trans, stored, style="editor")
@@ -644,7 +645,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         """
         Exports a workflow to myExperiment website.
         """
-        trans.workflow_building_mode = True
+        trans.workflow_building_mode = workflow_building_modes.ENABLED
         stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
 
         # Convert workflow to dict.
