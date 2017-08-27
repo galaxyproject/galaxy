@@ -7,6 +7,7 @@ import sgmllib
 import urllib2
 
 from sqlalchemy import and_
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
 from markupsafe import escape
 
@@ -621,9 +622,12 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         if not id:
             error("Invalid workflow id")
         stored = self.get_stored_workflow(trans, id)
+        # The following query loads all user-owned workflows,
+        # So that they can be copied or inserted in the workflow editor.
         workflows = trans.sa_session.query(model.StoredWorkflow) \
             .filter_by(user=trans.user, deleted=False) \
             .order_by(desc(model.StoredWorkflow.table.c.update_time)) \
+            .options(joinedload('latest_workflow').joinedload('steps')) \
             .all()
         return trans.fill_template("workflow/editor.mako", workflows=workflows, stored=stored, annotation=self.get_item_annotation_str(trans.sa_session, trans.user, stored))
 
