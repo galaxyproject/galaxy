@@ -451,10 +451,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 else:
                     data['upgrade_messages'][step.order_index] = {module.tool.name: "\n".join(module.version_changes)}
             # Get user annotation.
-            step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step)
-            annotation_str = ""
-            if step_annotation:
-                annotation_str = step_annotation.annotation
+            annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             config_form = None
             if trans.history:
                 # If in a web session, attach form html. No reason to do
@@ -550,9 +547,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         annotation_str = ""
         if stored is not None:
-            workflow_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, stored)
-            if workflow_annotation:
-                annotation_str = workflow_annotation.annotation
+            annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ''
         # Pack workflow data into a dictionary and return
         data = {}
         data['a_galaxy_workflow'] = 'true'  # Placeholder for identifying galaxy workflow
@@ -569,10 +564,7 @@ class WorkflowContentsManager(UsesAnnotations):
             if not module:
                 return None
             # Get user annotation.
-            step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step)
-            annotation_str = ""
-            if step_annotation:
-                annotation_str = step_annotation.annotation
+            annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             content_id = module.get_content_id()
             # Export differences for backward compatibility
             if module.type == 'tool':
@@ -744,7 +736,6 @@ class WorkflowContentsManager(UsesAnnotations):
         for step in workflow.steps:
             steps_to_order_index[step.id] = step.order_index
         for step in workflow.steps:
-            step_uuid = str(step.uuid) if step.uuid else None
             step_id = step.id if legacy else step.order_index
             step_type = step.type
             step_dict = {'id': step_id,
