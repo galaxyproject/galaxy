@@ -53,7 +53,8 @@ from galaxy.tools.parameters.basic import (
     DataToolParameter,
     HiddenToolParameter,
     SelectToolParameter,
-    ToolParameter
+    ToolParameter,
+    workflow_building_modes,
 )
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
@@ -1802,17 +1803,19 @@ class Tool(object, Dictifiable):
         """
         history_id = kwd.get('history_id', None)
         history = None
-        try:
-            if history_id is not None:
-                history = self.history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
-            else:
-                history = trans.get_history()
-            if history is None and job is not None:
-                history = self.history_manager.get_owned(job.history.id, trans.user, current_history=trans.history)
-            if history is None:
-                raise exceptions.MessageException('History unavailable. Please specify a valid history id')
-        except Exception as e:
-            raise exceptions.MessageException('[history_id=%s] Failed to retrieve history. %s.' % (history_id, str(e)))
+        if not workflow_building_mode or workflow_building_mode is workflow_building_modes.USE_HISTORY:
+            # We don't need a history when exporting a workflow for the workflow editor or when downloading a workflow
+            try:
+                if history_id is not None:
+                    history = self.history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
+                else:
+                    history = trans.get_history()
+                if history is None and job is not None:
+                    history = self.history_manager.get_owned(job.history.id, trans.user, current_history=trans.history)
+                if history is None:
+                    raise exceptions.MessageException('History unavailable. Please specify a valid history id')
+            except Exception as e:
+                raise exceptions.MessageException('[history_id=%s] Failed to retrieve history. %s.' % (history_id, str(e)))
 
         # build request context
         request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_building_mode)
@@ -1877,7 +1880,7 @@ class Tool(object, Dictifiable):
             'state_inputs'  : params_to_strings(self.inputs, state_inputs, self.app),
             'job_id'        : trans.security.encode_id(job.id) if job else None,
             'job_remap'     : self._get_job_remap(job),
-            'history_id'    : trans.security.encode_id(history.id),
+            'history_id'    : trans.security.encode_id(history.id) if history else None,
             'display'       : self.display_interface,
             'action'        : url_for(self.action),
             'method'        : self.method,
