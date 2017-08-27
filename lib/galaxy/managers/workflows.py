@@ -596,13 +596,12 @@ class WorkflowContentsManager(UsesAnnotations):
             }
             # Add tool shed repository information and post-job actions to step dict.
             if module.type == 'tool':
-                if module.tool.tool_shed_repository:
-                    tsr = module.tool.tool_shed_repository
+                if module.tool and module.tool.tool_shed:
                     step_dict["tool_shed_repository"] = {
-                        'name': tsr.name,
-                        'owner': tsr.owner,
-                        'changeset_revision': tsr.changeset_revision,
-                        'tool_shed': tsr.tool_shed
+                        'name': module.tool.repository_name,
+                        'owner': module.tool.repository_owner,
+                        'changeset_revision': module.tool.changeset_revision,
+                        'tool_shed': module.tool.tool_shed
                     }
                 pja_dict = {}
                 for pja in step.post_job_actions:

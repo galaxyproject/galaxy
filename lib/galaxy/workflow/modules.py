@@ -608,7 +608,7 @@ class ToolModule(WorkflowModule):
                     if not old_tool_shed_url:  # a tool from a different tool_shed has been found, but the original tool shed has been deactivated
                         old_tool_shed_url = "http://" + old_tool_shed  # let's just assume it's either http, or a http is forwarded to https.
                     old_url = old_tool_shed_url + "/view/%s/%s/" % (module.tool.repository_owner, module.tool.repository_name)
-                    new_url = module.tool.tool_shed_repository.get_sharable_url(module.tool.app) + '/%s/' % module.tool.tool_shed_repository.changeset_revision
+                    new_url = module.tool.sharable_url + '/%s/' % module.tool.changeset_revision
                     new_tool_shed_url = new_url.split("/view")[0]
                     message += "The tool \'%s\', version %s by the owner %s installed from <a href=\"%s\" target=\"_blank\">%s</a> is not available. " % (module.tool.name, tool_version, module.tool.repository_owner, old_url, old_tool_shed_url)
                     message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead. " % (new_url, new_tool_shed_url)
