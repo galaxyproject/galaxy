@@ -231,6 +231,8 @@ class WorkflowContentsManager(UsesAnnotations):
             if data['annotation']:
                 annotation = sanitize_html(data['annotation'], 'utf-8', 'text/html')
                 self.add_item_annotation(trans.sa_session, stored.user, stored, annotation)
+            workflow_tags = data.get('tags', [])
+            trans.app.tag_handler.set_tags_from_list(user=trans.user, item=stored, new_tags_list=workflow_tags)
 
             # Persist
             trans.sa_session.add(stored)
@@ -554,6 +556,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data['format-version'] = "0.1"
         data['name'] = workflow.name
         data['annotation'] = annotation_str
+        data['tags'] = stored.make_tag_string_list()
         if workflow.uuid is not None:
             data['uuid'] = str(workflow.uuid)
         data['steps'] = {}

@@ -436,7 +436,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :returns:   serialized version of the workflow
         """
         stored_workflow = self.__get_stored_workflow(trans, id)
-        if 'workflow' in payload:
+        workflow_dict = payload.get('workflow')
+        if workflow_dict:
             stored_workflow.name = sanitize_html(payload['name']) if ('name' in payload) else stored_workflow.name
 
             if 'annotation' in payload:
@@ -453,12 +454,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     entries = {x.stored_workflow_id: x for x in trans.get_user().stored_workflow_menu_entries}
                     if (trans.security.decode_id(id) in entries):
                         trans.get_user().stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
-
+            # set tags
+            trans.app.tag_handler.set_tags_from_list(user=trans.user, item=stored_workflow, new_tags_list=workflow_dict.get('tags', []))
             try:
                 workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
                     trans,
                     stored_workflow,
-                    payload['workflow'],
+                    workflow_dict,
                 )
             except workflows.MissingToolsException:
                 raise exceptions.MessageException("This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed.")
