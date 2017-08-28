@@ -71,47 +71,37 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
                     placement   : 'top'
                 });
             }).on( 'mousedown', function( e ) { e.preventDefault() } );
+
+            // listen to changes in collection
+            this.listenTo( this.collection, 'add remove', this.render, this );
+            this.render();
         },
 
         /** Start upload process */
         _eventStart: function() {
-            alert( 'Submit all ftp files' );
+            var self = this;
+            this.collection.each( function( model ) {
+                model.set( { 'genome'   : self.select_genome.value(),
+                             'extension': self.select_extension.value() } );
+            });
+            $.uploadpost({
+                url      : this.app.options.nginx_upload_path,
+                data     : this.app.toData( this.collection.filter() ),
+                success  : function( message )      { self._eventSuccess( message ) },
+                error    : function( message )      { self._eventError( message ) },
+                progress : function( percentage )   { self._eventProgress( percentage ) }
+            });
         },
 
         /** Set screen */
-        _updateScreen: function () {
-            var message = '';
-            if( this.counter.announce == 0 ) {
-                if (this.uploadbox.compatible()) {
-                    message = '&nbsp;';
-                } else {
-                    message = 'Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.';
-                }
+        render: function () {
+            if ( this.collection.length > 0 ) {
+                this.btnStart.enable();
+                this.btnStart.$el.addClass( 'btn-primary' );
             } else {
-                if ( this.counter.running == 0 ) {
-                    message = 'You added ' + this.counter.announce + ' file(s) to the queue. Add more files or click \'Start\' to proceed.';
-                } else {
-                    message = 'Please wait...' + this.counter.announce + ' out of ' + this.counter.running + ' remaining.';
-                }
+                this.btnStart.disable();
+                this.btnStart.$el.removeClass( 'btn-primary' );
             }
-            this.$( '.upload-top-info' ).html( message );
-            var enable_reset = this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0;
-            var enable_start = this.counter.running == 0 && this.counter.announce > 0;
-            var enable_build = this.counter.running == 0 && this.counter.announce == 0 && this.counter.success > 0 && this.counter.error == 0
-            var enable_sources = this.counter.running == 0;
-            var show_table = this.counter.announce + this.counter.success + this.counter.error > 0;
-            this.btnReset[ enable_reset ? 'enable' : 'disable' ]();
-            this.btnStart[ enable_start ? 'enable' : 'disable' ]();
-            this.btnStart.$el[ enable_start ? 'addClass' : 'removeClass' ]( 'btn-primary' );
-            this.btnBuild[ enable_build ? 'enable' : 'disable' ]();
-            this.btnBuild.$el[ enable_build ? 'addClass' : 'removeClass' ]( 'btn-primary' );
-            this.btnStop[ this.counter.running > 0 ? 'enable' : 'disable' ]();
-            this.btnLocal[ enable_sources ? 'enable' : 'disable' ]();
-            this.btnFtp[ enable_sources ? 'enable' : 'disable' ]();
-            this.btnCreate[ enable_sources ? 'enable' : 'disable' ]();
-            this.btnFtp.$el[ this.ftp_upload_site ? 'show' : 'hide' ]();
-            this.$( '.upload-table' )[ show_table ? 'show' : 'hide' ]();
-            this.$( '.upload-helper' )[ show_table ? 'hide' : 'show' ]();
         },
 
         /** Template */
