@@ -23,6 +23,9 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
                 onadd           : function( ftp_file ) {
                     self.collection.add({
                         id        : Utils.uid(),
+                        mode      : 'ftp',
+                        name      : ftp_file.path,
+                        path      : ftp_file.path,
                         file_mode : 'ftp',
                         file_name : ftp_file.path,
                         file_size : ftp_file.size,
@@ -87,10 +90,14 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
             $.uploadpost({
                 url      : this.app.options.nginx_upload_path,
                 data     : this.app.toData( this.collection.filter() ),
-                success  : function( message )      { self._eventSuccess( message ) },
-                error    : function( message )      { self._eventError( message ) },
-                progress : function( percentage )   { self._eventProgress( percentage ) }
+                success  : function( message ) { self._eventSuccess( message ) },
+                error    : function( message ) { window.console.log( message ) }
             });
+        },
+
+        /** Refresh success state */
+        _eventSuccess: function( message ) {
+            Galaxy.currHistoryPanel.refreshContents();
         },
 
         /** Set screen */
