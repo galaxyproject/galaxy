@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import logging
+import sys
 import threading
 
 try:
@@ -76,9 +77,9 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
             sys.exit(1)
         self._locks.extend(map(lambda x: 'RECV_MSG_FARM_' + x, farms))
         # this would be nice, but in my 2.0.15 uWSGI, the uwsgi module has no set_option function, and I don't know if it'd work even if the function existed as documented
-        #if len(self.lock_map) > 1:
-        #    uwsgi.set_option('locks', len(self.lock_map))
-        #    log.debug('Created %s uWSGI locks' % len(self.lock_map))
+        # if len(self.lock_map) > 1:
+        #     uwsgi.set_option('locks', len(self.lock_map))
+        #     log.debug('Created %s uWSGI locks' % len(self.lock_map))
 
     def __init__(self, app, stack, dispatcher=None):
         super(UWSGIFarmMessageTransport, self).__init__(app, stack, dispatcher=dispatcher)

@@ -34,7 +34,7 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
         self.active_workflow_schedulers = {}
         # TODO: this should not hardcode the job handlers pool
         self.__handler_pool = self.app.application_stack.pools.JOB_HANDLERS
-        # TODO: and we need a better way to indicate messaging should
+        # TODO: and we need a better way to indicate messaging should be used
         self.__use_stack_messages = app.application_stack.has_pool(self.__handler_pool)
         # Passive workflow schedulers won't need to be monitored I guess.
 
@@ -72,11 +72,11 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
         if self.__use_stack_messages:
             for workflow_invocation in model.WorkflowInvocation.poll_active_workflow_ids(
                     sa_session,
-                    handler=None,
-                ):
+                    handler=None):
                 log.info("(%s) Handler unassigned at startup, queueing workflow invocation via stack messaging for pool"
                          " [%s]", workflow_invocation.id, self.__handler_pool)
                 msg = WorkflowSchedulingMessage(task='setup', workflow_invocation_id=workflow_invocation.id)
+                self.app.application_stack.send_message(self.app.application_stack.pools.JOB_HANDLERS, msg)
 
     def _handle_setup_msg(self, workflow_invocation_id=None):
         sa_session = self.app.model.context

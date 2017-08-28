@@ -5,12 +5,6 @@ import sys
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
-from galaxy.config import (
-    configure_logging,
-    find_path,
-    find_root,
-    parse_dependency_options,
-)
 from galaxy.script import main_factory
 from galaxy.util.properties import nice_config_parser
 

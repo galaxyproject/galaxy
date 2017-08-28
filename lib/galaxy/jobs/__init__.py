@@ -209,8 +209,8 @@ class JobConfiguration(object, ConfiguresHandlers):
         except:
             log.info('No default handler specified in job config, will check for job handlers managed by application stack')
         if ((self.default_handler_id is None
-             or (len(self.handlers) == 1 and self.app.config.server_name.startswith(self.handlers.keys()[0])))
-            and self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS)):
+                or (len(self.handlers) == 1 and self.app.config.server_name.startswith(self.handlers.keys()[0])))
+                and self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS)):
             # Shortcut for compatibility with existing job confs that use the default handlers block
             # There are no defined handlers or there's only one handler and it's this server, and the stack has a handler pool
             self.handlers = {}

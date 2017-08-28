@@ -508,7 +508,6 @@ class Configuration(object):
         if "server_name" in kwargs:
             self.server_name = kwargs.get("server_name")
         # Store all configured server names for the message queue routing
-        # TODO: uWSGI mules
         self.server_names = []
         for section in global_conf_parser.sections():
             if section.startswith('server:'):

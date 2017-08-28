@@ -31,7 +31,6 @@ from galaxy.util import (
     safe_str_cmp
 )
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.util.properties import nice_config_parser
 from galaxy.web.framework import (
     base,
     formbuilder,

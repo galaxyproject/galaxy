@@ -1228,29 +1228,14 @@ use_interactive = True
 # be configured through the job configuration file.
 #job_config_file = config/job_conf.xml
 
-### TODO: These options will move to a stack config section in the YAML config
-### file
-
-# Some application stacks that Galaxy run under (such as uWSGI) can start
-# arbitrary Galaxy server processes to perform functions asynchronously from
-# the Galaxy web server process(es). Such stacks may give you the option to
-# define pools of these arbitrary processes to assign them specific functions.
-# This option controls which pool will be designated for handling Galaxy jobs.
+# NOTE: This option is temporary until additional configurability for starting
+# and pooling asynchronous workers under uWSGI is added.
 #
-# In uWSGI these arbitrary processes are known as "mules" and are grouped in to
-# pools called "farms".
-#
-# You should not need to change this option unless you are taking full control
-# over the command line startup procedure.
-#job_handler_pool_name = job-handlers
-
-# Number of job handlers to start, under supported application stacks. More
-# fine-grained control can be obtained by starting handlers manually and
-# configuring them in the job_config_file, but this simpler method should be
-# suitable for most cases. In the case of uWSGI, this value is used to
-# determine the command line arguments to `uwsgi` and setting it will have no
-# effect if you have taken full control over the command line startup
-# procedure.
+# Number of job handlers to start under uWSGI. This value is used to determine
+# the command line --mule and --farm arguments to `uwsgi` and setting it will
+# have no effect if you have taken full control over the command line startup
+# procedure or you set `mule` and `farm` options under the [uwsgi] section in
+# this config file.
 #job_handler_count = 1
 
 # When jobs fail due to job runner problems, Galaxy can be configured to retry

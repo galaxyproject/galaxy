@@ -40,13 +40,6 @@ try:
 except ImportError:
     Daemonize = None
 
-try:
-    import uwsgi
-except ImportError:
-    uwsgi = None
-
-from six import string_types
-
 REQUIRES_DAEMONIZE_MESSAGE = "Attempted to use Galaxy in daemon mode, but daemonize is unavailable."
 
 log = logging.getLogger(__name__)

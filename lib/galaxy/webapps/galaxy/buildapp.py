@@ -1,7 +1,6 @@
 """
 Provides factory methods to assemble the Galaxy web application
 """
-import os
 import sys
 import threading
 import atexit
@@ -162,8 +161,6 @@ uwsgi_app_factory = uwsgi_app
 
 def postfork_setup():
     from galaxy.app import app
-    # FIXME
-    #app.application_stack.set_postfork_server_name(app)
     app.control_worker.bind_and_start()
 
 

@@ -33,7 +33,6 @@ class Facts(MutableMapping):
                     self.__dict__['config_' + name] = lambda name=name: getattr(config, name)
 
     def __getitem__(self, key):
-        #item = super(Facts, self).__getitem__(key)
         item = self.__dict__.__getitem__(key)
         if callable(item):
             return item()

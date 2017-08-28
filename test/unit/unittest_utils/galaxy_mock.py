@@ -18,6 +18,7 @@ from galaxy.tools.deps.containers import NullContainerFinder
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web import security
+from galaxy.web.stack import ApplicationStack
 
 
 # =============================================================================
@@ -74,7 +75,8 @@ class MockApp(object):
         self.container_finder = NullContainerFinder()
         self._toolbox_lock = MockLock()
         self.genome_builds = GenomeBuilds(self)
-        self.job_queue = NoopQueue()
+        self.job_manager = Bunch(job_queue=NoopQueue())
+        self.application_stack = ApplicationStack()
 
     def init_datatypes(self):
         datatypes_registry = registry.Registry()

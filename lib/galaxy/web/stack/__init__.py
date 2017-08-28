@@ -6,7 +6,6 @@ import inspect
 import logging
 import os
 import signal
-import threading
 
 # The uwsgi module is automatically injected by the parent uwsgi
 # process and only exists that way.  If anything works, this is a
@@ -18,7 +17,7 @@ except ImportError:
 
 from six import string_types
 
-from .message import ApplicationStackMessage, ApplicationStackMessageDispatcher, JobHandlerMessage, decode
+from .message import ApplicationStackMessage, ApplicationStackMessageDispatcher
 from .transport import ApplicationStackTransport, UWSGIFarmMessageTransport
 
 from galaxy.util.bunch import Bunch
@@ -55,7 +54,7 @@ class ApplicationStack(object):
     # used both to route jobs to a pool with this name and indicate whether or
     # not a stack is using messaging for handler assignment
     pools = Bunch(
-        JOB_HANDLERS = 'job-handlers',
+        JOB_HANDLERS='job-handlers',
     )
 
     @classmethod
@@ -197,7 +196,6 @@ class UWSGIApplicationStack(MessageApplicationStack):
             return None
         kwds['config_file'] = config_file
         return kwds
-
 
     @classmethod
     def register_postfork_function(cls, f, *args, **kwargs):
