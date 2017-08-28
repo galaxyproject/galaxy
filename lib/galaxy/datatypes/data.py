@@ -443,6 +443,22 @@ class Data(object):
 
         return open(filename)
 
+    def _yield_user_file_content(self, trans, from_dataset, filename):
+        """This method is responsible for sanitizing the HTML if needed."""
+        if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
+            # Sanitize anytime we respond with plain text/html content.
+            # Check to see if this dataset's parent job is whitelisted
+            # We cannot currently trust imported datasets for rendering.
+            if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id in trans.app.config.sanitize_whitelist:
+                return open(filename)
+
+            # This is returning to the browser, it needs to be encoded.
+            # TODO Ideally this happens a layer higher, but this is a bad
+            # issue affecting many tools
+            return sanitize_html(open(filename).read()).encode('utf-8')
+
+        return open(filename)
+
     def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None):
         def escape(raw_identifier):
             return ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in raw_identifier)[0:150]
