@@ -1,6 +1,6 @@
 /** Renders contents of the composite uploader */
-define([ 'utils/utils', 'mvc/upload/upload-model', 'mvc/upload/composite/composite-row', 'mvc/ui/ui-popover', 'mvc/ui/ui-select', 'mvc/ui/ui-misc'],
-function( Utils, UploadModel, UploadRow, Popover, Select, Ui ) {
+define([ 'utils/utils', 'mvc/upload/upload-model', 'mvc/upload/composite/composite-row', 'mvc/upload/upload-extension', 'mvc/ui/ui-popover', 'mvc/ui/ui-select', 'mvc/ui/ui-misc'],
+function( Utils, UploadModel, UploadRow, UploadExtension, Popover, Select, Ui ) {
     return Backbone.View.extend({
         collection: new UploadModel.Collection(),
         initialize: function(app) {
@@ -40,10 +40,11 @@ function( Utils, UploadModel, UploadRow, Popover, Select, Ui ) {
 
             // handle extension info popover
             this.$( '.upload-footer-extension-info' ).on( 'click', function( e ) {
-                self._showExtensionInfo({
+                new UploadExtension({
                     $el         : $( e.target ),
                     title       : self.select_extension.text(),
                     extension   : self.select_extension.value(),
+                    list        : self.list_extensions,
                     placement   : 'top'
                 });
             }).on( 'mousedown', function( e ) { e.preventDefault() } );
@@ -124,38 +125,6 @@ function( Utils, UploadModel, UploadRow, Popover, Select, Ui ) {
         /** Refresh error state */
         _eventError: function( message ) {
             this.collection.each( function( it ) { it.set( { 'status': 'error', 'info': message } ) } );
-        },
-
-        /** Display extension info popup */
-        _showExtensionInfo: function(options) {
-            var self = this;
-            var $el         = options.$el;
-            var extension   = options.extension;
-            var title       = options.title;
-            var description = _.findWhere(this.list_extensions, { id : extension });
-            this.extension_popup && this.extension_popup.remove();
-            this.extension_popup = new Popover.View({
-                placement: options.placement || 'bottom',
-                container: $el,
-                destroy: true
-            });
-            this.extension_popup.title( title );
-            this.extension_popup.empty();
-            this.extension_popup.append( this._templateDescription( description ) );
-            this.extension_popup.show();
-        },
-
-        /* Template for extensions description */
-        _templateDescription: function( options ) {
-            if ( options.description ) {
-                var tmpl = options.description;
-                if ( options.description_url ) {
-                    tmpl += '&nbsp;(<a href="' + options.description_url + '" target="_blank">read more</a>)';
-                }
-                return tmpl;
-            } else {
-                return 'There is no description available for this file extension.';
-            }
         },
 
         /** Load html template */

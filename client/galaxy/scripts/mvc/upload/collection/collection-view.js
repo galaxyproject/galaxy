@@ -1,6 +1,6 @@
 /** Renders contents of the collection uploader */
-define([ 'utils/utils', 'mvc/upload/upload-model', 'mvc/upload/collection/collection-row', 'mvc/upload/upload-ftp', 'mvc/ui/ui-popover', 'mvc/ui/ui-select',  'mvc/ui/ui-misc', 'mvc/collection/list-collection-creator', 'utils/uploadbox' ],
-function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui, LIST_COLLECTION_CREATOR ) {
+define([ 'utils/utils', 'mvc/upload/upload-model', 'mvc/upload/collection/collection-row', 'mvc/upload/upload-ftp', 'mvc/upload/upload-extension','mvc/ui/ui-popover', 'mvc/ui/ui-select',  'mvc/ui/ui-misc', 'mvc/collection/list-collection-creator', 'utils/uploadbox' ],
+function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Select, Ui, LIST_COLLECTION_CREATOR ) {
     return Backbone.View.extend({
         // current upload size in bytes
         upload_size: 0,
@@ -76,10 +76,11 @@ function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui, LIST_CO
 
             // handle extension info popover
             this.$( '.upload-footer-extension-info' ).on( 'click', function( e ) {
-                self.showExtensionInfo({
+                new UploadExtension({
                     $el         : $( e.target ),
                     title       : self.select_extension.text(),
                     extension   : self.select_extension.value(),
+                    list        : self.list_extensions,
                     placement   : 'top'
                 });
             }).on( 'mousedown', function( e ) { e.preventDefault() } );
@@ -188,21 +189,6 @@ function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui, LIST_CO
         //
         // events triggered by this view
         //
-
-        /** [public] display extension info popup */
-        showExtensionInfo: function( options ) {
-            var self = this;
-            var $el = options.$el;
-            var extension = options.extension;
-            var title = options.title;
-            var description = _.findWhere( self.list_extensions, { 'id': extension } );
-            this.extension_popup && this.extension_popup.remove();
-            this.extension_popup = new Popover.View({ placement: options.placement || 'bottom', container: $el } );
-            this.extension_popup.title( title );
-            this.extension_popup.empty();
-            this.extension_popup.append( this._templateDescription( description ) );
-            this.extension_popup.show();
-        },
 
         /** Show/hide ftp popup */
         _eventFtp: function() {
@@ -343,19 +329,6 @@ function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui, LIST_CO
         /** Calculate percentage of all queued uploads */
         _uploadPercentage: function( percentage, size ) {
             return ( this.upload_completed + ( percentage * size ) ) / this.upload_size;
-        },
-
-        /** Template for extensions description */
-        _templateDescription: function( options ) {
-            if ( options.description ) {
-                var tmpl = options.description;
-                if ( options.description_url ) {
-                    tmpl += '&nbsp;(<a href="' + options.description_url + '" target="_blank">read more</a>)';
-                }
-                return tmpl;
-            } else {
-                return 'There is no description available for this file extension.';
-            }
         },
 
         /** Template */
