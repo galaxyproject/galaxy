@@ -20,20 +20,47 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
     var WorkflowItemView = Backbone.View.extend({
         tagName: 'tr', // name of (orphan) root tag in this.el
         initialize: function(){
-            _.bindAll(this, 'render', 'render_row', 'render_tag_editor', '_templateActions'); // every function that uses 'this' as the current object should be in here
-
-
-
+            _.bindAll(this, 'render', 'render_row', 'render_tag_editor', '_templateActions', 'model_remove'); // every function that uses 'this' as the current object should be in here
         },
+
+        events: {
+            'click #show-in-tool-panel': 'show_in_tool_panel',
+            'click #delete-workflow' : 'model_remove',
+            'click #rename-workflow' : 'rename_workflow'
+        },
+
         render: function(){
             $(this.el).html(this.render_row());
             return this; // for chainable calls, like .render().el
         },
 
+        show_in_tool_panel: function(){
+            this.model.set('show_in_tool_panel', !this.model.get('show_in_tool_panel'));
+            this.model.save();
+            // This reloads the whole page, so that the workflow appears in the tool panel.
+            window.location = Galaxy.root + 'workflow';
+        },
+
+        model_remove: function(){
+            if (confirm( "Are you sure you want to delete workflow '" + this.model.get('name') + "'?" )) {
+                this.model.destroy();
+                this.remove();
+            };
+        },
+
+        rename_workflow: function(){
+            var newname = prompt("Enter a new Name for workflow '" + this.model.get('name') + "'", this.model.get('name') );
+            if (newname) {
+                this.model.set('name', newname);
+                this.model.save();
+                this.render();
+            }
+        },
+
         render_row: function() {
             var show_in_tool_panel = this.model.get("show_in_tool_panel");
             var wf_id = this.model.id;
-            var checkbox_html = '<input type="checkbox" class="show-in-tool-panel" '+ ( show_in_tool_panel ? 'checked="' + show_in_tool_panel + '"' : "" ) +' value="' + wf_id + '">';
+            var checkbox_html = '<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" '+ ( show_in_tool_panel ? 'checked="' + show_in_tool_panel + '"' : "" ) +' value="' + wf_id + '">';
             var trHtml =  '<td>' +
                              '<div class="dropdown">' +
                                  '<button class="menubutton" type="button" data-toggle="dropdown">' +
@@ -54,7 +81,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
             tag_editor = new TAGS.WorkflowTagsEditor({
             model           : this.model,
             el              : $.find( '.' + this.model.id + '.tags-display' )});
-
             tag_editor.toggle( true );
             tag_editor.render();
         },
@@ -65,11 +91,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
                 return '<ul class="dropdown-menu action-dpd">' +
                            '<li><a href="'+ Galaxy.root +'workflow/editor?id='+ this.model.id +'">Edit</a></li>' +
                            '<li><a href="'+ Galaxy.root +'workflow/run?id='+ this.model.id +'">Run</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'workflow/sharing?id='+ this.model.id +'">Share or Download</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/sharing?id='+ this.model.id +'">Share</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'api/workflows/'+ this.model.id +'/download">Download</a></li>' +
                            '<li><a href="'+ Galaxy.root +'workflow/copy?id='+ this.model.id +'">Copy</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'workflow/rename?id='+ this.model.id +'">Rename</a></li>' +
+                           '<li><a id="rename-workflow" style="cursor: pointer;">Rename</a></li>' +
                            '<li><a href="'+ Galaxy.root +'workflow/display_by_id?id='+ this.model.id +'">View</a></li>' +
-                           '<li><a class="link-confirm-'+ this.model.id +'" href="'+ Galaxy.root +'workflow/delete?id='+ this.model.id +'">Delete</a></li>' +
+                           '<li><a id="delete-workflow" style="cursor: pointer;">Delete</a></li>' +
                       '</ul>';
             }
             else {
@@ -91,64 +118,80 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
         initialize: function() {
             this.setElement( '<div/>' );
             this.collection = new WORKFLOWS.WorkflowCollection();
+            // this.collection.comparator = 'number_of_steps';
+            // this.collection.on('sort', this.render, this);
             this.collection.bind('add', this.appendItem); // collection event binder
-            this.render();
+            this.collection.on('sync', this.render, this);  // hack to call
         },
+
+        events: {
+            'dragenter' : 'highlightDropZone',
+            'dragleave' : 'unhighlightDropZone',
+            'drop' : 'drop',
+            'dragover': function(ev) {
+                ev.preventDefault();
+            }
+        },
+
+        highlightDropZone: function() {
+            //TODO figure out how to highlight zone. Need css ?
+            this.$el.css( "overflow", "inherit" );
+            console.log('Dropzone')
+        },
+
+        unhighlightDropZone: function() {
+            console.log('Unhighlight Dropzone')
+        },
+
+        dropTest: function() {
+            console.log('Droptest')
+        },
+
+        drop: function(e) {
+            // TODO: check that file is valid galaxy workflow
+            e.preventDefault();
+            var files = e.dataTransfer.files;
+            var self = this;
+            for (var i = 0, f; f = files[i]; i++) {
+                self.readWorkflowFiles(f);
+            }
+        },
+
+        readWorkflowFiles: function(f) {
+                var self = this;
+                var reader = new FileReader();
+                reader.onload = function(theFile) {
+                    var wf_json = JSON.parse(reader.result);
+                    self.collection.create(wf_json, { at: 0, wait: true});
+                };
+                reader.readAsText(f, 'utf-8');
+            },
 
         render: function() {
             var self = this,
                 min_query_length = 3;
-                var $el_workflow = null;
                 // Add workflow header
-                self.$el.empty().append( self._templateHeader() );
-                // Add user actions message if any
+                var header = self._templateHeader();
                 build_messages();
-                $el_workflow = self.$( '.user-workflows' );
                 // Add the actions buttons
-                $el_workflow.append( self._templateActionButtons() );
-                var workflows = this.collection;
-                console.log(workflows);
-                $el_workflow.append(self._templateWorkflowTable());
-                self.adjust_actiondropdown( $el_workflow );
-                // Register delete and run workflow events
-                // _.each( workflows, function( wf ) {
-                //    self.confirm_delete( wf );
-                //});
-                self.register_show_tool_menu();
-                // Register search workflow event
+                var template_actions = self._templateActionButtons();
+                var table_template = self._templateWorkflowTable();
+                this.$el.html( header + template_actions + table_template);
+                _(this.collection.models).each(function(item){ // in case collection is not empty
+                    self.appendItem(item, prepend=false);
+                }, this);
+                self.adjust_actiondropdown( this.$el );
                 self.search_workflow( self.$( '.search-wf' ), self.$( '.workflow-search tr' ), min_query_length );
+                return this;
         },
 
-        appendItem: function(item){
+        appendItem: function(item, prepend){
             var workflowItemView = new WorkflowItemView({
-                model: item
+                model: item,
+                collection: this,
             });
-            self.$( '.user-workflows' ).find('tbody.workflow-search').append(workflowItemView.render().el);
+            self.$( '.workflow-search' ).append(workflowItemView.render().el);
             workflowItemView.render_tag_editor();
-        },
-
-        // Save the workflow as an item in Tool panel
-        register_show_tool_menu: function() {
-            var $el_checkboxes = this.$( '.show-in-tool-panel' );
-            $el_checkboxes.on( 'click', function( e ) {
-                var ids = [];
-                // Look for all the checked checkboxes
-                for( var item = 0; item < $el_checkboxes.length; item++ ) {
-                    var checkbox = $el_checkboxes[ item ];
-                    if( checkbox.checked ) {
-                        ids.push( checkbox.value );
-                    }
-                }
-                // Save all the checked workflows
-                $.ajax({
-                    type: 'PUT',
-                    url: Galaxy.root + 'api/workflows/menu/',
-                    data: JSON.stringify( { 'workflow_ids': ids } ),
-                    contentType : 'application/json'
-                }).done( function( response ) {
-                    window.location = Galaxy.root + 'workflow';
-                });
-            });
         },
 
         /** Add confirm box before removing/unsharing workflow */
@@ -231,8 +274,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
                     '</tr></thead>';
             return tableHtml + '<tbody class="workflow-search">' + '</tbody></table>';
         },
-
-
 
         /** Main template */
         _templateHeader: function() {
