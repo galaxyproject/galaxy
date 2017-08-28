@@ -161,12 +161,8 @@ function( Utils, UploadModel, UploadRow, Popover, Select, Ui ) {
         /** Load html template */
         _template: function() {
             return  '<div class="upload-view-composite">' +
-                        '<div class="upload-footer">' +
-                            '<span class="upload-footer-title">Composite Type:</span>' +
-                            '<span class="upload-footer-extension"/>' +
-                            '<span class="upload-footer-extension-info upload-icon-button fa fa-search"/> ' +
-                            '<span class="upload-footer-title">Genome/Build:</span>' +
-                            '<span class="upload-footer-genome"/>' +
+                        '<div class="upload-top">' +
+                            '<h6 class="upload-top-info"/>' +
                         '</div>' +
                         '<div class="upload-box">' +
                             '<table class="upload-table ui-table-striped" style="display: none;">' +
@@ -183,6 +179,13 @@ function( Utils, UploadModel, UploadRow, Popover, Select, Ui ) {
                                 '</thead>' +
                                 '<tbody/>' +
                             '</table>' +
+                        '</div>' +
+                        '<div class="upload-footer">' +
+                            '<span class="upload-footer-title">Composite Type:</span>' +
+                            '<span class="upload-footer-extension"/>' +
+                            '<span class="upload-footer-extension-info upload-icon-button fa fa-search"/> ' +
+                            '<span class="upload-footer-title">Genome/Build:</span>' +
+                            '<span class="upload-footer-genome"/>' +
                         '</div>' +
                         '<div class="upload-buttons"/>' +
                     '</div>';
