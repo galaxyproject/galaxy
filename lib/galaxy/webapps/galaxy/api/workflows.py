@@ -438,14 +438,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         stored_workflow = self.__get_stored_workflow(trans, id)
         workflow_dict = payload.get('workflow')
         if workflow_dict:
-            stored_workflow.name = sanitize_html(payload['name']) if ('name' in payload) else stored_workflow.name
+            new_workflow_name = payload.get('name') or workflow_dict.get('name')
+            if new_workflow_name:
+                stored_workflow.name = sanitize_html(new_workflow_name)
 
             if 'annotation' in payload:
                 newAnnotation = sanitize_html(payload['annotation'])
                 self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, newAnnotation)
 
-            if 'menu_entry' in payload:
-                if payload['menu_entry']:
+            if 'menu_entry' in payload or 'show_in_tool_panel' in workflow_dict:
+                if payload.get('menu_entry') or workflow_dict.get('show_in_tool_panel'):
                     menuEntry = model.StoredWorkflowMenuEntry()
                     menuEntry.stored_workflow = stored_workflow
                     trans.get_user().stored_workflow_menu_entries.append(menuEntry)
@@ -456,14 +458,19 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                         trans.get_user().stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
             # set tags
             trans.app.tag_handler.set_tags_from_list(user=trans.user, item=stored_workflow, new_tags_list=workflow_dict.get('tags', []))
-            try:
-                workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
-                    trans,
-                    stored_workflow,
-                    workflow_dict,
-                )
-            except workflows.MissingToolsException:
-                raise exceptions.MessageException("This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed.")
+
+            if 'steps' in workflow_dict:
+                try:
+                    workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
+                        trans,
+                        stored_workflow,
+                        workflow_dict,
+                    )
+                except workflows.MissingToolsException:
+                    raise exceptions.MessageException("This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed.")
+            else:
+                # We only adjusted tags and menu entry
+                return payload
         else:
             message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
             raise exceptions.RequestParameterInvalidException(message)
@@ -539,7 +546,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         item = workflow.to_dict(value_mapper={'id': trans.security.encode_id})
         item['url'] = url_for('workflow', id=encoded_id)
-
+        item['owner'] = workflow.user.username
+        item['number_of_steps'] = len(workflow.latest_workflow.steps)
         rval.append(item)
 
         #
