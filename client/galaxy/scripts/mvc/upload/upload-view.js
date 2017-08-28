@@ -1,6 +1,6 @@
 /** Upload app contains the upload progress button and upload modal, compiles model data for API request **/
-define([ 'utils/utils', 'mvc/ui/ui-modal', 'mvc/ui/ui-tabs', 'mvc/upload/upload-button', 'mvc/upload/default/default-view', 'mvc/upload/composite/composite-view', 'mvc/upload/collection/collection-view'],
-function( Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposite, UploadViewCollection ) {
+define([ 'utils/utils', 'mvc/ui/ui-modal', 'mvc/ui/ui-tabs', 'mvc/upload/upload-button', 'mvc/upload/default/default-view', 'mvc/upload/composite/composite-view', 'mvc/upload/collection/collection-view', 'mvc/upload/ftp/ftp-view'],
+function( Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposite, UploadViewCollection, UploadViewFtp ) {
     return Backbone.View.extend({
         options : {
             nginx_upload_path   : '',
@@ -102,6 +102,12 @@ function( Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposi
                     id      : 'regular',
                     title   : 'Regular',
                     $el     : this.default_view.$el
+                });
+                this.ftp_view = new UploadViewFtp( this );
+                this.tabs.add({
+                    id      : 'ftp',
+                    title   : 'File Transfer Protocol',
+                    $el     : this.ftp_view.$el
                 });
                 this.composite_view = new UploadViewComposite( this );
                 this.tabs.add({
