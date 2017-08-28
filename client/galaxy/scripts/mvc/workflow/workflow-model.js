@@ -15,25 +15,15 @@ var WorkflowItem = Backbone.Model.extend( baseMVC.LoggableMixin ).extend({
 
     urlRoot: '/api/workflows',
 
-    defaults : {
-        content: ''
-    },
-
     toJSON: function(){
     // need to overwrite this as endpoint expects the 'workflow' key in payload
     return {workflow : this.attributes};
     },
 
-    initialize: function() {
-        console.log("Initialize Workflow Model");
+    download: function() {
+        return $.getJSON(this.urlRoot + this.model.id + '/download')
     },
 
-    entryType: function() {
-        return this.entry? this.entry.EntryType : undefined;
-    },
-    fields: function() {
-        return this._fields;
-    }
 });
 
 var WorkflowCollection = Backbone.Collection.extend({
