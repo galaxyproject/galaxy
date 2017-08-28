@@ -9,6 +9,7 @@ from galaxy.exceptions import InternalServerError
 from galaxy.exceptions import ItemAccessibilityException
 from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers import tags
 from galaxy.util import validation
 
@@ -102,7 +103,7 @@ class LibraryDatasetsManager(object):
                 continue
             if key in ('name'):
                 if len(val) < MINIMUM_STRING_LENGTH:
-                    raise exceptions.RequestParameterInvalidException('%s must have at least length of %s'% (key, MINIMUM_STRING_LENGTH))
+                    raise RequestParameterInvalidException('%s must have at least length of %s'% (key, MINIMUM_STRING_LENGTH))
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
             if key in ('misc_info'):
@@ -111,11 +112,11 @@ class LibraryDatasetsManager(object):
             if key in ('file_ext'):
                 datatype = self.app.datatypes_registry.get_datatype_by_extension(val)
                 if datatype is None:
-                    raise exceptions.RequestParameterInvalidException('This Galaxy does not recognize the datatype of: %s'% (val))
+                    raise RequestParameterInvalidException('This Galaxy does not recognize the datatype of: %s'% (val))
                 validated_payload[key] = val
             if key in ('genome_build'):
                 if len(val) < MINIMUM_STRING_LENGTH:
-                    raise exceptions.RequestParameterInvalidException('%s must have at least length of %s'% (key, MINIMUM_STRING_LENGTH))
+                    raise RequestParameterInvalidException('%s must have at least length of %s'% (key, MINIMUM_STRING_LENGTH))
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
             elif key == 'tags':
