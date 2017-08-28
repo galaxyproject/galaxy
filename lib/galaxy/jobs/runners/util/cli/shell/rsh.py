@@ -1,4 +1,5 @@
 import logging
+import time
 
 import paramiko
 
@@ -57,6 +58,9 @@ class ParamikoShell(object):
         self.timeout = int(timeout) if timeout else timeout
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.connect()
+
+    def connect(self):
         self.ssh.connect(hostname=self.hostname,
                          port=self.port,
                          username=self.username,
@@ -65,9 +69,18 @@ class ParamikoShell(object):
                          timeout=self.timeout)
 
     def execute(self, cmd, timeout=60):
-        _, stdout, stderr = self.ssh.exec_command(cmd, timeout=timeout)
+        try:
+            _, stdout, stderr = self._execute(cmd, timeout)
+        except paramiko.SSHException as e:
+            log.error(e)
+            time.sleep(10)
+            self.connect()
+            _, stdout, stderr = self._execute(cmd, timeout)
         return_code = stdout.channel.recv_exit_status()
         return Bunch(stdout=stdout.read(), stderr=stderr.read(), returncode=return_code)
+
+    def _execute(self, cmd, timeout):
+        return self.ssh.exec_command(cmd, timeout=timeout)
 
 
 class GlobusSecureShell(SecureShell):
