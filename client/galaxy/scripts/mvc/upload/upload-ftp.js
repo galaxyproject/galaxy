@@ -4,6 +4,7 @@ define( [ 'utils/utils' ], function( Utils ) {
         initialize: function( options ) {
             var self = this;
             this.options = Utils.merge( options, {
+                css             : 'upload-ftp',
                 class_add       : 'upload-icon-button fa fa-square-o',
                 class_remove    : 'upload-icon-button fa fa-check-square-o',
                 class_partial   : 'upload-icon-button fa fa-minus-square-o',
@@ -143,7 +144,7 @@ define( [ 'utils/utils' ], function( Utils ) {
 
         /** Template of main view */
         _template: function() {
-            return  '<div class="upload-ftp">' +
+            return  '<div class="' + this.options.css + '">' +
                         '<div class="upload-ftp-wait fa fa-spinner fa-spin"/>' +
                         '<div class="upload-ftp-help">This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>' + this.options.ftp_upload_site + '</strong> using your Galaxy credentials (email address and password).</div>' +
                         '<div class="upload-ftp-content"/>' +

@@ -158,6 +158,9 @@
             }
         }
     }
+    .upload-box-solid {
+        border: 1px solid @btn-default-border !important;
+    }
     .upload-buttons {
         padding-top: 30px;
         button {
@@ -195,11 +198,7 @@
     }
 }
 
-.upload-ftp {
-    height: 250px;
-    width: 500px;
-    overflow-y: auto;
-    overflow-x: hidden;
+.upload-ftp-base {
     .upload-ftp-wait {
         font-size: 1.2em;
         position: absolute;
@@ -217,15 +216,12 @@
         cursor: pointer;
         .ftp-name {
             position: relative;
-            width: 240px;
             word-wrap: break-word;
         }
         .ftp-size {
-            width: 60px;
             white-space: nowrap;
         }
         .ftp-time {
-            width: 165px;
             white-space: nowrap;
         }
     }
@@ -237,6 +233,36 @@
     }
     td {
         padding: 8px 5px !important;
+    }
+}
+
+.upload-ftp {
+    &:extend(.upload-ftp-base all);
+    height: 250px;
+    width: 500px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    .upload-ftp-row {
+        cursor: pointer;
+        .ftp-name {
+            width: 240px;
+        }
+        .ftp-size {
+            width: 60px;
+        }
+        .ftp-time {
+            width: 165px;
+        }
+    }
+}
+
+.upload-ftp-full {
+    &:extend(.upload-ftp-base all);
+    .upload-ftp-content {
+        line-height: 2.0em !important;
+    }
+    th {
+        text-align: center !important;
     }
 }
 
