@@ -55,6 +55,7 @@ real_file = os.path.realpath(__file__)
 GALAXY_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(real_file), os.pardir))
 GALAXY_LIB_DIR = os.path.join(GALAXY_ROOT_DIR, "lib")
 DEFAULT_INI_APP = "main"
+DEFAULT_CONFIG_SECTION = "galaxy"
 DEFAULT_INIS = ["config/galaxy.ini", "universe_wsgi.ini", "config/galaxy.ini.sample"]
 
 DEFAULT_PID = "galaxy.pid"
@@ -80,11 +81,6 @@ def load_galaxy_app(
         except Exception:
             log.exception("Failed to chdir")
             raise
-        try:
-            sys.path.insert(1, GALAXY_LIB_DIR)
-        except Exception:
-            log.exception("Failed to add Galaxy to sys.path")
-            raise
 
     config_builder.setup_logging()
     from galaxy.util.properties import load_app_properties
@@ -92,7 +88,7 @@ def load_galaxy_app(
     kwds = load_app_properties(**kwds)
     from galaxy.app import UniverseApplication
     app = UniverseApplication(
-        global_conf={"__file__": config_builder.ini_path},
+        global_conf=config_builder.global_conf(),
         **kwds
     )
     app.control_worker.bind_and_start()
@@ -101,7 +97,7 @@ def load_galaxy_app(
 
 def app_loop(args, log):
     try:
-        config_builder = GalaxyConfigBuilder(args, config_file=config_file_from_uwsgi())
+        config_builder = GalaxyConfigBuilder(args)
         galaxy_app = load_galaxy_app(
             config_builder,
             config_env=True,
@@ -132,40 +128,18 @@ def absolute_config_path(path, galaxy_root):
     return path
 
 
-def find_ini(supplied_ini, galaxy_root):
-    if supplied_ini:
-        return supplied_ini
+def find_config(supplied_config, galaxy_root):
+    if supplied_config:
+        return supplied_config
 
-    # If not explicitly supplied an ini, check server.ini and then
-    # just restort to sample if that has not been configured.
+    # If not explicitly supplied an config, check galaxy.ini and then
+    # just resort to sample if that has not been configured.
     for guess in DEFAULT_INIS:
-        ini_path = os.path.join(galaxy_root, guess)
-        if os.path.exists(ini_path):
-            return ini_path
+        config_path = os.path.join(galaxy_root, guess)
+        if os.path.exists(config_path):
+            return config_path
 
     return guess
-
-def config_file_from_uwsgi(app_name=None):
-    if uwsgi:
-        for opt in ('yaml', 'json'):
-            if opt in uwsgi.opt:
-                return (uwsgi.opt[opt], app_name or 'galaxy')
-        if 'ini' in uwsgi.opt:
-            # FIXME: refactor (to properties) with galaxy.web.framework.webapp:build_native_uwsgi_app
-        if 'ini-paste' in uwsgi.opt:
-            app_name = 'app:%s' % app_name if app_name else 'app:%s' % DEFAULT_INI_APP
-            return (uwsgi.opt['ini-paste'], app_name)
-
-
-
-        # FIXME: still need this in get_app_kwds
-        elif 'set' in uwsgi.opt:
-            set_options = uwsgi.opt['set']
-            set_options = [set_options] if isinstance(set_options, string_types) else set_options
-            for k, v in [x.split('=', 1) for x in set_options]:
-                if k == 'galaxy_config_file':
-                    return v
-    return None
 
 
 class GalaxyConfigBuilder(object):
@@ -173,15 +147,19 @@ class GalaxyConfigBuilder(object):
     """
 
     def __init__(self, args=None, **kwds):
-        config_file = kwds.get("config_file", None) or (args and args.config_file) or (args and args.ini_path)
+        self.app_name = kwds.get("app") or (args and args.app) or DEFAULT_CONFIG_SECTION
+        config_file = kwds.get("config_file", None) or (args and args.config_file)
         # If given app_conf_path - use that - else we need to ensure we have a
         # config file path.
+        if not config_file and 'config_file' in self.app_kwds():
+            config_file = self.app_kwds()['config_file']
         if not config_file:
             galaxy_root = kwds.get("galaxy_root", GALAXY_ROOT_DIR)
             config_file = find_config(config_file, galaxy_root)
             config_file = absolute_config_path(config_file, galaxy_root=galaxy_root)
         self.config_file = config_file
-        self.app_name = kwds.get("app") or (args and args.app) or DEFAULT_INI_APP
+        # FIXME: this won't work for non-Paste ini configs
+        self.config_section = self.app_name if not self.config_is_ini else 'app:%s' % (kwds.get("app") or (args and args.app) or DEFAULT_INI_APP)
         self.log_file = (args and args.log_file)
 
     @classmethod
@@ -195,28 +173,41 @@ class GalaxyConfigBuilder(object):
         arg_parser.add_argument("--pid-file", default=DEFAULT_PID, help="pid file (default is %s)" % DEFAULT_PID)
         arg_parser.add_argument("--server-name", default=None, help="set a galaxy server name")
 
+    @property
+    def config_is_ini(self):
+        return self.config_file.endswith('.ini') or self.config_file.endswith('.ini.sample')
+
     def app_kwds(self):
-        config = dict(
-            config_file=self.config_file,
-            config_section="app:%s" % self.app_name,
-        )
-        return config
+        from galaxy.web.stack import get_app_kwds
+        kwds = get_app_kwds(self.app_name, app_name=self.app_name)
+        if 'config_file' not in kwds:
+            kwds['config_file'] = self.config_file
+        if 'config_section' not in kwds:
+            kwds['config_section'] = self.config_section
+        return kwds
+
+    def global_conf(self):
+        conf = {}
+        if self.config_is_ini:
+            conf["__file__"] = self.config_file
+        return conf
 
     def setup_logging(self):
         # Galaxy will attempt to setup logging if loggers is not present in
         # ini config file - this handles that loggers block however if present
         # (the way paste normally would)
         from galaxy.web.stack import application_stack_log_filter
-        if not self.ini_path:
+        if not self.config_file:
             return
-        raw_config = configparser.ConfigParser()
-        raw_config.read([self.ini_path])
-        if raw_config.has_section('loggers'):
-            config_file = os.path.abspath(self.ini_path)
-            fileConfig(
-                config_file,
-                dict(__file__=config_file, here=os.path.dirname(config_file))
-            )
+        if self.config_is_ini:
+            raw_config = configparser.ConfigParser()
+            raw_config.read([self.config_file])
+            if raw_config.has_section('loggers'):
+                config_file = os.path.abspath(self.config_file)
+                fileConfig(
+                    config_file,
+                    dict(__file__=config_file, here=os.path.dirname(config_file))
+                )
         root = logging.getLogger()
         for h in root.handlers:
             h.addFilter(application_stack_log_filter()())
@@ -224,6 +215,11 @@ class GalaxyConfigBuilder(object):
 
 def main():
     arg_parser = ArgumentParser(description=DESCRIPTION)
+    try:
+        sys.path.insert(1, GALAXY_LIB_DIR)
+    except Exception:
+        log.exception("Failed to add Galaxy to sys.path")
+        raise
     GalaxyConfigBuilder.populate_options(arg_parser)
     args = arg_parser.parse_args()
     if args.ini_path and not args.config_file:

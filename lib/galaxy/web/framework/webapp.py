@@ -985,7 +985,8 @@ def build_native_uwsgi_app(paste_factory, config_section):
         # Probably loaded via --ini-paste - expect paste app
         return None
 
-    uwsgi_app = paste_factory(uwsgi.opt, load_app_kwds=**app_kwds)
+    import uwsgi
+    uwsgi_app = paste_factory(uwsgi.opt, load_app_kwds=app_kwds)
     return uwsgi_app
 
 

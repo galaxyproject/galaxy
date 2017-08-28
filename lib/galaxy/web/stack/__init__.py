@@ -1,6 +1,6 @@
 """Web application stack operations
 """
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
 
 import inspect
 import logging
@@ -23,6 +23,7 @@ from .transport import ApplicationStackTransport, UWSGIFarmMessageTransport
 
 from galaxy.util.bunch import Bunch
 from galaxy.util.facts import get_facts
+from galaxy.util.properties import nice_config_parser
 
 
 log = logging.getLogger(__name__)
@@ -57,17 +58,17 @@ class ApplicationStack(object):
         JOB_HANDLERS = 'job-handlers',
     )
 
-    @staticmethod
-    def get_app_kwds(config_section, app_name=None, for_paste_app=False):
-        # TODO: how to implement for Paste/webless
+    @classmethod
+    def get_app_kwds(cls, config_section, app_name=None, for_paste_app=False):
         return {}
 
     @classmethod
     def register_postfork_function(cls, f, *args, **kwargs):
         f(*args, **kwargs)
 
-    def __init__(self, app=None):
+    def __init__(self, app=None, config=None):
         self.app = app
+        self.config = config or (app and app.config)
 
     def start(self):
         # TODO: with a stack config the pools could be parsed here
@@ -94,7 +95,7 @@ class ApplicationStack(object):
 
     @property
     def facts(self):
-        facts = get_facts(config=self.app.config)
+        facts = get_facts(config=self.config)
         facts.update({'pool_name': self.pool_name})
         return facts
 
@@ -116,8 +117,8 @@ class ApplicationStack(object):
 
 
 class MessageApplicationStack(ApplicationStack):
-    def __init__(self, app=None):
-        super(MessageApplicationStack, self).__init__(app=app)
+    def __init__(self, app=None, config=None):
+        super(MessageApplicationStack, self).__init__(app=app, config=config)
         self.dispatcher = ApplicationStackMessageDispatcher()
         self.transport = self.transport_class(app, stack=self, dispatcher=self.dispatcher)
 
@@ -162,24 +163,31 @@ class UWSGIApplicationStack(MessageApplicationStack):
 
     postfork_functions = []
 
-    @staticmethod
-    def get_app_kwds(config_section, app_name=None, for_paste_app=False):
+    @classmethod
+    def get_app_kwds(cls, config_section, app_name=None, for_paste_app=False):
         kwds = {
             'config_file': None,
             'config_section': config_section,
         }
         # used by webless mules started under uWSGI
         uwsgi_opt = uwsgi.opt
-        app_section = 'app:%s' % app_name if app_name else 'app:%s' % self.default_app_name
+        app_section = 'app:%s' % app_name if app_name else 'app:%s' % cls.default_app_name
+        # check for --yaml or --json uWSGI config options first
         config_file = uwsgi_opt.get("yaml") or uwsgi_opt.get("json")
-        # legacy, support loading ini uWSGI config without --ini-paste but with the app config under Paste's [app:main] section
+        # legacy, support loading ini uWSGI config without --ini-paste but with the app config under a Paste [app:] section
         if config_file is None and uwsgi_opt.get("ini"):
             config_file = uwsgi_opt["ini"]
             parser = nice_config_parser(config_file)
             if not parser.has_section(config_section) and parser.has_section(app_section):
                 kwds['config_section'] = app_section
-        if config_file is None and for_paste_app:
+        # if we're getting kwargs for loading by paste, pastedeploy will set them up itself
+        if config_file is None and uwsgi_opt.get("ini-paste") and for_paste_app:
             return None
+        # check for --set galaxy_config_file=<path>, this overrides whatever config file uWSGI was loaded with (which
+        # may not actually include a Galaxy config)
+        if uwsgi_opt.get("galaxy_config_file"):
+            config_file = uwsgi_opt.get("galaxy_config_file")
+        # otherwise, check --ini-paste
         if config_file is None and uwsgi_opt.get("ini-paste"):
             config_file = uwsgi_opt.get("ini") or uwsgi_opt.get("ini-paste")
             kwds['config_section'] = app_section
@@ -199,10 +207,10 @@ class UWSGIApplicationStack(MessageApplicationStack):
             # are standalone non-forking processes, they should run postfork functions immediately
             f(*args, **kwargs)
 
-    def __init__(self, app=None):
+    def __init__(self, app=None, config=None):
         self._farms_dict = None
         self._mules_list = None
-        super(UWSGIApplicationStack, self).__init__(app=app)
+        super(UWSGIApplicationStack, self).__init__(app=app, config=config)
 
     def __register_signal_handlers(self):
         for name in ('TERM', 'INT', 'HUP'):
@@ -305,9 +313,9 @@ def application_stack_class():
     return WeblessApplicationStack
 
 
-def application_stack_instance(app=None):
+def application_stack_instance(app=None, config=None):
     stack_class = application_stack_class()
-    return stack_class(app=app)
+    return stack_class(app=app, config=config)
 
 
 def application_stack_log_filter():
@@ -318,8 +326,12 @@ def register_postfork_function(f, *args, **kwargs):
     application_stack_class().register_postfork_function(f, *args, **kwargs)
 
 
-def get_app_kwds(config_section):
-    return application_stack_class().get_app_kwds(config_section)
+def get_app_kwds(config_section, app_name=None, for_paste_app=None):
+    return application_stack_class().get_app_kwds(config_section, app_name=app_name, for_paste_app=for_paste_app)
+
+
+def get_stack_facts(config=None):
+    return application_stack_instance(config=config).facts
 
 
 def _uwsgi_configured_mules():

@@ -28,7 +28,7 @@ from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.web.stack import application_stack_log_filter, register_postfork_function
+from galaxy.web.stack import application_stack_log_filter, get_stack_facts, register_postfork_function
 from .version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
@@ -880,7 +880,7 @@ def configure_logging(config):
     else:
         paste_configures_logging = False
     auto_configure_logging = not paste_configures_logging and string_as_bool(config.get("auto_configure_logging", "True"))
-    if auto_configure_logging and not config.logging:
+    if auto_configure_logging and (not hasattr(config, 'logging') or not config.logging):
         format = config.get("log_format", "%(name)s %(levelname)s %(asctime)s %(message)s")
         level = logging._levelNames[config.get("log_level", "DEBUG")]
         destination = config.get("log_destination", "stdout")
@@ -907,10 +907,13 @@ def configure_logging(config):
         formatter = logging.Formatter(format)
         # Hook everything up
         handler.setFormatter(formatter)
-        handler.addFilter(application_stack_log_filter()())
         root.addHandler(handler)
     elif auto_configure_logging and config.logging:
-        # TODO: template filename here
+        # configure logging with logging dict in config, template *FileHandler handler filenames with the `filename_template` option
+        for name, conf in config.logging['handlers'].items():
+            if conf['class'].startswith('logging.') and conf['class'].endswith('FileHandler') and 'filename_template' in conf:
+                conf['filename'] = conf.pop('filename_template').format(**get_stack_facts(config=config))
+                config.logging['handlers'][name] = conf
         logging.config.dictConfig(config.logging)
     for h in root.handlers:
         h.addFilter(application_stack_log_filter()())

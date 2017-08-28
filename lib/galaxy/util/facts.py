@@ -18,7 +18,7 @@ class Facts(MutableMapping):
     def __set_defaults(self, config):
         defaults = {
             'server_name': lambda: config.server_name,
-            "server_id": None,
+            'server_id': None,
             'process_num': None,
             'pool_nane': None,
             'fqdn': lambda: socket.getfqdn(),
@@ -27,9 +27,10 @@ class Facts(MutableMapping):
         self.__dict__.update(defaults)
 
     def __set_config(self, config):
-        for name in dir(config):
-            if not name.startswith('_') and isinstance(getattr(config, name), string_types):
-                self.__dict__['config_' + name] = lambda name=name: getattr(config, name)
+        if config is not None:
+            for name in dir(config):
+                if not name.startswith('_') and isinstance(getattr(config, name), string_types):
+                    self.__dict__['config_' + name] = lambda name=name: getattr(config, name)
 
     def __getitem__(self, key):
         #item = super(Facts, self).__getitem__(key)
