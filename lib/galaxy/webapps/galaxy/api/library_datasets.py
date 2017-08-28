@@ -42,45 +42,15 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
 
         * GET /api/libraries/datasets/{encoded_dataset_id}
 
-        :param  id:      the encoded id of the dataset to query
+        :param  id:      the encoded id of the library dataset to query
         :type   id:      an encoded id string
 
-        :returns:   detailed dataset information from base controller
+        :returns:   detailed library dataset information
         :rtype:     dictionary
         """
-        current_user_roles = trans.get_current_user_roles()
-
-        ld = self.ld_manager.get( trans, managers_base.decode_id( self.app, id ) )
-
-        tag_manager = tags.GalaxyTagManager(trans.sa_session)
-
-        # Build the full path for breadcrumb purposes.
-        full_path = self._build_path(trans, ld.folder)
-        dataset_item = (id, ld.name)
-        full_path.insert(0, dataset_item)
-        full_path = full_path[::-1]
-
-        # Find expired versions of the library dataset
-        expired_ldda_versions = []
-        for expired_ldda in ld.expired_datasets:
-            expired_ldda_versions.append((trans.security.encode_id(expired_ldda.id), expired_ldda.name))
-
-        rval = trans.security.encode_all_ids(ld.to_dict())
-        if len(expired_ldda_versions) > 0:
-            rval['has_versions'] = True
-            rval['expired_versions'] = expired_ldda_versions
-        rval['deleted'] = ld.deleted
-        rval['folder_id'] = 'F' + rval['folder_id']
-        rval['full_path'] = full_path
-        rval['file_size'] = util.nice_size(int(ld.library_dataset_dataset_association.get_size()))
-        rval['date_uploaded'] = ld.library_dataset_dataset_association.create_time.strftime("%Y-%m-%d %I:%M %p")
-        rval['can_user_modify'] = trans.app.security_agent.can_modify_library_item(current_user_roles, ld) or trans.user_is_admin()
-        rval['is_unrestricted'] = trans.app.security_agent.dataset_is_public(ld.library_dataset_dataset_association.dataset)
-        rval['tags'] = tag_manager.get_tags_str(ld.library_dataset_dataset_association.tags)
-
-        #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
-        rval['can_user_manage'] = trans.app.security_agent.can_manage_dataset(current_user_roles, ld.library_dataset_dataset_association.dataset) or trans.user_is_admin()
-        return rval
+        ld = self.ld_manager.get(trans, managers_base.decode_id(self.app, id ))
+        serialized = self.ld_manager.serialize(trans, ld)
+        return serialized
 
     @expose_api_anonymous
     def show_version(self, trans, encoded_dataset_id, encoded_ldda_id, **kwd):
@@ -196,6 +166,23 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         return dict(access_dataset_roles=access_dataset_role_list, modify_item_roles=modify_item_role_list, manage_dataset_roles=manage_dataset_role_list)
 
     @expose_api
+    def update(self, trans, encoded_dataset_id, payload=None, **kwd):
+        """Update the given library dataset (the latest linked ldda).
+
+        * PATCH /api/libraries/datasets/{encoded_dataset_id}
+
+        :param  encoded_dataset_id:      the encoded id of the library dataset to update
+        :type   encoded_dataset_id:      an encoded id string
+
+        :returns:   detailed library dataset information
+        :rtype:     dictionary
+        """
+        library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
+        updated = self.ld_manager.update(trans, library_dataset, payload)
+        serialized = self.ld_manager.serialize(trans, updated)
+        return serialized
+
+    @expose_api
     def update_permissions(self, trans, encoded_dataset_id, payload=None, **kwd):
         """
         Set permissions of the given library dataset to the given role ids.
@@ -225,6 +212,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         if payload:
             kwd.update(payload)
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
+        # Some permissions are attached directly to the underlying dataset.
         dataset = library_dataset.library_dataset_dataset_association.dataset
         current_user_roles = trans.get_current_user_roles()
         can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin()
@@ -716,25 +704,3 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
                     raise exceptions.InternalServerError("This dataset contains no content.")
         else:
             raise exceptions.RequestParameterInvalidException("Wrong format parameter specified")
-
-    def _build_path(self, trans, folder):
-        """
-        Search the path upwards recursively and load the whole route of
-        names and ids for breadcrumb building purposes.
-
-        :param folder: current folder for navigating up
-        :param type:   Galaxy LibraryFolder
-
-        :returns:   list consisting of full path to the library
-        :type:      list
-        """
-        path_to_root = []
-        if folder.parent_id is None:
-            # We are almost in root
-            path_to_root.append(('F' + trans.security.encode_id(folder.id), folder.name))
-        else:
-            # We add the current folder and traverse up one folder.
-            path_to_root.append(('F' + trans.security.encode_id(folder.id), folder.name))
-            upper_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(folder.parent_id)
-            path_to_root.extend(self._build_path(trans, upper_folder))
-        return path_to_root

@@ -667,6 +667,12 @@ def populate_api_routes(webapp, app):
                           action='show_version',
                           conditions=dict(method=["GET"]))
 
+    webapp.mapper.connect('update_ld',
+                          '/api/libraries/datasets/{encoded_dataset_id}',
+                          controller='library_datasets',
+                          action='update',
+                          conditions=dict(method=["PATCH"]))
+
     webapp.mapper.connect('show_legitimate_ld_roles',
                           '/api/libraries/datasets/{encoded_dataset_id}/permissions',
                           controller='library_datasets',
