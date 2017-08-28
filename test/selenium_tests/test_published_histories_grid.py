@@ -145,10 +145,8 @@ class HistoryGridTestCase(SeleniumTestCase):
         time.sleep(.5)
 
     def set_tags(self, tags):
-        tag_icon_selector = self.test_data['historyPanel']['selectors'] \
-            ['history']['tagIcon']
-        tag_area_selector = self.test_data['historyPanel']['selectors'] \
-            ['history']['tagArea']
+        tag_icon_selector = self.test_data['historyPanel']['selectors']['history']['tagIcon']
+        tag_area_selector = self.test_data['historyPanel']['selectors']['history']['tagArea']
 
         if not self.is_displayed(tag_area_selector):
             tag_icon = self.wait_for_selector(tag_icon_selector)
@@ -165,10 +163,8 @@ class HistoryGridTestCase(SeleniumTestCase):
             time.sleep(.5)
 
     def set_annotation(self, annotation):
-        anno_icon_selector = self.test_data['historyPanel']['selectors'] \
-            ['history']['annoIcon']
-        anno_area_selector = self.test_data['historyPanel']['selectors'] \
-            ['history']['annoArea']
+        anno_icon_selector = self.test_data['historyPanel']['selectors']['history']['annoIcon']
+        anno_area_selector = self.test_data['historyPanel']['selectors']['history']['annoArea']
 
         if not self.is_displayed(anno_area_selector):
             annon_icon = self.wait_for_selector(anno_icon_selector)
@@ -239,8 +235,7 @@ class HistoryGridTestCase(SeleniumTestCase):
 
     def click_to_rename_history(self):
         self.history_panel_name_element().click()
-        edit_title_input_selector = self.test_data['historyPanel'] \
-            ['selectors']['history']['nameEditableTextInput']
+        edit_title_input_selector = self.test_data['historyPanel']['selectors']['history']['nameEditableTextInput']
         return self.wait_for_selector(edit_title_input_selector)
 
     def is_displayed(self, selector):
