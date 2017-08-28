@@ -267,7 +267,6 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
             active_access_roles = dataset.get_access_roles(trans)
 
             for role_id in new_manage_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
                 role = self.role_manager.get(trans, managers_base.decode_id(self.app, role_id))
                 #  Check whether role is in the set of access roles
                 if role in active_access_roles:
@@ -290,7 +289,6 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
             active_access_roles = dataset.get_access_roles(trans)
 
             for role_id in new_modify_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
                 role = self.role_manager.get(trans, managers_base.decode_id(self.app, role_id))
                 #  Check whether role is in the set of access roles
                 if role in active_access_roles:
