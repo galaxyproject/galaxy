@@ -26,7 +26,7 @@ def _get_uwsgi_args(args, kwargs):
         'master': ' --master',
         'static-map': (' --static-map /static/style={here}/static/style/blue'
                        ' --static-map /static={here}/static'.format(here=os.getcwd())),
-        'paste-logger': ' --paste-logger',
+        'paste-logger': ' --paste-logger' if config.has_section('formatters') else '',
         'die-on-term': ' --die-on-term',
         'enable-threads': ' --enable-threads',
         'py-call-osafterfork': ' --py-call-osafterfork',
