@@ -548,15 +548,17 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow = stored.latest_workflow
 
         annotation_str = ""
+        tag_str = ""
         if stored is not None:
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ''
+            tag_str = stored.make_tag_string_list()
         # Pack workflow data into a dictionary and return
         data = {}
         data['a_galaxy_workflow'] = 'true'  # Placeholder for identifying galaxy workflow
         data['format-version'] = "0.1"
         data['name'] = workflow.name
         data['annotation'] = annotation_str
-        data['tags'] = stored.make_tag_string_list()
+        data['tags'] = tag_str
         if workflow.uuid is not None:
             data['uuid'] = str(workflow.uuid)
         data['steps'] = {}
