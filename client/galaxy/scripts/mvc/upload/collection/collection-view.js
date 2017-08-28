@@ -53,8 +53,6 @@ function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui, LIST_CO
                 ondragleave     : function()                    { self.$( '.upload-box' ).removeClass( 'highlight' ) }
             });
 
-            console.log(this.list_extensions);
-
             // add ftp file viewer
             this.ftp = new Popover.View( { title: 'FTP files', container: this.btnFtp.$el } );
 
