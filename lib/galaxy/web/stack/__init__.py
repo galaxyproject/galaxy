@@ -189,8 +189,10 @@ class UWSGIApplicationStack(MessageApplicationStack):
             config_file = uwsgi_opt.get("galaxy_config_file")
         # otherwise, check --ini-paste
         if config_file is None and uwsgi_opt.get("ini-paste"):
-            config_file = uwsgi_opt.get("ini") or uwsgi_opt.get("ini-paste")
-            kwds['config_section'] = app_section
+            config_file = uwsgi_opt["ini-paste"]
+            parser = nice_config_parser(config_file)
+            if not parser.has_section(config_section) and parser.has_section('app:main'):
+                kwds['config_section'] = 'app:main'
         if config_file is None:
             return None
         kwds['config_file'] = config_file
