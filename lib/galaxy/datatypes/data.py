@@ -347,7 +347,7 @@ class Data( object ):
                     except:
                         mime = "text/plain"
                 self._clean_and_set_mime_type( trans, mime )
-                return open( file_path )
+                return self._yield_user_file_content( trans, data, file_path )
             else:
                 return paste.httpexceptions.HTTPNotFound( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
         self._clean_and_set_mime_type( trans, data.get_mime() )
@@ -370,22 +370,28 @@ class Data( object ):
             max_peek_size = 10000000  # 10 MB for html
         preview = util.string_as_bool( preview )
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
-            if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
-                # Sanitize anytime we respond with plain text/html content.
-                # Check to see if this dataset's parent job is whitelisted
-                # We cannot currently trust imported datasets for rendering.
-                if not data.creating_job.imported and data.creating_job.tool_id in trans.app.config.sanitize_whitelist:
-                    return open(data.file_name).read()
-                # This is returning to the browser, it needs to be encoded.
-                # TODO Ideally this happens a layer higher, but this is a bad
-                # issue affecting many tools
-                return sanitize_html(open( data.file_name ).read()).encode('utf-8')
-            return open( data.file_name )
+            return self._yield_user_file_content(trans, data, data.file_name)
         else:
             trans.response.set_content_type( "text/html" )
             return trans.stream_template_mako( "/dataset/large_file.mako",
                                                truncated_data=open( data.file_name ).read(max_peek_size),
                                                data=data)
+
+    def _yield_user_file_content(self, trans, from_dataset, filename):
+        """This method is responsible for sanitizing the HTML if needed."""
+        if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
+            # Sanitize anytime we respond with plain text/html content.
+            # Check to see if this dataset's parent job is whitelisted
+            # We cannot currently trust imported datasets for rendering.
+            if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id in trans.app.config.sanitize_whitelist:
+                return open(filename)
+
+            # This is returning to the browser, it needs to be encoded.
+            # TODO Ideally this happens a layer higher, but this is a bad
+            # issue affecting many tools
+            return sanitize_html(open(filename).read()).encode('utf-8')
+
+        return open(filename)
 
     def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None):
         def escape(raw_identifier):

@@ -427,6 +427,8 @@ class Response( object ):
         """
         Send an HTTP redirect response to (target `url`)
         """
+        if "\n" in url or "\r" in url:
+            raise httpexceptions.HTTPInternalServerError("Invalid redirect URL encountered.")
         raise httpexceptions.HTTPFound( url.encode('utf-8'), headers=self.wsgi_headeritems() )
 
     def wsgi_headeritems( self ):
