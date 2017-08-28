@@ -33,7 +33,7 @@ def _get_uwsgi_args(args, kwargs):
         'mule': ' --mule=lib/galaxy/main.py' * handlerct,
         'farm': ' --farm={name}:{mules}'.format(
             name=kwargs.get('job_handler_pool_name', 'job-handlers'),
-            mules=','.join([str(x) for x in range(1, handlerct + 1)])),
+            mules=','.join([str(x) for x in range(1, handlerct + 1)])) if handlerct > 0 else '',
     }
     if not config.has_section('uwsgi'):
         format_dict = config_defaults
