@@ -40,9 +40,10 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
             this.$( '.upload-box' ).append( this.ftp_list.$el );
 
             // append buttons to dom
-            this.btnStart = new Ui.Button( { id: 'btn-start', title: 'Start', onclick: function() { self._eventStart() } } );
-            this.btnClose = new Ui.Button( { id: 'btn-close', title: 'Close',               onclick: function() { self.app.modal.hide() } } );
-            _.each( [ this.btnStart, this.btnClose ], function( button ) {
+            this.btnStart   = new Ui.Button( { id: 'btn-start',   title: 'Start',   onclick: function() { self._eventStart() } } );
+            this.btnRefresh = new Ui.Button( { id: 'btn-refresh', title: 'Refresh', onclick: function() { self.ftp_list.render() } } );
+            this.btnClose   = new Ui.Button( { id: 'btn-close',   title: 'Close',   onclick: function() { self.app.modal.hide() } } );
+            _.each( [ this.btnRefresh, this.btnStart, this.btnClose ], function( button ) {
                 self.$( '.upload-buttons' ).prepend( button.$el );
             });
 

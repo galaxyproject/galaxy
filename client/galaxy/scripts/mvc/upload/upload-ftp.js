@@ -15,45 +15,65 @@ define( [ 'utils/utils' ], function( Utils ) {
             } );
             this.collection = this.options.collection;
             this.setElement( this._template() );
-            this.rows = [];
-            Utils.get({
+            this.$content = this.$( '.upload-ftp-content' );
+            this.$wait    = this.$( '.upload-ftp-wait' );
+            this.$help    = this.$( '.upload-ftp-help' );
+            this.$number  = this.$( '.upload-ftp-number' );
+            this.$disk    = this.$( '.upload-ftp-disk' );
+            this.$body    = this.$( '.upload-ftp-body' );
+            this.$warning = this.$( '.upload-ftp-warning' );
+            this.$select  = this.$( '.upload-ftp-select-all' );
+            this.render();
+        },
+
+        render: function() {
+            var self = this;
+            this.$wait.show();
+            this.$content.hide();
+            this.$warning.hide();
+            this.$help.hide();
+            $.ajax({
                 url     : Galaxy.root + 'api/remote_files',
-                success : function( ftp_files ) { self._fill( ftp_files ) },
-                error   : function() { self._fill(); }
+                method  : 'GET',
+                success : function( ftp_files ) { self._renderTable( ftp_files ) },
+                error   : function() { self._renderTable() }
             });
         },
 
         /** Fill table with ftp entries */
-        _fill: function( ftp_files ) {
+        _renderTable: function( ftp_files ) {
+            this.rows = [];
             if ( ftp_files && ftp_files.length > 0 ) {
-                this.$( '.upload-ftp-content' ).html( $( this._templateTable() ) );
+                this.$body.empty();
                 var size = 0;
                 for (var index in ftp_files ) {
                     this.rows.push( this._add( ftp_files[ index ] ) );
                     size += ftp_files[ index ].size;
                 }
-                this.$( '.upload-ftp-number' ).html( ftp_files.length + ' files' );
-                this.$( '.upload-ftp-disk' ).html( Utils.bytesToString ( size, true ) );
+                this.$number.html( ftp_files.length + ' files' );
+                this.$disk.html( Utils.bytesToString ( size, true ) );
                 if ( this.collection ) {
                     var self = this;
                     this.$( '._has_collection' ).show();
-                    this.$select_all = this.$( '.upload-selectall' ).addClass( this.options.class_add );
-                    this.$select_all.on( 'click', function() {
-                        var add = self.$select_all.hasClass( self.options.class_add );
-                        for (var index in ftp_files ) {
-                            var ftp_file = ftp_files[ index ];
-                            var model_index = self._find( ftp_file );
-                            if( !model_index && add || model_index && !add ) {
-                                self.rows[ index ].trigger( 'click' );
-                            }
-                        }
-                    });
+                    this.$select.addClass( this.options.class_add )
+                                .on( 'click', function() {
+                                    var add = self.$select.hasClass( self.options.class_add );
+                                    for (var index in ftp_files ) {
+                                        var ftp_file = ftp_files[ index ];
+                                        var model_index = self._find( ftp_file );
+                                        if( !model_index && add || model_index && !add ) {
+                                            self.rows[ index ].trigger( 'click' );
+                                        }
+                                    }
+                                });
                     this._refresh();
                 }
+                this.$content.show();
             } else {
-                this.$( '.upload-ftp-content' ).html( $( this._templateInfo() ) );
+                this.$warning.show();
             }
-            this.$( '.upload-ftp-wait' ).hide();
+            this.$help.show();
+            this.$wait.hide();
         },
 
         /** Add file to table */
@@ -61,7 +81,7 @@ define( [ 'utils/utils' ], function( Utils ) {
             var self = this;
             var $it = $( this._templateRow( ftp_file ) );
             var $icon = $it.find( '.icon' );
-            this.$( 'tbody' ).append( $it );
+            this.$body.append( $it );
             if ( this.collection ) {
                 $icon.addClass( this._find( ftp_file ) ? this.options.class_remove : this.options.class_add );
                 $it.on('click', function() {
@@ -85,11 +105,11 @@ define( [ 'utils/utils' ], function( Utils ) {
         /** Refresh select all button state */
         _refresh: function() {
             var filtered = this.collection.where( { file_mode: 'ftp', enabled: true } );
-            this.$select_all.removeClass();
+            this.$select.removeClass();
             if ( filtered.length == 0 ) {
-                this.$select_all.addClass( this.options.class_add );
+                this.$select.addClass( this.options.class_add );
             } else {
-                this.$select_all.addClass( filtered.length == this.rows.length ? this.options.class_remove : this.options.class_partial );
+                this.$select.addClass( filtered.length == this.rows.length ? this.options.class_remove : this.options.class_partial );
             }
         },
 
@@ -113,41 +133,34 @@ define( [ 'utils/utils' ], function( Utils ) {
                     '</tr>';
         },
 
-        /** Template of table */
-        _templateTable: function() {
-            return  '<span style="whitespace: nowrap; float: left;">Available files: </span>' +
-                    '<span style="whitespace: nowrap; float: right;">' +
-                        '<span class="upload-icon fa fa-file-text-o"/>' +
-                        '<span class="upload-ftp-number"/>&nbsp;&nbsp;' +
-                        '<span class="upload-icon fa fa-hdd-o"/>' +
-                        '<span class="upload-ftp-disk"/>' +
-                    '</span>' +
-                    '<table class="grid" style="float: left;">' +
-                        '<thead>' +
-                            '<tr>' +
-                                '<th class="_has_collection" style="display: none;"><div class="upload-selectall"></th>' +
-                                '<th>Name</th>' +
-                                '<th>Size</th>' +
-                                '<th>Created</th>' +
-                            '</tr>' +
-                        '</thead>' +
-                        '<tbody/>' +
-                    '</table>';
-        },
-
-        /** Template of info message */
-        _templateInfo: function() {
-            return  '<div class="upload-ftp-warning warningmessage">' +
-                        'Your FTP directory does not contain any files.' +
-                    '</div>';
-        },
-
         /** Template of main view */
         _template: function() {
             return  '<div class="' + this.options.css + '">' +
                         '<div class="upload-ftp-wait fa fa-spinner fa-spin"/>' +
                         '<div class="upload-ftp-help">This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>' + this.options.ftp_upload_site + '</strong> using your Galaxy credentials (email address and password).</div>' +
-                        '<div class="upload-ftp-content"/>' +
+                        '<div class="upload-ftp-content">' +
+                            '<span style="whitespace: nowrap; float: left;">Available files: </span>' +
+                            '<span style="whitespace: nowrap; float: right;">' +
+                                '<span class="upload-icon fa fa-file-text-o"/>' +
+                                '<span class="upload-ftp-number"/>&nbsp;&nbsp;' +
+                                '<span class="upload-icon fa fa-hdd-o"/>' +
+                                '<span class="upload-ftp-disk"/>' +
+                            '</span>' +
+                            '<table class="grid" style="float: left;">' +
+                                '<thead>' +
+                                    '<tr>' +
+                                        '<th class="_has_collection" style="display: none;"><div class="upload-ftp-select-all"></th>' +
+                                        '<th>Name</th>' +
+                                        '<th>Size</th>' +
+                                        '<th>Created</th>' +
+                                    '</tr>' +
+                                '</thead>' +
+                                '<tbody class="upload-ftp-body"/>' +
+                            '</table>' +
+                        '</div>' +
+                        '<div class="upload-ftp-warning warningmessage">' +
+                            'Your FTP directory does not contain any files.' +
+                        '</div>'
                     '<div>';
         }
     });
