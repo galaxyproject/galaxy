@@ -91,9 +91,10 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
         },
 
         render_tag_editor: function(){
-            tag_editor = new TAGS.WorkflowTagsEditor({
+            tag_editor = new TAGS.TagsEditor({
             model           : this.model,
-            el              : $.find( '.' + this.model.id + '.tags-display' )});
+            el              : $.find( '.' + this.model.id + '.tags-display' ),
+            workflow_mode   : true });
             tag_editor.toggle( true );
             tag_editor.render();
         },
