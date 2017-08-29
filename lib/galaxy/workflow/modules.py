@@ -686,6 +686,7 @@ class ToolModule(WorkflowModule):
                 if tool_output.collection:
                     extra_kwds["collection"] = True
                     extra_kwds["collection_type"] = tool_output.structure.collection_type
+                    extra_kwds["collection_type_source"] = tool_output.structure.collection_type_source
                     formats = ['input']  # TODO: fix
                 elif tool_output.format_source is not None:
                     formats = ['input']  # default to special name "input" which remove restrictions on connections

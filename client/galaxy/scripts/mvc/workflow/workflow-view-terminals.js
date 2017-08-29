@@ -224,7 +224,8 @@ define(['mvc/workflow/workflow-globals', 'mvc/workflow/workflow-terminals',
         terminalMappingViewClass: TerminalMappingView,
         terminalForOutput: function( output ) {
             var collection_type = output.collection_type;
-            var terminal = new Terminals.OutputCollectionTerminal( { element: this.el, collection_type: collection_type, datatypes: output.extensions } );
+            var collection_type_source = output.collection_type_source;
+            var terminal = new Terminals.OutputCollectionTerminal( { element: this.el, collection_type: collection_type, collection_type_source: collection_type_source, datatypes: output.extensions } );
             return terminal;
         }
     });

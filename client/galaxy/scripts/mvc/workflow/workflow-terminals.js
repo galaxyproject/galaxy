@@ -476,11 +476,29 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
         initialize: function( attr ) {
             Terminal.prototype.initialize.call( this, attr );
             this.datatypes = attr.datatypes;
-            this.collectionType = new CollectionTypeDescription( attr.collection_type );
-            this.isCollection = true;
+            if( attr.collection_type ) {
+                this.collectionType = new CollectionTypeDescription( attr.collection_type );
+            } else {
+                var collectionTypeSource = attr.collection_type_source;
+                if(! collectionTypeSource) {
+                    console.log("Warning: No collection type or collection type source defined.");
+                }
+                this.collectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
+            }
+            this.isCollection =  true;
         },
         update: function( output ) {
-            var newCollectionType = new CollectionTypeDescription( output.collection_type );
+            var newCollectionType;
+            if( output.collection_type ) {
+                newCollectionType = new CollectionTypeDescription( output.collection_type );
+            } else {
+                var collectionTypeSource = output.collection_type_source;
+                if(! collectionTypeSource) {
+                    console.log("Warning: No collection type or collection type source defined.");
+                }
+                newCollectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
+            }
+
             if( newCollectionType.collectionType != this.collectionType.collectionType ) {
                 _.each( this.connectors, function( connector ) {
                     // TODO: consider checking if connection valid before removing...
