@@ -8,6 +8,7 @@ import os
 import shutil
 import struct
 import subprocess
+import sys
 import tempfile
 import zipfile
 from json import dumps
@@ -813,6 +814,56 @@ class H5(Binary):
 Binary.register_sniffable_binary_format("h5", "h5", H5)
 
 
+class Biom2(H5):
+    """
+    Class describing a biom2 file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'biom2_sparse_otu_table_hdf5.biom' )
+    >>> Biom2().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'test.mz5' )
+    >>> Biom2().sniff( fname )
+    False
+    >>> fname = get_test_fname( 'wiggle.wig' )
+    >>> Biom2().sniff( fname )
+    False
+    """
+    file_ext = "biom2"
+    edam_format = "format_3746"
+
+    def sniff(self, filename):
+        if super(Biom2, self).sniff(filename):
+            # check if HDF5 file is a biom2 file http://biom-format.org/documentation/biom_format.html
+            try:
+                header = open(filename, 'rb').read(8192)
+                required_fields = ['format-url', 'observation', 'sample']
+                for field in required_fields:
+                    if field not in header:
+                        return False
+                return True
+            except Exception:
+                return False
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Biom2 (HDF5) file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "Biom2 (HDF5) file (%s)" % (nice_size(dataset.get_size()))
+
+
+Binary.register_sniffable_binary_format("biom2", "biom2", Biom2)
+
+
 class Scf(Binary):
     """Class describing an scf binary sequence file"""
     edam_format = "format_1632"
@@ -1607,3 +1658,8 @@ class DMND(Binary):
 
 
 Binary.register_sniffable_binary_format("dmnd", "dmnd", DMND)
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod(sys.modules[__name__])
