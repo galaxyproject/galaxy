@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import binascii
 import gzip
+import h5py
 import logging
 import os
 import shutil
@@ -833,10 +834,11 @@ class Biom2(H5):
         if super(Biom2, self).sniff(filename):
             # check if HDF5 file is a biom2 file http://biom-format.org/documentation/biom_format.html
             try:
-                header = open(filename, 'rb').read(8192)
-                required_fields = ['format-url', 'observation', 'sample']
+                f = h5py.File(filename)
+                attributes = dict(f.attrs.items())
+                required_fields = ['format-url', 'format-version', 'generated-by']
                 for field in required_fields:
-                    if field not in header:
+                    if field not in attributes:
                         return False
                 return True
             except Exception:
