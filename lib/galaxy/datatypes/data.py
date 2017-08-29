@@ -389,7 +389,7 @@ class Data(object):
                         tmp_fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, escape(fname)))
                     tmp_fh.write('</table></body></html>\n')
                     tmp_fh.close()
-                    return self._yield_user_file_content(trans, data, file_path)
+                    return self._yield_user_file_content(trans, data, tmp_file_name)
                 mime = mimetypes.guess_type(file_path)[0]
                 if not mime:
                     try:
