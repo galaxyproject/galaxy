@@ -170,6 +170,7 @@ class Biom1(Json):
         http://biom-format.org/documentation/format_versions/biom-1.0.html
     """
     file_ext = "biom1"
+    edam_format = "format_3746"
 
     MetadataElement(name="table_rows", default=[], desc="table_rows", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
     MetadataElement(name="table_matrix_element_type", default="", desc="table_matrix_element_type", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="")
