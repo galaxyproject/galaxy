@@ -358,11 +358,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
 
         style = kwd.get("style", "export")
+        download_format = kwd.get('format')
         ret_dict = self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style)
-        if not ret_dict:
-            # This workflow has a tool that's missing from the distribution
-            message = "Workflow cannot be exported due to missing tools."
-            raise exceptions.MessageException(message)
+        if download_format == 'json-download':
+            sname = stored_workflow.name
+            sname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in sname)[0:150]
+            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.ga"' % (sname)
+            trans.response.set_content_type('application/galaxy-archive')
         return ret_dict
 
     @expose_api

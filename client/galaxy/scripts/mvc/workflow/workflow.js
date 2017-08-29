@@ -92,7 +92,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
                            '<li><a href="'+ Galaxy.root +'workflow/editor?id='+ this.model.id +'">Edit</a></li>' +
                            '<li><a href="'+ Galaxy.root +'workflow/run?id='+ this.model.id +'">Run</a></li>' +
                            '<li><a href="'+ Galaxy.root +'workflow/sharing?id='+ this.model.id +'">Share</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'api/workflows/'+ this.model.id +'/download">Download</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'api/workflows/'+ this.model.id +'/download?format=json-download">Download</a></li>' +
                            '<li><a href="'+ Galaxy.root +'workflow/copy?id='+ this.model.id +'">Copy</a></li>' +
                            '<li><a id="rename-workflow" style="cursor: pointer;">Rename</a></li>' +
                            '<li><a href="'+ Galaxy.root +'workflow/display_by_id?id='+ this.model.id +'">View</a></li>' +
