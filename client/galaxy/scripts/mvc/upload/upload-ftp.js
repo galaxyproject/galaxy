@@ -3,7 +3,7 @@ define( [ 'utils/utils' ], function( Utils ) {
     return Backbone.View.extend({
         initialize: function( options ) {
             this.model = new Backbone.Model( {
-                css             : 'upload-ftp',
+                cls             : 'upload-ftp',
                 class_add       : 'upload-icon-button fa fa-square-o',
                 class_remove    : 'upload-icon-button fa fa-check-square-o',
                 class_partial   : 'upload-icon-button fa fa-minus-square-o',
@@ -139,7 +139,7 @@ define( [ 'utils/utils' ], function( Utils ) {
 
         /** Template of main view */
         _template: function() {
-            return  '<div class="' + this.model.get( 'css' ) + '">' +
+            return  '<div class="' + this.model.get( 'cls' ) + '">' +
                         '<div class="upload-ftp-wait fa fa-spinner fa-spin"/>' +
                         '<div class="upload-ftp-help">' + this.model.get( 'help_text' ) + '</div>' +
                         '<div class="upload-ftp-content">' +

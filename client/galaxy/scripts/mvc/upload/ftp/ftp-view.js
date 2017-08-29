@@ -18,7 +18,7 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
 
             // build ftp list view
             this.ftp_list = new UploadFtp({
-                css             : 'upload-ftp-full',
+                cls             : 'upload-ftp-full',
                 collection      : this.collection,
                 ftp_upload_site : this.ftp_upload_site,
                 help_enabled    : false,
@@ -38,7 +38,12 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
             this.$( '.upload-box' ).append( this.ftp_list.$el );
 
             // append buttons to dom
-            this.btnStart   = new Ui.Button( { id: 'btn-start',   title: 'Start', onclick: function() { self._eventStart() } } );
+            this.btnStart   = new Ui.Button( {
+                id       : 'btn-start',
+                title    : 'Start',
+                wait_cls : 'btn btn-info',
+                onclick  : function() { self._eventStart() }
+            } );
             this.btnRefresh = new Ui.Button( { id: 'btn-refresh', title: 'Reset', onclick: function() { self._eventReset() } } );
             this.btnClose   = new Ui.Button( { id: 'btn-close',   title: 'Close', onclick: function() { self.app.modal.hide() } } );
             _.each( [ this.btnRefresh, this.btnStart, this.btnClose ], function( button ) {
@@ -82,6 +87,7 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
         /** Start upload process */
         _eventStart: function() {
             var self = this;
+            this.btnStart.wait();
             var data = {
                 payload: {
                     'tool_id'       : 'upload1',
@@ -122,11 +128,13 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
         _eventSuccess: function() {
             Galaxy.currHistoryPanel.refreshContents();
             this._eventReset();
+            this.btnStart.unwait();
         },
 
         /** Show error message */
         _eventError: function() {
             this.$info.html( 'Some of the selected files have already been queued...please unselect them and try again.' );
+            this.btnStart.unwait();
         },
 
         /** Set screen */
