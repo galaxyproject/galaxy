@@ -119,8 +119,6 @@ class LibraryDatasetsManager(object):
                     raise RequestParameterInvalidException('%s must have at least length of %s'% (key, MINIMUM_STRING_LENGTH))
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
-            elif key == 'tags':
-                validated_payload[key] = validation.validate_and_sanitize_basestring_list(key, val)
         return validated_payload
 
     def secure(self, trans, ld, check_accessible=True, check_ownership=False):
