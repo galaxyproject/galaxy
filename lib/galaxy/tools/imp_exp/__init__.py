@@ -70,6 +70,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
         if jiha:
             try:
                 archive_dir = jiha.archive_dir
+                archive_dir = os.path.realpath(archive_dir)
                 user = jiha.job.user
 
                 # Bioblend previous to 17.01 exported histories with an extra subdir.
@@ -122,7 +123,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                 datasets_usage_counts = {}
                 for dataset_attrs in datasets_attrs:
                     temp_dataset_file_name = \
-                        os.path.abspath(os.path.join(archive_dir, dataset_attrs['file_name']))
+                        os.path.realpath(os.path.abspath(os.path.join(archive_dir, dataset_attrs['file_name'])))
                     if (temp_dataset_file_name not in datasets_usage_counts):
                         datasets_usage_counts[temp_dataset_file_name] = 0
                     datasets_usage_counts[temp_dataset_file_name] += 1
