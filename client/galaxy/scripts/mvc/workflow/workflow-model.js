@@ -20,10 +20,6 @@ var WorkflowItem = Backbone.Model.extend( baseMVC.LoggableMixin ).extend({
     return {workflow : this.attributes};
     },
 
-    download: function() {
-        return $.getJSON(this.urlRoot + this.model.id + '/download')
-    },
-
 });
 
 var WorkflowCollection = Backbone.Collection.extend({
