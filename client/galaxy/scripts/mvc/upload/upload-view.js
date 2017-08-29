@@ -115,12 +115,14 @@ function( Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposi
                     title   : 'Collection',
                     $el     : this.collection_view.$el
                 });
-                this.ftp_view = new UploadViewFtp( this );
-                this.tabs.add({
-                    id      : 'ftp',
-                    title   : 'File Transfer Protocol',
-                    $el     : this.ftp_view.$el
-                });
+                if ( this.currentFtp() ) {
+                    this.ftp_view = new UploadViewFtp( this );
+                    this.tabs.add({
+                        id      : 'ftp',
+                        title   : 'File Transfer Protocol',
+                        $el     : this.ftp_view.$el
+                    });
+                }
                 this.modal = new Modal.View({
                     title           : 'Download from web or upload from disk',
                     body            : this.tabs.$el,

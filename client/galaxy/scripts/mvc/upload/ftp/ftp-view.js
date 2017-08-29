@@ -21,6 +21,7 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
                 css             : 'upload-ftp-full',
                 collection      : this.collection,
                 ftp_upload_site : this.ftp_upload_site,
+                show_help       : false,
                 onadd           : function( ftp_file ) {
                     self.collection.add({
                         id        : Utils.uid(),
@@ -106,7 +107,7 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
                 data     : data,
                 url      : this.app.options.nginx_upload_path,
                 success  : function( message ) { self._eventSuccess() },
-                error    : function( message ) { self.$info.html( 'Some of the selected files have already been submitted...please unselect them and try again.' ) }
+                error    : function( message ) { self._eventError() }
             });
         },
 
@@ -123,6 +124,11 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
             this._eventReset();
         },
 
+        /** Show error message */
+        _eventError: function() {
+            this.$info.html( 'Some of the selected files have already been queued...please unselect them and try again.' );
+        },
+
         /** Set screen */
         render: function () {
             if ( this.collection.length > 0 ) {
@@ -132,7 +138,7 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
             } else {
                 this.btnStart.disable();
                 this.btnStart.$el.removeClass( 'btn-primary' );
-                this.$info.html( '' );
+                this.$info.html( this.ftp_list.helpText() );
             }
         },
 

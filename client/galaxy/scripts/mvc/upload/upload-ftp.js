@@ -8,6 +8,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                 class_add       : 'upload-icon-button fa fa-square-o',
                 class_remove    : 'upload-icon-button fa fa-check-square-o',
                 class_partial   : 'upload-icon-button fa fa-minus-square-o',
+                show_help       : true,
                 collection      : null,
                 onchange        : function() {},
                 onadd           : function() {},
@@ -38,6 +39,11 @@ define( [ 'utils/utils' ], function( Utils ) {
                 success : function( ftp_files ) { self._renderTable( ftp_files ) },
                 error   : function() { self._renderTable() }
             });
+        },
+
+        /** Template help */
+        helpText: function() {
+            return 'This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>' + this.options.ftp_upload_site + '</strong> using your Galaxy credentials.'
         },
 
         /** Fill table with ftp entries */
@@ -72,7 +78,7 @@ define( [ 'utils/utils' ], function( Utils ) {
             } else {
                 this.$warning.show();
             }
-            this.$help.show();
+            this.options.show_help && this.$help.show();
             this.$wait.hide();
         },
 
@@ -137,7 +143,7 @@ define( [ 'utils/utils' ], function( Utils ) {
         _template: function() {
             return  '<div class="' + this.options.css + '">' +
                         '<div class="upload-ftp-wait fa fa-spinner fa-spin"/>' +
-                        '<div class="upload-ftp-help">This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>' + this.options.ftp_upload_site + '</strong> using your Galaxy credentials (email address and password).</div>' +
+                        '<div class="upload-ftp-help">' + this.helpText() + '</div>' +
                         '<div class="upload-ftp-content">' +
                             '<span style="whitespace: nowrap; float: left;">Available files: </span>' +
                             '<span style="whitespace: nowrap; float: right;">' +
