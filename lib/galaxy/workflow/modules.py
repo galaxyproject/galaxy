@@ -617,6 +617,9 @@ class ToolModule(WorkflowModule):
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
+        else:
+            # The tool is not installed
+            raise ToolMissingException("Tool %s missing. Cannot build workflow module." % tool_id)
         return module
 
     # ---- Saving in various forms ------------------------------------------
