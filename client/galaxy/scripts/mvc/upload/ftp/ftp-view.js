@@ -23,11 +23,7 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
                 onadd           : function( ftp_file ) {
                     self.collection.add({
                         id        : Utils.uid(),
-                        mode      : 'ftp',
-                        name      : ftp_file.path,
-                        path      : ftp_file.path,
                         file_mode : 'ftp',
-                        file_name : ftp_file.path,
                         file_size : ftp_file.size,
                         file_path : ftp_file.path,
                         enabled   : true
@@ -84,13 +80,30 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
         /** Start upload process */
         _eventStart: function() {
             var self = this;
+            var data = {
+                payload: {
+                    'tool_id'       : 'upload1',
+                    'history_id'    : this.app.currentHistory(),
+                    'inputs'        : {}
+                }
+            }
+            var inputs = {};
+            inputs[ 'dbkey' ] = this.select_genome.value();
+            inputs[ 'file_type' ] = this.select_extension.value();
+            inputs[ 'files_0|type' ] = 'upload_dataset';
+            inputs[ 'files_0|space_to_tab' ] = null;
+            inputs[ 'files_0|to_posix_lines' ] = null;
+            inputs[ 'files_0|ftp_files' ] = [];
             this.collection.each( function( model ) {
-                model.set( { 'genome'   : self.select_genome.value(),
-                             'extension': self.select_extension.value() } );
+                model.set( 'status', 'running' );
+                if ( model.get( 'file_size' ) > 0 ) {
+                    inputs[ 'files_0|ftp_files' ].push( model.get( 'file_path' ) );
+                }
             });
+            data.payload.inputs = JSON.stringify( inputs );
             $.uploadpost({
+                data     : data,
                 url      : this.app.options.nginx_upload_path,
-                data     : this.app.toData( this.collection.filter() ),
                 success  : function( message ) { self._eventSuccess( message ) },
                 error    : function( message ) { window.console.log( message ) }
             });
