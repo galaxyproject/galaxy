@@ -119,7 +119,7 @@ function( Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposi
                     this.ftp_view = new UploadViewFtp( this );
                     this.tabs.add({
                         id      : 'ftp',
-                        title   : 'File Transfer Protocol',
+                        title   : 'FTP Directory',
                         $el     : this.ftp_view.$el
                     });
                 }
