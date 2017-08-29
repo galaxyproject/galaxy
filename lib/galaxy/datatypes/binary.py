@@ -811,9 +811,6 @@ class H5(Binary):
             return "Binary HDF5 file (%s)" % (nice_size(dataset.get_size()))
 
 
-Binary.register_sniffable_binary_format("h5", "h5", H5)
-
-
 class Biom2(H5):
     """
     Class describing a biom2 file
@@ -862,6 +859,7 @@ class Biom2(H5):
 
 
 Binary.register_sniffable_binary_format("biom2", "biom2", Biom2)
+Binary.register_sniffable_binary_format("h5", "h5", H5)
 
 
 class Scf(Binary):
