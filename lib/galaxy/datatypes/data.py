@@ -372,7 +372,7 @@ class Data(object):
                     tmp_file_name = tmp_fh.name
                     dir_items = sorted(os.listdir(file_path))
                     base_path, item_name = os.path.split(file_path)
-                    tmp_fh.write('<html><head><h3>Directory %s contents: %d items</h3></head>\n' % (item_name, len(dir_items)))
+                    tmp_fh.write('<html><head><h3>Directory %s contents: %d items</h3></head>\n' % (escape(item_name), len(dir_items)))
                     tmp_fh.write('<body><p/><table cellpadding="2">\n')
                     for index, fname in enumerate(dir_items):
                         if index % 2 == 0:
@@ -386,10 +386,10 @@ class Data(object):
                         # href = url_for(controller='dataset', action='display',
                         # dataset_id=trans.security.encode_id(data.dataset.id),
                         # preview=preview, filename=fname, to_ext=to_ext)
-                        tmp_fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, fname))
+                        tmp_fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, escape(fname)))
                     tmp_fh.write('</table></body></html>\n')
                     tmp_fh.close()
-                    return open(tmp_file_name)
+                    return self._yield_user_file_content(trans, data, file_path)
                 mime = mimetypes.guess_type(file_path)[0]
                 if not mime:
                     try:
