@@ -2,19 +2,19 @@
 define( [ 'utils/utils' ], function( Utils ) {
     return Backbone.View.extend({
         initialize: function( options ) {
-            var self = this;
-            this.options = Utils.merge( options, {
+            this.model = new Backbone.Model( {
                 css             : 'upload-ftp',
                 class_add       : 'upload-icon-button fa fa-square-o',
                 class_remove    : 'upload-icon-button fa fa-check-square-o',
                 class_partial   : 'upload-icon-button fa fa-minus-square-o',
-                show_help       : true,
+                help_enabled    : true,
+                help_text       : 'This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>' + options.ftp_upload_site + '</strong> using your Galaxy credentials.',
                 collection      : null,
                 onchange        : function() {},
                 onadd           : function() {},
                 onremove        : function() {}
-            } );
-            this.collection = this.options.collection;
+            } ).set( options );
+            this.collection = this.model.get( 'collection' );
             this.setElement( this._template() );
             this.$content = this.$( '.upload-ftp-content' );
             this.$wait    = this.$( '.upload-ftp-wait' );
@@ -41,14 +41,10 @@ define( [ 'utils/utils' ], function( Utils ) {
             });
         },
 
-        /** Template help */
-        helpText: function() {
-            return 'This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>' + this.options.ftp_upload_site + '</strong> using your Galaxy credentials.'
-        },
-
         /** Fill table with ftp entries */
         _renderTable: function( ftp_files ) {
             var self = this;
+            var options = this.model.attributes;
             this.rows = [];
             if ( ftp_files && ftp_files.length > 0 ) {
                 this.$body.empty();
@@ -61,9 +57,9 @@ define( [ 'utils/utils' ], function( Utils ) {
                 this.$disk.html( Utils.bytesToString ( size, true ) );
                 if ( this.collection ) {
                     this.$( '._has_collection' ).show();
-                    this.$select.addClass( this.options.class_add )
+                    this.$select.addClass( options.class_add )
                                 .off().on( 'click', function() {
-                                    var add = self.$select.hasClass( self.options.class_add );
+                                    var add = self.$select.hasClass( options.class_add );
                                     for (var index in ftp_files ) {
                                         var ftp_file = ftp_files[ index ];
                                         var model_index = self._find( ftp_file );
@@ -78,44 +74,46 @@ define( [ 'utils/utils' ], function( Utils ) {
             } else {
                 this.$warning.show();
             }
-            this.options.show_help && this.$help.show();
+            options.help_enabled && this.$help.show();
             this.$wait.hide();
         },
 
         /** Add file to table */
         _add: function( ftp_file ) {
             var self = this;
+            var options = this.model.attributes;
             var $it = $( this._templateRow( ftp_file ) );
             var $icon = $it.find( '.icon' );
             this.$body.append( $it );
             if ( this.collection ) {
-                $icon.addClass( this._find( ftp_file ) ? this.options.class_remove : this.options.class_add );
+                $icon.addClass( this._find( ftp_file ) ? options.class_remove : options.class_add );
                 $it.on('click', function() {
                     var model_index = self._find( ftp_file );
                     $icon.removeClass();
                     if ( !model_index ) {
-                        self.options.onadd( ftp_file );
-                        $icon.addClass( self.options.class_remove );
+                        options.onadd( ftp_file );
+                        $icon.addClass( options.class_remove );
                     } else {
-                        self.options.onremove( model_index );
-                        $icon.addClass( self.options.class_add );
+                        options.onremove( model_index );
+                        $icon.addClass( options.class_add );
                     }
                     self._refresh();
                 });
             } else {
-                $it.on('click', function() { self.options.onchange( ftp_file ) } );
+                $it.on('click', function() { options.onchange( ftp_file ) } );
             }
             return $it;
         },
 
         /** Refresh select all button state */
         _refresh: function() {
+            var options = this.model.attributes;
             var filtered = this.collection.where( { file_mode: 'ftp', enabled: true } );
             this.$select.removeClass();
             if ( filtered.length == 0 ) {
-                this.$select.addClass( this.options.class_add );
+                this.$select.addClass( options.class_add );
             } else {
-                this.$select.addClass( filtered.length == this.rows.length ? this.options.class_remove : this.options.class_partial );
+                this.$select.addClass( filtered.length == this.rows.length ? options.class_remove : options.class_partial );
             }
         },
 
@@ -141,9 +139,9 @@ define( [ 'utils/utils' ], function( Utils ) {
 
         /** Template of main view */
         _template: function() {
-            return  '<div class="' + this.options.css + '">' +
+            return  '<div class="' + this.model.get( 'css' ) + '">' +
                         '<div class="upload-ftp-wait fa fa-spinner fa-spin"/>' +
-                        '<div class="upload-ftp-help">' + this.helpText() + '</div>' +
+                        '<div class="upload-ftp-help">' + this.model.get( 'help_text' ) + '</div>' +
                         '<div class="upload-ftp-content">' +
                             '<span style="whitespace: nowrap; float: left;">Available files: </span>' +
                             '<span style="whitespace: nowrap; float: right;">' +

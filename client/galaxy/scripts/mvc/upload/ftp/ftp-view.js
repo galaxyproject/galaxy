@@ -21,7 +21,7 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
                 css             : 'upload-ftp-full',
                 collection      : this.collection,
                 ftp_upload_site : this.ftp_upload_site,
-                show_help       : false,
+                help_enabled    : false,
                 onadd           : function( ftp_file ) {
                     self.collection.add({
                         id        : Utils.uid(),
@@ -138,7 +138,7 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
             } else {
                 this.btnStart.disable();
                 this.btnStart.$el.removeClass( 'btn-primary' );
-                this.$info.html( this.ftp_list.helpText() );
+                this.$info.html( this.ftp_list.model.get( 'help_text' ) );
             }
         },
 
