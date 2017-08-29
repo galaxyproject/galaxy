@@ -42,6 +42,7 @@ define( [ 'utils/utils' ], function( Utils ) {
 
         /** Fill table with ftp entries */
         _renderTable: function( ftp_files ) {
+            var self = this;
             this.rows = [];
             if ( ftp_files && ftp_files.length > 0 ) {
                 this.$body.empty();
@@ -53,10 +54,9 @@ define( [ 'utils/utils' ], function( Utils ) {
                 this.$number.html( ftp_files.length + ' files' );
                 this.$disk.html( Utils.bytesToString ( size, true ) );
                 if ( this.collection ) {
-                    var self = this;
                     this.$( '._has_collection' ).show();
                     this.$select.addClass( this.options.class_add )
-                                .on( 'click', function() {
+                                .off().on( 'click', function() {
                                     var add = self.$select.hasClass( self.options.class_add );
                                     for (var index in ftp_files ) {
                                         var ftp_file = ftp_files[ index ];

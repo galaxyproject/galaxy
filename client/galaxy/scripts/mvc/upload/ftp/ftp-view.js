@@ -41,7 +41,7 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
 
             // append buttons to dom
             this.btnStart   = new Ui.Button( { id: 'btn-start',   title: 'Start',   onclick: function() { self._eventStart() } } );
-            this.btnRefresh = new Ui.Button( { id: 'btn-refresh', title: 'Refresh', onclick: function() { self.ftp_list.render() } } );
+            this.btnRefresh = new Ui.Button( { id: 'btn-refresh', title: 'Refresh', onclick: function() { self.collection.reset(); self.ftp_list.render(); } } );
             this.btnClose   = new Ui.Button( { id: 'btn-close',   title: 'Close',   onclick: function() { self.app.modal.hide() } } );
             _.each( [ this.btnRefresh, this.btnStart, this.btnClose ], function( button ) {
                 self.$( '.upload-buttons' ).prepend( button.$el );
