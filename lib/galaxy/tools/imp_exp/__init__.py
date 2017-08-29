@@ -123,7 +123,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                 datasets_usage_counts = {}
                 for dataset_attrs in datasets_attrs:
                     temp_dataset_file_name = \
-                        os.path.realpath(os.path.abspath(os.path.join(archive_dir, dataset_attrs['file_name'])))
+                        os.path.realpath(os.path.join(archive_dir, dataset_attrs['file_name']))
                     if (temp_dataset_file_name not in datasets_usage_counts):
                         datasets_usage_counts[temp_dataset_file_name] = 0
                     datasets_usage_counts[temp_dataset_file_name] += 1
