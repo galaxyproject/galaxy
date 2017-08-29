@@ -14,6 +14,7 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
             this.list_genomes       = app.list_genomes;
             this.ftp_upload_site    = app.currentFtp();
             this.setElement( this._template() );
+            this.$info = this.$( '.upload-top-info' );
 
             // build ftp list view
             this.ftp_list = new UploadFtp({
@@ -36,9 +37,9 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
             this.$( '.upload-box' ).append( this.ftp_list.$el );
 
             // append buttons to dom
-            this.btnStart   = new Ui.Button( { id: 'btn-start',   title: 'Start',   onclick: function() { self._eventStart() } } );
-            this.btnRefresh = new Ui.Button( { id: 'btn-refresh', title: 'Refresh', onclick: function() { self.collection.reset(); self.ftp_list.render(); } } );
-            this.btnClose   = new Ui.Button( { id: 'btn-close',   title: 'Close',   onclick: function() { self.app.modal.hide() } } );
+            this.btnStart   = new Ui.Button( { id: 'btn-start',   title: 'Start', onclick: function() { self._eventStart() } } );
+            this.btnRefresh = new Ui.Button( { id: 'btn-refresh', title: 'Reset', onclick: function() { self._eventReset() } } );
+            this.btnClose   = new Ui.Button( { id: 'btn-close',   title: 'Close', onclick: function() { self.app.modal.hide() } } );
             _.each( [ this.btnRefresh, this.btnStart, this.btnClose ], function( button ) {
                 self.$( '.upload-buttons' ).prepend( button.$el );
             });
@@ -104,14 +105,22 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
             $.uploadpost({
                 data     : data,
                 url      : this.app.options.nginx_upload_path,
-                success  : function( message ) { self._eventSuccess( message ) },
-                error    : function( message ) { window.console.log( message ) }
+                success  : function( message ) { self._eventSuccess() },
+                error    : function( message ) { self.$info.html( 'Some of the selected files have already been submitted...please unselect them and try again.' ) }
             });
         },
 
+        /** Reset handler */
+        _eventReset: function() {
+            this.collection.reset();
+            this.ftp_list.render();
+            this.render();
+        },
+
         /** Refresh success state */
-        _eventSuccess: function( message ) {
+        _eventSuccess: function() {
             Galaxy.currHistoryPanel.refreshContents();
+            this._eventReset();
         },
 
         /** Set screen */
@@ -119,9 +128,11 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
             if ( this.collection.length > 0 ) {
                 this.btnStart.enable();
                 this.btnStart.$el.addClass( 'btn-primary' );
+                this.$info.html( 'You added ' + this.collection.length + ' file(s) to the queue. Add more files or click \'Start\' to proceed.' );
             } else {
                 this.btnStart.disable();
                 this.btnStart.$el.removeClass( 'btn-primary' );
+                this.$info.html( '' );
             }
         },
 
