@@ -1805,7 +1805,7 @@ class Tool(object, Dictifiable):
         """
         history_id = kwd.get('history_id', None)
         history = None
-        if not workflow_building_mode or workflow_building_mode is workflow_building_modes.USE_HISTORY:
+        if workflow_building_mode is workflow_building_modes.USE_HISTORY or workflow_building_mode is workflow_building_modes.DISABLED:
             # We don't need a history when exporting a workflow for the workflow editor or when downloading a workflow
             try:
                 if history_id is not None:
