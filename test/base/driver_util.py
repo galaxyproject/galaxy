@@ -595,7 +595,7 @@ class UwsgiServerWrapper(ServerWrapper):
         self._p = p
 
     def stop(self):
-        raise NotImplementedError("TODO: wait on self._p and stop")
+        self._p.kill()
 
 
 def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
@@ -790,7 +790,6 @@ class GalaxyTestDriver(TestDriver):
                     tempdir=tempdir,
                     config_object=config_object,
                 )
-                pass
             else:
                 # ---- Build Application --------------------------------------------------
                 self.app = build_galaxy_app(galaxy_config)
@@ -800,8 +799,8 @@ class GalaxyTestDriver(TestDriver):
                     galaxy_config,
                     config_object=config_object,
                 )
-                self.server_wrappers.append(server_wrapper)
                 log.info("Functional tests will be run against external Galaxy server %s:%s" % (server_wrapper.host, server_wrapper.port))
+            self.server_wrappers.append(server_wrapper)
         else:
             log.info("Functional tests will be run against test managed Galaxy server %s" % self.external_galaxy)
             # Ensure test file directory setup even though galaxy config isn't built.
