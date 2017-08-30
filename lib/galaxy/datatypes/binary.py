@@ -674,19 +674,32 @@ class CRAM(Binary):
 Binary.register_sniffable_binary_format('cram', 'cram', CRAM)
 
 
-class Bcf(Binary):
-    """Class describing a BCF file"""
+class BaseBcf(Binary):
     edam_format = "format_3020"
     edam_data = "data_3498"
     file_ext = "bcf"
+
+
+class Bcf(BaseBcf):
+    """
+    Class describing a (BGZF-compressed) BCF file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('1.bcf')
+    >>> Bcf().sniff(fname)
+    True
+    >>> fname = get_test_fname('1.bcf_uncompressed')
+    >>> Bcf().sniff(fname)
+    False
+    """
 
     MetadataElement(name="bcf_index", desc="BCF Index File", param=metadata.FileParameter, file_ext="csi", readonly=True, no_value=None, visible=False, optional=True)
 
     def sniff(self, filename):
         # BCF is compressed in the BGZF format, and must not be uncompressed in Galaxy.
-        # The first 3 bytes of any bcf file is 'BCF', and the file is binary.
         try:
             header = gzip.open(filename).read(3)
+            # The first 3 bytes of any BCF file are 'BCF', and the file is binary.
             if header == b'BCF':
                 return True
             return False
@@ -723,6 +736,34 @@ class Bcf(Binary):
 
 
 Binary.register_sniffable_binary_format("bcf", "bcf", Bcf)
+
+
+class BcfUncompressed(Bcf):
+    """
+    Class describing an uncompressed BCF file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( '1.bcf_uncompressed' )
+    >>> BcfUncompressed().sniff( fname )
+    True
+    >>> fname = get_test_fname( '1.bcf' )
+    >>> BcfUncompressed().sniff( fname )
+    False
+    """
+    file_ext = "bcf_uncompressed"
+
+    def sniff(self, filename):
+        try:
+            header = open(filename).read(3)
+            # The first 3 bytes of any BCF file are 'BCF', and the file is binary.
+            if header == b'BCF':
+                return True
+            return False
+        except:
+            return False
+
+
+Binary.register_sniffable_binary_format("bcf_uncompressed", "bcf_uncompressed", BcfUncompressed)
 
 
 class H5(Binary):
@@ -890,7 +931,7 @@ class BigBed(BigWig):
 Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 
 
-class TwoBit (Binary):
+class TwoBit(Binary):
     """Class describing a TwoBit format nucleotide file"""
     edam_format = "format_3009"
     edam_data = "data_0848"
@@ -926,7 +967,7 @@ Binary.register_sniffable_binary_format("twobit", "twobit", TwoBit)
 
 
 @dataproviders.decorators.has_dataproviders
-class SQlite (Binary):
+class SQlite(Binary):
     """Class describing a Sqlite database """
     MetadataElement(name="tables", default=[], param=ListParameter, desc="Database Tables", readonly=True, visible=True, no_value=[])
     MetadataElement(name="table_columns", default={}, param=DictParameter, desc="Database Table Columns", readonly=True, visible=True, no_value={})
@@ -1447,7 +1488,7 @@ Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
                                         OxliGraphLabels)
 
 
-class SearchGuiArchive (CompressedArchive):
+class SearchGuiArchive(CompressedArchive):
     """Class describing a SearchGUI archive """
     MetadataElement(name="searchgui_version", default='1.28.0', param=MetadataParameter, desc="SearchGui Version",
                     readonly=True, visible=True, no_value=None)
