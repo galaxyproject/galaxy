@@ -91,6 +91,11 @@ def selenium_test(f):
                     write_file("page_source.txt", self.driver.page_source)
                     write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
                     write_file("stacktrace.txt", traceback.format_exc())
+                    for log_type in ["browser", "driver"]:
+                        try:
+                            write_file("%s.log.json" % log_type, json.dumps(self.driver.get_log(log_type)))
+                        except Exception:
+                            continue
                     iframes = self.driver.find_elements_by_css_selector("iframe")
                     for iframe in iframes:
                         pass
