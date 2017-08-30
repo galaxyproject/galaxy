@@ -375,7 +375,7 @@ var FolderToolbarView = Backbone.View.extend({
       var folder_name = self.options.full_path[self.options.full_path.length - 1][1]
       self.modal.show({
           closing_events  : true,
-          title           : 'Adding datasets from your history to folder ' + folder_name,
+          title           : 'Adding datasets from your history to ' + folder_name,
           body            : template_modal({histories: self.histories.models}),
           buttons         : {
               'Add'       : function() {self.addAllDatasetsFromHistory();},
@@ -721,6 +721,12 @@ var FolderToolbarView = Backbone.View.extend({
         var history_contents_template = self.templateHistoryContents();
         self.histories.get(history_id).set({'contents' : history_contents});
         self.modal.$el.find('#selected_history_content').html(history_contents_template({history_contents: history_contents.models.reverse()}));
+        self.modal.$el.find('.history-import-select-all').bind("click", function(){
+          $('#selected_history_content [type=checkbox]').prop('checked', true);
+        });
+        self.modal.$el.find('.history-import-unselect-all').bind("click", function(){
+          $('#selected_history_content [type=checkbox]').prop('checked', false);
+        });
       },
       error: function(model, response){
         if (typeof response.responseJSON !== "undefined"){
@@ -745,9 +751,9 @@ var FolderToolbarView = Backbone.View.extend({
     } else {
       this.modal.disableButton( 'Add' );
       checked_hdas.each(function(){
-        var hid = $( this.parentElement ).data( 'id' );
+        var hid = $( this.parentElement.parentElement ).data( 'id' );
         if ( hid ) {
-          var item_type = $( this.parentElement ).data( 'name' );
+          var item_type = $( this.parentElement.parentElement ).data( 'name' );
           history_item_ids.push( hid );
           history_item_types.push( item_type );
         }
@@ -1413,27 +1419,42 @@ var FolderToolbarView = Backbone.View.extend({
     '<ul>',
       '<% _.each(history_contents, function(history_item) { %>',
         '<% if (history_item.get("deleted") != true ) { %>',
+          '<% var item_name = history_item.get("name") %>',
           '<% if (history_item.get("type") === "collection") { %>',
               '<% var collection_type = history_item.get("collection_type") %>',
               '<% if (collection_type === "list") { %>',
                 '<li data-id="<%= _.escape(history_item.get("id")) %>" data-name="<%= _.escape(history_item.get("type")) %>">',
-                  '<input style="margin: 0;" type="checkbox"> <%= _.escape(history_item.get("hid")) %>: <%= _.escape(history_item.get("name")) %> (Dataset Collection)',
+                  '<label>',
+                '<label title="<%= _.escape(item_name) %>">',
+                    '<input style="margin: 0;" type="checkbox"> <%= _.escape(history_item.get("hid")) %>: ',
+                    '<%= item_name.length > 75 ? _.escape("...".concat(item_name.substr(-75))) : _.escape(item_name) %> (Dataset Collection)',
+                  '</label>',
                 '</li>',
                '<% } else { %>',
                  '<li><input style="margin: 0;" type="checkbox" onclick="return false;" disabled="disabled">',
                     '<span title="You can convert this collection into a collection of type list using the Collection Tools">',
-                      ' <%= _.escape(history_item.get("hid")) %>: <%= _.escape(history_item.get("name")) %> (Dataset Collection of type <%= _.escape(collection_type) %> not supported.)',
+                      '<%= _.escape(history_item.get("hid")) %>: ',
+                      '<%= item_name.length > 75 ? _.escape("...".concat(item_name.substr(-75))) : _.escape(item_name) %> (Dataset Collection of type <%= _.escape(collection_type) %> not supported.)',
                     '</span>',
                   '</li>',
                 '<% } %>',
           '<% } else if (history_item.get("visible") === true && history_item.get("state") === "ok") { %>',
               '<li data-id="<%= _.escape(history_item.get("id")) %>" data-name="<%= _.escape(history_item.get("type")) %>">',
-                '<input style="margin: 0;" type="checkbox"> <%= _.escape(history_item.get("hid")) %>: <%= _.escape(history_item.get("name")) %>',
+                '<label title="<%= _.escape(item_name) %>">',
+                  '<input style="margin: 0;" type="checkbox"> <%= _.escape(history_item.get("hid")) %>: ',
+                  '<%= item_name.length > 75 ? _.escape("...".concat(item_name.substr(-75))) : _.escape(item_name) %>',
+                '</label>',
               '</li>',
           '<% } %>',
         '<% } %>',
       '<% }); %>',
-    '</ul>'
+    '</ul>',
+    '<button title="Select all datasets" type="button" class="button primary-button history-import-select-all">',
+      'Select all',
+    '</button>',
+    '<button title="Select all datasets" type="button" class="button primary-button history-import-unselect-all">',
+      'Unselect all',
+    '</button>'
     ].join(''));
   },
 
