@@ -15,7 +15,7 @@ from galaxy import util
 from galaxy import web
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import base as managers_base
-from galaxy.managers import folders, roles, library_datasets
+from galaxy.managers import folders, library_datasets, roles
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.streamball import StreamBall
