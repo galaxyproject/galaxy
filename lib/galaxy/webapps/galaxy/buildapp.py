@@ -260,7 +260,6 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tool_data/{id:.+?}/fields/{value:.+?}', action='show_field', controller="tool_data")
     webapp.mapper.connect('/api/tool_data/{id:.+?}/reload', action='reload', controller="tool_data")
     webapp.mapper.resource('dataset_collection', 'dataset_collections', path_prefix='/api/')
-    webapp.mapper.resource('sample', 'samples', path_prefix='/api')
     webapp.mapper.resource('form', 'forms', path_prefix='/api')
     webapp.mapper.resource('role', 'roles', path_prefix='/api')
     webapp.mapper.connect('/api/ftp_files', controller='remote_files')
