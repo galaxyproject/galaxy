@@ -131,6 +131,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
 
         initialize: function() {
             this.setElement( '<div/>' );
+            _.bindAll(this, 'adjust_actiondropdown')
             this.collection = new WORKFLOWS.WorkflowCollection();
             // this.collection.comparator = 'number_of_steps';
             // this.collection.on('sort', this.render, this);
@@ -194,9 +195,9 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
             _(this.collection.models).each(function(item){ // in case collection is not empty
                 self.appendItem(item);
             }, this);
-            this.adjust_actiondropdown( this.$el );
             var min_query_length = 3;
             this.search_workflow( this.$( '.search-wf' ), this.$( '.workflow-search tr' ), min_query_length );
+            this.adjust_actiondropdown();
             return this;
         },
 
@@ -244,13 +245,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
         },
 
         /** Ajust the position of dropdown with respect to table */
-        adjust_actiondropdown: function( $el ) {
-            $el.on( 'show.bs.dropdown', function () {
-                $el.css( "overflow", "inherit" );
+        adjust_actiondropdown: function( ) {
+            $(this.el).on( 'show.bs.dropdown', function () {
+                $(this.el).css( "overflow", "inherit" );
             });
-
-            $el.on( 'hide.bs.dropdown', function () {
-                $el.css( "overflow", "auto" );
+            $(this.el).on( 'hide.bs.dropdown', function () {
+                $(this.el).css( "overflow", "auto" );
             });
         },
 
