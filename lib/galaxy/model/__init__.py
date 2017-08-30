@@ -4219,114 +4219,6 @@ class FormValues(object):
         self.content = content
 
 
-class Request(object, Dictifiable):
-    def __init__(self, name=None, desc=None, request_type=None, user=None, form_values=None, notification=None):
-        self.name = name
-        self.desc = desc
-        self.type = request_type
-        self.values = form_values
-        self.user = user
-        self.notification = notification
-        self.samples_list = []
-
-
-class RequestEvent(object):
-    def __init__(self, request=None, request_state=None, comment=''):
-        self.request = request
-        self.state = request_state
-        self.comment = comment
-
-
-class RequestType(object, Dictifiable):
-    def __init__(self, name=None, desc=None, request_form=None, sample_form=None):
-        self.name = name
-        self.desc = desc
-        self.request_form = request_form
-        self.sample_form = sample_form
-
-
-class ExternalService(object):
-    def __init__(self, name=None, description=None, external_service_type_id=None, version=None, form_definition_id=None, form_values_id=None, deleted=None):
-        self.name = name
-        self.description = description
-        self.external_service_type_id = external_service_type_id
-        self.version = version
-        self.form_definition_id = form_definition_id
-        self.form_values_id = form_values_id
-        self.deleted = deleted
-        self.label = None
-
-
-class RequestTypeExternalServiceAssociation(object):
-    def __init__(self, request_type, external_service):
-        self.request_type = request_type
-        self.external_service = external_service
-
-
-class RequestTypePermissions(object):
-    def __init__(self, action, request_type, role):
-        self.action = action
-        self.request_type = request_type
-        self.role = role
-
-
-class Sample(object, Dictifiable):
-    def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None, library=None, folder=None, workflow=None, history=None):
-        self.name = name
-        self.desc = desc
-        self.request = request
-        self.values = form_values
-        self.bar_code = bar_code
-        self.library = library
-        self.folder = folder
-        self.history = history
-        self.workflow = workflow
-
-
-class SampleState(object):
-    def __init__(self, name=None, desc=None, request_type=None):
-        self.name = name
-        self.desc = desc
-        self.request_type = request_type
-
-
-class SampleEvent(object):
-    def __init__(self, sample=None, sample_state=None, comment=''):
-        self.sample = sample
-        self.state = sample_state
-        self.comment = comment
-
-
-class SampleDataset(object):
-    def __init__(self, sample=None, name=None, file_path=None, status=None, error_msg=None, size=None, external_service=None):
-        self.sample = sample
-        self.name = name
-        self.file_path = file_path
-        self.status = status
-        self.error_msg = error_msg
-        self.size = size
-        self.external_service = external_service
-
-
-class Run(object):
-    def __init__(self, form_definition, form_values, subindex=None):
-        self.template = form_definition
-        self.info = form_values
-        self.subindex = subindex
-
-
-class RequestTypeRunAssociation(object):
-    def __init__(self, request_type, run):
-        self.request_type = request_type
-        self.run = run
-
-
-class SampleRunAssociation(object):
-    def __init__(self, sample, run):
-        self.sample = sample
-        self.run = run
-
-
 class UserAddress(object):
     def __init__(self, user=None, desc=None, name=None, institution=None,
                  address=None, city=None, state=None, postal_code=None,
@@ -4736,3 +4628,56 @@ def copy_list(lst, *args, **kwds):
         return lst
     else:
         return [el.copy(*args, **kwds) for el in lst]
+
+
+# Sample request associated class
+class Request(object, Dictifiable):
+    pass
+
+
+class RequestEvent(object):
+    pass
+
+
+class RequestType(object, Dictifiable):
+    pass
+
+
+class ExternalService(object):
+    pass
+
+
+class RequestTypeExternalServiceAssociation(object):
+    pass
+
+
+class RequestTypePermissions(object):
+    pass
+
+
+class Sample(object):
+    pass
+
+
+class SampleState(object):
+    pass
+
+
+class SampleEvent(object):
+    pass
+
+
+class SampleDataset(object):
+    pass
+
+
+class Run(object):
+    pass
+
+
+class RequestTypeRunAssociation(object):
+    pass
+
+
+class SampleRunAssociation(object):
+    pass
