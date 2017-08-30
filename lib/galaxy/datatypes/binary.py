@@ -845,12 +845,9 @@ class Biom2(H5):
         if super(Biom2, self).sniff(filename):
             try:
                 f = h5py.File(filename)
-                attributes = dict(f.attrs.items())
+                attributes = list(dict(f.attrs.items()))
                 required_fields = ['id', 'format-url', 'type', 'generated-by', 'creation-date', 'nnz', 'shape']
-                for field in required_fields:
-                    if field not in attributes:
-                        return False
-                return True
+                return set(required_fields).issubset(attributes)
             except Exception:
                 return False
         return False
