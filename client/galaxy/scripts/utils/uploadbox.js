@@ -184,7 +184,7 @@
         // add new files to upload queue
         function add(files) {
             if (files && files.length && !queue_running) {
-                var current_index = queue_index;
+                var index = undefined;
                 _.each(files, function(file, key) {
                     if (file.mode !== 'new' && _.filter(queue, function(f) {
                         return f.name === file.name && f.size === file.size;
@@ -194,13 +194,13 @@
                 });
                 _.each(files, function(file) {
                     if (!file.duplicate) {
-                        var index = String(queue_index++);
+                        index = String(queue_index++);
                         queue[index] = file;
                         opts.announce(index, queue[index]);
                         queue_length++;
                     }
                 });
-                return current_index;
+                return index;
             }
         }
 

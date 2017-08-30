@@ -171,7 +171,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
                     collection      : this.collection,
                     ftp_upload_site : this.ftp_upload_site,
                     onadd           : function( ftp_file ) {
-                        self.uploadbox.add([{
+                        return self.uploadbox.add([{
                             mode: 'ftp',
                             name: ftp_file.path,
                             size: ftp_file.size,

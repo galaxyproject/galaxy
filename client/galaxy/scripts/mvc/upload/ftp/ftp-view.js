@@ -23,16 +23,18 @@ function( Utils, Select, Ui, UploadModel, UploadFtp, UploadExtension ) {
                 ftp_upload_site : this.ftp_upload_site,
                 help_enabled    : false,
                 onadd           : function( ftp_file ) {
+                    var index = Utils.uid();
                     self.collection.add({
-                        id        : Utils.uid(),
+                        id        : index,
                         file_mode : 'ftp',
                         file_size : ftp_file.size,
                         file_path : ftp_file.path,
                         enabled   : true
                     });
+                    return index;
                 },
-                onremove: function( model_index ) {
-                    self.collection.remove( model_index );
+                onremove: function( index ) {
+                    self.collection.remove( index );
                 }
             });
             this.$( '.upload-box' ).append( this.ftp_list.$el );

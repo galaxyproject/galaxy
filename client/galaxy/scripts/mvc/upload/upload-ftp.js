@@ -2,6 +2,7 @@
 define( [ 'utils/utils' ], function( Utils ) {
     return Backbone.View.extend({
         initialize: function( options ) {
+            var self = this;
             this.model = new Backbone.Model( {
                 cls             : 'upload-ftp',
                 class_add       : 'upload-icon-button fa fa-square-o',
@@ -36,95 +37,117 @@ define( [ 'utils/utils' ], function( Utils ) {
             $.ajax({
                 url     : Galaxy.root + 'api/remote_files',
                 method  : 'GET',
-                success : function( ftp_files ) { self._renderTable( ftp_files ) },
+                success : function( ftp_files ) {
+                    self.model.set( 'ftp_files', ftp_files );
+                    self._index();
+                    self._renderTable();
+                },
                 error   : function() { self._renderTable() }
             });
         },
 
         /** Fill table with ftp entries */
-        _renderTable: function( ftp_files ) {
+        _renderTable: function() {
             var self = this;
-            var options = this.model.attributes;
+            var ftp_files = this.model.get( 'ftp_files' );
             this.rows = [];
             if ( ftp_files && ftp_files.length > 0 ) {
                 this.$body.empty();
                 var size = 0;
-                for (var index in ftp_files ) {
-                    this.rows.push( this._add( ftp_files[ index ] ) );
-                    size += ftp_files[ index ].size;
-                }
+                _.each( ftp_files, function( ftp_file ) {
+                    self.rows.push( self._renderRow( ftp_file ) );
+                    size += ftp_file.size;
+                } );
                 this.$number.html( ftp_files.length + ' files' );
                 this.$disk.html( Utils.bytesToString ( size, true ) );
                 if ( this.collection ) {
                     this.$( '._has_collection' ).show();
-                    this.$select.addClass( options.class_add )
-                                .off().on( 'click', function() {
-                                    var add = self.$select.hasClass( options.class_add );
-                                    for (var index in ftp_files ) {
-                                        var ftp_file = ftp_files[ index ];
-                                        var model_index = self._find( ftp_file );
-                                        if( !model_index && add || model_index && !add ) {
-                                            self.rows[ index ].trigger( 'click' );
-                                        }
-                                    }
-                                });
+                    this.$select.addClass( this.model.get( 'class_add' ) )
+                                .off().on( 'click', function() { self._all() } );
                     this._refresh();
                 }
                 this.$content.show();
             } else {
                 this.$warning.show();
             }
-            options.help_enabled && this.$help.show();
+            this.model.get( 'help_enabled' ) && this.$help.show();
             this.$wait.hide();
         },
 
-        /** Add file to table */
-        _add: function( ftp_file ) {
+        /** Add row */
+        _renderRow: function( ftp_file ) {
             var self = this;
             var options = this.model.attributes;
             var $it = $( this._templateRow( ftp_file ) );
             var $icon = $it.find( '.icon' );
             this.$body.append( $it );
             if ( this.collection ) {
-                $icon.addClass( this._find( ftp_file ) ? options.class_remove : options.class_add );
+                var model_index = this.ftp_index[ ftp_file.path ];
+                $icon.addClass( model_index === undefined ? options.class_add : options.class_remove );
                 $it.on('click', function() {
-                    var model_index = self._find( ftp_file );
-                    $icon.removeClass();
-                    if ( !model_index ) {
-                        options.onadd( ftp_file );
-                        $icon.addClass( options.class_remove );
-                    } else {
-                        options.onremove( model_index );
-                        $icon.addClass( options.class_add );
-                    }
+                    self._switch( $icon, ftp_file );
                     self._refresh();
                 });
             } else {
                 $it.on('click', function() { options.onchange( ftp_file ) } );
             }
-            return $it;
+            return $icon;
+        },
+
+        /** Create ftp index */
+        _index: function() {
+            var self = this;
+            this.ftp_index = {};
+            this.collection && this.collection.each( function( model ) {
+                if ( model.get( 'file_mode' ) == 'ftp' ) {
+                    self.ftp_index[ model.get( 'file_path' ) ] = model.id;
+                }
+            } );
+        },
+
+        /** Select all event handler */
+        _all: function() {
+            var options = this.model.attributes;
+            var ftp_files = this.model.get( 'ftp_files' );
+            var add = this.$select.hasClass( options.class_add );
+            for (var index in ftp_files ) {
+                var ftp_file = ftp_files[ index ];
+                var model_index = this.ftp_index[ ftp_file.path ];
+                if( model_index === undefined && add || model_index !== undefined  && !add ) {
+                    this._switch( this.rows[ index ], ftp_file );
+                }
+            }
+            this._refresh();
+        },
+
+        /** Handle collection changes */
+        _switch: function( $icon, ftp_file ) {
+            $icon.removeClass();
+            var options = this.model.attributes;
+            var model_index = this.ftp_index[ ftp_file.path ];
+            if ( model_index === undefined ) {
+                var new_index = options.onadd( ftp_file );
+                $icon.addClass( options.class_remove );
+                this.ftp_index[ ftp_file.path ] = new_index;
+            } else {
+                options.onremove( model_index );
+                $icon.addClass( options.class_add );
+                this.ftp_index[ ftp_file.path ] = undefined;
+            }
         },
 
         /** Refresh select all button state */
         _refresh: function() {
-            var options = this.model.attributes;
-            var filtered = this.collection.where( { file_mode: 'ftp', enabled: true } );
+            var counts = _.reduce( this.ftp_index, function( memo, element ) {
+                ( element !== undefined ) && memo++;
+                return memo;
+            }, 0 );
             this.$select.removeClass();
-            if ( filtered.length == 0 ) {
-                this.$select.addClass( options.class_add );
+            if ( counts == 0 ) {
+                this.$select.addClass( this.model.get( 'class_add' ) );
             } else {
-                this.$select.addClass( filtered.length == this.rows.length ? options.class_remove : options.class_partial );
+                this.$select.addClass( counts == this.rows.length ? this.model.get( 'class_remove' ) : this.model.get( 'class_partial' ) );
             }
-        },
-
-        /** Get model index */
-        _find: function( ftp_file ) {
-            var item = this.collection.findWhere({
-                file_path   : ftp_file.path,
-                file_mode   : 'ftp',
-                enabled     : true
-            });
-            return item && item.get('id');
         },
 
         /** Template of row */
