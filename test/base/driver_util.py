@@ -623,6 +623,13 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             "--module",
             "galaxy.webapps.galaxy.buildapp:uwsgi_app_factory()",
         ]
+
+        handle_uwsgi_cli_command = getattr(
+            config_object, "handle_uwsgi_cli_command", None
+        )
+        if handle_uwsgi_cli_command is not None:
+            handle_uwsgi_cli_command(uwsgi_command)
+
         p = subprocess.Popen(
             uwsgi_command,
             cwd=galaxy_root,
@@ -726,7 +733,15 @@ class GalaxyTestDriver(TestDriver):
         if config_object is None:
             config_object = self
         self.external_galaxy = os.environ.get('GALAXY_TEST_EXTERNAL', None)
-        self.use_uwsgi = os.environ.get('GALAXY_TEST_UWSGI', None)
+
+        # Allow a particular test to force uwsgi or any test to use uwsgi with
+        # the GALAXY_TEST_UWSGI environment variable.
+        use_uwsgi = os.environ.get('GALAXY_TEST_UWSGI', None)
+        if not use_uwsgi:
+            if getattr(config_object, "require_uwsgi", None):
+                use_uwsgi = True
+        self.use_uwsgi = use_uwsgi
+
         self.galaxy_test_tmp_dir = get_galaxy_test_tmp_dir()
         self.temp_directories.append(self.galaxy_test_tmp_dir)
 

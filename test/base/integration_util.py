@@ -15,6 +15,9 @@ NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
     """Unit test case with utilities for spinning up Galaxy."""
 
+    # Subclasses can override this to force uwsgi for tests.
+    require_uwsgi = False
+
     @classmethod
     def setUpClass(cls):
         """Configure and start Galaxy for a test."""
@@ -66,6 +69,13 @@ class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
         This method will be passed the keyword argument pairs used to call
         Galaxy Config object and can modify the Galaxy instance created for
         the test as needed.
+        """
+
+    @classmethod
+    def handle_uwsgi_cli_command(cls, command):
+        """Extension point sub subclasses to modify arguments used to launch uWSGI server.
+
+        Command will a list that can be modified.
         """
 
     def _run_tool_test(self, *args, **kwargs):
