@@ -135,7 +135,7 @@ class LibraryDatasetsManager(object):
             # all operations are available to an admin
             return ld
         if check_accessible:
-            ld = self._check_accessible(trans, ld)
+            ld = self.check_accessible(trans, ld)
         return ld
 
     def check_accessible(self, trans, ld):
@@ -150,7 +150,7 @@ class LibraryDatasetsManager(object):
 
         :raises:    ObjectNotFound
         """
-        if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), ld):
+        if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), ld, trans.user):
             raise ObjectNotFound('Library dataset with the id provided was not found.')
         elif ld.deleted:
             raise ObjectNotFound('Library dataset with the id provided is deleted.')
