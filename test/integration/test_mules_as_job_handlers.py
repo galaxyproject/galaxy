@@ -3,6 +3,7 @@
 import os
 
 from base import integration_util
+from base.populators import DatasetPopulator
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
@@ -21,4 +22,8 @@ class MulesAsJobHandlersIntegrationTestCase(integration_util.IntegrationTestCase
         ])
 
     def test_tool_simple_constructs(self):
-        self._run_tool_test("simple_constructs")
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        history_id = dataset_populator.new_history()
+        dataset_populator.new_dataset(
+            history_id, contents="test 1 2 3", file_type="txt", wait=True
+        )
