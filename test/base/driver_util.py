@@ -383,7 +383,7 @@ def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
             if conn.getresponse().status == 200:
                 break
         except socket.error as e:
-            if e[0] != 61:
+            if e[0] not in [61, 111]:
                 raise
         time.sleep(sleep_amount)
     else:
