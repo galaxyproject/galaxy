@@ -1087,17 +1087,19 @@ class WorkflowModuleInjector(object):
         # Populate module.
         module = step.module = module_factory.from_workflow_step(self.trans, step)
 
-        # Fix any missing parameters
-        step.upgrade_messages = module.check_and_update_state()
-
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)
         module.add_dummy_datasets(connections=step.input_connections, steps=steps)
         state, step_errors = module.compute_runtime_state(self.trans, step_args)
         step.state = state
+
+        # Fix any missing parameters
+        step.upgrade_messages = module.check_and_update_state()
+
+        # Populate subworkflow components
         if step.type == "subworkflow":
             subworkflow = step.subworkflow
-            populate_module_and_state(self.trans, subworkflow, param_map={}, )
+            populate_module_and_state(self.trans, subworkflow, param_map={})
         return step_errors
 
 
