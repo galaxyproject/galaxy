@@ -875,7 +875,14 @@ class Biom2(H5):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "Biom2 (HDF5) file"
+            lines = ['Biom2 (HDF5) file']
+            try:
+                f = h5py.File(dataset.file_name)
+                for k, v in dict(f.attrs).items():
+                    lines.append('%s:  %s' % (k, v))
+            except Exception as e:
+                log.warning('%s, set_peek Exception: %s', self, e)
+            dataset.peek = '\n'.join(lines)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
