@@ -63,8 +63,10 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
             self = this;
             $.getJSON(this.model.urlRoot + '/' + this.model.id + '/download', function(wf_json) {
                 wf_json.name = 'Copy of ' + self.model.get('name');
-                if (wf_json.owner != Galaxy.user.attributes.username) {
-                    wf_json.name += ' shared by user ' + self.model.get('owner');
+                var current_owner = self.model.get('owner');
+                if (current_owner != Galaxy.user.attributes.username) {
+                    console.log(Galaxy.user.attributes.username);
+                    wf_json.name += ' shared by user ' + current_owner;
                 }
                 self.collection.create(wf_json, { at: 0, wait: true });
             })
