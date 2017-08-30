@@ -1,6 +1,5 @@
 """Scripts for drivers of Galaxy functional tests."""
 
-import collections
 import fcntl
 import httplib
 import json
@@ -10,6 +9,7 @@ import random
 import shutil
 import socket
 import struct
+import subprocess
 import sys
 import tempfile
 import threading
@@ -36,6 +36,7 @@ from .tool_shed_util import parse_tool_panel_config
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 DEFAULT_WEB_HOST = "localhost"
+DEFAULT_CONFIG_PREFIX = "GALAXY"
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
 GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 TOOL_SHED_TEST_DATA = os.path.join(GALAXY_TEST_DIRECTORY, "shed_functional", "test_data")
@@ -371,20 +372,38 @@ def get_webapp_global_conf():
     return global_conf
 
 
-def wait_for_http_server(host, port):
+def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
     """Wait for an HTTP server to boot up."""
     # Test if the server is up
-    for i in range(10):
+    for i in range(sleep_tries):
         # directly test the app, not the proxy
         conn = httplib.HTTPConnection(host, port)
-        conn.request("GET", "/")
-        if conn.getresponse().status == 200:
-            break
-        time.sleep(0.1)
+        try:
+            conn.request("GET", "/")
+            if conn.getresponse().status == 200:
+                break
+        except socket.error as e:
+            if e[0] != 61:
+                raise
+        time.sleep(sleep_amount)
     else:
         template = "Test HTTP server on host %s and port %s did not return '200 OK' after 10 tries"
         message = template % (host, port)
         raise Exception(message)
+
+
+def attempt_ports(port):
+    if port is not None:
+        yield port
+
+        raise Exception("An existing process seems bound to specified test server port [%s]" % port)
+    else:
+        random.seed()
+        for i in range(0, 9):
+            port = str(random.randint(8000, 10000))
+            yield port
+
+        raise Exception("Unable to open a port between %s and %s to start Galaxy server" % (8000, 1000))
 
 
 def serve_webapp(webapp, port=None, host=None):
@@ -393,21 +412,14 @@ def serve_webapp(webapp, port=None, host=None):
     Return the port the webapp is running one.
     """
     server = None
-    if port is not None:
-        server = httpserver.serve(webapp, host=host, port=port, start_loop=False)
-    else:
-        random.seed()
-        for i in range(0, 9):
-            try:
-                port = str(random.randint(8000, 10000))
-                server = httpserver.serve(webapp, host=host, port=port, start_loop=False)
-                break
-            except socket.error as e:
-                if e[0] == 98:
-                    continue
-                raise
-        else:
-            raise Exception("Unable to open a port between %s and %s to start Galaxy server" % (8000, 1000))
+    for port in attempt_ports(port):
+        try:
+            server = httpserver.serve(webapp, host=host, port=port, start_loop=False)
+            break
+        except socket.error as e:
+            if e[0] == 98:
+                continue
+            raise
 
     t = threading.Thread(target=server.serve_forever)
     t.start()
@@ -502,24 +514,6 @@ def build_shed_app(simple_kwargs):
     return app
 
 
-ServerWrapper = collections.namedtuple('ServerWrapper', ['app', 'server', 'name', 'host', 'port'])
-
-
-def _stop(self):
-    if self.server is not None:
-        log.info("Shutting down embedded %s web server" % self.name)
-        self.server.server_close()
-        log.info("Embedded web server %s stopped" % self.name)
-
-    if self.app is not None:
-        log.info("Stopping application %s" % self.name)
-        self.app.shutdown()
-        log.info("Application %s stopped." % self.name)
-
-
-ServerWrapper.stop = _stop
-
-
 class classproperty(object):
 
     def __init__(self, f):
@@ -538,7 +532,113 @@ def get_ip_address(ifname):
     )[20:24])
 
 
-def launch_server(app, webapp_factory, kwargs, prefix="GALAXY", config_object=None):
+def host_and_port(prefix, config_object):
+    host_env_key = "%s_TEST_HOST" % prefix
+    port_env_key = "%s_TEST_PORT" % prefix
+    default_web_host = getattr(config_object, "default_web_host", DEFAULT_WEB_HOST)
+    host = os.environ.get(host_env_key, default_web_host)
+    port = os.environ.get(port_env_key, None)
+
+    return host, port
+
+
+def set_and_wait_for_http_target(prefix, host, port):
+    host_env_key = "%s_TEST_HOST" % prefix
+    port_env_key = "%s_TEST_PORT" % prefix
+    os.environ[host_env_key] = host
+    os.environ[port_env_key] = port
+    wait_for_http_server(host, port)
+
+
+class ServerWrapper(object):
+
+    def __init__(self, name, host, port):
+        self.name = name
+        self.host = host
+        self.port = port
+
+    @property
+    def app(self):
+        raise NotImplementedError("Test can be run against target - requires a Galaxy app object.")
+
+    def stop(self):
+        raise NotImplementedError()
+
+
+class PasteServerWrapper(ServerWrapper):
+
+    def __init__(self, app, server, name, host, port):
+        super(PasteServerWrapper, self).__init__(name, host, port)
+        self._app = app
+        self._server = server
+
+    @property
+    def app(self):
+        return self._app
+
+    def stop(self):
+        if self._server is not None:
+            log.info("Shutting down embedded %s web server" % self.name)
+            self._server.server_close()
+            log.info("Embedded web server %s stopped" % self.name)
+
+        if self._app is not None:
+            log.info("Stopping application %s" % self.name)
+            self._app.shutdown()
+            log.info("Application %s stopped." % self.name)
+
+
+class UwsgiServerWrapper(ServerWrapper):
+
+    def __init__(self, p, name, host, port):
+        super(UwsgiServerWrapper, self).__init__(name, host, port)
+        self._p = p
+
+    def stop(self):
+        raise NotImplementedError("TODO: wait on self._p and stop")
+
+
+def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
+    name = prefix.lower()
+
+    host, port = host_and_port(prefix, config_object)
+
+    config = {}
+    config["galaxy"] = kwargs.copy()
+
+    yaml_config_path = os.path.join(tempdir, "galaxy.yml")
+    with open(yaml_config_path, "w") as f:
+        import yaml
+        yaml.dump(config, f)
+
+    def attempt_port_bind(port):
+        uwsgi_command = [
+            "uwsgi",
+            "--http",
+            "%s:%s" % (host, port),
+            "--pythonpath",
+            os.path.join(galaxy_root, "lib"),
+            "--yaml",
+            yaml_config_path,
+            "--module",
+            "galaxy.webapps.galaxy.buildapp:uwsgi_app_factory()",
+        ]
+        p = subprocess.Popen(
+            uwsgi_command,
+            cwd=galaxy_root,
+        )
+        set_and_wait_for_http_target(prefix, host, port)
+        log.info("Test-managed uwsgi web server for %s started at %s:%s" % (name, host, port))
+        return UwsgiServerWrapper(
+            p, name, host, port
+        )
+
+    for port in attempt_ports(port):
+        return attempt_port_bind(port)
+        # TODO: catch and determine an exception related to bad port binding and retry.
+
+
+def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
     """Launch a web server for a given app using supplied factory.
 
     Consistently read either GALAXY_TEST_HOST and GALAXY_TEST_PORT or
@@ -547,11 +647,7 @@ def launch_server(app, webapp_factory, kwargs, prefix="GALAXY", config_object=No
     """
     name = prefix.lower()
 
-    host_env_key = "%s_TEST_HOST" % prefix
-    port_env_key = "%s_TEST_PORT" % prefix
-    default_web_host = getattr(config_object, "default_web_host", DEFAULT_WEB_HOST)
-    host = os.environ.get(host_env_key, default_web_host)
-    port = os.environ.get(port_env_key, None)
+    host, port = host_and_port(prefix, config_object)
 
     webapp = webapp_factory(
         kwargs['global_conf'],
@@ -563,11 +659,9 @@ def launch_server(app, webapp_factory, kwargs, prefix="GALAXY", config_object=No
         webapp,
         host=host, port=port
     )
-    os.environ[host_env_key] = host
-    os.environ[port_env_key] = port
-    wait_for_http_server(host, port)
-    log.info("Embedded web server for %s started" % name)
-    return ServerWrapper(
+    set_and_wait_for_http_target(prefix, host, port)
+    log.info("Embedded paste web server for %s started at %s:%s" % (name, host, port))
+    return PasteServerWrapper(
         app, server, name, host, port
     )
 
@@ -632,6 +726,7 @@ class GalaxyTestDriver(TestDriver):
         if config_object is None:
             config_object = self
         self.external_galaxy = os.environ.get('GALAXY_TEST_EXTERNAL', None)
+        self.use_uwsgi = os.environ.get('GALAXY_TEST_UWSGI', None)
         self.galaxy_test_tmp_dir = get_galaxy_test_tmp_dir()
         self.temp_directories.append(self.galaxy_test_tmp_dir)
 
@@ -643,6 +738,8 @@ class GalaxyTestDriver(TestDriver):
         else:
             default_tool_conf = getattr(config_object, "default_tool_conf", None)
             datatypes_conf_override = getattr(config_object, "datatypes_conf_override", None)
+
+        self.app = None
 
         if self.external_galaxy is None:
             tempdir = tempfile.mkdtemp(dir=self.galaxy_test_tmp_dir)
@@ -672,16 +769,24 @@ class GalaxyTestDriver(TestDriver):
                 if handle_galaxy_config_kwds is not None:
                     handle_galaxy_config_kwds(galaxy_config)
 
-            # ---- Build Application --------------------------------------------------
-            self.app = build_galaxy_app(galaxy_config)
-            server_wrapper = launch_server(
-                self.app,
-                buildapp.app_factory,
-                galaxy_config,
-                config_object=config_object,
-            )
-            self.server_wrappers.append(server_wrapper)
-            log.info("Functional tests will be run against external Galaxy server %s:%s" % (server_wrapper.host, server_wrapper.port))
+            if self.use_uwsgi:
+                server_wrapper = launch_uwsgi(
+                    galaxy_config,
+                    tempdir=tempdir,
+                    config_object=config_object,
+                )
+                pass
+            else:
+                # ---- Build Application --------------------------------------------------
+                self.app = build_galaxy_app(galaxy_config)
+                server_wrapper = launch_server(
+                    self.app,
+                    buildapp.app_factory,
+                    galaxy_config,
+                    config_object=config_object,
+                )
+                self.server_wrappers.append(server_wrapper)
+                log.info("Functional tests will be run against external Galaxy server %s:%s" % (server_wrapper.host, server_wrapper.port))
         else:
             log.info("Functional tests will be run against test managed Galaxy server %s" % self.external_galaxy)
             # Ensure test file directory setup even though galaxy config isn't built.
