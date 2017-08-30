@@ -15,7 +15,7 @@ from galaxy import util
 from galaxy import web
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import base as managers_base
-from galaxy.managers import folders, roles, tags, library_datasets
+from galaxy.managers import folders, roles, library_datasets
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.streamball import StreamBall
@@ -48,7 +48,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         :returns:   detailed library dataset information
         :rtype:     dictionary
         """
-        ld = self.ld_manager.get(trans, managers_base.decode_id(self.app, id ))
+        ld = self.ld_manager.get(trans, managers_base.decode_id(self.app, id))
         serialized = self.ld_manager.serialize(trans, ld)
         return serialized
 
@@ -245,7 +245,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
                 trans.app.security_agent.make_dataset_public(dataset)
             else:
                 for role_id in new_access_roles_ids:
-                    role = self.role_manager.get(trans, managers_base.decode_id( self.app, role_id ))
+                    role = self.role_manager.get(trans, managers_base.decode_id(self.app, role_id))
                     #  Check whether role is in the set of allowed roles
                     valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, dataset)
                     if role in valid_roles:

@@ -1,8 +1,6 @@
 """Manager and Serializer for library datasets."""
 import logging
 
-from sqlalchemy import and_, false, not_, or_, true
-
 from galaxy import util
 
 from galaxy.exceptions import InternalServerError
@@ -103,7 +101,7 @@ class LibraryDatasetsManager(object):
                 continue
             if key in ('name'):
                 if len(val) < MINIMUM_STRING_LENGTH:
-                    raise RequestParameterInvalidException('%s must have at least length of %s'% (key, MINIMUM_STRING_LENGTH))
+                    raise RequestParameterInvalidException('%s must have at least length of %s' % (key, MINIMUM_STRING_LENGTH))
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
             if key in ('misc_info'):
@@ -112,11 +110,11 @@ class LibraryDatasetsManager(object):
             if key in ('file_ext'):
                 datatype = self.app.datatypes_registry.get_datatype_by_extension(val)
                 if datatype is None:
-                    raise RequestParameterInvalidException('This Galaxy does not recognize the datatype of: %s'% (val))
+                    raise RequestParameterInvalidException('This Galaxy does not recognize the datatype of: %s' % (val))
                 validated_payload[key] = val
             if key in ('genome_build'):
                 if len(val) < MINIMUM_STRING_LENGTH:
-                    raise RequestParameterInvalidException('%s must have at least length of %s'% (key, MINIMUM_STRING_LENGTH))
+                    raise RequestParameterInvalidException('%s must have at least length of %s' % (key, MINIMUM_STRING_LENGTH))
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
         return validated_payload
