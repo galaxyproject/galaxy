@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import binascii
 import gzip
-import h5py
 import logging
 import os
 import shutil
@@ -13,6 +12,7 @@ import sys
 import tempfile
 import zipfile
 from json import dumps
+import h5py
 
 import pysam
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
