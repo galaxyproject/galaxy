@@ -1,26 +1,13 @@
 /** Workflow view */
-define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-model"  ], function( Utils, Ui, TAGS, WORKFLOWS ) {
-
-    /** Build messages after user action */
-    function build_messages() {
-        var $el_message = this.$( '.response-message' ),
-            response = {};
-        response = {
-            'status': Utils.getQueryString( 'status' ),
-            'message': _.escape( Utils.getQueryString( 'message' ) ),
-            'persistent': true,
-            'cls': Utils.getQueryString( 'status' ) + 'message'
-        };
-        $el_message.empty().html( new Ui.Message( response ).$el );
-    }
-
+define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( mod_toastr, TAGS, WORKFLOWS ) {
 
     /** View of the individual workflows */
-
     var WorkflowItemView = Backbone.View.extend({
         tagName: 'tr', // name of (orphan) root tag in this.el
         initialize: function(){
             _.bindAll(this, 'render', 'render_row', 'render_tag_editor', '_templateActions', 'model_remove', 'copy_workflow'); // every function that uses 'this' as the current object should be in here
+            mod_toastr.options.timeOut = 1500;
+            mod_toastr.options.positionClass = "toast-top-left";
         },
 
         events: {
@@ -44,31 +31,48 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
         },
 
         model_remove: function(){
-            if (confirm( "Are you sure you want to delete workflow '" + this.model.get('name') + "'?" )) {
-                this.model.destroy();
+            var wf_name = this.model.get('name');
+            if (confirm( "Are you sure you want to delete workflow '" + wf_name + "'?" )) {
+                this.model.destroy({
+                    success: function() {
+
+                        mod_toastr.success("Successfully deleted workflow '" + wf_name + "'");
+                        }
+                });
                 this.remove();
             };
         },
 
         rename_workflow: function(){
-            var newname = prompt("Enter a new Name for workflow '" + this.model.get('name') + "'", this.model.get('name') );
-            if (newname) {
-                this.model.set('name', newname);
-                this.model.save();
+            var oldName = this.model.get('name');
+            var newName = prompt("Enter a new Name for workflow '" + oldName + "'", oldName );
+            if (newName) {
+                this.model.save(
+                    { 'name': newname },
+                    { success: function() {
+                        mod_toastr.success("Successfully renamed workflow '" + oldName + "' to '" + newName + "'")
+                    }
+                });
                 this.render();
             }
         },
 
         copy_workflow: function(){
             self = this;
+            var oldName = this.model.get('name');
             $.getJSON(this.model.urlRoot + '/' + this.model.id + '/download', function(wf_json) {
-                wf_json.name = 'Copy of ' + self.model.get('name');
+                var newName = 'Copy of ' + oldName;
                 var current_owner = self.model.get('owner');
                 if (current_owner != Galaxy.user.attributes.username) {
-                    console.log(Galaxy.user.attributes.username);
-                    wf_json.name += ' shared by user ' + current_owner;
+                    newName += ' shared by user ' + current_owner;
                 }
-                self.collection.create(wf_json, { at: 0, wait: true });
+                wf_json.name = newName;
+                self.collection.create(wf_json, { at: 0,
+                                                  wait: true,
+                                                  success: function() {
+                                                      mod_toastr.success("Successfully copied workflow '" + oldName + "' to '" + newName + "'")
+                                                  }
+                });
             })
         },
 
@@ -177,8 +181,17 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
                 var self = this;
                 var reader = new FileReader();
                 reader.onload = function(theFile) {
-                    var wf_json = JSON.parse(reader.result);
-                    self.collection.create(wf_json, { at: 0, wait: true});
+                    try {
+                        var wf_json = JSON.parse(reader.result);
+                    } catch(e) {
+                        mod_toastr.error("Could not read file '" + f.name + "'. Verify it is a valid Galaxy workflow");
+                        return;
+                    }
+                    self.collection.create(wf_json, { at: 0,
+                                                      wait: true,
+                                                      success: function() {
+                                                          mod_toastr.success("Successfully imported workflow '" + wf_json.name + "'")
+                                                      }});
                 };
                 reader.readAsText(f, 'utf-8');
             },
@@ -186,7 +199,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', "mvc/tag", "mvc/workflow/workflow-mod
         render: function() {
             // Add workflow header
             var header = this._templateHeader();
-            build_messages();
             // Add the actions buttons
             var template_actions = this._templateActionButtons();
             var table_template = this._templateWorkflowTable();
