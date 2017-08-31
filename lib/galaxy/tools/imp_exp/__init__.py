@@ -70,6 +70,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
         if jiha:
             try:
                 archive_dir = jiha.archive_dir
+                archive_dir = os.path.realpath(archive_dir)
                 user = jiha.job.user
 
                 # Bioblend previous to 17.01 exported histories with an extra subdir.
@@ -122,7 +123,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                 datasets_usage_counts = {}
                 for dataset_attrs in datasets_attrs:
                     temp_dataset_file_name = \
-                        os.path.abspath(os.path.join(archive_dir, dataset_attrs['file_name']))
+                        os.path.realpath(os.path.join(archive_dir, dataset_attrs['file_name']))
                     if (temp_dataset_file_name not in datasets_usage_counts):
                         datasets_usage_counts[temp_dataset_file_name] = 0
                     datasets_usage_counts[temp_dataset_file_name] += 1
@@ -329,6 +330,14 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
                  .filter(trans.model.Dataset.purged == expression.false()))
         return query.all()
 
+    def get_history_collections(trans, history):
+        """
+        Returns history's collections.
+        """
+        query = (trans.sa_session.query(trans.model.HistoryDatasetCollectionAssociation)
+                 .filter(trans.model.HistoryDatasetCollectionAssociation.history == history))
+        return query.all()
+
     # TODO: should use db_session rather than trans in this method.
     def setup_job(self, trans, jeha, include_hidden=False, include_deleted=False):
         """ Perform setup for job to export a history into an archive. Method generates
@@ -395,6 +404,27 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
                     return rval
                 return json.JSONEncoder.default(self, obj)
 
+        class CollectionsEncoder(json.JSONEncoder):
+            """ Custom JSONEncoder for a Collection. """
+
+            def default(self, obj):
+                """ Encode a collection, default encoding for everything else. """
+                if isinstance(obj, trans.model.HistoryDatasetCollectionAssociation):
+                    #dump attrs of each dataset of this collection
+                    collections_datasets_attrs = []
+                    collection_datasets = obj.dataset_instances
+                    for collection_dataset in collection_datasets:
+                        collections_datasets_attrs.append(collection_dataset)
+                    
+                    rval = {
+                        "display_name": obj.display_name(),
+                        "state": obj.state,
+                        "populated": obj.populated,
+                        "datasets":dumps(collections_datasets_attrs, cls=HistoryDatasetAssociationEncoder)
+                    }
+                    return rval
+                return json.JSONEncoder.default(self, obj)
+
         #
         # Create attributes/metadata files for export.
         #
@@ -440,6 +470,27 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
         provenance_attrs_out = open(datasets_attrs_filename + ".provenance", 'w')
         provenance_attrs_out.write(dumps(provenance_attrs, cls=HistoryDatasetAssociationEncoder))
         provenance_attrs_out.close()
+
+        # Write collections' attributes (including datasets list) to file.
+        collections = get_history_collections(trans, history)
+    
+        collections_attrs = []
+        included_collections_datasets = []
+        collections_datasets_attrs = []
+        collections_provenance_attrs = []
+        for collection in collections:
+            #filter this ?
+            if collection.populated == False:
+                break
+            if collection.state != 'ok':
+                break
+        
+            collections_attrs.append(collection)
+
+        collections_attrs_filename = tempfile.NamedTemporaryFile(dir=temp_output_dir).name
+        collections_attrs_out = open(collections_attrs_filename, 'w')
+        collections_attrs_out.write(dumps(collections_attrs, cls=CollectionsEncoder))
+        collections_attrs_out.close()
 
         #
         # Write jobs attributes file.
@@ -526,14 +577,15 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
             options = "-G"
         return "%s %s %s %s" % (options, history_attrs_filename,
                                 datasets_attrs_filename,
-                                jobs_attrs_filename)
+                                jobs_attrs_filename,
+                                collections_attrs_filename)
 
     def cleanup_after_job(self, db_session):
         """ Remove temporary directory and attribute files generated during setup for this job. """
         # Get jeha for job.
         jeha = db_session.query(model.JobExportHistoryArchive).filter_by(job_id=self.job_id).first()
         if jeha:
-            for filename in [jeha.history_attrs_filename, jeha.datasets_attrs_filename, jeha.jobs_attrs_filename]:
+            for filename in [jeha.history_attrs_filename, jeha.datasets_attrs_filename, jeha.jobs_attrs_filename, jeha.collections_attrs_filename]:
                 try:
                     os.remove(filename)
                 except Exception as e:
