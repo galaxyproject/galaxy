@@ -145,30 +145,23 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
         },
 
         events: {
-            'dragenter' : 'highlightDropZone',
             'dragleave' : 'unhighlightDropZone',
             'drop' : 'drop',
             'dragover': function(ev) {
+                $( '.hidden_description_layer' ).addClass( 'dragover' );
+                $('.menubutton').addClass('background-none');
                 ev.preventDefault();
             }
         },
 
-        highlightDropZone: function() {
-            //TODO figure out how to highlight zone. Need css ?
-            this.$el.css( "overflow", "inherit" );
-            console.log('Dropzone')
-        },
-
         unhighlightDropZone: function() {
-            console.log('Unhighlight Dropzone')
-        },
-
-        dropTest: function() {
-            console.log('Droptest')
+            $( '.hidden_description_layer' ).removeClass( 'dragover' );
+            $('.menubutton').removeClass('background-none');
         },
 
         drop: function(e) {
             // TODO: check that file is valid galaxy workflow
+            this.unhighlightDropZone();
             e.preventDefault();
             var files = e.dataTransfer.files;
             var self = this;
@@ -185,13 +178,17 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
                         var wf_json = JSON.parse(reader.result);
                     } catch(e) {
                         mod_toastr.error("Could not read file '" + f.name + "'. Verify it is a valid Galaxy workflow");
-                        return;
+                        wf_json = null;
+
                     }
-                    self.collection.create(wf_json, { at: 0,
-                                                      wait: true,
-                                                      success: function() {
-                                                          mod_toastr.success("Successfully imported workflow '" + wf_json.name + "'")
-                                                      }});
+                    if (wf_json) {
+                        self.collection.create(wf_json, {
+                            at: 0,
+                            wait: true,
+                            success: function() {
+                                mod_toastr.success("Successfully imported workflow '" + wf_json.name + "'")
+                            }});
+                    }
                 };
                 reader.readAsText(f, 'utf-8');
             },
@@ -299,7 +296,7 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
                         '<th>Published</th>' +
                         '<th>Show in tools panel</th>' +
                     '</tr></thead>';
-            return tableHtml + '<tbody class="workflow-search">' + '</tbody></table>';
+            return tableHtml + '<tbody class="workflow-search "><div class="hidden_description_layer"><p>Drop workflow files here to import</p>' + '</tbody></table></div>';
         },
 
         /** Main template */
