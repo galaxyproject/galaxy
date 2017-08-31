@@ -480,7 +480,7 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
                 this.collectionType = new CollectionTypeDescription( attr.collection_type );
             } else {
                 var collectionTypeSource = attr.collection_type_source;
-                if(! collectionTypeSource) {
+                if( ! collectionTypeSource ) {
                     console.log("Warning: No collection type or collection type source defined.");
                 }
                 this.collectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
@@ -493,7 +493,7 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
                 newCollectionType = new CollectionTypeDescription( output.collection_type );
             } else {
                 var collectionTypeSource = output.collection_type_source;
-                if(! collectionTypeSource) {
+                if( ! collectionTypeSource ) {
                     console.log("Warning: No collection type or collection type source defined.");
                 }
                 newCollectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
