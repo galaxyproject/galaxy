@@ -2,6 +2,7 @@ import logging
 import os
 import string
 import time
+from errno import ENOENT
 from xml.etree.ElementTree import ParseError
 
 from markupsafe import escape
@@ -539,7 +540,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
             concrete_path = os.path.join(tool_path, path)
             if not os.path.exists(concrete_path):
                 # This is a lot faster than attempting to load a non-existing tool
-                raise IOError
+                raise IOError(ENOENT, os.strerror(ENOENT))
             tool_shed_repository = None
             can_load_into_panel_dict = True
 
@@ -580,8 +581,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
             labels = item.labels
             if labels is not None:
                 tool.labels = labels
-        except IOError:
-            log.error("Error reading tool configuration file from path: %s" % path)
+        except (IOError, OSError) as exc:
+            log.error("Error reading tool configuration file from path '%s': %s", path, exc)
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 
