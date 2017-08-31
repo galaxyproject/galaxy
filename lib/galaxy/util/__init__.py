@@ -760,7 +760,7 @@ class Params(object):
         self.__dict__.update(values)
 
 
-def rst_to_html(s):
+def rst_to_html(s, error=False):
     """Convert a blob of reStructuredText to HTML"""
     log = logging.getLogger("docutils")
 
@@ -770,6 +770,8 @@ def rst_to_html(s):
     class FakeStream(object):
         def write(self, str):
             if len(str) > 0 and not str.isspace():
+                if error:
+                    raise Exception(str)
                 log.warning(str)
 
     settings_overrides = {
