@@ -179,7 +179,6 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
                     } catch(e) {
                         mod_toastr.error("Could not read file '" + f.name + "'. Verify it is a valid Galaxy workflow");
                         wf_json = null;
-
                     }
                     if (wf_json) {
                         self.collection.create(wf_json, {
@@ -221,11 +220,7 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
 
         /** Add confirm box before removing/unsharing workflow */
         confirm_delete: function( workflow ) {
-            var $el_wf_link = this.$( '.link-confirm-' + workflow.id ),
-                $el_shared_wf_link = this.$( '.link-confirm-shared-' + workflow.id );
-            $el_wf_link.click( function() {
-                return confirm( "Are you sure you want to delete workflow '" + workflow.name + "'?" );
-            });
+            var $el_shared_wf_link = this.$( '.link-confirm-shared-' + workflow.id );
             $el_shared_wf_link.click( function() {
                 return confirm( "Are you sure you want to remove the shared workflow '" + workflow.name + "'?" );
             });
@@ -367,7 +362,6 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
                        "</div>" +
                    "</div>";
         },
-
     });
 
     return {
