@@ -344,10 +344,15 @@ def _do_uwsgi_postfork():
         if mule is not True and i + 1 == uwsgi.mule_id():
             # mules will inherit the postfork function list and call them immediately upon fork, but programmed mules
             # should not do that (they will call the postfork functions in-place as they start up after exec())
-            UWSGIApplicationStack.postfork_functions = []
+            UWSGIApplicationStack.postfork_functions = [(_mule_fixup, (), {})]
     for f, args, kwargs in [t for t in UWSGIApplicationStack.postfork_functions]:
         log.debug('Calling postfork function: %s', f)
         f(*args, **kwargs)
+
+
+def _mule_fixup():
+    import urllib2
+    urllib2._opener = None
 
 
 if uwsgi:
