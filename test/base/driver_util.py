@@ -21,6 +21,7 @@ import nose.core
 import nose.loader
 import nose.plugins.manager
 from paste import httpserver
+from six.moves import shlex_quote
 
 from functional import database_contexts
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
@@ -657,6 +658,8 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             yaml_config_path,
             "--module",
             "galaxy.webapps.galaxy.buildapp:uwsgi_app_factory()",
+            "--enable-threads",
+            "--die-on-term",
         ]
 
         handle_uwsgi_cli_command = getattr(
@@ -665,6 +668,8 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
         if handle_uwsgi_cli_command is not None:
             handle_uwsgi_cli_command(uwsgi_command)
 
+        # we don't want to quote every argument but we don't want to print unquoted ones either, so do this
+        log.info("Starting uwsgi with command line: %s", ' '.join([shlex_quote(x) for x in uwsgi_command]))
         p = subprocess.Popen(
             uwsgi_command,
             cwd=galaxy_root,

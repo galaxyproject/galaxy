@@ -17,13 +17,27 @@ class MulesAsJobHandlersIntegrationTestCase(integration_util.IntegrationTestCase
     @classmethod
     def handle_uwsgi_cli_command(cls, command):
         command.extend([
+            "--py-call-osafterfork",
             "--mule=lib/galaxy/main.py",
             "--farm=job-handlers:1",
         ])
 
     def test_tool_simple_constructs(self):
+        tool_id = 'config_vars'
+        expect_server_name = 'main.mule'
         dataset_populator = DatasetPopulator(self.galaxy_interactor)
         history_id = dataset_populator.new_history()
-        dataset_populator.new_dataset(
-            history_id, contents="test 1 2 3", file_type="txt", wait=True
+        payload = dataset_populator.run_tool(
+            tool_id=tool_id,
+            inputs={'var': 'server_name'},
+            history_id=history_id,
+        )
+        dataset_id = payload['outputs'][0]['id']
+        dataset_populator.wait_for_dataset(history_id, dataset_id, assert_ok=True)
+        output = dataset_populator.get_history_dataset_content(history_id, dataset_id=dataset_id).strip()
+        assert output.startswith(expect_server_name), (
+            "Job handler's server name '{output}' does not start with expected string '{expected}'".format(
+                output=output,
+                expected=expect_server_name,
+            )
         )
