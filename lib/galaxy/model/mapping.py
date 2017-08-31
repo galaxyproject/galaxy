@@ -582,7 +582,8 @@ model.JobExportHistoryArchive.table = Table(
     Column("compressed", Boolean, index=True, default=False),
     Column("history_attrs_filename", TEXT),
     Column("datasets_attrs_filename", TEXT),
-    Column("jobs_attrs_filename", TEXT))
+    Column("jobs_attrs_filename", TEXT,
+    Column("collections_attrs_filename", TEXT))
 
 model.JobImportHistoryArchive.table = Table(
     "job_import_history_archive", metadata,
