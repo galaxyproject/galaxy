@@ -30,10 +30,10 @@ def read_attributes_from_file(file):
     datasets_attr_str = ''
     buffsize = 1048576
     try:
-       while True:
-           datasets_attr_str += datasets_attr_in.read(buffsize)
-           if not datasets_attr_str or len(datasets_attr_str) % buffsize != 0:
-               break
+        while True:
+            datasets_attr_str += datasets_attr_in.read(buffsize)
+            if not datasets_attr_str or len(datasets_attr_str) % buffsize != 0:
+                break
     except OverflowError:
         pass
     datasets_attrs = loads(datasets_attr_str)
@@ -85,7 +85,7 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, col
         datasets_attrs_out = open(datasets_attrs_file, 'w')
         datasets_attrs_out.write(dumps(datasets_attrs))
         datasets_attrs_out.close()
- 
+
         collections_attrs = read_attributes_from_file(collections_attrs_file)
 
         # Add collections datasets to archive and update dataset attributes.
@@ -94,8 +94,8 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, col
                 dataset_file_name = collection_dataset_attrs['file_name']  # Full file name.
                 dataset_hid = collection_dataset_attrs['hid']
                 collections_dataset_archive_name = os.path.join('collections_datasets',
-                                                     get_dataset_filename(collection_dataset_attrs['name'], collection_dataset_attrs['extension'], dataset_hid))
-                history_archive.add(dataset_file_name, arcname=collections_dataset_archive_name) 
+                                                                get_dataset_filename(collection_dataset_attrs['name'], collection_dataset_attrs['extension'], dataset_hid))
+                history_archive.add(dataset_file_name, arcname=collections_dataset_archive_name)
                 # Include additional files for example, files/images included in HTML output.
                 extra_files_path = collection_dataset_attrs['extra_files_path']
                 if extra_files_path:
