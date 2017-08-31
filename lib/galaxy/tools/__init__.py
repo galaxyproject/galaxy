@@ -473,18 +473,6 @@ class Tool(object, Dictifiable):
         return None
 
     @property
-    def produces_collections_of_unknown_type(self):
-
-        def output_is_dynamic_collection(output):
-            if not output.collection:
-                return False
-            if output.structure.collection_type:
-                return False
-            return True
-
-        return any(map(output_is_dynamic_collection, self.outputs.values()))
-
-    @property
     def produces_collections_with_unknown_structure(self):
 
         def output_is_dynamic(output):
@@ -1190,10 +1178,6 @@ class Tool(object, Dictifiable):
         # This is probably the best bet for detecting external web tools
         # right now
         if self.tool_type.startswith('data_source'):
-            return False
-
-        if self.produces_collections_of_unknown_type:
-            # Getting there...
             return False
 
         if hasattr(tool_source, "root"):
