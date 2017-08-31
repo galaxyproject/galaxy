@@ -50,6 +50,34 @@ MIGRATED_TOOL_PANEL_CONFIG = 'config/migrated_tools_conf.xml'
 INSTALLED_TOOL_PANEL_CONFIGS = [
     os.environ.get('GALAXY_TEST_SHED_TOOL_CONF', 'config/shed_tool_conf.xml')
 ]
+LOGGING_CONFIG = {
+    'version': 1,
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'galaxy': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': 0,
+            'qualname': 'galaxy',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'generic',
+            'level': 'DEBUG',
+            'stream': 'ext://sys.stderr',
+        },
+    },
+    'formatters': {
+        'generic': {
+            'format': '%(name)s %(levelname)-5.5s %(asctime)s [p:%(process)s] [%(threadName)s] %(message)s'
+        },
+    },
+}
 
 DEFAULT_LOCALES = "en"
 
@@ -116,6 +144,7 @@ def setup_galaxy_config(
     shed_tool_conf=None,
     datatypes_conf=None,
     update_integrated_tool_panel=False,
+    log_format=None,
 ):
     """Setup environment and build config for test Galaxy instance."""
     if not os.path.exists(tmpdir):
@@ -217,6 +246,9 @@ def setup_galaxy_config(
         # Used by shed's twill dependency stuff - todo read from
         # Galaxy's config API.
         os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir
+    if log_format:
+        config['logging'] = LOGGING_CONFIG.copy()
+        config['logging']['formatters']['generic']['format'] = log_format
     return config
 
 
@@ -746,6 +778,13 @@ class GalaxyTestDriver(TestDriver):
                 use_uwsgi = True
         self.use_uwsgi = use_uwsgi
 
+        # Allow controlling the log format
+        log_format = os.environ.get('GALAXY_TEST_LOG_FORMAT', None)
+        if not log_format and use_uwsgi:
+            log_format = "%(name)s %(levelname)-5.5s %(asctime)s " \
+                         "[p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] " \
+                         "[%(threadName)s] %(message)s"
+
         self.galaxy_test_tmp_dir = get_galaxy_test_tmp_dir()
         self.temp_directories.append(self.galaxy_test_tmp_dir)
 
@@ -776,6 +815,7 @@ class GalaxyTestDriver(TestDriver):
                     default_install_db_merged=True,
                     default_tool_conf=default_tool_conf,
                     datatypes_conf=datatypes_conf_override,
+                    log_format=log_format
                 )
                 galaxy_config = setup_galaxy_config(
                     galaxy_db_path,
