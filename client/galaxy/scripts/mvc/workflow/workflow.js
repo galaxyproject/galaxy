@@ -5,24 +5,24 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
     var WorkflowItemView = Backbone.View.extend({
         tagName: 'tr', // name of (orphan) root tag in this.el
         initialize: function(){
-            _.bindAll(this, 'render', 'render_row', 'render_tag_editor', '_templateActions', 'model_remove', 'copy_workflow'); // every function that uses 'this' as the current object should be in here
+            _.bindAll(this, 'render', '_rowTemplate', 'renderTagEditor', '_templateActions', 'removeWorkflow', 'copyWorkflow'); // every function that uses 'this' as the current object should be in here
             mod_toastr.options.timeOut = 1500;
             mod_toastr.options.positionClass = "toast-top-left";
         },
 
         events: {
-            'click #show-in-tool-panel': 'show_in_tool_panel',
-            'click #delete-workflow'   : 'model_remove',
-            'click #rename-workflow'   : 'rename_workflow',
-            'click #copy-workflow'     : 'copy_workflow',
+            'click #show-in-tool-panel': 'showInToolPanel',
+            'click #delete-workflow'   : 'removeWorkflow',
+            'click #rename-workflow'   : 'renameWorkflow',
+            'click #copy-workflow'     : 'copyWorkflow',
         },
 
         render: function(){
-            $(this.el).html(this.render_row());
-            return this; // for chainable calls, like .render().el
+            $(this.el).html(this._rowTemplate());
+            return this;
         },
 
-        show_in_tool_panel: function(){
+        showInToolPanel: function(){
             this.model.set('show_in_tool_panel', !this.model.get('show_in_tool_panel'));
             this.model.save();
             // This reloads the whole page, so that the workflow appears in the tool panel.
@@ -30,20 +30,19 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
             window.location = Galaxy.root + 'workflow';
         },
 
-        model_remove: function(){
-            var wf_name = this.model.get('name');
-            if (confirm( "Are you sure you want to delete workflow '" + wf_name + "'?" )) {
+        removeWorkflow: function(){
+            var wfName = this.model.get('name');
+            if (confirm( "Are you sure you want to delete workflow '" + wfName + "'?" )) {
                 this.model.destroy({
                     success: function() {
-
-                        mod_toastr.success("Successfully deleted workflow '" + wf_name + "'");
+                        mod_toastr.success("Successfully deleted workflow '" + wfName + "'");
                         }
                 });
                 this.remove();
             };
         },
 
-        rename_workflow: function(){
+        renameWorkflow: function(){
             var oldName = this.model.get('name');
             var newName = prompt("Enter a new Name for workflow '" + oldName + "'", oldName );
             if (newName) {
@@ -57,17 +56,17 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
             }
         },
 
-        copy_workflow: function(){
+        copyWorkflow: function(){
             self = this;
             var oldName = this.model.get('name');
-            $.getJSON(this.model.urlRoot + '/' + this.model.id + '/download', function(wf_json) {
+            $.getJSON(this.model.urlRoot + '/' + this.model.id + '/download', function(wfJson) {
                 var newName = 'Copy of ' + oldName;
-                var current_owner = self.model.get('owner');
-                if (current_owner != Galaxy.user.attributes.username) {
-                    newName += ' shared by user ' + current_owner;
+                var currentOwner = self.model.get('owner');
+                if (currentOwner != Galaxy.user.attributes.username) {
+                    newName += ' shared by user ' + currentOwner;
                 }
-                wf_json.name = newName;
-                self.collection.create(wf_json, { at: 0,
+                wfJson.name = newName;
+                self.collection.create(wfJson, { at: 0,
                                                   wait: true,
                                                   success: function() {
                                                       mod_toastr.success("Successfully copied workflow '" + oldName + "' to '" + newName + "'")
@@ -76,10 +75,10 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
             })
         },
 
-        render_row: function() {
-            var show_in_tool_panel = this.model.get("show_in_tool_panel");
-            var wf_id = this.model.id;
-            var checkbox_html = '<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" '+ ( show_in_tool_panel ? 'checked="' + show_in_tool_panel + '"' : "" ) +' value="' + wf_id + '">';
+        _rowTemplate: function() {
+            var show = this.model.get("show_in_tool_panel");
+            var wfId = this.model.id;
+            var checkboxHtml = '<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" '+ ( show ? 'checked="' + show + '"' : "" ) +' value="' + wfId + '">';
             var trHtml =  '<td>' +
                              '<div class="dropdown">' +
                                  '<button class="menubutton" type="button" data-toggle="dropdown">' +
@@ -88,21 +87,21 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
                                  this._templateActions( ) +
                              '</div>' +
                           '</td>' +
-                          '<td><span>' + '<div class="' + wf_id + ' tags-display"></div>' + '</td>' +
+                          '<td><span>' + '<div class="' + wfId + ' tags-display"></div>' + '</td>' +
                           '<td>' + ( this.model.get('owner') === Galaxy.user.attributes.username ? "You" : this.model.get('owner') ) +'</span></td>' +
                           '<td>' + this.model.get("number_of_steps") + '</td>' +
                           '<td>' + ( this.model.get("published") ? "Yes" : "No" ) + '</td>' +
-                          '<td>'+ checkbox_html + '</td>';
+                          '<td>'+ checkboxHtml + '</td>';
             return trHtml;
         },
 
-        render_tag_editor: function(){
-            var tag_editor = new TAGS.TagsEditor({
+        renderTagEditor: function(){
+            var TagEditor = new TAGS.TagsEditor({
             model           : this.model,
             el              : $.find( '.' + this.model.id + '.tags-display' ),
             workflow_mode   : true });
-            tag_editor.toggle( true );
-            tag_editor.render();
+            TagEditor.toggle( true );
+            TagEditor.render();
         },
 
         /** Template for user actions for workflows */
@@ -135,12 +134,10 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
 
         initialize: function() {
             this.setElement( '<div/>' );
-            _.bindAll(this, 'adjust_actiondropdown')
+            _.bindAll(this, 'adjustActiondropdown')
             this.collection = new WORKFLOWS.WorkflowCollection();
-            // this.collection.comparator = 'number_of_steps';
-            // this.collection.on('sort', this.render, this);
-            this.collection.bind('add', this.appendItem); // collection event binder
-            this.collection.on('sync', this.render, this);  // hack to call
+            this.collection.bind('add', this.appendItem);
+            this.collection.on('sync', this.render, this);
             this.render();
         },
 
@@ -196,16 +193,17 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
             // Add workflow header
             var header = this._templateHeader();
             // Add the actions buttons
-            var template_actions = this._templateActionButtons();
-            var table_template = this._templateWorkflowTable();
-            this.$el.html( header + template_actions + table_template);
+            var templateActions = this._templateActionButtons();
+            var tableTemplate = this._templateWorkflowTable();
+            this.$el.html( header + templateActions + tableTemplate);
             var self = this;
             _(this.collection.models).each(function(item){ // in case collection is not empty
                 self.appendItem(item);
+                self.confirmDelete(item);
             }, this);
-            var min_query_length = 3;
-            this.search_workflow( this.$( '.search-wf' ), this.$( '.workflow-search tr' ), min_query_length );
-            this.adjust_actiondropdown();
+            var minQueryLength = 3;
+            this.searchWorkflow( this.$( '.search-wf' ), this.$( '.workflow-search tr' ), minQueryLength );
+            this.adjustActiondropdown();
             return this;
         },
 
@@ -215,19 +213,19 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
                 collection: this.collection,
             });
             $( '.workflow-search' ).append(workflowItemView.render().el);
-            workflowItemView.render_tag_editor();
+            workflowItemView.renderTagEditor();
         },
 
         /** Add confirm box before removing/unsharing workflow */
-        confirm_delete: function( workflow ) {
+        confirmDelete: function( workflow ) {
             var $el_shared_wf_link = this.$( '.link-confirm-shared-' + workflow.id );
             $el_shared_wf_link.click( function() {
-                return confirm( "Are you sure you want to remove the shared workflow '" + workflow.name + "'?" );
+                return confirm( "Are you sure you want to remove the shared workflow '" + workflow.attributes.name + "'?" );
             });
         },
 
         /** Implement client side workflow search/filtering */
-        search_workflow: function( $el_searchinput, $el_tabletr, min_querylen ) {
+        searchWorkflow: function( $el_searchinput, $el_tabletr, min_querylen ) {
             $el_searchinput.on( 'keyup', function () {
                 var query = $( this ).val();
                 // Filter when query is at least 3 characters
@@ -249,7 +247,7 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
         },
 
         /** Ajust the position of dropdown with respect to table */
-        adjust_actiondropdown: function( ) {
+        adjustActiondropdown: function( ) {
             $(this.el).on( 'show.bs.dropdown', function () {
                 $(this.el).css( "overflow", "inherit" );
             });
