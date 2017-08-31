@@ -47,7 +47,7 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
             var newName = prompt("Enter a new Name for workflow '" + oldName + "'", oldName );
             if (newName) {
                 this.model.save(
-                    { 'name': newname },
+                    { 'name': newName },
                     { success: function() {
                         mod_toastr.success("Successfully renamed workflow '" + oldName + "' to '" + newName + "'")
                     }
@@ -70,8 +70,16 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
                                                   wait: true,
                                                   success: function() {
                                                       mod_toastr.success("Successfully copied workflow '" + oldName + "' to '" + newName + "'")
+                                                  },
+                                                  error : function(err) {
+                                                      console.log('error callback');
+                                                      // this error message for dev only
+                                                      alert('There was an error. See console for details');
+                                                      console.log(err);
                                                   }
                 });
+            }).error(function(jqXHR, textStatus, errorThrown) {
+                        mod_toastr.error(jqXHR.responseJSON.err_msg);
             })
         },
 
