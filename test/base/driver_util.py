@@ -7,6 +7,7 @@ import logging
 import os
 import random
 import shutil
+import signal
 import socket
 import struct
 import subprocess
@@ -595,7 +596,9 @@ class UwsgiServerWrapper(ServerWrapper):
         self._p = p
 
     def stop(self):
-        self._p.kill()
+        os.killpg(os.getpgid(self._p.pid), signal.SIGTERM)
+        time.sleep(.1)
+        os.killpg(os.getpgid(self._p.pid), signal.SIGKILL)
 
 
 def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
@@ -633,6 +636,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
         p = subprocess.Popen(
             uwsgi_command,
             cwd=galaxy_root,
+            preexec_fn=os.setsid,
         )
         set_and_wait_for_http_target(prefix, host, port)
         log.info("Test-managed uwsgi web server for %s started at %s:%s" % (name, host, port))
