@@ -14,6 +14,8 @@ HTML_CHECK_LINES = 100
 def check_html(file_path, chunk=None):
     if chunk is None:
         temp = open(file_path, "U")
+    elif hasattr(chunk, "splitlines"):
+        temp = chunk.splitlines()
     else:
         temp = chunk
     regexp1 = re.compile("<A\s+[^>]*HREF[^>]+>", re.I)
@@ -55,7 +57,7 @@ def check_binary(name, file_path=True):
     return is_binary
 
 
-def check_gzip(file_path):
+def check_gzip(file_path, check_content=True):
     # This method returns a tuple of booleans representing ( is_gzipped, is_valid )
     # Make sure we have a gzipped file
     try:
@@ -75,6 +77,10 @@ def check_gzip(file_path):
             return (True, True)
     except:
         return(False, False)
+
+    if not check_content:
+        return (True, True)
+
     CHUNK_SIZE = 2 ** 15  # 32Kb
     gzipped_file = gzip.GzipFile(file_path, mode='rb')
     chunk = gzipped_file.read(CHUNK_SIZE)
@@ -85,7 +91,7 @@ def check_gzip(file_path):
     return (True, True)
 
 
-def check_bz2(file_path):
+def check_bz2(file_path, check_content=True):
     try:
         temp = open(file_path, "U")
         magic_check = temp.read(3)
@@ -94,6 +100,10 @@ def check_bz2(file_path):
             return (False, False)
     except:
         return(False, False)
+
+    if not check_content:
+        return (True, True)
+
     CHUNK_SIZE = 2 ** 15  # reKb
     bzipped_file = bz2.BZ2File(file_path, mode='rb')
     chunk = bzipped_file.read(CHUNK_SIZE)
@@ -111,12 +121,12 @@ def check_zip(file_path):
 
 
 def is_bz2(file_path):
-    is_bz2, is_valid = check_bz2(file_path)
+    is_bz2, is_valid = check_bz2(file_path, check_content=False)
     return is_bz2
 
 
 def is_gzip(file_path):
-    is_gzipped, is_valid = check_gzip(file_path)
+    is_gzipped, is_valid = check_gzip(file_path, check_content=False)
     return is_gzipped
 
 

@@ -72,7 +72,7 @@ def __load_plugins_from_dicts(plugins_dict, configs, extra_kwds):
 
 
 def plugin_source_from_path(path):
-    if path.endswith(".yaml") or path.endswith(".yml"):
+    if path.endswith(".yaml") or path.endswith(".yml") or path.endswith(".yaml.sample") or path.endswith(".yml.sample"):
         return ('dict', __read_yaml(path))
     else:
         return ('xml', ElementTree.parse(path).getroot())

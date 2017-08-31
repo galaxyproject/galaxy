@@ -221,7 +221,7 @@ class ContainerRegistry(object):
         ]
         if self.enable_beta_mulled_containers:
             default_resolvers.extend([
-                CachedMulledDockerContainerResolver(self.app_info),
+                CachedMulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
                 MulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
                 BuildMulledDockerContainerResolver(self.app_info),
                 CachedMulledSingularityContainerResolver(self.app_info),
@@ -536,7 +536,8 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             raise Exception("Cannot containerize command [%s] without defined working directory." % working_directory)
 
         volumes_raw = self._expand_volume_str(self.destination_info.get("singularity_volumes", "$defaults"))
-        volumes = docker_util.DockerVolume.volumes_from_str(volumes_raw)
+        preprocessed_volumes_str = preprocess_volumes(volumes_raw, self.container_type)
+        volumes = docker_util.DockerVolume.volumes_from_str(preprocessed_volumes_str)
 
         singularity_target_kwds = dict(
             singularity_cmd=prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),

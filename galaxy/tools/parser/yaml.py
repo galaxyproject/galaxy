@@ -113,6 +113,7 @@ class YamlToolSource(ToolSource):
         output.format = output_dict.get("format", "data")
         output.change_format = []
         output.format_source = output_dict.get("format_source", None)
+        output.default_identifier_source = output_dict.get("default_identifier_source", None)
         output.metadata_source = output_dict.get("metadata_source", "")
         output.parent = output_dict.get("parent", None)
         output.label = output_dict.get("label", None)
