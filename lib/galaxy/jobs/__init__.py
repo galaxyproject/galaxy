@@ -1751,6 +1751,7 @@ class JobWrapper(object, HasResourceParameters):
 
     def change_ownership_for_run(self):
         job = self.get_job()
+        log.debug( '(%s) change_ownership_for_run' % ( job.id, ) )
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
         if external_chown_script and job.user is not None:
             try:
@@ -1761,6 +1762,7 @@ class JobWrapper(object, HasResourceParameters):
 
     def reclaim_ownership(self):
         job = self.get_job()
+        log.debug( '(%s) reclaim_ownership' % ( job.id, ) )
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
         if external_chown_script and job.user is not None:
             self._change_ownership(self.galaxy_system_pwent[0], str(self.galaxy_system_pwent[3]))
