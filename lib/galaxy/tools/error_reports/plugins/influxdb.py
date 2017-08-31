@@ -54,6 +54,7 @@ class InfluxDBPlugin(ErrorPlugin):
                 'tool_id': unicodify(job.tool_id),
                 'tool_version': unicodify(job.tool_version),
                 'tool_xml': unicodify(tool.config_file) if tool else None,
+                'destination_id': unicodify(job.destination_id),
                 'handler': unicodify(job.handler),
             }
         }])
