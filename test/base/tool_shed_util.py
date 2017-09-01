@@ -1,7 +1,7 @@
 import logging
 import os
 
-from galaxy.util import parse_xml, galaxy_root_path
+from galaxy.util import galaxy_root_path, parse_xml
 
 log = logging.getLogger(__name__)
 
