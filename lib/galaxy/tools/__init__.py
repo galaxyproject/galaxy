@@ -53,7 +53,8 @@ from galaxy.tools.parameters.basic import (
     DataToolParameter,
     HiddenToolParameter,
     SelectToolParameter,
-    ToolParameter
+    ToolParameter,
+    workflow_building_modes,
 )
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
@@ -419,6 +420,7 @@ class Tool(object, Dictifiable):
         self.repository_owner = None
         self.changeset_revision = None
         self.installed_changeset_revision = None
+        self.sharable_url = None
         # The tool.id value will be the value of guid, but we'll keep the
         # guid attribute since it is useful to have.
         self.guid = guid
@@ -1091,6 +1093,7 @@ class Tool(object, Dictifiable):
                     self.repository_owner = tool_shed_repository.owner
                     self.changeset_revision = tool_shed_repository.changeset_revision
                     self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+                    self.sharable_url = tool_shed_repository.get_sharable_url(self.app)
 
     @property
     def help(self):
@@ -1786,17 +1789,19 @@ class Tool(object, Dictifiable):
         """
         history_id = kwd.get('history_id', None)
         history = None
-        try:
-            if history_id is not None:
-                history = self.history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
-            else:
-                history = trans.get_history()
-            if history is None and job is not None:
-                history = self.history_manager.get_owned(job.history.id, trans.user, current_history=trans.history)
-            if history is None:
-                raise exceptions.MessageException('History unavailable. Please specify a valid history id')
-        except Exception as e:
-            raise exceptions.MessageException('[history_id=%s] Failed to retrieve history. %s.' % (history_id, str(e)))
+        if workflow_building_mode is workflow_building_modes.USE_HISTORY or workflow_building_mode is workflow_building_modes.DISABLED:
+            # We don't need a history when exporting a workflow for the workflow editor or when downloading a workflow
+            try:
+                if history_id is not None:
+                    history = self.history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
+                else:
+                    history = trans.get_history()
+                if history is None and job is not None:
+                    history = self.history_manager.get_owned(job.history.id, trans.user, current_history=trans.history)
+                if history is None:
+                    raise exceptions.MessageException('History unavailable. Please specify a valid history id')
+            except Exception as e:
+                raise exceptions.MessageException('[history_id=%s] Failed to retrieve history. %s.' % (history_id, str(e)))
 
         # build request context
         request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_building_mode)
@@ -1852,7 +1857,7 @@ class Tool(object, Dictifiable):
             'help'          : tool_help,
             'citations'     : bool(self.citations),
             'biostar_url'   : self.app.config.biostar_url,
-            'sharable_url'  : self.tool_shed_repository.get_sharable_url(self.app) if self.tool_shed_repository else None,
+            'sharable_url'  : self.sharable_url,
             'message'       : tool_message,
             'warnings'      : tool_warnings,
             'versions'      : tool_versions,
@@ -1861,7 +1866,7 @@ class Tool(object, Dictifiable):
             'state_inputs'  : params_to_strings(self.inputs, state_inputs, self.app),
             'job_id'        : trans.security.encode_id(job.id) if job else None,
             'job_remap'     : self._get_job_remap(job),
-            'history_id'    : trans.security.encode_id(history.id),
+            'history_id'    : trans.security.encode_id(history.id) if history else None,
             'display'       : self.display_interface,
             'action'        : url_for(self.action),
             'method'        : self.method,
@@ -2002,7 +2007,7 @@ class Tool(object, Dictifiable):
                         else:
                             message += 'You can re-run the job with this tool version, which is a different version of the original tool.'
                 else:
-                    new_tool_shed_url = '%s/%s/' % (tool.tool_shed_repository.get_sharable_url(tool.app), tool.tool_shed_repository.changeset_revision)
+                    new_tool_shed_url = '%s/%s/' % (tool.sharable_url, tool.changeset_revision)
                     old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_id.split('/repos/')[0])
                     old_tool_shed_url = '%s/view/%s/%s/' % (old_tool_shed_url, tool.repository_owner, tool.repository_name)
                     message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available.  ' % (old_tool_shed_url, tool_id, tool_version)
