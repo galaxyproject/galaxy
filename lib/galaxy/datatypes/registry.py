@@ -73,6 +73,8 @@ class Registry(object):
         self.datatype_elems = []
         self.sniffer_elems = []
         self.xml_filename = None
+        self._edam_formats_mapping = None
+        self._edam_data_mapping = None
         # Build sites
         self.build_sites = {}
         self.display_sites = {}
@@ -853,15 +855,17 @@ class Registry(object):
     def edam_formats(self):
         """
         """
-        mapping = dict((k, v.edam_format) for k, v in self.datatypes_by_extension.items())
-        return mapping
+        if not self._edam_formats_mapping:
+            self._edam_formats_mapping = dict((k, v.edam_format) for k, v in self.datatypes_by_extension.items())
+        return self._edam_formats_mapping
 
     @property
     def edam_data(self):
         """
         """
-        mapping = dict((k, v.edam_data) for k, v in self.datatypes_by_extension.items())
-        return mapping
+        if not self._edam_data_mapping:
+            self._edam_data_mapping = dict((k, v.edam_data) for k, v in self.datatypes_by_extension.items())
+        return self._edam_data_mapping
 
     @property
     def integrated_datatypes_configs(self):

@@ -28,7 +28,7 @@ class NullTourCallback(object):
         pass
 
 
-def retry_call_during_transitions(f, attempts=5, sleep=.1):
+def retry_call_during_transitions(f, attempts=5, sleep=.1, exception_check=exception_indicates_stale_element):
     previous_attempts = 0
     while True:
         try:
@@ -37,18 +37,18 @@ def retry_call_during_transitions(f, attempts=5, sleep=.1):
             if previous_attempts > attempts:
                 raise
 
-            if not exception_indicates_stale_element(e):
+            if not exception_check(e):
                 raise
 
             time.sleep(sleep)
             previous_attempts += 1
 
 
-def retry_during_transitions(f, attempts=5, sleep=.1):
+def retry_during_transitions(f, attempts=5, sleep=.1, exception_check=exception_indicates_stale_element):
 
     @wraps(f)
     def _retry(*args, **kwds):
-        retry_call_during_transitions(partial(f, *args, **kwds), attempts=attempts, sleep=sleep)
+        return retry_call_during_transitions(partial(f, *args, **kwds), attempts=attempts, sleep=sleep, exception_check=exception_check)
 
     return _retry
 
@@ -395,12 +395,26 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_table_elements(self):
         self.wait_for_selector_visible("tbody.workflow-search")
-        table_elements = self.driver.find_elements_by_css_selector("tbody.workflow-search > tr")
+        table_elements = self.driver.find_elements_by_css_selector("tbody.workflow-search > tr:not([style*='display: none'])")
         return table_elements
 
+    def workflow_index_table_row(self, workflow_index=0):
+        return self.workflow_index_table_elements()[workflow_index]
+
+    @retry_during_transitions
+    def workflow_index_click_search(self):
+        search_element = self.wait_for_selector_clickable("input.search-wf")
+        search_element.click()
+        return search_element
+
+    def workflow_index_rename(self, new_name, workflow_index=0):
+        self.workflow_index_click_option("Rename", workflow_index=workflow_index)
+        alert = self.driver.switch_to.alert
+        alert.send_keys(new_name)
+        alert.accept()
+
     def workflow_index_click_option(self, option_title, workflow_index=0):
-        table_elements = self.workflow_index_table_elements()
-        workflow_row = table_elements[workflow_index]
+        workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
         workflow_button = workflow_row.find_element_by_css_selector(".menubutton")
         workflow_button.click()
         menu_element = self.wait_for_selector_visible("ul.action-dpd")
@@ -414,6 +428,35 @@ class NavigatesGalaxy(HasDriver):
 
         if not found_option:
             raise AssertionError("Failed to find workflow action option with title [%s]" % option_title)
+
+    def workflow_index_click_tag_display(self, workflow_index=0):
+        workflow_row_element = self.workflow_index_table_row(workflow_index)
+        tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
+        tag_display.click()
+
+    def workflow_index_tags(self, workflow_index=0):
+        workflow_row_element = self.workflow_index_table_row(workflow_index)
+        tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
+        tag_spans = tag_display.find_elements_by_css_selector("span.label")
+        tags = []
+        for tag_span in tag_spans:
+            tags.append(tag_span.text)
+        return tags
+
+    def workflow_sharing_click_publish(self):
+        button = self.wait_for_selector_clickable("input[name='make_accessible_and_publish']")
+        button.click()
+
+    def tagging_add(self, tags, auto_closes=True, parent_selector=""):
+
+        for i, tag in enumerate(tags):
+            if auto_closes or i == 0:
+                tag_area = parent_selector + ".tags-input input[type='text']"
+                tag_area = self.wait_for_selector_clickable(tag_area)
+                tag_area.click()
+
+            tag_area.send_keys(tag)
+            self.send_enter(tag_area)
 
     def workflow_run_submit(self):
         button = self.wait_for_selector(".ui-form-header button")
