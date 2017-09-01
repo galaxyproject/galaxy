@@ -15,10 +15,10 @@ from datetime import datetime
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
     directory_hash_id,
-    safe_relpath,
     string_as_bool,
     umask_fix_perms,
 )
+from galaxy.util.path import safe_relpath
 from galaxy.util.sleeper import Sleeper
 
 from .s3_multipart_upload import multipart_upload

@@ -12,7 +12,8 @@ from sqlalchemy import and_, false
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import web
-from galaxy.util import asbool, build_url, CHUNK_SIZE, safe_relpath
+from galaxy.util import asbool, build_url, CHUNK_SIZE
+from galaxy.util.path import safe_relpath
 from galaxy.util.odict import odict
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.dependencies.repository.relation_builder import RelationBuilder

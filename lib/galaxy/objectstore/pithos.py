@@ -8,9 +8,9 @@ import shutil
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
     directory_hash_id,
-    safe_relpath,
     umask_fix_perms,
 )
+from galaxy.util.path import safe_relpath
 from ..objectstore import ObjectStore
 
 try:

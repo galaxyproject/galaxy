@@ -846,17 +846,21 @@ def string_as_bool_or_none(string):
         return False
 
 
-def listify(item, do_strip=False):
+def listify(item, do_strip=None, strip=False, split=True):
     """
     Make a single item a single item list, or return a list if passed a
-    list.  Passing a None returns an empty list.
+    list.  Splits strings on commas unless split=False, strips whitespace
+    from around comma-split elements if strip=True.  Passing a None returns
+    an empty list.  Passing a tuple returns the tuple.
     """
+    if do_strip is not None and strip is False:
+        strip = do_strip
     if not item:
         return []
-    elif isinstance(item, list):
+    elif isinstance(item, list) or isinstance(item, tuple):
         return item
-    elif isinstance(item, string_types) and item.count(','):
-        if do_strip:
+    elif split and isinstance(item, string_types) and item.count(','):
+        if strip:
             return [token.strip() for token in item.split(',')]
         else:
             return item.split(',')
@@ -1500,22 +1504,6 @@ def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
             if not chunk:
                 break
             f.write(chunk)
-
-
-def safe_relpath(path):
-    """
-    Given what we expect to be a relative path, determine whether the path
-    would exist inside the current directory.
-
-    :type   path:   string
-    :param  path:   a path to check
-    :rtype:         bool
-    :returns:       ``True`` if path is relative and does not reference a path
-        in a parent directory, ``False`` otherwise.
-    """
-    if path.startswith(os.sep) or normpath(path).startswith(os.pardir):
-        return False
-    return True
 
 
 class ExecutionTimer(object):

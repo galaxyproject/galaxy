@@ -1,7 +1,5 @@
 #!/bin/sh
 
-uwsgi_args="--master --pythonpath=lib"
-
 parse_common_args() {
     INITIALIZE_TOOL_DEPENDENCIES=1
     # Pop args meant for common_startup.sh
@@ -21,9 +19,9 @@ parse_common_args() {
                 common_startup_args="$common_startup_args $1"
                 shift
                 ;;
-            --stop-daemon)
-                common_startup_args="$common_startup_args $1"
-                paster_args="$paster_args $1"
+            --stop-daemon|stop)
+                common_startup_args="$common_startup_args --stop-daemon"
+                paster_args="$paster_args --pid-file $PID_FILE --stop-daemon"
                 uwsgi_args="$uwsgi_args --stop $PID_FILE"
                 stop_daemon_arg_set=1
                 shift
@@ -39,8 +37,8 @@ parse_common_args() {
                 daemon_or_restart_arg_set=1
                 shift
                 ;;
-            --daemon)
-                paster_args="$paster_args $1"
+            --daemon|start)
+                paster_args="$paster_args --pid-file $PID_FILE --log-file $LOG_FILE --daemon"
                 # --daemonize2 waits until after the application has loaded
                 # to daemonize, thus it stops if any errors are found
                 uwsgi_args="$uwsgi_args --daemonize2 $LOG_FILE --safe-pidfile $PID_FILE"
@@ -85,25 +83,13 @@ setup_python() {
     python ./scripts/check_python.py || exit 1
 }
 
-find_uwsgi() {
-    # Look for uwsgi
-    if [ -z "$skip_venv" -a -x $GALAXY_VIRTUAL_ENV/bin/uwsgi ]; then
-        UWSGI=$GALAXY_VIRTUAL_ENV/bin/uwsgi
-    elif command -v uwsgi >/dev/null 2>&1; then
-        UWSGI=uwsgi
-    else
-        echo 'ERROR: Could not find uwsgi executable'
-        exit 1
-    fi
-}
-
 find_server() {
     server_config="$1"
-    server_config_style="ini-paste"
+    server_app="$2"
+    arg_getter_args=
     default_webserver="paste"
     case "$server_config" in
-        *.y*ml*)
-            server_config_style="yaml"
+        *.y*ml|''|none)
             default_webserver="uwsgi"  # paste incapable of this
             ;;
     esac
@@ -120,10 +106,12 @@ find_server() {
             echo 'ERROR: Could not find uwsgi executable'
             exit 1
         fi
+        [ "$server_config" != "none" ] && arg_getter_args="-c $server_config"
+        [ -n "$server_app" ] && arg_getter_args="--app $server_app"
         run_server="$UWSGI"
-        server_args="--$server_config_style $server_config $uwsgi_args"
+        server_args="$(python ./scripts/get_uwsgi_args.py $arg_getter_args) $uwsgi_args"
     else
         run_server="python"
-        server_args="./scripts/paster.py serve $server_config $paster_args --pid-file $PID_FILE --log-file $LOG_FILE $paster_args"
+        server_args="./scripts/paster.py serve $server_config $paster_args"
     fi
 }

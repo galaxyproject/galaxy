@@ -4,12 +4,13 @@ Code to support database helper scripts (create_db.py, manage_db.py, etc...).
 import logging
 
 from galaxy.util import listify
+from galaxy.util.path import get_ext
 from galaxy.util.properties import find_config_file, load_app_properties
 
 
 log = logging.getLogger(__name__)
 
-DEFAULT_CONFIG_FILE = 'config/galaxy.ini'
+DEFAULT_CONFIG_NAMES = ['galaxy', 'universe_wsgi']
 DEFAULT_CONFIG_PREFIX = ''
 DEFAULT_DATABASE = 'galaxy'
 
@@ -17,15 +18,13 @@ DATABASE = {
     "galaxy":
         {
             'repo': 'lib/galaxy/model/migrate',
-            'old_config_files': ['universe_wsgi.ini'],
             'default_sqlite_file': './database/universe.sqlite',
             'config_override': 'GALAXY_CONFIG_',
         },
     "tool_shed":
         {
             'repo': 'lib/galaxy/webapps/tool_shed/model/migrate',
-            'config_file': 'config/tool_shed.yml',
-            'old_config_files': ['config/tool_shed.ini', 'tool_shed_wsgi.ini'],
+            'config_names': ['tool_shed', 'tool_shed_wsgi'],
             'default_sqlite_file': './database/community.sqlite',
             'config_override': 'TOOL_SHED_CONFIG_',
             'config_section': 'tool_shed',
@@ -33,7 +32,6 @@ DATABASE = {
     "install":
         {
             'repo': 'lib/galaxy/model/tool_shed_install/migrate',
-            'old_config_files': ['universe_wsgi.ini'],
             'config_prefix': 'install_',
             'default_sqlite_file': './database/install.sqlite',
             'config_override': 'GALAXY_INSTALL_CONFIG_',
@@ -41,14 +39,14 @@ DATABASE = {
 }
 
 
-def read_config_file_arg(argv, default, old_defaults, cwd=None):
-    config_file = None
+def read_config_file_arg(argv, config_names, cwd=None):
     if '-c' in argv:
         pos = argv.index('-c')
         argv.pop(pos)
-        config_file = argv.pop(pos)
-    old_defaults = listify(old_defaults)
-    return find_config_file(default, old_defaults, config_file, cwd=cwd)
+        return argv.pop(pos)
+    if cwd:
+        cwd = [cwd]
+    return find_config_file(config_names, dirs=cwd)
 
 
 def get_config(argv, cwd=None):
@@ -84,14 +82,13 @@ def get_config(argv, cwd=None):
         database = 'galaxy'
     database_defaults = DATABASE[database]
 
-    default = database_defaults.get('config_file', DEFAULT_CONFIG_FILE)
-    old_defaults = database_defaults.get('old_config_files')
-    config_file = read_config_file_arg(argv, default, old_defaults, cwd=cwd)
+    config_names = database_defaults.get('config_names', DEFAULT_CONFIG_NAMES)
+    config_file = read_config_file_arg(argv, config_names, cwd=cwd)
     repo = database_defaults['repo']
     config_prefix = database_defaults.get('config_prefix', DEFAULT_CONFIG_PREFIX)
     config_override = database_defaults.get('config_override', 'GALAXY_CONFIG_')
     default_sqlite_file = database_defaults['default_sqlite_file']
-    if config_file.endswith(".yml") or config_file.endswith(".yml.sample"):
+    if not config_file or get_ext(config_file, ignore='sample') == 'yaml':
         config_section = database_defaults.get('config_section', None)
     else:
         # An .ini file - just let load_app_properties find app:main.

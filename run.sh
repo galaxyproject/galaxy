@@ -1,5 +1,12 @@
 #!/bin/sh
 
+
+# Usage: ./run.sh <start|stop|restart>
+#
+#
+# Description: This script can be used to start or stop the galaxy
+# web application.
+
 cd "$(dirname "$0")"
 
 . ./scripts/common_startup_functions.sh
@@ -16,7 +23,10 @@ then
     . $GALAXY_LOCAL_ENV_FILE
 fi
 
-./scripts/common_startup.sh $common_startup_args || exit 1
+GALAXY_PID=${GALAXY_PID:-galaxy.pid}
+GALAXY_LOG=${GALAXY_LOG:-galaxy.log}
+PID_FILE=$GALAXY_PID
+LOG_FILE=$GALAXY_LOG
 
 parse_common_args $@
 
@@ -41,22 +51,27 @@ if [ -z "$GALAXY_CONFIG_FILE" ]; then
         GALAXY_CONFIG_FILE=universe_wsgi.ini
     elif [ -f config/galaxy.ini ]; then
         GALAXY_CONFIG_FILE=config/galaxy.ini
-    else
+    elif [ -f config/galaxy.yml ]; then
+        GALAXY_CONFIG_FILE=config/galaxy.yml
+    elif [ -f config/galaxy.ini.sample -a -z "$GALAXY_UWSGI" ]; then
         GALAXY_CONFIG_FILE=config/galaxy.ini.sample
     fi
     export GALAXY_CONFIG_FILE
 fi
 
-if [ $INITIALIZE_TOOL_DEPENDENCIES -eq 1 ]; then
-    # Install Conda environment if needed.
-    python ./scripts/manage_tool_dependencies.py -c "$GALAXY_CONFIG_FILE" init_if_needed
+if [ -n "$GALAXY_CONFIG_FILE" ]; then
+    config_file_arg="-c $GALAXY_CONFIG_FILE"
 fi
 
-if [ -n "$GALAXY_UWSGI" ]; then
-    uwsgi_args="$(python ./scripts/get_uwsgi_args.py)"
-    echo "executing: uwsgi $uwsgi_args"
-    uwsgi $uwsgi_args
-elif [ -n "$GALAXY_RUN_ALL" ]; then
+if [ $INITIALIZE_TOOL_DEPENDENCIES -eq 1 ]; then
+    # Install Conda environment if needed.
+    python ./scripts/manage_tool_dependencies.py $config_file_arg init_if_needed
+fi
+
+[ -n "$GALAXY_UWSGI" ] && APP_WEBSERVER='uwsgi'
+find_server ${GALAXY_CONFIG_FILE:-none} galaxy
+
+if [ "$run_server" = "python" -a -n "$GALAXY_RUN_ALL" ]; then
     servers=$(sed -n 's/^\[server:\(.*\)\]/\1/  p' "$GALAXY_CONFIG_FILE" | xargs echo)
     if [ -z "$stop_daemon_arg_set" -a -z "$daemon_or_restart_arg_set" ]; then
         echo "ERROR: \$GALAXY_RUN_ALL cannot be used without the '--daemon', '--stop-daemon' or 'restart' arguments to run.sh"
@@ -86,6 +101,7 @@ elif [ -n "$GALAXY_RUN_ALL" ]; then
         fi
     done
 else
-    # Handle only 1 server, whose name can be specified with --server-name parameter (defaults to "main")
-    python ./scripts/paster.py serve "$GALAXY_CONFIG_FILE" $paster_args
+    echo "executing: $run_server $server_args"
+    # args are properly quoted so use eval
+    eval $run_server $server_args
 fi

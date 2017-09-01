@@ -39,8 +39,6 @@ if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
         GALAXY_REPORTS_CONFIG=config/reports.ini
     elif [ -f config/reports.yml ]; then
         GALAXY_REPORTS_CONFIG=config/reports.yml
-    else
-        GALAXY_REPORTS_CONFIG=config/reports.yml.sample
     fi
     export GALAXY_REPORTS_CONFIG
 fi
@@ -49,5 +47,6 @@ if [ -n "$GALAXY_REPORTS_CONFIG_DIR" ]; then
     python ./scripts/build_universe_config.py "$GALAXY_REPORTS_CONFIG_DIR" "$GALAXY_REPORTS_CONFIG"
 fi
 
-find_server $GALAXY_REPORTS_CONFIG
-$run_server $server_args
+find_server ${GALAXY_REPORTS_CONFIG:-none} reports
+echo "executing: $run_server $server_args"
+eval $run_server $server_args

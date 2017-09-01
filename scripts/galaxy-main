@@ -189,7 +189,6 @@ class GalaxyConfigBuilder(object):
         # Galaxy will attempt to setup logging if loggers is not present in
         # ini config file - this handles that loggers block however if present
         # (the way paste normally would)
-        from galaxy.web.stack import application_stack_log_filter
         if not self.config_file:
             return
         if self.config_is_ini:
@@ -202,8 +201,6 @@ class GalaxyConfigBuilder(object):
                     dict(__file__=config_file, here=os.path.dirname(config_file))
                 )
         root = logging.getLogger()
-        for h in root.handlers:
-            h.addFilter(application_stack_log_filter()())
 
 
 def main():

@@ -25,6 +25,7 @@ from six.moves import shlex_quote
 
 from functional import database_contexts
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
+from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
@@ -51,34 +52,6 @@ MIGRATED_TOOL_PANEL_CONFIG = 'config/migrated_tools_conf.xml'
 INSTALLED_TOOL_PANEL_CONFIGS = [
     os.environ.get('GALAXY_TEST_SHED_TOOL_CONF', 'config/shed_tool_conf.xml')
 ]
-LOGGING_CONFIG = {
-    'version': 1,
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-    'loggers': {
-        'galaxy': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': 0,
-            'qualname': 'galaxy',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'generic',
-            'level': 'DEBUG',
-            'stream': 'ext://sys.stderr',
-        },
-    },
-    'formatters': {
-        'generic': {
-            'format': '%(name)s %(levelname)-5.5s %(asctime)s [p:%(process)s] [%(threadName)s] %(message)s'
-        },
-    },
-}
 
 DEFAULT_LOCALES = "en"
 
@@ -234,6 +207,7 @@ def setup_galaxy_config(
         use_heartbeat=False,
         user_library_import_dir=user_library_import_dir,
         webhooks_dir=TEST_WEBHOOKS_DIR,
+        logging=LOGGING_CONFIG_DEFAULT,
     )
     config.update(database_conf(tmpdir))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
@@ -247,9 +221,6 @@ def setup_galaxy_config(
         # Used by shed's twill dependency stuff - todo read from
         # Galaxy's config API.
         os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir
-    if log_format:
-        config['logging'] = LOGGING_CONFIG.copy()
-        config['logging']['formatters']['generic']['format'] = log_format
     return config
 
 

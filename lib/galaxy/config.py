@@ -28,7 +28,7 @@ from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.web.stack import application_stack_log_filter, get_stack_facts, register_postfork_function
+from galaxy.web.stack import get_stack_facts, register_postfork_function
 from .version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
@@ -77,6 +77,40 @@ PATH_LIST_DEFAULTS = dict(
                       'config/tool_conf.xml.sample,config/shed_tool_conf.xml']
 )
 
+LOGGING_CONFIG_DEFAULT = {
+    'version': 1,
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'galaxy': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': 0,
+            'qualname': 'galaxy',
+        },
+    },
+    'filters': {
+        'stack': {
+            '()': 'galaxy.web.stack.application_stack_log_filter',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'stack',
+            'level': 'DEBUG',
+            'stream': 'ext://sys.stderr',
+            'filters': ['stack'],
+        },
+    },
+    'formatters': {
+        'stack': {
+            '()': 'galaxy.web.stack.application_stack_log_formatter',
+        },
+    },
+}
 
 def resolve_path(path, root):
     """If 'path' is relative make absolute by prepending 'root'"""
@@ -578,7 +612,7 @@ class Configuration(object):
         # This is for testing new library browsing capabilities.
         self.new_lib_browse = string_as_bool(kwargs.get('new_lib_browse', False))
         # Logging configuration with logging.config.configDict:
-        self.logging = kwargs.get('logging', {})
+        self.logging = kwargs.get('logging', None)
         # Error logging with sentry
         self.sentry_dsn = kwargs.get('sentry_dsn', None)
         # Statistics and profiling with statsd
@@ -879,44 +913,21 @@ def configure_logging(config):
     else:
         paste_configures_logging = False
     auto_configure_logging = not paste_configures_logging and string_as_bool(config.get("auto_configure_logging", "True"))
-    if auto_configure_logging and (not hasattr(config, 'logging') or not config.logging):
-        format = config.get("log_format", "%(name)s %(levelname)s %(asctime)s %(message)s")
-        level = logging._levelNames[config.get("log_level", "DEBUG")]
-        destination = config.get("log_destination", "stdout")
-        log.info("Logging at '%s' level to '%s'" % (level, destination))
-        # Set level
-        root.setLevel(level)
-
-        disable_chatty_loggers = string_as_bool(config.get("auto_configure_logging_disable_chatty", "True"))
-        if disable_chatty_loggers:
-            # Turn down paste httpserver logging
-            if level <= logging.DEBUG:
-                for chatty_logger in ["paste.httpserver.ThreadPool", "routes.middleware"]:
-                    logging.getLogger(chatty_logger).setLevel(logging.WARN)
-
-        # Remove old handlers
-        for h in root.handlers[:]:
-            root.removeHandler(h)
-        # Create handler
-        if destination == "stdout":
-            handler = logging.StreamHandler(sys.stdout)
-        else:
-            handler = logging.FileHandler(destination)
-        # Create formatter
-        formatter = logging.Formatter(format)
-        # Hook everything up
-        handler.setFormatter(formatter)
-        root.addHandler(handler)
-    elif auto_configure_logging and config.logging:
+    if auto_configure_logging:
+        logging_conf = config.get('logging', None)
+        if logging_conf is None:
+            # if using the default logging config, honor the log_level setting
+            logging_conf = LOGGING_CONFIG_DEFAULT
+            if config.get('log_level', 'DEBUG') != 'DEBUG':
+                logging_conf['handlers']['console']['level'] = config.get('log_level', 'DEBUG')
         # configure logging with logging dict in config, template *FileHandler handler filenames with the `filename_template` option
-        for name, conf in config.logging['handlers'].items():
+        for name, conf in logging_conf.get('handlers', {}).items():
             if conf['class'].startswith('logging.') and conf['class'].endswith('FileHandler') and 'filename_template' in conf:
+                # FIXME: this seems to be broken because python is claiming double-star doesn't work on Facts, but
+                # Facts is a MutableMapping, which double-star works on, soo...
                 conf['filename'] = conf.pop('filename_template').format(**get_stack_facts(config=config))
-                config.logging['handlers'][name] = conf
-        logging.config.dictConfig(config.logging)
-    for h in root.handlers:
-        h.addFilter(application_stack_log_filter()())
-    # If sentry is configured, also log to it
+                logging_conf['handlers'][name] = conf
+        logging.config.dictConfig(logging_conf)
     if getattr(config, "sentry_dsn", None):
         from raven.handlers.logging import SentryHandler
         sentry_handler = SentryHandler(config.sentry_dsn)

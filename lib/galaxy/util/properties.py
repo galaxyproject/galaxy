@@ -5,42 +5,30 @@ this should be reusable by tool shed and pulsar as well.
 import os
 import os.path
 import sys
+from functools import partial
+from itertools import product, starmap
 
 import yaml
 
-from six import iteritems
+from six import iteritems, string_types
 from six.moves.configparser import ConfigParser
 
 from galaxy.util import listify
+from galaxy.util.path import has_ext, extensions, joinext
 
 
-def find_config_file(default, old_defaults, explicit, cwd=None):
-    old_defaults = listify(old_defaults)
-    if cwd is not None:
-        default = os.path.join(cwd, default)
-        for i in range(len(old_defaults)):
-            old_defaults[i] = os.path.join(cwd, old_defaults[i])
-        if explicit is not None:
-            explicit = os.path.join(cwd, explicit)
-
-    if explicit:
-        if os.path.exists(explicit):
-            config_file = explicit
-        else:
-            raise Exception("Problem determining Galaxy's configuration - the specified configuration file cannot be found.")
-    else:
-        config_file = None
-        if os.path.exists(default):
-            config_file = default
-        if config_file is None:
-            for old_default in old_defaults:
-                if os.path.exists(old_default):
-                    config_file = old_default
-
-        if config_file is None:
-            config_file = default + ".sample"
-
-    return config_file
+def find_config_file(names, exts=None, dirs=None, include_samples=False):
+    found = __find_config_files(
+        names,
+        exts=exts or extensions['yaml'] + extensions['ini'],
+        dirs=dirs or [os.getcwd(), os.path.join(os.getcwd(), 'config')],
+        include_samples=include_samples,
+    )
+    if not found:
+        return None
+    # doesn't really make sense to log here but we should probably generate a warning of some kind if more than one
+    # config is found.
+    return found[0]
 
 
 def load_app_properties(
@@ -57,18 +45,22 @@ def load_app_properties(
         config_section = ini_section
 
     if config_file:
-        if not config_file.endswith(".yml") and not config_file.endswith(".yml.sample"):
+        if not has_ext(config_file, 'yaml', aliases=True, ignore='sample'):
             if config_section is None:
                 config_section = "app:main"
             parser = nice_config_parser(config_file)
-            properties.update(dict(parser.items(config_section)))
+            if parser.has_section(config_section):
+                properties.update(dict(parser.items(config_section)))
+            else:
+                properties.update(parser.defaults())
         else:
             if config_section is None:
                 config_section = "galaxy"
 
             with open(config_file, "r") as f:
                 raw_properties = yaml.load(f)
-            properties = raw_properties[config_section] or {}
+            properties = __default_properties(config_file)
+            properties.update(raw_properties.get(config_section) or {})
 
     override_prefix = "%sOVERRIDE_" % config_prefix
     for key in os.environ:
@@ -84,11 +76,7 @@ def load_app_properties(
 
 
 def nice_config_parser(path):
-    defaults = {
-        'here': os.path.dirname(os.path.abspath(path)),
-        '__file__': os.path.abspath(path)
-    }
-    parser = NicerConfigParser(path, defaults=defaults)
+    parser = NicerConfigParser(path, defaults=__default_properties(path))
     parser.optionxform = str  # Don't lower-case keys
     with open(path) as f:
         parser.read_file(f)
@@ -148,6 +136,33 @@ class NicerConfigParser(ConfigParser):
                 e.args = tuple(args)
                 e.message = args[0]
                 raise
+
+
+def __get_all_configs(dirs, names):
+    return filter(os.path.exists, starmap(os.path.join, product(dirs, names)))
+
+
+def __find_config_files(names, exts=None, dirs=None, include_samples=False):
+    sample_names = []
+    if isinstance(names, string_types):
+        names = [names]
+    if not dirs:
+        dirs = [os.getcwd()]
+    if exts:
+        # add exts to names
+        names = starmap(joinext, product(names, exts))
+    if include_samples:
+        sample_names = map(partial(joinext, ext='sample'), names)
+    # check for all names in each dir before moving to the next dir. could do it the other way around but that makes
+    # less sense to me.
+    return __get_all_configs(dirs, names) or __get_all_configs(dirs, sample_names)
+
+
+def __default_properties(path):
+    return {
+        'here': os.path.dirname(os.path.abspath(path)),
+        '__file__': os.path.abspath(path)
+    }
 
 
 __all__ = ('find_config_file', 'load_app_properties', 'NicerConfigParser')

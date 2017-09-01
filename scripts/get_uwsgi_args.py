@@ -3,49 +3,111 @@ from __future__ import print_function
 import os
 import sys
 
+from six import string_types
+from six.moves import shlex_quote
+
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 from galaxy.script import main_factory
-from galaxy.util.properties import nice_config_parser
+from galaxy.util.path import get_ext
+from galaxy.util.properties import load_app_properties, nice_config_parser
+from galaxy.web.stack import get_app_kwds
 
 
-DESCRIPTION = "Script to determine uWSGI command line arguments."
-COMMAND_TEMPLATE = '{virtualenv} --ini-paste {config_file}{processes}{threads}{http}{pythonpath}{master}{static-map}{paste-logger}{die-on-term}{enable-threads}{py-call-osafterfork}{mule}{farm}'
+DESCRIPTION = "Script to determine uWSGI command line arguments"
+# socket is not an alias for http, but it is assumed that if you configure a socket in your uwsgi config you do not
+# want to run the default http server (or you can configure it yourself)
+ALIASES = {
+    'virtualenv': ('home', 'venv', 'pyhome'),
+    'pythonpath': ('python-path', 'pp'),
+    'http': ('httprouter', 'socket', 'uwsgi-socket', 'suwsgi-socket', 'ssl-socket'),
+}
+DEFAULT_ARGS = {
+    '_all_': ('virtualenv', 'pythonpath', 'master', 'threads', 'http', 'static-map', 'die-on-term', 'enable-threads'),
+    'galaxy': ('py-call-osafterfork', 'mule', 'farm'),
+    'reports': (),
+    'tool_shed': (),
+}
+DEFAULT_PORTS = {
+    'galaxy': 8080,
+    'reports': 9001,
+    'tool_shed': 9009,
+}
 
 
-def _get_uwsgi_args(args, kwargs):
-    config_file = args.config_file or kwargs['__file__']
+def __arg_set(arg, kwargs):
+    if arg in kwargs:
+        return True
+    for alias in ALIASES.get(arg, ()):
+        if alias in kwargs:
+            return True
+    return False
+
+
+def __add_arg(args, arg, value):
+    optarg = '--%s' % arg
+    if isinstance(value, bool):
+        if value is True:
+            args.append(optarg)
+    elif isinstance(value, string_types):
+        # the = in --optarg=value is usually, but not always, optional
+        if value.startswith('='):
+            args.append(shlex_quote(optarg + value))
+        else:
+            args.append(optarg)
+            args.append(shlex_quote(value))
+    else:
+        [__add_arg(args, arg, v) for v in value]
+
+
+def __add_config_file_arg(args, config_file, app):
+    ext = None
+    if config_file:
+        ext = get_ext(config_file)
+    if ext in ('yaml', 'json'):
+        __add_arg(args, ext, config_file)
+    elif ext == 'ini':
+        config = nice_config_parser(config_file)
+        has_logging = config.has_section('loggers')
+        if config.has_section('app:main'):
+            # uWSGI does not have any way to set the app name when loading with paste.deploy:loadapp(), so hardcoding
+            # the name to `main` is fine
+            __add_arg(args, 'ini-paste' if not has_logging else 'ini-paste-logged', config_file)
+            return  # do not add --module
+        else:
+            __add_arg(args, ext, config_file)
+            if has_logging:
+                __add_arg(args, 'paste-logger', True)
+    __add_arg(args, 'module', 'galaxy.webapps.{app}.buildapp:uwsgi_app()'.format(app=app))
+
+
+def _get_uwsgi_args(cliargs, kwargs):
+    # it'd be nice if we didn't have to reparse here but we need things out of more than one section
+    config_file = cliargs.config_file or kwargs.get('__file__')
+    uwsgi_kwargs = load_app_properties(config_file=config_file, config_section='uwsgi')
     handlerct = int(kwargs.get('job_handler_count', 1))
-    config = nice_config_parser(config_file)
-    config_defaults = {
-        'virtualenv': ' --virtualenv {venv}'.format(venv=os.environ.get('VIRTUAL_ENV', './.venv')),
-        'processes': ' --processes 1',
-        'threads': ' --threads 4',
-        'http': ' --http localhost:8080',
-        'pythonpath': ' --pythonpath lib',
-        'master': ' --master',
-        'static-map': (' --static-map /static/style={here}/static/style/blue'
-                       ' --static-map /static={here}/static'.format(here=os.getcwd())),
-        'paste-logger': ' --paste-logger' if config.has_section('formatters') else '',
-        'die-on-term': ' --die-on-term',
-        'enable-threads': ' --enable-threads',
-        'py-call-osafterfork': ' --py-call-osafterfork',
-        'mule': ' --mule=lib/galaxy/main.py' * handlerct,
-        'farm': ' --farm={name}:{mules}'.format(
+    args = []
+    __add_config_file_arg(args, config_file, cliargs.app)
+    defaults = {
+        'virtualenv': os.environ.get('VIRTUAL_ENV', './.venv'),
+        'pythonpath': 'lib',
+        'master': True,
+        'threads': '4',
+        'http': 'localhost:{port}'.format(port=DEFAULT_PORTS[cliargs.app]),
+        'static-map': ('/static/style={here}/static/style/blue'.format(here=os.getcwd()),
+                       '/static={here}/static'.format(here=os.getcwd())),
+        'die-on-term': True,
+        'enable-threads': True,
+        'py-call-osafterfork': True,
+        'mule': ('=lib/galaxy/main.py',) * handlerct,
+        'farm': '={name}:{mules}'.format(
             name=kwargs.get('job_handler_pool_name', 'job-handlers'),
             mules=','.join([str(x) for x in range(1, handlerct + 1)])) if handlerct > 0 else '',
     }
-    if not config.has_section('uwsgi'):
-        format_dict = config_defaults
-    else:
-        format_dict = {}
-        for opt in config_defaults.keys():
-            if config.has_option('uwsgi', opt):
-                format_dict[opt] = ''
-            else:
-                format_dict[opt] = config_defaults[opt]
-    format_dict['config_file'] = config_file
-    print(COMMAND_TEMPLATE.format(**format_dict))
+    for arg in DEFAULT_ARGS['_all_'] + DEFAULT_ARGS[cliargs.app]:
+        if not __arg_set(arg, uwsgi_kwargs):
+            __add_arg(args, arg, defaults[arg])
+    print(' '.join(args))
 
 
 ACTIONS = {

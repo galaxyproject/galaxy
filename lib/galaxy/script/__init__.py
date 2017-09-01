@@ -33,8 +33,9 @@ def main(argv=None):
 
 
 def _app_properties(args):
-    config_file = find_config_file("config/galaxy.ini", "universe_wsgi.ini", args.config_file)
-    app_properties = load_app_properties(ini_file=config_file)
+    # FIXME: you can use galaxy.util.path.extensions for this
+    config_file = args.config_file or find_config_file(args.app)
+    app_properties = load_app_properties(config_file=config_file, config_section=args.config_section)
     return app_properties
 
 
@@ -47,6 +48,10 @@ def _arg_parser():
                         help='action to perform')
     parser.add_argument("-c", "--config-file",
                         default=os.environ.get('GALAXY_CONFIG_FILE', None))
+    parser.add_argument("--config-section",
+                        default=os.environ.get('GALAXY_CONFIG_SECTION', None))
+    parser.add_argument("--app",
+                        default=os.environ.get('GALAXY_APP', 'galaxy'))
     for argument in ARGUMENTS:
         parser.add_argument(*argument[0], **argument[1])
     return parser

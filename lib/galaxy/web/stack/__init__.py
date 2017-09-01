@@ -47,6 +47,7 @@ class ApplicationStack(object):
     prohibited_middleware = frozenset()
     transport_class = ApplicationStackTransport
     log_filter_class = ApplicationStackLogFilter
+    log_format = '%(name)s %(levelname)s %(asctime)s %(message)s'
     # TODO: this belongs in the pool configuration
     server_name_template = '{server_name}'
     default_app_name = 'main'
@@ -56,6 +57,10 @@ class ApplicationStack(object):
     pools = Bunch(
         JOB_HANDLERS='job-handlers',
     )
+
+    @classmethod
+    def log_filter(cls):
+        return cls.log_filter_class()
 
     @classmethod
     def get_app_kwds(cls, config_section, app_name=None, for_paste_app=False):
@@ -150,6 +155,8 @@ class MessageApplicationStack(ApplicationStack):
 class UWSGIApplicationStack(MessageApplicationStack):
     """Interface to the uWSGI application stack. Supports running additional webless Galaxy workers as mules. Mules
     must be farmed to be communicable via uWSGI mule messaging, unfarmed mules are not supported.
+
+    Note that mules will use this as their stack class even though they start with the "webless" loading point.
     """
     name = 'uWSGI'
     prohibited_middleware = frozenset([
@@ -158,42 +165,33 @@ class UWSGIApplicationStack(MessageApplicationStack):
     ])
     transport_class = UWSGIFarmMessageTransport
     log_filter_class = UWSGILogFilter
+    log_format = '%(name)s %(levelname)s %(asctime)s [p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] [%(threadName)s] %(message)s'
     server_name_template = '{server_name}.{server_id}'
 
     postfork_functions = []
 
     @classmethod
-    def get_app_kwds(cls, config_section, app_name=None, for_paste_app=False):
+    def get_app_kwds(cls, config_section, app_name=None):
         kwds = {
             'config_file': None,
             'config_section': config_section,
         }
-        # used by webless mules started under uWSGI
         uwsgi_opt = uwsgi.opt
-        app_section = 'app:%s' % app_name if app_name else 'app:%s' % cls.default_app_name
         # check for --yaml or --json uWSGI config options first
         config_file = uwsgi_opt.get("yaml") or uwsgi_opt.get("json")
-        # legacy, support loading ini uWSGI config without --ini-paste but with the app config under a Paste [app:] section
-        if config_file is None and uwsgi_opt.get("ini"):
-            config_file = uwsgi_opt["ini"]
+        # --ini and --ini-paste don't behave the same way, but this method will only be called by mules if the main
+        # application was loaded with --ini-paste, so we can make some assumptions, most notably, uWSGI does not have
+        # any way to set the app name when loading with paste.deploy:loadapp(), so hardcoding the alternate section
+        # name to `app:main` is fine.
+        if config_file is None and uwsgi_opt.get("ini") or uwsgi_opt.get("ini-paste"):
+            config_file = uwsgi_opt.get("ini") or uwsgi_opt.get("ini-paste")
             parser = nice_config_parser(config_file)
-            if not parser.has_section(config_section) and parser.has_section(app_section):
-                kwds['config_section'] = app_section
-        # if we're getting kwargs for loading by paste, pastedeploy will set them up itself
-        if config_file is None and uwsgi_opt.get("ini-paste") and for_paste_app:
-            return None
+            if not parser.has_section(config_section) and parser.has_section('app:main'):
+                kwds['config_section'] = 'app:main'
         # check for --set galaxy_config_file=<path>, this overrides whatever config file uWSGI was loaded with (which
         # may not actually include a Galaxy config)
         if uwsgi_opt.get("galaxy_config_file"):
             config_file = uwsgi_opt.get("galaxy_config_file")
-        # otherwise, check --ini-paste
-        if config_file is None and uwsgi_opt.get("ini-paste"):
-            config_file = uwsgi_opt["ini-paste"]
-            parser = nice_config_parser(config_file)
-            if not parser.has_section(config_section) and parser.has_section('app:main'):
-                kwds['config_section'] = 'app:main'
-        if config_file is None:
-            return None
         kwds['config_file'] = config_file
         return kwds
 
@@ -319,15 +317,19 @@ def application_stack_instance(app=None, config=None):
 
 
 def application_stack_log_filter():
-    return application_stack_class().log_filter_class
+    return application_stack_class().log_filter_class()
+
+
+def application_stack_log_formatter():
+    return logging.Formatter(fmt=application_stack_class().log_format)
 
 
 def register_postfork_function(f, *args, **kwargs):
     application_stack_class().register_postfork_function(f, *args, **kwargs)
 
 
-def get_app_kwds(config_section, app_name=None, for_paste_app=None):
-    return application_stack_class().get_app_kwds(config_section, app_name=app_name, for_paste_app=for_paste_app)
+def get_app_kwds(config_section, app_name=None):
+    return application_stack_class().get_app_kwds(config_section, app_name=app_name)
 
 
 def get_stack_facts(config=None):
