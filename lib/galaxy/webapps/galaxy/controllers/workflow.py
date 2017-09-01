@@ -20,7 +20,7 @@ from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.tools.parameters.basic import workflow_building_modes
-from galaxy.util import unicodify, FILENAME_VALID_CHARS
+from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
@@ -712,32 +712,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         """
         stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
         return self._workflow_to_dict(trans, stored)
-
-    @web.json_pretty
-    def export_to_file(self, trans, id):
-        """
-        Get the latest Workflow for the StoredWorkflow identified by `id` and
-        encode it as a json string that can be imported back into Galaxy
-
-        This has slightly different information than the above. In particular,
-        it does not attempt to decode forms and build UIs, it just stores
-        the raw state.
-        """
-
-        # Get workflow.
-        stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
-
-        # Stream workflow to file.
-        stored_dict = self._workflow_to_dict(trans, stored)
-        if not stored_dict:
-            # This workflow has a tool that's missing from the distribution
-            trans.response.status = 400
-            return "Workflow cannot be exported due to missing tools."
-        sname = stored.name
-        sname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in sname)[0:150]
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.ga"' % (sname)
-        trans.response.set_content_type('application/galaxy-archive')
-        return stored_dict
 
     @web.expose
     @web.json

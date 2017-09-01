@@ -1271,6 +1271,10 @@ a.action-button {
     }
 }
 
+.menubutton.background-none {
+    background: none;
+}
+
 // A split menu button, the main button has an action, the arrow causes the
 // popup menu to appear
 
@@ -1823,4 +1827,27 @@ div.toolTitleNoSection
 
 .other-options {
     margin-bottom: 2%;
+}
+
+.hidden_description_layer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(200, 200, 200, 0.6);
+  visibility: hidden;
+  opacity: 0;
+  font-size: 2.0em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* transition effect. not necessary */
+  transition: opacity .2s, visibility .2s;
+}
+
+.hidden_description_layer.dragover {
+  visibility: visible;
+  opacity: 1;
 }
