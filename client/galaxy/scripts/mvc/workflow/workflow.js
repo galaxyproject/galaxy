@@ -143,9 +143,9 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
             this.setElement( '<div/>' );
             _.bindAll(this, 'adjustActiondropdown')
             this.collection = new WORKFLOWS.WorkflowCollection();
+            this.collection.fetch().done(this.render());
             this.collection.bind('add', this.appendItem);
             this.collection.on('sync', this.render, this);
-            this.render();
         },
 
         events: {

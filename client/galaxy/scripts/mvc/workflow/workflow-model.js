@@ -31,9 +31,6 @@ var WorkflowCollection = Backbone.Collection.extend({
     model: WorkflowItem,
     url: '/api/workflows',
 
-    initialize: function () {
-        this.fetch();
-    }
   });
 
 //==============================================================================
