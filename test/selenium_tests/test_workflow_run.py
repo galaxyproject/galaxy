@@ -42,6 +42,5 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.workflow_index_open()
         self.workflow_index_click_option("Run")
         time.sleep(.5)
-        with self.main_panel():
-            # Check that this tool form contains a warning about different versions.
-            self.assert_warning_message(contains="different versions")
+        # Check that this tool form contains a warning about different versions.
+        self.assert_warning_message(contains="different versions")
