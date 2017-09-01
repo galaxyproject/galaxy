@@ -181,7 +181,7 @@ class DependencyResolversView(object):
         """
         List index for all active resolvers that have the 'install_dependency' attribute.
         """
-        return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled ]
+        return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled]
 
     @property
     def uninstallable_resolvers(self):

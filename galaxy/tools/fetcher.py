@@ -6,7 +6,7 @@ class ToolLocationFetcher(object):
     def __init__(self):
         self.resolver_classes = self.__resolvers_dict()
 
-    def __resolvers_dict( self ):
+    def __resolvers_dict(self):
         import galaxy.tools.locations
         return plugin_config.plugins_dict(galaxy.tools.locations, 'scheme')
 

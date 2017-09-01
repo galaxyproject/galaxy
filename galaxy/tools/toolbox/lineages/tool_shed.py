@@ -14,6 +14,7 @@ class ToolVersionCache(object):
     inverse, and getting all previous/next tool versions without numerous
     database requests.
     """
+
     def __init__(self, app):
         self.app = app
         self.tool_version_by_id, self.tool_version_by_tool_id = self.get_tool_versions()
@@ -55,30 +56,30 @@ class ToolShedLineage(ToolLineage):
         self._tool_shed_repository = tool_shed_repository
 
     @staticmethod
-    def from_tool( app, tool ):
+    def from_tool(app, tool):
         # Make sure the tool has a tool_version.
-        if not get_installed_tool_version( app, tool.id ):
-            tool_version = ToolVersion( tool_id=tool.id, tool_shed_repository=tool.tool_shed_repository )
-            app.install_model.context.add( tool_version )
+        if not get_installed_tool_version(app, tool.id):
+            tool_version = ToolVersion(tool_id=tool.id, tool_shed_repository=tool.tool_shed_repository)
+            app.install_model.context.add(tool_version)
             app.install_model.context.flush()
             app.tool_version_cache = ToolVersionCache(app)
-        return ToolShedLineage( app, tool.tool_version )
+        return ToolShedLineage(app, tool.tool_version)
 
     @staticmethod
-    def from_tool_id( app, tool_id ):
-        tool_version = get_installed_tool_version( app, tool_id )
+    def from_tool_id(app, tool_id):
+        tool_version = get_installed_tool_version(app, tool_id)
         if tool_version:
-            return ToolShedLineage( app, tool_version )
+            return ToolShedLineage(app, tool_version)
         else:
             return None
 
-    def get_version_ids( self, reverse=False ):
-        tool_version = self.app.install_model.context.query( ToolVersion ).get( self.tool_version_id )
-        result = tool_version.get_version_ids( self.app, reverse=reverse )
+    def get_version_ids(self, reverse=False):
+        tool_version = self.app.install_model.context.query(ToolVersion).get(self.tool_version_id)
+        result = tool_version.get_version_ids(self.app, reverse=reverse)
         return result
 
-    def get_versions( self, reverse=False ):
-        return [ ToolLineageVersion.from_guid(_) for _ in self.get_version_ids( reverse=reverse ) ]
+    def get_versions(self, reverse=False):
+        return [ToolLineageVersion.from_guid(_) for _ in self.get_version_ids(reverse=reverse)]
 
     def to_dict(self):
         tool_shed_repository = self._tool_shed_repository
@@ -91,8 +92,8 @@ class ToolShedLineage(ToolLineage):
         return rval
 
 
-def get_installed_tool_version( app, tool_id ):
+def get_installed_tool_version(app, tool_id):
     return app.tool_version_cache.tool_version_by_tool_id.get(tool_id, None)
 
 
-__all__ = ( "ToolShedLineage", )
+__all__ = ("ToolShedLineage", )

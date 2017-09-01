@@ -201,15 +201,15 @@ class ContainerRegistry(object):
         self.app_info = app_info
         self.container_resolvers = self.__build_container_resolvers(app_info)
 
-    def __build_container_resolvers( self, app_info ):
+    def __build_container_resolvers(self, app_info):
         conf_file = getattr(app_info, 'containers_resolvers_config_file', None)
         if not conf_file:
             return self.__default_containers_resolvers()
-        if not os.path.exists( conf_file ):
-            log.debug( "Unable to find config file '%s'", conf_file)
+        if not os.path.exists(conf_file):
+            log.debug("Unable to find config file '%s'", conf_file)
             return self.__default_containers_resolvers()
-        plugin_source = plugin_config.plugin_source_from_path( conf_file )
-        return self.__parse_resolver_conf_xml( plugin_source )
+        plugin_source = plugin_config.plugin_source_from_path(conf_file)
+        return self.__parse_resolver_conf_xml(plugin_source)
 
     def __parse_resolver_conf_xml(self, plugin_source):
         extra_kwds = {}
@@ -221,7 +221,7 @@ class ContainerRegistry(object):
         ]
         if self.enable_beta_mulled_containers:
             default_resolvers.extend([
-                CachedMulledDockerContainerResolver(self.app_info),
+                CachedMulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
                 MulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
                 BuildMulledDockerContainerResolver(self.app_info),
                 CachedMulledSingularityContainerResolver(self.app_info),
@@ -229,9 +229,9 @@ class ContainerRegistry(object):
             ])
         return default_resolvers
 
-    def __resolvers_dict( self ):
+    def __resolvers_dict(self):
         import galaxy.tools.deps.container_resolvers
-        return plugin_config.plugins_dict( galaxy.tools.deps.container_resolvers, 'resolver_type' )
+        return plugin_config.plugins_dict(galaxy.tools.deps.container_resolvers, 'resolver_type')
 
     def find_best_container_description(self, enabled_container_types, tool_info):
         """Yield best container description of supplied types matching tool info."""
@@ -298,7 +298,7 @@ class JobInfo(object):
 
 
 @six.add_metaclass(ABCMeta)
-class Container( object ):
+class Container(object):
 
     def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description):
         self.container_id = container_id
@@ -536,7 +536,8 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             raise Exception("Cannot containerize command [%s] without defined working directory." % working_directory)
 
         volumes_raw = self._expand_volume_str(self.destination_info.get("singularity_volumes", "$defaults"))
-        volumes = docker_util.DockerVolume.volumes_from_str(volumes_raw)
+        preprocessed_volumes_str = preprocess_volumes(volumes_raw, self.container_type)
+        volumes = docker_util.DockerVolume.volumes_from_str(preprocessed_volumes_str)
 
         singularity_target_kwds = dict(
             singularity_cmd=prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),
