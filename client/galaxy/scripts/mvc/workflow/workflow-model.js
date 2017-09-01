@@ -6,8 +6,8 @@ define([
 
 var logNamespace = 'workflow';
 //==============================================================================
-/** @class model for tool citations.
- *  @name Citation
+/** @class model for a single workflow.
+ *  @name WorkflowItem
  *  @augments Backbone.Model
  */
 var WorkflowItem = Backbone.Model.extend( baseMVC.LoggableMixin ).extend({
@@ -22,6 +22,11 @@ var WorkflowItem = Backbone.Model.extend( baseMVC.LoggableMixin ).extend({
 
 });
 
+//==============================================================================
+/** @class collection for workflows.
+ *  @name WorkflowCollection
+ *  @augments Backbone.Collection
+ */
 var WorkflowCollection = Backbone.Collection.extend({
     model: WorkflowItem,
     url: '/api/workflows',
