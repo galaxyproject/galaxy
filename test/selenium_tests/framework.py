@@ -26,7 +26,7 @@ from six.moves.urllib.parse import urljoin
 
 from base import populators
 from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address
-from base.twilltestcase import FunctionalTestCase
+from base.testcase import FunctionalTestCase
 from base.workflows_format_2 import (
     ImporterGalaxyInterface,
     convert_and_import_workflow,

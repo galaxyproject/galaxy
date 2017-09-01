@@ -26,7 +26,11 @@ TOOL_TYPES_NO_TEST = (DataManagerTool, )
 
 
 class ToolTestCase(TwillTestCase):
-    """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
+    """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`.
+
+    Ideally this would be FunctionalTestCase instead of a TwillTestCase but the
+    subclass DataManagerToolTestCase requires the use of Twill still.
+    """
 
     def do_it(self, testdef, resource_parameters={}):
         """
@@ -254,6 +258,16 @@ class ToolTestCase(TwillTestCase):
             raise JobOutputsError(found_exceptions, job_stdio)
         else:
             return job_stdio
+
+    def _format_stream(self, output, stream, format):
+        output = output or ''
+        if format:
+            msg = "---------------------- >> begin tool %s << -----------------------\n" % stream
+            msg += output + "\n"
+            msg += "----------------------- >> end tool %s << ------------------------\n" % stream
+        else:
+            msg = output
+        return msg
 
 
 class JobOutputsError(AssertionError):
