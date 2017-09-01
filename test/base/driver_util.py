@@ -608,16 +608,16 @@ class UwsgiServerWrapper(ServerWrapper):
     def wait(self):
         self._r = self._p.wait()
 
-    def failed(self):
-        if self._r is not None:
-            self._t.join()
-            return self._r != 0
-        return False
-
     def stop(self):
-        os.killpg(os.getpgid(self._p.pid), signal.SIGTERM)
+        try:
+            os.killpg(os.getpgid(self._p.pid), signal.SIGTERM)
+        except Exception:
+            pass
         time.sleep(.1)
-        os.killpg(os.getpgid(self._p.pid), signal.SIGKILL)
+        try:
+            os.killpg(os.getpgid(self._p.pid), signal.SIGKILL)
+        except Exception:
+            pass
         self._t.join()
 
 
@@ -634,10 +634,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
         import yaml
         yaml.dump(config, f)
 
-    def attempt_port_bind(port, attempt=0, max_tries=3):
-        if attempt == max_tries:
-            raise Exception("Failed to start uWSGI after %s tries, giving up" % max_tries)
-
+    def attempt_port_bind(port):
         uwsgi_command = [
             "uwsgi",
             "--http",
@@ -665,26 +662,18 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             cwd=galaxy_root,
             preexec_fn=os.setsid,
         )
-        w = UwsgiServerWrapper(
+        return UwsgiServerWrapper(
             p, name, host, port
         )
-        for i in range(3):
-            try:
-                set_and_wait_for_http_target(prefix, host, port, sleep_tries=50)
-                break
-            except:
-                if w.failed():
-                    new = attempt_ports(None).next()
-                    log.warning("Failed to start uWSGI on port [%s], trying again with port [%s]", port, new)
-                    return attempt_port_bind(new, attempt=attempt+1)
-                # otherwise, it's running but not responding yet, attempt contact again
-        else:
-            w.stop()
-            raise Exception("Failed to contact uWSGI, giving up")
-        log.info("Test-managed uwsgi web server for %s started at %s:%s" % (name, host, port))
-        return w
 
-    return attempt_port_bind(attempt_ports(port).next())
+    for port in attempt_ports(port):
+        server_wrapper = attempt_port_bind(port)
+        try:
+            set_and_wait_for_http_target(prefix, host, port, sleep_tries=50)
+            log.info("Test-managed uwsgi web server for %s started at %s:%s" % (name, host, port))
+            return server_wrapper
+        except Exception:
+            server_wrapper.stop()
 
 
 def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
