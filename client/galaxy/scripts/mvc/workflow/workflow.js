@@ -66,19 +66,18 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
                 }
                 wfJson.name = newName;
                 self.collection.create(wfJson, { at: 0,
-                                                  wait: true,
-                                                  success: function() {
-                                                      mod_toastr.success("Successfully copied workflow '" + oldName + "' to '" + newName + "'")
-                                                  },
-                                                  error : function(err) {
-                                                      console.log('error callback');
-                                                      // this error message for dev only
-                                                      alert('There was an error. See console for details');
-                                                      console.log(err);
-                                                  }
+                                                 wait: true,
+                                                 success: function() {
+                                                     mod_toastr.success("Successfully copied workflow '" + oldName + "' to '" + newName + "'")
+                                                 },
+                                                 error : function(model, resp, options) {
+                                                     // signature seems to have changed over the course of backbone dev
+                                                     // see https://github.com/jashkenas/backbone/issues/2606#issuecomment-19289483
+                                                     mod_toastr.error(options.errorThrown);
+                                                 }
                 });
             }).error(function(jqXHR, textStatus, errorThrown) {
-                        mod_toastr.error(jqXHR.responseJSON.err_msg);
+                  mod_toastr.error(jqXHR.responseJSON.err_msg);
             })
         },
 
@@ -190,7 +189,11 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
                             wait: true,
                             success: function() {
                                 mod_toastr.success("Successfully imported workflow '" + wf_json.name + "'")
-                            }});
+                            },
+                            error : function(model, resp, options) {
+                                mod_toastr.error(options.errorThrown);
+                            }
+                        });
                     }
                 };
                 reader.readAsText(f, 'utf-8');
