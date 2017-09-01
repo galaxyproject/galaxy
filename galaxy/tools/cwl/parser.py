@@ -14,13 +14,13 @@ from abc import ABCMeta, abstractmethod
 
 import six
 
-from galaxy.tools.hash import build_tool_hash
 from galaxy.util import listify, safe_makedirs
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 
 from .cwltool_deps import (
     ensure_cwltool_available,
+    pathmapper,
     process,
 )
 from .representation import (
@@ -33,17 +33,18 @@ from .representation import (
 )
 
 from .schema import non_strict_schema_loader, schema_loader
+from .util import SECONDARY_FILES_EXTRA_PREFIX
 
 log = logging.getLogger(__name__)
 
 JOB_JSON_FILE = ".cwl_job.json"
-SECONDARY_FILES_EXTRA_PREFIX = "__secondary_files__"
 
 DOCKER_REQUIREMENT = "DockerRequirement"
 SUPPORTED_TOOL_REQUIREMENTS = [
     "CreateFileRequirement",
     "DockerRequirement",
     "EnvVarRequirement",
+    "InitialWorkDirRequirement",
     "InlineJavascriptRequirement",
     "ShellCommandRequirement",
     "ScatterFeatureRequirement",
@@ -57,12 +58,16 @@ SUPPORTED_WORKFLOW_REQUIREMENTS = SUPPORTED_TOOL_REQUIREMENTS + [
 ]
 
 
-def tool_proxy(tool_path, strict_cwl_validation=True):
+def tool_proxy(tool_path=None, tool_object=None, strict_cwl_validation=True):
     """ Provide a proxy object to cwltool data structures to just
     grab relevant data.
     """
     ensure_cwltool_available()
-    tool = to_cwl_tool_object(tool_path, strict_cwl_validation=strict_cwl_validation)
+    tool = to_cwl_tool_object(
+        tool_path=tool_path,
+        tool_object=tool_object,
+        strict_cwl_validation=strict_cwl_validation
+    )
     return tool
 
 
@@ -96,9 +101,28 @@ def load_job_proxy(job_directory, strict_cwl_validation=True):
 
 
 def to_cwl_tool_object(tool_path=None, tool_object=None, persisted_tool=None, strict_cwl_validation=True):
+    schema_loader = _schema_loader(strict_cwl_validation)
     if tool_path is not None:
-        cwl_tool = _schema_loader(strict_cwl_validation).tool(
+        cwl_tool = schema_loader.tool(
             path=tool_path
+        )
+    elif tool_object is not None:
+        # Allow loading tools from YAML...
+        from ruamel import yaml as ryaml
+        import json
+        as_str = json.dumps(tool_object)
+        tool_object = ryaml.round_trip_load(as_str)
+        from schema_salad import sourceline
+        from schema_salad.ref_resolver import file_uri
+        uri = file_uri(os.getcwd()) + "/"
+        sourceline.add_lc_filename(tool_object, uri)
+        tool_object, _ = schema_loader.raw_document_loader.resolve_all(tool_object, uri)
+        raw_process_reference = schema_loader.raw_process_reference_for_object(
+            tool_object,
+            uri=uri
+        )
+        cwl_tool = schema_loader.tool(
+            raw_process_reference=raw_process_reference,
         )
     else:
         cwl_tool = ToolProxy.from_persistent_representation(persisted_tool)
@@ -198,10 +222,15 @@ class ToolProxy(object):
 
     def galaxy_id(self):
         raw_id = self.id
-        if raw_id:
-            return os.path.splitext(os.path.basename(raw_id))[0]
-        else:
-            return build_tool_hash(self.to_persistent_representation())
+        tool_id = None
+        # don't reduce "search.cwl#index" to search
+        if raw_id and "#" not in raw_id:
+            tool_id = os.path.splitext(os.path.basename(raw_id))[0]
+        if not tool_id:
+            from galaxy.tools.hash import build_tool_hash
+            tool_id = build_tool_hash(self.to_persistent_representation())
+        assert tool_id
+        return tool_id
 
     @abstractmethod
     def input_instances(self):
@@ -334,7 +363,7 @@ class JobProxy(object):
                 self._output_callback,
                 basedir=self._job_directory,
                 select_resources=self._select_resources,
-                outdir=os.path.join(self._job_directory, "cwloutput"),
+                outdir=os.path.join(self._job_directory, "working"),
                 tmpdir=os.path.join(self._job_directory, "cwltmp"),
                 stagedir=os.path.join(self._job_directory, "cwlstagedir"),
                 use_container=False,
@@ -445,8 +474,27 @@ class JobProxy(object):
 
     def stage_files(self):
         cwl_job = self.cwl_job()
+
+        def stageFunc(resolved_path, target_path):
+            log.info("resolving %s to %s" % (resolved_path, target_path))
+            try:
+                os.symlink(resolved_path, target_path)
+            except OSError:
+                pass
+
         if hasattr(cwl_job, "pathmapper"):
-            process.stageFiles(self.cwl_job().pathmapper, os.symlink, ignoreWritable=True)
+            process.stageFiles(cwl_job.pathmapper, stageFunc, ignoreWritable=True, symLink=False)
+
+        if hasattr(cwl_job, "generatefiles"):
+            outdir = os.path.join(self._job_directory, "working")
+            # TODO: Why doesn't cwl_job.generatemapper work?
+            generate_mapper = pathmapper.PathMapper(cwl_job.generatefiles["listing"],
+                                                    outdir, outdir, separateDirs=False)
+            # TODO: figure out what inplace_update should be.
+            inplace_update = getattr(cwl_job, "inplace_update")
+            process.stageFiles(generate_mapper, stageFunc, ignoreWritable=inplace_update, symLink=False)
+            from cwltool import job
+            job.relink_initialworkdir(generate_mapper, outdir, outdir, inplace_update=inplace_update)
         # else: expression tools do not have a path mapper.
 
     @staticmethod
@@ -742,30 +790,30 @@ class InputProxy(object):
     def __init__(self, step_proxy, cwl_input):
         self._cwl_input = cwl_input
         self.step_proxy = step_proxy
+        self.workflow_proxy = step_proxy._workflow_proxy
+
         cwl_input_id = cwl_input["id"]
         cwl_source_id = cwl_input.get("source", None)
         if cwl_source_id is None:
             if "valueFrom" not in cwl_input:
                 raise NotImplementedError("Workflow step input must define a source or a valueFrom value.")
 
-        if cwl_source_id is not None:
-            step_name, input_name = split_step_references(
-                cwl_input_id,
-                multiple=False,
-                workflow_id=step_proxy.cwl_workflow_id
-            )
-            self.step_name = step_name
-            self.input_name = input_name
-        else:
-            self.step_name = None
-            self.input_name = None
+        assert cwl_input_id
+        step_name, input_name = split_step_references(
+            cwl_input_id,
+            multiple=False,
+            workflow_id=step_proxy.cwl_workflow_id
+        )
+        self.step_name = step_name
+        self.input_name = input_name
 
         self.cwl_input_id = cwl_input_id
         self.cwl_source_id = cwl_source_id
 
-        scatter = False
-        if self.input_name in listify(step_proxy._step.tool.get("scatter", [])):
-            scatter = True
+        scatter_inputs = [split_step_references(
+            i, multiple=False, workflow_id=step_proxy.cwl_workflow_id
+        )[1] for i in listify(step_proxy._step.tool.get("scatter", []))]
+        scatter = self.input_name in scatter_inputs
         self.scatter = scatter
 
     def to_dict(self):
@@ -800,6 +848,7 @@ class ToolStepProxy(BaseStepProxy):
         # in-memory tool and reference by the JSONLD ID I think. So workflow
         # proxy should force the loading of a tool.
         tool_proxy = cwl_tool_object_to_proxy(self.tool_references()[0])
+        from galaxy.tools.hash import build_tool_hash
         tool_hash = build_tool_hash(tool_proxy.to_persistent_representation())
 
         # We need to stub out null entries for things getting replaced by
