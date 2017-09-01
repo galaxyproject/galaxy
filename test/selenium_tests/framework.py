@@ -6,16 +6,17 @@ import datetime
 import json
 import os
 import time
+
 import traceback
 
-from functools import wraps
+from functools import partial, wraps
 
 import requests
 
 from galaxy_selenium import (
     driver_factory,
 )
-from galaxy_selenium.navigates_galaxy import NavigatesGalaxy
+from galaxy_selenium.navigates_galaxy import NavigatesGalaxy, retry_during_transitions
 
 try:
     from pyvirtualdisplay import Display
@@ -112,6 +113,9 @@ def selenium_test(f):
     return func_wrapper
 
 
+retry_assertion_during_transitions = partial(retry_during_transitions, exception_check=lambda e: isinstance(e, AssertionError))
+
+
 class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
 
     framework_tool_and_types = True
@@ -149,6 +153,9 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
     def setup_driver_and_session(self):
         self.display = driver_factory.virtual_display_if_enabled(headless_selenium())
         self.driver = get_driver()
+        # New workflow index page does not degrade well to smaller sizes, needed
+        # to increase this.
+        self.driver.set_window_size(1280, 900)
 
         if self.ensure_registered:
             self.register()
