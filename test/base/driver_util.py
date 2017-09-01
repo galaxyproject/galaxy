@@ -408,13 +408,13 @@ def attempt_ports(port):
             port = str(random.randint(8000, 10000))
             yield port
 
-        raise Exception("Unable to open a port between %s and %s to start Galaxy server" % (8000, 1000))
+        raise Exception("Unable to open a port between %s and %s to start Galaxy server" % (8000, 10000))
 
 
 def serve_webapp(webapp, port=None, host=None):
     """Serve the webapp on a recommend port or a free one.
 
-    Return the port the webapp is running one.
+    Return the port the webapp is running on.
     """
     server = None
     for port in attempt_ports(port):
@@ -547,12 +547,12 @@ def host_and_port(prefix, config_object):
     return host, port
 
 
-def set_and_wait_for_http_target(prefix, host, port):
+def set_and_wait_for_http_target(prefix, host, port, sleep_amount=0.1, sleep_tries=150):
     host_env_key = "%s_TEST_HOST" % prefix
     port_env_key = "%s_TEST_PORT" % prefix
     os.environ[host_env_key] = host
     os.environ[port_env_key] = port
-    wait_for_http_server(host, port)
+    wait_for_http_server(host, port, sleep_amount=sleep_amount, sleep_tries=sleep_tries)
 
 
 class ServerWrapper(object):
@@ -598,11 +598,27 @@ class UwsgiServerWrapper(ServerWrapper):
     def __init__(self, p, name, host, port):
         super(UwsgiServerWrapper, self).__init__(name, host, port)
         self._p = p
+        self._r = None
+        self._t = threading.Thread(target=self.wait)
+        self._t.start()
+
+    def __del__(self):
+        self._t.join()
+
+    def wait(self):
+        self._r = self._p.wait()
+
+    def failed(self):
+        if self._r is not None:
+            self._t.join()
+            return self._r != 0
+        return False
 
     def stop(self):
         os.killpg(os.getpgid(self._p.pid), signal.SIGTERM)
         time.sleep(.1)
         os.killpg(os.getpgid(self._p.pid), signal.SIGKILL)
+        self._t.join()
 
 
 def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
@@ -618,7 +634,10 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
         import yaml
         yaml.dump(config, f)
 
-    def attempt_port_bind(port):
+    def attempt_port_bind(port, attempt=0, max_tries=3):
+        if attempt == max_tries:
+            raise Exception("Failed to start uWSGI after %s tries, giving up" % max_tries)
+
         uwsgi_command = [
             "uwsgi",
             "--http",
@@ -646,15 +665,26 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             cwd=galaxy_root,
             preexec_fn=os.setsid,
         )
-        set_and_wait_for_http_target(prefix, host, port)
-        log.info("Test-managed uwsgi web server for %s started at %s:%s" % (name, host, port))
-        return UwsgiServerWrapper(
+        w = UwsgiServerWrapper(
             p, name, host, port
         )
+        for i in range(3):
+            try:
+                set_and_wait_for_http_target(prefix, host, port, sleep_tries=50)
+                break
+            except:
+                if w.failed():
+                    new = attempt_ports(None).next()
+                    log.warning("Failed to start uWSGI on port [%s], trying again with port [%s]", port, new)
+                    return attempt_port_bind(new, attempt=attempt+1)
+                # otherwise, it's running but not responding yet, attempt contact again
+        else:
+            w.stop()
+            raise Exception("Failed to contact uWSGI, giving up")
+        log.info("Test-managed uwsgi web server for %s started at %s:%s" % (name, host, port))
+        return w
 
-    for port in attempt_ports(port):
-        return attempt_port_bind(port)
-        # TODO: catch and determine an exception related to bad port binding and retry.
+    return attempt_port_bind(attempt_ports(port).next())
 
 
 def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
