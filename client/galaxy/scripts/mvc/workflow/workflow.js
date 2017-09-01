@@ -7,7 +7,6 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
         initialize: function(){
             _.bindAll(this, 'render', '_rowTemplate', 'renderTagEditor', '_templateActions', 'removeWorkflow', 'copyWorkflow'); // every function that uses 'this' as the current object should be in here
             mod_toastr.options.timeOut = 1500;
-            mod_toastr.options.positionClass = "toast-top-left";
         },
 
         events: {
