@@ -537,12 +537,24 @@ def get_ip_address(ifname):
     )[20:24])
 
 
-def host_and_port(prefix, config_object):
+def explicitly_configured_host_and_port(prefix, config_object):
     host_env_key = "%s_TEST_HOST" % prefix
     port_env_key = "%s_TEST_PORT" % prefix
+    port_random_env_key = "%s_TEST_PORT_RANDOM" % prefix
     default_web_host = getattr(config_object, "default_web_host", DEFAULT_WEB_HOST)
     host = os.environ.get(host_env_key, default_web_host)
-    port = os.environ.get(port_env_key, None)
+
+    if os.environ.get(port_random_env_key, None) is not None:
+        # Ignore the port environment variable, it wasn't explictly configured.
+        port = None
+    else:
+        port = os.environ.get(port_env_key, None)
+
+    # If an explicit port wasn't assigned for this test or test case, set this
+    # environment variable so we know it is random. We can then randomly re-assign
+    # for new tests.
+    if port is None:
+        os.environ["GALAXY_TEST_PORT_RANDOM"] = "1"
 
     return host, port
 
@@ -624,7 +636,7 @@ class UwsgiServerWrapper(ServerWrapper):
 def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
     name = prefix.lower()
 
-    host, port = host_and_port(prefix, config_object)
+    host, port = explicitly_configured_host_and_port(prefix, config_object)
 
     config = {}
     config["galaxy"] = kwargs.copy()
@@ -685,7 +697,7 @@ def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, con
     """
     name = prefix.lower()
 
-    host, port = host_and_port(prefix, config_object)
+    host, port = explicitly_configured_host_and_port(prefix, config_object)
 
     webapp = webapp_factory(
         kwargs['global_conf'],
