@@ -193,6 +193,6 @@ table output:
          336    0.001    0.000    0.268    0.001 default.py:449(do_execute)
          336    0.262    0.001    0.267    0.001 {method 'execute' of 'psycopg2.extensions.cursor' objects}
 
+As before I hit the `build` endpoint 4 times.
 Both functions have disappeared from the table of the 40 longest running
-function calls, and the total time required for loading the tool form 4
-times has decreased from 9.5 seconds to 2.2 seconds.
+function calls, and the total time required has decreased from 9.5 seconds to 2.2 seconds.
