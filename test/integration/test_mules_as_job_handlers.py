@@ -35,6 +35,7 @@ class _BaseMulesIntegrationTestCase(integration_util.IntegrationTestCase):
         )
 
 
+@integration_util.skip_if_jenkins
 class SingleMuleAsJobHandlersIntegrationTestCase(_BaseMulesIntegrationTestCase):
 
     @classmethod
@@ -46,6 +47,7 @@ class SingleMuleAsJobHandlersIntegrationTestCase(_BaseMulesIntegrationTestCase):
         ])
 
 
+@integration_util.skip_if_jenkins
 class MultipleMulesAsJobHandlersIntegrationTestCase(_BaseMulesIntegrationTestCase):
 
     @classmethod
