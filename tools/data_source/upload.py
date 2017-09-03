@@ -6,6 +6,7 @@
 from __future__ import print_function
 
 import codecs
+import errno
 import gzip
 import os
 import shutil
@@ -79,16 +80,12 @@ def add_file(dataset, registry, json_file, output_path):
     converted_path = None
     stdout = None
     link_data_only = dataset.get('link_data_only', 'copy_files')
-    in_place = dataset.get('in_place', True)
+    run_as_real_user = in_place = dataset.get('in_place', True)
     purge_source = dataset.get('purge_source', True)
     # in_place is True if there is no external chmod in place,
     # however there are other instances where modifications should not occur in_place:
-    # in-place unpacking or editing of line-ending when linking in data or when
-    # importing data from the FTP folder while purge_source is set to false
-    if not purge_source and dataset.get('type') == 'ftp_import':
-        # If we do not purge the source we should not modify it in place.
-        in_place = False
-    if dataset.type in ('server_dir', 'path_paste'):
+    # when a file is added from a directory on the local file system (ftp import folder or any other path).
+    if dataset.type in ('server_dir', 'path_paste', 'ftp_import'):
         in_place = False
     check_content = dataset.get('check_content' , True)
     auto_decompress = dataset.get('auto_decompress', True)
@@ -321,13 +318,16 @@ def add_file(dataset, registry, json_file, output_path):
             return
     if link_data_only == 'copy_files' and converted_path:
         # Move the dataset to its "real" path
-        shutil.copy(converted_path, output_path)
         try:
-            os.remove(converted_path)
-        except Exception:
-            pass
+            shutil.move(converted_path, output_path)
+        except OSError as e:
+            # We may not have permission to remove converted_path
+            if e.errno != errno.EACCES:
+                raise
     elif link_data_only == 'copy_files':
-        if purge_source:
+        if purge_source and not run_as_real_user:
+            # if the upload tool runs as a real user the real user
+            # can't move dataset.path as this path is owned by galaxy.
             shutil.move(dataset.path, output_path)
         else:
             shutil.copy(dataset.path, output_path)
