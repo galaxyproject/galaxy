@@ -75,6 +75,7 @@ class Registry(object):
         self.xml_filename = None
         self._edam_formats_mapping = None
         self._edam_data_mapping = None
+        self._converters_by_datatype = {}
         # Build sites
         self.build_sites = {}
         self.display_sites = {}
@@ -797,16 +798,18 @@ class Registry(object):
 
     def get_converters_by_datatype(self, ext):
         """Returns available converters by source type"""
-        converters = odict()
-        source_datatype = type(self.get_datatype_by_extension(ext))
-        for ext2, converters_dict in self.datatype_converters.items():
-            converter_datatype = type(self.get_datatype_by_extension(ext2))
-            if issubclass(source_datatype, converter_datatype):
-                converters.update(converters_dict)
-        # Ensure ext-level converters are present
-        if ext in self.datatype_converters.keys():
-            converters.update(self.datatype_converters[ext])
-        return converters
+        if ext not in self._converters_by_datatype:
+            converters = odict()
+            source_datatype = type(self.get_datatype_by_extension(ext))
+            for ext2, converters_dict in self.datatype_converters.items():
+                converter_datatype = type(self.get_datatype_by_extension(ext2))
+                if issubclass(source_datatype, converter_datatype):
+                    converters.update(converters_dict)
+            # Ensure ext-level converters are present
+            if ext in self.datatype_converters.keys():
+                converters.update(self.datatype_converters[ext])
+            self._converters_by_datatype[ext] = converters
+        return self._converters_by_datatype[ext]
 
     def get_converter_by_target_type(self, source_ext, target_ext):
         """Returns a converter based on source and target datatypes"""
