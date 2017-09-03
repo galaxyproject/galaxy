@@ -134,10 +134,10 @@ class NavigatesGalaxy(HasDriver):
             assert final_state == "ok", final_state
         return final_state
 
-    def history_panel_wait_for_hid_ok(self, hid, timeout=60):
-        self.history_panel_wait_for_hid_state(hid, 'ok', timeout=timeout)
+    def history_panel_wait_for_hid_ok(self, hid, timeout=60, allowed_force_refreshes=0):
+        self.history_panel_wait_for_hid_state(hid, 'ok', timeout=timeout, allowed_force_refreshes=allowed_force_refreshes)
 
-    def history_panel_wait_for_hid_visible(self, hid, timeout=60):
+    def history_panel_wait_for_hid_visible(self, hid, timeout=60, allowed_force_refreshes=0):
         current_history_id = self.current_history_id()
 
         def history_has_hid(driver):
@@ -148,8 +148,9 @@ class NavigatesGalaxy(HasDriver):
         contents = self.api_get("histories/%s/contents" % current_history_id)
         history_item = [d for d in contents if d["hid"] == hid][0]
         history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
+
         try:
-            self.wait_for_selector_visible(history_item_selector)
+            self.history_item_wait_for_selector(history_item_selector, allowed_force_refreshes)
         except self.TimeoutException as e:
             dataset_elements = self.driver.find_elements_by_css_selector("#current-history-panel .list-items div")
             div_ids = [d.get_attribute('id') for d in dataset_elements]
@@ -157,6 +158,20 @@ class NavigatesGalaxy(HasDriver):
             message = template % (hid, ",".join(div_ids))
             raise self.prepend_timeout_message(e, message)
         return history_item_selector
+
+    def history_item_wait_for_selector(self, history_item_selector, allowed_force_refreshes):
+        attempt = 0
+        while True:
+            try:
+                rval = self.wait_for_selector_visible(history_item_selector)
+                break
+            except self.TimeoutException:
+                if attempt >= allowed_force_refreshes:
+                    raise
+
+            attempt += 1
+            self.history_panel_refresh_click()
+        return rval
 
     def history_panel_wait_for_hid_hidden(self, hid, timeout=60):
         current_history_id = self.current_history_id()
@@ -166,11 +181,11 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_selector_absent(history_item_selector)
         return history_item_selector
 
-    def history_panel_wait_for_hid_state(self, hid, state, timeout=60):
-        history_item_selector = self.history_panel_wait_for_hid_visible(hid, timeout=timeout)
+    def history_panel_wait_for_hid_state(self, hid, state, timeout=60, allowed_force_refreshes=0):
+        history_item_selector = self.history_panel_wait_for_hid_visible(hid, timeout=timeout, allowed_force_refreshes=allowed_force_refreshes)
         history_item_selector_state = "%s.state-%s" % (history_item_selector, state)
         try:
-            self.wait_for_selector_visible(history_item_selector_state)
+            self.history_item_wait_for_selector(history_item_selector_state, allowed_force_refreshes)
         except self.TimeoutException as e:
             history_item = self.driver.find_element_by_css_selector(history_item_selector)
             current_state = "UNKNOWN"
@@ -181,6 +196,7 @@ class NavigatesGalaxy(HasDriver):
             template = "Failed waiting on history item %d state to change to [%s] current state [%s]. "
             message = template % (hid, state, current_state)
             raise self.prepend_timeout_message(e, message)
+        return history_item_selector_state
 
     def get_logged_in_user(self):
         return self.api_get("users/current")
@@ -459,7 +475,7 @@ class NavigatesGalaxy(HasDriver):
             self.send_enter(tag_area)
 
     def workflow_run_submit(self):
-        button = self.wait_for_selector(".ui-form-header button")
+        button = self.wait_for_selector_clickable("button.btn-primary")
         button.click()
 
     def tool_open(self, tool_id):
