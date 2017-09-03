@@ -85,7 +85,7 @@ def add_file(dataset, registry, json_file, output_path):
     # however there are other instances where modifications should not occur in_place:
     # in-place unpacking or editing of line-ending when linking in data or when
     # importing data from the FTP folder while purge_source is set to false
-    if purge_source == False and dataset.get('type') == 'ftp_import':
+    if not purge_source and dataset.get('type') == 'ftp_import':
         # If we do not purge the source we should not modify it in place.
         in_place = False
     if dataset.type in ('server_dir', 'path_paste'):
@@ -288,8 +288,8 @@ def add_file(dataset, registry, json_file, output_path):
                 if check_content and check_html(dataset.path):
                     file_err('The uploaded file contains inappropriate HTML content', dataset, json_file)
                     return
-            if data_type not in ('gzip', 'bz2', 'zip', 'binary'):
-                if link_data_only == 'copy_files':
+            if data_type != 'binary':
+                if link_data_only == 'copy_files' and data_type not in ('gzip', 'bz2', 'zip'):
                     # Convert universal line endings to Posix line endings if to_posix_lines is True
                     # and the data is not binary or gzip-, bz2- or zip-compressed.
                     if dataset.to_posix_lines:
