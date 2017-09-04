@@ -68,7 +68,14 @@ class UnivaJobRunner( DRMAAJobRunner ):
             mem_wasted = extinfo["memory_wasted"]
 
             # check if the output contains indicators for a memory violation
-            memviolation = _check_memory_limit( ajs.error_file )
+            #memviolation = _check_memory_limit( ajs.error_file )
+            memerrors = set(["xrealloc: cannot allocate",
+                 "MemoryError",
+                 "std::bad_alloc",
+                 "java.lang.OutOfMemoryError: Java heap space",
+                 "Out of memory!"])
+            memviolation = util.grep_tail( ajs.error_file, memerrors, MEMORY_LIMIT_SCAN_SIZE )
+            
             log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) memviolation {mv}".format(jobid=ajs.job_id, mv=memviolation))
 
             # check job for run time or memory violation
@@ -552,36 +559,36 @@ class UnivaJobRunner( DRMAAJobRunner ):
             return self.drmaa.JobState.UNDETERMINED
 
 
-def _check_memory_limit( efile_path ):
-    """
-    A very poor implementation of tail, but it doesn't need to be fancy
-    since we are only searching the last 2K
-    checks for an error message that indicates an memory constraint violation
-    returns True if such an indicator is found and False otherwise
-    """
-    # list of error output from different programming languages in case
-    # of memory allocation errors for bash, Python, C++, JAVA, Perl
-    memerrors = set(["xrealloc: cannot allocate",
-                     "MemoryError",
-                     "std::bad_alloc",
-                     "java.lang.OutOfMemoryError: Java heap space",
-                     "Out of memory!"])
-
-    try:
-        log.debug( 'Checking %s for exceeded memory messages from programs', efile_path )
-        with open( efile_path ) as f:
-            if os.path.getsize(efile_path) > MEMORY_LIMIT_SCAN_SIZE:
-                f.seek(-MEMORY_LIMIT_SCAN_SIZE, os.SEEK_END)
-                f.readline()
-            for line in f.readlines():
-                stripped_line = line.strip()
-                for err in memerrors:
-                    if err in stripped_line:
-                        return True
-    except:
-        log.exception('Error reading end of %s:', efile_path)
-
-    return False
+# def _check_memory_limit( efile_path ):
+#     """
+#     A very poor implementation of tail, but it doesn't need to be fancy
+#     since we are only searching the last 2K
+#     checks for an error message that indicates an memory constraint violation
+#     returns True if such an indicator is found and False otherwise
+#     """
+#     # list of error output from different programming languages in case
+#     # of memory allocation errors for bash, Python, C++, JAVA, Perl
+#     memerrors = set(["xrealloc: cannot allocate",
+#                      "MemoryError",
+#                      "std::bad_alloc",
+#                      "java.lang.OutOfMemoryError: Java heap space",
+#                      "Out of memory!"])
+# 
+#     try:
+#         log.debug( 'Checking %s for exceeded memory messages from programs', efile_path )
+#         with open( efile_path ) as f:
+#             if os.path.getsize(efile_path) > MEMORY_LIMIT_SCAN_SIZE:
+#                 f.seek(-MEMORY_LIMIT_SCAN_SIZE, os.SEEK_END)
+#                 f.readline()
+#             for line in f.readlines():
+#                 stripped_line = line.strip()
+#                 for err in memerrors:
+#                     if err in stripped_line:
+#                         return True
+#     except:
+#         log.exception('Error reading end of %s:', efile_path)
+# 
+#     return False
 
 
 # def _parse_mem( mstring ):

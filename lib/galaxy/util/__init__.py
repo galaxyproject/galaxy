@@ -1518,6 +1518,29 @@ def safe_relpath(path):
     return True
 
 
+def grep_tail( path, strings, scan_size ):
+    """
+    check the tail of a file for the appearance of given strings (e.g. error messages) 
+    A very poor implementation of tail, but it doesn't need to be fancy
+    since we are only searching the last bytes
+    path: path to a file
+    strings: some iterable data structure 
+    scan_size: number of bytes to scan
+    returns the found string and False otherwise
+    """
+    try:
+        with open( path ) as f:
+            if os.path.getsize(path) > scan_size:
+                f.seek(-scan_size, os.SEEK_END)
+                f.readline()
+            for line in f.readlines():
+                for s in strings:
+                    if s in line.strip():
+                        return s
+    except IOError:
+        log.exception('Error reading end of %s:', path)
+    return False
+
 class ExecutionTimer(object):
 
     def __init__(self):
