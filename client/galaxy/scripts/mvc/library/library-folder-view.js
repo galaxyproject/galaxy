@@ -37,8 +37,6 @@ var FolderView = Backbone.View.extend({
       success: function() {
         if (that.options.show_permissions){
             that.showPermissions();
-        } else {
-            that.render();
         }
       },
       error: function(model, response){
@@ -49,19 +47,6 @@ var FolderView = Backbone.View.extend({
         }
       }
     });
-  },
-
-  render: function(options){
-    $(".tooltip").remove();
-    this.options = _.extend(this.options, options);
-    var template = this.templateFolder();
-    this.$el.html(template({item: this.model}));
-    $(".peek").html(this.model.get("peek"));
-    $("#center [data-toggle]").tooltip();
-  },
-
-  shareFolder: function(){
-    mod_toastr.info('Feature coming soon.');
   },
 
   goBack: function(){
@@ -165,18 +150,6 @@ var FolderView = Backbone.View.extend({
     return select_options;
   },
 
-  comingSoon: function(){
-    mod_toastr.warning('Feature coming soon.');
-  },
-
-  copyToClipboard: function(){
-    var href = Backbone.history.location.href;
-    if (href.lastIndexOf('/permissions') !== -1){
-      href = href.substr(0, href.lastIndexOf('/permissions'));
-    }
-    window.prompt("Copy to clipboard: Ctrl+C, Enter", href);
-  },
-
   /**
    * Extract the role ids from Select2 elements's 'data'
    */
@@ -204,57 +177,6 @@ var FolderView = Backbone.View.extend({
     .fail(function(){
       mod_toastr.error('An error occurred while attempting to set folder permissions.');
     })
-  },
-
-  templateFolder : function(){
-    return _.template([
-    '<div class="library_style_container">',
-      '<div id="library_toolbar">',
-        '<button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-default toolbtn_modify_dataset primary-button" type="button">',
-          '<span class="fa fa-pencil"/>',
-          '&nbsp;Modify',
-        '</button>',
-        '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions">',
-          '<button data-toggle="tooltip" data-placement="top" title="Manage permissions" class="btn btn-default toolbtn_change_permissions primary-button" type="button">',
-            '<span class="fa fa-group"/>',
-            '&nbsp;Permissions',
-          '</button>',
-        '</a>',
-        '<button data-toggle="tooltip" data-placement="top" title="Share dataset" class="btn btn-default toolbtn-share-dataset primary-button" type="button">',
-          '<span class="fa fa-share"/>',
-          '&nbsp;Share',
-          '</span>',
-        '</button>',
-      '</div>',
-      '<p>',
-        'This dataset is unrestricted so everybody can access it. Just share the URL of this page. ',
-        '<button data-toggle="tooltip" data-placement="top" title="Copy to clipboard" class="btn btn-default btn-copy-link-to-clipboard primary-button" type="button">',
-          '<span class="fa fa-clipboard"/>',
-          '&nbsp;To Clipboard',
-        '</button> ',
-      '</p>',
-      '<div class="dataset_table">',
-        '<table class="grid table table-striped table-condensed">',
-          '<tr>',
-            '<th scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">',
-              'Name',
-            '</th>',
-            '<td>',
-              '<%= _.escape(item.get("name")) %>',
-            '</td>',
-          '</tr>',
-          '<% if (item.get("file_ext")) { %>',
-            '<tr>',
-              '<th scope="row">Data type</th>',
-              '<td>',
-                '<%= _.escape(item.get("file_ext")) %>',
-              '</td>',
-            '</tr>',
-          '<% } %>',
-        '</table>',
-      '</div>',
-    '</div>'
-    ].join(''));
   },
 
   templateFolderPermissions : function(){

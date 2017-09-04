@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 
 
 class WorkflowsManager(object):
-    """ Handle CRUD type operaitons related to workflows. More interesting
+    """ Handle CRUD type operations related to workflows. More interesting
     stuff regarding workflow execution, step sorting, etc... can be found in
     the galaxy.workflow module.
     """

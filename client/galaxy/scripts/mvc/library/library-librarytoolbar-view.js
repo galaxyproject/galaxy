@@ -210,7 +210,7 @@ var LibraryToolbarView = Backbone.View.extend({
                     '<button id="create_new_library_btn" class="primary-button btn-xs" type="button"><span class="fa fa-plus"></span> New Library</button>',
                 '</span>',
               '<% } %>',
-              '<span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki">',
+              '<span class="help-button" data-toggle="tooltip" data-placement="top" title="See this screen annotated">',
                 '<a href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">',
                   '<button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button>',
                 '</a>',

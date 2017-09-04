@@ -101,7 +101,7 @@ lib/galaxy/webapps/galaxy/api/genomes.py
 lib/galaxy/webapps/galaxy/api/histories.py
 lib/galaxy/webapps/galaxy/api/__init__.py
 lib/galaxy/webapps/galaxy/api/jobs.py
-lib/galaxy/webapps/galaxy/api/lda_datasets.py
+lib/galaxy/webapps/galaxy/api/library_datasets.py
 lib/galaxy/webapps/galaxy/api/requests.py
 lib/galaxy/webapps/galaxy/api/roles.py
 lib/galaxy/webapps/galaxy/api/samples.py
