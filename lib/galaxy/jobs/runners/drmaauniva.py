@@ -255,7 +255,8 @@ class UnivaJobRunner( DRMAAJobRunner ):
         # qdel       100     137          user@mail
 
         extinfo["time_wasted"] = _parse_time( qacct["wallclock"] )
-        extinfo["memory_wasted"] = _parse_mem( qacct["maxvmem"] )
+        extinfo["memory_wasted"] = util.size_to_bytes( qacct["maxvmem"] )
+#         extinfo["memory_wasted"] = _parse_mem( qacct["maxvmem"] )
 
         log.debug("DRMAAUniva: ({job_id}) qacct {qacct}".format(job_id=job_id, qacct=qacct))
 
