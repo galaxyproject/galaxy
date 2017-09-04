@@ -11,7 +11,7 @@ import time
 
 # from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
-
+from galaxy import util 
 
 log = logging.getLogger( __name__ )
 
@@ -583,22 +583,22 @@ def _check_memory_limit( efile_path ):
     return False
 
 
-def _parse_mem( mstring ):
-    mem = None
-    m = re.search( "([0-9.]+)([KGM]?)", mstring )
-    if m is not None:
-        mem = float(m.group(1))
-        if m.group(2) == 'K':
-            mem *= 1024
-        elif m.group(2) == 'M':
-            mem *= 1024 * 1024
-        elif m.group(2) == 'G':
-            mem *= 1024 * 1024 * 1024
-        elif m.group(2) == '':
-            pass
-        else:
-            log.error( "DRMAAUniva: unparsable memory spec {spec}".format(spec=mstring) )
-    return mem
+# def _parse_mem( mstring ):
+#     mem = None
+#     m = re.search( "([0-9.]+)([KGM]?)", mstring )
+#     if m is not None:
+#         mem = float(m.group(1))
+#         if m.group(2) == 'K':
+#             mem *= 1024
+#         elif m.group(2) == 'M':
+#             mem *= 1024 * 1024
+#         elif m.group(2) == 'G':
+#             mem *= 1024 * 1024 * 1024
+#         elif m.group(2) == '':
+#             pass
+#         else:
+#             log.error( "DRMAAUniva: unparsable memory spec {spec}".format(spec=mstring) )
+#     return mem
 
 
 def _parse_time( tstring ):
@@ -635,7 +635,8 @@ def _parse_native_specs( job_id, native_spec ):
     # parse memory
     m = re.search( "mem=([0-9.]+[KGM]?)[\s,]*", native_spec )
     if m is not None:
-        mem = _parse_mem( m.group(1) )
+        mem = util.size_to_bytes( m.group(1) )
+        # mem = _parse_mem( m.group(1) )
         if mem is None:
             log.error( "DRMAAUniva: job {job_id} has unparsable memory native spec {spec}".format(job_id=job_id, spec=native_spec) )
     return tme, mem
