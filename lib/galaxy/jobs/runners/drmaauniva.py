@@ -15,7 +15,7 @@ from galaxy.jobs.runners.drmaa import DRMAAJobRunner
 
 log = logging.getLogger( __name__ )
 
-__all__ = ( 'DRMAAUnivaJobRunner', )
+__all__ = ( 'UnivaJobRunner', )
 
 MEMORY_LIMIT_SCAN_SIZE = 1024 * 1024  # 1MB
 
@@ -39,22 +39,22 @@ class DRMAAWaitUnusable( Exception ):
     pass
 
 
-class DRMAAUnivaJobRunner( DRMAAJobRunner ):
-    runner_name = "DRMAAUnivaJobRunner"
+class UnivaJobRunner( DRMAAJobRunner ):
+    runner_name = "UnivaJobRunner"
     # restrict job name length as in the DRMAAJobRunner
     # restrict_job_name_length = 15
 
     def check_watched_item( self, ajs, new_watched ):
         # get state with job_info/qstat
         state = self._get_drmaa_state(ajs.job_id, self.ds, False)
-        logging.debug("DRMAAUnivaJobRunner:check_watched_item ({jobid}) -> state {state}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state]))
+        log.debug("UnivaJobRunner:check_watched_item ({jobid}) -> state {state}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state]))
         return state
 
     def _complete_terminal_job( self, ajs, drmaa_state, **kwargs ):
         extinfo = dict()
         # get state with job_info/qstat + wait/qacct
         state = self._get_drmaa_state(ajs.job_id, self.ds, True, extinfo)
-        logging.debug("DRMAAUnivaJobRunner:_complete_terminal_job ({jobid}) -> state {state} info {info}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state], info=extinfo))
+        log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) -> state {state} info {info}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state], info=extinfo))
 
         # for any job that is finished (regardless of successful or failed) check if there
         # were memory or time deletions or if the job was deleted
@@ -69,10 +69,10 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
 
             # check if the output contains indicators for a memory violation
             memviolation = _check_memory_limit( ajs.error_file )
-            logging.debug("DRMAAUnivaJobRunner:_complete_terminal_job ({jobid}) memviolation {mv}".format(jobid=ajs.job_id, mv=memviolation))
+            log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) memviolation {mv}".format(jobid=ajs.job_id, mv=memviolation))
 
             # check job for run time or memory violation
-            if "deleted" in extinfo and extinfo[ "deleted" ]:
+            if "deleted" in extinfo and extinfo["deleted"]:
                 log.info( '(%s/%s) Job was cancelled (e.g. with qdel)', ajs.job_wrapper.get_id_tag(), ajs.job_id )
                 ajs.fail_message = "This job failed because it was cancelled by an administrator."
                 drmaa_state = self.drmaa.JobState.FAILED
@@ -91,10 +91,10 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             # TODO return True?
             return True  # job was not actually terminal
         else:
-            logging.error( "DRMAAUniva: job {job_id} determined unknown state {state}".format(job_id=ajs.job_id, state=state) )
+            log.error( "DRMAAUniva: job {job_id} determined unknown state {state}".format(job_id=ajs.job_id, state=state) )
             drmaa_state = self.drmaa_job_states.FAILED
         # by default, finish the job with the state from drmaa
-        return super( DRMAAUnivaJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
+        return super( UnivaJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
 
     def _drmaa_state_is_refined( self, statep, staten ):
         """
@@ -113,7 +113,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             self.drmaa.JobState.USER_SUSPENDED: 0x22,
             self.drmaa.JobState.DONE: 0x30,
             self.drmaa.JobState.FAILED: 0x40 }
-        return drmaa_job_state_order[ staten ] > drmaa_job_state_order[ statep ]
+        return drmaa_job_state_order[staten] > drmaa_job_state_order[statep]
 
     def _get_drmaa_state_qstat( self, job_id, extinfo=set()):
         """
@@ -127,7 +127,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         extinfo a set that additional information can be stored in, i.e., "deleted"
         returns the drmaa state
         """
-        logging.debug("DRMAAUnivaJobRunner._get_drmaa_state_qstat ({jobid})".format(jobid=job_id))
+        log.debug("UnivaJobRunner._get_drmaa_state_qstat ({jobid})".format(jobid=job_id))
         # TODO using -u "*" is the simplest way to query the jobs of all users which
         # allows to treat the case where jobs are submitted as real user it would
         # be more efficient to specify the user (or in case that the galaxy user
@@ -146,7 +146,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
                 break
         if state is None:
             state = self.drmaa.JobState.DONE
-        logging.debug("DRMAAUnivaJobRunner._get_drmaa_state_qstat ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
+        log.debug("UnivaJobRunner._get_drmaa_state_qstat ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
         return state
 
     def _get_drmaa_state_qstatj( self, job_id, extinfo ):
@@ -202,7 +202,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         extinfo dict where signal, exit_status, deleted = True, time_wasted, and memory_wasted can be stored
         return state
         '''
-        logging.debug("DRMAAUnivaJobRunner._get_drmaa_state_qacct ({jobid})".format(jobid=job_id))
+        log.debug("UnivaJobRunner._get_drmaa_state_qacct ({jobid})".format(jobid=job_id))
         signals = dict((k, v) for v, k in reversed(sorted(signal.__dict__.items()))
            if v.startswith('SIG') and not v.startswith('SIG_'))
         cmd = ['qacct', '-j', job_id]
@@ -257,17 +257,17 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         extinfo["time_wasted"] = _parse_time( qacct["wallclock"] )
         extinfo["memory_wasted"] = _parse_mem( qacct["maxvmem"] )
 
-        logging.debug("DRMAAUniva: ({job_id}) qacct {qacct}".format(job_id=job_id, qacct=qacct))
+        log.debug("DRMAAUniva: ({job_id}) qacct {qacct}".format(job_id=job_id, qacct=qacct))
 
 #         for q in qacct:
-#             logging.debug("%s : %s"%(q, qacct[q]))
+#             log.debug("%s : %s"%(q, qacct[q]))
 #
         # deleted_by
         # If the job (the array task) has been deleted via qdel, "<username>@<hostname>", else
         # "NONE". If qdel was called multiple times, every invocation is recorded in a comma
         # separated list.
         if "deleted_by" in qacct and qacct["deleted_by"] != "NONE":
-            logging.error( "DRMAAUniva: job {job_id} was aborted by {culprit}".format(job_id=job_id, culprit=qacct["deleted_by"]) )
+            log.error( "DRMAAUniva: job {job_id} was aborted by {culprit}".format(job_id=job_id, culprit=qacct["deleted_by"]) )
             extinfo["deleted"] = True
             return self.drmaa.JobState.FAILED
 
@@ -283,14 +283,14 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         if "exit_status" in qacct:
             qacct["exit_status"] = int(qacct["exit_status"])
             if qacct["exit_status"] < 1:
-                logging.error( "DRMAAUniva: job {job_id} has exit status {status}".format(job_id=job_id, status=qacct["exit_status"]) )
+                log.error( "DRMAAUniva: job {job_id} has exit status {status}".format(job_id=job_id, status=qacct["exit_status"]) )
                 state = self.drmaa.JobState.DONE
             elif 0 < qacct["exit_status"] < 129:
-                logging.error( "DRMAAUniva: job {job_id} has exit status {status}".format(job_id=job_id, status=qacct["exit_status"]) )
+                log.error( "DRMAAUniva: job {job_id} has exit status {status}".format(job_id=job_id, status=qacct["exit_status"]) )
                 extinfo[ 'exit_status' ] = qacct["exit_status"]
                 state = self.drmaa.JobState.FAILED
             else:
-                logging.error( "DRMAAUniva: job {job_id} was killed by signal {signal}".format(job_id=job_id, signal=qacct["exit_status"] - 128) )
+                log.error( "DRMAAUniva: job {job_id} was killed by signal {signal}".format(job_id=job_id, signal=qacct["exit_status"] - 128) )
                 state = self.drmaa.JobState.FAILED
                 extinfo[ "signal" ] = signals[ qacct["exit_status"] - 128 ]
 
@@ -310,9 +310,9 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             elif code in [ 24, 25 ]:
                 state = self.drmaa.JobState.RUNNING
             else:
-                logging.error( "DRMAAUniva: job {job_id} failed with failure {failure}".format(job_id=job_id, failure=qacct["failed"]) )
+                log.error( "DRMAAUniva: job {job_id} failed with failure {failure}".format(job_id=job_id, failure=qacct["failed"]) )
                 state = self.drmaa.JobState.FAILED
-        logging.debug("DRMAAUnivaJobRunner._get_drmaa_state_qacct ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
+        log.debug("UnivaJobRunner._get_drmaa_state_qacct ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
         return state
 
     def _get_drmaa_state_wait( self, job_id, ds, extinfo ):
@@ -326,7 +326,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         ds: drmaa session
         extinfo dict where signal, exit_status, deleted = True, time_wasted, and memory_wasted can be stored
         '''
-        logging.debug("DRMAAUnivaJobRunner._get_drmaa_state_wait ({jobid})".format(jobid=job_id))
+        log.debug("UnivaJobRunner._get_drmaa_state_wait ({jobid})".format(jobid=job_id))
         # experiments
         #            exitStatus coreDump hasExited hasSignal Signal  wasAborted
         # BASH ----------------------------------------------------------------
@@ -357,8 +357,9 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             # Note: drmaa refers to the parent galaxy module which has a global
             # variable drmaa which is the drmaa python library
             rv = ds.session.wait(job_id, self.drmaa.session.Session.TIMEOUT_NO_WAIT)
-        except self.drmaa.errors.DrmaaException as e:
-            # logging.exception("could not determine status of job {jobid} using drmaa.wait error was {error}".format(jobid=job_id, error=str( e )))
+        except self.drmaa.errors.DrmaaException:
+        #except self.drmaa.errors.DrmaaException as e:
+            # log.exception("could not determine status of job {jobid} using drmaa.wait error was {error}".format(jobid=job_id, error=str( e )))
             raise DRMAAWaitUnusable()
 
         # documentation of the variables adapted from the drmaa C library documentation at
@@ -407,9 +408,9 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         extinfo["time_wasted"] = float(rv.resourceUsage['wallclock'])
         extinfo["memory_wasted"] = float(rv.resourceUsage['maxvmem'])
 
-        logging.debug("wait -> \texitStatus {0}\thasCoreDump {1}\thasExited {2}\thasSignal {3}\tjobId {4}\t\tterminatedSignal {5}\twasAborted {6}\tresourceUsage {7}".format(rv.exitStatus, rv.hasCoreDump, rv.hasExited, rv.hasSignal, rv.jobId, rv.terminatedSignal, rv.wasAborted, rv.resourceUsage))
+        log.debug("wait -> \texitStatus {0}\thasCoreDump {1}\thasExited {2}\thasSignal {3}\tjobId {4}\t\tterminatedSignal {5}\twasAborted {6}\tresourceUsage {7}".format(rv.exitStatus, rv.hasCoreDump, rv.hasExited, rv.hasSignal, rv.jobId, rv.terminatedSignal, rv.wasAborted, rv.resourceUsage))
         if rv.wasAborted:
-            logging.error( "DRMAAUniva: job {job_id} was aborted according to wait()".format(job_id=job_id) )
+            log.error( "DRMAAUniva: job {job_id} was aborted according to wait()".format(job_id=job_id) )
             extinfo["deleted"] = True
             return self.drmaa.JobState.FAILED
 
@@ -417,21 +418,21 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         # but also violation of scheduler constraints
         state = self.drmaa.JobState.DONE
         if rv.exitStatus != 0:
-            logging.error( "DRMAAUniva: job {job_id} has exit status {status}".format(job_id=job_id, status=rv.exitStatus) )
+            log.error( "DRMAAUniva: job {job_id} has exit status {status}".format(job_id=job_id, status=rv.exitStatus) )
             extinfo["state"] = self.drmaa.JobState.FAILED
 
         if not rv.hasExited or rv.hasSignal:
             if rv.hasCoreDump != 0:
-                logging.error( "DRMAAUniva: job {job_id} has core dump".format(job_id=job_id) )
+                log.error( "DRMAAUniva: job {job_id} has core dump".format(job_id=job_id) )
                 extinfo["state"] = self.drmaa.JobState.FAILED
             elif len(rv.terminatedSignal) > 0:
-                logging.error( "DRMAAUniva: job {job_id} was kill by signal {signal}".format(job_id=job_id, signal=rv.terminatedSignal) )
+                log.error( "DRMAAUniva: job {job_id} was kill by signal {signal}".format(job_id=job_id, signal=rv.terminatedSignal) )
                 state = self.drmaa.JobState.FAILED
                 extinfo["signal"] = rv.terminatedSignal
             elif rv.wasAborted == 0:
-                logging.error( "DRMAAUniva: job {job_id} has finished in unclear condition".format(job_id=job_id) )
+                log.error( "DRMAAUniva: job {job_id} has finished in unclear condition".format(job_id=job_id) )
                 state = self.drmaa.JobState.FAILED
-        logging.debug("DRMAAUnivaJobRunner._get_drmaa_state_wait ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
+        log.debug("UnivaJobRunner._get_drmaa_state_wait ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
         return state
 
     def _get_drmaa_state(self, job_id, ds, waitqacct, extinfo=dict()):
@@ -441,12 +442,12 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         the function returns the state (one of the drmaa states) and extended
         information in the extinfo dict
         """
-        logging.debug("DRMAAUnivaJobRunner._get_drmaa_state ({jobid}) {qw}".format(jobid=job_id, qw=waitqacct))
+        log.debug("UnivaJobRunner._get_drmaa_state ({jobid}) {qw}".format(jobid=job_id, qw=waitqacct))
         state = self.drmaa.JobState.UNDETERMINED
         # try to get the state with drmaa.job_status (does not work for jobs
         # started as real user) or  qstat (works only for jobs that are running)
         try:
-            logging.debug("DRMAAUnivaJobRunner trying job_status ({jobid})".format(jobid=job_id))
+            log.debug("UnivaJobRunner trying job_status ({jobid})".format(jobid=job_id))
             state = ds.job_status( job_id )
         except self.drmaa.errors.DrmaaException:
             state = self._get_drmaa_state_qstat(job_id, extinfo)
@@ -456,15 +457,15 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             try:
                 wstate = self._get_drmaa_state_wait(job_id, ds, extinfo)
             except DRMAAWaitUnusable:
-                logging.debug("DRMAAUniva: job {job_id} catched DRMAAWaitUnusable".format(job_id=job_id))
+                log.debug("DRMAAUniva: job {job_id} catched DRMAAWaitUnusable".format(job_id=job_id))
                 wstate = self._get_drmaa_state_qacct(job_id, extinfo)
             if self._drmaa_state_is_refined( state, wstate ):
-                logging.debug("DRMAAUniva: job {job_id} wait/qacct {qacct} refines qacct {qstat}".format(job_id=job_id, qacct=self.drmaa_job_state_strings[wstate], qstat=self.drmaa_job_state_strings[state]))
+                log.debug("DRMAAUniva: job {job_id} wait/qacct {qacct} refines qacct {qstat}".format(job_id=job_id, qacct=self.drmaa_job_state_strings[wstate], qstat=self.drmaa_job_state_strings[state]))
                 state = wstate
             else:
-                logging.debug("DRMAAUniva: job {job_id} wait/qacct {qacct} does NOT refines qacct {qstat}".format(job_id=job_id, qacct=self.drmaa_job_state_strings[wstate], qstat=self.drmaa_job_state_strings[state]))
+                log.debug("DRMAAUniva: job {job_id} wait/qacct {qacct} does NOT refines qacct {qstat}".format(job_id=job_id, qacct=self.drmaa_job_state_strings[wstate], qstat=self.drmaa_job_state_strings[state]))
 
-        logging.debug("DRMAAUnivaJobRunner._get_drmaa_state ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
+        log.debug("UnivaJobRunner._get_drmaa_state ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
         return state
 
     def _map_qstat_drmaa_states( self, job_id, state, extinfo ):
@@ -546,7 +547,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         elif "w" in state:
             return self.drmaa.JobState.QUEUED_ACTIVE
         else:
-            logging.error("DRMAAUniva: job {job_id} unknown state from qstat: {state}".format(job_id=job_id, state=state))
+            log.error("DRMAAUniva: job {job_id} unknown state from qstat: {state}".format(job_id=job_id, state=state))
             return self.drmaa.JobState.UNDETERMINED
 
 
@@ -596,7 +597,7 @@ def _parse_mem( mstring ):
         elif m.group(2) == '':
             pass
         else:
-            logging.error( "DRMAAUniva: unparsable memory spec {spec}".format(spec=mstring) )
+            log.error( "DRMAAUniva: unparsable memory spec {spec}".format(spec=mstring) )
     return mem
 
 
@@ -630,11 +631,11 @@ def _parse_native_specs( job_id, native_spec ):
     if m is not None:
         tme = _parse_time( m.group(1) )
         if tme is None:
-            logging.error( "DRMAAUniva: job {job_id} has unparsable time native spec {spec}".format(job_id=job_id, spec=native_spec) )
+            log.error( "DRMAAUniva: job {job_id} has unparsable time native spec {spec}".format(job_id=job_id, spec=native_spec) )
     # parse memory
     m = re.search( "mem=([0-9.]+[KGM]?)[\s,]*", native_spec )
     if m is not None:
         mem = _parse_mem( m.group(1) )
         if mem is None:
-            logging.error( "DRMAAUniva: job {job_id} has unparsable memory native spec {spec}".format(job_id=job_id, spec=native_spec) )
+            log.error( "DRMAAUniva: job {job_id} has unparsable memory native spec {spec}".format(job_id=job_id, spec=native_spec) )
     return tme, mem
