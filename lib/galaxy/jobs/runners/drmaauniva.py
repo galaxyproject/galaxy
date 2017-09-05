@@ -641,7 +641,7 @@ def _parse_native_specs( job_id, native_spec ):
         if tme is None:
             log.error( "DRMAAUniva: job {job_id} has unparsable time native spec {spec}".format(job_id=job_id, spec=native_spec) )
     # parse memory
-    m = re.search( "mem=([0-9.]+[KGM]?)[\s,]*", native_spec )
+    m = re.search( "mem=([\d.]+[KGMT]?)[\s,]*", native_spec )
     if m is not None:
         mem = util.size_to_bytes( m.group(1) )
         # mem = _parse_mem( m.group(1) )

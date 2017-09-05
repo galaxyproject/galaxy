@@ -1240,7 +1240,7 @@ def size_to_bytes(size):
         pass
     # Otherwise it must have non-numeric characters
     size_re = re.compile( '([\d\.]+)\s*([tgmk]?b?|b|bytes?)$' )
-    size_match = re.match(size_re, size.lower())
+    size_match = re.match( size_re, size.lower() )
     assert size_match is not None
     size = float(size_match.group(1))
     multiple = size_match.group(2)
