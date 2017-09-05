@@ -569,7 +569,7 @@ class WorkflowContentsManager(UsesAnnotations):
             if not module:
                 return None
             if module.type == 'tool' and not module.tool:
-                msg = "Cannot download workflow because the tool '%s' is missing in step %s. " % (step.tool_id, step.order_index)
+                msg = "Cannot download workflow because the tool '%s' is missing in step %s." % (step.tool_id, step.order_index)
                 raise exceptions.ToolMissingException(msg)
             # Get user annotation.
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
