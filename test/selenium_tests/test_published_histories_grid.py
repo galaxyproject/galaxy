@@ -1,6 +1,10 @@
 import time
 
-from .framework import SeleniumTestCase, selenium_test
+from .framework import (
+    retry_assertion_during_transitions,
+    selenium_test,
+    SeleniumTestCase,
+)
 
 # Test case data
 HISTORY1_NAME = 'First'
@@ -121,6 +125,7 @@ class HistoryGridTestCase(SeleniumTestCase):
 
         return names
 
+    @retry_assertion_during_transitions
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
         actual_histories = self.get_histories()
         if not sort_matters:
