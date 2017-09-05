@@ -862,8 +862,8 @@ var FolderToolbarView = Backbone.View.extend({
    * @param  {array} paths                    paths relative to Galaxy root folder
    * @param  {boolean} preserve_dirs          indicates whether to preserve folder structure
    * @param  {boolean} link_data              copy files to Galaxy or link instead
-   * @param  {boolean} to_posix_lines              copy files to Galaxy or link instead
-   * @param  {boolean} space_to_tab              copy files to Galaxy or link instead
+   * @param  {boolean} to_posix_lines         convert line endings to POSIX standard
+   * @param  {boolean} space_to_tab           convert spaces to tabs
    * @param  {str} source                     string representing what type of folder
    *                                          is the source of import
    * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
