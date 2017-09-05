@@ -22,16 +22,20 @@ from galaxy.util import (
 from galaxy.util.sleeper import Sleeper
 from ..objectstore import convert_bytes, ObjectStore
 
-log = logging.getLogger(__name__)
-logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
-
 try:
     from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
 except ImportError:
-    log.error("Could not import CloudBridge.")
+    CloudProviderFactory = None
+    ProviderList = None
 
-NO_BOTO_ERROR_MESSAGE = ("Cloud object store is configured, but no boto dependency available."
-                         "Please install and properly configure boto or modify object store configuration.")
+log = logging.getLogger(__name__)
+
+logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
+
+NO_CLOUDBRIDGE_ERROR_MESSAGE = (
+    "ObjectStore configured, but no cloudbridge dependency available."
+    "Please install cloudbridge or modify Object Store configuration."
+)
 
 
 class Cloud(ObjectStore):
@@ -42,6 +46,8 @@ class Cloud(ObjectStore):
     """
     def __init__(self, config, config_xml):
         super(Cloud, self).__init__(config)
+        if CloudProviderFactory is None:
+            raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
         self.staging_path = self.config.file_path
         self.transfer_progress = 0
         self._parse_config_xml(config_xml)
