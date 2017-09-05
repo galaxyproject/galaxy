@@ -33,8 +33,8 @@ log = logging.getLogger(__name__)
 logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
 
 NO_CLOUDBRIDGE_ERROR_MESSAGE = (
-    "ObjectStore configured, but no cloudbridge dependency available."
-    "Please install cloudbridge or modify Object Store configuration."
+    "Cloud ObjectStore is configured, but no CloudBridge dependency available."
+    "Please install CloudBridge or modify ObjectStore configuration."
 )
 
 
