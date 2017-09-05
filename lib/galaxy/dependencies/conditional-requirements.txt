@@ -16,6 +16,3 @@ python-ldap==2.4.27
 
 # Synnefo / Pithos+ object store client
 kamaki
-
-# bz2file is not required on python >= 3.3
-bz2file

@@ -1,7 +1,6 @@
 """
 Determine what optional dependencies are needed.
 """
-import sys
 from os.path import dirname, join
 from xml.etree import ElementTree
 
@@ -112,9 +111,6 @@ class ConditionalDependencies(object):
 
     def check_kamaki(self):
         return 'pithos' in self.object_stores
-
-    def check_bz2file(self):
-        return sys.version < (3, 3)
 
 
 def optional(config_file):
