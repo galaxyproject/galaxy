@@ -13,6 +13,7 @@ uWSGI==2.0.15
 #python_lzo==1.8
 
 # pure Python packages
+bz2file==0.98
 Paste==2.0.2
 PasteDeploy==1.5.2
 docutils==0.12

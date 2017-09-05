@@ -13,6 +13,7 @@ pycrypto
 #python_lzo
 
 # pure Python packages
+bz2file
 Paste
 PasteDeploy
 docutils
