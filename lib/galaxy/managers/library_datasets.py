@@ -4,7 +4,6 @@ import logging
 from galaxy import util
 
 from galaxy.exceptions import InternalServerError
-from galaxy.exceptions import ItemAccessibilityException
 from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.exceptions import ObjectNotFound
 from galaxy.exceptions import RequestParameterInvalidException
