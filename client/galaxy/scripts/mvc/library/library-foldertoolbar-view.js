@@ -528,12 +528,10 @@ var FolderToolbarView = Backbone.View.extend({
           that.renderJstree( options );
           $('.jstree-folders-message').hide();
           $('.jstree-preserve-structure').hide();
-          $('.jstree-link-files').hide();
           $('.jstree-files-message').show();
         } else if ( event.target.value ==='jstree-disable-files' ){
           $('.jstree-files-message').hide();
           $('.jstree-folders-message').show();
-          $('.jstree-link-files').show();
           $('.jstree-preserve-structure').show();
           options.disabled_jstree_element = 'files';
           that.renderJstree( options );
@@ -606,6 +604,9 @@ var FolderToolbarView = Backbone.View.extend({
   importFromPathsClicked: function(){
     var preserve_dirs = this.modal.$el.find('.preserve-checkbox').is(':checked');
     var link_data = this.modal.$el.find('.link-checkbox').is(':checked');
+    var space_to_tab = this.modal.$el.find('.spacetab-checkbox').is(':checked');
+    var to_posix_lines = this.modal.$el.find('.posix-checkbox').is(':checked');
+    var tag_using_filenames = this.modal.$el.find('.tag-files').is(':checked');
     var file_type = this.select_extension.value();
     var dbkey = this.select_genome.value();
     var paths = $('textarea#import_paths').val();
@@ -625,8 +626,11 @@ var FolderToolbarView = Backbone.View.extend({
       this.chainCallImportingFolders( { paths: valid_paths,
                                         preserve_dirs: preserve_dirs,
                                         link_data: link_data,
+                                        space_to_tab: space_to_tab,
+                                        to_posix_lines: to_posix_lines,
                                         source: 'admin_path',
                                         file_type: file_type,
+                                        tag_using_filenames: tag_using_filenames,
                                         dbkey: dbkey } );
     }
   },
@@ -678,6 +682,8 @@ var FolderToolbarView = Backbone.View.extend({
     var selected_nodes = _.filter(all_nodes, function(node){ return node.state.disabled == false; })
     var preserve_dirs = this.modal.$el.find( '.preserve-checkbox' ).is( ':checked' );
     var link_data = this.modal.$el.find( '.link-checkbox' ).is( ':checked' );
+    var space_to_tab = this.modal.$el.find('.spacetab-checkbox').is(':checked');
+    var to_posix_lines = this.modal.$el.find('.posix-checkbox').is(':checked');
     var file_type = this.select_extension.value();
     var dbkey = this.select_genome.value();
     var tag_using_filenames = this.modal.$el.find( '.tag-files' ).is( ':checked' );
@@ -698,6 +704,8 @@ var FolderToolbarView = Backbone.View.extend({
         this.chainCallImportingFolders( { paths: paths,
                                           preserve_dirs: preserve_dirs,
                                           link_data: link_data,
+                                          space_to_tab: space_to_tab,
+                                          to_posix_lines: to_posix_lines,
                                           source: full_source,
                                           file_type: file_type,
                                           dbkey: dbkey,
@@ -707,6 +715,9 @@ var FolderToolbarView = Backbone.View.extend({
         this.chainCallImportingUserdirFiles( { paths : paths,
                                                file_type: file_type,
                                                dbkey: dbkey,
+                                               link_data: link_data,
+                                               space_to_tab: space_to_tab,
+                                               to_posix_lines: to_posix_lines,
                                                source: full_source,
                                                tag_using_filenames: tag_using_filenames } );
       }
@@ -814,7 +825,6 @@ var FolderToolbarView = Backbone.View.extend({
    * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
    */
   chainCallImportingUserdirFiles: function( options ){
-
     var that = this;
     var popped_item = options.paths.pop();
     if ( typeof popped_item === "undefined" ) {
@@ -830,6 +840,9 @@ var FolderToolbarView = Backbone.View.extend({
                                                        '&source=' + options.source +
                                                        '&path=' + popped_item +
                                                        '&file_type=' + options.file_type +
+                                                       '&link_data=' + options.link_data +
+                                                       '&space_to_tab=' + options.space_to_tab +
+                                                       '&to_posix_lines=' + options.to_posix_lines +
                                                        '&dbkey=' + options.dbkey +
                                                        '&tag_using_filenames=' + options.tag_using_filenames ) )
     promise.done( function( response ){
@@ -844,11 +857,13 @@ var FolderToolbarView = Backbone.View.extend({
   },
 
   /**
-   * Take the array of paths and createa request for each of them
-   * calling them in chain. Update the progress bar in between each.
+   * Take the array of paths and create a request for each of them
+   * calling them in series. Update the progress bar in between each.
    * @param  {array} paths                    paths relative to Galaxy root folder
    * @param  {boolean} preserve_dirs          indicates whether to preserve folder structure
    * @param  {boolean} link_data              copy files to Galaxy or link instead
+   * @param  {boolean} to_posix_lines         convert line endings to POSIX standard
+   * @param  {boolean} space_to_tab           convert spaces to tabs
    * @param  {str} source                     string representing what type of folder
    *                                          is the source of import
    * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
@@ -872,6 +887,8 @@ var FolderToolbarView = Backbone.View.extend({
                                                           '&path=' + popped_item +
                                                           '&preserve_dirs=' + options.preserve_dirs +
                                                           '&link_data=' + options.link_data +
+                                                          '&to_posix_lines=' + options.to_posix_lines +
+                                                          '&space_to_tab=' + options.space_to_tab +
                                                           '&file_type=' + options.file_type +
                                                           '&dbkey=' + options.dbkey +
                                                           '&tag_using_filenames=' + options.tag_using_filenames ) )
@@ -1339,16 +1356,24 @@ var FolderToolbarView = Backbone.View.extend({
           '<input class="preserve-checkbox" type="checkbox" value="preserve_directory_structure">',
           'Preserve directory structure',
         '</label>',
-        '<label class="checkbox-inline jstree-link-files" style="display:none;">',
+        '<label class="checkbox-inline">',
           '<input class="link-checkbox" type="checkbox" value="link_files">',
           'Link files instead of copying',
+        '</label>',
+        '<label class="checkbox-inline">',
+          '<input class="posix-checkbox" type="checkbox" value="to_posix_lines" checked="checked">',
+          'Convert line endings to POSIX',
+        '</label>',
+        '<label class="checkbox-inline">',
+          '<input class="spacetab-checkbox" type="checkbox" value="space_to_tab">',
+          'Convert spaces to tabs',
         '</label>',
       '</div>',
       '<button title="Select all files" type="button" class="button primary-button libimport-select-all">',
         'Select all',
       '</button>',
       '<button title="Select no files" type="button" class="button primary-button libimport-select-none">',
-        'Select none',
+        'Unselect all',
       '</button>',
       '<hr />',
       // append jstree object here
@@ -1360,6 +1385,7 @@ var FolderToolbarView = Backbone.View.extend({
         'Type: <span id="library_extension_select" class="library-extension-select" />',
         'Genome: <span id="library_genome_select" class="library-genome-select" />',
       '</div>',
+      '<br>',
       '<div>',
          '<label class="checkbox-inline tag-files">',
             'Tag datasets based on file names.',
@@ -1375,13 +1401,22 @@ var FolderToolbarView = Backbone.View.extend({
     '<div id="file_browser_modal">',
       '<div class="alert alert-info jstree-folders-message">All files within the given folders and their subfolders will be imported into the current folder.</div>',
       '<div style="margin-bottom: 0.5em;">',
-        '<label class="checkbox-inline jstree-preserve-structure">',
+        '<label class="checkbox-inline">',
           '<input class="preserve-checkbox" type="checkbox" value="preserve_directory_structure">',
           'Preserve directory structure',
         '</label>',
-        '<label class="checkbox-inline jstree-link-files">',
+        '<label class="checkbox-inline">',
           '<input class="link-checkbox" type="checkbox" value="link_files">',
           'Link files instead of copying',
+        '</label>',
+        '<br>',
+        '<label class="checkbox-inline">',
+          '<input class="posix-checkbox" type="checkbox" value="to_posix_lines" checked="checked">',
+          'Convert line endings to POSIX',
+        '</label>',
+        '<label class="checkbox-inline">',
+          '<input class="spacetab-checkbox" type="checkbox" value="space_to_tab">',
+          'Convert spaces to tabs',
         '</label>',
       '</div>',
       '<textarea id="import_paths" class="form-control" rows="5" placeholder="Absolute paths (or paths relative to Galaxy root) separated by newline" autofocus></textarea>',
@@ -1390,6 +1425,12 @@ var FolderToolbarView = Backbone.View.extend({
       '<div>',
         'Type: <span id="library_extension_select" class="library-extension-select" />',
         'Genome: <span id="library_genome_select" class="library-genome-select" />',
+      '</div>',
+      '<div>',
+         '<label class="checkbox-inline tag-files">',
+            'Tag datasets based on file names.',
+            '<input class="tag-files" type="checkbox" value="tag_using_filenames" checked="checked">',
+         '</label>',
       '</div>',
     '</div>'
     ].join(''));
@@ -1415,7 +1456,16 @@ var FolderToolbarView = Backbone.View.extend({
 
   templateHistoryContents: function (){
     return _.template([
-    '<strong>Choose the datasets to import:</strong>',
+    '<p>Choose the datasets to import:</p>',
+    '<div>',
+    '<button title="Select all datasets" type="button" class="button primary-button history-import-select-all">',
+      'Select all',
+    '</button>',
+    '<button title="Select all datasets" type="button" class="button primary-button history-import-unselect-all">',
+      'Unselect all',
+    '</button>',
+    '</div>',
+    '<br>',
     '<ul>',
       '<% _.each(history_contents, function(history_item) { %>',
         '<% if (history_item.get("deleted") != true ) { %>',
@@ -1449,12 +1499,6 @@ var FolderToolbarView = Backbone.View.extend({
         '<% } %>',
       '<% }); %>',
     '</ul>',
-    '<button title="Select all datasets" type="button" class="button primary-button history-import-select-all">',
-      'Select all',
-    '</button>',
-    '<button title="Select all datasets" type="button" class="button primary-button history-import-unselect-all">',
-      'Unselect all',
-    '</button>'
     ].join(''));
   },
 
