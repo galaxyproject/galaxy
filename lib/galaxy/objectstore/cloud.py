@@ -30,8 +30,6 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
-logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
-
 NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Cloud ObjectStore is configured, but no CloudBridge dependency available."
     "Please install CloudBridge or modify ObjectStore configuration."
