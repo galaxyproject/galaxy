@@ -3,16 +3,21 @@ import json
 import logging
 import os
 import shutil
+import sys
 import tempfile
 from collections import namedtuple
 
-import bz2file
 from sqlalchemy.sql.expression import null
 
 import tool_shed.repository_types.util as rt_util
 from galaxy.util import checkers, safe_relpath
 from tool_shed.tools import data_table_manager
 from tool_shed.util import basic_util, hg_util, shed_util_common as suc
+
+if sys.version_info < (3, 3):
+    import bz2file as bz2
+else:
+    import bz2
 
 log = logging.getLogger(__name__)
 
@@ -131,7 +136,7 @@ def handle_bz2(repository, uploaded_file_name):
     fd, uncompressed = tempfile.mkstemp(prefix='repo_%d_upload_bunzip2_' % repository.id,
                                         dir=os.path.dirname(uploaded_file_name),
                                         text=False)
-    bzipped_file = bz2file.BZ2File(uploaded_file_name, 'rb')
+    bzipped_file = bz2.BZ2File(uploaded_file_name, 'rb')
     while 1:
         try:
             chunk = bzipped_file.read(basic_util.CHUNK_SIZE)

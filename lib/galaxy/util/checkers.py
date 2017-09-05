@@ -1,12 +1,17 @@
 import gzip
 import re
+import sys
 import zipfile
 
-import bz2file
 from six import StringIO
 
 from galaxy import util
 from galaxy.util.image_util import image_type
+
+if sys.version_info < (3, 3):
+    import bz2file as bz2
+else:
+    import bz2
 
 HTML_CHECK_LINES = 100
 
@@ -105,7 +110,7 @@ def check_bz2(file_path, check_content=True):
         return (True, True)
 
     CHUNK_SIZE = 2 ** 15  # reKb
-    bzipped_file = bz2file.BZ2File(file_path, mode='rb')
+    bzipped_file = bz2.BZ2File(file_path, mode='rb')
     chunk = bzipped_file.read(CHUNK_SIZE)
     bzipped_file.close()
     # See if we have a compressed HTML file
