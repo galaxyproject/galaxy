@@ -1,8 +1,8 @@
-import bz2
 import gzip
 import re
 import zipfile
 
+import bz2file
 from six import StringIO
 
 from galaxy import util
@@ -105,7 +105,7 @@ def check_bz2(file_path, check_content=True):
         return (True, True)
 
     CHUNK_SIZE = 2 ** 15  # reKb
-    bzipped_file = bz2.BZ2File(file_path, mode='rb')
+    bzipped_file = bz2file.BZ2File(file_path, mode='rb')
     chunk = bzipped_file.read(CHUNK_SIZE)
     bzipped_file.close()
     # See if we have a compressed HTML file

@@ -26,9 +26,9 @@ from galaxy.util.image_util import get_image_ext
 
 
 try:
-    import bz2
+    import bz2file
 except:
-    bz2 = None
+    bz2file = None
 
 assert sys.version_info[:2] >= (2, 4)
 
@@ -165,7 +165,7 @@ def add_file(dataset, registry, json_file, output_path):
                     os.chmod(dataset.path, 0o644)
                 dataset.name = dataset.name.rstrip('.gz')
                 data_type = 'gzip'
-            if not data_type and bz2 is not None:
+            if not data_type and bz2file is not None:
                 # See if we have a bz2 file, much like gzip
                 is_bzipped, is_valid = check_bz2(dataset.path, check_content)
                 if is_bzipped and not is_valid:
@@ -176,7 +176,7 @@ def add_file(dataset, registry, json_file, output_path):
                         # We need to uncompress the temp_name file
                         CHUNK_SIZE = 2 ** 20  # 1Mb
                         fd, uncompressed = tempfile.mkstemp(prefix='data_id_%s_upload_bunzip2_' % dataset.dataset_id, dir=os.path.dirname(output_path), text=False)
-                        bzipped_file = bz2.BZ2File(dataset.path, 'rb')
+                        bzipped_file = bz2file.BZ2File(dataset.path, 'rb')
                         while 1:
                             try:
                                 chunk = bzipped_file.read(CHUNK_SIZE)

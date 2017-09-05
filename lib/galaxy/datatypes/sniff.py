@@ -3,7 +3,6 @@ File format detector
 """
 from __future__ import absolute_import
 
-import bz2
 import codecs
 import gzip
 import logging
@@ -14,6 +13,7 @@ import sys
 import tempfile
 import zipfile
 
+import bz2file
 from six import text_type
 
 from galaxy import util
@@ -500,7 +500,7 @@ def handle_uploaded_dataset_file(filename, datatypes_registry, ext='auto', is_mu
 
 
 AUTO_DETECT_EXTENSIONS = ['auto']  # should 'data' also cause auto detect?
-DECOMPRESSION_FUNCTIONS = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File)
+DECOMPRESSION_FUNCTIONS = dict(gzip=gzip.GzipFile, bz2=bz2file.BZ2File)
 COMPRESSION_CHECK_FUNCTIONS = [('gzip', is_gzip), ('bz2', is_bz2)]
 COMPRESSION_DATATYPES = dict(gzip=['bam', 'fastq.gz', 'fastqsanger.gz', 'fastqillumina.gz', 'fastqsolexa.gz', 'fastqcssanger.gz'], bz2=['fastq.bz2', 'fastqsanger.bz2', 'fastqillumina.bz2', 'fastqsolexa.bz2', 'fastqcssanger.bz2'])
 COMPRESSED_EXTENSIONS = []

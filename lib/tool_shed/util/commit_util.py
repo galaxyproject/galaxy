@@ -1,4 +1,3 @@
-import bz2
 import gzip
 import json
 import logging
@@ -7,6 +6,7 @@ import shutil
 import tempfile
 from collections import namedtuple
 
+import bz2file
 from sqlalchemy.sql.expression import null
 
 import tool_shed.repository_types.util as rt_util
@@ -131,7 +131,7 @@ def handle_bz2(repository, uploaded_file_name):
     fd, uncompressed = tempfile.mkstemp(prefix='repo_%d_upload_bunzip2_' % repository.id,
                                         dir=os.path.dirname(uploaded_file_name),
                                         text=False)
-    bzipped_file = bz2.BZ2File(uploaded_file_name, 'rb')
+    bzipped_file = bz2file.BZ2File(uploaded_file_name, 'rb')
     while 1:
         try:
             chunk = bzipped_file.read(basic_util.CHUNK_SIZE)

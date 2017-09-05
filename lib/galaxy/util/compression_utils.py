@@ -1,6 +1,7 @@
-import bz2
 import gzip
 import zipfile
+
+import bz2file
 
 from .checkers import (
     is_bz2,
@@ -27,7 +28,7 @@ def get_fileobj(filename, mode="r", gzip_only=False, bz2_only=False, zip_only=Fa
     if not bz2_only and not zip_only and is_gzip(filename):
         return gzip.GzipFile(filename, cmode)
     if not gzip_only and not zip_only and is_bz2(filename):
-        return bz2.BZ2File(filename, cmode)
+        return bz2file.BZ2File(filename, cmode)
     if not bz2_only and not gzip_only and zipfile.is_zipfile(filename):
         # Return fileobj for the first file in a zip file.
         with zipfile.ZipFile(filename, cmode) as zh:
