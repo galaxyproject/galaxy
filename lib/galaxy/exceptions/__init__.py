@@ -104,6 +104,15 @@ class ToolMissingException(MessageException):
     err_code = error_codes.USER_TOOL_MISSING_PROBLEM
 
 
+class StepToolMissingException(MessageException):
+    status_code = 400
+    err_code = error_codes.USER_TOOL_MISSING_PROBLEM
+
+    def __init__(self, err_msg=None, module=None):
+        self.err_msg = err_msg
+        self.module = module
+
+
 class RequestParameterInvalidException(MessageException):
     status_code = 400
     err_code = error_codes.USER_REQUEST_INVALID_PARAMETER

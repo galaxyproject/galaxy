@@ -438,7 +438,11 @@ class WorkflowContentsManager(UsesAnnotations):
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step)
+            try:
+                module = module_factory.from_workflow_step(trans, step)
+            except exceptions.StepToolMissingException as e:
+                # We handle missing tools in module.get_errors()
+                module = e.module
             if not module:
                 raise exceptions.MessageException('Unrecognized step type: %s' % step.type)
             # Load label from state of data input modules, necessary for backward compatibility

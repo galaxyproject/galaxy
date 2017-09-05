@@ -14,7 +14,6 @@ from galaxy import (
     web
 )
 from galaxy.dataset_collections import matching
-from galaxy.exceptions import ToolMissingException
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
 from galaxy.tools import (
@@ -619,7 +618,7 @@ class ToolModule(WorkflowModule):
                 module.version_changes.append(message)
         else:
             # The tool is not installed
-            raise ToolMissingException("Tool %s missing. Cannot build workflow module." % tool_id)
+            raise exceptions.StepToolMissingException("Tool %s missing. Cannot build workflow module." % tool_id, module=module)
         return module
 
     # ---- Saving in various forms ------------------------------------------
@@ -748,7 +747,7 @@ class ToolModule(WorkflowModule):
                         return RuntimeValue()
             visit_input_values(self.tool.inputs, self.state.inputs, callback)
         else:
-            raise ToolMissingException("Tool %s missing. Cannot add dummy datasets." % self.tool_id)
+            raise exceptions.ToolMissingException("Tool %s missing. Cannot add dummy datasets." % self.tool_id)
 
     def get_post_job_actions(self, incoming):
         return ActionBox.handle_incoming(incoming)
@@ -777,7 +776,7 @@ class ToolModule(WorkflowModule):
                     state.inputs[RUNTIME_STEP_META_STATE_KEY] = step_metadata_runtime_state
             return state, step_errors
         else:
-            raise ToolMissingException("Tool %s missing. Cannot compute runtime state." % self.tool_id)
+            raise exceptions.ToolMissingException("Tool %s missing. Cannot compute runtime state." % self.tool_id)
 
     def decode_runtime_state(self, runtime_state):
         """ Take runtime state from persisted invocation and convert it
@@ -789,7 +788,7 @@ class ToolModule(WorkflowModule):
                 self.__restore_step_meta_runtime_state(loads(runtime_state[RUNTIME_STEP_META_STATE_KEY]))
             return state
         else:
-            raise ToolMissingException("Tool %s missing. Cannot recover runtime state." % self.tool_id)
+            raise exceptions.ToolMissingException("Tool %s missing. Cannot recover runtime state." % self.tool_id)
 
     def execute(self, trans, progress, invocation, step):
         tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version)
