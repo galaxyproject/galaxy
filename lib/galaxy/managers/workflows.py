@@ -568,9 +568,6 @@ class WorkflowContentsManager(UsesAnnotations):
             module = module_factory.from_workflow_step(trans, step)
             if not module:
                 return None
-            if module.type == 'tool' and not module.tool:
-                msg = "Cannot download workflow because the tool '%s' is missing in step %s." % (step.tool_id, step.order_index)
-                raise exceptions.ToolMissingException(msg)
             # Get user annotation.
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             content_id = module.get_content_id()
@@ -669,10 +666,12 @@ class WorkflowContentsManager(UsesAnnotations):
                         data_input_names[prefixed_name] = True
                 # FIXME: this updates modules silently right now; messages from updates should be provided.
                 module.check_and_update_state()
-                visit_input_values(module.tool.inputs, module.state.inputs, callback)
-                # Filter
-                # FIXME: this removes connection without displaying a message currently!
-                input_connections = [conn for conn in input_connections if (conn.input_name in data_input_names or conn.non_data_connection)]
+                if module.tool:
+                    # If the tool is installed we attempt to verify input values
+                    # and connections, otherwise the last known state will be dumped without modifications.
+                    visit_input_values(module.tool.inputs, module.state.inputs, callback)
+                    # FIXME: this removes connection without displaying a message currently!
+                    input_connections = [conn for conn in input_connections if (conn.input_name in data_input_names or conn.non_data_connection)]
 
             # Encode input connections as dictionary
             input_conn_dict = {}
