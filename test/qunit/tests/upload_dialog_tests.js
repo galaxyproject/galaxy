@@ -44,6 +44,6 @@ define([ "test-app", "mvc/upload/upload-view"
     test( "test ftp popup", function() {
         $(this.app.ui_button.$el).trigger('click');
         $('#btn-ftp').trigger('click');
-        ok($('.upload-ftp-help').length == 1, 'Should show ftp help text.');
+        ok($('.upload-ftp').length == 1, 'Should show ftp popover.');
     } );
 });
