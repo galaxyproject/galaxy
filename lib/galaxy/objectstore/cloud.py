@@ -171,21 +171,17 @@ class Cloud(ObjectStore):
                 return
 
     def _get_bucket(self, bucket_name):
-        """ Sometimes a handle to a bucket is not established right away so try
-        it a few times. Raise error if connection is not established. """
-        for i in range(5):
-            try:
-                bucket = self.conn.object_store.get(bucket_name)
-                if bucket is None:
-                    log.debug("Bucket not found, creating a bucket with handle '%s'", bucket_name)
-                    bucket = self.conn.object_store.create(bucket_name)
-                log.debug("Using cloud object store with bucket '%s'", bucket.name)
-                return bucket
-            except Exception:
-                log.exception("Could not get bucket '%s', attempt %s/5", bucket_name, i + 1)
-                time.sleep(2)
-        # All the attempts have been exhausted and connection was not established,
-        # raise error
+        try:
+            bucket = self.conn.object_store.get(bucket_name)
+            if bucket is None:
+                log.debug("Bucket not found, creating a bucket with handle '%s'", bucket_name)
+                bucket = self.conn.object_store.create(bucket_name)
+            log.debug("Using cloud ObjectStore with bucket '%s'", bucket.name)
+            return bucket
+        except Exception:
+            # These two generic exceptions will be replaced by specific exceptions
+            # once proper exceptions are exposed by CloudBridge.
+            log.exception("Could not get bucket '%s'.", bucket_name)
         raise Exception
 
     def _fix_permissions(self, rel_path):
