@@ -758,9 +758,9 @@ var FolderToolbarView = Backbone.View.extend({
     } else {
       this.modal.disableButton( 'Add' );
       checked_hdas.each(function(){
-        var hid = $( this.parentElement.parentElement ).data( 'id' );
+        var hid = $( this.parentElement.parentElement.parentElement ).data( 'id' );
         if ( hid ) {
-          var item_type = $( this.parentElement.parentElement ).data( 'name' );
+          var item_type = $( this.parentElement.parentElement.parentElement ).data( 'name' );
           history_item_ids.push( hid );
           history_item_types.push( item_type );
         }
@@ -770,7 +770,6 @@ var FolderToolbarView = Backbone.View.extend({
         var folder_item = new mod_library_model.Item();
         folder_item.url = Galaxy.root + 'api/folders/' + this.options.id + '/contents';
         if (history_item_types[i] === 'collection') {
-          console.log('collection');
           folder_item.set({'from_hdca_id': history_item_id});
         } else {
           folder_item.set({'from_hda_id': history_item_id});
