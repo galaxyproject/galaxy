@@ -10,6 +10,8 @@ import struct
 import subprocess
 import tempfile
 import zipfile
+import tarfile
+import re
 
 import pysam
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
@@ -1348,6 +1350,54 @@ class OxliGraphLabels(OxliBinary):
 
 Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
                                         OxliGraphLabels)
+
+class Fast5Archive ( CompressedArchive ):
+    """Class describing a FAST5 archive """
+    MetadataElement( name="fast5_count", default='0', param=MetadataParameter, desc="Read Count",
+                     readonly=True, visible=True, no_value=None )
+    file_ext = "fast5_archive"
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        super( Fast5Archive, self ).set_meta( dataset, overwrite=overwrite, **kwd )
+        try:
+            if dataset and tarfile.is_tarfile( dataset.file_name ):
+                temptar = tarfile.open( dataset.file_name, 'r' )
+                contents = temptar.getnames()
+                r = re.compile(".+\.fast5$")
+                fast5 = filter( r.match, contents )
+                dataset.metadata.fast5_count = len(fast5)
+                temptar.close()
+        except Exception as e:
+            log.warning( '%s, set_meta Exception: %s', self, e )
+
+    def sniff( self, filename ):
+        try:
+            if filename and tarfile.is_tarfile( filename ):
+                temptar = tarfile.open( filename, 'r' )
+                contents = temptar.getnames()
+                r = re.compile(".+\.fast5$")
+                is_fast5 = filter( r.match, contents )
+                temptar.close()
+                return is_fast5
+        except Exception as e:
+            log.warning( '%s, sniff Exception: %s', self, e )
+        return False
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "FAST5 Archive (%s)" % ( nice_size( dataset.get_size() ) )
+            dataset.blurb = "%s sequences" % ( dataset.metadata.fast5_count or 'unknown' )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "FAST5 Archive (%s)" % ( nice_size( dataset.get_size() ) )
+
+Binary.register_sniffable_binary_format("fast5_archive", "fast5_archive", Fast5Archive)
 
 
 class SearchGuiArchive ( CompressedArchive ):

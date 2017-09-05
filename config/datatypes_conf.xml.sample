@@ -233,6 +233,7 @@
     <datatype extension="cps" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
     <datatype extension="ct" type="galaxy.datatypes.tabular:ConnectivityTable" display_in_upload="true"/>
     <datatype extension="searchgui_archive" type="galaxy.datatypes.binary:SearchGuiArchive" display_in_upload="true"/>
+    <datatype extension="fast5_archive" type="galaxy.datatypes.binary:Fast5Archive" display_in_upload="true"/>
     <datatype extension="peptideshaker_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <!-- End Proteomics Datatypes -->
     <datatype extension="netcdf" type="galaxy.datatypes.binary:NetCDF" mimetype="application/octet-stream" display_in_upload="true" description="Format used by netCDF software library for writing and reading chromatography-MS data files." />
@@ -638,6 +639,7 @@
     <sniffer type="galaxy.datatypes.binary:Sra"/>
     <sniffer type="galaxy.datatypes.binary:NetCDF"/>
     <sniffer type="galaxy.datatypes.binary:DMND" />
+    <sniffer type="galaxy.datatypes.binary:Fast5Archive" />
     <sniffer type="galaxy.datatypes.triples:Rdf"/>
     <sniffer type="galaxy.datatypes.blast:BlastXml"/>
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>
