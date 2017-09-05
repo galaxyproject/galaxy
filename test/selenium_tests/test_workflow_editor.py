@@ -69,25 +69,25 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         assert "Using version '0.2' instead of version '0.0.1'" in text, text
         assert "Using default: '1'" in text, text
 
-    @selenium_test
-    def test_missing_tools(self):
-        workflow_populator = self.workflow_populator
-        workflow_populator.upload_yaml_workflow("""
-class: GalaxyWorkflow
-inputs:
-  - id: input1
-steps:
-  - tool_id: missing
-    label: first_cat
-    state:
-      foo: bar
-""")
-        self.workflow_index_open()
-        self.workflow_index_click_option("Edit")
-        time.sleep(.5)
-        modal_element = self.wait_for_selector_visible(self.modal_body_selector())
-        text = modal_element.text
-        assert "Tool is not installed" in text, text
+    # Broken test until #4548 (https://github.com/galaxyproject/galaxy/issues/4548) is resolved.
+    #     @selenium_test
+    #     def test_missing_tools(self):
+    #         workflow_populator = self.workflow_populator
+    #         workflow_populator.upload_yaml_workflow("""
+    # class: GalaxyWorkflow
+    # inputs:
+    #   - id: input1
+    # steps:
+    #   - tool_id: missing
+    #     label: first_cat
+    #     state:
+    #       foo: bar
+    # """)
+    #         self.workflow_index_open()
+    #         self.workflow_index_click_option("Edit")
+    #         modal_element = self.wait_for_selector_visible(self.modal_body_selector())
+    #         text = modal_element.text
+    #         assert "Tool is not installed" in text, text
 
     def workflow_create_new(self, name=None, annotation=None):
         self.workflow_index_open()
