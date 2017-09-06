@@ -205,44 +205,36 @@ var FolderToolbarView = Backbone.View.extend({
       return folderDetails.name !== '';
   },
 
-
   // show bulk import modal
   modalBulkImport : function(){
       var checkedValues = $('#folder_table').find(':checked');
       if(checkedValues.length === 0){
           mod_toastr.info('You must select some datasets first.');
       } else {
-          this.refreshUserHistoriesList(function(that){
-            var template = that.templateBulkImportInModal();
-            that.modal = Galaxy.modal;
-            that.modal.show({
-                closing_events  : true,
-                title           : 'Import into History',
-                body            : template({histories : that.histories.models}),
-                buttons         : {
-                    'Import'    : function() {that.importAllIntoHistory();},
-                    'Close'     : function() {Galaxy.modal.hide();}
-                }
-            });
+        var that = this;
+        this.histories = new mod_library_model.GalaxyHistories();
+        this.histories.fetch()
+        .done(function(){
+          var template = that.templateBulkImportInModal();
+          that.modal = Galaxy.modal;
+          that.modal.show({
+              closing_events  : true,
+              title           : 'Import into History',
+              body            : template({histories : that.histories.models}),
+              buttons         : {
+                  'Import'    : function() {that.importAllIntoHistory();},
+                  'Close'     : function() {Galaxy.modal.hide();}
+              }
           });
+        })
+        .fail(function(model, response){
+          if (typeof response.responseJSON !== "undefined"){
+            mod_toastr.error(response.responseJSON.err_msg);
+          } else {
+            mod_toastr.error('An error ocurred.');
+          }
+        });
       }
-  },
-
-  refreshUserHistoriesList: function(callback){
-    var that = this;
-    this.histories = new mod_library_model.GalaxyHistories();
-    this.histories.fetch({
-      success: function (){
-        callback(that);
-      },
-      error: function(model, response){
-        if (typeof response.responseJSON !== "undefined"){
-          mod_toastr.error(response.responseJSON.err_msg);
-        } else {
-          mod_toastr.error('An error ocurred.');
-        }
-      }
-    });
   },
 
   /**
@@ -253,7 +245,7 @@ var FolderToolbarView = Backbone.View.extend({
     var new_history_name = this.modal.$('input[name=history_name]').val();
     var that = this;
     if (new_history_name !== ''){
-      $.post( Galaxy.root + 'api/histories', {name: new_history_name})
+      $.post(Galaxy.root + 'api/histories', {name: new_history_name})
         .done(function( new_history ) {
           that.options.last_used_history_id = new_history.id;
           that.processImportToHistory(new_history.id, new_history.name);
@@ -369,33 +361,37 @@ var FolderToolbarView = Backbone.View.extend({
   },
 
   addFilesFromHistoryModal: function(){
-    this.refreshUserHistoriesList( function( self ){
-      self.modal = Galaxy.modal;
-      var template_modal = self.templateAddFilesFromHistory();
-      var folder_name = self.options.full_path[self.options.full_path.length - 1][1]
-      self.modal.show({
-          closing_events  : true,
-          title           : 'Adding datasets from your history to ' + folder_name,
-          body            : template_modal({histories: self.histories.models}),
-          buttons         : {
-              'Add'       : function() {self.addAllDatasetsFromHistory();},
-              'Close'     : function() {Galaxy.modal.hide();}
-          },
-          closing_callback: function(){
-            Galaxy.libraries.library_router.back();
-          }
-      });
-
-      // user should always have a history, even anonymous user
-      if (self.histories.models.length > 0){
+    this.histories = new mod_library_model.GalaxyHistories();
+    var self = this;
+    this.histories.fetch()
+      .done(function(){
+        self.modal = Galaxy.modal;
+        var template_modal = self.templateAddFilesFromHistory();
+        var folder_name = self.options.full_path[self.options.full_path.length - 1][1]
+        self.modal.show({
+            closing_events  : true,
+            title           : 'Adding datasets from your history to ' + folder_name,
+            body            : template_modal({histories: self.histories.models}),
+            buttons         : {
+                'Add'       : function() {self.addAllDatasetsFromHistory();},
+                'Close'     : function() {Galaxy.modal.hide();}
+            },
+            closing_callback: function(){
+              Galaxy.libraries.library_router.navigate('folders/' + self.id, {trigger: true});
+            }
+        });
         self.fetchAndDisplayHistoryContents(self.histories.models[0].id);
         $( "#dataset_add_bulk" ).change(function(event) {
           self.fetchAndDisplayHistoryContents(event.target.value);
         });
-      } else {
-        mod_toastr.error( 'An error ocurred.' );
-      }
-    });
+      })
+      .fail(function(model, response){
+        if (typeof response.responseJSON !== "undefined"){
+          mod_toastr.error(response.responseJSON.err_msg);
+        } else {
+          mod_toastr.error('An error ocurred.');
+        }
+      });
   },
 
   /**
@@ -762,9 +758,9 @@ var FolderToolbarView = Backbone.View.extend({
     } else {
       this.modal.disableButton( 'Add' );
       checked_hdas.each(function(){
-        var hid = $( this.parentElement.parentElement ).data( 'id' );
+        var hid = $( this.parentElement.parentElement.parentElement ).data( 'id' );
         if ( hid ) {
-          var item_type = $( this.parentElement.parentElement ).data( 'name' );
+          var item_type = $( this.parentElement.parentElement.parentElement ).data( 'name' );
           history_item_ids.push( hid );
           history_item_types.push( item_type );
         }
