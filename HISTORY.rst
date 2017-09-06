@@ -9,7 +9,9 @@ History
 17.9.4.dev0
 ---------------------
 
-    
+* Bring in various Galaxy updates including numerous Conda fixes and changes (thanks to @nsoranzo).
+* Improved error handling when parsing tool reStructuredText (thanks to @erasche).
+* Updated CWL utilities.
 
 ---------------------
 17.9.3 (2017-06-27)
