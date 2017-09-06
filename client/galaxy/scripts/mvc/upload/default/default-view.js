@@ -2,74 +2,55 @@
 define([ 'utils/utils', 'mvc/upload/upload-model', 'mvc/upload/default/default-row', 'mvc/upload/upload-ftp', 'mvc/upload/upload-extension', 'mvc/ui/ui-popover', 'mvc/ui/ui-select', 'mvc/ui/ui-misc', 'utils/uploadbox'],
 function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Select, Ui ) {
 
-    var LazyLoader = Backbone.View.extend({
+    var LimitLoader = Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
-            this.$container  = options.$container;
-            this.collection  = options.collection;
-            this.new_content = options.new_content;
-            this.max         = options.max || 100;
-            this.$container.on( 'scroll', function() { self._scroll() } );
-            this.container_scroll = 0;
-            this.container_height = 0;
-            this.content_height = 0;
+            this.$container   = options.$container;
+            this.collection   = options.collection;
+            this.new_content  = options.new_content;
+            this.max          = options.max || 50;
             this.content_list = {}
+            this.$message     = $( '<div/>' ).addClass( 'ui-limitloader' ).append( '...only the first ' + this.max + ' entries are visible.' );
+            this.$container.append( this.$message );
         },
 
-        /** Handle change in scroll events */
-        _scroll: function() {
-            this.container_scroll = this.$container.scrollTop();
-            if ( this.container_scroll + this.container_height >= this.content_height ) {
-                this.refresh();
-            }
-        },
-
-        /** Returns the number of visible views */
-        _size: function() {
-            return _.size( this.content_list );
+        /** Checks if the limit has been reached */
+        _done: function() {
+            var done = _.size( this.content_list ) > this.max;
+            this.$message[ done ? 'show' : 'hide' ]();
+            return done;
         },
 
         /** Remove all content */
         reset: function() {
-            var self = this;
-            this.content_height = 0;
-            _.each( this.content_list, function( content, model_id ) {
+            _.each( this.content_list, function( content ) {
                 content.remove();
-                delete self.content_list[ model_id ];
             });
+            this.content_list = {};
+            this.$message.hide();
         },
 
         /** Remove content */
         remove: function( model_id ) {
             var content = this.content_list[ model_id ];
             if ( content ) {
-                this.content_height -= content.$el.height();
                 content.remove();
                 delete this.content_list[ model_id ];
             }
+            this.refresh();
         },
 
         /** Refreshes container content by adding new views if visible */
         refresh: function() {
-            if ( !this.done ) {
-                if ( this._size() > this.max ) {
-                    this.$container.append( $( '<div/>' ).addClass( 'ui-lazyloader' ).append( '...only the first ' + this.max + ' entries are visible.' ) );
-                    this.done = true;
-                } else {
-                    this.$container
-                    this.container_height = this.container_height || this.$container.height();
-                    var limit = this.container_scroll + 2 * this.container_height;
-                    for ( var i in this.collection.models ) {
-                        var model = this.collection.models[ i ];
-                        var view = this.content_list[ model.id ];
-                        if ( !this.content_list[ model.id ] ) {
-                            if ( limit > this.content_height ) {
-                                var content = this.new_content( model );
-                                this.content_list[ model.id ] = content;
-                                this.content_height += content.$el.height();
-                            } else {
-                                break;
-                            }
+            if ( !this._done() ) {
+                for ( var i in this.collection.models ) {
+                    var model = this.collection.models[ i ];
+                    var view = this.content_list[ model.id ];
+                    if ( !this.content_list[ model.id ] ) {
+                        var content = this.new_content( model );
+                        this.content_list[ model.id ] = content;
+                        if ( this._done() ) {
+                            break;
                         }
                     }
                 }
@@ -165,7 +146,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
             });
 
             // Lazy load helper
-            this.loader = new LazyLoader({
+            this.loader = new LimitLoader({
                 $container  : this.$uploadbox,
                 $content    : this.$uploadtable,
                 collection  : this.collection,
