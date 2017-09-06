@@ -106,6 +106,38 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
             this.render();
         },
 
+        render: function () {
+            var message = '';
+            if( this.counter.announce == 0 ) {
+                if (this.uploadbox.compatible()) {
+                    message = '&nbsp;';
+                } else {
+                    message = 'Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.';
+                }
+            } else {
+                if ( this.counter.running == 0 ) {
+                    message = 'You added ' + this.counter.announce + ' file(s) to the queue. Add more files or click \'Start\' to proceed.';
+                } else {
+                    message = 'Please wait...' + this.counter.announce + ' out of ' + this.counter.running + ' remaining.';
+                }
+            }
+            this.$( '.upload-top-info' ).html( message );
+            var enable_reset = this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0;
+            var enable_start = this.counter.running == 0 && this.counter.announce > 0;
+            var enable_sources = this.counter.running == 0;
+            var show_table = this.counter.announce + this.counter.success + this.counter.error > 0;
+            this.btnReset[ enable_reset ? 'enable' : 'disable' ]();
+            this.btnStart[ enable_start ? 'enable' : 'disable' ]();
+            this.btnStart.$el[ enable_start ? 'addClass' : 'removeClass' ]( 'btn-primary' );
+            this.btnStop[ this.counter.running > 0 ? 'enable' : 'disable' ]();
+            this.btnLocal[ enable_sources ? 'enable' : 'disable' ]();
+            this.btnFtp[ enable_sources ? 'enable' : 'disable' ]();
+            this.btnCreate[ enable_sources ? 'enable' : 'disable' ]();
+            this.btnFtp.$el[ this.ftp_upload_site ? 'show' : 'hide' ]();
+            this.$( '.upload-table' )[ show_table ? 'show' : 'hide' ]();
+            this.$( '.upload-helper' )[ show_table ? 'hide' : 'show' ]();
+        },
+
         /** A new file has been dropped/selected through the uploadbox plugin */
         _eventAnnounce: function( index, file ) {
             this.counter.announce++;
@@ -283,38 +315,6 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
                     model.set( 'genome', genome );
                 }
             });
-        },
-
-        render: function () {
-            var message = '';
-            if( this.counter.announce == 0 ) {
-                if (this.uploadbox.compatible()) {
-                    message = '&nbsp;';
-                } else {
-                    message = 'Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.';
-                }
-            } else {
-                if ( this.counter.running == 0 ) {
-                    message = 'You added ' + this.counter.announce + ' file(s) to the queue. Add more files or click \'Start\' to proceed.';
-                } else {
-                    message = 'Please wait...' + this.counter.announce + ' out of ' + this.counter.running + ' remaining.';
-                }
-            }
-            this.$( '.upload-top-info' ).html( message );
-            var enable_reset = this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0;
-            var enable_start = this.counter.running == 0 && this.counter.announce > 0;
-            var enable_sources = this.counter.running == 0;
-            var show_table = this.counter.announce + this.counter.success + this.counter.error > 0;
-            this.btnReset[ enable_reset ? 'enable' : 'disable' ]();
-            this.btnStart[ enable_start ? 'enable' : 'disable' ]();
-            this.btnStart.$el[ enable_start ? 'addClass' : 'removeClass' ]( 'btn-primary' );
-            this.btnStop[ this.counter.running > 0 ? 'enable' : 'disable' ]();
-            this.btnLocal[ enable_sources ? 'enable' : 'disable' ]();
-            this.btnFtp[ enable_sources ? 'enable' : 'disable' ]();
-            this.btnCreate[ enable_sources ? 'enable' : 'disable' ]();
-            this.btnFtp.$el[ this.ftp_upload_site ? 'show' : 'hide' ]();
-            this.$( '.upload-table' )[ show_table ? 'show' : 'hide' ]();
-            this.$( '.upload-helper' )[ show_table ? 'hide' : 'show' ]();
         },
 
         /** Calculate percentage of all queued uploads */
