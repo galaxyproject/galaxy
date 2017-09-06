@@ -171,8 +171,18 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
 
         * PATCH /api/libraries/datasets/{encoded_dataset_id}
 
-        :param  encoded_dataset_id:      the encoded id of the library dataset to update
-        :type   encoded_dataset_id:      an encoded id string
+        :param  encoded_dataset_id: the encoded id of the library dataset to update
+        :type   encoded_dataset_id: an encoded id string
+        :param  payload:            dictionary structure containing::
+            :param name:            new ld's name, must be longer than 0
+            :type  name:            str
+            :param misc_info:       new ld's misc info
+            :type  misc_info:       str
+            :param file_ext:        new ld's extension, must exist in the Galaxy registry
+            :type  file_ext:        str
+            :param genome_build:    new ld's genome build
+            :type  genome_build:    str
+        :type   payload: dict
 
         :returns:   detailed library dataset information
         :rtype:     dictionary

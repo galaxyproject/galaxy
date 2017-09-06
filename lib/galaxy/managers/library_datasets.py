@@ -4,7 +4,6 @@ import logging
 from galaxy import util
 
 from galaxy.exceptions import InternalServerError
-from galaxy.exceptions import ItemAccessibilityException
 from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.exceptions import ObjectNotFound
 from galaxy.exceptions import RequestParameterInvalidException
@@ -43,26 +42,25 @@ class LibraryDatasetsManager(object):
     def update(self, trans, ld, payload):
         """
         Update the given library dataset - the latest linked ldda.
-        Updating older lddas (versions) is not supported.
+        Updating older lddas (versions) is not allowed.
 
-        :param  ld: library dataset to change
-        :type   ld: LibraryDataset
-        :param  check_ownership:           flag whether to check that user owns the item
-        :type   check_ownership:           bool
-        :param  check_accessible:          flag whether to check that user can access item
-        :type   check_accessible:          bool
+        :param  ld:                 library dataset to change
+        :type   ld:                 LibraryDataset
+        :param  payload:            dictionary structure containing::
+            :param name:            new ld's name, must be longer than 0
+            :type  name:            str
+            :param misc_info:       new ld's misc info
+            :type  misc_info:       str
+            :param file_ext:        new ld's extension, must exist in the Galaxy registry
+            :type  file_ext:        str
+            :param genome_build:    new ld's genome build
+            :type  genome_build:    str
+        :type   payload: dict
 
         :returns:   the changed library dataset
         :rtype:     galaxy.model.LibraryDataset
-
-        :raises:    ItemAccessibilityException, InsufficientPermissionsException
         """
-        current_user_roles = trans.get_current_user_roles()
         self.check_modifiable(trans, ld)
-        if ld.deleted is True:
-            raise ItemAccessibilityException("You cannot update a deleted library dataset. Undelete it first.")
-        if not (trans.user_is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, ld)):
-            raise InsufficientPermissionsException('You do not have proper permission to modify this library dataset.')
         # we are going to operate on the actual latest ldda
         ldda = ld.library_dataset_dataset_association
         payload = self._validate_and_parse_update_payload(payload)
@@ -169,13 +167,12 @@ class LibraryDatasetsManager(object):
 
         :raises:    ObjectNotFound
         """
-        if trans.user_is_admin():
-            # all operations are available to an admin
+        if ld.deleted:
+            raise ObjectNotFound('Library dataset with the id provided is deleted.')
+        elif trans.user_is_admin():
             return ld
         if not trans.app.security_agent.can_modify_library_item(trans.get_current_user_roles(), ld):
             raise InsufficientPermissionsException('You do not have proper permission to modify this library dataset.')
-        elif ld.deleted:
-            raise ObjectNotFound('Library dataset with the id provided is deleted.')
         else:
             return ld
 
