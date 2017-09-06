@@ -66,7 +66,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
                 container   : this.$( '.upload-footer-extension' ),
                 data        : _.filter( this.list_extensions, function( ext ) { return !ext.composite_files } ),
                 value       : this.options.default_extension,
-                onchange    : function( extension ) { self.updateExtension( extension ) }
+                onchange    : function( extension ) { self._changeExtension( extension ) }
             });
 
             // handle extension info popover
@@ -86,7 +86,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
                 container   : this.$( '.upload-footer-genome' ),
                 data        : this.list_genomes,
                 value       : this.options.default_genome,
-                onchange    : function( genome ) { self.updateGenome(genome) }
+                onchange    : function( genome ) { self._changeGenome(genome) }
             });
 
             // Lazy load helper
@@ -103,7 +103,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
 
             // events
             this.collection.on( 'remove', function( model ) { self._eventRemove( model ) } );
-            this._updateScreen();
+            this.render();
         },
 
         /** A new file has been dropped/selected through the uploadbox plugin */
@@ -118,7 +118,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
                 file_data   : file
             });
             this.collection.add( new_model );
-            this._updateScreen();
+            this.render();
             this.loader.refresh();
         },
 
@@ -137,7 +137,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
             this.upload_completed += it.get( 'file_size' ) * 100;
             this.counter.announce--;
             this.counter.success++;
-            this._updateScreen();
+            this.render();
             Galaxy.currHistoryPanel.refreshContents();
         },
 
@@ -149,14 +149,14 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
             this.upload_completed += it.get( 'file_size' ) * 100;
             this.counter.announce--;
             this.counter.error++;
-            this._updateScreen();
+            this.render();
         },
 
         /** Queue is done */
         _eventComplete: function() {
             this.collection.each( function( model ) { model.get( 'status' ) == 'queued' && model.set( 'status', 'init' ) } );
             this.counter.running = 0;
-            this._updateScreen();
+            this.render();
         },
 
         /** Remove model from upload list */
@@ -171,7 +171,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
                 this.counter.announce--;
             }
             this.uploadbox.remove( model.id );
-            this._updateScreen();
+            this.render();
         },
 
         //
@@ -237,7 +237,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
 
                 // queue remaining files
                 this.uploadbox.start();
-                this._updateScreen();
+                this.render();
             }
         },
 
@@ -261,12 +261,12 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
                 this.select_extension.value( this.options.default_extension );
                 this.select_genome.value( this.options.default_genome );
                 this.ui_button.model.set( 'percentage', 0 );
-                this._updateScreen();
+                this.render();
             }
         },
 
         /** Update extension for all models */
-        updateExtension: function( extension, defaults_only ) {
+        _changeExtension: function( extension, defaults_only ) {
             var self = this;
             this.collection.each( function( model ) {
                 if ( model.get( 'status' ) == 'init' && ( model.get( 'extension' ) == self.options.default_extension || !defaults_only ) ) {
@@ -276,7 +276,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
         },
 
         /** Update genome for all models */
-        updateGenome: function( genome, defaults_only ) {
+        _changeGenome: function( genome, defaults_only ) {
             var self = this;
             this.collection.each( function( model ) {
                 if ( model.get( 'status' ) == 'init' && ( model.get( 'genome' ) == self.options.default_genome || !defaults_only ) ) {
@@ -285,8 +285,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
             });
         },
 
-        /** Set screen */
-        _updateScreen: function () {
+        render: function () {
             var message = '';
             if( this.counter.announce == 0 ) {
                 if (this.uploadbox.compatible()) {
