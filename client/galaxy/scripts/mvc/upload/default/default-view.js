@@ -311,12 +311,18 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
         /** Package and upload ftp files in a single request */
         _uploadFtp: function() {
             var self = this;
+            var list = [];
             this.collection.each( function( model ) {
                 if( model.get( 'status' ) == 'queued' && model.get( 'file_mode' ) == 'ftp' ) {
                     self.uploadbox.remove( model.id );
-                    self._eventSuccess( model.id );
-                    //self._eventError( model.id, 'Upload failed' );
+                    list.push( model );
                 }
+            });
+            $.uploadpost({
+                data     : this.app.toData( list ),
+                url      : this.app.options.nginx_upload_path,
+                success  : function( message ) { _.each( list, function( model ) { self._eventSuccess( model.id ) } ) },
+                error    : function( message ) { _.each( list, function( model ) { self._eventError( model.id, message ) } ) }
             });
         },
 
