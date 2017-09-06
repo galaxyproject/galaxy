@@ -221,6 +221,8 @@ class HistoryGridTestCase(SeleniumTestCase):
             publish_button = self.wait_for_selector_clickable(selector)
             publish_button.click()
 
+            self.wait_for_selector_clickable('input[name="disable_link_access_and_unpublish"]')
+
     def navigate_to_published_histories_page(self):
         self.home()
         self.click_masthead_user()  # Open masthead menu
