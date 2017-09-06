@@ -33,6 +33,11 @@ class SchemaLoader(object):
         fileuri, _ = urldefrag(uri)
         return RawProcessReference(self.raw_document_loader.fetch(fileuri), uri)
 
+    def raw_process_reference_for_object(self, object, uri=None):
+        if uri is None:
+            uri = "galaxy://"
+        return RawProcessReference(object, uri)
+
     def process_definition(self, raw_reference):
         document_loader, avsc_names, process_object, metadata, uri = load_tool.validate_document(
             self.raw_document_loader,

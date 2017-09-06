@@ -11,6 +11,7 @@ from six import string_types
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util import safe_makedirs, string_as_bool
 from galaxy.util.bunch import Bunch
+from .util import set_basename_and_derived_properties
 
 log = logging.getLogger(__name__)
 
@@ -55,6 +56,7 @@ TYPE_REPRESENTATIONS = [
     TypeRepresentation("integer", INPUT_TYPE.INTEGER, "an integer", None),
     TypeRepresentation("float", INPUT_TYPE.FLOAT, "a decimal number", None),
     TypeRepresentation("file", INPUT_TYPE.DATA, "a dataset", None),
+    TypeRepresentation("directory", INPUT_TYPE.DATA, "a directory", None),
     TypeRepresentation("boolean", INPUT_TYPE.BOOLEAN, "a boolean", None),
     TypeRepresentation("text", INPUT_TYPE.TEXT, "a simple text field", None),
     TypeRepresentation("record", INPUT_TYPE.DATA_COLLECTON, "record as a dataset collection", "record"),
@@ -74,6 +76,7 @@ if not USE_FIELD_TYPES:
         "int": ["integer"],
         "float": ["float"],
         "File": ["file"],
+        "Directory": ["directory"],
         "null": ["null"],
         "record": ["record"],
     }
@@ -86,6 +89,7 @@ else:
         "int": ["integer"],
         "float": ["float"],
         "File": ["file"],
+        "Directory": ["directory"],
         "null": ["null"],
         "record": ["record"],
     }
@@ -117,21 +121,41 @@ def dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper):
         with open(dataset_wrapper.file_name, "r") as f:
             return json.load(f)
 
+    if dataset_wrapper.ext == "directory":
+        return dataset_wrapper_to_directory_json(inputs_dir, dataset_wrapper)
+
     extra_files_path = dataset_wrapper.extra_files_path
     secondary_files_path = os.path.join(extra_files_path, "__secondary_files__")
     path = str(dataset_wrapper)
+    raw_file_object = {"class": "File"}
+
     if os.path.exists(secondary_files_path):
         safe_makedirs(inputs_dir)
         name = os.path.basename(path)
         new_input_path = os.path.join(inputs_dir, name)
         os.symlink(path, new_input_path)
+        secondary_files = []
         for secondary_file_name in os.listdir(secondary_files_path):
             secondary_file_path = os.path.join(secondary_files_path, secondary_file_name)
-            os.symlink(secondary_file_path, new_input_path + secondary_file_name)
+            target = os.path.join(inputs_dir, secondary_file_name)
+            log.info("linking [%s] to [%s]" % (secondary_file_path, target))
+            os.symlink(secondary_file_path, target)
+            is_dir = os.path.isdir(os.path.realpath(secondary_file_path))
+            secondary_files.append({"class": "File" if not is_dir else "Directory", "location": target})
+
+        raw_file_object["secondaryFiles"] = secondary_files
         path = new_input_path
 
-    return {"location": path,
-            "class": "File"}
+    raw_file_object["location"] = path
+    set_basename_and_derived_properties(raw_file_object, str(dataset_wrapper.cwl_filename or dataset_wrapper.name))
+    return raw_file_object
+
+
+def dataset_wrapper_to_directory_json(inputs_dir, dataset_wrapper):
+    assert dataset_wrapper.ext == "directory"
+
+    return {"location": dataset_wrapper.extra_files_path,
+            "class": "Directory"}
 
 
 def collection_wrapper_to_array(inputs_dir, wrapped_value):
@@ -171,6 +195,9 @@ def to_cwl_job(tool, param_dict, local_working_directory):
         if type_representation.name == "file":
             dataset_wrapper = param_dict_value
             return dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper)
+        elif type_representation.name == "directory":
+            dataset_wrapper = param_dict_value
+            return dataset_wrapper_to_directory_json(inputs_dir, dataset_wrapper)
         elif type_representation.name == "integer":
             return int(str(param_dict_value))
         elif type_representation.name == "long":
@@ -295,6 +322,9 @@ def to_galaxy_parameters(tool, as_dict):
                 type_representation_name = "string"
             elif isinstance(as_dict_value, dict) and "src" in as_dict_value and "id" in as_dict_value and "file" in case_strings:
                 type_representation_name = "file"
+            elif isinstance(as_dict_value, dict) and "src" in as_dict_value and "id" in as_dict_value and "directory" in case_strings:
+                # TODO: can't disambiuate with above if both are available...
+                type_representation_name = "directory"
             elif "field" in case_strings:
                 type_representation_name = "field"
             elif "json" in case_strings and as_dict_value is not None:
