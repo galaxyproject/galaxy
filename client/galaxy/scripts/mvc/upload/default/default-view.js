@@ -1,62 +1,6 @@
 /** Renders contents of the default uploader */
-define([ 'utils/utils', 'mvc/upload/upload-model', 'mvc/upload/default/default-row', 'mvc/upload/upload-ftp', 'mvc/upload/upload-extension', 'mvc/ui/ui-popover', 'mvc/ui/ui-select', 'mvc/ui/ui-misc', 'utils/uploadbox'],
-function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Select, Ui ) {
-
-    var LimitLoader = Backbone.View.extend({
-        initialize: function( options ) {
-            var self = this;
-            this.$container   = options.$container;
-            this.collection   = options.collection;
-            this.new_content  = options.new_content;
-            this.max          = options.max || 50;
-            this.content_list = {}
-            this.$message     = $( '<div/>' ).addClass( 'ui-limitloader' ).append( '...only the first ' + this.max + ' entries are visible.' );
-            this.$container.append( this.$message );
-        },
-
-        /** Checks if the limit has been reached */
-        _done: function() {
-            var done = _.size( this.content_list ) > this.max;
-            this.$message[ done ? 'show' : 'hide' ]();
-            return done;
-        },
-
-        /** Remove all content */
-        reset: function() {
-            _.each( this.content_list, function( content ) {
-                content.remove();
-            });
-            this.content_list = {};
-            this.$message.hide();
-        },
-
-        /** Remove content */
-        remove: function( model_id ) {
-            var content = this.content_list[ model_id ];
-            if ( content ) {
-                content.remove();
-                delete this.content_list[ model_id ];
-            }
-            this.refresh();
-        },
-
-        /** Refreshes container content by adding new views if visible */
-        refresh: function() {
-            if ( !this._done() ) {
-                for ( var i in this.collection.models ) {
-                    var model = this.collection.models[ i ];
-                    var view = this.content_list[ model.id ];
-                    if ( !this.content_list[ model.id ] ) {
-                        var content = this.new_content( model );
-                        this.content_list[ model.id ] = content;
-                        if ( this._done() ) {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    });
+define([ 'utils/utils', 'mvc/upload/upload-model', 'mvc/upload/default/default-row', 'mvc/upload/upload-ftp', 'mvc/upload/upload-extension', 'mvc/ui/ui-popover', 'mvc/ui/ui-select', 'mvc/ui/ui-misc', 'mvc/lazy/lazy-limited', 'utils/uploadbox'],
+function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Select, Ui, LazyLimited ) {
 
     return Backbone.View.extend({
         // current upload size in bytes
@@ -146,9 +90,8 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
             });
 
             // Lazy load helper
-            this.loader = new LimitLoader({
+            this.loader = new LazyLimited({
                 $container  : this.$uploadbox,
-                $content    : this.$uploadtable,
                 collection  : this.collection,
                 new_content : function( model ) {
                     var upload_row = new UploadRow( self, { model: model } )
