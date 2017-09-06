@@ -1,0 +1,16 @@
+<tool id="count_multi_file" name="count_multi_file">
+    <description>count the number of datasets in a multiple file input</description>
+    <command><![CDATA[
+        echo '${len($input1)}' > '$out_file1'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" label="Concatenate Dataset" multiple="true" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

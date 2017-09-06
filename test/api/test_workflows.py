@@ -1272,6 +1272,86 @@ test_data:
 """, history_id=history_id, wait=True)
             self.assertEqual("chr16\t142908\t143003\tCCDS10397.1_cds_0_0_chr16_142909_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
 
+    @skip_without_tool("empty_list")
+    @skip_without_tool("count_list")
+    @skip_without_tool("random_lines1")
+    def test_empty_list_mapping(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+outputs:
+  - id: count_list
+    source: count_list#out_file1
+steps:
+  - tool_id: empty_list
+    label: empty_list
+    state:
+      input1:
+        $link: input1
+  - tool_id: random_lines1
+    label: random_lines
+    state:
+      num_lines: 2
+      input:
+        $link: empty_list#output
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+  - tool_id: count_list
+    label: count_list
+    state:
+      input1:
+        $link: random_lines#out_file1
+
+test_data:
+  input1:
+    value: 1.bed
+    type: File
+""", history_id=history_id, wait=True)
+            self.assertEqual("0\n", self.dataset_populator.get_history_dataset_content(history_id))
+
+    @skip_without_tool("empty_list")
+    @skip_without_tool("count_multi_file")
+    @skip_without_tool("random_lines1")
+    def test_empty_list_reduction(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+outputs:
+  - id: count_multi_file
+    source: count_multi_file#out_file1
+steps:
+  - tool_id: empty_list
+    label: empty_list
+    state:
+      input1:
+        $link: input1
+  - tool_id: random_lines1
+    label: random_lines
+    state:
+      num_lines: 2
+      input:
+        $link: empty_list#output
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+  - tool_id: count_multi_file
+    label: count_multi_file
+    state:
+      input1:
+        $link: random_lines#out_file1
+
+test_data:
+  input1:
+    value: 1.bed
+    type: File
+""", history_id=history_id, wait=True)
+            self.assertEqual("0\n", self.dataset_populator.get_history_dataset_content(history_id))
+
     @skip_without_tool("cat")
     def test_cancel_new_workflow_when_history_deleted(self):
         with self.dataset_populator.test_history() as history_id:
