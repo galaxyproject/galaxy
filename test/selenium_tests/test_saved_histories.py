@@ -17,8 +17,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
     def test_saved_histories_list(self):
         self.navigate_to_saved_histories_page()
         # self.assert_grid_histories_are([HISTORY2_NAME, 'Unnamed history'])
-        histories = self.get_histories()
-        assert HISTORY2_NAME in histories
+        self.assert_history_in_grid(HISTORY2_NAME)
 
     @selenium_test
     def test_rename_history(self):
@@ -39,6 +38,26 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         self.navigate_to_saved_histories_page()
         self.assert_grid_histories_are([HISTORY1_NAME, HISTORY2_NAME], False)
 
+    @selenium_test
+    def test_delete_and_undelete_history(self):
+        self.navigate_to_saved_histories_page()
+
+        # Delete the history
+        self.click_popup_option(HISTORY2_NAME, 'Delete')
+
+        self.assert_history_in_grid(HISTORY2_NAME, False)
+
+        self.show_advanced_search()
+        self.select_filter('deleted', 'True')
+        time.sleep(1)
+
+        # Restore the history
+        self.click_popup_option(HISTORY2_NAME, 'Undelete')
+        self.wait_for_selector_visible('.donemessage')
+        self.select_filter('deleted', 'False')
+
+        self.assert_history_in_grid(HISTORY2_NAME)
+
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
         actual_histories = self.get_histories()
         if not sort_matters:
@@ -46,13 +65,20 @@ class SavedHistoriesTestCase(SeleniumTestCase):
             actual_histories = set(actual_histories)
         self.assertEqual(expected_histories, actual_histories)
 
+    def assert_history_in_grid(self, history, present=True):
+        histories = self.get_histories()
+        if present:
+            assert history in histories
+        else:
+            assert history not in histories
+
     def get_histories(self):
         time.sleep(1.5)
         names = []
         grid = self.wait_for_selector('#grid-table-body')
         for row in grid.find_elements_by_tag_name('tr'):
-            cell = row.find_elements_by_tag_name('td')[1]  # Name
-            names.append(cell.text)
+            name_cell = row.find_elements_by_tag_name('td')[1]
+            names.append(name_cell.text)
         return names
 
     def navigate_to_saved_histories_page(self):
@@ -62,9 +88,8 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         label = self.navigation_data['labels']['masthead']['menus']['user']
         self.click_label(label)
 
-        selector = 'a[href="/histories/list"]'
-        histories_link = self.wait_for_selector_clickable(selector)
-        histories_link.click()
+        saved_histories_link = self.wait_for_selector_clickable('a[href="/histories/list"]')
+        saved_histories_link.click()
 
     def ensure_user_and_histories(self):
         if getattr(SavedHistoriesTestCase, 'user_email', None):
@@ -84,6 +109,17 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         editable_text_input_element.send_keys(name)
         self.send_enter(editable_text_input_element)
 
+    def show_advanced_search(self):
+        search_selector = '#standard-search .advanced-search-toggle'
+        search_link = self.wait_for_selector_clickable(search_selector)
+        search_link.click()
+
+    def select_filter(self, filter_key, filter_value):
+        filter_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
+            (filter_key, filter_value)
+        filter_link = self.wait_for_selector_clickable(filter_selector)
+        filter_link.click()
+
     def click_history_option(self, option_label):
         self.home()
         self.click_history_options()  # Open history menu
@@ -93,7 +129,6 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         menu_option.click()
 
     def click_popup_option(self, history_name, option_label):
-        # Find history with a given name
         history = None
         grid = self.wait_for_selector('#grid-table-body')
         for row in grid.find_elements_by_tag_name('tr'):
@@ -101,7 +136,9 @@ class SavedHistoriesTestCase(SeleniumTestCase):
             if name_cell.text == history_name:
                 history = name_cell
                 break
-        self.assertIsNotNone(history)
+
+        if history is None:
+            raise AssertionError('Failed to find history with name [%s]' % history_name)
 
         menu_button = name_cell.find_element_by_css_selector('.popup')
         x_offset = menu_button.size['width'] - 5
