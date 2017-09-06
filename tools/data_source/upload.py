@@ -25,12 +25,12 @@ from galaxy.util.checkers import check_binary, check_bz2, check_gzip, check_html
 from galaxy.util.image_util import get_image_ext
 
 
-try:
+if sys.version_info < (3, 3):
+    import bz2file as bz2
+else:
     import bz2
-except:
-    bz2 = None
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 7)
 
 
 def stop_err(msg, ret=1):
@@ -165,7 +165,7 @@ def add_file(dataset, registry, json_file, output_path):
                     os.chmod(dataset.path, 0o644)
                 dataset.name = dataset.name.rstrip('.gz')
                 data_type = 'gzip'
-            if not data_type and bz2 is not None:
+            if not data_type:
                 # See if we have a bz2 file, much like gzip
                 is_bzipped, is_valid = check_bz2(dataset.path, check_content)
                 if is_bzipped and not is_valid:
