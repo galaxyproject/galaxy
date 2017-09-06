@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.9.5.dev0
+17.9.5 (2017-09-06)
 ---------------------
 
 * Bring in updated CWL utilities from the upstream work on CWL integration.
