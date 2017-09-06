@@ -731,6 +731,24 @@ class ToolsTestCase(api.ApiTestCase):
         }
         self._run_and_check_simple_collection_mapping(history_id, inputs)
 
+    @skip_without_tool("cat1")
+    def test_map_over_empty_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=[]).json()['id']
+            inputs = {
+                "input1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
+            }
+            create = self._run_cat1(history_id, inputs=inputs, assert_ok=True)
+            outputs = create['outputs']
+            jobs = create['jobs']
+            implicit_collections = create['implicit_collections']
+            self.assertEquals(len(jobs), 0)
+            self.assertEquals(len(outputs), 0)
+            self.assertEquals(len(implicit_collections), 1)
+
+            empty_output = implicit_collections[0]
+            assert empty_output["name"] == "Concatenate datasets on collection 1", empty_output
+
     @skip_without_tool("output_action_change_format")
     def test_map_over_with_output_format_actions(self):
         for use_action in ["do", "dont"]:
