@@ -149,9 +149,8 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
                 file_path   : file.path,
                 file_data   : file
             });
-            this.collection.add( new_model );
             this.render();
-            this.loader.refresh();
+            this.collection.add( new_model );
         },
 
         /** Progress */
@@ -193,7 +192,6 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
 
         /** Remove model from upload list */
         _eventRemove: function( model ) {
-            this.loader.remove( model.id );
             var status = model.get( 'status' );
             if ( status == 'success' ) {
                 this.counter.success--;
@@ -286,7 +284,6 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
         _eventReset: function() {
             if ( this.counter.running == 0 ){
                 var self = this;
-                this.loader.reset();
                 this.collection.reset();
                 this.counter.reset();
                 this.uploadbox.reset();

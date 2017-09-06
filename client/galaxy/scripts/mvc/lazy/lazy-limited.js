@@ -10,6 +10,9 @@ define([], function() {
             this.content_list = {}
             this.$message     = $( '<div/>' ).addClass( 'ui-limitloader' ).append( '...only the first ' + this.max + ' entries are visible.' );
             this.$container.append( this.$message );
+            this.listenTo( this.collection, 'reset', this._reset, this );
+            this.listenTo( this.collection, 'add', this._refresh, this );
+            this.listenTo( this.collection, 'remove', this._remove, this );
         },
 
         /** Checks if the limit has been reached */
@@ -20,7 +23,7 @@ define([], function() {
         },
 
         /** Remove all content */
-        reset: function() {
+        _reset: function() {
             _.each( this.content_list, function( content ) {
                 content.remove();
             });
@@ -29,17 +32,18 @@ define([], function() {
         },
 
         /** Remove content */
-        remove: function( model_id ) {
+        _remove: function( model ) {
+            var model_id = model.id;
             var content = this.content_list[ model_id ];
             if ( content ) {
                 content.remove();
                 delete this.content_list[ model_id ];
             }
-            this.refresh();
+            this._refresh();
         },
 
         /** Refreshes container content by adding new views if visible */
-        refresh: function() {
+        _refresh: function() {
             if ( !this._done() ) {
                 for ( var i in this.collection.models ) {
                     var model = this.collection.models[ i ];
