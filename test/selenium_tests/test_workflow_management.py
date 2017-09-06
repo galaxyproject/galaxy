@@ -112,10 +112,6 @@ class WorkflowManagementTestCase(SeleniumTestCase):
         self.assertEqual(len(self.workflow_index_table_elements()), n)
 
     def _workflow_import_from_url(self):
-        element = self.wait_for_selector_clickable(self.test_data["selectors"]["workflows"]["import_button"])
-        element.click()
+        self.workflow_index_click_import()
         url = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test/base/data/test_workflow_1.ga"
-        form_element = self.driver.find_element_by_css_selector("#center form")
-        url_element = form_element.find_element_by_css_selector("input[type='text']")
-        url_element.send_keys(url)
-        self.click_submit(form_element)
+        self.workflow_import_submit_url(url)
