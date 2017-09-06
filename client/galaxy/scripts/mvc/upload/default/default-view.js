@@ -211,23 +211,34 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
 
         /** Start upload process */
         _eventStart: function() {
-            if ( this.counter.announce == 0 || this.counter.running > 0 ) {
-                return;
+            if ( this.counter.announce != 0 && this.counter.running == 0 ) {
+                // prepare upload process
+                var self = this;
+                this.upload_size = 0;
+                this.upload_completed = 0;
+                this.collection.each( function( model ) {
+                    if( model.get( 'status' ) == 'init' ) {
+                        model.set( 'status', 'queued' );
+                        self.upload_size += model.get( 'file_size' );
+                    }
+                });
+                this.ui_button.model.set( { 'percentage': 0, 'status': 'success' } );
+                this.counter.running = this.counter.announce;
+                this.history_id = this.app.currentHistory();
+
+                // package ftp files separately, and remove them from queue
+                this.collection.each( function( model ) {
+                    if( model.get( 'status' ) == 'queued' && model.get( 'file_mode' ) == 'ftp' ) {
+                        self.uploadbox.remove( model.id );
+                        self._eventSuccess( model.id );
+                        //self._eventError( model.id, 'Upload failed' );
+                    }
+                });
+
+                // queue remaining files
+                this.uploadbox.start();
+                this._updateScreen();
             }
-            var self = this;
-            this.upload_size = 0;
-            this.upload_completed = 0;
-            this.collection.each( function( model ) {
-                if( model.get( 'status' ) == 'init' ) {
-                    model.set( 'status', 'queued' );
-                    self.upload_size += model.get( 'file_size' );
-                }
-            });
-            this.ui_button.model.set( { 'percentage': 0, 'status': 'success' } );
-            this.counter.running = this.counter.announce;
-            this.history_id = this.app.currentHistory();
-            this.uploadbox.start();
-            this._updateScreen();
         },
 
         /** Pause upload process */
