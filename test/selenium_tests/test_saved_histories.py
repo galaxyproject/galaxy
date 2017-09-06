@@ -68,6 +68,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
     def ensure_user_and_histories(self):
         if getattr(SavedHistoriesTestCase, 'user_email', None):
+            self.home()  # ensure Galaxy is loaded
             self.submit_login(self.user_email)
             return
 
