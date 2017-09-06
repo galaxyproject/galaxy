@@ -139,6 +139,9 @@
   <tool file="for_workflows/mapper.xml" />
   <tool file="for_workflows/mapper2.xml" />
   <tool file="for_workflows/split.xml" />
+  <tool file="for_workflows/empty_list.xml" />
+  <tool file="for_workflows/count_list.xml" />
+  <tool file="for_workflows/count_multi_file.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
 
   <section id="filter" name="For Tours">
