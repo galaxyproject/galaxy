@@ -257,13 +257,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
                 this.history_id = this.app.currentHistory();
 
                 // package ftp files separately, and remove them from queue
-                this.collection.each( function( model ) {
-                    if( model.get( 'status' ) == 'queued' && model.get( 'file_mode' ) == 'ftp' ) {
-                        self.uploadbox.remove( model.id );
-                        self._eventSuccess( model.id );
-                        //self._eventError( model.id, 'Upload failed' );
-                    }
-                });
+                this._uploadFtp();
 
                 // queue remaining files
                 this.uploadbox.start();
@@ -310,6 +304,18 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
             this.collection.each( function( model ) {
                 if ( model.get( 'status' ) == 'init' && ( model.get( 'genome' ) == self.options.default_genome || !defaults_only ) ) {
                     model.set( 'genome', genome );
+                }
+            });
+        },
+
+        /** Package and upload ftp files in a single request */
+        _uploadFtp: function() {
+            var self = this;
+            this.collection.each( function( model ) {
+                if( model.get( 'status' ) == 'queued' && model.get( 'file_mode' ) == 'ftp' ) {
+                    self.uploadbox.remove( model.id );
+                    self._eventSuccess( model.id );
+                    //self._eventError( model.id, 'Upload failed' );
                 }
             });
         },
