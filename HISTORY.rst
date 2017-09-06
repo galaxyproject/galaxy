@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.9.4.dev0
+17.9.4 (2017-09-06)
 ---------------------
 
 * Bring in various Galaxy updates including numerous Conda fixes and changes (thanks to @nsoranzo).
