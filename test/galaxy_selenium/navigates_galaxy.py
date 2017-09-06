@@ -423,6 +423,11 @@ class NavigatesGalaxy(HasDriver):
         search_element.click()
         return search_element
 
+    @retry_during_transitions
+    def workflow_index_click_import(self):
+        element = self.wait_for_selector_clickable(self.test_data["selectors"]["workflows"]["import_button"])
+        element.click()
+
     def workflow_index_rename(self, new_name, workflow_index=0):
         self.workflow_index_click_option("Rename", workflow_index=workflow_index)
         alert = self.driver.switch_to.alert
@@ -458,6 +463,12 @@ class NavigatesGalaxy(HasDriver):
         for tag_span in tag_spans:
             tags.append(tag_span.text)
         return tags
+
+    def workflow_import_submit_url(self, url):
+        form_element = self.wait_for_selector_visible("#center form")
+        url_element = form_element.find_element_by_css_selector("input[type='text']")
+        url_element.send_keys(url)
+        self.click_submit(form_element)
 
     def workflow_sharing_click_publish(self):
         button = self.wait_for_selector_clickable("input[name='make_accessible_and_publish']")
@@ -507,6 +518,7 @@ class NavigatesGalaxy(HasDriver):
     def click_masthead_workflow(self):
         self.click_xpath(self.navigation_data["selectors"]["masthead"]["workflow"])
 
+    @retry_during_transitions
     def click_button_new_workflow(self):
         element = self.wait_for_selector_clickable(self.navigation_data["selectors"]["workflows"]["new_button"])
         element.click()
