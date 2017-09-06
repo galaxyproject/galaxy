@@ -1,6 +1,82 @@
 /** Renders contents of the default uploader */
 define([ 'utils/utils', 'mvc/upload/upload-model', 'mvc/upload/default/default-row', 'mvc/upload/upload-ftp', 'mvc/upload/upload-extension', 'mvc/ui/ui-popover', 'mvc/ui/ui-select', 'mvc/ui/ui-misc', 'utils/uploadbox'],
 function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Select, Ui ) {
+
+    var LazyLoader = Backbone.View.extend({
+        initialize: function( options ) {
+            var self = this;
+            this.$container  = options.$container;
+            this.collection  = options.collection;
+            this.new_content = options.new_content;
+            this.max         = options.max || 100;
+            this.$container.on( 'scroll', function() { self._scroll() } );
+            this.container_scroll = 0;
+            this.container_height = 0;
+            this.content_height = 0;
+            this.content_list = {}
+        },
+
+        /** Handle change in scroll events */
+        _scroll: function() {
+            this.container_scroll = this.$container.scrollTop();
+            if ( this.container_scroll + this.container_height >= this.content_height ) {
+                this.refresh();
+            }
+        },
+
+        /** Returns the number of visible views */
+        _size: function() {
+            return _.size( this.content_list );
+        },
+
+        /** Remove all content */
+        reset: function() {
+            var self = this;
+            this.content_height = 0;
+            _.each( this.content_list, function( content, model_id ) {
+                content.remove();
+                delete self.content_list[ model_id ];
+            });
+        },
+
+        /** Remove content */
+        remove: function( model_id ) {
+            var content = this.content_list[ model_id ];
+            if ( content ) {
+                this.content_height -= content.$el.height();
+                content.remove();
+                delete this.content_list[ model_id ];
+            }
+        },
+
+        /** Refreshes container content by adding new views if visible */
+        refresh: function() {
+            if ( !this.done ) {
+                if ( this._size() > this.max ) {
+                    this.$container.append( $( '<div/>' ).addClass( 'ui-lazyloader' ).append( '...only the first ' + this.max + ' entries are visible.' ) );
+                    this.done = true;
+                } else {
+                    this.$container
+                    this.container_height = this.container_height || this.$container.height();
+                    var limit = this.container_scroll + 2 * this.container_height;
+                    for ( var i in this.collection.models ) {
+                        var model = this.collection.models[ i ];
+                        var view = this.content_list[ model.id ];
+                        if ( !this.content_list[ model.id ] ) {
+                            if ( limit > this.content_height ) {
+                                var content = this.new_content( model );
+                                this.content_list[ model.id ] = content;
+                                this.content_height += content.$el.height();
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+
     return Backbone.View.extend({
         // current upload size in bytes
         upload_size: 0,
@@ -14,7 +90,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
             success     : 0,
             error       : 0,
             running     : 0,
-            reset : function() { this.announce = this.success = this.error = this.running = 0 }
+            reset       : function() { this.announce = this.success = this.error = this.running = 0 }
         },
 
         initialize : function( app ) {
@@ -25,7 +101,11 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
             this.list_genomes       = app.list_genomes;
             this.ui_button          = app.ui_button;
             this.ftp_upload_site    = app.currentFtp();
+
+            // build template
             this.setElement( this._template() );
+            this.$uploadbox         = this.$( '.upload-box' );
+            this.$uploadtable       = this.$( '.upload-table' );
 
             // append buttons to dom
             this.btnLocal    = new Ui.Button( { id: 'btn-local', title: 'Choose local file',   onclick: function() { self.uploadbox.select() }, icon: 'fa fa-laptop' } );
@@ -40,7 +120,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
             });
 
             // file upload
-            this.uploadbox = this.$( '.upload-box' ).uploadbox({
+            this.uploadbox = this.$uploadbox.uploadbox({
                 url             : this.app.options.nginx_upload_path,
                 announce        : function( index, file )       { self._eventAnnounce( index, file ) },
                 initialize      : function( index )             { return self.app.toData( [ self.collection.get( index ) ], self.history_id ) },
@@ -48,8 +128,8 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
                 success         : function( index, message )    { self._eventSuccess( index, message ) },
                 error           : function( index, message )    { self._eventError( index, message ) },
                 complete        : function()                    { self._eventComplete() },
-                ondragover      : function()                    { self.$( '.upload-box' ).addClass( 'highlight' ) },
-                ondragleave     : function()                    { self.$( '.upload-box' ).removeClass( 'highlight' ) }
+                ondragover      : function()                    { self.$uploadbox.addClass( 'highlight' ) },
+                ondragleave     : function()                    { self.$uploadbox.removeClass( 'highlight' ) }
             });
 
             // add ftp file viewer
@@ -84,6 +164,19 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
                 onchange    : function( genome ) { self.updateGenome(genome) }
             });
 
+            // Lazy load helper
+            this.loader = new LazyLoader({
+                $container  : this.$uploadbox,
+                $content    : this.$uploadtable,
+                collection  : this.collection,
+                new_content : function( model ) {
+                    var upload_row = new UploadRow( self, { model: model } )
+                    self.$uploadtable.find( '> tbody:first' ).append( upload_row.$el );
+                    upload_row.render();
+                    return upload_row;
+                }
+            });
+
             // events
             this.collection.on( 'remove', function( model ) { self._eventRemove( model ) } );
             this._updateScreen();
@@ -101,10 +194,8 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
                 file_data   : file
             });
             this.collection.add( new_model );
-            var upload_row = new UploadRow( this, { model: new_model } );
-            this.$( '.upload-table > tbody:first' ).append( upload_row.$el );
             this._updateScreen();
-            upload_row.render();
+            this.loader.refresh();
         },
 
         /** Progress */
@@ -146,6 +237,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
 
         /** Remove model from upload list */
         _eventRemove: function( model ) {
+            this.loader.remove( model.id );
             var status = model.get( 'status' );
             if ( status == 'success' ) {
                 this.counter.success--;
@@ -226,6 +318,8 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
         /** Remove all */
         _eventReset: function() {
             if ( this.counter.running == 0 ){
+                var self = this;
+                this.loader.reset();
                 this.collection.reset();
                 this.counter.reset();
                 this.uploadbox.reset();
