@@ -7,6 +7,8 @@ HISTORY1_NAME = 'First'
 HISTORY2_NAME = 'Second'
 HISTORY3_NAME = 'Third'
 HISTORY4_NAME = 'Four'
+HISTORY3_TAGS = ['tag3']
+HISTORY4_TAGS = ['tag4']
 
 
 class SavedHistoriesTestCase(SeleniumTestCase):
@@ -156,6 +158,33 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         self.assert_grid_histories_are(['No Items'])
 
+    @selenium_test
+    def test_advanced_search(self):
+        self.navigate_to_saved_histories_page()
+
+        self.show_advanced_search()
+
+        name_filter_selector = '#input-name-filter'
+        tags_filter_selector = '#input-tags-filter'
+
+        # Search by name
+        self.set_filter(name_filter_selector, HISTORY2_NAME)
+        self.assert_grid_histories_are([HISTORY2_NAME])
+        self.unset_filter('name', HISTORY2_NAME)
+
+        self.set_filter(name_filter_selector, HISTORY4_NAME)
+        self.assert_grid_histories_are(['No Items'])
+        self.unset_filter('name', HISTORY4_NAME)
+
+        # Search by tags
+        self.set_filter(tags_filter_selector, HISTORY3_TAGS[0])
+        self.assert_grid_histories_are([HISTORY3_NAME])
+        self.unset_filter('tags', HISTORY3_TAGS[0])
+
+        self.set_filter(tags_filter_selector, HISTORY4_TAGS[0])
+        self.assert_grid_histories_are(['No Items'])
+        self.unset_filter('tags', HISTORY4_TAGS[0])
+
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
         actual_histories = self.get_histories()
         if not sort_matters:
@@ -182,12 +211,34 @@ class SavedHistoriesTestCase(SeleniumTestCase):
             names.append(name)
         return names
 
+    def set_filter(self, selector, value):
+        filter_input = self.wait_for_selector_clickable(selector)
+        filter_input.send_keys(value)
+        self.send_enter(filter_input)
+
     def unset_filter(self, filter_key, filter_value):
         close_button_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
             (filter_key, filter_value)
         close_button = self.wait_for_selector_clickable(close_button_selector)
         close_button.click()
         time.sleep(.5)
+
+    def set_tags(self, tags):
+        tag_icon_selector = self.test_data['historyPanel']['selectors']['history']['tagIcon']
+        tag_area_selector = self.test_data['historyPanel']['selectors']['history']['tagArea']
+
+        if not self.is_displayed(tag_area_selector):
+            tag_icon = self.wait_for_selector_clickable(tag_icon_selector)
+            tag_icon.click()
+
+        tag_area_selector += ' .tags-input input'
+        tag_area = self.wait_for_selector_clickable(tag_area_selector)
+        tag_area.click()
+
+        for tag in tags:
+            tag_area.send_keys(tag)
+            self.send_enter(tag_area)
+            time.sleep(.5)
 
     def navigate_to_saved_histories_page(self):
         self.home()
@@ -207,8 +258,10 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         SavedHistoriesTestCase.user_email = self._get_random_email()
         self.register(self.user_email)
+
         self.create_history(HISTORY2_NAME)
         self.create_history(HISTORY3_NAME)
+        self.set_tags(HISTORY3_TAGS)
 
     def create_history(self, name):
         self.click_history_option('Create New')
@@ -270,3 +323,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         self.history_panel_name_element().click()
         edit_title_input_selector = self.test_data['historyPanel']['selectors']['history']['nameEditableTextInput']
         return self.wait_for_selector(edit_title_input_selector)
+
+    def is_displayed(self, selector):
+        element = self.driver.find_element_by_css_selector(selector)
+        return element.is_displayed()
