@@ -12,8 +12,8 @@ import sys
 import tempfile
 import zipfile
 from json import dumps
-import h5py
 
+import h5py
 import pysam
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
