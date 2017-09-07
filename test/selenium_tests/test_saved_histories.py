@@ -21,6 +21,25 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         self.assert_history_in_grid(HISTORY2_NAME)
 
     @selenium_test
+    def test_history_switch(self):
+        self.navigate_to_saved_histories_page()
+
+        self.click_popup_option(HISTORY2_NAME, 'Switch')
+        time.sleep(1)
+
+        selector = '#current-history-panel .name.editable-text'
+        history_name = self.wait_for_selector(selector)
+
+        self.assertEqual(history_name.text, HISTORY2_NAME)
+
+    @selenium_test
+    def test_history_view(self):
+        self.navigate_to_saved_histories_page()
+        self.click_popup_option(HISTORY2_NAME, 'View')
+        history_name = self.wait_for_selector('.name.editable-text')
+        self.assertEqual(history_name.text, HISTORY2_NAME)
+
+    @selenium_test
     def test_rename_history(self):
         self.navigate_to_saved_histories_page()
 
@@ -58,18 +77,6 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         self.select_filter('deleted', 'False')
 
         self.assert_history_in_grid(HISTORY2_NAME)
-
-    @selenium_test
-    def test_history_switch(self):
-        self.navigate_to_saved_histories_page()
-
-        self.click_popup_option(HISTORY2_NAME, 'Switch')
-        time.sleep(1)
-
-        selector = '#current-history-panel .name.editable-text'
-        history_name = self.wait_for_selector(selector)
-
-        self.assertEqual(history_name.text, HISTORY2_NAME)
 
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
         actual_histories = self.get_histories()
