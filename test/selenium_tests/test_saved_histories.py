@@ -17,8 +17,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
     @selenium_test
     def test_saved_histories_list(self):
         self.navigate_to_saved_histories_page()
-        # self.assert_grid_histories_are([HISTORY3_NAME, HISTORY2_NAME, 'Unnamed history'])
-        self.assert_history_in_grid(HISTORY2_NAME)
+        self.assert_histories_in_grid([HISTORY2_NAME, HISTORY3_NAME])
 
     @selenium_test
     def test_history_switch(self):
@@ -81,7 +80,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         # Delete the history
         self.click_popup_option(HISTORY2_NAME, 'Delete')
 
-        self.assert_history_in_grid(HISTORY2_NAME, False)
+        self.assert_histories_in_grid([HISTORY2_NAME], False)
 
         self.show_advanced_search()
         self.select_filter('deleted', 'True')
@@ -89,10 +88,39 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         # Restore the history
         self.click_popup_option(HISTORY2_NAME, 'Undelete')
+
         self.wait_for_selector_visible('.donemessage')
         self.select_filter('deleted', 'False')
 
-        self.assert_history_in_grid(HISTORY2_NAME)
+        self.assert_histories_in_grid([HISTORY2_NAME])
+
+    @selenium_test
+    def test_delete_and_undelete_multiple_histories(self):
+        self.navigate_to_saved_histories_page()
+
+        delete_button_selector = 'input[type="button"][value="Delete"]'
+        undelete_button_selector = 'input[type="button"][value="Undelete"]'
+
+        # Delete multiple histories
+        self.check_histories([HISTORY2_NAME, HISTORY3_NAME])
+        delete_button = self.wait_for_selector_clickable(delete_button_selector)
+        delete_button.click()
+
+        self.assert_histories_in_grid([HISTORY2_NAME, HISTORY3_NAME], False)
+
+        self.show_advanced_search()
+        self.select_filter('deleted', 'True')
+        time.sleep(1)
+
+        # Restore multiple histories
+        self.check_histories([HISTORY2_NAME, HISTORY3_NAME])
+        undelete_button = self.wait_for_selector_clickable(undelete_button_selector)
+        undelete_button.click()
+
+        self.wait_for_selector_visible('.donemessage')
+        self.select_filter('deleted', 'False')
+
+        self.assert_histories_in_grid([HISTORY2_NAME, HISTORY3_NAME])
 
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
         actual_histories = self.get_histories()
@@ -101,12 +129,13 @@ class SavedHistoriesTestCase(SeleniumTestCase):
             actual_histories = set(actual_histories)
         self.assertEqual(expected_histories, actual_histories)
 
-    def assert_history_in_grid(self, history, present=True):
-        histories = self.get_histories()
+    def assert_histories_in_grid(self, expected_histories, present=True):
+        actual_histories = self.get_histories()
+        intersection = list(set(actual_histories).intersection(expected_histories))
         if present:
-            assert history in histories
+            self.assertEqual(intersection, expected_histories)
         else:
-            assert history not in histories
+            self.assertEqual(intersection, [])
 
     def get_histories(self):
         time.sleep(1.5)
@@ -184,6 +213,15 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         popup_option = self.driver.find_element_by_link_text(option_label)
         popup_option.click()
+
+    def check_histories(self, histories):
+        grid = self.wait_for_selector('#grid-table-body')
+        for row in grid.find_elements_by_tag_name('tr'):
+            td = row.find_elements_by_tag_name('td')
+            history_name = td[1].text
+            if history_name in histories:
+                checkbox = td[0].find_element_by_tag_name('input')
+                checkbox.click()
 
     def click_to_rename_history(self):
         self.history_panel_name_element().click()
