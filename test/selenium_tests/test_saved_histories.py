@@ -98,6 +98,24 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         self.assert_histories_in_grid([HISTORY2_NAME])
 
     @selenium_test
+    def test_permanently_delete_history(self):
+        self.create_history(HISTORY4_NAME)
+
+        self.navigate_to_saved_histories_page()
+        self.assert_histories_in_grid([HISTORY4_NAME])
+
+        self.click_popup_option(HISTORY4_NAME, 'Delete Permanently')
+        alert = self.driver.switch_to.alert
+        alert.accept()
+
+        self.assert_histories_in_grid([HISTORY4_NAME], False)
+
+        self.show_advanced_search()
+        self.select_filter('deleted', 'True')
+
+        self.assert_histories_in_grid([HISTORY4_NAME])
+
+    @selenium_test
     def test_delete_and_undelete_multiple_histories(self):
         self.navigate_to_saved_histories_page()
 
