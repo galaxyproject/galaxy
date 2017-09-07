@@ -5,6 +5,7 @@ from .framework import SeleniumTestCase, selenium_test
 # Test case data
 HISTORY1_NAME = 'First'
 HISTORY2_NAME = 'Second'
+HISTORY3_NAME = 'Third'
 
 
 class SavedHistoriesTestCase(SeleniumTestCase):
@@ -16,7 +17,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
     @selenium_test
     def test_saved_histories_list(self):
         self.navigate_to_saved_histories_page()
-        # self.assert_grid_histories_are([HISTORY2_NAME, 'Unnamed history'])
+        # self.assert_grid_histories_are([HISTORY3_NAME, HISTORY2_NAME, 'Unnamed history'])
         self.assert_history_in_grid(HISTORY2_NAME)
 
     @selenium_test
@@ -36,7 +37,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         self.assertEqual(expected_message, message.text)
 
         self.navigate_to_saved_histories_page()
-        self.assert_grid_histories_are([HISTORY1_NAME, HISTORY2_NAME], False)
+        self.assert_grid_histories_are([HISTORY1_NAME, HISTORY2_NAME, HISTORY3_NAME], False)
 
     @selenium_test
     def test_delete_and_undelete_history(self):
@@ -57,6 +58,18 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         self.select_filter('deleted', 'False')
 
         self.assert_history_in_grid(HISTORY2_NAME)
+
+    @selenium_test
+    def test_history_switch(self):
+        self.navigate_to_saved_histories_page()
+
+        self.click_popup_option(HISTORY2_NAME, 'Switch')
+        time.sleep(1)
+
+        selector = '#current-history-panel .name.editable-text'
+        history_name = self.wait_for_selector(selector)
+
+        self.assertEqual(history_name.text, HISTORY2_NAME)
 
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
         actual_histories = self.get_histories()
@@ -100,6 +113,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         SavedHistoriesTestCase.user_email = self._get_random_email()
         self.register(self.user_email)
         self.create_history(HISTORY2_NAME)
+        self.create_history(HISTORY3_NAME)
 
     def create_history(self, name):
         self.click_history_option('Create New')
