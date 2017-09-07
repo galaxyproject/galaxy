@@ -305,6 +305,65 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             return None
         return state
 
+    def check_watched_item( self, ajs, new_watched ):
+        """
+        look at a single watched job, determine its state, and deal with errors
+        that could happen in this process. to be called from check_watched_items()
+        returns the state or None if exceptions occured
+        in the latter case the job is appended to new_watched if a
+        1 drmaa.InternalException,
+        2 drmaa.InvalidJobExceptionnot, or
+        3 drmaa.DrmCommunicationException occured
+        (which causes the job to be tested again in the next iteration of check_watched_items)
+        - the job is finished as errored if any other exception occurs
+        - the job is finished OK or errored after the maximum number of retries
+          depending on the exception
+        Note that None is returned in all cases where the loop in check_watched_items
+        is to be continued
+        """
+        external_job_id = ajs.job_id
+        galaxy_id_tag = ajs.job_wrapper.get_id_tag()
+        state = None
+        try:
+            assert external_job_id not in ( None, 'None' ), '(%s/%s) Invalid job id' % ( galaxy_id_tag, external_job_id )
+            state = self.ds.job_status( external_job_id )
+            # Reset exception retries
+            for retry_exception in RETRY_EXCEPTIONS_LOWER:
+                setattr( ajs, retry_exception + '_retries', 0)
+        except ( drmaa.InternalException, drmaa.InvalidJobException ) as e:
+            ecn = type(e).__name__
+            retry_param = ecn.lower() + '_retries'
+            state_param = ecn.lower() + '_state'
+            retries = getattr( ajs, retry_param, 0 )
+            log.warning("(%s/%s) unable to check job status because of %s exception for %d consecutive tries: %s", galaxy_id_tag, external_job_id, ecn, retries + 1, e)
+            if self.runner_params[ retry_param ] > 0:
+                if retries < self.runner_params[ retry_param ]:
+                    # will retry check on next iteration
+                    setattr( ajs, retry_param, retries + 1 )
+                    new_watched.append( ajs )
+                    return None
+            if self.runner_params[ state_param ] == model.Job.states.OK:
+                log.warning( "(%s/%s) job will now be finished OK", galaxy_id_tag, external_job_id )
+                self.work_queue.put( ( self.finish_job, ajs ) )
+            elif self.runner_params[ state_param ] == model.Job.states.ERROR:
+                log.warning( "(%s/%s) job will now be errored", galaxy_id_tag, external_job_id )
+                self.work_queue.put( ( self.fail_job, ajs ) )
+            else:
+                raise Exception( "%s is set to an invalid value (%s), this should not be possible. See galaxy.jobs.drmaa.__init__()", state_param, self.runner_params[ state_param ] )
+            return None
+        except drmaa.DrmCommunicationException as e:
+            log.warning( "(%s/%s) unable to communicate with DRM: %s", galaxy_id_tag, external_job_id, e )
+            new_watched.append( ajs )
+            return None
+        except Exception as e:
+            # so we don't kill the monitor thread
+            log.exception( "(%s/%s) unable to check job status: %s" % ( galaxy_id_tag, external_job_id, e ) )
+            log.warning( "(%s/%s) job will now be errored" % ( galaxy_id_tag, external_job_id ) )
+            ajs.fail_message = "Cluster could not complete job"
+            self.work_queue.put( ( self.fail_job, ajs ) )
+            return None
+        return state
+
     def check_watched_items( self ):
         """
         Called by the monitor thread to look at each watched job and deal
