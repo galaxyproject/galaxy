@@ -323,20 +323,26 @@ def create_paramfile(trans, uploaded_datasets):
         else:
             try:
                 is_binary = uploaded_dataset.datatype.is_binary
-            except:
+            except Exception:
                 is_binary = None
             try:
                 link_data_only = uploaded_dataset.link_data_only
-            except:
+            except Exception:
                 link_data_only = 'copy_files'
             try:
                 uuid_str = uploaded_dataset.uuid
-            except:
+            except Exception:
                 uuid_str = None
             try:
                 purge_source = uploaded_dataset.purge_source
-            except:
+            except Exception:
                 purge_source = True
+            try:
+                user_ftp_dir = os.path.abspath(trans.user_ftp_dir)
+            except Exception:
+                user_ftp_dir = None
+            if user_ftp_dir and uploaded_dataset.path.startswith(user_ftp_dir):
+                uploaded_dataset.type = 'ftp_import'
             json = dict(file_type=uploaded_dataset.file_type,
                         ext=uploaded_dataset.ext,
                         name=uploaded_dataset.name,

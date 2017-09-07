@@ -6,6 +6,7 @@
 from __future__ import print_function
 
 import codecs
+import errno
 import gzip
 import os
 import shutil
@@ -79,8 +80,13 @@ def add_file(dataset, registry, json_file, output_path):
     converted_path = None
     stdout = None
     link_data_only = dataset.get('link_data_only', 'copy_files')
-    in_place = dataset.get('in_place', True)
+    run_as_real_user = in_place = dataset.get('in_place', True)
     purge_source = dataset.get('purge_source', True)
+    # in_place is True if there is no external chmod in place,
+    # however there are other instances where modifications should not occur in_place:
+    # when a file is added from a directory on the local file system (ftp import folder or any other path).
+    if dataset.type in ('server_dir', 'path_paste', 'ftp_import'):
+        in_place = False
     check_content = dataset.get('check_content' , True)
     auto_decompress = dataset.get('auto_decompress', True)
     try:
@@ -158,7 +164,7 @@ def add_file(dataset, registry, json_file, output_path):
                     os.close(fd)
                     gzipped_file.close()
                     # Replace the gzipped file with the decompressed file if it's safe to do so
-                    if dataset.type in ('server_dir', 'path_paste') or not in_place:
+                    if not in_place:
                         dataset.path = uncompressed
                     else:
                         shutil.move(uncompressed, dataset.path)
@@ -191,7 +197,7 @@ def add_file(dataset, registry, json_file, output_path):
                         os.close(fd)
                         bzipped_file.close()
                         # Replace the bzipped file with the decompressed file if it's safe to do so
-                        if dataset.type in ('server_dir', 'path_paste') or not in_place:
+                        if not in_place:
                             dataset.path = uncompressed
                         else:
                             shutil.move(uncompressed, dataset.path)
@@ -248,7 +254,7 @@ def add_file(dataset, registry, json_file, output_path):
                         z.close()
                         # Replace the zipped file with the decompressed file if it's safe to do so
                         if uncompressed is not None:
-                            if dataset.type in ('server_dir', 'path_paste') or not in_place:
+                            if not in_place:
                                 dataset.path = uncompressed
                             else:
                                 shutil.move(uncompressed, dataset.path)
@@ -280,12 +286,9 @@ def add_file(dataset, registry, json_file, output_path):
                     file_err('The uploaded file contains inappropriate HTML content', dataset, json_file)
                     return
             if data_type != 'binary':
-                if link_data_only == 'copy_files':
-                    if dataset.type in ('server_dir', 'path_paste') and data_type not in ['gzip', 'bz2', 'zip']:
-                        in_place = False
-                    # Convert universal line endings to Posix line endings, but allow the user to turn it off,
-                    # so that is becomes possible to upload gzip, bz2 or zip files with binary data without
-                    # corrupting the content of those files.
+                if link_data_only == 'copy_files' and data_type not in ('gzip', 'bz2', 'zip'):
+                    # Convert universal line endings to Posix line endings if to_posix_lines is True
+                    # and the data is not binary or gzip-, bz2- or zip-compressed.
                     if dataset.to_posix_lines:
                         tmpdir = output_adjacent_tmpdir(output_path)
                         tmp_prefix = 'data_id_%s_convert_' % dataset.dataset_id
@@ -313,19 +316,18 @@ def add_file(dataset, registry, json_file, output_path):
                 '<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed.'
             file_err(err_msg, dataset, json_file)
             return
-    if link_data_only == 'copy_files' and dataset.type in ('server_dir', 'path_paste') and data_type not in ['gzip', 'bz2', 'zip']:
+    if link_data_only == 'copy_files' and converted_path:
         # Move the dataset to its "real" path
-        if converted_path is not None:
-            shutil.copy(converted_path, output_path)
-            try:
-                os.remove(converted_path)
-            except:
-                pass
-        else:
-            # This should not happen, but it's here just in case
-            shutil.copy(dataset.path, output_path)
+        try:
+            shutil.move(converted_path, output_path)
+        except OSError as e:
+            # We may not have permission to remove converted_path
+            if e.errno != errno.EACCES:
+                raise
     elif link_data_only == 'copy_files':
-        if purge_source:
+        if purge_source and not run_as_real_user:
+            # if the upload tool runs as a real user the real user
+            # can't move dataset.path as this path is owned by galaxy.
             shutil.move(dataset.path, output_path)
         else:
             shutil.copy(dataset.path, output_path)
