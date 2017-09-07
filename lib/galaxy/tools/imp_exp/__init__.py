@@ -555,6 +555,9 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
                 break
 
             collections_attrs.append(collection)
+            # export jobs for these datasets
+            for collection_dataset in collection.dataset_instances:
+                included_datasets.append(collection_dataset)
 
         collections_attrs_filename = tempfile.NamedTemporaryFile(dir=temp_output_dir).name
         collections_attrs_out = open(collections_attrs_filename, 'w')
