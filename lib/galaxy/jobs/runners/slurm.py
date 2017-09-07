@@ -7,6 +7,7 @@ import subprocess
 import time
 
 from galaxy import model
+from galaxy import util
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
 
 log = logging.getLogger(__name__)
@@ -24,6 +25,9 @@ SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
 # https://github.com/SchedMD/slurm/
 SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.',
                                                 ': Exceeded step memory limit at some point.']
+SLURM_MEMORY_ERRORS = { SLURM_MEMORY_LIMIT_EXCEEDED_MSG: 'This job was terminated because it used more memory than it was allocated.'}
+for w in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS: 
+    SLURM_MEMORY_ERRORS[w] = 'This job was cancelled probably because it used more memory than it was allocated.'
 SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024  # 16MB
 
 
@@ -108,10 +112,11 @@ class SlurmJobRunner(DRMAAJobRunner):
                         ajs.fail_message = "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
                 elif slurm_state == 'CANCELLED':
                     # Check to see if the job was killed for exceeding memory consumption
-                    check_memory_limit_msg = self.__check_memory_limit(ajs.error_file)
+#                     check_memory_limit_msg = self.__check_memory_limit( ajs.error_file )
+                    check_memory_limit_msg = util.grep_tail(ajs.error_file, SLURM_MEMORY_ERRORS, 2048)
                     if check_memory_limit_msg:
-                        log.info('(%s/%s) Job hit memory limit', ajs.job_wrapper.get_id_tag(), ajs.job_id)
-                        ajs.fail_message = check_memory_limit_msg
+                        log.info( '(%s/%s) Job hit memory limit', ajs.job_wrapper.get_id_tag(), ajs.job_id )
+                        ajs.fail_message = SLURM_MEMORY_ERRORS[check_memory_limit_msg]
                         ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                     else:
                         log.info('(%s/%s) Job was cancelled via SLURM (e.g. with scancel(1))', ajs.job_wrapper.get_id_tag(), ajs.job_id)
@@ -147,24 +152,28 @@ class SlurmJobRunner(DRMAAJobRunner):
         # by default, finish the job with the state from drmaa
         return super(SlurmJobRunner, self)._complete_terminal_job(ajs, drmaa_state=drmaa_state)
 
-    def __check_memory_limit(self, efile_path):
-        """
-        A very poor implementation of tail, but it doesn't need to be fancy
-        since we are only searching the last 2K
-        """
-        try:
-            log.debug('Checking %s for exceeded memory message from SLURM', efile_path)
-            with open(efile_path) as f:
-                if os.path.getsize(efile_path) > 2048:
-                    f.seek(-2048, os.SEEK_END)
-                    f.readline()
-                for line in f.readlines():
-                    stripped_line = line.strip()
-                    if stripped_line == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
-                        return 'This job was terminated because it used more memory than it was allocated.'
-                    elif any(_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS):
-                        return 'This job was cancelled probably because it used more memory than it was allocated.'
-        except:
-            log.exception('Error reading end of %s:', efile_path)
-
-        return False
+#     def __check_memory_limit( self, efile_path ):
+#         """
+#         Checks (the tail of) the error file for SLURM output that indicates that
+#         the job hit the memory limit. 
+#         returns: a nonempty string if the memory limit was reached and False otherwise 
+#          
+#         A very poor implementation of tail, but it doesn't need to be fancy
+#         since we are only searching the last 2K
+#         """
+#         try:
+#             log.debug( 'Checking %s for exceeded memory message from SLURM', efile_path )
+#             with open( efile_path ) as f:
+#                 if os.path.getsize(efile_path) > 2048:
+#                     f.seek(-2048, os.SEEK_END)
+#                     f.readline()
+#                 for line in f.readlines():
+#                     stripped_line = line.strip()
+#                     if stripped_line == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
+#                         return 'This job was terminated because it used more memory than it was allocated.'
+#                     elif any(_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS):
+#                         return 'This job was cancelled probably because it used more memory than it was allocated.'
+#         except:
+#             log.exception('Error reading end of %s:', efile_path)
+# 
+#         return False

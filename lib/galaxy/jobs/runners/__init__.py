@@ -360,7 +360,8 @@ class BaseJobRunner(object):
             job_info
         )
 
-    def _handle_runner_state(self, runner_state, job_state):
+    def _handle_runner_state( self, runner_state, job_state ):
+        job_state.job_wrapper.reclaim_ownership()
         try:
             for handler in self.runner_state_handlers.get(runner_state, []):
                 handler(self.app, self, job_state)
