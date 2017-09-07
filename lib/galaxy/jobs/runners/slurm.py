@@ -152,29 +152,6 @@ class SlurmJobRunner(DRMAAJobRunner):
         # by default, finish the job with the state from drmaa
         return super(SlurmJobRunner, self)._complete_terminal_job(ajs, drmaa_state=drmaa_state)
 
-<<<<<<< HEAD
-    def __check_memory_limit(self, efile_path):
-        """
-        A very poor implementation of tail, but it doesn't need to be fancy
-        since we are only searching the last 2K
-        """
-        try:
-            log.debug('Checking %s for exceeded memory message from SLURM', efile_path)
-            with open(efile_path) as f:
-                if os.path.getsize(efile_path) > 2048:
-                    f.seek(-2048, os.SEEK_END)
-                    f.readline()
-                for line in f.readlines():
-                    stripped_line = line.strip()
-                    if stripped_line == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
-                        return 'This job was terminated because it used more memory than it was allocated.'
-                    elif any(_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS):
-                        return 'This job was cancelled probably because it used more memory than it was allocated.'
-        except:
-            log.exception('Error reading end of %s:', efile_path)
-
-        return False
-=======
 #     def __check_memory_limit( self, efile_path ):
 #         """
 #         Checks (the tail of) the error file for SLURM output that indicates that
@@ -200,4 +177,3 @@ class SlurmJobRunner(DRMAAJobRunner):
 #             log.exception('Error reading end of %s:', efile_path)
 # 
 #         return False
->>>>>>> created a common function in util that checks the tail of a file
