@@ -2,9 +2,9 @@
 Neo4j Composite Dataset
 """
 import logging
-import sys
-import shutil
 import os
+import shutil
+import sys
 
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.images import Html
@@ -20,6 +20,7 @@ class Neo4j(Html):
     derived from html - composite datatype elements
     stored in extra files path
     """
+
     def generate_primary_file(self, dataset=None):
         """
         This is called only at upload to write the html file
@@ -29,7 +30,7 @@ class Neo4j(Html):
             '<html><head><title>Files for Composite Dataset (%s)</title></head><p/>\
             This composite dataset is composed of the following files:<p/><ul>' % (
                 self.file_ext)]
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).iteritems():
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             opt_text = ''
             if composite_file.optional:
                 opt_text = ' (optional)'

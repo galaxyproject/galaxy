@@ -32,15 +32,31 @@ import parsley
 from sqlalchemy import and_
 from sqlalchemy.orm import aliased
 
-from galaxy.model import (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation,
-                          History, Library, LibraryFolder, LibraryDataset, StoredWorkflowTagAssociation,
-                          StoredWorkflow, HistoryTagAssociation, HistoryDatasetAssociationTagAssociation,
-                          ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation, Job, JobParameter,
-                          JobToInputLibraryDatasetAssociation, JobToInputDatasetAssociation, JobToOutputDatasetAssociation,
-                          Page, PageRevision)
+from galaxy.model import (
+    ExtendedMetadata,
+    ExtendedMetadataIndex,
+    History,
+    HistoryAnnotationAssociation,
+    HistoryDatasetAssociation,
+    HistoryDatasetAssociationTagAssociation,
+    HistoryTagAssociation,
+    Job,
+    JobParameter,
+    JobToInputDatasetAssociation,
+    JobToInputLibraryDatasetAssociation,
+    JobToOutputDatasetAssociation,
+    Library,
+    LibraryDataset,
+    LibraryDatasetDatasetAssociation,
+    LibraryFolder,
+    Page,
+    PageRevision,
+    StoredWorkflow,
+    StoredWorkflowTagAssociation
+)
 from galaxy.model.tool_shed_install import ToolVersion
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 class ViewField(object):
@@ -63,6 +79,7 @@ class ViewField(object):
         its chain of parents to find out which library it belongs to
 
     """
+
     def __init__(self, name, sqlalchemy_field=None, handler=None, post_filter=None, id_decode=False):
         self.name = name
         self.sqlalchemy_field = sqlalchemy_field
@@ -90,7 +107,7 @@ class ViewQueryBaseClass(object):
             if left_base in self.FIELDS:
                 field = self.FIELDS[left_base]
                 if field.id_decode:
-                    conditional.right = trans.security.decode_id( conditional.right )
+                    conditional.right = trans.security.decode_id(conditional.right)
 
     def filter(self, left, operator, right):
         if operator == 'and':
@@ -106,17 +123,17 @@ class ViewQueryBaseClass(object):
                     sqlalchemy_field_value = getattr(clazz, attribute)
                     if operator == "=":
                         # print field.sqlalchemy_field == right, field.sqlalchemy_field, right
-                        self.query = self.query.filter( sqlalchemy_field_value == right )
+                        self.query = self.query.filter(sqlalchemy_field_value == right)
                     elif operator == "!=":
-                        self.query = self.query.filter( sqlalchemy_field_value != right )
+                        self.query = self.query.filter(sqlalchemy_field_value != right)
                     elif operator == "like":
-                        self.query = self.query.filter( sqlalchemy_field_value.like(right) )
+                        self.query = self.query.filter(sqlalchemy_field_value.like(right))
                     else:
                         raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
                 elif field.handler is not None:
                     field.handler(self, left, operator, right)
                 elif field.post_filter is not None:
-                    self.post_filter.append( [field.post_filter, left, operator, right] )
+                    self.post_filter.append([field.post_filter, left, operator, right])
                 else:
                     raise GalaxyParseError("Unable to filter on field: %s" % (left))
 
@@ -145,9 +162,9 @@ class ViewQueryBaseClass(object):
 def library_extended_metadata_filter(view, left, operator, right):
     view.do_query = True
     if 'extended_metadata_joined' not in view.state:
-        view.query = view.query.join( ExtendedMetadata )
+        view.query = view.query.join(ExtendedMetadata)
         view.state['extended_metadata_joined'] = True
-    alias = aliased( ExtendedMetadataIndex )
+    alias = aliased(ExtendedMetadataIndex)
     field = "/%s" % ("/".join(left.split(".")[1:]))
     # print "FIELD", field
     view.query = view.query.filter(
@@ -179,7 +196,7 @@ class LibraryDatasetDatasetView(ViewQueryBaseClass):
     }
 
     def search(self, trans):
-        self.query = trans.sa_session.query( LibraryDatasetDatasetAssociation )
+        self.query = trans.sa_session.query(LibraryDatasetDatasetAssociation)
 
 
 ##################
@@ -195,7 +212,7 @@ class LibraryView(ViewQueryBaseClass):
     }
 
     def search(self, trans):
-        self.query = trans.sa_session.query( Library )
+        self.query = trans.sa_session.query(Library)
 
 
 ##################
@@ -229,7 +246,7 @@ class LibraryFolderView(ViewQueryBaseClass):
     }
 
     def search(self, trans):
-        self.query = trans.sa_session.query( LibraryFolder )
+        self.query = trans.sa_session.query(LibraryFolder)
 
 
 ##################
@@ -252,7 +269,7 @@ class LibraryDatasetView(ViewQueryBaseClass):
     }
 
     def search(self, trans):
-        self.query = trans.sa_session.query( LibraryDataset )
+        self.query = trans.sa_session.query(LibraryDataset)
 
 
 ##################
@@ -266,7 +283,7 @@ class ToolView(ViewQueryBaseClass):
     }
 
     def search(self, trans):
-        self.query = trans.install_model.context.query( ToolVersion )
+        self.query = trans.install_model.context.query(ToolVersion)
 
 
 ##################
@@ -282,9 +299,9 @@ def history_dataset_handle_tag(view, left, operator, right):
             HistoryDatasetAssociation.id == tag_table.history_dataset_association_id
         )
         tmp = right.split(":")
-        view.query = view.query.filter( tag_table.user_tname == tmp[0] )
+        view.query = view.query.filter(tag_table.user_tname == tmp[0])
         if len(tmp) > 1:
-            view.query = view.query.filter( tag_table.user_value == tmp[1] )
+            view.query = view.query.filter(tag_table.user_value == tmp[1])
     else:
         raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
 
@@ -292,9 +309,9 @@ def history_dataset_handle_tag(view, left, operator, right):
 def history_dataset_extended_metadata_filter(view, left, operator, right):
     view.do_query = True
     if 'extended_metadata_joined' not in view.state:
-        view.query = view.query.join( ExtendedMetadata )
+        view.query = view.query.join(ExtendedMetadata)
         view.state['extended_metadata_joined'] = True
-    alias = aliased( ExtendedMetadataIndex )
+    alias = aliased(ExtendedMetadataIndex)
     field = "/%s" % ("/".join(left.split(".")[1:]))
     # print "FIELD", field
     view.query = view.query.filter(
@@ -324,7 +341,7 @@ class HistoryDatasetView(ViewQueryBaseClass):
     }
 
     def search(self, trans):
-        self.query = trans.sa_session.query( HistoryDatasetAssociation )
+        self.query = trans.sa_session.query(HistoryDatasetAssociation)
 
 
 ##################
@@ -340,9 +357,9 @@ def history_handle_tag(view, left, operator, right):
             History.id == tag_table.history_id
         )
         tmp = right.split(":")
-        view.query = view.query.filter( tag_table.user_tname == tmp[0] )
+        view.query = view.query.filter(tag_table.user_tname == tmp[0])
         if len(tmp) > 1:
-            view.query = view.query.filter( tag_table.user_value == tmp[1] )
+            view.query = view.query.filter(tag_table.user_value == tmp[1])
     else:
         raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
 
@@ -350,16 +367,16 @@ def history_handle_tag(view, left, operator, right):
 def history_handle_annotation(view, left, operator, right):
     if operator == "=":
         view.do_query = True
-        view.query = view.query.filter( and_(
+        view.query = view.query.filter(and_(
             HistoryAnnotationAssociation.history_id == History.id,
             HistoryAnnotationAssociation.annotation == right
-        ) )
+        ))
     elif operator == "like":
         view.do_query = True
-        view.query = view.query.filter( and_(
+        view.query = view.query.filter(and_(
             HistoryAnnotationAssociation.history_id == History.id,
-            HistoryAnnotationAssociation.annotation.like( right )
-        ) )
+            HistoryAnnotationAssociation.annotation.like(right)
+        ))
     else:
         raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
 
@@ -375,7 +392,7 @@ class HistoryView(ViewQueryBaseClass):
     }
 
     def search(self, trans):
-        self.query = trans.sa_session.query( History )
+        self.query = trans.sa_session.query(History)
 
 
 ##################
@@ -390,9 +407,9 @@ def workflow_tag_handler(view, left, operator, right):
             StoredWorkflow.id == StoredWorkflowTagAssociation.stored_workflow_id
         )
         tmp = right.split(":")
-        view.query = view.query.filter( StoredWorkflowTagAssociation.user_tname == tmp[0] )
+        view.query = view.query.filter(StoredWorkflowTagAssociation.user_tname == tmp[0])
         if len(tmp) > 1:
-            view.query = view.query.filter( StoredWorkflowTagAssociation.user_value == tmp[1] )
+            view.query = view.query.filter(StoredWorkflowTagAssociation.user_value == tmp[1])
     else:
         raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
 
@@ -407,7 +424,7 @@ class WorkflowView(ViewQueryBaseClass):
     }
 
     def search(self, trans):
-        self.query = trans.sa_session.query( StoredWorkflow )
+        self.query = trans.sa_session.query(StoredWorkflow)
 
 
 ##################
@@ -417,7 +434,7 @@ class WorkflowView(ViewQueryBaseClass):
 
 def job_param_filter(view, left, operator, right):
     view.do_query = True
-    alias = aliased( JobParameter )
+    alias = aliased(JobParameter)
     param_name = re.sub(r'^param.', '', left)
     view.query = view.query.filter(
         and_(
@@ -430,7 +447,7 @@ def job_param_filter(view, left, operator, right):
 
 def job_input_hda_filter(view, left, operator, right):
     view.do_query = True
-    alias = aliased( JobToInputDatasetAssociation )
+    alias = aliased(JobToInputDatasetAssociation)
     param_name = re.sub(r'^input_hda.', '', left)
     view.query = view.query.filter(
         and_(
@@ -443,7 +460,7 @@ def job_input_hda_filter(view, left, operator, right):
 
 def job_input_ldda_filter(view, left, operator, right):
     view.do_query = True
-    alias = aliased( JobToInputLibraryDatasetAssociation )
+    alias = aliased(JobToInputLibraryDatasetAssociation)
     param_name = re.sub(r'^input_ldda.', '', left)
     view.query = view.query.filter(
         and_(
@@ -456,7 +473,7 @@ def job_input_ldda_filter(view, left, operator, right):
 
 def job_output_hda_filter(view, left, operator, right):
     view.do_query = True
-    alias = aliased( JobToOutputDatasetAssociation )
+    alias = aliased(JobToOutputDatasetAssociation)
     param_name = re.sub(r'^output_hda.', '', left)
     view.query = view.query.filter(
         and_(
@@ -479,7 +496,7 @@ class JobView(ViewQueryBaseClass):
     }
 
     def search(self, trans):
-        self.query = trans.sa_session.query( Job )
+        self.query = trans.sa_session.query(Job)
 
 
 ##################
@@ -497,7 +514,7 @@ class PageView(ViewQueryBaseClass):
     }
 
     def search(self, trans):
-        self.query = trans.sa_session.query( Page )
+        self.query = trans.sa_session.query(Page)
 
 
 ##################
@@ -514,7 +531,7 @@ class PageRevisionView(ViewQueryBaseClass):
     }
 
     def search(self, trans):
-        self.query = trans.sa_session.query( PageRevision )
+        self.query = trans.sa_session.query(PageRevision)
 
 
 # The view mapping takes a user's name for a table and maps it to a View class
@@ -587,6 +604,7 @@ class GalaxyQuery(object):
     """
     This class represents a data structure of a compiled GQL query
     """
+
     def __init__(self, field_list, table_name, conditional):
         self.field_list = field_list
         self.table_name = table_name
@@ -598,6 +616,7 @@ class GalaxyQueryComparison(object):
     This class represents the data structure of the comparison arguments of a
     compiled GQL query (ie where name='Untitled History')
     """
+
     def __init__(self, left, operator, right):
         self.left = left
         self.operator = operator
@@ -609,6 +628,7 @@ class GalaxyQueryAnd(object):
     This class represents the data structure of the comparison arguments of a
     compiled GQL query (ie where name='Untitled History')
     """
+
     def __init__(self, left, right):
         self.left = left
         self.operator = 'and'
@@ -639,7 +659,7 @@ class SearchQuery(object):
         return self.view.get_results(True)
 
     def item_to_api_value(self, item):
-        r = item.to_dict( view='element' )
+        r = item.to_dict(view='element')
         if self.query.field_list.count("*"):
             return r
         o = {}
@@ -653,6 +673,7 @@ class GalaxySearchEngine(object):
     """
     Primary class for searching. Parses GQL (Galaxy Query Language) queries and returns a 'SearchQuery' class
     """
+
     def __init__(self):
         self.parser = parsley.makeGrammar(gqlGrammar, {
             're': re,

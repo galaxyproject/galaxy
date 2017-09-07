@@ -7,13 +7,13 @@ import logging
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
 PasswordResetToken_table = Table("password_reset_token", metadata,
-                                 Column( "token", String( 32 ), primary_key=True, unique=True, index=True ),
-                                 Column( "expiration_time", DateTime ),
-                                 Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ))
+                                 Column("token", String(32), primary_key=True, unique=True, index=True),
+                                 Column("expiration_time", DateTime),
+                                 Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
 
 
 def upgrade(migrate_engine):

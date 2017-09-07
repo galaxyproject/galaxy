@@ -209,8 +209,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Pass debug flag to conda commands.
 #conda_debug = False
 # conda channels to enable by default (http://conda.pydata.org/docs/custom-channels.html)
-# the recommended channel order is the one from BioConda (https://github.com/bioconda/bioconda-recipes/blob/master/config.yml#L8)
-#conda_ensure_channels = iuc,bioconda,r,defaults,conda-forge
+#conda_ensure_channels = iuc,bioconda,conda-forge,defaults,r
 # Set to True to instruct Galaxy to look for and install missing tool
 # dependencies before each job runs.
 #conda_auto_install = False
@@ -633,6 +632,10 @@ nglims_config_file = tool-data/nglims.yaml
 # The URL linked by the "Videos" link in the "Help" menu.
 #screencasts_url = https://vimeo.com/galaxyproject
 
+# Points to the GenomeSpace UI service which will be used by
+# the GenomeSpace importer and exporter tools
+#genomespace_ui_url = https://gsui.genomespace.org/jsui/
+
 # The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
 # as on the user registration and login forms and in the activation emails.
 #terms_url = None
@@ -908,12 +911,14 @@ use_interactive = True
 # sub-directories of files contained in their directory.
 #user_library_import_dir = None
 
-# Add an option to the admin library upload tool allowing admins to paste
+# Allow admins to paste filesystem paths during upload. For libraries this
+# adds an option to the admin library upload tool allowing admins to paste
 # filesystem paths to files and directories in a box, and these paths will be
-# added to a library.  Set to True to enable.  Please note the security
+# added to a library.  For history uploads, this allows pasting in paths as URIs.
+# (i.e. prefixed with file://). Set to True to enable.  Please note the security
 # implication that this will give Galaxy Admins access to anything your Galaxy
 # user has access to.
-#allow_library_path_paste = False
+#allow_path_paste = False
 
 # Users may choose to download multiple files from a library in an archive.  By
 # default, Galaxy allows users to select from a few different archive formats
@@ -1315,7 +1320,10 @@ use_interactive = True
 # or the username which are both stored in the Galaxy data base. 
 # The latter option is particularly useful for installations that get the 
 # authentication from LDAP.
-# Possible values are user_email (default) and username.  
+# Also, Galaxy can accept the name of a common system user (eg. galaxy_worker) 
+# who can run every job being submitted. This user should not be the same user 
+# running the galaxy system. 
+# Possible values are user_email (default), username or <common_system_user>
 #real_system_username = user_email 
 
 # File to source to set up the environment when running jobs.  By default, the

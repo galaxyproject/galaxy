@@ -175,7 +175,7 @@ var View = Backbone.View.extend({
                     optional    : self.model.get( 'optional' ),
                     multiple    : c.multiple,
                     searchable  : !c.multiple || ( data && data[ c.src ] && data[ c.src ].length > self.model.get( 'pagelimit' ) ),
-                    selectall   : false,
+                    individual  : true,
                     error_text  : 'No ' + ( extensions ? extensions + ' ' : '' ) + ( src_labels[ c.src ] || 'content' ) + ' available.',
                     onchange    : function() {
                         self.trigger( 'change' );
@@ -301,6 +301,7 @@ var View = Backbone.View.extend({
         } catch( e ) {
             this._handleDropStatus( 'danger' );
         }
+        ev.preventDefault();
     },
 
     /** Highlight drag result */

@@ -10,7 +10,7 @@ import os.path
 import sys
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
-sys.path[1:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
+sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
 from base import driver_util
 log = driver_util.build_logger()
@@ -108,10 +108,10 @@ def find_test_driver():
     return test_driver
 
 
-def _check_arg( name ):
+def _check_arg(name):
     try:
-        index = sys.argv.index( name )
-        del sys.argv[ index ]
+        index = sys.argv.index(name)
+        del sys.argv[index]
         ret_val = True
     except ValueError:
         ret_val = False

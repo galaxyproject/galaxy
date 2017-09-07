@@ -16,8 +16,10 @@ var LibraryDatasetView = Backbone.View.extend({
 
   model: null,
 
-  options: {
+  options: {},
 
+  defaults: {
+    edit_mode: false
   },
 
   events: {
@@ -25,13 +27,11 @@ var LibraryDatasetView = Backbone.View.extend({
     "click .toolbtn_cancel_modifications" :   "render",
     "click .toolbtn-download-dataset"     :   "downloadDataset",
     "click .toolbtn-import-dataset"       :   "importIntoHistory",
-    "click .toolbtn-share-dataset"        :   "shareDataset",
     "click .btn-copy-link-to-clipboard"   :   "copyToClipboard",
     "click .btn-make-private"             :   "makeDatasetPrivate",
     "click .btn-remove-restrictions"      :   "removeDatasetRestrictions",
     "click .toolbtn_save_permissions"     :   "savePermissions",
-    "click .toolbtn_save_modifications"   :   "comingSoon",
-
+    "click .toolbtn_save_modifications"   :   "saveModifications"
   },
 
   // genome select
@@ -134,7 +134,10 @@ var LibraryDatasetView = Backbone.View.extend({
     $(".tooltip").remove();
     var template = this.templateModifyDataset();
     this.$el.html(template({item: this.model}));
-    this.renderSelectBoxes({genome_build: this.model.get('genome_build'), file_ext: this.model.get('file_ext') });
+    this.renderSelectBoxes({
+      genome_build: this.model.get('genome_build'),
+      file_ext: this.model.get('file_ext')
+    });
     $(".peek").html(this.model.get("peek"));
     $("#center [data-toggle]").tooltip();
   },
@@ -243,10 +246,6 @@ var LibraryDatasetView = Backbone.View.extend({
         }
       }
       });
-  },
-
-  shareDataset: function(){
-    mod_toastr.info('Feature coming soon.');
   },
 
   goBack: function(){
@@ -457,8 +456,57 @@ var LibraryDatasetView = Backbone.View.extend({
     }
   },
 
-  comingSoon: function(){
-    mod_toastr.warning('Feature coming soon.');
+  /**
+   * Save the changes made to the library dataset.
+   */
+  saveModifications: function(options){
+    var is_changed = false;
+    var ld = this.model;
+    var new_name = this.$el.find('.input_dataset_name').val();
+    if (typeof new_name !== 'undefined' && new_name !== ld.get('name') ){
+      if (new_name.length > 0){
+        ld.set("name", new_name);
+        is_changed = true;
+      } else{
+        mod_toastr.warning('Library dataset name has to be at least 1 character long.');
+        return;
+      }
+    }
+    var new_info = this.$el.find('.input_dataset_misc_info').val();
+    if (typeof new_info !== 'undefined' && new_info !== ld.get('misc_info') ){
+        ld.set("misc_info", new_info);
+        is_changed = true;
+    }
+    var new_genome_build = this.select_genome.$el.select2('data').id;
+    if (typeof new_genome_build !== 'undefined' && new_genome_build !== ld.get('genome_build') ){
+        ld.set("genome_build", new_genome_build);
+        is_changed = true;
+    }
+    var new_ext = this.select_extension.$el.select2('data').id;
+    if (typeof new_ext !== 'undefined' && new_ext !== ld.get('file_ext') ){
+        ld.set("file_ext", new_ext);
+        is_changed = true;
+    }
+    var dataset_view = this;
+    if (is_changed){
+      ld.save(null, {
+        patch: true,
+        success: function(ld) {
+          dataset_view.render()
+          mod_toastr.success('Changes to library dataset saved.');
+        },
+        error: function(model, response){
+          if (typeof response.responseJSON !== "undefined"){
+            mod_toastr.error(response.responseJSON.err_msg);
+          } else {
+            mod_toastr.error('An error occured while attempting to update the library dataset.');
+          }
+        }
+      });
+    } else {
+      dataset_view.render()
+      mod_toastr.info('Nothing has changed.');
+    }
   },
 
   copyToClipboard: function(){
@@ -497,7 +545,7 @@ var LibraryDatasetView = Backbone.View.extend({
    * Extract the role ids from Select2 elements's 'data'
    */
   _extractIds: function(roles_list){
-    ids_list = [];
+    var ids_list = [];
     for (var i = roles_list.length - 1; i >= 0; i--) {
       ids_list.push(roles_list[i].id);
     };
@@ -523,42 +571,46 @@ var LibraryDatasetView = Backbone.View.extend({
   },
 
   /**
-   * Request all extensions and genomes from Galaxy
-   * and save them sorted in arrays.
+   * If needed request all extensions and/or genomes from Galaxy
+   * and save them in sorted arrays.
    */
   fetchExtAndGenomes: function(){
     var that = this;
-    mod_utils.get({
-        url      :  Galaxy.root + "api/datatypes?extension_only=False",
-        success  :  function( datatypes ) {
-                        for (key in datatypes) {
-                            that.list_extensions.push({
-                                id              : datatypes[key].extension,
-                                text            : datatypes[key].extension,
-                                description     : datatypes[key].description,
-                                description_url : datatypes[key].description_url
-                            });
-                        }
-                        that.list_extensions.sort(function(a, b) {
-                            return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
-                        });
-                        that.list_extensions.unshift(that.auto);
-                    }
+    if (this.list_genomes.length == 0){
+      mod_utils.get({
+        url      : Galaxy.root + "api/datatypes?extension_only=False",
+        success  : function( datatypes ) {
+          for (var key in datatypes) {
+              that.list_extensions.push({
+                  id              : datatypes[key].extension,
+                  text            : datatypes[key].extension,
+                  description     : datatypes[key].description,
+                  description_url : datatypes[key].description_url
+              });
+          }
+          that.list_extensions.sort(function(a, b) {
+              return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
+          });
+          that.list_extensions.unshift(that.auto);
+        }
       });
-    mod_utils.get({
-        url     :    Galaxy.root + "api/genomes",
+    }
+    if (this.list_extensions.length == 0){
+      mod_utils.get({
+        url     : Galaxy.root + "api/genomes",
         success : function( genomes ) {
-                    for ( key in genomes ) {
-                        that.list_genomes.push({
-                            id      : genomes[key][1],
-                            text    : genomes[key][0]
-                        });
-                    }
-                    that.list_genomes.sort(function(a, b) {
-                        return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
-                    });
-                }
-    });
+          for (var key in genomes ) {
+              that.list_genomes.push({
+                  id      : genomes[key][1],
+                  text    : genomes[key][0]
+              });
+          }
+          that.list_genomes.sort(function(a, b) {
+              return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
+          });
+        }
+      });
+    }
   },
 
   renderSelectBoxes: function(options){
@@ -566,6 +618,7 @@ var LibraryDatasetView = Backbone.View.extend({
     // See this.fetchExtAndGenomes()
     // TODO switch to common resources:
     // https://trello.com/c/dIUE9YPl/1933-ui-common-resources-and-data-into-galaxy-object
+    var that = this;
     var current_genome = '?';
     var current_ext = 'auto';
     if (typeof options !== 'undefined'){
@@ -576,17 +629,16 @@ var LibraryDatasetView = Backbone.View.extend({
         current_ext = options.file_ext;
       }
     }
-    var that = this;
     this.select_genome = new mod_select.View( {
         css: 'dataset-genome-select',
         data: that.list_genomes,
-        container: that.$el.find( '#dataset_genome_select' ),
+        container: that.$el.find('#dataset_genome_select'),
         value: current_genome
     } );
     this.select_extension = new mod_select.View({
       css: 'dataset-extension-select',
       data: that.list_extensions,
-      container: that.$el.find( '#dataset_extension_select' ),
+      container: that.$el.find('#dataset_extension_select'),
       value: current_ext
     });
   },
@@ -711,14 +763,20 @@ var LibraryDatasetView = Backbone.View.extend({
         '<% } %>',
         '<% if (item.get("misc_blurb")) { %>',
           '<tr>',
-            '<th scope="row">Miscellaneous blurb</th>',
+            '<th scope="row">Misc. blurb</th>',
             '<td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>',
           '</tr>',
         '<% } %>',
         '<% if (item.get("misc_info")) { %>',
           '<tr>',
-            '<th scope="row">Miscellaneous information</th>',
+            '<th scope="row">Misc. info</th>',
             '<td scope="row"><%= _.escape(item.get("misc_info")) %></td>',
+          '</tr>',
+        '<% } %>',
+        '<% if (item.get("tags")) { %>',
+          '<tr>',
+            '<th scope="row">Tags</th>',
+            '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
           '</tr>',
         '<% } %>',
       '</table>',
@@ -850,6 +908,12 @@ var LibraryDatasetView = Backbone.View.extend({
               '<td scope="row"><%= _.escape(ldda.get("misc_info")) %></td>',
             '</tr>',
           '<% } %>',
+          '<% if (item.get("tags")) { %>',
+            '<tr>',
+              '<th scope="row">Tags</th>',
+              '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
+            '</tr>',
+          '<% } %>',
         '</table>',
         '<div>',
           '<pre class="peek">',
@@ -890,7 +954,6 @@ var LibraryDatasetView = Backbone.View.extend({
       '</ol>',
 
       '<div class="dataset_table">',
-        '<p>For full editing options please import the dataset to history and use "Edit attributes" on it.</p>',
         '<table class="grid table table-striped table-condensed">',
           '<tr>',
             '<th class="dataset-first-column" scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
@@ -944,13 +1007,20 @@ var LibraryDatasetView = Backbone.View.extend({
             '<td scope="row"><%= _.escape(item.get("message")) %></td>',
           '</tr>',
           '<tr>',
-            '<th scope="row">Miscellaneous information</th>',
-            '<td scope="row"><%= _.escape(item.get("misc_info")) %></td>',
-          '</tr>',
-          '<tr>',
-            '<th scope="row">Miscellaneous blurb</th>',
+            '<th scope="row">Misc. blurb</th>',
             '<td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>',
           '</tr>',
+          '<tr>',
+            '<th scope="row">Misc. information</th>',
+            '<td><input class="input_dataset_misc_info form-control" type="text" placeholder="info" value="<%= _.escape(item.get("misc_info")) %>"></td>',
+          '</tr>',
+          //TODO: add functionality to modify tags here
+          '<% if (item.get("tags")) { %>',
+            '<tr>',
+              '<th scope="row">Tags</th>',
+              '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
+            '</tr>',
+          '<% } %>',
         '</table>',
         '<div>',
           '<pre class="peek">',

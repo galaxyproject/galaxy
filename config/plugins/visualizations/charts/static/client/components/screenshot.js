@@ -37,7 +37,7 @@ define( [ 'libs/underscore' ], function( _ ) {
                     }
                 }
                 $canvas.children().each( function() { _toImage( $( this ), 0, 0 ) } );
-                imgData = newCanvas.toDataURL( 'image/png' );
+                var imgData = newCanvas.toDataURL( 'image/png' );
                 if ( imgData ) {
                     window.location.href = imgData.replace( 'image/png', 'image/octet-stream' );
                 }
@@ -97,7 +97,7 @@ define( [ 'libs/underscore' ], function( _ ) {
             $el.append( form );
         }
         form.empty();
-        for ( name in data ) {
+        for (var name in data ) {
             var input = $( '<input/>', {
                 type    : 'hidden',
                 name    : name,

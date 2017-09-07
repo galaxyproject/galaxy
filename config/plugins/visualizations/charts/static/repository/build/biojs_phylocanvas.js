@@ -73,6 +73,14 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                        tree.setNodeSize( node_size );
 	                        tree.setTextSize( text_size );
 	                        tree.lineWidth = line_width;
+	                        // Show bootstrap confidence levels
+	                        tree.showBootstrap = settings.get( 'show_bootstrap' ) === "true" ? true : false;
+	                        tree.showInternalNodeLabels = tree.showBootstrap;
+	                        // Update font and color for internal nodel labels
+	                        tree.internalLabelStyle.colour = tree.branchColour;
+	                        tree.internalLabelStyle.font = tree.font;
+	                        tree.internalLabelStyle.textSize = tree.textSize;
+	
 	                        // Register click event on tree
 	                        tree.on( 'click', function ( e ) {
 	                            var node = tree.getNodeAtMousePosition( e );

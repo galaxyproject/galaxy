@@ -7,7 +7,7 @@ import logging
 
 from sqlalchemy import Boolean, Column, MetaData, Table
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
@@ -26,14 +26,14 @@ def upgrade(migrate_engine):
     metadata.reflect()
 
     # Create and initialize imported column in job table.
-    Jobs_table = Table( "job", metadata, autoload=True )
-    c = Column( "imported", Boolean, default=False, index=True )
+    Jobs_table = Table("job", metadata, autoload=True)
+    c = Column("imported", Boolean, default=False, index=True)
     try:
         # Create
-        c.create( Jobs_table, index_name="ix_job_imported")
+        c.create(Jobs_table, index_name="ix_job_imported")
         assert c is Jobs_table.c.imported
 
-        migrate_engine.execute( "UPDATE job SET imported=%s" % engine_false(migrate_engine) )
+        migrate_engine.execute("UPDATE job SET imported=%s" % engine_false(migrate_engine))
     except Exception:
         log.exception("Adding imported column to job table failed.")
 
@@ -43,7 +43,7 @@ def downgrade(migrate_engine):
     metadata.reflect()
 
     # Drop imported column from job table.
-    Jobs_table = Table( "job", metadata, autoload=True )
+    Jobs_table = Table("job", metadata, autoload=True)
     try:
         Jobs_table.c.imported.drop()
     except Exception:

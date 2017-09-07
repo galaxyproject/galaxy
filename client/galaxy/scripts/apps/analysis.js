@@ -1,18 +1,24 @@
 var jQuery = require( 'jquery' ),
     $ = jQuery,
     GalaxyApp = require( 'galaxy' ).GalaxyApp,
-    QUERY_STRING = require( 'utils/query-string-parsing' ),
+    Router = require( 'layout/router' ),
     ToolPanel = require( './panels/tool-panel' ),
     HistoryPanel = require( './panels/history-panel' ),
     Page = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
+    FormWrapper = require( 'mvc/form/form-wrapper' ),
     UserPreferences = require( 'mvc/user/user-preferences' ),
     CustomBuilds = require( 'mvc/user/user-custom-builds' ),
     Tours = require( 'mvc/tours' ),
     GridView = require( 'mvc/grid/grid-view' ),
-    PageList = require( 'mvc/page/page-list' ),
+    GridShared = require( 'mvc/grid/grid-shared' ),
     Workflows = require( 'mvc/workflow/workflow' ),
-    WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' );
+    HistoryList = require( 'mvc/history/history-list' ),
+    ToolFormComposite = require( 'mvc/tool/tool-form-composite' ),
+    Utils = require( 'utils/utils' ),
+    Ui = require( 'mvc/ui/ui-misc' ),
+    DatasetError = require( 'mvc/dataset/dataset-error' ),
+    DatasetEditAttributes = require('mvc/dataset/dataset-edit-attributes');
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -28,53 +34,9 @@ var jQuery = require( 'jquery' ),
 window.app = function app( options, bootstrapped ){
     window.Galaxy = new GalaxyApp( options, bootstrapped );
     Galaxy.debug( 'analysis app' );
-    Galaxy.params = Galaxy.config.params;
-
-    var routingMessage = Backbone.View.extend({
-        initialize: function(options) {
-            this.message = options.message || "Undefined Message";
-            this.msg_status = options.type || 'info';
-            this.render();
-		},
-        render: function(){
-            this.$el.html(_.escape(this.message)).addClass(this.msg_status + "message");
-        }
-    });
 
     /** Routes */
-    var Router = Backbone.Router.extend({
-        // TODO: not many client routes at this point - fill and remove from server.
-        // since we're at root here, this may be the last to be routed entirely on the client.
-        initialize : function( page, options ){
-            this.page = page;
-            this.options = options;
-        },
-
-        /** helper to push a new navigation state */
-        push: function( url, data ) {
-            data = data || {};
-            data.__identifer = Math.random().toString( 36 ).substr( 2 );
-            if ( !$.isEmptyObject( data ) ) {
-                url += url.indexOf( '?' ) == -1 ? '?' : '&';
-                url += $.param( data , true );
-            }
-            this.navigate( url, { 'trigger': true } );
-        },
-
-        /** override to parse query string into obj and send to each route */
-        execute: function( callback, args, name ){
-            Galaxy.debug( 'router execute:', callback, args, name );
-            var queryObj = QUERY_STRING.parse( args.pop() );
-            args.push( queryObj );
-            if( callback ){
-                if ( this.authenticate( args, name ) ) {
-                    callback.apply( this, args );
-                } else {
-                    this.loginRequired();
-                }
-            }
-        },
-
+    var AnalysisRouter = Router.extend({
         routes : {
             '(/)' : 'home',
             '(/)root*' : 'home',
@@ -82,22 +44,23 @@ window.app = function app( options, bootstrapped ){
             '(/)user(/)' : 'show_user',
             '(/)user(/)(:form_id)' : 'show_user_form',
             '(/)workflow(/)' : 'show_workflows',
+            '(/)workflow/run(/)' : 'show_run',
             '(/)pages(/)(:action_id)' : 'show_pages',
-            '(/)datasets(/)(:action_id)' : 'show_datasets',
-            '(/)workflow/configure_menu(/)' : 'show_configure_menu',
-            '(/)custom_builds' : 'show_custom_builds'
+            '(/)visualizations/(:action_id)' : 'show_visualizations',
+            '(/)workflows/list_published(/)' : 'show_workflows_published',
+            '(/)histories(/)(:action_id)' : 'show_histories',
+            '(/)datasets(/)list(/)' : 'show_datasets',
+            '(/)workflow/import_workflow' : 'show_import_workflow',
+            '(/)custom_builds' : 'show_custom_builds',
+            '(/)datasets/edit': 'show_dataset_edit_attributes',
+            '(/)datasets/error': 'show_dataset_error'
         },
 
         require_login: [
             'show_user',
             'show_user_form',
-            'show_workflows',
-            'show_configure_menu'
+            'show_workflows'
         ],
-
-        loginRequired: function() {
-            this.page.display( new routingMessage({type: 'error', message: "You must be logged in to make this request."}) );
-        },
 
         authenticate: function( args, name ) {
             return ( Galaxy.user && Galaxy.user.id ) || this.require_login.indexOf( name ) == -1;
@@ -116,7 +79,20 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_user_form : function( form_id ) {
-            this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+            var model = new UserPreferences.Model( { user_id: Galaxy.params.id } );
+            this.page.display( new FormWrapper.View ( model.get( form_id ) ) );
+        },
+
+        show_visualizations : function( action_id ) {
+            this.page.display( new GridShared.View( { action_id: action_id, plural: 'Visualizations', item: 'visualization' } ) );
+        },
+
+        show_workflows_published : function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'workflow/list_published', dict_format: true } ) );
+        },
+
+        show_histories : function( action_id ) {
+            this.page.display( new HistoryList.View( { action_id: action_id } ) );
         },
 
         show_datasets : function() {
@@ -124,19 +100,19 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_pages : function( action_id ) {
-            if ( action_id == 'list' ) {
-                this.page.display( new PageList.View() );
-            } else {
-                this.page.display( new GridView( { url_base: Galaxy.root + 'page/list_published', dict_format: true } ) );
-            }
+            this.page.display( new GridShared.View( { action_id: action_id, plural: 'Pages', item: 'page' } ) );
         },
 
         show_workflows : function(){
             this.page.display( new Workflows.View() );
         },
 
-        show_configure_menu : function(){
-            this.page.display( new WorkflowsConfigureMenu.View() );
+        show_run : function() {
+            this._loadWorkflow();
+        },
+
+        show_import_workflow : function() {
+            this.page.display( new Workflows.ImportWorkflowView() );
         },
 
         show_custom_builds : function() {
@@ -147,6 +123,14 @@ window.app = function app( options, bootstrapped ){
                 return;
             }
             this.page.display( new CustomBuilds.View() );
+        },
+
+        show_dataset_edit_attributes : function() {
+            this.page.display( new DatasetEditAttributes.View() );
+        },
+
+        show_dataset_error : function() {
+            this.page.display( new DatasetError.View() );
         },
 
         /**  */
@@ -163,7 +147,7 @@ window.app = function app( options, bootstrapped ){
             } else {
                 // show the workflow run form
                 if( params.workflow_id ){
-                    this._loadCenterIframe( 'workflow/run?id=' + params.workflow_id );
+                    this._loadWorkflow();
                 // load the center iframe with controller.action: galaxy.org/?m_c=history&m_a=list -> history/list
                 } else if( params.m_c ){
                     this._loadCenterIframe( params.m_c + '/' + params.m_a );
@@ -177,8 +161,8 @@ window.app = function app( options, bootstrapped ){
         /** load the center panel with a tool form described by the given params obj */
         _loadToolForm : function( params ){
             //TODO: load tool form code async
-            params.id = unescape( params.tool_id );
-            centerPanel.display( new ToolForm.View( params ) );
+            params.id = decodeURIComponent( params.tool_id );
+            this.page.display( new ToolForm.View( params ) );
         },
 
         /** load the center panel iframe using the given url */
@@ -188,21 +172,30 @@ window.app = function app( options, bootstrapped ){
             this.page.$( '#galaxy_main' ).prop( 'src', url );
         },
 
+        /** load workflow by its url in run mode */
+        _loadWorkflow: function() {
+            var self = this;
+            Utils.get({
+                url: Galaxy.root + 'api/workflows/' + Utils.getQueryString( 'id' ) + '/download',
+                data: { 'style': 'run' },
+                success: function( response ) {
+                    self.page.display( new ToolFormComposite.View( response ) );
+                },
+                error: function( response ) {
+                    var error_msg = "Error occurred while loading the resource.",
+                        options = { 'message': error_msg, 'status': 'error', 'persistent': true, 'cls': 'errormessage' };
+                    self.page.display( new Ui.Message( options ) );
+                }
+            });
+        }
     });
 
     // render and start the router
     $(function(){
-
         Galaxy.page = new Page.View( _.extend( options, {
             Left   : ToolPanel,
             Right  : HistoryPanel,
-            Router : Router
+            Router : AnalysisRouter
         } ) );
-
-        // start the router - which will call any of the routes above
-        Backbone.history.start({
-            root        : Galaxy.root,
-            pushState   : true,
-        });
     });
 };

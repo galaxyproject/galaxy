@@ -285,7 +285,7 @@ var DatasetCollection = Backbone.Model
     // ........................................................................ searchable
     /** searchable attributes for collections */
     searchAttributes : [
-        'name'
+        'name', 'tags'
     ],
 
     // ........................................................................ misc

@@ -634,10 +634,10 @@ var CircsterTrackView = Backbone.View.extend({
             track.get('config').set_value('max_value', self.data_bounds[1], {silent: true});
 
             // Merge chroms layout with data.
-            layout_and_data = _.zip(chrom_arcs, genome_wide_data),
+            var layout_and_data = _.zip(chrom_arcs, genome_wide_data);
 
             // Render each chromosome's data.
-            chroms_data_layout = _.map(layout_and_data, function(chrom_info) {
+            _.each(layout_and_data, function(chrom_info) {
                 var chrom_arc = chrom_info[0],
                     data = chrom_info[1];
                 return self._render_chrom_data(svg, chrom_arc, data);
@@ -1084,7 +1084,7 @@ var Circster = Backbone.View.extend(
         {
             icon_class: 'plus-button', title: 'Add tracks', on_click: function()
             {
-                visualization.select_datasets(Galaxy.root + "visualization/list_current_history_datasets", Galaxy.root + "api/datasets", vis.get('dbkey'), function(tracks)
+                visualization.select_datasets({'dbkey': vis.get('dbkey')}, function(tracks)
                 {
                     vis.add_tracks(tracks);
                 });
@@ -1133,7 +1133,7 @@ var Circster = Backbone.View.extend(
         {
             icon_class: 'cross-circle', title: 'Close', on_click: function()
             {
-                window.location = Galaxy.root + "visualization/list";
+                window.location = Galaxy.root + "visualizations/list";
             }
         }], { tooltip_config: { placement: 'bottom' } });
 

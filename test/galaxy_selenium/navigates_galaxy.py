@@ -28,7 +28,7 @@ class NullTourCallback(object):
         pass
 
 
-def retry_call_during_transitions(f, attempts=5, sleep=.1):
+def retry_call_during_transitions(f, attempts=5, sleep=.1, exception_check=exception_indicates_stale_element):
     previous_attempts = 0
     while True:
         try:
@@ -37,18 +37,18 @@ def retry_call_during_transitions(f, attempts=5, sleep=.1):
             if previous_attempts > attempts:
                 raise
 
-            if not exception_indicates_stale_element(e):
+            if not exception_check(e):
                 raise
 
             time.sleep(sleep)
             previous_attempts += 1
 
 
-def retry_during_transitions(f, attempts=5, sleep=.1):
+def retry_during_transitions(f, attempts=5, sleep=.1, exception_check=exception_indicates_stale_element):
 
     @wraps(f)
     def _retry(*args, **kwds):
-        retry_call_during_transitions(partial(f, *args, **kwds), attempts=attempts, sleep=sleep)
+        return retry_call_during_transitions(partial(f, *args, **kwds), attempts=attempts, sleep=sleep, exception_check=exception_check)
 
     return _retry
 
@@ -134,10 +134,10 @@ class NavigatesGalaxy(HasDriver):
             assert final_state == "ok", final_state
         return final_state
 
-    def history_panel_wait_for_hid_ok(self, hid, timeout=60):
-        self.history_panel_wait_for_hid_state(hid, 'ok', timeout=timeout)
+    def history_panel_wait_for_hid_ok(self, hid, timeout=60, allowed_force_refreshes=0):
+        self.history_panel_wait_for_hid_state(hid, 'ok', timeout=timeout, allowed_force_refreshes=allowed_force_refreshes)
 
-    def history_panel_wait_for_hid_visible(self, hid, timeout=60):
+    def history_panel_wait_for_hid_visible(self, hid, timeout=60, allowed_force_refreshes=0):
         current_history_id = self.current_history_id()
 
         def history_has_hid(driver):
@@ -148,8 +148,9 @@ class NavigatesGalaxy(HasDriver):
         contents = self.api_get("histories/%s/contents" % current_history_id)
         history_item = [d for d in contents if d["hid"] == hid][0]
         history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
+
         try:
-            self.wait_for_selector_visible(history_item_selector)
+            self.history_item_wait_for_selector(history_item_selector, allowed_force_refreshes)
         except self.TimeoutException as e:
             dataset_elements = self.driver.find_elements_by_css_selector("#current-history-panel .list-items div")
             div_ids = [d.get_attribute('id') for d in dataset_elements]
@@ -157,6 +158,20 @@ class NavigatesGalaxy(HasDriver):
             message = template % (hid, ",".join(div_ids))
             raise self.prepend_timeout_message(e, message)
         return history_item_selector
+
+    def history_item_wait_for_selector(self, history_item_selector, allowed_force_refreshes):
+        attempt = 0
+        while True:
+            try:
+                rval = self.wait_for_selector_visible(history_item_selector)
+                break
+            except self.TimeoutException:
+                if attempt >= allowed_force_refreshes:
+                    raise
+
+            attempt += 1
+            self.history_panel_refresh_click()
+        return rval
 
     def history_panel_wait_for_hid_hidden(self, hid, timeout=60):
         current_history_id = self.current_history_id()
@@ -166,11 +181,11 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_selector_absent(history_item_selector)
         return history_item_selector
 
-    def history_panel_wait_for_hid_state(self, hid, state, timeout=60):
-        history_item_selector = self.history_panel_wait_for_hid_visible(hid, timeout=timeout)
+    def history_panel_wait_for_hid_state(self, hid, state, timeout=60, allowed_force_refreshes=0):
+        history_item_selector = self.history_panel_wait_for_hid_visible(hid, timeout=timeout, allowed_force_refreshes=allowed_force_refreshes)
         history_item_selector_state = "%s.state-%s" % (history_item_selector, state)
         try:
-            self.wait_for_selector_visible(history_item_selector_state)
+            self.history_item_wait_for_selector(history_item_selector_state, allowed_force_refreshes)
         except self.TimeoutException as e:
             history_item = self.driver.find_element_by_css_selector(history_item_selector)
             current_state = "UNKNOWN"
@@ -181,6 +196,7 @@ class NavigatesGalaxy(HasDriver):
             template = "Failed waiting on history item %d state to change to [%s] current state [%s]. "
             message = template % (hid, state, current_state)
             raise self.prepend_timeout_message(e, message)
+        return history_item_selector_state
 
     def get_logged_in_user(self):
         return self.api_get("users/current")
@@ -395,12 +411,31 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_table_elements(self):
         self.wait_for_selector_visible("tbody.workflow-search")
-        table_elements = self.driver.find_elements_by_css_selector("tbody.workflow-search > tr")
+        table_elements = self.driver.find_elements_by_css_selector("tbody.workflow-search > tr:not([style*='display: none'])")
         return table_elements
 
+    def workflow_index_table_row(self, workflow_index=0):
+        return self.workflow_index_table_elements()[workflow_index]
+
+    @retry_during_transitions
+    def workflow_index_click_search(self):
+        search_element = self.wait_for_selector_clickable("input.search-wf")
+        search_element.click()
+        return search_element
+
+    @retry_during_transitions
+    def workflow_index_click_import(self):
+        element = self.wait_for_selector_clickable(self.test_data["selectors"]["workflows"]["import_button"])
+        element.click()
+
+    def workflow_index_rename(self, new_name, workflow_index=0):
+        self.workflow_index_click_option("Rename", workflow_index=workflow_index)
+        alert = self.driver.switch_to.alert
+        alert.send_keys(new_name)
+        alert.accept()
+
     def workflow_index_click_option(self, option_title, workflow_index=0):
-        table_elements = self.workflow_index_table_elements()
-        workflow_row = table_elements[workflow_index]
+        workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
         workflow_button = workflow_row.find_element_by_css_selector(".menubutton")
         workflow_button.click()
         menu_element = self.wait_for_selector_visible("ul.action-dpd")
@@ -415,8 +450,43 @@ class NavigatesGalaxy(HasDriver):
         if not found_option:
             raise AssertionError("Failed to find workflow action option with title [%s]" % option_title)
 
+    def workflow_index_click_tag_display(self, workflow_index=0):
+        workflow_row_element = self.workflow_index_table_row(workflow_index)
+        tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
+        tag_display.click()
+
+    def workflow_index_tags(self, workflow_index=0):
+        workflow_row_element = self.workflow_index_table_row(workflow_index)
+        tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
+        tag_spans = tag_display.find_elements_by_css_selector("span.label")
+        tags = []
+        for tag_span in tag_spans:
+            tags.append(tag_span.text)
+        return tags
+
+    def workflow_import_submit_url(self, url):
+        form_element = self.wait_for_selector_visible("#center form")
+        url_element = form_element.find_element_by_css_selector("input[type='text']")
+        url_element.send_keys(url)
+        self.click_submit(form_element)
+
+    def workflow_sharing_click_publish(self):
+        button = self.wait_for_selector_clickable("input[name='make_accessible_and_publish']")
+        button.click()
+
+    def tagging_add(self, tags, auto_closes=True, parent_selector=""):
+
+        for i, tag in enumerate(tags):
+            if auto_closes or i == 0:
+                tag_area = parent_selector + ".tags-input input[type='text']"
+                tag_area = self.wait_for_selector_clickable(tag_area)
+                tag_area.click()
+
+            tag_area.send_keys(tag)
+            self.send_enter(tag_area)
+
     def workflow_run_submit(self):
-        button = self.wait_for_selector(".ui-form-header button")
+        button = self.wait_for_selector_clickable("button.btn-primary")
         button.click()
 
     def tool_open(self, tool_id):
@@ -448,6 +518,7 @@ class NavigatesGalaxy(HasDriver):
     def click_masthead_workflow(self):
         self.click_xpath(self.navigation_data["selectors"]["masthead"]["workflow"])
 
+    @retry_during_transitions
     def click_button_new_workflow(self):
         element = self.wait_for_selector_clickable(self.navigation_data["selectors"]["workflows"]["new_button"])
         element.click()

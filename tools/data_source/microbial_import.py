@@ -8,7 +8,7 @@ from __future__ import print_function
 import sys
 from shutil import copyfile
 
-assert sys.version_info[:2] >= ( 2, 4 )
+assert sys.version_info[:2] >= (2, 4)
 
 BUFFER = 1048576
 
@@ -28,7 +28,7 @@ while have_none:
 available_files = {}
 try:
     filename = sys.argv[-1]
-    for i, line in enumerate( open( filename ) ):
+    for i, line in enumerate(open(filename)):
         if not line or line[0:1] == "#":
             continue
         fields = line.split('\t')

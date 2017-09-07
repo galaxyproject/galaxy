@@ -72,9 +72,9 @@ class Cleanup(object):
         parser.add_option('-U', '--no-update-time', action='store_false', dest='update_time', help="Don't set update_time on updated objects", default=True)
         parser.add_option('-s', '--sequence', dest='sequence', help='Comma-separated sequence of actions, chosen from: %s' % self.action_names, default='')
         parser.add_option('-w', '--work-mem', dest='work_mem', help='Set PostgreSQL work_mem for this connection', default=None)
-        ( self.options, self.args ) = parser.parse_args()
+        (self.options, self.args) = parser.parse_args()
 
-        self.options.sequence = [ x.strip() for x in self.options.sequence.split(',') ]
+        self.options.sequence = [x.strip() for x in self.options.sequence.split(',')]
 
         if self.options.sequence == ['']:
             print("Error: At least one action must be specified in the action sequence\n")
@@ -105,7 +105,7 @@ class Cleanup(object):
         url = make_url(self.config.database_connection)
 
         log.info('Connecting to database with URL: %s' % url)
-        args = url.translate_connect_args( username='user' )
+        args = url.translate_connect_args(username='user')
         args.update(url.query)
 
         assert url.get_dialect().name == 'postgresql', 'This script can only be used with PostgreSQL.'

@@ -6,16 +6,17 @@ import datetime
 import json
 import os
 import time
+
 import traceback
 
-from functools import wraps
+from functools import partial, wraps
 
 import requests
 
 from galaxy_selenium import (
     driver_factory,
 )
-from galaxy_selenium.navigates_galaxy import NavigatesGalaxy
+from galaxy_selenium.navigates_galaxy import NavigatesGalaxy, retry_during_transitions
 
 try:
     from pyvirtualdisplay import Display
@@ -26,7 +27,7 @@ from six.moves.urllib.parse import urljoin
 
 from base import populators
 from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address
-from base.twilltestcase import FunctionalTestCase
+from base.testcase import FunctionalTestCase
 from base.workflows_format_2 import (
     ImporterGalaxyInterface,
     convert_and_import_workflow,
@@ -91,6 +92,11 @@ def selenium_test(f):
                     write_file("page_source.txt", self.driver.page_source)
                     write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
                     write_file("stacktrace.txt", traceback.format_exc())
+                    for log_type in ["browser", "driver"]:
+                        try:
+                            write_file("%s.log.json" % log_type, json.dumps(self.driver.get_log(log_type)))
+                        except Exception:
+                            continue
                     iframes = self.driver.find_elements_by_css_selector("iframe")
                     for iframe in iframes:
                         pass
@@ -105,6 +111,9 @@ def selenium_test(f):
                     raise
 
     return func_wrapper
+
+
+retry_assertion_during_transitions = partial(retry_during_transitions, exception_check=lambda e: isinstance(e, AssertionError))
 
 
 class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
@@ -144,6 +153,9 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
     def setup_driver_and_session(self):
         self.display = driver_factory.virtual_display_if_enabled(headless_selenium())
         self.driver = get_driver()
+        # New workflow index page does not degrade well to smaller sizes, needed
+        # to increase this.
+        self.driver.set_window_size(1280, 900)
 
         if self.ensure_registered:
             self.register()
@@ -335,7 +347,7 @@ class SeleniumSessionDatasetCollectionPopulator(populators.BaseDatasetCollection
         self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_test_case)
 
     def _create_collection(self, payload):
-        create_response = self._post( "dataset_collections", data=payload )
+        create_response = self._post("dataset_collections", data=payload)
         return create_response
 
 
@@ -360,4 +372,4 @@ class SeleniumSessionWorkflowPopulator(populators.BaseWorkflowPopulator, Seleniu
 
     def upload_yaml_workflow(self, has_yaml, **kwds):
         workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
-        return workflow[ "id" ]
+        return workflow["id"]

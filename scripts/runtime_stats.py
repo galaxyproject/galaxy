@@ -22,7 +22,7 @@ Examples
 
 # Stats for all runs of the Bowtie 2 tool installed from the Tool Shed but we
 # don't feel like figuring out or typing the long ID (matches any tool with
-# '/tophat2/' in its full ID):
+# '/bowtie2/' in its full ID):
 % ./runtime_stats.py -c galaxy.ini --like 'bowtie2'
 
 # Stats for all runs of Tophat 2 that took longer than 2 minutes but less than
@@ -118,7 +118,7 @@ def parse_arguments():
         cp = configparser.ConfigParser()
         cp.readfp(open(args.config))
         uri = cp.get('app:main', 'database_connection')
-        names = { 'database': 'dbname', 'username': 'user' }
+        names = {'database': 'dbname', 'username': 'user'}
         args.connect_args = url.make_url(uri).translate_connect_args(**names)
     else:
         args.connect_args = {}
@@ -223,9 +223,9 @@ def query(tool_id=None, user=None, like=None, source='metrics',
     print('Query returned %d rows' % cur.rowcount)
 
     if source == 'metrics':
-        times = numpy.array([ r[0] for r in cur if r[0] ])
+        times = numpy.array([r[0] for r in cur if r[0]])
     elif source == 'history':
-        times = numpy.array([ r[0].total_seconds() for r in cur if r[0] ])
+        times = numpy.array([r[0].total_seconds() for r in cur if r[0]])
 
     print('Collected %d times' % times.size)
 

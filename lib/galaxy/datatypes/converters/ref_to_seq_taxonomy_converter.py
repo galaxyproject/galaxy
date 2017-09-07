@@ -4,9 +4,8 @@ convert a ref.taxonomy file to a seq.taxonomy file
 Usage:
 %python ref_to_seq_taxonomy_converter.py <ref.taxonom> <seq.taxonomy>
 """
-
-import sys
 import re
+import sys
 
 assert sys.version_info[:2] >= (2, 4)
 

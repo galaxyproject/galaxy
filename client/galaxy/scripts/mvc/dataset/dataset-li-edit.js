@@ -60,12 +60,10 @@ var DatasetListItemEdit = _super.extend(
             deleted = this.model.get( 'deleted' ),
             editBtnData = {
                 title       : _l( 'Edit attributes' ),
-                href        : this.model.urls.edit,
-                target      : this.linkTarget,
+                href        : Galaxy.root + 'datasets/edit?dataset_id=' + this.model.attributes.id,
                 faIcon      : 'fa-pencil',
                 classes     : 'edit-btn'
             };
-
         // disable if purged or deleted and explain why in the tooltip
         if( deleted || purged ){
             editBtnData.disabled = true;
@@ -155,7 +153,7 @@ var DatasetListItemEdit = _super.extend(
             return null
         }
         return faIconButton({
-            title: 'Tool Help',
+            title: _l('Tool Help'),
             classes: 'icon-btn',
             href: '#',
             faIcon: 'fa-question',
@@ -199,9 +197,8 @@ var DatasetListItemEdit = _super.extend(
     _renderErrButton : function(){
         return faIconButton({
             title       : _l( 'View or report this error' ),
-            href        : this.model.urls.report_error,
+            href        : Galaxy.root + 'datasets/error?dataset_id=' + this.model.attributes.id,
             classes     : 'report-error-btn',
-            target      : this.linkTarget,
             faIcon      : 'fa-bug'
         });
     },

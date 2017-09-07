@@ -8,8 +8,8 @@ from galaxy import model
 from galaxy.exceptions import MalformedContents
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
 
-unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
-sys.path.insert( 1, unit_root )
+unit_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+sys.path.insert(1, unit_root)
 from unittest_utils.galaxy_mock import MockApp
 
 

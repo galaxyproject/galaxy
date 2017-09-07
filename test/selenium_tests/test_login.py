@@ -26,7 +26,7 @@ class LoginTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_invalid_passwords(self):
-        bad_passwords = [ '1234', '', '; SELECT * FROM galaxy_user' ]
+        bad_passwords = ['1234', '', '; SELECT * FROM galaxy_user']
         for bad_password in bad_passwords:
             self.home()
             self.submit_login(self._get_random_email(), password=bad_password)

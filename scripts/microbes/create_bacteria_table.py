@@ -3,11 +3,11 @@
 import os
 import sys
 
-assert sys.version_info[:2] >= ( 2, 4 )
+assert sys.version_info[:2] >= (2, 4)
 
 
 def __main__():
-    base_dir = os.path.join( os.getcwd(), "bacteria" )
+    base_dir = os.path.join(os.getcwd(), "bacteria")
     try:
         base_dir = sys.argv[1]
     except:

@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<%def name="title()">Galaxy Administration</%def>
+<%def name="title()">Administration</%def>
 
 <h2>Administration</h2>
 Please visit <a href="https://galaxyproject.org/admin" target="_blank">the Galaxy administration hub</a> to learn how to keep your Galaxy in best shape.

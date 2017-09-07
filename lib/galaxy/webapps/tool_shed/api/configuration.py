@@ -7,16 +7,16 @@ from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_ap
 from galaxy.web.base.controller import BaseAPIController
 
 import logging
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
-class ConfigurationController( BaseAPIController ):
+class ConfigurationController(BaseAPIController):
 
-    def __init__( self, app ):
-        super( ConfigurationController, self ).__init__( app )
+    def __init__(self, app):
+        super(ConfigurationController, self).__init__(app)
 
     @expose_api_anonymous_and_sessionless
-    def version( self, trans, **kwds ):
+    def version(self, trans, **kwds):
         """
         GET /api/version
         Return a description of the version_major and version of Galaxy Tool Shed
@@ -25,4 +25,4 @@ class ConfigurationController( BaseAPIController ):
         :rtype:     dict
         :returns:   dictionary with versions keyed as 'version_major' and 'version'
         """
-        return {"version_major": self.app.config.version_major, "version": self.app.config.version }
+        return {"version_major": self.app.config.version_major, "version": self.app.config.version}
