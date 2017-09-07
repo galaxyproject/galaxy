@@ -32,7 +32,7 @@ six==1.10.0
 Whoosh==2.7.4
 testfixtures==4.10.0
 galaxy_sequence_utils==1.0.2
-h5py==2.7.0
+h5py==2.7.1
 
 # pykwalify and dependencies
 pykwalify==1.5.1
