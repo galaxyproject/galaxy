@@ -122,12 +122,27 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         self.assert_histories_in_grid([HISTORY2_NAME, HISTORY3_NAME])
 
+    @selenium_test
+    def test_sort_by_name(self):
+        self.navigate_to_saved_histories_page()
+
+        sort_link = self.wait_for_selector_clickable('.sort-link[sort_key="name"]')
+        sort_link.click()
+
+        actual_histories = self.get_histories()
+        if 'Unnamed history' in actual_histories:
+            expected_histories = [HISTORY2_NAME, HISTORY3_NAME, 'Unnamed history']
+        else:
+            expected_histories = [HISTORY1_NAME, HISTORY2_NAME, HISTORY3_NAME]
+
+        self.assertEqual(actual_histories, expected_histories)
+
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
         actual_histories = self.get_histories()
         if not sort_matters:
-            expected_histories = set(expected_histories)
             actual_histories = set(actual_histories)
-        self.assertEqual(expected_histories, actual_histories)
+            expected_histories = set(expected_histories)
+        self.assertEqual(actual_histories, expected_histories)
 
     def assert_histories_in_grid(self, expected_histories, present=True):
         actual_histories = self.get_histories()
