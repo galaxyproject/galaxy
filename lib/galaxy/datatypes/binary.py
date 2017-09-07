@@ -11,7 +11,6 @@ import subprocess
 import tempfile
 import zipfile
 import tarfile
-import re
 from json import dumps
 
 import pysam
@@ -1494,30 +1493,26 @@ class Fast5Archive(CompressedArchive):
     """Class describing a FAST5 archive """
     MetadataElement(name="fast5_count", default='0', param=MetadataParameter, desc="Read Count",
                     readonly=True, visible=True, no_value=None)
-    file_ext = "fast5_archive"
+    file_ext = "fast5.tar"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super(Fast5Archive, self).set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             if dataset and tarfile.is_tarfile(dataset.file_name):
-                temptar = tarfile.open(dataset.file_name, 'r')
-                contents = temptar.getnames()
-                r = re.compile(".+\.fast5$")
-                fast5 = filter(r.match, contents)
-                dataset.metadata.fast5_count = len(fast5)
-                temptar.close()
+                with tarfile.open(dataset.file_name, 'r') as temptar:
+                    dataset.metadata.fast5_count = sum(
+                        1 for c in temptar if c.name.endswith('.fast5')
+                    )
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
 
     def sniff(self, filename):
         try:
             if filename and tarfile.is_tarfile(filename):
-                temptar = tarfile.open(filename, 'r')
-                contents = temptar.getnames()
-                r = re.compile(".+\.fast5$")
-                is_fast5 = filter(r.match, contents)
-                temptar.close()
-                return is_fast5
+                with tarfile.open(filename, 'r') as temptar:
+                    for c in temptar:
+                        if c.name.endswith('.fast5'):
+                            return True
         except Exception as e:
             log.warning('%s, sniff Exception: %s', self, e)
         return False
@@ -1537,7 +1532,49 @@ class Fast5Archive(CompressedArchive):
             return "FAST5 Archive (%s)" % (nice_size(dataset.get_size()))
 
 
-Binary.register_sniffable_binary_format("fast5_archive", "fast5_archive", Fast5Archive)
+Binary.register_sniffable_binary_format("fast5_archive", "fast5.tar", Fast5Archive)
+
+
+class Fast5ArchiveGz(Fast5Archive):
+    """Class describing a gzip-compressed FAST5 archive """
+    file_ext = "fast5.tar.gz"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic = binascii.unhexlify("1f8b")
+
+    def sniff(self, filename):
+        try:
+            header = open(filename, 'rb').read(2)
+            if header == self._magic:
+                return super(Fast5ArchiveGz, self).sniff(filename)
+        except Exception as e:
+            log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+
+Binary.register_sniffable_binary_format("fast5_archive_gz", "fast5.tar.gz", Fast5ArchiveGz)
+
+
+class Fast5ArchiveBz2(Fast5Archive):
+    """Class describing a bzip2-compressed FAST5 archive """
+    file_ext = "fast5.tar.bz2"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic = binascii.unhexlify("425a68")
+
+    def sniff(self, filename):
+        try:
+            header = open(filename, 'rb').read(3)
+            if header == self._magic:
+                return super(Fast5ArchiveBz2, self).sniff(filename)
+        except Exception as e:
+            log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+
+Binary.register_sniffable_binary_format("fast5_archive_bz2", "fast5.tar.bz2", Fast5ArchiveBz2)
 
 
 class SearchGuiArchive(CompressedArchive):
