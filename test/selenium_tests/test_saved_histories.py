@@ -26,9 +26,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         self.click_popup_option(HISTORY2_NAME, 'Switch')
         time.sleep(1)
-
-        selector = '#current-history-panel .name.editable-text'
-        history_name = self.wait_for_selector(selector)
+        history_name = self.history_panel_name_element()
 
         self.assertEqual(history_name.text, HISTORY2_NAME)
 
@@ -38,6 +36,24 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         self.click_popup_option(HISTORY2_NAME, 'View')
         history_name = self.wait_for_selector('.name.editable-text')
         self.assertEqual(history_name.text, HISTORY2_NAME)
+
+    @selenium_test
+    def test_history_publish(self):
+        self.navigate_to_saved_histories_page()
+
+        # Publish the history
+        self.click_popup_option(HISTORY2_NAME, 'Share or Publish')
+        selector = 'input[name="make_accessible_and_publish"]'
+        publish_button = self.wait_for_selector_clickable(selector)
+        publish_button.click()
+
+        self.navigate_to_saved_histories_page()
+
+        self.show_advanced_search()
+        self.select_filter('sharing', 'published')
+        time.sleep(1)
+
+        self.assert_grid_histories_are([HISTORY2_NAME])
 
     @selenium_test
     def test_rename_history(self):
@@ -150,21 +166,21 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         menu_option.click()
 
     def click_popup_option(self, history_name, option_label):
-        history = None
+        history_menu_button = None
         grid = self.wait_for_selector('#grid-table-body')
         for row in grid.find_elements_by_tag_name('tr'):
             name_cell = row.find_elements_by_tag_name('td')[1]
             if name_cell.text == history_name:
-                history = name_cell
+                history_menu_button = name_cell
                 break
 
-        if history is None:
+        if history_menu_button is None:
             raise AssertionError('Failed to find history with name [%s]' % history_name)
 
-        menu_button = name_cell.find_element_by_css_selector('.popup')
-        x_offset = menu_button.size['width'] - 5
-        y_offset = menu_button.size['height'] - 5
-        self.action_chains().move_to_element_with_offset(menu_button, x_offset, y_offset).click().perform()
+        popup_menu_button = history_menu_button.find_element_by_css_selector('.popup')
+        x_offset = popup_menu_button.size['width'] - 5
+        y_offset = popup_menu_button.size['height'] - 5
+        self.action_chains().move_to_element_with_offset(popup_menu_button, x_offset, y_offset).click().perform()
 
         popup_option = self.driver.find_element_by_link_text(option_label)
         popup_option.click()
