@@ -112,7 +112,7 @@ var FolderListView = Backbone.View.extend({
 
         // when dataset_id is present render its details too
         if ( this.options.dataset_id ){
-            row = _.findWhere( that.rowViews, { id: this.options.dataset_id } );
+            var row = _.findWhere( that.rowViews, { id: this.options.dataset_id } );
             if ( row ) {
               row.showDatasetDetails();
             } else {
@@ -277,7 +277,7 @@ var FolderListView = Backbone.View.extend({
          // Iterate each checkbox
          $(':checkbox', '#folder_list_body').each(function() {
             this.checked = selected;
-            $row = $(this.parentElement.parentElement);
+            var $row = $(this.parentElement.parentElement);
             // Change color of selected/unselected
             if (selected) {
               that.makeDarkRow($row);
@@ -386,7 +386,7 @@ var FolderListView = Backbone.View.extend({
       '</table>',
       '<div class="empty-folder-message" style="display:none;">',
           'This folder is either empty or you do not have proper access permissions to see the contents. If you expected something to show up',
-          ' please consult the <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity" target="_blank">library security wikipage</a>',
+          ' please consult the <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">library security wikipage</a>',
           ' or visit the <a href="https://biostar.usegalaxy.org/" target="_blank">Galaxy support site</a>.',
       '</div>'
       ].join(''));

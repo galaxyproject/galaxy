@@ -3,6 +3,7 @@ Offload jobs to a Kubernetes cluster.
 """
 
 import logging
+import re
 from os import environ as os_environ
 
 from six import text_type
@@ -47,6 +48,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_persistent_volume_claim_name=dict(map=str),
             k8s_persistent_volume_claim_mount_path=dict(map=str),
             k8s_namespace=dict(map=str, default="default"),
+            k8s_job_api_version=dict(map=str, default="batch/v1"),
+            k8s_supplemental_group_id=dict(map=str),
+            k8s_pull_policy=dict(map=str, default="Default"),
+            k8s_fs_group_id=dict(map=int),
             k8s_pod_retrials=dict(map=int, valid=lambda x: int > 0, default=3))
 
         if 'runner_param_specs' not in kwargs:
@@ -63,6 +68,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         else:
             self._pykube_api = HTTPClient(KubeConfig.from_file(self.runner_params["k8s_config_path"]))
         self._galaxy_vol_name = "pvc-galaxy"  # TODO this needs to be read from params!!
+
+        self._supplemental_group = self.__get_supplemental_group()
+        self._fs_group = self.__get_fs_group()
+        self._default_pull_policy = self.__get_pull_policy()
 
         self._init_monitor_thread()
         self._init_worker_threads()
@@ -81,17 +90,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # Construction of the Kubernetes Job object follows: http://kubernetes.io/docs/user-guide/persistent-volumes/
         k8s_job_name = self.__produce_unique_k8s_job_name(job_wrapper.get_id_tag())
         k8s_job_obj = {
-            "apiVersion": "extensions/v1beta1",
+            "apiVersion": self.runner_params['k8s_job_api_version'],
             "kind": "Job",
-            "metadata":
-            # metadata.name is the name of the pod resource created, and must be unique
-            # http://kubernetes.io/docs/user-guide/configuring-containers/
-                {
+            "metadata": {
+                    # metadata.name is the name of the pod resource created, and must be unique
+                    # http://kubernetes.io/docs/user-guide/configuring-containers/
                     "name": k8s_job_name,
                     "namespace": "default",  # TODO this should be set
-                    "labels": {"app": k8s_job_name},
-                }
-            ,
+                    "labels": {"app": k8s_job_name}
+            },
             "spec": self.__get_k8s_job_spec(job_wrapper)
         }
 
@@ -113,6 +120,32 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # external_runJob_script can be None, in which case it's not used.
         external_runjob_script = None
         return external_runjob_script
+
+    def __get_pull_policy(self):
+        if "k8s_pull_policy" in self.runner_params:
+            if self.runner_params['k8s_pull_policy'] in ["Always", "IfNotPresent", "Never"]:
+                return self.runner_params['k8s_pull_policy']
+        return None
+
+    def __get_supplemental_group(self):
+        if "k8s_supplemental_group_id" in self.runner_params:
+            try:
+                return int(self.runner_params["k8s_supplemental_group_id"])
+            except:
+                log.warning("Supplemental group passed for Kubernetes runner needs to be an integer, value "
+                         + self.runner_params["k8s_supplemental_group_id"] + " passed is invalid")
+                return None
+        return None
+
+    def __get_fs_group(self):
+        if "k8s_fs_group_id" in self.runner_params:
+            try:
+                return int(self.runner_params["k8s_fs_group_id"])
+            except:
+                log.warning("FS group passed for Kubernetes runner needs to be an integer, value "
+                         + self.runner_params["k8s_fs_group_id"] + " passed is invalid")
+                return None
+        return None
 
     def __produce_unique_k8s_job_name(self, galaxy_internal_job_id):
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
@@ -140,6 +173,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # TODO include other relevant elements that people might want to use from
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
 
+        if self._supplemental_group and self._supplemental_group > 0:
+            k8s_spec_template["spec"]["securityContext"] = dict(supplementalGroups=[self._supplemental_group])
+        if self._fs_group and self._fs_group > 0:
+            if "securityContext" in k8s_spec_template["spec"]:
+                k8s_spec_template["spec"]["securityContext"]["fsGroup"] = self._fs_group
+            else:
+                k8s_spec_template["spec"]["securityContext"] = dict(fsGroup=self._fs_group)
+
         return k8s_spec_template
 
     def __get_k8s_restart_policy(self, job_wrapper):
@@ -161,7 +202,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return [k8s_mountable_volume]
 
     def __get_k8s_containers(self, job_wrapper):
-        """Fills in all required for setting up the docker containers to be used."""
+        """Fills in all required for setting up the docker containers to be used, including setting a pull policy if
+           this has been set.
+        """
         k8s_container = {
             "name": self.__get_k8s_container_name(job_wrapper),
             "image": self._find_container(job_wrapper).container_id,
@@ -177,6 +220,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             }]
         }
 
+        if self._default_pull_policy:
+            k8s_container["imagePullPolicy"] = self._default_pull_policy
         # if self.__requires_ports(job_wrapper):
         #    k8s_container['ports'] = self.__get_k8s_containers_ports(job_wrapper)
 
@@ -208,8 +253,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return k8s_cont_image
 
     def __get_k8s_container_name(self, job_wrapper):
-        # TODO check if this is correct
-        return job_wrapper.job_destination.id
+        # These must follow a specific regex for Kubernetes.
+        raw_id = job_wrapper.job_destination.id
+        cleaned_id = re.sub("[^-a-z0-9]", "-", raw_id)
+        if cleaned_id.startswith("-") or cleaned_id.endswith("-"):
+            cleaned_id = "x%sx" % cleaned_id
+        return cleaned_id
 
     def check_watched_item(self, job_state):
         """Checks the state of a job already submitted on k8s. Job state is a AsynchronousJobState"""
@@ -256,7 +305,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 self.mark_as_failed(job_state)
                 job.scale(replicas=0)
                 return None
-
             # We should not get here
             log.debug(
                 "Reaching unexpected point for Kubernetes job, where it is not classified as succ., active nor failed.")

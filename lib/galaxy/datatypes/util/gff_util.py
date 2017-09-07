@@ -3,75 +3,79 @@ Provides utilities for working with GFF files.
 """
 import copy
 
-from bx.intervals.io import GenomicInterval, MissingFieldError, NiceReaderWrapper, ParseError, GenomicIntervalReader
-from bx.tabular.io import Header, Comment
+from bx.intervals.io import GenomicInterval, GenomicIntervalReader, MissingFieldError, NiceReaderWrapper, ParseError
+from bx.tabular.io import Comment, Header
+
+from six import Iterator
 
 from galaxy.util.odict import odict
 
 
-class GFFInterval( GenomicInterval ):
+class GFFInterval(GenomicInterval):
     """
     A GFF interval, including attributes. If file is strictly a GFF file,
     only attribute is 'group.'
     """
-    def __init__( self, reader, fields, chrom_col=0, feature_col=2, start_col=3, end_col=4,
-                  strand_col=6, score_col=5, default_strand='.', fix_strand=False ):
+
+    def __init__(self, reader, fields, chrom_col=0, feature_col=2, start_col=3, end_col=4,
+                 strand_col=6, score_col=5, default_strand='.', fix_strand=False):
         # HACK: GFF format allows '.' for strand but GenomicInterval does not. To get around this,
         # temporarily set strand and then unset after initing GenomicInterval.
         unknown_strand = False
-        if not fix_strand and fields[ strand_col ] == '.':
+        if not fix_strand and fields[strand_col] == '.':
             unknown_strand = True
-            fields[ strand_col ] = '+'
-        GenomicInterval.__init__( self, reader, fields, chrom_col, start_col, end_col, strand_col,
-                                  default_strand, fix_strand=fix_strand )
+            fields[strand_col] = '+'
+        GenomicInterval.__init__(self, reader, fields, chrom_col, start_col, end_col, strand_col,
+                                 default_strand, fix_strand=fix_strand)
         if unknown_strand:
             self.strand = '.'
-            self.fields[ strand_col ] = '.'
+            self.fields[strand_col] = '.'
 
         # Handle feature, score column.
         self.feature_col = feature_col
         if self.feature_col >= self.nfields:
-            raise MissingFieldError( "No field for feature_col (%d)" % feature_col )
-        self.feature = self.fields[ self.feature_col ]
+            raise MissingFieldError("No field for feature_col (%d)" % feature_col)
+        self.feature = self.fields[self.feature_col]
         self.score_col = score_col
         if self.score_col >= self.nfields:
-            raise MissingFieldError( "No field for score_col (%d)" % score_col )
-        self.score = self.fields[ self.score_col ]
+            raise MissingFieldError("No field for score_col (%d)" % score_col)
+        self.score = self.fields[self.score_col]
 
         # GFF attributes.
-        self.attributes = parse_gff_attributes( fields[8] )
+        self.attributes = parse_gff_attributes(fields[8])
 
-    def copy( self ):
-        return GFFInterval(self.reader, list( self.fields ), self.chrom_col, self.feature_col, self.start_col,
+    def copy(self):
+        return GFFInterval(self.reader, list(self.fields), self.chrom_col, self.feature_col, self.start_col,
                            self.end_col, self.strand_col, self.score_col, self.strand)
 
 
-class GFFFeature( GFFInterval ):
+class GFFFeature(GFFInterval):
     """
     A GFF feature, which can include multiple intervals.
     """
-    def __init__( self, reader, chrom_col=0, feature_col=2, start_col=3, end_col=4,
-                  strand_col=6, score_col=5, default_strand='.', fix_strand=False, intervals=[],
-                  raw_size=0 ):
+
+    def __init__(self, reader, chrom_col=0, feature_col=2, start_col=3, end_col=4,
+                 strand_col=6, score_col=5, default_strand='.', fix_strand=False, intervals=[],
+                 raw_size=0):
         # Use copy so that first interval and feature do not share fields.
-        GFFInterval.__init__( self, reader, copy.deepcopy( intervals[0].fields ), chrom_col, feature_col,
-                              start_col, end_col, strand_col, score_col, default_strand,
-                              fix_strand=fix_strand )
+        GFFInterval.__init__(self, reader, copy.deepcopy(intervals[0].fields), chrom_col, feature_col,
+                             start_col, end_col, strand_col, score_col, default_strand,
+                             fix_strand=fix_strand)
         self.intervals = intervals
         self.raw_size = raw_size
         # Use intervals to set feature attributes.
         for interval in self.intervals:
             # Error checking. NOTE: intervals need not share the same strand.
             if interval.chrom != self.chrom:
-                raise ValueError( "interval chrom does not match self chrom: %s != %s" %
-                                  ( interval.chrom, self.chrom ) )
+                raise ValueError("interval chrom does not match self chrom: %s != %s" %
+                                 (interval.chrom, self.chrom))
             # Set start, end of interval.
             if interval.start < self.start:
                 self.start = interval.start
             if interval.end > self.end:
                 self.end = interval.end
 
-    def name( self ):
+    def name(self):
         """ Returns feature's name. """
         name = None
         # Preference for name: GTF, GFF3, GFF.
@@ -81,43 +85,43 @@ class GFFFeature( GFFInterval ):
                 # GFF3:
                 'ID', 'id',
                 # GFF (TODO):
-                'group' ]:
-            name = self.attributes.get( attr_name, None )
+                'group']:
+            name = self.attributes.get(attr_name, None)
             if name is not None:
                 break
         return name
 
-    def copy( self ):
+    def copy(self):
         intervals_copy = []
         for interval in self.intervals:
-            intervals_copy.append( interval.copy() )
+            intervals_copy.append(interval.copy())
         return GFFFeature(self.reader, self.chrom_col, self.feature_col, self.start_col, self.end_col, self.strand_col,
-                          self.score_col, self.strand, intervals=intervals_copy )
+                          self.score_col, self.strand, intervals=intervals_copy)
 
-    def lines( self ):
+    def lines(self):
         lines = []
         for interval in self.intervals:
-            lines.append( '\t'.join( interval.fields ) )
+            lines.append('\t'.join(interval.fields))
         return lines
 
 
-class GFFIntervalToBEDReaderWrapper( NiceReaderWrapper ):
+class GFFIntervalToBEDReaderWrapper(NiceReaderWrapper):
     """
     Reader wrapper that reads GFF intervals/lines and automatically converts
     them to BED format.
     """
 
-    def parse_row( self, line ):
+    def parse_row(self, line):
         # HACK: this should return a GFF interval, but bx-python operations
         # require GenomicInterval objects and subclasses will not work.
-        interval = GenomicInterval( self, line.split( "\t" ), self.chrom_col, self.start_col,
-                                    self.end_col, self.strand_col, self.default_strand,
-                                    fix_strand=self.fix_strand )
-        interval = convert_gff_coords_to_bed( interval )
+        interval = GenomicInterval(self, line.split("\t"), self.chrom_col, self.start_col,
+                                   self.end_col, self.strand_col, self.default_strand,
+                                   fix_strand=self.fix_strand)
+        interval = convert_gff_coords_to_bed(interval)
         return interval
 
 
-class GFFReaderWrapper( NiceReaderWrapper ):
+class GFFReaderWrapper(Iterator, NiceReaderWrapper):  # Iterator can be removed after bx-python library is ported to Python3
     """
     Reader wrapper for GFF files.
 
@@ -131,10 +135,10 @@ class GFFReaderWrapper( NiceReaderWrapper ):
        expect traditional interval format.
     """
 
-    def __init__( self, reader, chrom_col=0, feature_col=2, start_col=3,
-                  end_col=4, strand_col=6, score_col=5, fix_strand=False, convert_to_bed_coord=False, **kwargs ):
-        NiceReaderWrapper.__init__( self, reader, chrom_col=chrom_col, start_col=start_col, end_col=end_col,
-                                    strand_col=strand_col, fix_strand=fix_strand, **kwargs )
+    def __init__(self, reader, chrom_col=0, feature_col=2, start_col=3,
+                 end_col=4, strand_col=6, score_col=5, fix_strand=False, convert_to_bed_coord=False, **kwargs):
+        NiceReaderWrapper.__init__(self, reader, chrom_col=chrom_col, start_col=start_col, end_col=end_col,
+                                   strand_col=strand_col, fix_strand=fix_strand, **kwargs)
         self.feature_col = feature_col
         self.score_col = score_col
         self.convert_to_bed_coord = convert_to_bed_coord
@@ -143,29 +147,28 @@ class GFFReaderWrapper( NiceReaderWrapper ):
         self.seed_interval = None
         self.seed_interval_line_len = 0
 
-    def parse_row( self, line ):
-        interval = GFFInterval( self, line.split( "\t" ), self.chrom_col, self.feature_col,
-                                self.start_col, self.end_col, self.strand_col, self.score_col,
-                                self.default_strand, fix_strand=self.fix_strand )
+    def parse_row(self, line):
+        interval = GFFInterval(self, line.split("\t"), self.chrom_col, self.feature_col,
+                               self.start_col, self.end_col, self.strand_col, self.score_col,
+                               self.default_strand, fix_strand=self.fix_strand)
         return interval
 
-    # For Python3 this needs to be changed to __next__() after bx-python library is ported too
-    def next( self ):
+    def __next__(self):
         """ Returns next GFFFeature. """
 
         #
         # Helper function.
         #
 
-        def handle_parse_error( parse_error ):
+        def handle_parse_error(e):
             """ Actions to take when ParseError found. """
             if self.outstream:
                 if self.print_delegate and hasattr(self.print_delegate, "__call__"):
-                    self.print_delegate( self.outstream, e, self )
+                    self.print_delegate(self.outstream, e, self)
             self.skipped += 1
             # no reason to stuff an entire bad file into memmory
             if self.skipped < 10:
-                self.skipped_lines.append( ( self.linenum, self.current_line, str( e ) ) )
+                self.skipped_lines.append((self.linenum, self.current_line, str(e)))
 
             # For debugging, uncomment this to propogate parsing exceptions up.
             # I.e. the underlying reason for an unexpected StopIteration exception
@@ -182,130 +185,130 @@ class GFFReaderWrapper( NiceReaderWrapper ):
         if not self.seed_interval:
             while not self.seed_interval:
                 try:
-                    self.seed_interval = GenomicIntervalReader.next( self )
+                    self.seed_interval = GenomicIntervalReader.next(self)
                 except ParseError as e:
-                    handle_parse_error( e )
+                    handle_parse_error(e)
                 # TODO: When no longer supporting python 2.4 use finally:
                 # finally:
-                raw_size += len( self.current_line )
+                raw_size += len(self.current_line)
 
         # If header or comment, clear seed interval and return it with its size.
-        if isinstance( self.seed_interval, ( Header, Comment ) ):
+        if isinstance(self.seed_interval, (Header, Comment)):
             return_val = self.seed_interval
-            return_val.raw_size = len( self.current_line )
+            return_val.raw_size = len(self.current_line)
             self.seed_interval = None
             self.seed_interval_line_len = 0
             return return_val
 
         # Initialize feature identifier from seed.
-        feature_group = self.seed_interval.attributes.get( 'group', None )  # For GFF
+        feature_group = self.seed_interval.attributes.get('group', None)  # For GFF
         # For GFF3
-        feature_id = self.seed_interval.attributes.get( 'ID', None )
+        feature_id = self.seed_interval.attributes.get('ID', None)
         # For GTF.
-        feature_transcript_id = self.seed_interval.attributes.get( 'transcript_id', None )
+        feature_transcript_id = self.seed_interval.attributes.get('transcript_id', None)
 
         # Read all intervals associated with seed.
         feature_intervals = []
-        feature_intervals.append( self.seed_interval )
+        feature_intervals.append(self.seed_interval)
         while True:
             try:
-                interval = GenomicIntervalReader.next( self )
-                raw_size += len( self.current_line )
+                interval = GenomicIntervalReader.next(self)
+                raw_size += len(self.current_line)
             except StopIteration as e:
                 # No more intervals to read, but last feature needs to be
                 # returned.
                 interval = None
-                raw_size += len( self.current_line )
+                raw_size += len(self.current_line)
                 break
             except ParseError as e:
-                handle_parse_error( e )
-                raw_size += len( self.current_line )
+                handle_parse_error(e)
+                raw_size += len(self.current_line)
                 continue
             # TODO: When no longer supporting python 2.4 use finally:
             # finally:
             # raw_size += len( self.current_line )
 
             # Ignore comments.
-            if isinstance( interval, Comment ):
+            if isinstance(interval, Comment):
                 continue
 
             # Determine if interval is part of feature.
             part_of = False
-            group = interval.attributes.get( 'group', None )
+            group = interval.attributes.get('group', None)
             # GFF test:
             if group and feature_group == group:
                 part_of = True
             # GFF3 test:
-            parent_id = interval.attributes.get( 'Parent', None )
-            cur_id = interval.attributes.get( 'ID', None )
-            if ( cur_id and cur_id == feature_id ) or ( parent_id and parent_id == feature_id ):
+            parent_id = interval.attributes.get('Parent', None)
+            cur_id = interval.attributes.get('ID', None)
+            if (cur_id and cur_id == feature_id) or (parent_id and parent_id == feature_id):
                 part_of = True
             # GTF test:
-            transcript_id = interval.attributes.get( 'transcript_id', None )
+            transcript_id = interval.attributes.get('transcript_id', None)
             if transcript_id and transcript_id == feature_transcript_id:
                 part_of = True
 
             # If interval is not part of feature, clean up and break.
             if not part_of:
                 # Adjust raw size because current line is not part of feature.
-                raw_size -= len( self.current_line )
+                raw_size -= len(self.current_line)
                 break
 
             # Interval associated with feature.
-            feature_intervals.append( interval )
+            feature_intervals.append(interval)
 
         # Last interval read is the seed for the next interval.
         self.seed_interval = interval
-        self.seed_interval_line_len = len( self.current_line )
+        self.seed_interval_line_len = len(self.current_line)
 
         # Return feature.
-        feature = GFFFeature( self, self.chrom_col, self.feature_col, self.start_col,
-                              self.end_col, self.strand_col, self.score_col,
-                              self.default_strand, fix_strand=self.fix_strand,
-                              intervals=feature_intervals, raw_size=raw_size )
+        feature = GFFFeature(self, self.chrom_col, self.feature_col, self.start_col,
+                             self.end_col, self.strand_col, self.score_col,
+                             self.default_strand, fix_strand=self.fix_strand,
+                             intervals=feature_intervals, raw_size=raw_size)
 
         # Convert to BED coords?
         if self.convert_to_bed_coord:
-            convert_gff_coords_to_bed( feature )
+            convert_gff_coords_to_bed(feature)
 
         return feature
 
 
-def convert_bed_coords_to_gff( interval ):
+def convert_bed_coords_to_gff(interval):
     """
     Converts an interval object's coordinates from BED format to GFF format.
     Accepted object types include GenomicInterval and list (where the first
     element in the list is the interval's start, and the second element is
     the interval's end).
     """
-    if isinstance( interval, GenomicInterval ):
+    if isinstance(interval, GenomicInterval):
         interval.start += 1
-        if isinstance( interval, GFFFeature ):
+        if isinstance(interval, GFFFeature):
             for subinterval in interval.intervals:
-                convert_bed_coords_to_gff( subinterval )
+                convert_bed_coords_to_gff(subinterval)
     elif isinstance(interval, list):
-        interval[ 0 ] += 1
+        interval[0] += 1
     return interval
 
 
-def convert_gff_coords_to_bed( interval ):
+def convert_gff_coords_to_bed(interval):
     """
     Converts an interval object's coordinates from GFF format to BED format.
     Accepted object types include GFFFeature, GenomicInterval, and list (where
     the first element in the list is the interval's start, and the second
     element is the interval's end).
     """
-    if isinstance( interval, GenomicInterval ):
+    if isinstance(interval, GenomicInterval):
         interval.start -= 1
-        if isinstance( interval, GFFFeature ):
+        if isinstance(interval, GFFFeature):
             for subinterval in interval.intervals:
-                convert_gff_coords_to_bed( subinterval )
+                convert_gff_coords_to_bed(subinterval)
     elif isinstance(interval, list):
-        interval[ 0 ] -= 1
+        interval[0] -= 1
     return interval
 
 
-def parse_gff_attributes( attr_str ):
+def parse_gff_attributes(attr_str):
     """
     Parses a GFF/GTF attribute string and returns a dictionary of name-value
     pairs. The general format for a GFF3 attributes string is
@@ -326,9 +329,9 @@ def parse_gff_attributes( attr_str ):
         # Try splitting by '=' (GFF3) first because spaces are allowed in GFF3
         # attribute; next, try double quotes for GTF.
         pair = name_value_pair.strip().split("=")
-        if len( pair ) == 1:
+        if len(pair) == 1:
             pair = name_value_pair.strip().split("\"")
-        if len( pair ) == 1:
+        if len(pair) == 1:
             # Could not split for some reason -- raise exception?
             continue
         if pair == '':
@@ -338,16 +341,39 @@ def parse_gff_attributes( attr_str ):
             continue
         # Need to strip double quote from values
         value = pair[1].strip(" \"")
-        attributes[ name ] = value
+        attributes[name] = value
 
-    if len( attributes ) == 0:
+    if len(attributes) == 0:
         # Could not split attributes string, so entire string must be
         # 'group' attribute. This is the case for strictly GFF files.
         attributes['group'] = attr_str
     return attributes
 
 
-def gff_attributes_to_str( attrs, gff_format ):
+def parse_gff3_attributes(attr_str):
+    """
+    Parses a GFF3 attribute string and returns a dictionary of name-value
+    pairs. The general format for a GFF3 attributes string is
+
+        name1=value1;name2=value2
+    """
+    attributes_list = attr_str.split(";")
+    attributes = {}
+    for tag_value_pair in attributes_list:
+        pair = tag_value_pair.strip().split("=")
+        if len(pair) == 1:
+            raise Exception("Attribute '%s' does not contain a '='" % tag_value_pair)
+        if pair == '':
+            continue
+        tag = pair[0].strip()
+        if tag == '':
+            raise Exception("Empty tag in attribute '%s'" % tag_value_pair)
+        value = pair[1].strip()
+        attributes[tag] = value
+    return attributes
+
+
+def gff_attributes_to_str(attrs, gff_format):
     """
     Convert GFF attributes to string. Supported formats are GFF3, GTF.
     """
@@ -367,11 +393,11 @@ def gff_attributes_to_str( attrs, gff_format ):
         format_string = '%s=%s'
     attrs_strs = []
     for name, value in attrs.items():
-        attrs_strs.append( format_string % ( name, value ) )
-    return " ; ".join( attrs_strs )
+        attrs_strs.append(format_string % (name, value))
+    return " ; ".join(attrs_strs)
 
 
-def read_unordered_gtf( iterator, strict=False ):
+def read_unordered_gtf(iterator, strict=False):
     """
     Returns GTF features found in an iterator. GTF lines need not be ordered
     or clustered for reader to work. Reader returns GFFFeature objects sorted
@@ -380,7 +406,7 @@ def read_unordered_gtf( iterator, strict=False ):
 
     # -- Get function that generates line/feature key. --
     def get_transcript_id(fields):
-        return parse_gff_attributes( fields[8] )[ 'transcript_id' ]
+        return parse_gff_attributes(fields[8])['transcript_id']
     if strict:
         # Strict GTF parsing uses transcript_id only to group lines into feature.
         key_fn = get_transcript_id
@@ -389,41 +415,38 @@ def read_unordered_gtf( iterator, strict=False ):
         # transcripts with same ID on different chromosomes; this occurs in some popular
         # datasources, such as RefGenes in UCSC.
         def key_fn(fields):
-            return fields[0] + '_' + get_transcript_id( fields )
+            return fields[0] + '_' + get_transcript_id(fields)
 
     # Aggregate intervals by transcript_id and collect comments.
     feature_intervals = odict()
     comments = []
-    for count, line in enumerate( iterator ):
-        if line.startswith( '#' ):
-            comments.append( Comment( line ) )
+    for count, line in enumerate(iterator):
+        if line.startswith('#'):
+            comments.append(Comment(line))
             continue
 
-        line_key = key_fn( line.split('\t') )
+        line_key = key_fn(line.split('\t'))
         if line_key in feature_intervals:
-            feature = feature_intervals[ line_key ]
+            feature = feature_intervals[line_key]
         else:
             feature = []
-            feature_intervals[ line_key ] = feature
-        feature.append( GFFInterval( None, line.split( '\t' ) ) )
+            feature_intervals[line_key] = feature
+        feature.append(GFFInterval(None, line.split('\t')))
 
     # Create features.
     chroms_features = {}
-    for count, intervals in enumerate( feature_intervals.values() ):
+    for count, intervals in enumerate(feature_intervals.values()):
         # Sort intervals by start position.
-        intervals.sort( lambda a, b: cmp( a.start, b.start ) )
-        feature = GFFFeature( None, intervals=intervals )
+        intervals.sort(key=lambda _: _.start)
+        feature = GFFFeature(None, intervals=intervals)
         if feature.chrom not in chroms_features:
-            chroms_features[ feature.chrom ] = []
-        chroms_features[ feature.chrom ].append( feature )
+            chroms_features[feature.chrom] = []
+        chroms_features[feature.chrom].append(feature)
 
     # Sort features by chrom, start position.
-    chroms_features_sorted = []
-    for chrom_features in chroms_features.values():
-        chroms_features_sorted.append( chrom_features )
-    chroms_features_sorted.sort( lambda a, b: cmp( a[0].chrom, b[0].chrom ) )
+    chroms_features_sorted = sorted(chroms_features.values(), key=lambda _: _[0].chrom)
     for features in chroms_features_sorted:
-        features.sort( lambda a, b: cmp( a.start, b.start ) )
+        features.sort(key=lambda _: _.start)
 
     # Yield comments first, then features.
     # FIXME: comments can appear anywhere in file, not just the beginning.

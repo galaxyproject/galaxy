@@ -56,7 +56,7 @@ steps:
 UNSCHEDULED_STEP = object()
 
 
-class WorkflowProgressTestCase( unittest.TestCase ):
+class WorkflowProgressTestCase(unittest.TestCase):
 
     def setUp(self):
         self.app = TestApp()
@@ -68,7 +68,7 @@ class WorkflowProgressTestCase( unittest.TestCase ):
         workflow = yaml_to_model(workflow_yaml)
         self.invocation.workflow = workflow
 
-    def _new_workflow_progress( self ):
+    def _new_workflow_progress(self):
         return WorkflowProgress(
             self.invocation, self.inputs_by_step_id, MockModuleInjector(self.progress)
         )
@@ -90,36 +90,36 @@ class WorkflowProgressTestCase( unittest.TestCase ):
     def _step(self, index):
         return self.invocation.workflow.steps[index]
 
-    def test_connect_data_input( self ):
+    def test_connect_data_input(self):
         self._setup_workflow(TEST_WORKFLOW_YAML)
         hda = model.HistoryDatasetAssociation()
 
         self.inputs_by_step_id = {100: hda}
         progress = self._new_workflow_progress()
-        progress.set_outputs_for_input( self._step(0) )
+        progress.set_outputs_for_input(self._step(0))
 
         conn = model.WorkflowStepConnection()
         conn.output_name = "output"
         conn.output_step = self._step(0)
         assert progress.replacement_for_connection(conn) is hda
 
-    def test_replacement_for_tool_input( self ):
+    def test_replacement_for_tool_input(self):
         self._setup_workflow(TEST_WORKFLOW_YAML)
         hda = model.HistoryDatasetAssociation()
 
         self.inputs_by_step_id = {100: hda}
         progress = self._new_workflow_progress()
-        progress.set_outputs_for_input( self._step(0) )
+        progress.set_outputs_for_input(self._step(0))
 
         replacement = progress.replacement_for_tool_input(self._step(2), MockInput(), "input1")
         assert replacement is hda
 
-    def test_connect_tool_output( self ):
+    def test_connect_tool_output(self):
         self._setup_workflow(TEST_WORKFLOW_YAML)
         hda = model.HistoryDatasetAssociation()
 
         progress = self._new_workflow_progress()
-        progress.set_step_outputs( self._step(2), {"out1": hda} )
+        progress.set_step_outputs(self._step(2), {"out1": hda})
 
         conn = model.WorkflowStepConnection()
         conn.output_name = "out1"
@@ -166,7 +166,7 @@ class WorkflowProgressTestCase( unittest.TestCase ):
         subworkflow = subworkflow_step.subworkflow
         assert subworkflow_progress.workflow_invocation.workflow == subworkflow
         subworkflow_input_step = subworkflow.step_by_index(0)
-        subworkflow_progress.set_outputs_for_input( subworkflow_input_step )
+        subworkflow_progress.set_outputs_for_input(subworkflow_input_step)
 
         subworkflow_cat_step = subworkflow.step_by_index(1)
 

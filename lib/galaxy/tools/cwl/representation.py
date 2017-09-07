@@ -19,6 +19,7 @@ GALAXY_TO_CWL_TYPES = {
     'float': 'float',
     'data': 'File',
     'boolean': 'boolean',
+    'text': 'text'
 }
 
 
@@ -56,7 +57,8 @@ def to_cwl_job(tool, param_dict, local_working_directory):
                     os.symlink(secondary_file_path, new_input_path + secondary_file_name)
                 path = new_input_path
 
-            return {"path": path, "class": "File"}
+            return {"location": path,
+                    "class": "File"}
         elif cwl_type == "integer":
             return int(str(param_dict_value))
         elif cwl_type == "long":
@@ -67,7 +69,7 @@ def to_cwl_job(tool, param_dict, local_working_directory):
             return float(str(param_dict_value))
         elif cwl_type == "boolean":
             return string_as_bool(param_dict_value)
-        elif cwl_type == "string":
+        elif cwl_type == "text":
             return str(param_dict_value)
         elif cwl_type == "json":
             raw_value = param_dict_value.value
@@ -87,16 +89,13 @@ def to_cwl_job(tool, param_dict, local_working_directory):
             assert input_name in param_dict, "No value for %s in %s" % (input_name, param_dict)
             current_case = param_dict[input_name]["_cwl__type_"]
             if str(current_case) != "null":  # str because it is a wrapped...
-                case_index = input.get_current_case( current_case )
-                case_input = input.cases[ case_index ].inputs["_cwl__value_"]
+                case_index = input.get_current_case(current_case)
+                case_input = input.cases[case_index].inputs["_cwl__value_"]
                 case_value = param_dict[input_name]["_cwl__value_"]
                 input_json[input_name] = simple_value(case_input, case_value, cwl_type=current_case)
         else:
             input_json[input_name] = simple_value(input, param_dict[input_name])
 
-    input_json["allocatedResources"] = {
-        "cpu": "$GALAXY_SLOTS",
-    }
     return input_json
 
 
@@ -163,8 +162,8 @@ def to_galaxy_parameters(tool, as_dict):
             galaxy_request["%s|_cwl__type_" % input_name] = cwl_type
             if cwl_type != "null":
                 current_case_index = input.get_current_case(cwl_type)
-                current_case_inputs = input.cases[ current_case_index ].inputs
-                current_case_input = current_case_inputs[ "_cwl__value_" ]
+                current_case_inputs = input.cases[current_case_index].inputs
+                current_case_input = current_case_inputs["_cwl__value_"]
                 galaxy_value = from_simple_value(current_case_input, as_dict_value, cwl_type)
                 galaxy_request["%s|_cwl__value_" % input_name] = galaxy_value
         elif as_dict_value is NOT_PRESENT:

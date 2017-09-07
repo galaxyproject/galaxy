@@ -1,6 +1,6 @@
 /* global define, QUnit, module, test, ok, equal, deepEqual, notEqual */
-define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-thumbnails', 'mvc/ui/ui-tabs'
-], function( testApp, Ui, SelectContent, Drilldown, Thumbnails, Tabs ){
+define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-slider', 'mvc/ui/ui-thumbnails', 'mvc/ui/ui-tabs'
+], function( testApp, Ui, SelectContent, Drilldown, Slider, Thumbnails, Tabs ){
     'use strict';
     module( 'Ui test', {
         setup: function() {
@@ -581,6 +581,22 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         ok( label.$el.html() === '_new_title', 'Correct new title' );
     } );
 
+    test( 'slider', function() {
+        var input = new Slider.View( { min: 1, max: 100, value: 10 } );
+        $( 'body' ).prepend( input.$el );
+        ok( input.$slider.slider( 'value' ) == 10, 'Correct value.' );
+        ok( input.value( 1000 ) == 100, 'Correct upper limit.' );
+        ok( input.$slider.slider( 'value' ) == 100, 'Correct slider value.' );
+        ok( input.$slider.slider( 'option', 'step' ) == 1, 'Correct default step size.' );
+        var input1 = new Slider.View( { value: 10 } );
+        $( 'body' ).prepend( input1.$el );
+        ok( input1.$slider.css( 'display' ) == 'none', 'Slider hidden.' );
+        var input2 = new Slider.View( { min: 0, max: 100, value: 10.1, precise: true } );
+        $( 'body' ).prepend( input2.$el );
+        ok( input2.$slider.slider( 'option', 'step' ) == 0.01, 'Correct float step size.' );
+        ok( input2.$slider.slider( 'value' ) == 10.1, 'Correct float slider value.' );
+    } );
+
     test( 'input', function() {
         var input = new Ui.Input();
         $( 'body' ).prepend( input.$el );
@@ -698,11 +714,11 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
                 firstvalue      : 'id0',
                 firstlabel      : 'hid0: name0',
                 firstmultiple   : true,
-                totalmultiple   : 1,
+                totalmultiple   : 2,
                 lastvalue       : 'id2',
                 lastlabel       : 'hid2: name2',
                 lastlength      : 3,
-                lastmultiple    : false });
+                lastmultiple    : true });
 
         select.model.set( 'multiple', false );
         select.model.set( 'type', 'data_collection' );

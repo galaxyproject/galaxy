@@ -35,7 +35,7 @@ EDAM_OWL_URL = "http://data.bioontology.org/ontologies/EDAM/submissions/25/downl
 
 
 if not os.path.exists("/tmp/edam.owl"):
-    open("/tmp/edam.owl", "w").write( urllib2.urlopen( EDAM_OWL_URL ).read() )
+    open("/tmp/edam.owl", "w").write(urllib2.urlopen(EDAM_OWL_URL).read())
 
 
 owl_xml_tree = etree.ElementTree.parse("/tmp/edam.owl")

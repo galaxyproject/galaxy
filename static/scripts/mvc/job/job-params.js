@@ -1,0 +1,2 @@
+define(["utils/utils"],function(a){var b=Backbone.View.extend({initialize:function(a){this.options=a,this.setElement("<div/>"),this.render()},render:function(){console.log("HI");var a=this;a.$el.empty().append("<h1>Testing</h1>")}});return{View:b}});
+//# sourceMappingURL=../../../maps/mvc/job/job-params.js.map

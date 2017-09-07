@@ -12,7 +12,7 @@ try:
 except:
     Client = None
 
-from galaxy.util.postfork import register_postfork_function
+from galaxy.web.stack import register_postfork_function
 
 
 RAVEN_IMPORT_MESSAGE = ('The Python raven package is required to use this '
@@ -24,13 +24,14 @@ class Sentry(object):
     A WSGI middleware which will attempt to capture any
     uncaught exceptions and send them to Sentry.
     """
+
     def __init__(self, application, dsn):
         assert Client is not None, RAVEN_IMPORT_MESSAGE
         self.application = application
         self.client = None
 
         def postfork_sentry_client():
-            self.client = Client( dsn )
+            self.client = Client(dsn)
 
         register_postfork_function(postfork_sentry_client)
 
@@ -90,7 +91,7 @@ class Sentry(object):
             },
             # Galaxy: add request id from environment if available
             extra={
-                'request_id': environ.get( 'request_id', 'Unknown' )
+                'request_id': environ.get('request_id', 'Unknown')
             }
         )
         # Galaxy: store event_id in environment so we can show it to the user

@@ -1,0 +1,53 @@
+# Each element in this file corresponds to a destination for an error
+# report.
+
+# If you supply the parameter ``user_submission``, and set it to True,
+# this error plugin will only be activated when the user uses the bug
+# report submission interface. Otherwise, it will be triggered without
+# any user interaction (e.g. historical behaviour of sentry plugin)
+
+# If your plugin is ``user_submission=True``, then supplying
+# ``verbose=True`` will cause the plugin to display a message to the end
+# user. E.g. the email plugin simply states "Your error report has been
+# sent", or the JSON plugin informs the user "Wrote error report to ..."
+
+# The plugins below are listed with their default values of
+# verbose/user_submission, but those are not necessary to provide.
+
+# The default Email bug reporter. By default, the standard
+# configuration is taken from your galaxy.ini
+- type: email
+  verbose: true
+  user_submission: true
+
+# Example JSON bug reporter implementation. This just writes the bug
+# report as a JSON file to a specified directory and serves as an
+# example for others to extend.
+# - type: json
+#   verbose: true
+#   user_submission: true
+#   directory: /tmp/reports/
+
+# Submit error reports to sentry. If a sentry_dsn is configured in your
+# galaxy.ini, then Galaxy will submit the job error to Sentry.
+- type: sentry
+  user_submission: false
+
+# Allow users to submit error reports to biostars. This requires that the
+# biostars integration is configured. This *only* makes sense when
+# user_submission is true, as it only generates the link for the user to click
+# on and submit the bug report, it does not actually submit the bug report on
+# their behalf.
+# - type: biostars
+#   user_submission: true
+
+# InfluxDB error reporting backend. You will need to `pip install
+# influxdb` in the galaxy virtualenv yourself. This sends well tagged
+# errors InfluxDB allowing you to notice relationships between tool errors and
+# other infrastructure issues.
+# - type: influxdb
+#   # All arguments prefixed with `influxdb_` are per http://influxdb-python.readthedocs.io/en/latest/api-documentation.html#influxdbclient
+#   influxdb_host: 127.0.0.1
+#   influxdb_port: 8086
+#   influxdb_database: galaxy
+#   influxdb_timeout: 2

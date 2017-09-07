@@ -24,3 +24,6 @@ class ExplicitContainerResolver(ContainerResolver):
                 return container_description
 
         return None
+
+
+__all__ = ("ExplicitContainerResolver", )

@@ -166,11 +166,13 @@
         ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
-        %if app.config.brand:
-            <title>${self.title()} / ${app.config.brand}</title>
-        %else:
-            <title>${self.title()}</title>
-        %endif
+        <title>
+            Galaxy
+            %if app.config.brand:
+            | ${app.config.brand}
+            %endif
+            | ${self.title()}
+        </title>
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
         ${self.stylesheets()}

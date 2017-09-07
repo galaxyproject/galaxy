@@ -19,7 +19,7 @@ class DependencyResolver(Dictifiable, object):
     """Abstract description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
-    dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies']
+    dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies', 'can_uninstall_dependencies']
     # A "simple" dependency is one that does not depend on the the tool
     # resolving the dependency. Classic tool shed dependencies are non-simple
     # because the repository install context is used in dependency resolution
@@ -27,10 +27,11 @@ class DependencyResolver(Dictifiable, object):
     # resolution.
     disabled = False
     resolves_simple_dependencies = True
+    can_uninstall_dependencies = False
     config_options = {}
 
     @abstractmethod
-    def resolve( self, requirement, **kwds ):
+    def resolve(self, requirement, **kwds):
         """Given inputs describing dependency in the abstract yield a Dependency object.
 
         The Dependency object describes various attributes (script, bin,
@@ -47,8 +48,17 @@ class MultipleDependencyResolver:
     """Variant of DependencyResolver that can optionally resolve multiple dependencies together."""
 
     @abstractmethod
-    def resolve_all( self, requirements, **kwds ):
-        """Given multiple requirements yield Dependency objects if and only if they may all be resolved together.
+    def resolve_all(self, requirements, **kwds):
+        """
+        Given multiple requirements yields a list of Dependency objects if and only if they may all be resolved together.
+
+        Unsuccessfull attempts should return an empty list.
+
+        :param requirements: list of tool requirements
+        :param type: [ToolRequirement] or ToolRequirements
+
+        :returns: list of resolved dependencies
+        :rtype: [Dependency]
         """
 
 
@@ -229,13 +239,13 @@ class Dependency(Dictifiable, object):
     cacheable = False
 
     @abstractmethod
-    def shell_commands( self, requirement ):
+    def shell_commands(self, requirement):
         """
         Return shell commands to enable this dependency.
         """
 
     @abstractproperty
-    def exact( self ):
+    def exact(self):
         """ Return true if version information wasn't discarded to resolve
         the dependency.
         """
@@ -248,7 +258,7 @@ class Dependency(Dictifiable, object):
         return "Using dependency %s version %s of type %s" % (self.name, self.version, self.dependency_type)
 
 
-class NullDependency( Dependency ):
+class NullDependency(Dependency):
     dependency_type = None
     exact = True
 
@@ -263,7 +273,7 @@ class NullDependency( Dependency ):
         """
         return "Dependency %s not found." % self.name
 
-    def shell_commands( self, requirement ):
+    def shell_commands(self, requirement):
         return None
 
 

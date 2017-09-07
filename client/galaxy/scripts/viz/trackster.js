@@ -8,9 +8,7 @@ var view            = null;
 var browser_router  = null;
 
 // load required libraries
-require(
-[
-    // load js libraries
+require([
     'utils/utils',
     'libs/jquery/jquery.event.drag',
     'libs/jquery/jquery.event.hover',
@@ -20,10 +18,8 @@ require(
     'libs/farbtastic',
     'libs/jquery/jquery.form',
     'libs/jquery/jquery.rating',
-    "ui/editable-text",
-], function(mod_utils, mod_icon_btn)
-{
-    // load css
+    'ui/editable-text',
+], function(mod_utils) {
     mod_utils.cssLoadFile("static/style/jquery.rating.css");
     mod_utils.cssLoadFile("static/style/autocomplete_tagging.css");
     mod_utils.cssLoadFile("static/style/jquery-ui/smoothness/jquery-ui.css");
@@ -37,8 +33,9 @@ define([
     "viz/trackster/tracks",
     "viz/visualization",
     "mvc/ui/icon-button",
-    "utils/query-string-parsing"
-], function(_, tracks, visualization, mod_icon_btn, query_string) {
+    "utils/query-string-parsing",
+    "mvc/grid/grid-view"
+], function(_, tracks, visualization, mod_icon_btn, query_string, GridView) {
 
 /**
  * Base Object/Model for inhertiance.
@@ -118,7 +115,7 @@ var TracksterUI = Base.extend({
         var self = this,
             menu = mod_icon_btn.create_icon_buttons_menu([
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() {
-                visualization.select_datasets(Galaxy.root + "visualization/list_current_history_datasets", Galaxy.root + "api/datasets", { 'f-dbkey': view.dbkey },
+                visualization.select_datasets({ 'dbkey': view.dbkey },
                 function(new_tracks) {
                     _.each(new_tracks, function(track) {
                         view.add_drawable( tracks.object_from_template(track, view, view) );
@@ -155,64 +152,6 @@ var TracksterUI = Base.extend({
         });
         this.buttonMenu = menu;
         return menu;
-    },
-
-    /**
-     * Use a popup to select a dataset of create bookmarks from
-     */
-    add_bookmarks: function() {
-        var self = this,
-            baseURL = this.baseURL;
-
-        // show modal while loading history
-        Galaxy.modal.show({title: "Select dataset for new bookmarks", body: "progress" });
-
-        $.ajax({
-            url: this.baseURL + "/visualization/list_histories",
-            data: { "f-dbkey": view.dbkey },
-            error: function() { alert( "Grid failed" ); },
-            success: function(table_html) {
-
-                // show modal to select bookmarks
-                Galaxy.modal.show(
-                {
-                    title   : "Select dataset for new bookmarks",
-                    body    : table_html,
-                    buttons :
-                    {
-                        "Cancel": function()
-                        {
-                            Galaxy.modal.hide();
-                        },
-
-                        "Insert": function()
-                        {
-                            // Just use the first selected
-                            $('input[name=id]:checked,input[name=ldda_ids]:checked').first().each(function()
-                            {
-                                var data, id = $(this).val();
-                                if ($(this).attr("name") === "id")
-                                    data = { hda_id: id };
-                                else
-                                    data = { ldda_id: id};
-
-                                $.ajax({
-                                    url: this.baseURL + "/visualization/bookmarks_from_dataset",
-                                    data: data,
-                                    dataType: "json"
-                                }).then( function(data) {
-                                    for( i = 0; i < data.data.length; i++ ) {
-                                        var row = data.data[i];
-                                        self.add_bookmark( row[0], row[1] );
-                                    }
-                                });
-                            });
-                            Galaxy.modal.hide();
-                        }
-                    }
-                });
-            }
-        });
     },
 
     /**
@@ -323,8 +262,7 @@ var TracksterUI = Base.extend({
     /**
      * Set up location router to use hashes as track browser locations.
      */
-    set_up_router : function(options)
-    {
+    set_up_router : function(options) {
         new visualization.TrackBrowserRouter(options);
         Backbone.history.start();
     },
@@ -391,11 +329,9 @@ var TracksterUI = Base.extend({
 
 });
 
-var TracksterView = Backbone.View.extend(
-{
+var TracksterView = Backbone.View.extend( {
     // initalize trackster
-    initialize : function ()
-    {
+    initialize : function () {
         // load ui
         ui = new TracksterUI(Galaxy.root);
 
@@ -418,7 +354,6 @@ var TracksterView = Backbone.View.extend(
         // hide right panel
         force_right_panel("hide");
 
-
         // check if id is available
         if (galaxy_config.app.id){
             this.view_existing();
@@ -436,77 +371,68 @@ var TracksterView = Backbone.View.extend(
             dataset_params = {
                 dbkey       : dbkey,
                 dataset_id  : query_string.get( 'dataset_id' ),
-                hda_ldda    : query_string.get( 'hda_ldda' )
+                hda_ldda    : query_string.get( 'hda_ldda' ),
+                gene_region : query_string.get( 'gene_region' ),
             };
         if (dbkey){
             listTracksParams[ 'f-dbkey' ] = dbkey;
         }
-        $.ajax({
-            url: Galaxy.root + 'visualization/list_tracks?' + $.param( listTracksParams ),
-            dataType: "html",
-            error: function() { alert( "Could not add this dataset to browser." ); },
 
-            success: function(table_html) {
-                console.debug( 'success' );
-                function view_in_saved(){
-                    // Show new modal with saved visualizations.
-                    Galaxy.modal.show({
-                        title : "Add Data to Saved Visualization",
-                        body : table_html,
-                        buttons : {
-                            "Cancel": function() {
-                                // go back to the first choice
-                                show_choice();
-                            },
-                            "Add to visualization": function() {
-                                $(parent.document).find('input[name=id]:checked').each(function() {
-                                    var vis_id = $(this).val();
-                                    dataset_params.id = vis_id;
-                                    window.location = Galaxy.root + "visualization/trackster?" + $.param(dataset_params);
-                                });
-                            }
-                        }
-                    });
+        Galaxy.modal.show({
+            title : "View Data in a New or Saved Visualization?",
+            // either have text in here or have to remove body and the header/footer margins
+            body  : (
+                "<p><ul style='list-style: disc inside none'>You can add this dataset as:" +
+                    "<li>a new track to one of your existing, saved Trackster " +
+                    "sessions if they share the genome build: <b>" + ( dbkey || "Not available." ) + "</b></li>" +
+                    "<li>or create a new session with this dataset as the only track</li>" +
+                "</ul></p>"
+            ),
+            buttons : {
+                "Cancel": function() {
+                    window.location = Galaxy.root + "visualizations/list";
+                },
+                "View in saved visualization": function() {
+                    self.view_in_saved( dataset_params );
+                },
+                "View in new visualization": function() {
+                    self.view_new();
                 }
-                function show_choice(){
-                    Galaxy.modal.show({
-                        title : "View Data in a New or Saved Visualization?",
-                        // either have text in here or have to remove body and the header/footer margins
-                        body  : (
-                            // TODO: yay. inline styles. thanks, galaxy
-                            '<p><ul style="list-style: disc inside none">You can add this dataset as:' +
-                                "<li>a new track to one of your existing, saved Trackster " +
-                                "sessions if they share the genome build: <b>" + dbkey + "</b></li>" +
-                                "<li>or create a new session with this dataset as the only track</li>" +
-                            "</ul></p>"
-                        ),
-                        buttons : {
-                            "Cancel": function() {
-                                window.location = Galaxy.root + "visualization/list";
-                            },
-                            "View in saved visualization": function() {
-                                view_in_saved();
-                            },
-                            "View in new visualization": function() {
-                                self.view_new();
-                            }
-                        }
-                    });
-                }
-                show_choice();
             }
         });
     },
 
     // view
-    view_existing : function ()
-    {
+    view_in_saved : function( dataset_params ) {
+        var tracks_grid = new GridView( {
+            url_base    : Galaxy.root + 'visualization/list_tracks',
+            dict_format : true,
+            embedded    : true
+        });
+        Galaxy.modal.show({
+            title   : "Add Data to Saved Visualization",
+            body    : tracks_grid.$el,
+            buttons : {
+                "Cancel": function() {
+                    window.location = Galaxy.root + "visualizations/list";
+                },
+                "Add to visualization": function() {
+                    $(parent.document).find('input[name=id]:checked').each(function() {
+                        dataset_params.id = $(this).val();
+                        window.location = Galaxy.root + "visualization/trackster?" + $.param(dataset_params);
+                    });
+                }
+            }
+        });
+    },
+
+    // view
+    view_existing : function () {
         // get config
         var viz_config = galaxy_config.app.viz_config;
 
         // view
-        view = ui.create_visualization(
-        {
+        view = ui.create_visualization( {
             container: $("#center .unified-panel-body"),
             name: viz_config.title,
             vis_id: viz_config.vis_id,
@@ -518,32 +444,22 @@ var TracksterView = Backbone.View.extend(
     },
 
     // view
-    view_new : function ()
-    {
-        // availability of default database key
-        /*if (galaxy_config.app.default_dbkey !== undefined)
-        {
-            this.create_browser("Unnamed", galaxy_config.app.default_dbkey);
-            return;
-        }*/
-
+    view_new : function () {
         // reference this
         var self = this;
 
         // ajax
-        $.ajax(
-        {
+        $.ajax( {
             url: Galaxy.root + "api/genomes?chrom_info=True",
             data: {},
             error: function() { alert( "Couldn't create new browser." ); },
-            success: function(response)
-            {
+            success: function(response) {
                 // show dialog
                 Galaxy.modal.show({
                     title   : "New Visualization",
                     body    : self.template_view_new(response),
                     buttons : {
-                        "Cancel": function() { window.location = Galaxy.root + "visualization/list"; },
+                        "Cancel": function() { window.location = Galaxy.root + "visualizations/list"; },
                         "Create": function() { self.create_browser($("#new-title").val(), $("#new-dbkey").val()); Galaxy.modal.hide(); }
                     }
                 });
@@ -565,8 +481,7 @@ var TracksterView = Backbone.View.extend(
     },
 
     // new browser form
-    template_view_new: function(response)
-    {
+    template_view_new: function(response) {
         // start template
         var html =  '<form id="new-browser-form" action="javascript:void(0);" method="post" onsubmit="return false;">' +
                         '<div class="form-row">' +
@@ -602,12 +517,10 @@ var TracksterView = Backbone.View.extend(
     },
 
     // create
-    create_browser : function(name, dbkey)
-    {
+    create_browser : function(name, dbkey) {
         $(document).trigger("convert_to_values");
 
-        view = ui.create_visualization (
-        {
+        view = ui.create_visualization ({
             container: $("#center .unified-panel-body"),
             name: name,
             dbkey: dbkey
@@ -621,8 +534,7 @@ var TracksterView = Backbone.View.extend(
     },
 
     // initialization for editor-specific functions.
-    init_editor : function ()
-    {
+    init_editor : function () {
         // set title
         $("#center .unified-panel-title").text(view.config.get_value('name') + " (" + view.dbkey + ")");
 
@@ -636,8 +548,7 @@ var TracksterView = Backbone.View.extend(
             });
 
         // initialize icons
-        $("#add-bookmark-button").click(function()
-        {
+        $("#add-bookmark-button").click(function() {
             // add new bookmark.
             var position = view.chrom + ":" + view.low + "-" + view.high,
                 annotation = "Bookmark description";

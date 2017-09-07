@@ -37,7 +37,7 @@ except ImportError:
 NO_BOTO_ERROR_MESSAGE = ("S3/Swift object store configured, but no boto dependency available."
                          "Please install and properly configure boto or modify object store configuration.")
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
 
 
@@ -47,6 +47,7 @@ class S3ObjectStore(ObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and S3.
     """
+
     def __init__(self, config, config_xml):
         if boto is None:
             raise Exception(NO_BOTO_ERROR_MESSAGE)
@@ -169,7 +170,7 @@ class S3ObjectStore(ObjectStore):
         # exceed delete_this_much; start deleting from the front of the file list,
         # which assumes the oldest files come first on the list.
         deleted_amount = 0
-        for entry in enumerate(file_list):
+        for entry in file_list:
             if deleted_amount < delete_this_much:
                 deleted_amount += entry[2]
                 os.remove(entry[1])
@@ -211,7 +212,7 @@ class S3ObjectStore(ObjectStore):
                 # Ignore symlinks
                 if os.path.islink(path):
                     continue
-                umask_fix_perms( path, self.config.umask, 0o666, self.config.gid )
+                umask_fix_perms(path, self.config.umask, 0o666, self.config.gid)
 
     def _construct_path(self, obj, base_dir=None, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, **kwargs):
         # extra_dir should never be constructed from provided data but just
@@ -479,8 +480,8 @@ class S3ObjectStore(ObjectStore):
         if self.exists(obj, **kwargs):
             return bool(self.size(obj, **kwargs) > 0)
         else:
-            raise ObjectNotFound( 'objectstore.empty, object does not exist: %s, kwargs: %s'
-                                  % ( str( obj ), str( kwargs ) ) )
+            raise ObjectNotFound('objectstore.empty, object does not exist: %s, kwargs: %s'
+                                 % (str(obj), str(kwargs)))
 
     def size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
@@ -577,8 +578,8 @@ class S3ObjectStore(ObjectStore):
         # even if it does not exist.
         # if dir_only:
         #     return cache_path
-        raise ObjectNotFound( 'objectstore.get_filename, no cache_path: %s, kwargs: %s'
-                              % ( str( obj ), str( kwargs ) ) )
+        raise ObjectNotFound('objectstore.get_filename, no cache_path: %s, kwargs: %s'
+                             % (str(obj), str(kwargs)))
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
@@ -603,8 +604,8 @@ class S3ObjectStore(ObjectStore):
             # Update the file on S3
             self._push_to_os(rel_path, source_file)
         else:
-            raise ObjectNotFound( 'objectstore.update_from_file, object does not exist: %s, kwargs: %s'
-                                  % ( str( obj ), str( kwargs ) ) )
+            raise ObjectNotFound('objectstore.update_from_file, object does not exist: %s, kwargs: %s'
+                                 % (str(obj), str(kwargs)))
 
     def get_object_url(self, obj, **kwargs):
         if self.exists(obj, **kwargs):

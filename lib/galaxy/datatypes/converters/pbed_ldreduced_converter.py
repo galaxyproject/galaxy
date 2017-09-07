@@ -3,9 +3,9 @@
 from __future__ import print_function
 
 import os
+import subprocess
 import sys
 import tempfile
-import subprocess
 import time
 
 prog = "pbed_ldreduced_converter.py"
@@ -55,7 +55,7 @@ def pruneLD(plinktasks=[], cd='./', vclbase=[]):
 
 
 def makeLDreduced(basename, infpath=None, outfpath=None, plinke='plink', forcerebuild=False, returnFname=False,
-                  winsize="60", winmove="40", r2thresh="0.1" ):
+                  winsize="60", winmove="40", r2thresh="0.1"):
     """ not there so make and leave in output dir for post job hook to copy back into input extra files path for next time
     """
     outbase = os.path.join(outfpath, basename)
@@ -105,7 +105,7 @@ def main():
         s2 = 'Input %s, winsize=%s, winmove=%s, r2thresh=%s' % (base_name, winsize, winmove, r2thresh)
         print('%s %s' % (s1, s2))
         f.write('<div>%s\n%s\n<ol>' % (s1, s2))
-        for i, data in enumerate( flist ):
+        for i, data in enumerate(flist):
             f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
         f.write("</div></body></html>")
 

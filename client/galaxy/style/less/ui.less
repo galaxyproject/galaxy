@@ -34,6 +34,12 @@
 @ui-margin-horizontal-small: 4px;
 @ui-margin-horizontal-large: 10px;
 
+// helpers
+.ui-clear-float {
+    clear: both !important;
+    float: none !important;
+}
+
 // margins
 .ui-margin-top {
     padding-top: @ui-margin-vertical !important;
@@ -68,12 +74,33 @@
 	font-weight: bold;
 }
 
+.ui-tags {
+    word-wrap: break-word;
+    padding-right: 25px;
+}
+
+.ui-column {
+    .ui-column-left {
+        width: 49%;
+        float: left;
+        .ui-message {
+            margin-top: 5px;
+        }
+    }
+    .ui-column-right {
+        width: 49%;
+        float: right;
+        margin-top: 5px;
+    }
+}
+
 .ui-message {
     padding: 2px 10px 2px 10px;
     margin-top: @ui-margin-vertical-large;
     margin-bottom: 0px;
     width: 100%;
     display: none;
+    word-wrap: break-word;
 }
 
 .ui-modal {
@@ -115,6 +142,7 @@
 
 // buttons
 .ui-button-default {
+    float: right;
     .icon {
         font-size: 1.1em;
     }
@@ -134,6 +162,7 @@
     &:extend(.no-highlight);
     height: auto !important;
     width: auto !important;
+    float: right;
     ul {
         i {
             width: 1.2em;
@@ -175,6 +204,30 @@
     height: inherit !important;
     width: inherit !important;
     padding-right: 3px !important;
+    float: right;
+}
+
+// side panel
+.ui-side-panel {
+    color: @base-text-color;
+    background: @side-panel-bg;
+    padding: 10px;
+    .ui-side-section-title {
+        font-weight: bold;
+    }
+    .ui-side-section-body {
+        .ui-side-section-body-title {
+            padding-top: 5px;
+            padding-bottom: 5px;
+            margin-left: 16px;
+            margin-right: 10px;
+            display: list-item;
+            list-style: square outside;
+        }
+        .ui-side-section-body-title:last-child {
+            padding-bottom: 15px;
+        }
+    }
 }
 
 // panel
@@ -381,6 +434,7 @@
 
 .ui-form-help {
     overflow: auto;
+    word-wrap: break-word;
 }
 
 .ui-form-info {
@@ -703,8 +757,11 @@
     width: 100%;
     .ui-form-slider-text {
         &:extend(.ui-input);
-        width: 100px;
+    }
+
+    .ui-form-slider-left {
         float: left;
+        width: 100px;
     }
 
     .ui-form-slider-element {
@@ -750,15 +807,15 @@
         margin-right: 5px;
     }
     .ui-color-picker-label {
-        float: left;
         line-height: 1.2em;
+        margin-bottom: 5px;
     }
     .ui-color-picker-view {
         height: 100%;
         overflow: auto;
         display: none;
         float: left;
-        margin-top: 5px;
+        margin-bottom: 5px;
         .ui-color-picker-panel {
             width: 210px;
             .ui-color-picker-content {
@@ -784,6 +841,14 @@
                     }
                 }
             }
+            .ui-color-picker-content:first-child {
+                padding-top: 5px;
+                padding-bottom: 10px;
+            }
+            .ui-color-picker-content:last-child {
+                padding-top: 85px;
+                padding-bottom: 5px;
+            }
         }
     }
 }
@@ -791,16 +856,18 @@
 .ui-list {
     .ui-list-select {
         float: left;
-        width: ~'calc(100% - 27px)';
+        width: ~'calc(100% - 29px)';
     }
     .ui-list-button {
         .ui-button-icon {
             margin-top: 3px;
             margin-right: 5px;
+            float: left;
         }
     }
     .ui-list-message, .ui-list-portlet {
         clear: both;
+        padding-top: 1px;
     }
     .ui-list-id {
         cursor: pointer;
@@ -809,6 +876,34 @@
             font-size: 1.2em;
             margin-right: 5px;
         }
+    }
+}
+
+.ui-gs-select-file {
+    .ui-gs-filename-textbox {
+        float: right;
+        width: ~'calc(100% - 76px)';
+    }
+    .ui-gs-token-textbox {
+        float: right;
+        width: ~'calc(100% - 76px)';
+    }
+    .ui-gs-browse-button {
+        float: left;
+        .ui-button-icon {
+            margin-top: 3px;
+            margin-right: 5px;
+        }
+    }
+    .ui-gs-token-label {
+        margin-top: 5px;            
+        margin-left: 32px;
+        margin-right: 5px;
+        float: left;
+    }
+    .ui-gs-token-field {
+        clear: both;
+        padding-top: 5px;
     }
 }
 
@@ -878,6 +973,25 @@
         float: left;
         padding-top: 2px;
     }
+}
+
+.ui-dragover {
+    border-radius: 3px;
+    border: 2px solid @table-border-color;
+    background: lighten(@table-border-color, 30%);
+    padding: 2px;
+}
+
+.ui-dragover-danger {
+    &:extend(.ui-dragover);
+    border: 2px solid @state-danger-bg;
+    background: lighten(@state-danger-bg, 10%) !important;
+}
+
+.ui-dragover-success {
+    &:extend(.ui-dragover);
+    border: 2px solid @state-success-bg;
+    background: lighten(@state-success-bg, 10%) !important;
 }
 
 // global select2 adjustments

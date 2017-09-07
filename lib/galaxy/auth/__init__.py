@@ -17,7 +17,7 @@ class AuthManager(object):
     def __init__(self, app):
         self.__app = app
         import galaxy.auth.providers
-        self.__plugins_dict = plugin_config.plugins_dict(galaxy.auth.providers, 'plugin_type' )
+        self.__plugins_dict = plugin_config.plugins_dict(galaxy.auth.providers, 'plugin_type')
         auth_config_file = app.config.auth_config_file
         # parse XML
         ct = xml.etree.ElementTree.parse(auth_config_file)
@@ -25,7 +25,7 @@ class AuthManager(object):
 
         authenticators = []
         # process authenticators
-        for auth_elem in conf_root.getchildren():
+        for auth_elem in conf_root:
             type_elem = auth_elem.find('type')
             plugin = self.__plugins_dict.get(type_elem.text)()
 
@@ -85,26 +85,26 @@ class AuthManager(object):
             username = login
         for provider, options in self.active_authenticators(email, username, password):
             if provider is None:
-                log.debug( "Unable to find module: %s" % options )
+                log.debug("Unable to find module: %s" % options)
             else:
                 auth_result, auto_email, auto_username = provider.authenticate(email, username, password, options)
                 auto_email = str(auto_email).lower()
                 auto_username = str(auto_username).lower()
                 if auth_result is True:
                     # make username unique
-                    if validate_publicname( trans, auto_username ) != '':
+                    if validate_publicname(trans, auto_username) != '':
                         i = 1
                         while i <= 10:  # stop after 10 tries
-                            if validate_publicname( trans, "%s-%i" % (auto_username, i) ) == '':
+                            if validate_publicname(trans, "%s-%i" % (auto_username, i)) == '':
                                 auto_username = "%s-%i" % (auto_username, i)
                                 break
                             i += 1
                         else:
                             break  # end for loop if we can't make a unique username
-                    log.debug( "Email: %s, auto-register with username: %s" % (auto_email, auto_username) )
+                    log.debug("Email: %s, auto-register with username: %s" % (auto_email, auto_username))
                     return (_get_bool(options, 'auto-register', False), auto_email, auto_username)
                 elif auth_result is None:
-                    log.debug( "Email: %s, Username %s, stopping due to failed non-continue" % (auto_email, auto_username) )
+                    log.debug("Email: %s, Username %s, stopping due to failed non-continue" % (auto_email, auto_username))
                     break  # end authentication (skip rest)
         return (False, '', '')
 
@@ -112,7 +112,7 @@ class AuthManager(object):
         """Checks the username/email and password using auth providers."""
         for provider, options in self.active_authenticators(user.email, user.username, password):
             if provider is None:
-                log.debug( "Unable to find module: %s" % options )
+                log.debug("Unable to find module: %s" % options)
             else:
                 auth_result = provider.authenticate_user(user, password, options)
                 if auth_result is True:
@@ -127,7 +127,7 @@ class AuthManager(object):
         """
         for provider, options in self.active_authenticators(user.email, user.username, current_password):
             if provider is None:
-                log.debug( "Unable to find module: %s" % options )
+                log.debug("Unable to find module: %s" % options)
             else:
                 auth_result = provider.authenticate_user(user, current_password, options)
                 if auth_result is True:
@@ -153,7 +153,7 @@ class AuthManager(object):
                         continue  # skip to next
                 yield authenticator.plugin, authenticator.options
         except Exception:
-            log.exception( "Active Authenticators Failure" )
+            log.exception("Active Authenticators Failure")
             raise
 
 

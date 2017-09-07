@@ -1,11 +1,11 @@
 define([
     "utils/levenshtein",
     "utils/natural-sort",
-    "mvc/collection/list-collection-creator",
+    "mvc/collection/base-creator",
     "mvc/base-mvc",
     "utils/localization",
     "ui/hoverhighlight"
-], function( levenshteinDistance, naturalSort, LIST_COLLECTION_CREATOR, baseMVC, _l ){
+], function( levenshteinDistance, naturalSort, baseCreator, baseMVC, _l ){
 
 'use strict';
 
@@ -190,7 +190,7 @@ function autoPairFnBuilder( options ){
 // ============================================================================
 /** An interface for building collections of paired datasets.
  */
-var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
+var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).extend( baseCreator.CollectionCreatorMixin ).extend({
     _logNamespace : logNamespace,
 
     className: 'list-of-pairs-collection-creator collection-creator flex-row-container',
@@ -259,6 +259,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         /** Used for blocking UI events during ajax/operations (don't post twice) */
         this.blocking = false;
 
+        this._setUpCommonSettings( attributes );
         this._setUpBehaviors();
         this._dataSetUp();
     },
@@ -404,7 +405,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
     /** autopair by exact match */
     autopairSimple : autoPairFnBuilder({
-        scoreThreshold: function(){ return 1.0; },
+        scoreThreshold: function(){ return 0.6; },
         match : function _match( params ){
             params = params || {};
             if( params.matchTo === params.possible ){
@@ -581,6 +582,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         var ajaxData = {
             type            : 'dataset_collection',
             collection_type : 'list:paired',
+            hide_source_items : creator.hideOriginals || false,
             name            : _.escape( name || creator.$( '.collection-name' ).val() ),
             element_identifiers : creator.paired.map( function( pair ){
                 return creator._pairToJSON( pair );
@@ -632,8 +634,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** render the entire interface */
     render : function( speed, callback ){
         //this.debug( '-- _render' );
-        //this.$el.empty().html( PairedCollectionCreator.templates.main() );
-        this.$el.empty().html( PairedCollectionCreator.templates.main() );
+        //this.$el.empty().html( this.templates.main() );
+        this.$el.empty().html( this.templates.main() );
         this._renderHeader( speed );
         this._renderMiddle( speed );
         this._renderFooter( speed );
@@ -645,8 +647,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** render the header section */
     _renderHeader : function( speed, callback ){
         //this.debug( '-- _renderHeader' );
-        var $header = this.$( '.header' ).empty().html( PairedCollectionCreator.templates.header() )
-            .find( '.help-content' ).prepend( $( PairedCollectionCreator.templates.helpContent() ) );
+        var $header = this.$( '.header' ).empty().html( this.templates.header() )
+            .find( '.help-content' ).prepend( $( this.templates.helpContent() ) );
 
         this._renderFilters();
         return $header;
@@ -659,7 +661,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
     /** render the middle including unpaired and paired sections (which may be hidden) */
     _renderMiddle : function( speed, callback ){
-        var $middle = this.$( '.middle' ).empty().html( PairedCollectionCreator.templates.middle() );
+        var $middle = this.$( '.middle' ).empty().html( this.templates.middle() );
 
         // (re-) hide the un/paired panels based on instance vars
         if( this.unpairedPanelHidden ){
@@ -810,14 +812,9 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         return $msg;
     },
 
-    /** render the footer, completion controls, and cancel controls */
-    _renderFooter : function( speed, callback ){
-        var $footer = this.$( '.footer' ).empty().html( PairedCollectionCreator.templates.footer() );
-        this.$( '.remove-extensions' ).prop( 'checked', this.removeExtensions );
-        if( typeof this.oncancel === 'function' ){
-            this.$( '.cancel-create.btn' ).show();
-        }
-        return $footer;
+    footerSettings : {
+        '.hide-originals': 'hideOriginals',
+        '.remove-extensions': 'removeExtensions'
     },
 
     /** add any jQuery/bootstrap/custom plugins to elements rendered */
@@ -942,6 +939,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         // header
         'click .more-help'                          : '_clickMoreHelp',
         'click .less-help'                          : '_clickLessHelp',
+        'click .main-help'                          : '_toggleHelp',
         'click .header .alert button'               : '_hideAlert',
         'click .forward-column .column-title'       : '_clickShowOnlyUnpaired',
         'click .reverse-column .column-title'       : '_clickShowOnlyUnpaired',
@@ -981,37 +979,9 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         'change .remove-extensions'                 : function( ev ){ this.toggleExtensions(); },
         'change .collection-name'                   : '_changeName',
         'keydown .collection-name'                  : '_nameCheckForEnter',
-        'click .cancel-create'                      : function( ev ){
-            if( typeof this.oncancel === 'function' ){
-                this.oncancel.call( this );
-            }
-        },
+        'change .hide-originals'                    : '_changeHideOriginals',
+        'click .cancel-create'                      : '_cancelCreate',
         'click .create-collection'                  : '_clickCreate'//,
-    },
-
-    // ........................................................................ header
-    /** expand help */
-    _clickMoreHelp : function( ev ){
-        this.$( '.main-help' ).addClass( 'expanded' );
-        this.$( '.more-help' ).hide();
-    },
-    /** collapse help */
-    _clickLessHelp : function( ev ){
-        this.$( '.main-help' ).removeClass( 'expanded' );
-        this.$( '.more-help' ).show();
-    },
-
-    /** show an alert on the top of the interface containing message (alertClass is bootstrap's alert-*)*/
-    _showAlert : function( message, alertClass ){
-        alertClass = alertClass || 'alert-danger';
-        this.$( '.main-help' ).hide();
-        this.$( '.header .alert' ).attr( 'class', 'alert alert-dismissable' ).addClass( alertClass ).show()
-            .find( '.alert-message' ).html( message );
-    },
-    /** hide the alerts at the top */
-    _hideAlert : function( message ){
-        this.$( '.main-help' ).show();
-        this.$( '.header .alert' ).hide();
     },
 
     /** toggle between showing only unpaired and split view */
@@ -1419,33 +1389,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         creator._renderFooter();
     },
 
-    /** handle a collection name change */
-    _changeName : function( ev ){
-        this._validationWarning( 'name', !!this._getName() );
-    },
-
-    /** check for enter key press when in the collection name and submit */
-    _nameCheckForEnter : function( ev ){
-        if( ev.keyCode === 13 && !this.blocking ){
-            this._clickCreate();
-        }
-    },
-
-    /** get the current collection name */
-    _getName : function(){
-        return _.escape( this.$( '.collection-name' ).val() );
-    },
-
-    /** attempt to create the current collection */
-    _clickCreate : function( ev ){
-        var name = this._getName();
-        if( !name ){
-            this._validationWarning( 'name' );
-        } else if( !this.blocking ){
-            this.createList();
-        }
-    },
-
     // ------------------------------------------------------------------------ misc
     /** debug a dataset list */
     _printList : function( list ){
@@ -1465,208 +1408,199 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     },
 
     /** string rep */
-    toString : function(){ return 'PairedCollectionCreator'; }
+    toString : function(){ return 'PairedCollectionCreator'; },
+
+    templates: _.extend({}, baseCreator.CollectionCreatorMixin._creatorTemplates, {
+
+        /** the header (not including help text) */
+        header : _.template([
+            '<div class="main-help well clear">',
+                '<a class="more-help" href="javascript:void(0);">', _l( 'More help' ), '</a>',
+                '<div class="help-content">',
+                    '<a class="less-help" href="javascript:void(0);">', _l( 'Less' ), '</a>',
+                '</div>',
+            '</div>',
+            '<div class="alert alert-dismissable">',
+                '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>',
+                '<span class="alert-message"></span>',
+            '</div>',
+
+            '<div class="column-headers vertically-spaced flex-column-container">',
+                '<div class="forward-column flex-column column">',
+                    '<div class="column-header">',
+                        '<div class="column-title">',
+                            '<span class="title">', _l( 'Unpaired forward' ), '</span>',
+                            '<span class="title-info unpaired-info"></span>',
+                        '</div>',
+                        '<div class="unpaired-filter forward-unpaired-filter pull-left">',
+                            '<input class="search-query" placeholder="', _l( 'Filter this list' ), '" />',
+                        '</div>',
+                    '</div>',
+                '</div>',
+                '<div class="paired-column flex-column no-flex column">',
+                    '<div class="column-header">',
+                        '<a class="choose-filters-link" href="javascript:void(0)">',
+                            _l( 'Choose filters' ),
+                        '</a>',
+                        '<a class="clear-filters-link" href="javascript:void(0);">',
+                            _l( 'Clear filters' ),
+                        '</a><br />',
+                        '<a class="autopair-link" href="javascript:void(0);">',
+                            _l( 'Auto-pair' ),
+                        '</a>',
+                    '</div>',
+                '</div>',
+                '<div class="reverse-column flex-column column">',
+                    '<div class="column-header">',
+                        '<div class="column-title">',
+                            '<span class="title">', _l( 'Unpaired reverse' ), '</span>',
+                            '<span class="title-info unpaired-info"></span>',
+                        '</div>',
+                        '<div class="unpaired-filter reverse-unpaired-filter pull-left">',
+                            '<input class="search-query" placeholder="', _l( 'Filter this list' ), '" />',
+                        '</div>',
+                    '</div>',
+                '</div>',
+            '</div>'
+        ].join('')),
+
+        /** the middle: unpaired, divider, and paired */
+        middle : _.template([
+            // contains two flex rows (rows that fill available space) and a divider btwn
+            '<div class="unpaired-columns flex-column-container scroll-container flex-row">',
+                '<div class="forward-column flex-column column">',
+                    '<ol class="column-datasets"></ol>',
+                '</div>',
+                '<div class="paired-column flex-column no-flex column">',
+                    '<ol class="column-datasets"></ol>',
+                '</div>',
+                '<div class="reverse-column flex-column column">',
+                    '<ol class="column-datasets"></ol>',
+                '</div>',
+            '</div>',
+            '<div class="flexible-partition">',
+                '<div class="flexible-partition-drag" title="', _l( 'Drag to change' ), '"></div>',
+                '<div class="column-header">',
+                    '<div class="column-title paired-column-title">',
+                        '<span class="title"></span>',
+                    '</div>',
+                    '<a class="unpair-all-link" href="javascript:void(0);">',
+                        _l( 'Unpair all' ),
+                    '</a>',
+                '</div>',
+            '</div>',
+            '<div class="paired-columns flex-column-container scroll-container flex-row">',
+                '<ol class="column-datasets"></ol>',
+            '</div>'
+        ].join('')),
+
+        /** creation and cancel controls */
+        footer : _.template([
+            '<div class="attributes clear">',
+                '<div class="clear">',
+                    '<label class="setting-prompt pull-right">',
+                        _l( 'Hide original elements' ), '?',
+                        '<input class="hide-originals pull-right" type="checkbox" />',
+                    '</label>',
+                    '<label class="setting-prompt pull-right">',
+                        _l( 'Remove file extensions from pair names' ), '?',
+                        '<input class="remove-extensions pull-right" type="checkbox" />',
+                    '</label>',
+                '</div>',
+                '<div class="clear">',
+                    '<input class="collection-name form-control pull-right" ',
+                        'placeholder="', _l( 'Enter a name for your new list' ), '" />',
+                    '<div class="collection-name-prompt pull-right">', _l( 'Name' ), ':</div>',
+                '</div>',
+            '</div>',
+
+            '<div class="actions clear vertically-spaced">',
+                '<div class="other-options pull-left">',
+                    '<button class="cancel-create btn" tabindex="-1">', _l( 'Cancel' ), '</button>',
+                    '<div class="create-other btn-group dropup">',
+                        '<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
+                              _l( 'Create a different kind of collection' ),
+                              ' <span class="caret"></span>',
+                        '</button>',
+                        '<ul class="dropdown-menu" role="menu">',
+                              '<li><a href="#">', _l( 'Create a <i>single</i> pair' ), '</a></li>',
+                              '<li><a href="#">', _l( 'Create a list of <i>unpaired</i> datasets' ), '</a></li>',
+                        '</ul>',
+                    '</div>',
+                '</div>',
+
+                '<div class="main-options pull-right">',
+                    '<button class="create-collection btn btn-primary">', _l( 'Create list' ), '</button>',
+                '</div>',
+            '</div>'
+        ].join('')),
+
+        /** help content */
+        helpContent : _.template([
+            '<p>', _l([
+                'Collections of paired datasets are ordered lists of dataset pairs (often forward and reverse reads). ',
+                'These collections can be passed to tools and workflows in order to have analyses done on each member of ',
+                'the entire group. This interface allows you to create a collection, choose which datasets are paired, ',
+                'and re-order the final collection.'
+            ].join( '' )), '</p>',
+            '<p>', _l([
+                'Unpaired datasets are shown in the <i data-target=".unpaired-columns">unpaired section</i> ',
+                '(hover over the underlined words to highlight below). ',
+                'Paired datasets are shown in the <i data-target=".paired-columns">paired section</i>.',
+                '<ul>To pair datasets, you can:',
+                    '<li>Click a dataset in the ',
+                        '<i data-target=".unpaired-columns .forward-column .column-datasets,',
+                                        '.unpaired-columns .forward-column">forward column</i> ',
+                        'to select it then click a dataset in the ',
+                        '<i data-target=".unpaired-columns .reverse-column .column-datasets,',
+                                        '.unpaired-columns .reverse-column">reverse column</i>.',
+                    '</li>',
+                    '<li>Click one of the "Pair these datasets" buttons in the ',
+                        '<i data-target=".unpaired-columns .paired-column .column-datasets,',
+                                        '.unpaired-columns .paired-column">middle column</i> ',
+                        'to pair the datasets in a particular row.',
+                    '</li>',
+                    '<li>Click <i data-target=".autopair-link">"Auto-pair"</i> ',
+                        'to have your datasets automatically paired based on name.',
+                    '</li>',
+                '</ul>'
+            ].join( '' )), '</p>',
+            '<p>', _l([
+                '<ul>You can filter what is shown in the unpaired sections by:',
+                    '<li>Entering partial dataset names in either the ',
+                        '<i data-target=".forward-unpaired-filter input">forward filter</i> or ',
+                        '<i data-target=".reverse-unpaired-filter input">reverse filter</i>.',
+                    '</li>',
+                    '<li>Choosing from a list of preset filters by clicking the ',
+                        '<i data-target=".choose-filters-link">"Choose filters" link</i>.',
+                    '</li>',
+                    '<li>Entering regular expressions to match dataset names. See: ',
+                        '<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions"',
+                            ' target="_blank">MDN\'s JavaScript Regular Expression Tutorial</a>. ',
+                        'Note: forward slashes (\\) are not needed.',
+                    '</li>',
+                    '<li>Clearing the filters by clicking the ',
+                        '<i data-target=".clear-filters-link">"Clear filters" link</i>.',
+                    '</li>',
+                '</ul>'
+            ].join( '' )), '</p>',
+            '<p>', _l([
+                'To unpair individual dataset pairs, click the ',
+                    '<i data-target=".unpair-btn">unpair buttons ( <span class="fa fa-unlink"></span> )</i>. ',
+                'Click the <i data-target=".unpair-all-link">"Unpair all" link</i> to unpair all pairs.'
+            ].join( '' )), '</p>',
+            '<p>', _l([
+                'You can include or remove the file extensions (e.g. ".fastq") from your pair names by toggling the ',
+                    '<i data-target=".remove-extensions-prompt">"Remove file extensions from pair names?"</i> control.'
+            ].join( '' )), '</p>',
+            '<p>', _l([
+                'Once your collection is complete, enter a <i data-target=".collection-name">name</i> and ',
+                'click <i data-target=".create-collection">"Create list"</i>. ',
+                '(Note: you do not have to pair all unpaired datasets to finish.)'
+            ].join( '' )), '</p>'
+        ].join(''))
+    })
 });
-
-
-//TODO: move to require text plugin and load these as text
-//TODO: underscore currently unnecc. bc no vars are used
-//TODO: better way of localizing text-nodes in long strings
-/** underscore template fns attached to class */
-PairedCollectionCreator.templates = PairedCollectionCreator.templates || {
-
-    /** the skeleton */
-    main : _.template([
-        '<div class="header flex-row no-flex"></div>',
-        '<div class="middle flex-row flex-row-container"></div>',
-        '<div class="footer flex-row no-flex">'
-    ].join('')),
-
-    /** the header (not including help text) */
-    header : _.template([
-        '<div class="main-help well clear">',
-            '<a class="more-help" href="javascript:void(0);">', _l( 'More help' ), '</a>',
-            '<div class="help-content">',
-                '<a class="less-help" href="javascript:void(0);">', _l( 'Less' ), '</a>',
-            '</div>',
-        '</div>',
-        '<div class="alert alert-dismissable">',
-            '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>',
-            '<span class="alert-message"></span>',
-        '</div>',
-
-        '<div class="column-headers vertically-spaced flex-column-container">',
-            '<div class="forward-column flex-column column">',
-                '<div class="column-header">',
-                    '<div class="column-title">',
-                        '<span class="title">', _l( 'Unpaired forward' ), '</span>',
-                        '<span class="title-info unpaired-info"></span>',
-                    '</div>',
-                    '<div class="unpaired-filter forward-unpaired-filter pull-left">',
-                        '<input class="search-query" placeholder="', _l( 'Filter this list' ), '" />',
-                    '</div>',
-                '</div>',
-            '</div>',
-            '<div class="paired-column flex-column no-flex column">',
-                '<div class="column-header">',
-                    '<a class="choose-filters-link" href="javascript:void(0)">',
-                        _l( 'Choose filters' ),
-                    '</a>',
-                    '<a class="clear-filters-link" href="javascript:void(0);">',
-                        _l( 'Clear filters' ),
-                    '</a><br />',
-                    '<a class="autopair-link" href="javascript:void(0);">',
-                        _l( 'Auto-pair' ),
-                    '</a>',
-                '</div>',
-            '</div>',
-            '<div class="reverse-column flex-column column">',
-                '<div class="column-header">',
-                    '<div class="column-title">',
-                        '<span class="title">', _l( 'Unpaired reverse' ), '</span>',
-                        '<span class="title-info unpaired-info"></span>',
-                    '</div>',
-                    '<div class="unpaired-filter reverse-unpaired-filter pull-left">',
-                        '<input class="search-query" placeholder="', _l( 'Filter this list' ), '" />',
-                    '</div>',
-                '</div>',
-            '</div>',
-        '</div>'
-    ].join('')),
-
-    /** the middle: unpaired, divider, and paired */
-    middle : _.template([
-        // contains two flex rows (rows that fill available space) and a divider btwn
-        '<div class="unpaired-columns flex-column-container scroll-container flex-row">',
-            '<div class="forward-column flex-column column">',
-                '<ol class="column-datasets"></ol>',
-            '</div>',
-            '<div class="paired-column flex-column no-flex column">',
-                '<ol class="column-datasets"></ol>',
-            '</div>',
-            '<div class="reverse-column flex-column column">',
-                '<ol class="column-datasets"></ol>',
-            '</div>',
-        '</div>',
-        '<div class="flexible-partition">',
-            '<div class="flexible-partition-drag" title="', _l( 'Drag to change' ), '"></div>',
-            '<div class="column-header">',
-                '<div class="column-title paired-column-title">',
-                    '<span class="title"></span>',
-                '</div>',
-                '<a class="unpair-all-link" href="javascript:void(0);">',
-                    _l( 'Unpair all' ),
-                '</a>',
-            '</div>',
-        '</div>',
-        '<div class="paired-columns flex-column-container scroll-container flex-row">',
-            '<ol class="column-datasets"></ol>',
-        '</div>'
-    ].join('')),
-
-    /** creation and cancel controls */
-    footer : _.template([
-        '<div class="attributes clear">',
-            '<div class="clear">',
-                '<label class="remove-extensions-prompt pull-right">',
-                    _l( 'Remove file extensions from pair names' ), '?',
-                    '<input class="remove-extensions pull-right" type="checkbox" />',
-                '</label>',
-            '</div>',
-            '<div class="clear">',
-                '<input class="collection-name form-control pull-right" ',
-                    'placeholder="', _l( 'Enter a name for your new list' ), '" />',
-                '<div class="collection-name-prompt pull-right">', _l( 'Name' ), ':</div>',
-            '</div>',
-        '</div>',
-
-        '<div class="actions clear vertically-spaced">',
-            '<div class="other-options pull-left">',
-                '<button class="cancel-create btn" tabindex="-1">', _l( 'Cancel' ), '</button>',
-                '<div class="create-other btn-group dropup">',
-                    '<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
-                          _l( 'Create a different kind of collection' ),
-                          ' <span class="caret"></span>',
-                    '</button>',
-                    '<ul class="dropdown-menu" role="menu">',
-                          '<li><a href="#">', _l( 'Create a <i>single</i> pair' ), '</a></li>',
-                          '<li><a href="#">', _l( 'Create a list of <i>unpaired</i> datasets' ), '</a></li>',
-                    '</ul>',
-                '</div>',
-            '</div>',
-
-            '<div class="main-options pull-right">',
-                '<button class="create-collection btn btn-primary">', _l( 'Create list' ), '</button>',
-            '</div>',
-        '</div>'
-    ].join('')),
-
-    /** help content */
-    helpContent : _.template([
-        '<p>', _l([
-            'Collections of paired datasets are ordered lists of dataset pairs (often forward and reverse reads). ',
-            'These collections can be passed to tools and workflows in order to have analyses done on each member of ',
-            'the entire group. This interface allows you to create a collection, choose which datasets are paired, ',
-            'and re-order the final collection.'
-        ].join( '' )), '</p>',
-        '<p>', _l([
-            'Unpaired datasets are shown in the <i data-target=".unpaired-columns">unpaired section</i> ',
-            '(hover over the underlined words to highlight below). ',
-            'Paired datasets are shown in the <i data-target=".paired-columns">paired section</i>.',
-            '<ul>To pair datasets, you can:',
-                '<li>Click a dataset in the ',
-                    '<i data-target=".unpaired-columns .forward-column .column-datasets,',
-                                    '.unpaired-columns .forward-column">forward column</i> ',
-                    'to select it then click a dataset in the ',
-                    '<i data-target=".unpaired-columns .reverse-column .column-datasets,',
-                                    '.unpaired-columns .reverse-column">reverse column</i>.',
-                '</li>',
-                '<li>Click one of the "Pair these datasets" buttons in the ',
-                    '<i data-target=".unpaired-columns .paired-column .column-datasets,',
-                                    '.unpaired-columns .paired-column">middle column</i> ',
-                    'to pair the datasets in a particular row.',
-                '</li>',
-                '<li>Click <i data-target=".autopair-link">"Auto-pair"</i> ',
-                    'to have your datasets automatically paired based on name.',
-                '</li>',
-            '</ul>'
-        ].join( '' )), '</p>',
-        '<p>', _l([
-            '<ul>You can filter what is shown in the unpaired sections by:',
-                '<li>Entering partial dataset names in either the ',
-                    '<i data-target=".forward-unpaired-filter input">forward filter</i> or ',
-                    '<i data-target=".reverse-unpaired-filter input">reverse filter</i>.',
-                '</li>',
-                '<li>Choosing from a list of preset filters by clicking the ',
-                    '<i data-target=".choose-filters-link">"Choose filters" link</i>.',
-                '</li>',
-                '<li>Entering regular expressions to match dataset names. See: ',
-                    '<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions"',
-                        ' target="_blank">MDN\'s JavaScript Regular Expression Tutorial</a>. ',
-                    'Note: forward slashes (\\) are not needed.',
-                '</li>',
-                '<li>Clearing the filters by clicking the ',
-                    '<i data-target=".clear-filters-link">"Clear filters" link</i>.',
-                '</li>',
-            '</ul>'
-        ].join( '' )), '</p>',
-        '<p>', _l([
-            'To unpair individual dataset pairs, click the ',
-                '<i data-target=".unpair-btn">unpair buttons ( <span class="fa fa-unlink"></span> )</i>. ',
-            'Click the <i data-target=".unpair-all-link">"Unpair all" link</i> to unpair all pairs.'
-        ].join( '' )), '</p>',
-        '<p>', _l([
-            'You can include or remove the file extensions (e.g. ".fastq") from your pair names by toggling the ',
-                '<i data-target=".remove-extensions-prompt">"Remove file extensions from pair names?"</i> control.'
-        ].join( '' )), '</p>',
-        '<p>', _l([
-            'Once your collection is complete, enter a <i data-target=".collection-name">name</i> and ',
-            'click <i data-target=".create-collection">"Create list"</i>. ',
-            '(Note: you do not have to pair all unpaired datasets to finish.)'
-        ].join( '' )), '</p>'
-    ].join(''))
-};
-
 
 //=============================================================================
 /** a modal version of the paired collection creator */
@@ -1708,11 +1642,12 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datas
 
 
 //=============================================================================
-function createListOfPairsCollection( collection ){
+function createListOfPairsCollection( collection, defaultHideSourceItems ){
     var elements = collection.toJSON();
 //TODO: validate elements
     return pairedCollectionCreatorModal( elements, {
-        historyId : collection.historyId
+        historyId : collection.historyId,
+        defaultHideSourceItems: defaultHideSourceItems
     });
 }
 

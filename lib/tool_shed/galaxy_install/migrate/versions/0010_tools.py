@@ -104,9 +104,9 @@ location discussed above by running the following command.
 from __future__ import print_function
 
 
-def upgrade( migrate_engine ):
+def upgrade(migrate_engine):
     print(__doc__)
 
 
-def downgrade( migrate_engine ):
+def downgrade(migrate_engine):
     pass

@@ -5,9 +5,8 @@ import optparse
 import sys
 
 
-def stop_err( msg ):
-    sys.stderr.write( msg )
-    sys.exit()
+def stop_err(msg):
+    sys.exit(msg)
 
 
 def main():
@@ -64,7 +63,7 @@ options (listed below) default to 'None' if omitted
     invalid_starts = []
 
     if options.input_txt:
-        infile = open( options.input_txt, 'r')
+        infile = open(options.input_txt, 'r')
     else:
         infile = sys.stdin
 
@@ -72,13 +71,13 @@ options (listed below) default to 'None' if omitted
         invalid_starts = options.ignore.split(',')
 
     if options.ascii and options.ignore and options.ignore != "None":
-        for i, item in enumerate( invalid_starts ):
-            invalid_starts[i] = chr( int( item ) )
+        for i, item in enumerate(invalid_starts):
+            invalid_starts[i] = chr(int(item))
 
-    col = int( options.col )
+    col = int(options.col)
 
-    for i, line in enumerate( infile ):
-        line = line.rstrip( '\r\n' )
+    for i, line in enumerate(infile):
+        line = line.rstrip('\r\n')
         if line:
             if options.fastq and i % 2 == 0:
                 print(line)
@@ -86,25 +85,25 @@ options (listed below) default to 'None' if omitted
 
             if line[0] not in invalid_starts:
                 if col == 0:
-                    if int( options.end ) > 0:
-                        line = line[ int( options.start ) - 1:int( options.end ) ]
-                    elif int( options.end ) < 0:
-                        endposition = len(line) + int( options.end )
-                        line = line[ int( options.start ) - 1:endposition ]
+                    if int(options.end) > 0:
+                        line = line[int(options.start) - 1:int(options.end)]
+                    elif int(options.end) < 0:
+                        endposition = len(line) + int(options.end)
+                        line = line[int(options.start) - 1:endposition]
                     else:
-                        line = line[ int( options.start ) - 1: ]
+                        line = line[int(options.start) - 1:]
                 else:
-                    fields = line.split( '\t' )
-                    if col - 1 > len( fields ):
+                    fields = line.split('\t')
+                    if col - 1 > len(fields):
                         stop_err('Column %d does not exist. Check input parameters\n' % col)
 
-                    if int( options.end ) > 0:
-                        fields[col - 1] = fields[col - 1][ int( options.start ) - 1:int( options.end ) ]
-                    elif int( options.end ) < 0:
-                        endposition = len(fields[col - 1]) + int( options.end )
-                        fields[col - 1] = fields[col - 1][ int( options.start ) - 1:endposition ]
+                    if int(options.end) > 0:
+                        fields[col - 1] = fields[col - 1][int(options.start) - 1:int(options.end)]
+                    elif int(options.end) < 0:
+                        endposition = len(fields[col - 1]) + int(options.end)
+                        fields[col - 1] = fields[col - 1][int(options.start) - 1:endposition]
                     else:
-                        fields[col - 1] = fields[col - 1][ int( options.start ) - 1: ]
+                        fields[col - 1] = fields[col - 1][int(options.start) - 1:]
                     line = '\t'.join(fields)
             print(line)
 

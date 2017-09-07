@@ -18,41 +18,41 @@ from galaxy.jobs.runners.util.condor import (
 )
 from galaxy.util import asbool
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
-__all__ = ( 'CondorJobRunner', )
+__all__ = ('CondorJobRunner', )
 
 
-class CondorJobState( AsynchronousJobState ):
-    def __init__( self, **kwargs ):
+class CondorJobState(AsynchronousJobState):
+    def __init__(self, **kwargs):
         """
         Encapsulates state related to a job that is being run via the DRM and
         that we need to monitor.
         """
-        super( CondorJobState, self ).__init__( **kwargs )
+        super(CondorJobState, self).__init__(**kwargs)
         self.failed = False
         self.user_log = None
         self.user_log_size = 0
 
 
-class CondorJobRunner( AsynchronousJobRunner ):
+class CondorJobRunner(AsynchronousJobRunner):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
     runner_name = "CondorRunner"
 
-    def __init__( self, app, nworkers ):
+    def __init__(self, app, nworkers):
         """Initialize this job runner and start the monitor thread"""
-        super( CondorJobRunner, self ).__init__( app, nworkers )
+        super(CondorJobRunner, self).__init__(app, nworkers)
         self._init_monitor_thread()
         self._init_worker_threads()
 
-    def queue_job( self, job_wrapper ):
+    def queue_job(self, job_wrapper):
         """Create job script and submit it to the DRM"""
 
         # prepare the job
-        include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", True ) )
-        if not self.prepare_job( job_wrapper, include_metadata=include_metadata):
+        include_metadata = asbool(job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
+        if not self.prepare_job(job_wrapper, include_metadata=include_metadata):
             return
 
         # get configured job destination
@@ -66,10 +66,10 @@ class CondorJobRunner( AsynchronousJobRunner ):
         container = None
         universe = query_params.get('universe', None)
         if universe and universe.strip().lower() == 'docker':
-            container = self._find_container( job_wrapper )
+            container = self._find_container(job_wrapper)
             if container:
                 # HTCondor needs the image as 'docker_image'
-                query_params.update({'docker_image': container})
+                query_params.update({'docker_image': container.container_id})
 
         galaxy_slots = query_params.get('request_cpus', None)
         if galaxy_slots:
@@ -84,9 +84,9 @@ class CondorJobRunner( AsynchronousJobRunner ):
         )
 
         cluster_directory = self.app.config.cluster_files_directory
-        cjs.user_log = os.path.join( cluster_directory, 'galaxy_%s.condor.log' % galaxy_id_tag )
-        cjs.register_cleanup_file_attribute( 'user_log' )
-        submit_file = os.path.join( cluster_directory, 'galaxy_%s.condor.desc' % galaxy_id_tag )
+        cjs.user_log = os.path.join(cluster_directory, 'galaxy_%s.condor.log' % galaxy_id_tag)
+        cjs.register_cleanup_file_attribute('user_log')
+        submit_file = os.path.join(cluster_directory, 'galaxy_%s.condor.desc' % galaxy_id_tag)
         executable = cjs.job_file
 
         build_submit_params = dict(
@@ -104,10 +104,10 @@ class CondorJobRunner( AsynchronousJobRunner ):
             slots_statement=galaxy_slots_statement,
         )
         try:
-            self.write_executable_script( executable, script )
+            self.write_executable_script(executable, script)
         except:
-            job_wrapper.fail( "failure preparing job script", exception=True )
-            log.exception( "(%s) failure preparing job script" % galaxy_id_tag )
+            job_wrapper.fail("failure preparing job script", exception=True)
+            log.exception("(%s) failure preparing job script" % galaxy_id_tag)
             return
 
         cleanup_job = job_wrapper.cleanup_job
@@ -117,45 +117,45 @@ class CondorJobRunner( AsynchronousJobRunner ):
             if cleanup_job == "always":
                 cjs.cleanup()
                 # job_wrapper.fail() calls job_wrapper.cleanup()
-            job_wrapper.fail( "failure preparing submit file", exception=True )
-            log.exception( "(%s) failure preparing submit file" % galaxy_id_tag )
+            job_wrapper.fail("failure preparing submit file", exception=True)
+            log.exception("(%s) failure preparing submit file" % galaxy_id_tag)
             return
 
         # job was deleted while we were preparing it
         if job_wrapper.get_state() == model.Job.states.DELETED:
-            log.debug( "Job %s deleted by user before it entered the queue" % galaxy_id_tag )
+            log.debug("Job %s deleted by user before it entered the queue" % galaxy_id_tag)
             if cleanup_job in ("always", "onsuccess"):
-                os.unlink( submit_file )
+                os.unlink(submit_file)
                 cjs.cleanup()
                 job_wrapper.cleanup()
             return
 
-        log.debug( "(%s) submitting file %s" % ( galaxy_id_tag, executable ) )
+        log.debug("(%s) submitting file %s" % (galaxy_id_tag, executable))
 
         external_job_id, message = condor_submit(submit_file)
         if external_job_id is None:
-            log.debug( "condor_submit failed for job %s: %s" % (job_wrapper.get_id_tag(), message) )
+            log.debug("condor_submit failed for job %s: %s" % (job_wrapper.get_id_tag(), message))
             if self.app.config.cleanup_job == "always":
-                os.unlink( submit_file )
+                os.unlink(submit_file)
                 cjs.cleanup()
-            job_wrapper.fail( "condor_submit failed", exception=True )
+            job_wrapper.fail("condor_submit failed", exception=True)
             return
 
-        os.unlink( submit_file )
+        os.unlink(submit_file)
 
-        log.info( "(%s) queued as %s" % ( galaxy_id_tag, external_job_id ) )
+        log.info("(%s) queued as %s" % (galaxy_id_tag, external_job_id))
 
         # store runner information for tracking if Galaxy restarts
-        job_wrapper.set_job_destination( job_destination, external_job_id )
+        job_wrapper.set_job_destination(job_destination, external_job_id)
 
         # Store DRM related state information for job
         cjs.job_id = external_job_id
         cjs.job_destination = job_destination
 
         # Add to our 'queue' of jobs to monitor
-        self.monitor_queue.put( cjs )
+        self.monitor_queue.put(cjs)
 
-    def check_watched_items( self ):
+    def check_watched_items(self):
         """
         Called by the monitor thread to look at each watched job and deal
         with state changes.
@@ -165,8 +165,8 @@ class CondorJobRunner( AsynchronousJobRunner ):
             job_id = cjs.job_id
             galaxy_id_tag = cjs.job_wrapper.get_id_tag()
             try:
-                if os.stat( cjs.user_log ).st_size == cjs.user_log_size:
-                    new_watched.append( cjs )
+                if os.stat(cjs.user_log).st_size == cjs.user_log_size:
+                    new_watched.append(cjs)
                     continue
                 s1, s4, s7, s5, s9, log_size = summarize_condor_log(cjs.user_log, job_id)
                 job_running = s1 and not (s4 or s7)
@@ -175,63 +175,63 @@ class CondorJobRunner( AsynchronousJobRunner ):
                 cjs.user_log_size = log_size
             except Exception:
                 # so we don't kill the monitor thread
-                log.exception( "(%s/%s) Unable to check job status" % ( galaxy_id_tag, job_id ) )
-                log.warning( "(%s/%s) job will now be errored" % ( galaxy_id_tag, job_id ) )
+                log.exception("(%s/%s) Unable to check job status" % (galaxy_id_tag, job_id))
+                log.warning("(%s/%s) job will now be errored" % (galaxy_id_tag, job_id))
                 cjs.fail_message = "Cluster could not complete job"
-                self.work_queue.put( ( self.fail_job, cjs ) )
+                self.work_queue.put((self.fail_job, cjs))
                 continue
             if job_running and not cjs.running:
-                log.debug( "(%s/%s) job is now running" % ( galaxy_id_tag, job_id ) )
-                cjs.job_wrapper.change_state( model.Job.states.RUNNING )
+                log.debug("(%s/%s) job is now running" % (galaxy_id_tag, job_id))
+                cjs.job_wrapper.change_state(model.Job.states.RUNNING)
             if not job_running and cjs.running:
-                log.debug( "(%s/%s) job has stopped running" % ( galaxy_id_tag, job_id ) )
+                log.debug("(%s/%s) job has stopped running" % (galaxy_id_tag, job_id))
                 # Will switching from RUNNING to QUEUED confuse Galaxy?
                 # cjs.job_wrapper.change_state( model.Job.states.QUEUED )
             if job_complete:
                 if cjs.job_wrapper.get_state() != model.Job.states.DELETED:
-                    external_metadata = not asbool( cjs.job_wrapper.job_destination.params.get( "embed_metadata_in_job", True) )
+                    external_metadata = not asbool(cjs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
                     if external_metadata:
-                        self._handle_metadata_externally( cjs.job_wrapper, resolve_requirements=True )
-                    log.debug( "(%s/%s) job has completed" % ( galaxy_id_tag, job_id ) )
-                    self.work_queue.put( ( self.finish_job, cjs ) )
+                        self._handle_metadata_externally(cjs.job_wrapper, resolve_requirements=True)
+                    log.debug("(%s/%s) job has completed" % (galaxy_id_tag, job_id))
+                    self.work_queue.put((self.finish_job, cjs))
                 continue
             if job_failed:
-                log.debug( "(%s/%s) job failed" % ( galaxy_id_tag, job_id ) )
+                log.debug("(%s/%s) job failed" % (galaxy_id_tag, job_id))
                 cjs.failed = True
-                self.work_queue.put( ( self.finish_job, cjs ) )
+                self.work_queue.put((self.finish_job, cjs))
                 continue
             cjs.runnning = job_running
-            new_watched.append( cjs )
+            new_watched.append(cjs)
         # Replace the watch list with the updated version
         self.watched = new_watched
 
-    def stop_job( self, job ):
+    def stop_job(self, job):
         """Attempts to delete a job from the DRM queue"""
         external_id = job.job_runner_external_id
         failure_message = condor_stop(external_id)
         if failure_message:
             log.debug("(%s/%s). Failed to stop condor %s" % (external_id, failure_message))
 
-    def recover( self, job, job_wrapper ):
+    def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         # TODO Check if we need any changes here
         job_id = job.get_job_runner_external_id()
         galaxy_id_tag = job_wrapper.get_id_tag()
         if job_id is None:
-            self.put( job_wrapper )
+            self.put(job_wrapper)
             return
-        cjs = CondorJobState( job_wrapper=job_wrapper, files_dir=self.app.config.cluster_files_directory )
-        cjs.job_id = str( job_id )
+        cjs = CondorJobState(job_wrapper=job_wrapper, files_dir=self.app.config.cluster_files_directory)
+        cjs.job_id = str(job_id)
         cjs.command_line = job.get_command_line()
         cjs.job_wrapper = job_wrapper
         cjs.job_destination = job_wrapper.job_destination
-        cjs.user_log = os.path.join( self.app.config.cluster_files_directory, 'galaxy_%s.condor.log' % galaxy_id_tag )
-        cjs.register_cleanup_file_attribute( 'user_log' )
+        cjs.user_log = os.path.join(self.app.config.cluster_files_directory, 'galaxy_%s.condor.log' % galaxy_id_tag)
+        cjs.register_cleanup_file_attribute('user_log')
         if job.state == model.Job.states.RUNNING:
-            log.debug( "(%s/%s) is still in running state, adding to the DRM queue" % ( job.id, job.job_runner_external_id ) )
+            log.debug("(%s/%s) is still in running state, adding to the DRM queue" % (job.id, job.job_runner_external_id))
             cjs.running = True
-            self.monitor_queue.put( cjs )
+            self.monitor_queue.put(cjs)
         elif job.state == model.Job.states.QUEUED:
-            log.debug( "(%s/%s) is still in DRM queued state, adding to the DRM queue" % ( job.id, job.job_runner_external_id ) )
+            log.debug("(%s/%s) is still in DRM queued state, adding to the DRM queue" % (job.id, job.job_runner_external_id))
             cjs.running = False
-            self.monitor_queue.put( cjs )
+            self.monitor_queue.put(cjs)

@@ -1,6 +1,7 @@
 import logging
 import os
 import json
+from collections import namedtuple
 
 from galaxy.util.filelock import FileLock
 from galaxy.util import sockets
@@ -10,7 +11,7 @@ from galaxy.util import unique_id
 import urllib2
 import time
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 DEFAULT_PROXY_TO_HOST = "localhost"
@@ -20,7 +21,7 @@ SECURE_COOKIE = "galaxysession"
 
 class ProxyManager(object):
 
-    def __init__( self, config ):
+    def __init__(self, config):
         for option in ["manage_dynamic_proxy", "dynamic_proxy_bind_port",
                        "dynamic_proxy_bind_ip", "dynamic_proxy_debug",
                        "dynamic_proxy_external_proxy", "dynamic_proxy_prefix",
@@ -31,10 +32,10 @@ class ProxyManager(object):
                        "dynamic_proxy_golang_docker_address",
                        "dynamic_proxy_golang_api_key"]:
 
-            setattr( self, option, getattr( config, option ) )
+            setattr(self, option, getattr(config, option))
 
         if self.manage_dynamic_proxy:
-            self.lazy_process = self.__setup_lazy_process( config )
+            self.lazy_process = self.__setup_lazy_process(config)
         else:
             self.lazy_process = NoOpLazyProcess()
 
@@ -43,10 +44,10 @@ class ProxyManager(object):
 
         self.proxy_ipc = proxy_ipc(config)
 
-    def shutdown( self ):
+    def shutdown(self):
         self.lazy_process.shutdown()
 
-    def setup_proxy( self, trans, host=DEFAULT_PROXY_TO_HOST, port=None, proxy_prefix="", route_name="", container_ids=None ):
+    def setup_proxy(self, trans, host=DEFAULT_PROXY_TO_HOST, port=None, proxy_prefix="", route_name="", container_ids=None, container_interface=None):
         if self.manage_dynamic_proxy:
             log.info("Attempting to start dynamic proxy process")
             log.debug("Cmd: " + ' '.join(self.lazy_process.command_and_args))
@@ -61,7 +62,8 @@ class ProxyManager(object):
             authentication,
             proxy_requests,
             '/%s' % route_name,
-            container_ids
+            container_ids,
+            container_interface,
         )
         # TODO: These shouldn't need to be request.host and request.scheme -
         # though they are reasonable defaults.
@@ -79,7 +81,11 @@ class ProxyManager(object):
             'proxied_host': proxy_requests.host,
         }
 
-    def __setup_lazy_process( self, config ):
+    def query_proxy(self, trans):
+        authentication = AuthenticationToken(trans)
+        return self.proxy_ipc.fetch_requests(authentication)
+
+    def __setup_lazy_process(self, config):
         launcher = self.proxy_launcher()
         command = launcher.launch_proxy_command(config)
         return LazyProcess(command)
@@ -111,9 +117,9 @@ class NodeProxyLauncher(object):
         if config.dynamic_proxy_debug:
             args.append("--verbose")
 
-        parent_directory = os.path.dirname( __file__ )
-        path_to_application = os.path.join( parent_directory, "js", "lib", "main.js" )
-        command = [ path_to_application ] + args
+        parent_directory = os.path.dirname(__file__)
+        path_to_application = os.path.join(parent_directory, "js", "lib", "main.js")
+        command = [path_to_application] + args
         return command
 
 
@@ -146,7 +152,7 @@ class AuthenticationToken(object):
 
     def __init__(self, trans):
         self.cookie_name = SECURE_COOKIE
-        self.cookie_value = trans.get_cookie( self.cookie_name )
+        self.cookie_value = trans.get_cookie(self.cookie_name)
 
 
 class ProxyRequests(object):
@@ -174,7 +180,10 @@ def proxy_ipc(config):
 
 class ProxyIpc(object):
 
-    def handle_requests(self, authentication, proxy_requests, route_name, container_ids):
+    def handle_requests(self, authentication, proxy_requests, route_name, container_ids, container_interface):
+        raise NotImplementedError()
+
+    def fetch_requests(self, authentication, key):
         raise NotImplementedError()
 
 
@@ -183,23 +192,37 @@ class JsonFileProxyIpc(object):
     def __init__(self, proxy_session_map):
         self.proxy_session_map = proxy_session_map
 
-    def handle_requests(self, authentication, proxy_requests, route_name, container_ids):
-        key = "%s:%s" % ( proxy_requests.host, proxy_requests.port )
-        secure_id = authentication.cookie_value
-        with FileLock( self.proxy_session_map ):
-            if not os.path.exists( self.proxy_session_map ):
-                open( self.proxy_session_map, "w" ).write( "{}" )
-            json_data = open( self.proxy_session_map, "r" ).read()
-            session_map = json.loads( json_data )
-            to_remove = []
-            for k, value in session_map.items():
-                if value == secure_id:
-                    to_remove.append( k )
-            for k in to_remove:
-                del session_map[ k ]
-            session_map[ key ] = secure_id
-            new_json_data = json.dumps( session_map )
-            open( self.proxy_session_map, "w" ).write( new_json_data )
+    def handle_requests(self, authentication, proxy_requests, route_name, container_ids, container_interface):
+        key = authentication.cookie_value
+        with FileLock(self.proxy_session_map):
+            if not os.path.exists(self.proxy_session_map):
+                open(self.proxy_session_map, "w").write("{}")
+            json_data = open(self.proxy_session_map, "r").read()
+            session_map = json.loads(json_data)
+            session_map[key] = {
+                'host': proxy_requests.host,
+                'port': proxy_requests.port,
+                'container_ids': container_ids,
+                'container_interface': container_interface,
+            }
+            new_json_data = json.dumps(session_map)
+            open(self.proxy_session_map, "w").write(new_json_data)
+
+    def fetch_requests(self, authentication):
+        key = authentication.cookie_value
+        try:
+            with open(self.proxy_session_map) as fh:
+                session_map = json.load(fh)
+                m = session_map[key]
+                return ProxyMapping(
+                    host=m['host'],
+                    port=m['port'],
+                    container_ids=m['container_ids'],
+                    container_interface=m['container_interface'],
+                )
+        except (TypeError, KeyError):
+            log.warning('fetch_requests(): invalid key: %s', key)
+            return None
 
 
 class SqliteProxyIpc(object):
@@ -207,23 +230,57 @@ class SqliteProxyIpc(object):
     def __init__(self, proxy_session_map):
         self.proxy_session_map = proxy_session_map
 
-    def handle_requests(self, authentication, proxy_requests, route_name, container_ids):
-        key = "%s:%s" % ( proxy_requests.host, proxy_requests.port )
-        secure_id = authentication.cookie_value
-        with FileLock( self.proxy_session_map ):
+    def handle_requests(self, authentication, proxy_requests, route_name, container_ids, container_interface):
+        key = authentication.cookie_value
+        with FileLock(self.proxy_session_map):
             conn = sqlite.connect(self.proxy_session_map)
             try:
                 c = conn.cursor()
                 try:
                     # Create table
-                    c.execute('''CREATE TABLE gxproxy
-                                 (key text PRIMARY_KEY, secret text)''')
+                    c.execute('''CREATE TABLE gxproxy2
+                                 (key text PRIMARY KEY,
+                                  host text,
+                                  port integer,
+                                  container_ids text,
+                                  container_interface text)''')
                 except Exception:
                     pass
-                insert_tmpl = '''INSERT INTO gxproxy (key, secret) VALUES ('%s', '%s');'''
-                insert = insert_tmpl % (key, secure_id)
-                c.execute(insert)
+                delete = '''DELETE FROM gxproxy2 WHERE key=?'''
+                c.execute(delete, (key,))
+                insert = '''INSERT INTO gxproxy2
+                            (key, host, port, container_ids, container_interface)
+                            VALUES (?, ?, ?, ?, ?)'''
+                c.execute(insert,
+                          (key,
+                           proxy_requests.host,
+                           proxy_requests.port,
+                           json.dumps(container_ids),
+                           container_interface))
                 conn.commit()
+            finally:
+                conn.close()
+
+    def fetch_requests(self, authentication):
+        key = authentication.cookie_value
+        with FileLock(self.proxy_session_map):
+            conn = sqlite.connect(self.proxy_session_map)
+            try:
+                c = conn.cursor()
+                select = '''SELECT host, port, container_ids, container_interface
+                            FROM gxproxy2
+                            WHERE key=?'''
+                c.execute(select, (key,))
+                try:
+                    host, port, container_ids, container_interface = c.fetchone()
+                except TypeError:
+                    log.warning('fetch_requests(): invalid key: %s', key)
+                    return None
+                return ProxyMapping(
+                    host=host,
+                    port=port,
+                    container_ids=json.loads(container_ids),
+                    container_interface=container_interface)
             finally:
                 conn.close()
 
@@ -234,12 +291,12 @@ class RestGolangProxyIpc(object):
         self.config = config
         self.api_url = 'http://127.0.0.1:%s/api?api_key=%s' % (self.config.dynamic_proxy_bind_port, self.config.dynamic_proxy_golang_api_key)
 
-    def handle_requests(self, authentication, proxy_requests, route_name, container_ids, sleep=1):
+    def handle_requests(self, authentication, proxy_requests, route_name, container_ids, container_interface, sleep=1):
         """Make a POST request to the GO proxy to register a route
         """
         values = {
             'FrontendPath': route_name,
-            'BackendAddr': "%s:%s" % ( proxy_requests.host, proxy_requests.port ),
+            'BackendAddr': "%s:%s" % (proxy_requests.host, proxy_requests.port),
             'AuthorizedCookie': authentication.cookie_value,
             'ContainerIds': container_ids,
         }
@@ -259,5 +316,9 @@ class RestGolangProxyIpc(object):
             time.sleep(sleep)
             self.handle_requests(authentication, proxy_requests, route_name, container_ids, sleep=sleep + 1)
         pass
+
+
+ProxyMapping = namedtuple('ProxyMapping', ['host', 'port', 'container_ids', 'container_interface'])
+
 
 # TODO: MQ diven proxy?

@@ -410,7 +410,8 @@ var PhylovizLayoutBase =  Backbone.View.extend({
             .attr("data-original-title", function(){
                 var d = this.__data__,
                     annotation = d.annotation || "None" ;
-                return d ? (d.name ? d.name + "<br/>" : "") + "Dist: " + d.dist + " <br/>Annotation: " + annotation: "";
+                return d ? ( (d.name ? d.name + "<br/>" : "") + "Dist: " + d.dist + " <br/>Annotation1: " + annotation +
+                    ( d.bootstrap ? "<br/>Confidence level: " + ( Math.round( 100 * d.bootstrap ) ) : "") ): "";
             })
             .tooltip({'placement':'top', 'trigger' : 'hover'});
 
@@ -515,7 +516,7 @@ var PhylovizLinearView =  PhylovizLayoutBase.extend({
         nodeUpdate.select("text")
             .style("fill-opacity", 1)
             .style("font-size", fontSize)
-            .text(function(d) { return d.name; });
+            .text(function(d) { return ( ( d.name && d.name !== "" ) ? d.name : ( d.bootstrap ? Math.round( 100 * d.bootstrap ) : "" ) ) });
 
         // ------- D3 EXIT --------
         // Transition exiting nodes to the parent's new position.
@@ -725,7 +726,7 @@ var HeaderButtons = Backbone.View.extend({
     initRightHeaderBtns : function(){
         var self = this;
 
-        rightMenu = mod_icon_btn.create_icon_buttons_menu([
+        var rightMenu = mod_icon_btn.create_icon_buttons_menu([
             { icon_class: 'gear', title: 'PhyloViz Settings', on_click: function(){
                 $("#SettingsMenu").show();
                 self.settingsMenu.updateUI();
@@ -741,7 +742,7 @@ var HeaderButtons = Backbone.View.extend({
                 $("#nodeSelectionView").show();
             } },
             { icon_class: 'information', title: 'Phyloviz Help', on_click: function() {
-                window.open('https://wiki.galaxyproject.org/Learn/Visualization/PhylogeneticTree');
+                window.open('https://galaxyproject.org/learn/visualization/phylogenetic-tree/');
                 // https://docs.google.com/document/d/1AXFoJgEpxr21H3LICRs3EyMe1B1X_KFPouzIgrCz3zk/edit
             } }
         ],

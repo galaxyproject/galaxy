@@ -10,23 +10,23 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import TrimmedString
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler( sys.stdout )
+handler = logging.StreamHandler(sys.stdout)
 format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter( format )
-handler.setFormatter( formatter )
-log.addHandler( handler )
+formatter = logging.Formatter(format)
+handler.setFormatter(formatter)
+log.addHandler(handler)
 
 now = datetime.datetime.utcnow
 
 metadata = MetaData()
 
-APIKeys_table = Table( "api_keys", metadata,
-                       Column( "id", Integer, primary_key=True ),
-                       Column( "create_time", DateTime, default=now ),
-                       Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-                       Column( "key", TrimmedString( 32 ), index=True, unique=True ) )
+APIKeys_table = Table("api_keys", metadata,
+                      Column("id", Integer, primary_key=True),
+                      Column("create_time", DateTime, default=now),
+                      Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
+                      Column("key", TrimmedString(32), index=True, unique=True))
 
 
 def upgrade(migrate_engine):
@@ -36,7 +36,7 @@ def upgrade(migrate_engine):
     try:
         APIKeys_table.create()
     except Exception as e:
-        log.debug( "Creating api_keys table failed: %s" % str( e ) )
+        log.debug("Creating api_keys table failed: %s" % str(e))
 
 
 def downgrade(migrate_engine):
@@ -46,4 +46,4 @@ def downgrade(migrate_engine):
     try:
         APIKeys_table.drop()
     except Exception as e:
-        log.debug( "Dropping api_keys table failed: %s" % str( e ) )
+        log.debug("Dropping api_keys table failed: %s" % str(e))

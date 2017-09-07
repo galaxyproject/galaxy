@@ -3,11 +3,11 @@
 import os
 import sys
 
-assert sys.version_info[:2] >= ( 2, 4 )
+assert sys.version_info[:2] >= (2, 4)
 
 
 def __main__():
-    base_dir = os.path.join( os.getcwd(), "bacteria" )
+    base_dir = os.path.join(os.getcwd(), "bacteria")
     try:
         base_dir = sys.argv[1]
     except:
@@ -47,26 +47,26 @@ def __main__():
             continue
         if 'build' in org:
             build = org['build']
-            print "ORG\t%s\t%s\t%s\t%s\t%s\t%s\tUCSC" % ( build, org['name'], org['kingdom'], org['group'], org['chromosomes'], org['info url'] )
+            print "ORG\t%s\t%s\t%s\t%s\t%s\t%s\tUCSC" % (build, org['name'], org['kingdom'], org['group'], org['chromosomes'], org['info url'])
         else:
-            print "ORG\t%s\t%s\t%s\t%s\t%s\t%s\tNone" % ( build, org['name'], org['kingdom'], org['group'], org['chromosomes'], org['info url'] )
+            print "ORG\t%s\t%s\t%s\t%s\t%s\t%s\tNone" % (build, org['name'], org['kingdom'], org['group'], org['chromosomes'], org['info url'])
 
         for chr in org['chrs']:
             chr = org['chrs'][chr]
-            print "CHR\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % ( build, chr['chromosome'], chr['name'], chr['length'], chr['gi'], chr['gb'], "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&val=" + chr['refseq'] )
+            print "CHR\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (build, chr['chromosome'], chr['name'], chr['length'], chr['gi'], chr['gb'], "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&val=" + chr['refseq'])
             for feature in ['CDS', 'tRNA', 'rRNA']:
-                print "DATA\t%s_%s_%s\t%s\t%s\t%s\t%s\t%s" % ( build, chr['chromosome'], feature, build, chr['chromosome'], feature, "bed", os.path.join( org['base_dir'], "%s.%s.bed" % ( chr['chromosome'], feature ) ) )
+                print "DATA\t%s_%s_%s\t%s\t%s\t%s\t%s\t%s" % (build, chr['chromosome'], feature, build, chr['chromosome'], feature, "bed", os.path.join(org['base_dir'], "%s.%s.bed" % (chr['chromosome'], feature)))
             # FASTA
-            print "DATA\t%s_%s_%s\t%s\t%s\t%s\t%s\t%s" % ( build, chr['chromosome'], "seq", build, chr['chromosome'], "sequence", "fasta", os.path.join( org['base_dir'], "%s.fna" % chr['chromosome'] ) )
+            print "DATA\t%s_%s_%s\t%s\t%s\t%s\t%s\t%s" % (build, chr['chromosome'], "seq", build, chr['chromosome'], "sequence", "fasta", os.path.join(org['base_dir'], "%s.fna" % chr['chromosome']))
             # GeneMark
-            if os.path.exists( os.path.join( org['base_dir'], "%s.GeneMark.bed" % chr['chromosome'] ) ):
-                print "DATA\t%s_%s_%s\t%s\t%s\t%s\t%s\t%s" % ( build, chr['chromosome'], "GeneMark", build, chr['chromosome'], "GeneMark", "bed", os.path.join( org['base_dir'], "%s.GeneMark.bed" % chr['chromosome'] ) )
+            if os.path.exists(os.path.join(org['base_dir'], "%s.GeneMark.bed" % chr['chromosome'])):
+                print "DATA\t%s_%s_%s\t%s\t%s\t%s\t%s\t%s" % (build, chr['chromosome'], "GeneMark", build, chr['chromosome'], "GeneMark", "bed", os.path.join(org['base_dir'], "%s.GeneMark.bed" % chr['chromosome']))
             # GenMarkHMM
-            if os.path.exists( os.path.join( org['base_dir'], "%s.GeneMarkHMM.bed" % chr['chromosome'] ) ):
-                print "DATA\t%s_%s_%s\t%s\t%s\t%s\t%s\t%s" % ( build, chr['chromosome'], "GeneMarkHMM", build, chr['chromosome'], "GeneMarkHMM", "bed", os.path.join( org['base_dir'], "%s.GeneMarkHMM.bed" % chr['chromosome'] ) )
+            if os.path.exists(os.path.join(org['base_dir'], "%s.GeneMarkHMM.bed" % chr['chromosome'])):
+                print "DATA\t%s_%s_%s\t%s\t%s\t%s\t%s\t%s" % (build, chr['chromosome'], "GeneMarkHMM", build, chr['chromosome'], "GeneMarkHMM", "bed", os.path.join(org['base_dir'], "%s.GeneMarkHMM.bed" % chr['chromosome']))
             # Glimmer3
-            if os.path.exists( os.path.join( org['base_dir'], "%s.Glimmer3.bed" % chr['chromosome'] ) ):
-                print "DATA\t%s_%s_%s\t%s\t%s\t%s\t%s\t%s" % ( build, chr['chromosome'], "Glimmer3", build, chr['chromosome'], "Glimmer3", "bed", os.path.join( org['base_dir'], "%s.Glimmer3.bed" % chr['chromosome'] ) )
+            if os.path.exists(os.path.join(org['base_dir'], "%s.Glimmer3.bed" % chr['chromosome'])):
+                print "DATA\t%s_%s_%s\t%s\t%s\t%s\t%s\t%s" % (build, chr['chromosome'], "Glimmer3", build, chr['chromosome'], "Glimmer3", "bed", os.path.join(org['base_dir'], "%s.Glimmer3.bed" % chr['chromosome']))
 
 
 if __name__ == "__main__":

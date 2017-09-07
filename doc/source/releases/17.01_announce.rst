@@ -29,20 +29,22 @@ Highlights
   Thanks to `@abretaud <https://github.com/abretaud>`__, `@ashvark <https://github.com/ashvark>`__, `@jvolkening <https://github.com/jvolkening>`__, and `@mvdbeek <https://github.com/mvdbeek>`__.
   Implemented in `Pull Request 3145`_, `PullRequest 3510`_ and `PullRequest 3514`_.
 
-`Github <https://github.com/galaxyproject/galaxy>`__
-===========================================================
+Get Galaxy
+==========
 
-New Galaxy repository
+The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
   .. code-block:: shell
 
       $ git clone -b release_17.01 https://github.com/galaxyproject/galaxy.git
 
-Update of existing Galaxy repository
+To update an existing Galaxy repository run:
   .. code-block:: shell
 
       $ git checkout release_17.01 && git pull --ff-only origin release_17.01
 
-See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
+See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
 Deprecation Notices
 ===================
@@ -61,6 +63,8 @@ Deprecation Notices
 
   If you have local tools that depend on these modules and you do not wish to use a formal dependency resolution mechanism
   such as Conda, you can change the option ``preserve_python_environment`` in galaxy.ini from ``legacy`` to ``legacy_and_local``.
+
+* Galaxy's 'repair repository' feature for installed repositories is deprecated and will be removed/replaced in the next release - `details <https://github.com/galaxyproject/galaxy/issues/2929>`__.
 
 Release Notes
 ===========================================================

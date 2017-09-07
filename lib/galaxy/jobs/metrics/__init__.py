@@ -37,7 +37,7 @@ class JobMetrics(object):
     def format(self, plugin, key, value):
         """Find :class:`formatting.JobMetricFormatter` corresponding to instrumented plugin value."""
         if plugin in self.plugin_classes:
-            plugin_class = self.plugin_classes[ plugin ]
+            plugin_class = self.plugin_classes[plugin]
             formatter = plugin_class.formatter
         else:
             formatter = DEFAULT_FORMATTER
@@ -54,10 +54,10 @@ class JobMetrics(object):
     def set_destination_instrumenter(self, destination_id, job_instrumenter=None):
         if job_instrumenter is None:
             job_instrumenter = NULL_JOB_INSTRUMENTER
-        self.job_instrumenters[ destination_id ] = job_instrumenter
+        self.job_instrumenters[destination_id] = job_instrumenter
 
     def collect_properties(self, destination_id, job_id, job_directory):
-        return self.job_instrumenters[ destination_id ].collect_properties(job_id, job_directory)
+        return self.job_instrumenters[destination_id].collect_properties(job_id, job_directory)
 
     def __plugins_dict(self):
         import galaxy.jobs.metrics.instrumenters
@@ -94,8 +94,8 @@ class JobInstrumenter(object):
                 if plugin_commands:
                     commands.extend(util.listify(plugin_commands))
             except Exception:
-                log.exception("Failed to generate pre-execute commands for plugin %s" % plugin)
-        return "\n".join([ c for c in commands if c ])
+                log.exception("Failed to generate pre-execute commands for plugin %s", plugin)
+        return "\n".join([c for c in commands if c])
 
     def post_execute_commands(self, job_directory):
         commands = []
@@ -105,8 +105,8 @@ class JobInstrumenter(object):
                 if plugin_commands:
                     commands.extend(util.listify(plugin_commands))
             except Exception:
-                log.exception("Failed to generate post-execute commands for plugin %s" % plugin)
-        return "\n".join([ c for c in commands if c ])
+                log.exception("Failed to generate post-execute commands for plugin %s", plugin)
+        return "\n".join([c for c in commands if c])
 
     def collect_properties(self, job_id, job_directory):
         per_plugin_properites = {}
@@ -114,9 +114,9 @@ class JobInstrumenter(object):
             try:
                 properties = plugin.job_properties(job_id, job_directory)
                 if properties:
-                    per_plugin_properites[ plugin.plugin_type ] = properties
+                    per_plugin_properites[plugin.plugin_type] = properties
             except Exception:
-                log.exception("Failed to collect job properties for plugin %s" % plugin)
+                log.exception("Failed to collect job properties for plugin %s", plugin)
         return per_plugin_properites
 
     def __plugins_from_source(self, plugins_source):

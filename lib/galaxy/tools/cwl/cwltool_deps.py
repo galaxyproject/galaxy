@@ -17,6 +17,7 @@ try:
         workflow,
         job,
         process,
+        pathmapper,
     )
 except (ImportError, SyntaxError):
     # Drop SyntaxError once cwltool supports Python 3
@@ -24,6 +25,7 @@ except (ImportError, SyntaxError):
     workflow = None
     job = None
     process = None
+    pathmapper = None
 
 try:
     from cwltool import load_tool
@@ -40,6 +42,12 @@ try:
 except (ImportError, SyntaxError):
     # Drop SyntaxError once schema_salad supports Python 3
     schema_salad = None
+
+try:
+    from schema_salad import ref_resolver
+except (ImportError, SyntaxError):
+    ref_resolver = None
+
 
 needs_shell_quoting = re.compile(r"""(^$|[\s|&;()<>\'"$@])""").search
 
@@ -66,9 +74,11 @@ def ensure_cwltool_available():
 
 __all__ = (
     'main',
+    'ref_resolver',
     'load_tool',
     'workflow',
     'process',
+    'pathmapper',
     'ensure_cwltool_available',
     'schema_salad',
     'shellescape',

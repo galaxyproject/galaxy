@@ -46,8 +46,11 @@ GalaxyApp.prototype._init = function __init( options, bootstrapped ){
     }
 
     self._processOptions( options );
-    // special case for root
+
+    // add root and url parameters
     self.root = options.root || '/';
+    self.params = options.params || {};
+    self.session_csrf_token = options.session_csrf_token || null;
 
     self._initConfig( options.config || {} );
     self._patchGalaxy( window.Galaxy );
@@ -76,9 +79,10 @@ GalaxyApp.prototype._init = function __init( options, bootstrapped ){
 /** default options */
 GalaxyApp.prototype.defaultOptions = {
     /** monkey patch attributes from existing window.Galaxy object? */
-    patchExisting   : true,
+    patchExisting      : true,
     /** root url of this app */
-    root            : '/'
+    root               : '/',
+    session_csrf_token : null,
 };
 
 /** filter to options present in defaultOptions (and default to them) */

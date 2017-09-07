@@ -14,16 +14,16 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 from tool_shed.galaxy_install.migrate.common import MigrateToolsApplication
 
-app = MigrateToolsApplication( sys.argv[ 1 ] )
+app = MigrateToolsApplication(sys.argv[1])
 non_shed_tool_confs = app.tool_migration_manager.proprietary_tool_confs
-if len( non_shed_tool_confs ) == 1:
+if len(non_shed_tool_confs) == 1:
     plural = ''
-    file_names = non_shed_tool_confs[ 0 ]
+    file_names = non_shed_tool_confs[0]
 else:
     plural = 's'
-    file_names = ', '.join( non_shed_tool_confs )
+    file_names = ', '.join(non_shed_tool_confs)
 msg = "\nThe installation process is finished.  All tools associated with this migration that were defined in your file%s named\n" % plural
 msg += "%s, have been removed.  You may now start your Galaxy server.\n" % file_names
 print msg
 app.shutdown()
-sys.exit( 0 )
+sys.exit(0)

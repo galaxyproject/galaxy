@@ -53,7 +53,7 @@ var View = Options.BaseIcons.extend({
         // recursive function which iterates through options
         function iterate ( $tmpl, options, header ) {
             header = header || [];
-            for ( i in options ) {
+            for (var i in options ) {
                 var level = options[ i ];
                 var has_options = level.options && level.options.length > 0;
                 var new_header = header.slice( 0 );

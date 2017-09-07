@@ -8,26 +8,27 @@ from requests import (
 
 from base import api
 
-from base.populators import DatasetPopulator, wait_on
+from base.populators import DatasetPopulator, DatasetCollectionPopulator, wait_on
 
 
-class HistoriesApiTestCase( api.ApiTestCase ):
+class HistoriesApiTestCase(api.ApiTestCase):
 
-    def setUp( self ):
-        super( HistoriesApiTestCase, self ).setUp( )
-        self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
+    def setUp(self):
+        super(HistoriesApiTestCase, self).setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
-    def test_create_history( self ):
+    def test_create_history(self):
         # Create a history.
         create_response = self._create_history("TestHistory1")
-        created_id = create_response[ "id" ]
+        created_id = create_response["id"]
 
         # Make sure new history appears in index of user's histories.
-        index_response = self._get( "histories" ).json()
-        indexed_history = [ h for h in index_response if h[ "id" ] == created_id ][0]
-        self.assertEquals(indexed_history[ "name" ], "TestHistory1")
+        index_response = self._get("histories").json()
+        indexed_history = [h for h in index_response if h["id"] == created_id][0]
+        self.assertEquals(indexed_history["name"], "TestHistory1")
 
-    def test_show_history( self ):
+    def test_show_history(self):
         history_id = self._create_history("TestHistoryForShow")["id"]
         show_response = self._show(history_id)
         self._assert_has_key(
@@ -153,7 +154,7 @@ class HistoriesApiTestCase( api.ApiTestCase ):
         for str_key in ["name", "annotation"]:
             assert self._update(history_id, {str_key: False}).status_code == 400
 
-        for bool_key in [ 'deleted', 'importable', 'published' ]:
+        for bool_key in ['deleted', 'importable', 'published']:
             assert self._update(history_id, {bool_key: "a string"}).status_code == 400
 
         assert self._update(history_id, {"tags": "a simple string"}).status_code == 400
@@ -167,75 +168,102 @@ class HistoriesApiTestCase( api.ApiTestCase ):
         assert self._delete("histories/%s" % invalid_history_id).status_code == 400
         assert self._post("histories/deleted/%s/undelete" % invalid_history_id).status_code == 400
 
-    def test_create_anonymous_fails( self ):
-        post_data = dict( name="CannotCreate" )
+    def test_create_anonymous_fails(self):
+        post_data = dict(name="CannotCreate")
         # Using lower-level _api_url will cause key to not be injected.
-        histories_url = self._api_url( "histories" )
-        create_response = post( url=histories_url, data=post_data )
-        self._assert_status_code_is( create_response, 403 )
+        histories_url = self._api_url("histories")
+        create_response = post(url=histories_url, data=post_data)
+        self._assert_status_code_is(create_response, 403)
 
-    def test_import_export( self ):
-        history_id = self.dataset_populator.new_history( name="for_export" )
-        self.dataset_populator.new_dataset( history_id, content="1 2 3" )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        download_path = self._export( history_id )
-        full_download_url = "%s%s?key=%s" % ( self.url, download_path, self.galaxy_interactor.api_key )
-        download_response = get( full_download_url )
-        self._assert_status_code_is( download_response, 200 )
+    def test_import_export(self):
+        history_name = "for_export"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        imported_history_id = self._reimport_history(history_id, history_name)
 
-        def history_names():
-            history_index = self._get( "histories" )
-            return dict((h["name"], h) for h in history_index.json())
-
-        import_name = "imported from archive: for_export"
-        assert import_name not in history_names()
-
-        import_data = dict( archive_source=full_download_url, archive_type="url" )
-        import_response = self._post( "histories", data=import_data )
-
-        self._assert_status_code_is( import_response, 200 )
-
-        def has_history_with_name():
-            histories = history_names()
-            return histories.get( import_name, None )
-
-        imported_history = wait_on( has_history_with_name, desc="import history" )
-        imported_history_id = imported_history[ "id" ]
-        self.dataset_populator.wait_for_history( imported_history_id )
-        contents_response = self._get( "histories/%s/contents" % imported_history_id )
-        self._assert_status_code_is( contents_response, 200 )
+        contents_response = self._get("histories/%s/contents" % imported_history_id)
+        self._assert_status_code_is(contents_response, 200)
         contents = contents_response.json()
-        assert len( contents ) == 1
+        assert len(contents) == 1
         imported_content = self.dataset_populator.get_history_dataset_content(
             history_id=imported_history_id,
-            dataset_id=contents[ 0 ][ "id" ]
+            dataset_id=contents[0]["id"]
         )
         assert imported_content == "1 2 3\n"
 
-    def test_create_tag( self ):
-        post_data = dict( name="TestHistoryForTag" )
-        history_id = self._post( "histories", data=post_data ).json()["id"]
-        tag_data = dict( value="awesometagvalue" )
+    def test_import_export_collection(self):
+        from nose.plugins.skip import SkipTest
+        raise SkipTest("Collection import/export not yet implemented")
+
+        history_name = "for_export_with_collections"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        self.dataset_collection_populator.create_list_in_history(history_id, contents=["Hello", "World"])
+
+        imported_history_id = self._reimport_history(history_id, history_name)
+
+        contents_response = self._get("histories/%s/contents" % imported_history_id)
+        self._assert_status_code_is(contents_response, 200)
+        contents = contents_response.json()
+        assert len(contents) == 3
+
+    def _reimport_history(self, history_id, history_name):
+        # Ensure the history is ready to go...
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+        # Export the history.
+        download_path = self._export(history_id)
+
+        # Create download for history
+        full_download_url = "%s%s?key=%s" % (self.url, download_path, self.galaxy_interactor.api_key)
+        download_response = get(full_download_url)
+        self._assert_status_code_is(download_response, 200)
+
+        def history_names():
+            history_index = self._get("histories")
+            return dict((h["name"], h) for h in history_index.json())
+
+        import_name = "imported from archive: %s" % history_name
+        assert import_name not in history_names()
+
+        import_data = dict(archive_source=full_download_url, archive_type="url")
+        import_response = self._post("histories", data=import_data)
+
+        self._assert_status_code_is(import_response, 200)
+
+        def has_history_with_name():
+            histories = history_names()
+            return histories.get(import_name, None)
+
+        imported_history = wait_on(has_history_with_name, desc="import history")
+        imported_history_id = imported_history["id"]
+        self.dataset_populator.wait_for_history(imported_history_id)
+
+        return imported_history_id
+
+    def test_create_tag(self):
+        post_data = dict(name="TestHistoryForTag")
+        history_id = self._post("histories", data=post_data).json()["id"]
+        tag_data = dict(value="awesometagvalue")
         tag_url = "histories/%s/tags/awesometagname" % history_id
-        tag_create_response = self._post( tag_url, data=tag_data )
-        self._assert_status_code_is( tag_create_response, 200 )
+        tag_create_response = self._post(tag_url, data=tag_data)
+        self._assert_status_code_is(tag_create_response, 200)
 
     def _export(self, history_id):
-        export_url = self._api_url( "histories/%s/exports" % history_id, use_key=True )
-        put_response = put( export_url )
-        self._assert_status_code_is( put_response, 202 )
+        export_url = self._api_url("histories/%s/exports" % history_id, use_key=True)
+        put_response = put(export_url)
+        self._assert_status_code_is(put_response, 202)
 
         def export_ready_response():
-            put_response = put( export_url )
+            put_response = put(export_url)
             if put_response.status_code == 202:
                 return None
             return put_response
 
-        put_response = wait_on( export_ready_response, desc="export ready" )
-        self._assert_status_code_is( put_response, 200 )
+        put_response = wait_on(export_ready_response, desc="export ready")
+        self._assert_status_code_is(put_response, 200)
         response = put_response.json()
-        self._assert_has_keys( response, "download_url" )
-        download_path = response[ "download_url" ]
+        self._assert_has_keys(response, "download_url")
+        download_path = response["download_url"]
         return download_path
 
     def _show(self, history_id):

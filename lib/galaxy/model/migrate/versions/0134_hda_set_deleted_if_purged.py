@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import logging
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 def engine_true(migrate_engine):
@@ -24,7 +24,7 @@ def upgrade(migrate_engine):
     try:
         migrate_engine.execute(cmd)
     except Exception:
-        log.exception("Exception executing SQL command: %s" % cmd)
+        log.exception("Exception executing SQL command: %s", cmd)
 
 
 def downgrade(migrate_engine):

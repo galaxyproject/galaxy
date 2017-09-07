@@ -4,6 +4,41 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
         this.isCollection = true;
         this.rank = collectionType.split(":").length;
     }
+
+    var NULL_COLLECTION_TYPE_DESCRIPTION = {
+        isCollection: false,
+        canMatch: function( other ) { return false; },
+        canMapOver: function( other ) {
+            return false;
+        },
+        toString: function() {
+            return "NullCollectionType[]";
+        },
+        append: function( otherCollectionType ) {
+            return otherCollectionType;
+        },
+        equal: function( other ) {
+            return other === this;
+        }
+    };
+
+    var ANY_COLLECTION_TYPE_DESCRIPTION = {
+        isCollection: true,
+        canMatch: function( other ) { return NULL_COLLECTION_TYPE_DESCRIPTION !== other; },
+        canMapOver: function( other ) {
+            return false;
+        },
+        toString: function() {
+            return "AnyCollectionType[]";
+        },
+        append: function( otherCollectionType ) {
+            throw "Cannot append to ANY_COLLECTION_TYPE_DESCRIPTION";
+        },
+        equal: function( other ) {
+            return other === this;
+        }
+    };
+
     $.extend( CollectionTypeDescription.prototype, {
         append: function( otherCollectionTypeDescription ) {
             if( otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION ) {
@@ -53,40 +88,6 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
         }
     } );
 
-    NULL_COLLECTION_TYPE_DESCRIPTION = {
-        isCollection: false,
-        canMatch: function( other ) { return false; },
-        canMapOver: function( other ) {
-            return false;
-        },
-        toString: function() {
-            return "NullCollectionType[]";
-        },
-        append: function( otherCollectionType ) {
-            return otherCollectionType;
-        },
-        equal: function( other ) {
-            return other === this;
-        }
-    };
-
-    ANY_COLLECTION_TYPE_DESCRIPTION = {
-        isCollection: true,
-        canMatch: function( other ) { return NULL_COLLECTION_TYPE_DESCRIPTION !== other; },
-        canMapOver: function( other ) {
-            return false;
-        },
-        toString: function() {
-            return "AnyCollectionType[]";
-        },
-        append: function( otherCollectionType ) {
-            throw "Cannot append to ANY_COLLECTION_TYPE_DESCRIPTION";
-        },
-        equal: function( other ) {
-            return other === this;
-        }
-    };
-
     var TerminalMapping = Backbone.Model.extend( {
         initialize: function( attr ) {
             this.mapOver = attr.mapOver || NULL_COLLECTION_TYPE_DESCRIPTION;
@@ -134,7 +135,7 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
         },
         destroyInvalidConnections: function( ) {
             _.each( this.connectors, function( connector ) {
-                connector.destroyIfInvalid();
+                connector && connector.destroyIfInvalid();
             } );
         },
         setMapOver : function( val ) {
@@ -428,9 +429,11 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
             if( ! canMatch ) {
                 for( var collectionTypeIndex in collectionTypes ) {
                     var collectionType = collectionTypes[collectionTypeIndex];
-                    var effectiveMapOver = otherCollectionType.effectiveMapOver( collectionType );
-                    if( effectiveMapOver != NULL_COLLECTION_TYPE_DESCRIPTION ) {
-                        return effectiveMapOver;
+                    if( otherCollectionType.canMapOver( collectionType ) ) {
+                        var effectiveMapOver = otherCollectionType.effectiveMapOver( collectionType );
+                        if( effectiveMapOver != NULL_COLLECTION_TYPE_DESCRIPTION ) {
+                            return effectiveMapOver;
+                        }
                     }
                 }
             }
@@ -473,11 +476,29 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
         initialize: function( attr ) {
             Terminal.prototype.initialize.call( this, attr );
             this.datatypes = attr.datatypes;
-            this.collectionType = new CollectionTypeDescription( attr.collection_type );
-            this.isCollection = true;
+            if( attr.collection_type ) {
+                this.collectionType = new CollectionTypeDescription( attr.collection_type );
+            } else {
+                var collectionTypeSource = attr.collection_type_source;
+                if( ! collectionTypeSource ) {
+                    console.log("Warning: No collection type or collection type source defined.");
+                }
+                this.collectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
+            }
+            this.isCollection =  true;
         },
         update: function( output ) {
-            var newCollectionType = new CollectionTypeDescription( output.collection_type );
+            var newCollectionType;
+            if( output.collection_type ) {
+                newCollectionType = new CollectionTypeDescription( output.collection_type );
+            } else {
+                var collectionTypeSource = output.collection_type_source;
+                if( ! collectionTypeSource ) {
+                    console.log("Warning: No collection type or collection type source defined.");
+                }
+                newCollectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
+            }
+
             if( newCollectionType.collectionType != this.collectionType.collectionType ) {
                 _.each( this.connectors, function( connector ) {
                     // TODO: consider checking if connection valid before removing...

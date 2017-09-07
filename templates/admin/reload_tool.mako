@@ -1,8 +1,9 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%
-   from galaxy.tools import Tool
-   from galaxy.tools.toolbox import ToolSection
+    from cgi import escape
+    from galaxy.tools import Tool
+    from galaxy.tools.toolbox import ToolSection
 %>
 
 <script type="text/javascript">
@@ -24,9 +25,14 @@ $().ready(function() {
 });
 </script>
 
-%if message:
-    ${render_msg( message, status )}
-%endif
+<%
+    if message:
+        html_message = "Reloaded the tool:<br/>"
+        html_message += "<b>name:</b> %s<br/>" % escape( message[ 'name' ] )
+        html_message += "<b>id:</b> %s<br/>" % escape( message[ 'id' ] )
+        html_message += "<b>version:</b> %s" % escape( message[ 'version' ] )
+        render_msg( html_message, status )
+%>
 
 <div class="toolForm">
     <div class="toolFormTitle">Reload Tool</div>

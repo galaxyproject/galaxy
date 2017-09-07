@@ -11,17 +11,17 @@ import argparse
 from common import submit
 
 
-def main( options ):
+def main(options):
     api_key = options.api_key
     if api_key:
         if options.tool_shed_url and options.name and options.owner:
-            base_tool_shed_url = options.tool_shed_url.rstrip( '/' )
+            base_tool_shed_url = options.tool_shed_url.rstrip('/')
             data = {}
-            data[ 'tool_shed_url' ] = base_tool_shed_url
-            data[ 'name' ] = options.name
-            data[ 'owner' ] = options.owner
-            url = '%s%s' % ( base_tool_shed_url, '/api/repositories/remove_repository_registry_entry' )
-            response_dict = submit( url, data, api_key=api_key, return_formatted=False )
+            data['tool_shed_url'] = base_tool_shed_url
+            data['name'] = options.name
+            data['owner'] = options.owner
+            url = '%s%s' % (base_tool_shed_url, '/api/repositories/remove_repository_registry_entry')
+            response_dict = submit(url, data, api_key=api_key, return_formatted=False)
             print response_dict
         else:
             print "Invalid tool_shed: ", base_tool_shed_url, " name: ", options.name, " or owner: ", options.owner, "."
@@ -30,10 +30,10 @@ def main( options ):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser( description='Remove entries from the Tool Shed repository registry for a specified repository.' )
-    parser.add_argument( "-a", "--api_key", dest="api_key", required=True, help="API Key for user removing entries from the Tool Shed's repository registry." )
-    parser.add_argument( "-u", "--url", dest="tool_shed_url", required=True, help="Tool Shed URL" )
-    parser.add_argument( "-n", "--name", dest='name', required=True, help="Repository name." )
-    parser.add_argument( "-o", "--owner", dest='owner', required=True, help="Repository owner." )
+    parser = argparse.ArgumentParser(description='Remove entries from the Tool Shed repository registry for a specified repository.')
+    parser.add_argument("-a", "--api_key", dest="api_key", required=True, help="API Key for user removing entries from the Tool Shed's repository registry.")
+    parser.add_argument("-u", "--url", dest="tool_shed_url", required=True, help="Tool Shed URL")
+    parser.add_argument("-n", "--name", dest='name', required=True, help="Repository name.")
+    parser.add_argument("-o", "--owner", dest='owner', required=True, help="Repository owner.")
     options = parser.parse_args()
-    main( options )
+    main(options)

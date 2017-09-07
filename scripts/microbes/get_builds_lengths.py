@@ -3,11 +3,11 @@
 import os
 import sys
 
-assert sys.version_info[:2] >= ( 2, 4 )
+assert sys.version_info[:2] >= (2, 4)
 
 
 def __main__():
-    base_dir = os.path.join( os.getcwd(), "bacteria" )
+    base_dir = os.path.join(os.getcwd(), "bacteria")
     try:
         base_dir = sys.argv[1]
     except:
@@ -52,8 +52,8 @@ def __main__():
         chrs = []
         for chrom in org['chrs']:
             chrom = org['chrs'][chrom]
-            chrs.append( "%s=%s" % ( chrom['chromosome'], chrom['length'] ) )
-        print "%s\t%s\t%s" % ( build, org['name'], ",".join( chrs ) )
+            chrs.append("%s=%s" % (chrom['chromosome'], chrom['length']))
+        print "%s\t%s\t%s" % (build, org['name'], ",".join(chrs))
 
 
 if __name__ == "__main__":

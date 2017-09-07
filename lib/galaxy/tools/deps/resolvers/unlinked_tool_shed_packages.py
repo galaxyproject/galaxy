@@ -25,7 +25,7 @@ from os.path import exists, getmtime, join
 from .galaxy_packages import BaseGalaxyPackageDependencyResolver
 from ..resolvers import Dependency, NullDependency
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 MANUAL = "manual"
 PREFERRED_OWNERS = MANUAL + ",iuc,devteam"
@@ -42,7 +42,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
         # Option to ignore owner and just use last modified time
         self.select_by_owner = str(kwds.get('select_by_owner', "true")).lower() != "false"
 
-    def _find_dep_versioned( self, name, version, type='package', **kwds ):
+    def _find_dep_versioned(self, name, version, type='package', **kwds):
         try:
             possibles = self._find_possible_dependencies(name, version, type)
             if len(possibles) == 0:
@@ -64,7 +64,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
     def _find_possible_dependencies(self, name, version, type):
         possibles = []
         if exists(self.base_path):
-            path = join( self.base_path, name, version )
+            path = join(self.base_path, name, version)
             if exists(path):
                 # First try the way without owner/name/revision
                 package = self._galaxy_package_dep(path, version, name, True)
@@ -145,11 +145,11 @@ class CandidateDependency(Dependency):
         self.path = path
         self.owner = owner
 
-    def shell_commands( self, requirement ):
+    def shell_commands(self, requirement):
         """
         Return shell commands to enable this dependency.
         """
-        return self.dependency.shell_commands( requirement )
+        return self.dependency.shell_commands(requirement)
 
 
 __all__ = ('UnlinkedToolShedPackageDependencyResolver', )

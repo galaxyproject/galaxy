@@ -6,7 +6,6 @@ define( [ 'utils/utils' ], function( Utils ) {
             this.model = options && options.model || new Backbone.Model({
                 id          : Utils.uid(),
                 title       : '',
-                floating    : 'right',
                 icon        : '',
                 cls         : 'btn btn-default',
                 wait        : false,
@@ -31,7 +30,6 @@ define( [ 'utils/utils' ], function( Utils ) {
                     .addClass( options.disabled && 'disabled' )
                     .attr( 'id', options.id )
                     .attr( 'disabled', options.disabled )
-                    .css( 'float', options.floating )
                     .off( 'click' ).on( 'click' , function() {
                         $( '.tooltip' ).hide();
                         options.onclick && !self.disabled && options.onclick();
@@ -112,6 +110,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                              title      : options.title,
                              target     : options.target || '_top',
                              disabled   : options.disabled } )
+                    .tooltip( { placement: 'bottom' } )
                     .off( 'click' ).on( 'click' , function() {
                         options.onclick && !options.disabled && options.onclick();
                     });
@@ -173,7 +172,6 @@ define( [ 'utils/utils' ], function( Utils ) {
             this.model = options && options.model || new Backbone.Model({
                 id          : Utils.uid(),
                 title       : '',
-                floating    : 'right',
                 icon        : '',
                 cls         : 'ui-button-icon',
                 disabled    : false
@@ -192,7 +190,6 @@ define( [ 'utils/utils' ], function( Utils ) {
                     .addClass( options.disabled && 'disabled' )
                     .attr( 'disabled', options.disabled )
                     .attr( 'id', options.id )
-                    .css( 'float', options.floating )
                     .off( 'click' ).on( 'click', function() {
                         $( '.tooltip' ).hide();
                         !options.disabled && options.onclick && options.onclick();
@@ -211,7 +208,6 @@ define( [ 'utils/utils' ], function( Utils ) {
             this.model = options && options.model || new Backbone.Model({
                 id              : '',
                 title           : '',
-                floating        : 'right',
                 pull            : 'right',
                 icon            : null,
                 onclick         : null,
@@ -238,8 +234,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                     .addClass( 'dropdown' )
                     .addClass( options.cls )
                     .attr( 'id', options.id )
-                    .css( { float   : options.floating,
-                            display : options.visible && this.collection.where( { visible: true } ).length > 0 ? 'block' : 'none' } );
+                    .css( { display : options.visible && this.collection.where( { visible: true } ).length > 0 ? 'block' : 'none' } );
             this.$root.addClass( 'root button dropdown-toggle' )
                       .attr( 'data-toggle', 'dropdown' )
                       .tooltip( { title: options.tooltip, placement: 'bottom' } )

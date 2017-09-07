@@ -20,7 +20,7 @@ var View = Backbone.View.extend({
             disabled    : false,
             onchange    : function(){},
             value       : null,
-            selectall   : true,
+            individual  : false,
             pagesize    : 20
         }).set( options );
         this.on( 'change', function() { self.model.get( 'onchange' ) && self.model.get( 'onchange' )( self.value() ) } );
@@ -94,7 +94,7 @@ var View = Backbone.View.extend({
             });
         }
         this.all_button = null;
-        if ( this.model.get( 'multiple' ) && this.model.get( 'selectall' ) ) {
+        if ( this.model.get( 'multiple' ) && !this.model.get( 'individual' ) ) {
             this.all_button = new Buttons.ButtonCheck({
                 onclick: function() {
                     var new_value = [];
@@ -107,6 +107,11 @@ var View = Backbone.View.extend({
             });
             this.$el.prepend( this.all_button.$el );
         }
+    },
+
+    /** Matches a search term with a given text */
+    _match: function( term, text ) {
+        return !term || term == '' || String( text ).toUpperCase().indexOf( term.toUpperCase() ) >= 0
     },
 
     /** Updates the selection options */
@@ -125,22 +130,44 @@ var View = Backbone.View.extend({
         if ( this.model.get( 'searchable' ) ) {
             this.data2 = [];
             _.each( this.data, function( option, index ) {
-                self.data2.push( { order: index, id: option.value, text: option.label } );
+                self.data2.push( { order: index, id: option.value, text: option.label, tags: option.tags } );
             });
             this.$select.data( 'select2' ) && this.$select.select2( 'destroy' );
+            this.matched_tags = {};
             this.$select.select2({
                 data            : self.data2,
                 closeOnSelect   : !this.model.get( 'multiple' ),
                 multiple        : this.model.get( 'multiple' ),
                 query           : function( q ) {
+                    self.matched_tags = {};
                     var pagesize = self.model.get( 'pagesize' );
                     var results = _.filter( self.data2, function ( e ) {
-                        return !q.term || q.term == '' || e.text.toUpperCase().indexOf( q.term.toUpperCase() ) >= 0;
+                        var found = false;
+                        _.each( e.tags, function( tag ) {
+                            if ( self._match( q.term, tag ) ) {
+                                found = self.matched_tags[ tag ] = true;
+                            }
+                        });
+                        return found || self._match( q.term, e.text );
                     });
                     q.callback({
                         results: results.slice( ( q.page - 1 ) * pagesize, q.page * pagesize ),
                         more   : results.length >= q.page * pagesize
                     });
+                },
+                formatResult    : function( result ) {
+                    return _.escape( result.text ) +
+                        '<div class="ui-tags">' +
+                            _.reduce( result.tags, function( memo, tag ) {
+                                if ( self.matched_tags[ tag ] ) {
+                                    return memo + '&nbsp;' +
+                                        '<div class="label label-info">' +
+                                            _.escape( tag ) +
+                                        '</div>'
+                                }
+                                return memo;
+                            }, '' ) +
+                        '</div>';
                 }
             });
             this.$( '.select2-container .select2-search input' ).off( 'blur' );
@@ -288,7 +315,7 @@ var View = Backbone.View.extend({
         }
         if ( this.model.get( 'searchable' ) ) {
             if ( $.isArray( new_value ) ) {
-                val = [];
+                var val = [];
                 _.each( new_value, function( v ) {
                     var d = _.findWhere( self.data2, { id: v } );
                     d && val.push( d );

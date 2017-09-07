@@ -1,11 +1,16 @@
-import bz2
 import gzip
+import sys
 import zipfile
 
 from .checkers import (
     is_bz2,
     is_gzip
 )
+
+if sys.version_info < (3, 3):
+    import bz2file as bz2
+else:
+    import bz2
 
 
 def get_fileobj(filename, mode="r", gzip_only=False, bz2_only=False, zip_only=False):
@@ -29,5 +34,7 @@ def get_fileobj(filename, mode="r", gzip_only=False, bz2_only=False, zip_only=Fa
     if not gzip_only and not zip_only and is_bz2(filename):
         return bz2.BZ2File(filename, cmode)
     if not bz2_only and not gzip_only and zipfile.is_zipfile(filename):
-        return zipfile.os_zipfile(filename, cmode)
+        # Return fileobj for the first file in a zip file.
+        with zipfile.ZipFile(filename, cmode) as zh:
+            return zh.open(zh.namelist()[0], cmode)
     return open(filename, mode)

@@ -64,7 +64,7 @@ class Phyloxml_Parser(Base_Parser):
 
         return currentNode
 
-    def _makeLeafNode(self, leafNode, depth=0 ):
+    def _makeLeafNode(self, leafNode, depth=0):
         """Makes leaf nodes by calling Phylotree methods"""
         node = {}
         for child in leafNode:

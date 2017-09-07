@@ -35,8 +35,8 @@ def test_select_wrapper_simple_options(tool):
         <option value="y" selected="true">I am Y</option>
         <option value="z">I am Z</option>
     </param>''')
-    parameter = SelectToolParameter( tool, xml )
-    wrapper = SelectToolParameterWrapper( parameter, "x", tool.app )
+    parameter = SelectToolParameter(tool, xml)
+    wrapper = SelectToolParameterWrapper(parameter, "x")
     assert str(wrapper) == "x"
     assert wrapper.name == "blah"
     assert wrapper.value_label == "I am X"
@@ -45,14 +45,14 @@ def test_select_wrapper_simple_options(tool):
 @with_mock_tool
 def test_select_wrapper_with_drilldown(tool):
     parameter = _drilldown_parameter(tool)
-    wrapper = SelectToolParameterWrapper( parameter, ["option3"], tool.app )
+    wrapper = SelectToolParameterWrapper(parameter, ["option3"])
     assert str(wrapper) == "option3", str(wrapper)
 
 
 @with_mock_tool
 def test_select_wrapper_option_file(tool):
     parameter = _setup_blast_tool(tool)
-    wrapper = SelectToolParameterWrapper( parameter, "val2", tool.app )
+    wrapper = SelectToolParameterWrapper(parameter, "val2")
     assert str(wrapper) == "val2"
     assert wrapper.fields.name == "name2"
     assert wrapper.fields.path == "path2"
@@ -61,7 +61,7 @@ def test_select_wrapper_option_file(tool):
 @with_mock_tool
 def test_select_wrapper_multiple(tool):
     parameter = _setup_blast_tool(tool, multiple=True)
-    wrapper = SelectToolParameterWrapper( parameter, ["val1", "val2"], tool.app )
+    wrapper = SelectToolParameterWrapper(parameter, ["val1", "val2"])
     assert str(wrapper) == "val1,val2"
     assert wrapper.fields.name == "name1,name2"
 
@@ -69,7 +69,7 @@ def test_select_wrapper_multiple(tool):
 @with_mock_tool
 def test_select_wrapper_with_path_rewritting(tool):
     parameter = _setup_blast_tool(tool, multiple=True)
-    wrapper = SelectToolParameterWrapper( parameter, ["val1", "val2"], tool.app, other_values={}, path_rewriter=lambda v: "Rewrite<%s>" % v )
+    wrapper = SelectToolParameterWrapper(parameter, ["val1", "val2"], other_values={}, path_rewriter=lambda v: "Rewrite<%s>" % v)
     assert wrapper.fields.path == "Rewrite<path1>,Rewrite<path2>"
 
 
@@ -85,15 +85,15 @@ def test_raw_object_wrapper():
 
 @with_mock_tool
 def test_input_value_wrapper(tool):
-    parameter = IntegerToolParameter( tool, XML( '<param name="blah" type="integer" size="4" value="10" min="0" />' ) )
-    wrapper = InputValueWrapper( parameter, "5" )
-    assert str( wrapper ) == "5"
+    parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" size="4" value="10" min="0" />'))
+    wrapper = InputValueWrapper(parameter, "5")
+    assert str(wrapper) == "5"
 
 
 def test_dataset_wrapper():
     dataset = MockDataset()
     wrapper = DatasetFilenameWrapper(dataset)
-    assert str( wrapper ) == MOCK_DATASET_PATH
+    assert str(wrapper) == MOCK_DATASET_PATH
     assert wrapper.file_name == MOCK_DATASET_PATH
 
     assert wrapper.ext == MOCK_DATASET_EXT
@@ -103,7 +103,7 @@ def test_dataset_wrapper_false_path():
     dataset = MockDataset()
     new_path = "/new/path/dataset_123.dat"
     wrapper = DatasetFilenameWrapper(dataset, dataset_path=Bunch(false_path=new_path))
-    assert str( wrapper ) == new_path
+    assert str(wrapper) == new_path
     assert wrapper.file_name == new_path
 
 
@@ -126,7 +126,7 @@ def test_dataset_false_extra_files_path():
 
 
 def _drilldown_parameter(tool):
-    xml = XML( '''<param name="some_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
+    xml = XML('''<param name="some_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
         <options>
             <option name="Heading 1" value="heading1">
                 <option name="Option 1" value="option1"/>
@@ -138,21 +138,21 @@ def _drilldown_parameter(tool):
             </option>
            <option name="Option 5" value="option5"/>
       </options>
-    </param>''' )
-    parameter = DrillDownSelectToolParameter( tool, xml )
+    </param>''')
+    parameter = DrillDownSelectToolParameter(tool, xml)
     return parameter
 
 
 def _setup_blast_tool(tool, multiple=False):
     tool.app.write_test_tool_data("blastdb.loc", "val1\tname1\tpath1\nval2\tname2\tpath2\n")
-    xml = XML( '''<param name="database" type="select" label="Nucleotide BLAST database" multiple="%s">
+    xml = XML('''<param name="database" type="select" label="Nucleotide BLAST database" multiple="%s">
         <options from_file="blastdb.loc">
             <column name="value" index="0"/>
             <column name="name" index="1"/>
             <column name="path" index="2"/>
         </options>
-    </param>''' % multiple )
-    parameter = SelectToolParameter( tool, xml )
+    </param>''' % multiple)
+    parameter = SelectToolParameter(tool, xml)
     return parameter
 
 

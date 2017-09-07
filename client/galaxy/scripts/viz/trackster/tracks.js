@@ -791,7 +791,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             // For all tracks, save current filter manager and set manager to shared (this object's) manager.
             this.saved_filters_managers = [];
             for (var i = 0; i < this.drawables.length; i++) {
-                drawable = this.drawables[i];
+                var drawable = this.drawables[i];
                 this.saved_filters_managers.push(drawable.filters_manager);
                 drawable.filters_manager = this.filters_manager;
             }
@@ -909,7 +909,7 @@ var TracksterView = Backbone.View.extend({
         // Introduction div shown when there are no tracks.
         this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container);
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
-            visualization.select_datasets(Galaxy.root + "visualization/list_current_history_datasets", Galaxy.root + "api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
+            visualization.select_datasets({ 'dbkey': view.dbkey }, function(tracks) {
                 _.each(tracks, function(track) {
                     view.add_drawable( object_from_template(track, view, view) );
                 });
@@ -1699,7 +1699,7 @@ var TracksterToolView = Backbone.View.extend({
      * Render tool UI.
      */
     render: function() {
-        var self = this;
+        var self = this,
             tool = this.model,
             parent_div = this.$el.addClass("dynamic-tool").hide();
 
@@ -3959,6 +3959,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Returns appropriate display mode based on data.
      */
     get_mode: function(data) {
+        var mode;
         // HACK: use no_detail mode track is in overview to prevent overview from being too large.
         if (data.extra_info === "no_detail" || this.is_overview) {
             mode = "no_detail";
@@ -4030,7 +4031,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         // Preprocessing: filter features and determine whether all unfiltered features have been slotted.
         var
             filtered = [],
-            slots = this.slotters[w_scale].slots;
+            slots = this.slotters[w_scale].slots,
             all_slotted = true;
         if ( result.data ) {
             var filters = this.filters_manager.filters;

@@ -55,6 +55,51 @@ class DependencyResolversView(object):
         dependencies_per_tool = {tool: self._dependency_manager.requirements_to_dependencies(requirements, **kwds) for tool, requirements in tool_requirements_d.items()}
         return dependencies_per_tool
 
+    def uninstall_dependencies(self, index=None, **payload):
+        """Attempt to uninstall requirements. Returns 0 if successfull, else None."""
+        requirements = payload.get('requirements')
+        if not requirements:
+            return None
+        if index:
+            resolver = self._dependency_resolvers[index]
+            if resolver.can_uninstall_dependencies:
+                return resolver.uninstall(requirements)
+        else:
+            for index in self.uninstallable_resolvers:
+                return_code = self._dependency_resolvers[index].uninstall(requirements)
+                if return_code == 0:
+                    return return_code
+        return None
+
+    @property
+    def unused_dependency_paths(self):
+        """List dependencies that are not currently installed."""
+        unused_dependencies = []
+        toolbox_requirements_status = self.toolbox_requirements_status
+        for resolver in self._dependency_resolvers:
+            if hasattr(resolver, 'unused_dependency_paths'):
+                unused_dependencies.extend(resolver.unused_dependency_paths(toolbox_requirements_status))
+        return set(unused_dependencies)
+
+    def remove_unused_dependency_paths(self, envs):
+        """
+        Remove dependencies that are not currently used.
+
+        Returns a list of all environments that have been successfully removed.
+        """
+        envs_to_remove = set(envs)
+        toolbox_requirements_status = self.toolbox_requirements_status
+        removed_environments = set()
+        for resolver in self._dependency_resolvers:
+            if hasattr(resolver, 'unused_dependency_paths') and hasattr(resolver, 'uninstall_environments'):
+                unused_dependencies = resolver.unused_dependency_paths(toolbox_requirements_status)
+                can_remove = envs_to_remove & set(unused_dependencies)
+                exit_code = resolver.uninstall_environments(can_remove)
+                if exit_code == 0:
+                    removed_environments = removed_environments.union(can_remove)
+                    envs_to_remove = envs_to_remove.difference(can_remove)
+        return list(removed_environments)
+
     def install_dependencies(self, requirements):
         return self._dependency_manager._requirements_to_dependencies_dict(requirements, **{'install': True})
 
@@ -134,9 +179,35 @@ class DependencyResolversView(object):
     @property
     def installable_resolvers(self):
         """
-        List index for all active resolvers that have the 'install_dependency' attribute
+        List index for all active resolvers that have the 'install_dependency' attribute.
         """
-        return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled ]
+        return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled]
+
+    @property
+    def uninstallable_resolvers(self):
+        """
+        List index for all active resolvers that can uninstall dependencies that have been installed through this resolver.
+        """
+        return [index for index, resolver in enumerate(self._dependency_resolvers) if resolver.can_uninstall_dependencies and not resolver.disabled]
+
+    @property
+    def tool_ids_by_requirements(self):
+        """Dictionary with requirements as keys, and tool_ids as values."""
+        tool_ids_by_requirements = {}
+        if not self._app.toolbox.tools_by_id:
+            return {}
+        for tid, tool in self._app.toolbox.tools_by_id.items():
+            if tool.tool_requirements not in tool_ids_by_requirements:
+                tool_ids_by_requirements[tool.tool_requirements] = [tid]
+            else:
+                tool_ids_by_requirements[tool.tool_requirements].append(tid)
+        return tool_ids_by_requirements
+
+    @property
+    def toolbox_requirements_status(self):
+        return {r: self.get_requirements_status(tool_requirements_d={tids[0]: r},
+                                                installed_tool_dependencies=self._app.toolbox.tools_by_id[tids[0]].installed_tool_dependencies)
+                for r, tids in self.tool_ids_by_requirements.items()}
 
     def get_requirements_status(self, tool_requirements_d, installed_tool_dependencies=None):
         dependencies = self.show_dependencies(tool_requirements_d, installed_tool_dependencies)

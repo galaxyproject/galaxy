@@ -8,42 +8,64 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
             this.form = new ToolFormBase( Utils.merge({
                 listen_to_history : true,
                 always_refresh    : false,
-                customize         : function( form ) {
+                buildmodel: function( process, form ) {
                     var options = form.model.attributes;
-                    // build execute button
-                    options.buttons = {
-                        execute: execute_btn = new Ui.Button({
-                            icon     : 'fa-check',
-                            tooltip  : 'Execute: ' + options.name + ' (' + options.version + ')',
-                            title    : 'Execute',
-                            cls      : 'ui-button btn btn-primary',
-                            floating : 'clear',
-                            onclick  : function() {
-                                execute_btn.wait();
-                                form.portlet.disable();
-                                self.submit( options, function() {
-                                    execute_btn.unwait();
-                                    form.portlet.enable();
-                                } );
+
+                    // build request url
+                    var build_url = '';
+                    var build_data = {};
+                    var job_id = options.job_id;
+                    if ( job_id ) {
+                        build_url = Galaxy.root + 'api/jobs/' + job_id + '/build_for_rerun';
+                    } else {
+                        build_url = Galaxy.root + 'api/tools/' + options.id + '/build';
+                        build_data = $.extend( {}, Galaxy.params );
+                        build_data[ 'tool_id' ] && ( delete build_data[ 'tool_id' ] );
+                    }
+                    options.version && ( build_data[ 'tool_version' ] = options.version );
+
+                    // get initial model
+                    Utils.get({
+                        url     : build_url,
+                        data    : build_data,
+                        success : function( data ) {
+                            if( !data.display ) {
+                                window.location = Galaxy.root;
+                                return;
                             }
-                        })
-                    }
-                    // remap feature
-                    if ( options.job_id && options.job_remap ) {
-                        options.inputs.push({
-                            label       : 'Resume dependencies from this job',
-                            name        : 'rerun_remap_job_id',
-                            type        : 'select',
-                            display     : 'radio',
-                            ignore      : '__ignore__',
-                            value       : '__ignore__',
-                            options     : [ [ 'Yes', options.job_id ], [ 'No', '__ignore__' ] ],
-                            help        : 'The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.'
-                        });
-                    }
+                            form.model.set( data );
+                            self._customize( form );
+                            Galaxy.emit.debug('tool-form-base::_buildModel()', 'Initial tool model ready.', data);
+                            process.resolve();
+                        },
+                        error   : function( response, status ) {
+                            var error_message = ( response && response.err_msg ) || 'Uncaught error.';
+                            if ( status == 401 ) {
+                                window.location = Galaxy.root + 'user/login?' + $.param({ redirect : Galaxy.root + '?tool_id=' + options.id });
+                            } else if ( form.$el.is( ':empty' ) ) {
+                                form.$el.prepend( ( new Ui.Message({
+                                    message     : error_message,
+                                    status      : 'danger',
+                                    persistent  : true,
+                                    large       : true
+                                }) ).$el );
+                            } else {
+                                Galaxy.modal && Galaxy.modal.show({
+                                    title   : 'Tool request failed',
+                                    body    : error_message,
+                                    buttons : {
+                                        'Close' : function() {
+                                            Galaxy.modal.hide();
+                                        }
+                                    }
+                                });
+                            }
+                            Galaxy.emit.debug( 'tool-form-base::_buildModel()', 'Initial tool model request failed.', response );
+                            process.reject();
+                        }
+                    });
                 },
                 postchange          : function( process, form ) {
-                    var self = this;
                     var current_state = {
                         tool_id         : form.model.get( 'id' ),
                         tool_version    : form.model.get( 'version' ),
@@ -71,6 +93,42 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
             this.deferred = this.form.deferred;
             this.setElement( '<div/>' );
             this.$el.append( this.form.$el );
+        },
+
+        _customize: function( form ) {
+            var self = this;
+            var options = form.model.attributes;
+            // build execute button
+            options.buttons = {
+                execute: execute_btn = new Ui.Button({
+                    icon     : 'fa-check',
+                    tooltip  : 'Execute: ' + options.name + ' (' + options.version + ')',
+                    title    : 'Execute',
+                    cls      : 'btn btn-primary ui-clear-float',
+                    wait_cls : 'btn btn-info ui-clear-float',
+                    onclick  : function() {
+                        execute_btn.wait();
+                        form.portlet.disable();
+                        self.submit( options, function() {
+                            execute_btn.unwait();
+                            form.portlet.enable();
+                        } );
+                    }
+                })
+            }
+            // remap feature
+            if ( options.job_id && options.job_remap ) {
+                options.inputs.push({
+                    label       : 'Resume dependencies from this job',
+                    name        : 'rerun_remap_job_id',
+                    type        : 'select',
+                    display     : 'radio',
+                    ignore      : '__ignore__',
+                    value       : '__ignore__',
+                    options     : [ [ 'Yes', options.job_id ], [ 'No', '__ignore__' ] ],
+                    help        : 'The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.'
+                });
+            }
         },
 
         /** Submit a regular job.
@@ -110,7 +168,8 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                     if ( response.jobs && response.jobs.length > 0 ) {
                         self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );
                         var WebhookApp = new Webhooks.WebhookView({
-                            urlRoot: Galaxy.root + 'api/webhooks/tool'
+                            urlRoot: Galaxy.root + 'api/webhooks/tool',
+                            toolId: job_def.tool_id
                         });
                     }
                     parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.refreshContents();

@@ -5,12 +5,15 @@
   "keywords": [
     "galaxy"
   ],
-  "repository": { "type": "git",
-                  "url": "https://github.com/galaxyproject/galaxy.git"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/galaxyproject/galaxy.git"
   },
   "license": "AFL-3.0",
   "dependencies": {
     "amdi18n-loader": "^0.2.0",
+    "babel-core": "^6.24.0",
+    "babel-loader": "^6.4.1",
     "grunt": "^0.4.5",
     "grunt-bower-install-simple": "^1.1.0",
     "grunt-check-modules": "^1.0.0",
