@@ -6,6 +6,7 @@ from .framework import SeleniumTestCase, selenium_test
 HISTORY1_NAME = 'First'
 HISTORY2_NAME = 'Second'
 HISTORY3_NAME = 'Third'
+HISTORY4_NAME = 'Four'
 
 
 class SavedHistoriesTestCase(SeleniumTestCase):
@@ -137,6 +138,24 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         self.assertEqual(actual_histories, expected_histories)
 
+    @selenium_test
+    def test_standard_search(self):
+        self.navigate_to_saved_histories_page()
+
+        input_selector = '#input-free-text-search-filter'
+        search_input = self.wait_for_selector(input_selector)
+        search_input.send_keys(HISTORY2_NAME)
+        self.send_enter(search_input)
+
+        self.assert_grid_histories_are([HISTORY2_NAME])
+
+        self.unset_filter('free-text-search', HISTORY2_NAME)
+        search_input = self.wait_for_selector(input_selector)
+        search_input.send_keys(HISTORY4_NAME)
+        self.send_enter(search_input)
+
+        self.assert_grid_histories_are(['No Items'])
+
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
         actual_histories = self.get_histories()
         if not sort_matters:
@@ -157,9 +176,18 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         names = []
         grid = self.wait_for_selector('#grid-table-body')
         for row in grid.find_elements_by_tag_name('tr'):
-            name_cell = row.find_elements_by_tag_name('td')[1]
-            names.append(name_cell.text)
+            td = row.find_elements_by_tag_name('td')
+            name = td[1].text if td[0].text == '' else td[0].text
+            # name_cell = row.find_elements_by_tag_name('td')[1]
+            names.append(name)
         return names
+
+    def unset_filter(self, filter_key, filter_value):
+        close_button_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
+            (filter_key, filter_value)
+        close_button = self.wait_for_selector_clickable(close_button_selector)
+        close_button.click()
+        time.sleep(.5)
 
     def navigate_to_saved_histories_page(self):
         self.home()
