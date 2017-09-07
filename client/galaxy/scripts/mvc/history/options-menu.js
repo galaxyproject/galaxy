@@ -76,7 +76,7 @@ var menu = [
         func    : function() {
             if( Galaxy && Galaxy.currHistoryPanel
             &&  confirm( _l( 'Really delete the current history permanently? This cannot be undone.' ) ) ){
-                galaxy_main.window.location.href = 'history/delete?purge=True&id=' + Galaxy.currHistoryPanel.model.id;
+                Galaxy.currHistoryPanel.model.purge().done(function(){Galaxy.currHistoryPanel.loadCurrentHistory();});
             }
         },
     },
