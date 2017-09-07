@@ -1490,7 +1490,14 @@ Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
 
 
 class Fast5Archive(CompressedArchive):
-    """Class describing a FAST5 archive """
+    """
+    Class describing a FAST5 archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'test.fast5.tar' )
+    >>> Fast5Archive().sniff( fname )
+    True
+    """
     MetadataElement(name="fast5_count", default='0', param=MetadataParameter, desc="Read Count",
                     readonly=True, visible=True, no_value=None)
     file_ext = "fast5.tar"
@@ -1536,7 +1543,17 @@ Binary.register_sniffable_binary_format("fast5_archive", "fast5.tar", Fast5Archi
 
 
 class Fast5ArchiveGz(Fast5Archive):
-    """Class describing a gzip-compressed FAST5 archive """
+    """
+    Class describing a gzip-compressed FAST5 archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'test.fast5.tar.gz' )
+    >>> Fast5ArchiveGz().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'test.fast5.tar' )
+    >>> Fast5ArchiveGz().sniff( fname )
+    False
+    """
     file_ext = "fast5.tar.gz"
 
     def __init__(self, **kwd):
@@ -1557,7 +1574,17 @@ Binary.register_sniffable_binary_format("fast5_archive_gz", "fast5.tar.gz", Fast
 
 
 class Fast5ArchiveBz2(Fast5Archive):
-    """Class describing a bzip2-compressed FAST5 archive """
+    """
+    Class describing a bzip2-compressed FAST5 archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'test.fast5.tar.bz2' )
+    >>> Fast5ArchiveBz2().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'test.fast5.tar' )
+    >>> Fast5ArchiveBz2().sniff( fname )
+    False
+    """
     file_ext = "fast5.tar.bz2"
 
     def __init__(self, **kwd):
