@@ -188,8 +188,8 @@ class HistoryGridTestCase(SeleniumTestCase):
         if getattr(HistoryGridTestCase, "user1_email", None):
             return
 
-        HistoryGridTestCase.user1_email = self._get_random_email()
-        HistoryGridTestCase.user2_email = self._get_random_email()
+        HistoryGridTestCase.user1_email = self._get_random_email("test1")
+        HistoryGridTestCase.user2_email = self._get_random_email("test2")
         self.register(self.user1_email)
         self.create_history(HISTORY1_NAME)
         self.set_tags(HISTORY1_TAGS)
