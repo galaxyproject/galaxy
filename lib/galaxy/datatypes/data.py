@@ -369,6 +369,7 @@ class Data(object):
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
                     tmp_fh = tempfile.NamedTemporaryFile(delete=False)
+                    tmp_file_name = tmp_fh.name
                     dir_items = sorted(os.listdir(file_path))
                     base_path, item_name = os.path.split(file_path)
                     tmp_fh.write('<html><head><h3>Directory %s contents: %d items</h3></head>\n' % (escape(item_name), len(dir_items)))
