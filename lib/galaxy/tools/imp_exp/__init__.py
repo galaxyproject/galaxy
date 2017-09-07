@@ -108,7 +108,6 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                         trans.app.tag_handler.apply_item_tags( trans, trans.user, new_history, get_tag_str( tag, value ) )
                     """
 
-                datasets_attrs = []
                 #
                 # Create collections.
                 #
@@ -117,27 +116,29 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                 collections_attrs = loads(collections_attr_str)
 
                 hda_collection_dict = {}
-                collection_dict = {}
+                hid_collection_dict = {}
                 hid_elements_attrs_dict = {}
+                hid_file_dict = {}
                 for collection_attrs in collections_attrs:
                     # create collection
                     dc = model.DatasetCollection(collection_type=collection_attrs['type'],
                                                  populated=collection_attrs['populated'])
-                    collection_dict[collection_attrs['hid']] = dc
+                    hid_collection_dict[collection_attrs['hid']] = dc
                     for dataset_attrs in collection_attrs['datasets']:
                         hda_collection_dict[dataset_attrs['hid']] = dc
-                    elements_attrs = collection_attrs["elements_attrs"]
+                        hid_file_dict[dataset_attrs['hid']] = {'file_name': dataset_attrs['file_name']}
+                    elements_attrs = collection_attrs['elements_attrs']
                     for element_attrs in elements_attrs:
-                        hid_elements_attrs_dict[element_attrs["hid"]] = {"element_identifier": element_attrs["element_identifier"],
-                                                                         "element_type": element_attrs["element_type"],
-                                                                         "element_index": element_attrs["element_index"]}
+                        hid_elements_attrs_dict[element_attrs['hid']] = {'element_identifier': element_attrs['element_identifier'],
+                                                                         'element_type': element_attrs['element_type'],
+                                                                         'element_index': element_attrs['element_index']}
 
                 #
                 # Create datasets.
                 #
                 datasets_attrs_file_name = os.path.join(archive_dir, 'datasets_attrs.txt')
                 datasets_attr_str = read_file_contents(datasets_attrs_file_name)
-                datasets_attrs += loads(datasets_attr_str)
+                datasets_attrs = loads(datasets_attr_str)
 
                 if os.path.exists(datasets_attrs_file_name + ".provenance"):
                     provenance_attr_str = read_file_contents(datasets_attrs_file_name + ".provenance")
@@ -148,6 +149,9 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                 # be linked to multiple dataset objects (HDAs).
                 datasets_usage_counts = {}
                 for dataset_attrs in datasets_attrs:
+                    # use the right path when dataset comes from a collection
+                    if dataset_attrs['hid'] in hda_collection_dict:
+                        dataset_attrs['file_name'] = hid_file_dict[dataset_attrs['hid']]['file_name']
                     temp_dataset_file_name = \
                         os.path.realpath(os.path.join(archive_dir, dataset_attrs['file_name']))
                     if (temp_dataset_file_name not in datasets_usage_counts):
@@ -156,6 +160,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
 
                 # Create datasets.
                 for dataset_attrs in datasets_attrs:
+                    dataset_attrs['dataset_archive_path'] = 'datasets'
                     metadata = dataset_attrs['metadata']
 
                     # Create dataset and HDA.
@@ -173,7 +178,8 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                                                           sa_session=self.sa_session)
                     if 'uuid' in dataset_attrs:
                         hda.dataset.uuid = dataset_attrs["uuid"]
-                    if dataset_attrs.get('exported', True) is False:
+                    # if dataset is in a collection, do not set deleted/purged to True
+                    if (dataset_attrs.get('exported', True) is False) and ((dataset_attrs['hid'] in hda_collection_dict) is False):
                         hda.state = hda.states.DISCARDED
                         hda.deleted = True
                         hda.purged = True
@@ -191,16 +197,19 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                     if dataset_attrs['hid'] in hda_collection_dict:
                         dce = model.DatasetCollectionElement(collection=hda_collection_dict[dataset_attrs['hid']],
                                                              element=hda,
-                                                             element_index=hid_elements_attrs_dict[dataset_attrs['hid']]["element_index"],
-                                                             element_identifier=hid_elements_attrs_dict[dataset_attrs['hid']]["element_identifier"])
+                                                             element_index=hid_elements_attrs_dict[dataset_attrs['hid']]['element_index'],
+                                                             element_identifier=hid_elements_attrs_dict[dataset_attrs['hid']]['element_identifier'])
+                        # change the path to the file in archive
+                        dataset_attrs['dataset_archive_path'] = 'collections_datasets'
                         self.sa_session.add(dce)
 
                     self.sa_session.flush()
-                    if dataset_attrs.get('exported', True) is True:
+                    # if dataset is in a collection, export it
+                    if (dataset_attrs.get('exported', True) is True) or (dataset_attrs['hid'] in hda_collection_dict):
                         # Do security check and move/copy dataset data.
                         temp_dataset_file_name = \
                             os.path.realpath(os.path.abspath(os.path.join(archive_dir, dataset_attrs['file_name'])))
-                        if not file_in_dir(temp_dataset_file_name, os.path.join(archive_dir, "datasets")):
+                        if not file_in_dir(temp_dataset_file_name, os.path.join(archive_dir, dataset_attrs['dataset_archive_path'])):
                             raise MalformedContents("Invalid dataset path: %s" % temp_dataset_file_name)
                         if datasets_usage_counts[temp_dataset_file_name] == 1:
                             self.app.object_store.update_from_file(hda.dataset, file_name=temp_dataset_file_name, create=True)
@@ -243,7 +252,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
 
                 # create association between collection and history
                 for collection_attrs in collections_attrs:
-                    hdca = model.HistoryDatasetCollectionAssociation(collection=collection_dict[collection_attrs['hid']],
+                    hdca = model.HistoryDatasetCollectionAssociation(collection=hid_collection_dict[collection_attrs['hid']],
                                                                      history=new_history,
                                                                      visible=True,
                                                                      hid=collection_attrs['hid'],
