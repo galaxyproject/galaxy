@@ -8,9 +8,9 @@ import os
 import shutil
 import struct
 import subprocess
+import tarfile
 import tempfile
 import zipfile
-import tarfile
 from json import dumps
 
 import pysam
@@ -20,6 +20,7 @@ from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
 from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite, which
+from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
 
 
@@ -1508,7 +1509,7 @@ class Fast5Archive(CompressedArchive):
             if dataset and tarfile.is_tarfile(dataset.file_name):
                 with tarfile.open(dataset.file_name, 'r') as temptar:
                     dataset.metadata.fast5_count = sum(
-                        1 for c in temptar if c.name.endswith('.fast5')
+                        1 for f in temptar if f.name.endswith('.fast5')
                     )
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
@@ -1517,9 +1518,13 @@ class Fast5Archive(CompressedArchive):
         try:
             if filename and tarfile.is_tarfile(filename):
                 with tarfile.open(filename, 'r') as temptar:
-                    for c in temptar:
-                        if c.name.endswith('.fast5'):
+                    for f in temptar:
+                        if not f.isfile():
+                            continue
+                        if f.name.endswith('.fast5'):
                             return True
+                        else:
+                            return False
         except Exception as e:
             log.warning('%s, sniff Exception: %s', self, e)
         return False
@@ -1539,9 +1544,6 @@ class Fast5Archive(CompressedArchive):
             return "FAST5 Archive (%s)" % (nice_size(dataset.get_size()))
 
 
-Binary.register_sniffable_binary_format("fast5_archive", "fast5.tar", Fast5Archive)
-
-
 class Fast5ArchiveGz(Fast5Archive):
     """
     Class describing a gzip-compressed FAST5 archive
@@ -1550,27 +1552,19 @@ class Fast5ArchiveGz(Fast5Archive):
     >>> fname = get_test_fname( 'test.fast5.tar.gz' )
     >>> Fast5ArchiveGz().sniff( fname )
     True
+    >>> fname = get_test_fname( 'test.fast5.tar.bz2' )
+    >>> Fast5ArchiveGz().sniff( fname )
+    False
     >>> fname = get_test_fname( 'test.fast5.tar' )
     >>> Fast5ArchiveGz().sniff( fname )
     False
     """
     file_ext = "fast5.tar.gz"
 
-    def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
-        self._magic = binascii.unhexlify("1f8b")
-
     def sniff(self, filename):
-        try:
-            header = open(filename, 'rb').read(2)
-            if header == self._magic:
-                return super(Fast5ArchiveGz, self).sniff(filename)
-        except Exception as e:
-            log.warning('%s, sniff Exception: %s', self, e)
-        return False
-
-
-Binary.register_sniffable_binary_format("fast5_archive_gz", "fast5.tar.gz", Fast5ArchiveGz)
+        if not is_gzip(filename):
+            return False
+        return Fast5Archive.sniff(self, filename)
 
 
 class Fast5ArchiveBz2(Fast5Archive):
@@ -1581,27 +1575,24 @@ class Fast5ArchiveBz2(Fast5Archive):
     >>> fname = get_test_fname( 'test.fast5.tar.bz2' )
     >>> Fast5ArchiveBz2().sniff( fname )
     True
+    >>> fname = get_test_fname( 'test.fast5.tar.gz' )
+    >>> Fast5ArchiveBz2().sniff( fname )
+    False
     >>> fname = get_test_fname( 'test.fast5.tar' )
     >>> Fast5ArchiveBz2().sniff( fname )
     False
     """
     file_ext = "fast5.tar.bz2"
 
-    def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
-        self._magic = binascii.unhexlify("425a68")
-
     def sniff(self, filename):
-        try:
-            header = open(filename, 'rb').read(3)
-            if header == self._magic:
-                return super(Fast5ArchiveBz2, self).sniff(filename)
-        except Exception as e:
-            log.warning('%s, sniff Exception: %s', self, e)
-        return False
+        if not is_bz2(filename):
+            return False
+        return Fast5Archive.sniff(self, filename)
 
 
 Binary.register_sniffable_binary_format("fast5_archive_bz2", "fast5.tar.bz2", Fast5ArchiveBz2)
+Binary.register_sniffable_binary_format("fast5_archive_gz", "fast5.tar.gz", Fast5ArchiveGz)
+Binary.register_sniffable_binary_format("fast5_archive", "fast5.tar", Fast5Archive)
 
 
 class SearchGuiArchive(CompressedArchive):
