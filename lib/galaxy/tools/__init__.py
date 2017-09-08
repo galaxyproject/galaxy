@@ -87,7 +87,7 @@ from galaxy.web.form_builder import SelectField
 from galaxy.work.context import WorkRequestContext
 from tool_shed.util import common_util
 
-from .execute import execute as execute_job
+from .execute import execute as execute_job, MappingParameters
 from .loader import (
     imported_macro_paths,
     raw_tool_xml_tree,
@@ -1252,8 +1252,6 @@ class Tool(object, Dictifiable):
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
         expanded_incomings, collection_info = expand_meta_parameters(trans, self, incoming)
-        if not expanded_incomings:
-            raise exceptions.MessageException('Tool execution failed, trying to run a tool over an empty collection.')
 
         # Remapping a single job to many jobs doesn't make sense, so disable
         # remap if multi-runs of tools are being used.
@@ -1291,16 +1289,23 @@ class Tool(object, Dictifiable):
             err_data = {key: value for d in all_errors for (key, value) in d.items()}
             raise exceptions.MessageException(', '.join(msg for msg in err_data.values()), err_data=err_data)
         else:
-            execution_tracker = execute_job(trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info)
-            if execution_tracker.successful_jobs:
-                return dict(out_data=execution_tracker.output_datasets,
-                            num_jobs=len(execution_tracker.successful_jobs),
-                            job_errors=execution_tracker.execution_errors,
-                            jobs=execution_tracker.successful_jobs,
-                            output_collections=execution_tracker.output_collections,
-                            implicit_collections=execution_tracker.implicit_collections)
-            else:
+            mapping_params = MappingParameters(incoming, all_params)
+            execution_tracker = execute_job(trans, self, mapping_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info)
+            # Raise an exception if there were jobs to execute and none of them were submitted,
+            # if at least one is submitted or there are no jobs to execute - return aggregate
+            # information including per-job errors. Arguably we should just always return the
+            # aggregate information - we just haven't done that historically.
+            raise_execution_exception = not execution_tracker.successful_jobs and len(all_params) > 0
+
+            if raise_execution_exception:
                 raise exceptions.MessageException(execution_tracker.execution_errors[0])
+
+            return dict(out_data=execution_tracker.output_datasets,
+                        num_jobs=len(execution_tracker.successful_jobs),
+                        job_errors=execution_tracker.execution_errors,
+                        jobs=execution_tracker.successful_jobs,
+                        output_collections=execution_tracker.output_collections,
+                        implicit_collections=execution_tracker.implicit_collections)
 
     def handle_single_execution(self, trans, rerun_remap_job_id, params, history, mapping_over_collection, execution_cache=None):
         """

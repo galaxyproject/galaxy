@@ -21,7 +21,7 @@ from galaxy.tools import (
     DefaultToolState,
     ToolInputsNotReadyException
 )
-from galaxy.tools.execute import execute
+from galaxy.tools.execute import execute, MappingParameters
 from galaxy.tools.parameters import (
     check_param,
     params_to_incoming,
@@ -856,10 +856,11 @@ class ToolModule(WorkflowModule):
             param_combinations.append(execution_state.inputs)
 
         try:
+            mapping_params = MappingParameters(tool_state.inputs, param_combinations)
             execution_tracker = execute(
                 trans=self.trans,
                 tool=tool,
-                param_combinations=param_combinations,
+                mapping_params=mapping_params,
                 history=invocation.history,
                 collection_info=collection_info,
                 workflow_invocation_uuid=invocation.uuid.hex
