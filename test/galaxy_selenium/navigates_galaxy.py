@@ -303,8 +303,7 @@ class NavigatesGalaxy(HasDriver):
 
         self.upload_start()
 
-        close_button = self.wait_for_selector_clickable("button#btn-close")
-        close_button.click()
+        self.wait_for_and_click_selector("button#btn-close")
 
     def upload_list(self, test_paths, name="test", ext=None, genome=None, hide_source_items=True):
         self._collection_upload_start(test_paths, ext, genome, "List")
@@ -353,16 +352,12 @@ class NavigatesGalaxy(HasDriver):
         self.upload_start(tab_id="collection")
         self.upload_build()
 
-    @retry_during_transitions
     def upload_tab_click(self, tab):
         tab_tag_id = "#tab-title-link-%s" % tab
-        tab_element = self.wait_for_selector_clickable(tab_tag_id)
-        tab_element.click()
+        self.wait_for_and_click_selector(tab_tag_id)
 
-    @retry_during_transitions
     def upload_start_click(self):
-        upload_button = self.wait_for_selector_clickable(".upload-button")
-        upload_button.click()
+        self.wait_for_and_click_selector(".upload-button")
 
     @retry_during_transitions
     def upload_set_footer_extension(self, ext, tab_id="regular"):
@@ -383,10 +378,8 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_selector_visible(".upload-footer-collection-type")
         self.select2_set_value(".upload-footer-collection-type", collection_type)
 
-    @retry_during_transitions
     def upload_start(self, tab_id="regular"):
-        start_button = self.wait_for_selector_clickable("div#%s button#btn-start" % tab_id)
-        start_button.click()
+        self.wait_for_and_click_selector("div#%s button#btn-start" % tab_id)
 
     @retry_during_transitions
     def upload_build(self):
@@ -399,8 +392,7 @@ class NavigatesGalaxy(HasDriver):
         build_button.click()
 
     def upload_queue_local_file(self, test_path, tab_id="regular"):
-        local_upload_button = self.wait_for_selector_clickable("div#%s button#btn-local" % tab_id)
-        local_upload_button.click()
+        self.wait_for_and_click_selector("div#%s button#btn-local" % tab_id)
 
         file_upload = self.wait_for_selector('div#%s input[type="file"]' % tab_id)
         file_upload.send_keys(test_path)
@@ -417,16 +409,11 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_table_row(self, workflow_index=0):
         return self.workflow_index_table_elements()[workflow_index]
 
-    @retry_during_transitions
     def workflow_index_click_search(self):
-        search_element = self.wait_for_selector_clickable("input.search-wf")
-        search_element.click()
-        return search_element
+        return self.wait_for_and_click_selector("input.search-wf")
 
-    @retry_during_transitions
     def workflow_index_click_import(self):
-        element = self.wait_for_selector_clickable(self.test_data["selectors"]["workflows"]["import_button"])
-        element.click()
+        self.wait_for_and_click_selector(self.test_data["selectors"]["workflows"]["import_button"])
 
     def workflow_index_rename(self, new_name, workflow_index=0):
         self.workflow_index_click_option("Rename", workflow_index=workflow_index)
@@ -471,8 +458,7 @@ class NavigatesGalaxy(HasDriver):
         self.click_submit(form_element)
 
     def workflow_sharing_click_publish(self):
-        button = self.wait_for_selector_clickable("input[name='make_accessible_and_publish']")
-        button.click()
+        self.wait_for_and_click_selector("input[name='make_accessible_and_publish']")
 
     def tagging_add(self, tags, auto_closes=True, parent_selector=""):
 
@@ -486,12 +472,10 @@ class NavigatesGalaxy(HasDriver):
             self.send_enter(tag_area)
 
     def workflow_run_submit(self):
-        button = self.wait_for_selector_clickable("button.btn-primary")
-        button.click()
+        self.wait_for_and_click_selector("button.btn-primary")
 
     def tool_open(self, tool_id):
-        link_element = self.wait_for_selector('a[href$="tool_runner?tool_id=%s"]' % tool_id)
-        link_element.click()
+        self.wait_for_and_click_selector('a[href$="tool_runner?tool_id=%s"]' % tool_id)
 
     def tool_parameter_div(self, expanded_parameter_id):
         return self.wait_for_selector("div.ui-form-element[tour_id$='%s']" % expanded_parameter_id)
@@ -509,8 +493,7 @@ class NavigatesGalaxy(HasDriver):
             input_element.send_keys(value)
 
     def tool_execute(self):
-        execute_button = self.wait_for_selector("button#execute")
-        execute_button.click()
+        self.wait_for_and_click_selector("button#execute")
 
     def click_masthead_user(self):
         self.click_xpath(self.navigation_data["selectors"]["masthead"]["user"])
@@ -518,10 +501,8 @@ class NavigatesGalaxy(HasDriver):
     def click_masthead_workflow(self):
         self.click_xpath(self.navigation_data["selectors"]["masthead"]["workflow"])
 
-    @retry_during_transitions
     def click_button_new_workflow(self):
-        element = self.wait_for_selector_clickable(self.navigation_data["selectors"]["workflows"]["new_button"])
-        element.click()
+        self.wait_for_and_click_selector(self.navigation_data["selectors"]["workflows"]["new_button"])
 
     def wait_for_sizzle_selector_clickable(self, selector):
         element = self._wait_on(
@@ -557,33 +538,27 @@ class NavigatesGalaxy(HasDriver):
         menu_selector = self.test_data["historyOptions"]["selectors"]["menu"]
         return menu_selector
 
-    @retry_during_transitions
     def history_panel_refresh_click(self):
-        refresh_item = self.wait_for_selector_clickable("#history-refresh-button")
-        refresh_item.click()
+        self.wait_for_and_click_selector("#history-refresh-button")
 
     def history_panel_multi_operations_selector(self):
         return self.test_data["historyPanel"]["selectors"]["history"]["multiOperationsIcon"]
 
     def history_panel_multi_operations_show(self):
         operations_selector = self.history_panel_multi_operations_selector()
-        operations_element = self.wait_for_selector_clickable(operations_selector)
-        operations_element.click()
+        self.wait_for_and_click_selector(operations_selector)
 
-    @retry_during_transitions
     def history_panel_muli_operation_select_hid(self, hid):
         item_selector = self.history_panel_item_selector(hid, wait=True)
         operation_radio_selector = "%s .selector" % item_selector
-        element = self.wait_for_selector_clickable(operation_radio_selector)
-        element.click()
+        self.wait_for_and_click_selector(operation_radio_selector)
 
     def history_panel_multi_operation_action_selector(self):
         return self.test_data["historyPanel"]["selectors"]["history"]["multiOperationsActionBtn"]
 
     def history_panel_multi_operation_action_click(self, action):
         time.sleep(5)
-        button_element = self.wait_for_selector_clickable(self.history_panel_multi_operation_action_selector())
-        button_element.click()
+        self.wait_for_and_click_selector(self.history_panel_multi_operation_action_selector())
         menu_element = self.wait_for_selector_visible(".list-action-menu.open")
         action_element = menu_element.find_element_by_link_text(action)
         action_element.click()
@@ -624,8 +599,7 @@ class NavigatesGalaxy(HasDriver):
 
         button_def = self.test_data["historyPanel"]["hdaPrimaryActionButtons"][button_key]
         button_selector = button_def["selector"]
-        button_item = self.wait_for_selector_visible("%s %s" % (buttons_selector, button_selector))
-        return button_item.click()
+        return self.wait_for_and_click_selector("%s %s" % (buttons_selector, button_selector))
 
     def history_panel_click_item_title(self, **kwds):
         if "hda_id" in kwds:
@@ -633,8 +607,7 @@ class NavigatesGalaxy(HasDriver):
         else:
             item_selector = self.history_panel_item_selector(kwds["hid"])
         title_selector = "%s .title" % item_selector
-        title_element = self.wait_for_selector(title_selector)
-        title_element.click()
+        self.wait_for_and_click_selector(title_selector)
         if kwds.get("wait", False):
             # Find a better way to wait for transition
             time.sleep(.5)
@@ -648,17 +621,13 @@ class NavigatesGalaxy(HasDriver):
         name_element.send_keys(name)
 
     def collection_builder_hide_originals(self):
-        hide_element = self.wait_for_selector_clickable("input.hide-originals")
-        hide_element.click()
+        self.wait_for_and_click_selector("input.hide-originals")
 
     def collection_builder_create(self):
-        create_element = self.wait_for_selector_clickable("button.create-collection")
-        create_element.click()
+        self.wait_for_and_click_selector("button.create-collection")
 
-    @retry_during_transitions
     def collection_builder_clear_filters(self):
-        clear_filter_link = self.wait_for_selector_visible("a.clear-filters-link")
-        clear_filter_link.click()
+        self.wait_for_and_click_selector("a.clear-filters-link")
 
     def collection_builder_click_paired_item(self, forward_or_reverse, item):
         assert forward_or_reverse in ["forward", "reverse"]
@@ -772,6 +741,12 @@ class NavigatesGalaxy(HasDriver):
             print("(Post)Clicking %s" % postclick_selector)
             element = self.tour_wait_for_clickable_element(postclick_selector)
             element.click()
+
+    @retry_during_transitions
+    def wait_for_and_click_selector(self, selector):
+        element = self.wait_for_selector_clickable(selector)
+        element.click()
+        return element
 
     def select2_set_value(self, container_selector, value, with_click=True):
         # There are two hacky was to select things from the select2 widget -
