@@ -2,7 +2,7 @@
 define( [ 'utils/utils', 'mvc/grid/grid-view', 'mvc/history/history-model', 'mvc/history/copy-dialog' ], function( Utils, GridView, HistoryModel, historyCopyDialog ) {
 
     var View = Backbone.View.extend({
-        title: "Galaxy Histories",
+        title: "Histories",
         initialize: function( options ) {
             var self = this;
             this.setElement( $( '<div/>' ) );

@@ -91,7 +91,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'utils/query-string-parsing' ]
 
     /** View of the main user preference panel with links to individual user forms */
     var View = Backbone.View.extend({
-        title: "Galaxy User Preferences",
+        title: "User Preferences",
         initialize: function() {
             this.model = new Model();
             this.setElement( '<div/>' );
