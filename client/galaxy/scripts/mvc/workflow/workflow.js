@@ -137,7 +137,7 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
 
     /** View of the main workflow list page */
     var WorkflowListView = Backbone.View.extend({
-
+        title: "Galaxy Workflows",
         initialize: function() {
             this.setElement( '<div/>' );
             _.bindAll(this, 'adjustActiondropdown')
