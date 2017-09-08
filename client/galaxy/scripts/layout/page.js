@@ -18,7 +18,7 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
             Galaxy.modal = this.modal = new Modal.View();
             Galaxy.display = this.display = function( view ) {
                 if ( view.title ){
-                    window.document.title = "Galaxy | " + (window.Galaxy.config.brand ? window.Galaxy.config.brand + " | " : '') + view.title;
+                    window.document.title = "Galaxy " + (window.Galaxy.config.brand ? " / " + window.Galaxy.config.brand : '') + " | " + view.title;
                 }
                 self.center.display( view );
             };
