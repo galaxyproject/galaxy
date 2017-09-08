@@ -352,6 +352,19 @@ class WorkflowProgress(object):
 
     def set_step_outputs(self, step, outputs):
         self.outputs[step.id] = outputs
+        for workflow_output in step.workflow_outputs:
+            output_name = workflow_output.output_name
+            if output_name not in outputs:
+                raise KeyError("Failed to find [%s] in step outputs [%s]" % (output_name, outputs))
+            output = outputs[output_name]
+            self._record_workflow_output(
+                step,
+                workflow_output,
+                output=output,
+            )
+
+    def _record_workflow_output(self, step, workflow_output, output):
+        self.workflow_invocation.add_output(workflow_output, step, output)
 
     def mark_step_outputs_delayed(self, step, why=None):
         if why:
