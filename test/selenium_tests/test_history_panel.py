@@ -59,8 +59,8 @@ class HistoryPanelTestCase(SeleniumTestCase):
         tag_area_selector = self.test_data["historyPanel"]["selectors"]["history"]["tagArea"]
         anno_area_selector = self.test_data["historyPanel"]["selectors"]["history"]["annoArea"]
 
-        tag_icon = self.wait_for_selector(tag_icon_selector)
-        annon_icon = self.wait_for_selector(anno_icon_selector)
+        tag_icon = self.wait_for_selector_clickable(tag_icon_selector)
+        annon_icon = self.wait_for_selector_clickable(anno_icon_selector)
 
         self.assert_selector_absent_or_hidden(tag_area_selector)
         self.assert_selector_absent_or_hidden(anno_area_selector)
@@ -83,6 +83,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         self.assert_selector_absent_or_hidden(tag_area_selector)
         self.assert_selector_absent_or_hidden(anno_area_selector)
 
+    @selenium_test
     def test_refresh_preserves_state(self):
         self.register()
         self.perform_upload(self.get_filename("1.txt"))
@@ -107,8 +108,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         self.assert_selector_absent_or_hidden(hda_body_selector)
 
     def click_history_refresh(self):
-        refresh_button_element = self.wait_for_selector('a#history-refresh-button')
-        refresh_button_element.click()
+        self.wait_for_and_click_selector('a#history-refresh-button')
 
     def click_to_rename_history(self):
         self.history_panel_name_element().click()
