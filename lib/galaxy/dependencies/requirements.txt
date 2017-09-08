@@ -7,6 +7,8 @@ PyYAML
 SQLAlchemy
 mercurial
 pycrypto
+# Flexible BAM index naming is new to main pysam
+pysam>=0.12
 
 # Install python_lzo if you want to support indexed access to lzo-compressed
 # locally cached maf files via bx-python
@@ -65,8 +67,3 @@ pyparsing
 Fabric
 paramiko
 ecdsa
-
-# We still pin these dependencies because of modifications to the upstream packages
-
-# Flexible BAM index naming
-pysam==0.8.4+gx5

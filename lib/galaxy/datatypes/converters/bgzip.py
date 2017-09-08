@@ -8,8 +8,7 @@ usage: %prog in_file out_file
 import optparse
 import subprocess
 import tempfile
-
-from pysam import ctabix
+import pysam
 
 
 def main():
@@ -44,7 +43,7 @@ def main():
     grepped.stdout.close()
     output, err = after_sort.communicate()
 
-    ctabix.tabix_compress(tmpfile.name, output_fname, force=True)
+    pysam.tabix_compress(tmpfile.name, output_fname, force=True)
 
 
 if __name__ == "__main__":
