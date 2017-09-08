@@ -9,6 +9,7 @@ usage: %prog in_file out_file
 import optparse
 import os
 import sys
+
 import pysam
 
 

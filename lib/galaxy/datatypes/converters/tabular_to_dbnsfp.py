@@ -7,6 +7,7 @@ usage: %prog in_file out_file
 
 import optparse
 import os.path
+
 import pysam
 
 

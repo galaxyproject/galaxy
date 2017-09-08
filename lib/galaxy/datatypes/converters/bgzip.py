@@ -8,6 +8,7 @@ usage: %prog in_file out_file
 import optparse
 import subprocess
 import tempfile
+
 import pysam
 
 
