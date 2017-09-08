@@ -269,10 +269,11 @@ var FolderToolbarView = Backbone.View.extend({
     var dataset_ids = [];
     var folder_ids = [];
     $('#folder_table').find(':checked').each(function(){
-        if ($(this.parentElement.parentElement).data('id') !== '' && this.parentElement.parentElement.classList.contains('dataset_row') ) {
-            dataset_ids.push($(this.parentElement.parentElement).data('id'));
-        } else if ($(this.parentElement.parentElement).data('id') !== '' && this.parentElement.parentElement.classList.contains('folder_row') ) {
-            folder_ids.push($(this.parentElement.parentElement).data('id'));
+        var row_id = $(this).closest('tr').data('id');
+        if (row_id.substring(0,1) == 'F'){
+            folder_ids.push(row_id);
+        } else {
+            dataset_ids.push(row_id);
         }
     });
     // prepare the dataset objects to be imported
@@ -323,10 +324,11 @@ var FolderToolbarView = Backbone.View.extend({
     var dataset_ids = [];
     var folder_ids = [];
         $( '#folder_table' ).find( ':checked' ).each( function(){
-            if ( $(this.parentElement.parentElement).data('id') !== '' && this.parentElement.parentElement.classList.contains('dataset_row') ) {
-                dataset_ids.push( $(this.parentElement.parentElement).data('id') );
-            } else if ( $(this.parentElement.parentElement).data('id') !== '' && this.parentElement.parentElement.classList.contains('folder_row') ) {
-                folder_ids.push( $(this.parentElement.parentElement).data('id') );
+            var row_id = $(this).closest('tr').data('id');
+            if (row_id.substring(0,1) == 'F'){
+                folder_ids.push(row_id);
+            } else {
+                dataset_ids.push(row_id);
             }
         } );
     var url = Galaxy.root + 'api/libraries/datasets/download/' + format;
@@ -1015,11 +1017,12 @@ var FolderToolbarView = Backbone.View.extend({
       var dataset_ids = [];
       var folder_ids = [];
       checkedValues.each(function(){
-          if ($(this.parentElement.parentElement).data('id') !== undefined) {
-              if ($(this.parentElement.parentElement).data('id').substring(0,1) == 'F'){
-                folder_ids.push($(this.parentElement.parentElement).data('id'));
+          var row_id = $(this).closest('tr').data('id');
+          if (row_id !== undefined) {
+              if (row_id.substring(0,1) == 'F'){
+                folder_ids.push(row_id);
               } else {
-                dataset_ids.push($(this.parentElement.parentElement).data('id'));
+                dataset_ids.push(row_id);
               }
           }
       });
