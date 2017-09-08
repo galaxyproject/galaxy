@@ -964,6 +964,31 @@ test_data:
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
     @skip_without_tool("cat")
+    def test_cancel_workflow_when_history_deleted(self):
+        workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
+        uploaded_workflow_id = self.workflow_populator.create_workflow(workflow)
+        history_id = self.dataset_populator.new_history()
+        hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        index_map = {
+            '0': self._ds_entry(hda1),
+        }
+        invocation_id = self.__invoke_workflow(
+            history_id,
+            uploaded_workflow_id,
+            index_map,
+        )
+
+        # Wait for all the datasets to complete, make sure the workflow invocation
+        # is not complete.
+        invocation = self._invocation_details(uploaded_workflow_id, invocation_id)
+        assert invocation['state'] != 'scheduled', invocation
+
+        self._delete("histories/%s" % history_id)
+
+        invocation_cancelled = self._wait_for_invocation_state(uploaded_workflow_id, invocation_id, 'cancelled')
+        assert invocation_cancelled, "Workflow state is not cancelled..."
+
+    @skip_without_tool("cat")
     def test_workflow_pause(self):
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
         uploaded_workflow_id = self.workflow_populator.create_workflow(workflow)
@@ -988,17 +1013,21 @@ test_data:
 
         self.__review_paused_steps(uploaded_workflow_id, invocation_id, order_index=2, action=True)
 
-        invocation_scheduled = False
+        invocation_scheduled = self._wait_for_invocation_state(uploaded_workflow_id, invocation_id, 'scheduled')
+        assert invocation_scheduled, "Workflow state is not scheduled..."
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+    def _wait_for_invocation_state(self, workflow_id, invocation_id, target_state):
+        target_state_reached = False
         for i in range(25):
-            invocation = self._invocation_details(uploaded_workflow_id, invocation_id)
-            if invocation['state'] == 'scheduled':
-                invocation_scheduled = True
+            invocation = self._invocation_details(workflow_id, invocation_id)
+            if invocation['state'] == target_state:
+                target_state_reached = True
                 break
 
             time.sleep(.5)
 
-        assert invocation_scheduled, "Workflow state is not scheduled..."
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return target_state_reached
 
     @skip_without_tool("cat")
     def test_workflow_pause_cancel(self):
