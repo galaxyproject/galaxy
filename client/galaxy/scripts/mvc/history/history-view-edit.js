@@ -629,7 +629,7 @@ HistoryViewEdit.prototype.templates = (function(){
 
     return _.extend( _.clone( _super.prototype.templates ), {
         counts : countsTemplate,
-        found : foundTemplate
+        found : foundTemplate 
     });
 }());
 
