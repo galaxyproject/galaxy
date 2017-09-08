@@ -20,6 +20,7 @@ return Backbone.View.extend({
     initialize: function(grid_config) {
         this.grid = new GridModel();
         this.dict_format = grid_config.dict_format;
+        this.title = grid_config.title;
         var self = this;
         window.add_tag_to_grid_filter = function( tag_name, tag_value ){
             // Put tag name and value together.
