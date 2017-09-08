@@ -216,7 +216,7 @@ class NavigatesGalaxy(HasDriver):
         domain = domain or 'test.test'
         return self._get_random_name(prefix=username, suffix="@" + domain)
 
-    def submit_login(self, email, password=None):
+    def submit_login(self, email, password=None, assert_valid=True):
         if password is None:
             password = self.default_password
 
@@ -232,6 +232,9 @@ class NavigatesGalaxy(HasDriver):
             form = self.wait_for_selector(self.navigation_data["selectors"]["loginPage"]["form"])
             self.fill(form, login_info)
             self.click_submit(form)
+
+        if assert_valid:
+            self.wait_for_logged_in()
 
     def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True):
         if email is None:
@@ -257,9 +260,18 @@ class NavigatesGalaxy(HasDriver):
             ))
             self.click_xpath(self.navigation_data["selectors"]["registrationPage"]["submit_xpath"])
             # Give the browser a bit of time to submit the request.
-            time.sleep(.25)
+            # It would be good to eliminate this sleep, but it can't be because Galaxy
+            # doesn't swap the "User" menu automatically after it registers a user and
+            # and the donemessage visible comment below doesn't work when using Selenium.
+            # Something about the Selenium session or quickness of registering causes the
+            # following in the Galaxy logs which gets propaged to the GUI as a generic error:
+            # /api/histories/cfc05ccec54895e2/contents?keys=type_id%2Celement_count&order=hid&v=dev&q=history_content_type&q=deleted&q=purged&q=visible&qv=dataset_collection&qv=False&qv=False&qv=True HTTP/1.1" 403 - "http://localhost:8080/"
+            # Like the logged in user doesn't have permission to the previously anonymous user's
+            # history, it is odd but I cannot replicate this outside of Selenium.
+            time.sleep(.35)
 
         if assert_valid:
+            # self.wait_for_selector_visible(".donemessage")
             self.home()
             self.click_masthead_user()
             # Make sure the user menu was dropped down
@@ -278,6 +290,9 @@ class NavigatesGalaxy(HasDriver):
 
             # Hide masthead menu click
             self.click_center()
+
+    def wait_for_logged_in(self):
+        self.wait_for_selector_visible("a.loggedin-only")
 
     def click_center(self):
         action_chains = self.action_chains()
@@ -746,7 +761,7 @@ class NavigatesGalaxy(HasDriver):
                 raise AssertionError(message)
 
     def assert_no_error_message(self):
-        self.assert_selector_absent(self.test_data["selectors"]["messages"]["error"])
+        self.wait_for_selector_absent(self.test_data["selectors"]["messages"]["error"])
 
     def run_tour_step(self, step, step_index, tour_callback):
         preclick = step.get("preclick", [])
