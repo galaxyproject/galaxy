@@ -11,6 +11,7 @@ from __future__ import print_function
 import json
 import optparse
 import os
+import re
 import struct
 import sys
 import tempfile
@@ -284,7 +285,7 @@ def fill_empty_columns(line, split, fill_values):
     return split.join(filled_columns)
 
 
-def join_files(filename1, column1, filename2, column2, out_filename, split=None, buffer=1000000, keep_unmatched=False, keep_partial=False, index_depth=3, fill_options=None):
+def join_files(filename1, column1, filename2, column2, out_filename, split=None, buffer=1000000, keep_unmatched=False, keep_partial=False, keep_headers=False, index_depth=3, fill_options=None):
     # return identifier based upon line
     def get_identifier_by_line(line, column, split=None):
         if isinstance(line, str):
@@ -294,9 +295,18 @@ def join_files(filename1, column1, filename2, column2, out_filename, split=None,
         return None
     if fill_options is None:
         fill_options = Bunch(fill_unjoined_only=True, file1_columns=None, file2_columns=None)
+    keep_headers_done = False
     out = open(out_filename, 'w+b')
     index = BufferedIndex(filename2, column2, split, buffer, index_depth)
     for line1 in open(filename1, 'rb'):
+        if keep_headers and not keep_headers_done:
+            header1 = line1
+            with open(filename2, 'r') as file2:
+                header2 = file2.readline()
+                header2 = re.sub(r'^#', '', header2)
+            out.write("%s%s%s\n" % (header1.rstrip('\r\n'), split, header2.rstrip('\r\n')))
+            keep_headers_done = True
+            continue
         identifier = get_identifier_by_line(line1, column1, split)
         if identifier:
             written = False
@@ -352,6 +362,12 @@ def main():
         dest='fill_options_file',
         type='str', default=None,
         help='Fill empty columns with a values from a JSONified file.')
+    parser.add_option(
+        '-H', '--keep_headers',
+        action='store_true',
+        dest='keep_headers',
+        default=False,
+        help='Keep the headers')
 
     options, args = parser.parse_args()
 
@@ -383,7 +399,7 @@ def main():
     # Character for splitting fields and joining lines
     split = "\t"
 
-    return join_files(filename1, column1, filename2, column2, out_filename, split, options.buffer, options.keep_unmatched, options.keep_partial, options.index_depth, fill_options=fill_options)
+    return join_files(filename1, column1, filename2, column2, out_filename, split, options.buffer, options.keep_unmatched, options.keep_partial, options.keep_headers, options.index_depth, fill_options=fill_options)
 
 
 if __name__ == "__main__":
