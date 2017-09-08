@@ -17,7 +17,7 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
             // attach global objects, build mastheads
             Galaxy.modal = this.modal = new Modal.View();
             Galaxy.display = this.display = function( view ) {
-                if (view.title){
+                if ( view.title ){
                     window.document.title = view.title;
                 }
                 self.center.display( view );
