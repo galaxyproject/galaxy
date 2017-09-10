@@ -46,9 +46,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         # Publish the history
         self.click_popup_option(HISTORY2_NAME, 'Share or Publish')
-        selector = 'input[name="make_accessible_and_publish"]'
-        publish_button = self.wait_for_selector_clickable(selector)
-        publish_button.click()
+        self.wait_for_and_click_selector('input[name="make_accessible_and_publish"]')
 
         self.navigate_to_saved_histories_page()
 
@@ -125,8 +123,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         # Delete multiple histories
         self.check_histories([HISTORY2_NAME, HISTORY3_NAME])
-        delete_button = self.wait_for_selector_clickable(delete_button_selector)
-        delete_button.click()
+        self.wait_for_and_click_selector(delete_button_selector)
 
         self.assert_histories_in_grid([HISTORY2_NAME, HISTORY3_NAME], False)
 
@@ -136,8 +133,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         # Restore multiple histories
         self.check_histories([HISTORY2_NAME, HISTORY3_NAME])
-        undelete_button = self.wait_for_selector_clickable(undelete_button_selector)
-        undelete_button.click()
+        self.wait_for_and_click_selector(undelete_button_selector)
 
         self.wait_for_selector_visible('.donemessage')
         self.select_filter('deleted', 'False')
@@ -148,8 +144,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
     def test_sort_by_name(self):
         self.navigate_to_saved_histories_page()
 
-        sort_link = self.wait_for_selector_clickable('.sort-link[sort_key="name"]')
-        sort_link.click()
+        self.wait_for_and_click_selector('.sort-link[sort_key="name"]')
 
         actual_histories = self.get_histories()
         if 'Unnamed history' in actual_histories:
@@ -259,8 +254,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
     def unset_filter(self, filter_key, filter_value):
         close_button_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
             (filter_key, filter_value)
-        close_button = self.wait_for_selector_clickable(close_button_selector)
-        close_button.click()
+        self.wait_for_and_click_selector(close_button_selector)
         time.sleep(.5)
 
     def set_tags(self, tags):
@@ -268,8 +262,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         tag_area_selector = self.test_data['historyPanel']['selectors']['history']['tagArea']
 
         if not self.is_displayed(tag_area_selector):
-            tag_icon = self.wait_for_selector_clickable(tag_icon_selector)
-            tag_icon.click()
+            self.wait_for_and_click_selector(tag_icon_selector)
 
         tag_area_selector += ' .tags-input input'
         tag_area = self.wait_for_selector_clickable(tag_area_selector)
@@ -283,12 +276,9 @@ class SavedHistoriesTestCase(SeleniumTestCase):
     def navigate_to_saved_histories_page(self):
         self.home()
         self.click_masthead_user()  # Open masthead menu
-
         label = self.navigation_data['labels']['masthead']['menus']['user']
         self.click_label(label)
-
-        saved_histories_link = self.wait_for_selector_clickable('a[href="/histories/list"]')
-        saved_histories_link.click()
+        self.wait_for_and_click_selector('a[href="/histories/list"]')
 
     def ensure_user_and_histories(self):
         if getattr(SavedHistoriesTestCase, 'user_email', None):
@@ -313,14 +303,12 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
     def show_advanced_search(self):
         search_selector = '#standard-search .advanced-search-toggle'
-        search_link = self.wait_for_selector_clickable(search_selector)
-        search_link.click()
+        self.wait_for_and_click_selector(search_selector)
 
     def select_filter(self, filter_key, filter_value):
         filter_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
             (filter_key, filter_value)
-        filter_link = self.wait_for_selector_clickable(filter_selector)
-        filter_link.click()
+        self.wait_for_and_click_selector(filter_selector)
 
     def click_history_option(self, option_label):
         self.home()
