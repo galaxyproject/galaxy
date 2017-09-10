@@ -553,6 +553,33 @@ class NavigatesGalaxy(HasDriver):
         menu_selector = self.test_data["historyOptions"]["selectors"]["menu"]
         return menu_selector
 
+    def history_panel_add_tags(self, tags):
+        tag_icon_selector = self.test_data['historyPanel']['selectors']['history']['tagIcon']
+        tag_area_selector = self.test_data['historyPanel']['selectors']['history']['tagArea']
+
+        if not self.selector_is_displayed(tag_area_selector):
+            self.wait_for_and_click_selector(tag_icon_selector)
+
+        tag_area_selector += ' .tags-input input'
+        tag_area = self.wait_for_and_click_selector(tag_area_selector)
+
+        for tag in tags:
+            tag_area.send_keys(tag)
+            self.send_enter(tag_area)
+            time.sleep(.5)
+
+    def history_panel_rename(self, new_name):
+        editable_text_input_element = self.history_panel_click_to_rename()
+        editable_text_input_element.send_keys(new_name)
+        self.send_enter(editable_text_input_element)
+
+    def history_panel_click_to_rename(self):
+        self.history_panel_name_element().click()
+        return self.wait_for_selector(self.history_panel_edit_title_input_selector())
+
+    def history_panel_edit_title_input_selector(self):
+        return self.test_data["historyPanel"]["selectors"]["history"]["nameEditableTextInput"]
+
     def history_panel_refresh_click(self):
         self.wait_for_and_click_selector("#history-refresh-button")
 

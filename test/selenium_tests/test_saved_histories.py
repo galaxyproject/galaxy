@@ -257,22 +257,6 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         self.wait_for_and_click_selector(close_button_selector)
         time.sleep(.5)
 
-    def set_tags(self, tags):
-        tag_icon_selector = self.test_data['historyPanel']['selectors']['history']['tagIcon']
-        tag_area_selector = self.test_data['historyPanel']['selectors']['history']['tagArea']
-
-        if not self.is_displayed(tag_area_selector):
-            self.wait_for_and_click_selector(tag_icon_selector)
-
-        tag_area_selector += ' .tags-input input'
-        tag_area = self.wait_for_selector_clickable(tag_area_selector)
-        tag_area.click()
-
-        for tag in tags:
-            tag_area.send_keys(tag)
-            self.send_enter(tag_area)
-            time.sleep(.5)
-
     def navigate_to_saved_histories_page(self):
         self.home()
         self.click_masthead_user()  # Open masthead menu
@@ -291,15 +275,12 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         self.create_history(HISTORY2_NAME)
         self.create_history(HISTORY3_NAME)
-        self.set_tags(HISTORY3_TAGS)
+        self.history_panel_add_tags(HISTORY3_TAGS)
 
     def create_history(self, name):
+        self.home()
         self.click_history_option('Create New')
-
-        # Rename the history
-        editable_text_input_element = self.click_to_rename_history()
-        editable_text_input_element.send_keys(name)
-        self.send_enter(editable_text_input_element)
+        self.history_panel_rename(name)
 
     def show_advanced_search(self):
         search_selector = '#standard-search .advanced-search-toggle'
@@ -309,14 +290,6 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         filter_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
             (filter_key, filter_value)
         self.wait_for_and_click_selector(filter_selector)
-
-    def click_history_option(self, option_label):
-        self.home()
-        self.click_history_options()  # Open history menu
-
-        # Click labelled option
-        menu_option = self.driver.find_element_by_link_text(option_label)
-        menu_option.click()
 
     def click_popup_option(self, history_name, option_label):
         history_menu_button = None
@@ -360,12 +333,3 @@ class SavedHistoriesTestCase(SeleniumTestCase):
             if history_name in histories:
                 checkbox = td[0].find_element_by_tag_name('input')
                 checkbox.click()
-
-    def click_to_rename_history(self):
-        self.history_panel_name_element().click()
-        edit_title_input_selector = self.test_data['historyPanel']['selectors']['history']['nameEditableTextInput']
-        return self.wait_for_selector(edit_title_input_selector)
-
-    def is_displayed(self, selector):
-        element = self.driver.find_element_by_css_selector(selector)
-        return element.is_displayed()

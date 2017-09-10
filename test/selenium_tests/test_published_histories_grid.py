@@ -153,34 +153,15 @@ class HistoryGridTestCase(SeleniumTestCase):
         close_link.click()
         time.sleep(.5)
 
-    def set_tags(self, tags):
-        tag_icon_selector = self.test_data['historyPanel']['selectors']['history']['tagIcon']
-        tag_area_selector = self.test_data['historyPanel']['selectors']['history']['tagArea']
-
-        if not self.is_displayed(tag_area_selector):
-            tag_icon = self.wait_for_selector_clickable(tag_icon_selector)
-            tag_icon.click()
-
-        tag_area_selector += ' .tags-input input'
-        tag_area = self.wait_for_selector_clickable(tag_area_selector)
-        tag_area.click()
-
-        for tag in tags:
-            tag_area.send_keys(tag)
-            self.send_enter(tag_area)
-            time.sleep(.5)
-
     def set_annotation(self, annotation):
         anno_icon_selector = self.test_data['historyPanel']['selectors']['history']['annoIcon']
         anno_area_selector = self.test_data['historyPanel']['selectors']['history']['annoArea']
 
-        if not self.is_displayed(anno_area_selector):
-            annon_icon = self.wait_for_selector_clickable(anno_icon_selector)
-            annon_icon.click()
+        if not self.selector_is_displayed(anno_area_selector):
+            self.wait_for_and_click_selector(anno_icon_selector)
 
         anno_area_selector += ' .annotation'
-        annon_area = self.wait_for_selector_clickable(anno_area_selector)
-        annon_area.click()
+        self.wait_for_and_click_selector(anno_area_selector)
 
         area_editable_selector = anno_area_selector + ' textarea'
         done_button_selector = anno_area_selector + ' button'
@@ -199,27 +180,24 @@ class HistoryGridTestCase(SeleniumTestCase):
         HistoryGridTestCase.user2_email = self._get_random_email("test2")
         self.register(self.user1_email)
         self.create_history(HISTORY1_NAME)
-        self.set_tags(HISTORY1_TAGS)
+        self.history_panel_add_tags(HISTORY1_TAGS)
         self.publish_current_history()
 
         self.create_history(HISTORY3_NAME)
-        self.set_tags(HISTORY3_TAGS)
+        self.history_panel_add_tags(HISTORY3_TAGS)
         self.set_annotation(HISTORY3_ANNOT)
         self.publish_current_history()
         self.logout_if_needed()
 
         self.register(self.user2_email)
         self.create_history(HISTORY2_NAME)
-        self.set_tags(HISTORY2_TAGS)
+        self.history_panel_add_tags(HISTORY2_TAGS)
         self.publish_current_history()
 
     def create_history(self, name):
+        self.home()
         self.click_history_option('Create New')
-
-        # Rename the history
-        editable_text_input_element = self.click_to_rename_history()
-        editable_text_input_element.send_keys(name)
-        self.send_enter(editable_text_input_element)
+        self.history_panel_rename(name)
 
     def publish_current_history(self):
         self.click_history_option('Share or Publish')
@@ -236,22 +214,4 @@ class HistoryGridTestCase(SeleniumTestCase):
         self.click_label(
             self.navigation_data['labels']['masthead']['menus']['libraries'])
         selector = 'a[href="/histories/list_published"]'
-        histories_link = self.wait_for_selector_clickable(selector)
-        histories_link.click()
-
-    def click_history_option(self, option_label):
-        self.home()
-        self.click_history_options()  # Open history menu
-
-        # Click labelled option
-        menu_option = self.driver.find_element_by_link_text(option_label)
-        menu_option.click()
-
-    def click_to_rename_history(self):
-        self.history_panel_name_element().click()
-        edit_title_input_selector = self.test_data['historyPanel']['selectors']['history']['nameEditableTextInput']
-        return self.wait_for_selector(edit_title_input_selector)
-
-    def is_displayed(self, selector):
-        element = self.driver.find_element_by_css_selector(selector)
-        return element.is_displayed()
+        self.wait_for_and_click_selector(selector)
