@@ -150,8 +150,8 @@ class LibraryManager(object):
         :param  check_accessible:        flag whether to check that user can access library
         :type   check_accessible:        bool
 
-        :returns:   the original folder
-        :rtype:     LibraryFolder
+        :returns:   the original library
+        :rtype:     Library
         """
         # all libraries are accessible to an admin
         if trans.user_is_admin():

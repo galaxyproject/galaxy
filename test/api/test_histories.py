@@ -8,7 +8,7 @@ from requests import (
 
 from base import api
 
-from base.populators import DatasetPopulator, wait_on
+from base.populators import DatasetPopulator, DatasetCollectionPopulator, wait_on
 
 
 class HistoriesApiTestCase(api.ApiTestCase):
@@ -16,6 +16,7 @@ class HistoriesApiTestCase(api.ApiTestCase):
     def setUp(self):
         super(HistoriesApiTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     def test_create_history(self):
         # Create a history.
@@ -175,10 +176,44 @@ class HistoriesApiTestCase(api.ApiTestCase):
         self._assert_status_code_is(create_response, 403)
 
     def test_import_export(self):
-        history_id = self.dataset_populator.new_history(name="for_export")
+        history_name = "for_export"
+        history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        imported_history_id = self._reimport_history(history_id, history_name)
+
+        contents_response = self._get("histories/%s/contents" % imported_history_id)
+        self._assert_status_code_is(contents_response, 200)
+        contents = contents_response.json()
+        assert len(contents) == 1
+        imported_content = self.dataset_populator.get_history_dataset_content(
+            history_id=imported_history_id,
+            dataset_id=contents[0]["id"]
+        )
+        assert imported_content == "1 2 3\n"
+
+    def test_import_export_collection(self):
+        from nose.plugins.skip import SkipTest
+        raise SkipTest("Collection import/export not yet implemented")
+
+        history_name = "for_export_with_collections"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        self.dataset_collection_populator.create_list_in_history(history_id, contents=["Hello", "World"])
+
+        imported_history_id = self._reimport_history(history_id, history_name)
+
+        contents_response = self._get("histories/%s/contents" % imported_history_id)
+        self._assert_status_code_is(contents_response, 200)
+        contents = contents_response.json()
+        assert len(contents) == 3
+
+    def _reimport_history(self, history_id, history_name):
+        # Ensure the history is ready to go...
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+        # Export the history.
         download_path = self._export(history_id)
+
+        # Create download for history
         full_download_url = "%s%s?key=%s" % (self.url, download_path, self.galaxy_interactor.api_key)
         download_response = get(full_download_url)
         self._assert_status_code_is(download_response, 200)
@@ -187,7 +222,7 @@ class HistoriesApiTestCase(api.ApiTestCase):
             history_index = self._get("histories")
             return dict((h["name"], h) for h in history_index.json())
 
-        import_name = "imported from archive: for_export"
+        import_name = "imported from archive: %s" % history_name
         assert import_name not in history_names()
 
         import_data = dict(archive_source=full_download_url, archive_type="url")
@@ -202,15 +237,8 @@ class HistoriesApiTestCase(api.ApiTestCase):
         imported_history = wait_on(has_history_with_name, desc="import history")
         imported_history_id = imported_history["id"]
         self.dataset_populator.wait_for_history(imported_history_id)
-        contents_response = self._get("histories/%s/contents" % imported_history_id)
-        self._assert_status_code_is(contents_response, 200)
-        contents = contents_response.json()
-        assert len(contents) == 1
-        imported_content = self.dataset_populator.get_history_dataset_content(
-            history_id=imported_history_id,
-            dataset_id=contents[0]["id"]
-        )
-        assert imported_content == "1 2 3\n"
+
+        return imported_history_id
 
     def test_create_tag(self):
         post_data = dict(name="TestHistoryForTag")

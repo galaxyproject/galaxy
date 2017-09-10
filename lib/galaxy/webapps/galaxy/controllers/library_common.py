@@ -1096,7 +1096,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         if response_code == 200:
             precreated_datasets = upload_common.get_precreated_datasets(trans, tool_params, trans.app.model.LibraryDatasetDatasetAssociation, controller=cntrller)
             if upload_option == 'upload_file':
-                tool_params = upload_common.persist_uploads(tool_params)
+                tool_params = upload_common.persist_uploads(tool_params, trans)
                 uploaded_datasets = upload_common.get_uploaded_datasets(trans, cntrller, tool_params, precreated_datasets, dataset_upload_inputs, library_bunch=library_bunch)
             elif upload_option == 'upload_directory':
                 uploaded_datasets, response_code, message = self.get_server_dir_uploaded_datasets(trans, cntrller, kwd, full_dir, import_dir_desc, library_bunch, response_code, message)

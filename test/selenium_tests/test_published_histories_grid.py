@@ -1,6 +1,10 @@
 import time
 
-from .framework import SeleniumTestCase, selenium_test
+from .framework import (
+    retry_assertion_during_transitions,
+    selenium_test,
+    SeleniumTestCase,
+)
 
 # Test case data
 HISTORY1_NAME = 'First'
@@ -78,16 +82,14 @@ class HistoryGridTestCase(SeleniumTestCase):
     @selenium_test
     def test_history_grid_sort_by_name(self):
         self.navigate_to_published_histories_page()
-        sort_link = self.wait_for_selector('th#name-header > a')
-        sort_link.click()
+        self.wait_for_and_click_selector('th#name-header > a')
         self.assert_grid_histories_are([HISTORY1_NAME, HISTORY2_NAME, HISTORY3_NAME])
 
     @selenium_test
     def test_history_grid_sort_by_owner(self):
         self.navigate_to_published_histories_page()
-        sort_link = self.wait_for_selector('th#username-header > a')
-        sort_link.click()
-        self.assert_grid_histories_are([HISTORY1_NAME, HISTORY3_NAME, HISTORY2_NAME])
+        self.wait_for_and_click_selector('th#username-header > a')
+        self.assert_grid_histories_sorted_by_owner()
 
     @selenium_test
     def test_history_grid_tag_click(self):
@@ -121,6 +123,16 @@ class HistoryGridTestCase(SeleniumTestCase):
 
         return names
 
+    @retry_assertion_during_transitions
+    def assert_grid_histories_sorted_by_owner(self):
+        histories = self.get_histories()
+        index_1, index_2, index_3 = [histories.index(n) for n in [HISTORY1_NAME, HISTORY2_NAME, HISTORY3_NAME]]
+        # 1 and 3 are owned by a owner whose username lexicographically
+        # precedes 2. So verify 1 and 3 come before 2.
+        assert index_1 < index_2
+        assert index_3 < index_2
+
+    @retry_assertion_during_transitions
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
         actual_histories = self.get_histories()
         if not sort_matters:
@@ -183,8 +195,8 @@ class HistoryGridTestCase(SeleniumTestCase):
         if getattr(HistoryGridTestCase, "user1_email", None):
             return
 
-        HistoryGridTestCase.user1_email = self._get_random_email()
-        HistoryGridTestCase.user2_email = self._get_random_email()
+        HistoryGridTestCase.user1_email = self._get_random_email("test1")
+        HistoryGridTestCase.user2_email = self._get_random_email("test2")
         self.register(self.user1_email)
         self.create_history(HISTORY1_NAME)
         self.set_tags(HISTORY1_TAGS)
@@ -215,6 +227,8 @@ class HistoryGridTestCase(SeleniumTestCase):
             selector = 'input[name="make_accessible_and_publish"]'
             publish_button = self.wait_for_selector_clickable(selector)
             publish_button.click()
+
+            self.wait_for_selector_clickable('input[name="disable_link_access_and_unpublish"]')
 
     def navigate_to_published_histories_page(self):
         self.home()

@@ -1069,6 +1069,15 @@ use_interactive = True
 #expose_user_name = False
 #expose_user_email = False
 
+# Whitelist for local network addresses for "Upload from URL" dialog.
+# By default, Galaxy will deny access to the local network address space, to
+# prevent users making requests to services which the administrator did not
+# intend to expose. Previously, you could request any network service that
+# Galaxy might have had access to, even if the user could not normally access it.
+# It should be a comma separated list of IP addresses or IP address/mask, e.g.
+# 10.10.10.10,10.0.1.0/24,fd00::/8
+#fetch_url_whitelist=
+
 # -- Beta features
 
 # Enable new run workflow form

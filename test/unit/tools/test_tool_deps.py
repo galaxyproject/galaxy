@@ -20,6 +20,7 @@ from galaxy.tools.deps.requirements import (
 )
 from galaxy.tools.deps.resolvers import NullDependency
 from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
+from galaxy.tools.deps.resolvers.lmod import LmodDependency, LmodDependencyResolver
 from galaxy.tools.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
 from galaxy.util.bunch import Bunch
 
@@ -286,6 +287,139 @@ echo 'FOO="bar"'
 ''')
         resolver = Bunch(modulecmd=mock_modulecmd, modulepath='/something')
         dependency = ModuleDependency(resolver, "foomodule", "1.0")
+        __assert_foo_exported(dependency.shell_commands(Bunch(type="package")))
+
+
+def test_lmod_dependency_resolver():
+    with __test_base_path() as temp_directory:
+        lmod_script = _setup_lmod_command(temp_directory, '''
+/opt/apps/modulefiles:
+BlastPlus/
+BlastPlus/2.2.31+
+BlastPlus/2.4.0+
+Infernal/
+Infernal/1.1.2
+Mothur/
+Mothur/1.33.3
+Mothur/1.36.1
+Mothur/1.38.1.1
+''')
+        resolver = LmodDependencyResolver(_SimpleDependencyManager(), lmodexec=lmod_script, modulepath='/path/to/modulefiles')
+
+        lmod = resolver.resolve(ToolRequirement(name="Infernal", version=None, type="package"))
+        assert lmod.module_name == "Infernal"
+        assert lmod.module_version is None
+
+        lmod = resolver.resolve(ToolRequirement(name="BlastPlus", version="2.4.0+", type="package"))
+        assert lmod.module_name == "BlastPlus"
+        assert lmod.module_version == "2.4.0+"
+
+        lmod = resolver.resolve(ToolRequirement(name="Mothur", version="1.39", type="package"))
+        assert isinstance(lmod, NullDependency)
+
+
+def test_lmod_dependency_resolver_versionless():
+    with __test_base_path() as temp_directory:
+        lmod_script = _setup_lmod_command(temp_directory, '''
+/opt/apps/modulefiles:
+BlastPlus/2.4.0+
+Infernal/1.1.2
+Mothur/1.36.1
+''')
+        resolver = LmodDependencyResolver(_SimpleDependencyManager(), lmodexec=lmod_script, versionless='true', modulepath='/path/to/modulefiles')
+
+        lmod = resolver.resolve(ToolRequirement(name="Infernal", version=None, type="package"))
+        assert lmod.module_name == "Infernal"
+        assert lmod.module_version is None
+
+        lmod = resolver.resolve(ToolRequirement(name="Mothur", version="1.36.1", type="package"))
+        assert lmod.module_name == "Mothur"
+        assert lmod.module_version == "1.36.1"
+
+        lmod = resolver.resolve(ToolRequirement(name="BlastPlus", version="2.3", type="package"))
+        assert lmod.module_name == "BlastPlus"
+        assert lmod.module_version is None
+
+        lmod = resolver.resolve(ToolRequirement(name="Foo", version="0.1", type="package"))
+        assert isinstance(lmod, NullDependency)
+
+
+def test_lmod_dependency_resolver_with_mapping_file():
+    with __test_base_path() as temp_directory:
+        lmod_script = _setup_lmod_command(temp_directory, '''
+/opt/apps/modulefiles:
+BlastPlus/
+BlastPlus/2.2.31+
+BlastPlus/2.4.0+
+Infernal/
+Infernal/1.1.2
+Mothur/
+Mothur/1.33.3
+Mothur/1.36.1
+Mothur/1.38.1.1
+''')
+        mapping_file = os.path.join(temp_directory, "mapping")
+        with open(mapping_file, "w") as f:
+            f.write('''
+- from:
+    name: blast+
+    unversioned: true
+  to:
+    name: BlastPlus
+    version: 2.4.0+
+- from:
+    name: Mothur
+    version: 1.38
+  to:
+    version: 1.38.1.1
+''')
+
+        resolver = LmodDependencyResolver(_SimpleDependencyManager(), lmodexec=lmod_script, mapping_files=mapping_file, modulepath='/path/to/modulefiles')
+
+        lmod = resolver.resolve(ToolRequirement(name="BlastPlus", version="2.2.31+", type="package"))
+        assert lmod.module_name == "BlastPlus"
+        assert lmod.module_version == "2.2.31+", lmod.module_version
+
+        lmod = resolver.resolve(ToolRequirement(name="blast+", type="package"))
+        assert lmod.module_name == "BlastPlus"
+        assert lmod.module_version == "2.4.0+", lmod.module_version
+
+        lmod = resolver.resolve(ToolRequirement(name="blast+", version="2.23", type="package"))
+        assert isinstance(lmod, NullDependency)
+
+        lmod = resolver.resolve(ToolRequirement(name="Infernal", version="1.2", type="package"))
+        assert isinstance(lmod, NullDependency)
+
+        lmod = resolver.resolve(ToolRequirement(name="Mothur", version="1.38", type="package"))
+        assert lmod.module_name == "Mothur"
+        assert lmod.module_version == "1.38.1.1", lmod.module_version
+
+
+def _setup_lmod_command(temp_directory, contents):
+    lmod_script = os.path.join(temp_directory, "lmod")
+    __write_script(lmod_script, '''#!/bin/sh
+cat %s/lmod_example_output 1>&2;
+''' % temp_directory)
+    with open(os.path.join(temp_directory, "lmod_example_output"), "w") as f:
+        # Subset of a "lmod -t avail" command of the LMOD environment module system.
+        f.write(contents)
+    return lmod_script
+
+
+def test_lmod_dependency():
+    with __test_base_path() as temp_directory:
+        # Create mock lmod script that just exports a variable
+        # the way "lmod load" would, but also validate correct
+        # module name and version are coming through.
+        mock_lmodexec = os.path.join(temp_directory, 'pouet')
+        __write_script(mock_lmodexec, '''#!/bin/sh
+if [ "$2" != "foomodule/1.0" ]; then
+    exit 1
+fi
+echo 'FOO="bar"'
+''')
+        resolver = Bunch(lmodexec=mock_lmodexec, settargexec=None, modulepath='/path/to/modulefiles')
+        dependency = LmodDependency(resolver, "foomodule", "1.0")
         __assert_foo_exported(dependency.shell_commands(Bunch(type="package")))
 
 
