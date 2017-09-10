@@ -292,7 +292,17 @@ class NavigatesGalaxy(HasDriver):
             self.click_center()
 
     def wait_for_logged_in(self):
-        self.wait_for_selector_visible("a.loggedin-only")
+        try:
+            self.wait_for_selector_visible("a.loggedin-only")
+        except self.TimeoutException as e:
+            user_info = self.api_get("users/current")
+            if "username" in user_info:
+                template = "Failed waiting for masthead to update for login, but user API response indicates [%s] is logged in. This seems to be a bug in Galaxy. API response was [%s]. "
+                message = template % (user_info["username"], user_info)
+            else:
+                template = "Failed waiting for masthead to update for login, API indicates no user is logged in - there is a problem with this test. API response was [%s]. "
+                message = template % user_info
+            raise self.prepend_timeout_message(e, message)
 
     def click_center(self):
         action_chains = self.action_chains()
