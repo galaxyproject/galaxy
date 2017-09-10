@@ -99,9 +99,12 @@ class NavigatesGalaxy(HasDriver):
             'galaxysession': self.get_galaxy_session()
         }
 
-    def history_panel_name_element(self):
+    def history_panel_name_selector(self):
         name_selector = self.test_data["historyPanel"]["selectors"]["history"]["name"]
-        return self.wait_for_selector(name_selector)
+        return name_selector
+
+    def history_panel_name_element(self):
+        return self.wait_for_selector(self.history_panel_name_selector())
 
     def current_history(self):
         history = self.api_get("histories")[0]
@@ -574,7 +577,7 @@ class NavigatesGalaxy(HasDriver):
         self.send_enter(editable_text_input_element)
 
     def history_panel_click_to_rename(self):
-        self.history_panel_name_element().click()
+        self.wait_for_and_click_selector(self.history_panel_name_selector())
         return self.wait_for_selector(self.history_panel_edit_title_input_selector())
 
     def history_panel_edit_title_input_selector(self):
