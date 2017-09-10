@@ -7,6 +7,7 @@ HISTORY1_NAME = 'First'
 HISTORY2_NAME = 'Second'
 HISTORY3_NAME = 'Third'
 HISTORY4_NAME = 'Four'
+HISTORY2_TAGS = ['tag3']
 HISTORY3_TAGS = ['tag3']
 HISTORY4_TAGS = ['tag4']
 
@@ -203,6 +204,28 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         self.assert_grid_histories_are(['No Items'])
         self.unset_filter('tags', HISTORY4_TAGS[0])
 
+    @selenium_test
+    def test_tags(self):
+        self.navigate_to_saved_histories_page()
+
+        # Click the add tag button
+        tags_cell = self.get_history_tags_cell(HISTORY2_NAME)
+        add_tag_button = tags_cell.find_element_by_css_selector('.add-tag-button')
+        add_tag_button.click()
+
+        # Insert a tag
+        tags_cell = self.get_history_tags_cell(HISTORY2_NAME)
+        tag_area = tags_cell.find_element_by_tag_name('textarea')
+        tag_area.send_keys(HISTORY2_TAGS[0])
+        self.send_enter(tag_area)
+
+        # Search by tag
+        tags_cell = self.get_history_tags_cell(HISTORY2_NAME)
+        tag = tags_cell.find_element_by_css_selector('span.tag-name')
+        tag.click()
+
+        self.assert_grid_histories_are([HISTORY3_NAME, HISTORY2_NAME], False)
+
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
         actual_histories = self.get_histories()
         if not sort_matters:
@@ -225,7 +248,6 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         for row in grid.find_elements_by_tag_name('tr'):
             td = row.find_elements_by_tag_name('td')
             name = td[1].text if td[0].text == '' else td[0].text
-            # name_cell = row.find_elements_by_tag_name('td')[1]
             names.append(name)
         return names
 
@@ -327,6 +349,20 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         popup_option = self.driver.find_element_by_link_text(option_label)
         popup_option.click()
+
+    def get_history_tags_cell(self, history_name):
+        tags_cell = None
+        grid = self.wait_for_selector('#grid-table-body')
+        for row in grid.find_elements_by_tag_name('tr'):
+            td = row.find_elements_by_tag_name('td')
+            if td[1].text == history_name:
+                tags_cell = td[3]
+                break
+
+        if tags_cell is None:
+            raise AssertionError('Failed to find history with name [%s]' % history_name)
+
+        return tags_cell
 
     def check_histories(self, histories):
         grid = self.wait_for_selector('#grid-table-body')
