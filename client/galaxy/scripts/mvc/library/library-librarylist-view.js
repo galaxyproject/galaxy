@@ -199,13 +199,6 @@ var LibraryListView = Backbone.View.extend({
         }
     },
 
-    redirectToHome: function(){
-        window.location = '../';
-    },
-    redirectToLogin: function(){
-        window.location = '/user/login';
-    },
-
     /**
      * In case the search_term is not empty perform the search and render
      * the result. Render all visible libraries otherwise.
