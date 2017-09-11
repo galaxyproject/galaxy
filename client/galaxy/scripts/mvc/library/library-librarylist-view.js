@@ -210,7 +210,7 @@ var LibraryListView = Backbone.View.extend({
         var results = null
         results = this.collection.search( search_term );
         this.options.searching = true;
-        this.render({'models': results});
+        this.render({models: results, show_page: 1});
       } else {
         this.options.searching = false;
         this.render();
