@@ -2,15 +2,6 @@ import time
 
 from .framework import SeleniumTestCase, selenium_test
 
-# Test case data
-HISTORY1_NAME = 'First'
-HISTORY2_NAME = 'Second'
-HISTORY3_NAME = 'Third'
-HISTORY4_NAME = 'Four'
-HISTORY2_TAGS = ['tag3']
-HISTORY3_TAGS = ['tag3']
-HISTORY4_TAGS = ['tag4']
-
 
 class SavedHistoriesTestCase(SeleniumTestCase):
 
@@ -21,31 +12,29 @@ class SavedHistoriesTestCase(SeleniumTestCase):
     @selenium_test
     def test_saved_histories_list(self):
         self.navigate_to_saved_histories_page()
-        self.assert_histories_in_grid([HISTORY2_NAME, HISTORY3_NAME])
+        self.assert_histories_in_grid([self.history2_name, self.history3_name])
 
     @selenium_test
     def test_history_switch(self):
         self.navigate_to_saved_histories_page()
-
-        self.click_popup_option(HISTORY2_NAME, 'Switch')
+        self.click_popup_option(self.history2_name, 'Switch')
         time.sleep(1)
         history_name = self.history_panel_name_element()
-
-        self.assertEqual(history_name.text, HISTORY2_NAME)
+        self.assertEqual(history_name.text, self.history2_name)
 
     @selenium_test
     def test_history_view(self):
         self.navigate_to_saved_histories_page()
-        self.click_popup_option(HISTORY2_NAME, 'View')
+        self.click_popup_option(self.history2_name, 'View')
         history_name = self.wait_for_selector('.name.editable-text')
-        self.assertEqual(history_name.text, HISTORY2_NAME)
+        self.assertEqual(history_name.text, self.history2_name)
 
     @selenium_test
     def test_history_publish(self):
         self.navigate_to_saved_histories_page()
 
         # Publish the history
-        self.click_popup_option(HISTORY2_NAME, 'Share or Publish')
+        self.click_popup_option(self.history2_name, 'Share or Publish')
         self.wait_for_and_click_selector('input[name="make_accessible_and_publish"]')
 
         self.navigate_to_saved_histories_page()
@@ -54,7 +43,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         self.select_filter('sharing', 'published')
         time.sleep(1)
 
-        self.assert_grid_histories_are([HISTORY2_NAME])
+        self.assert_histories_in_grid([self.history2_name])
 
     @selenium_test
     def test_rename_history(self):
@@ -65,54 +54,55 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         # Rename the history
         history_name_input = self.wait_for_selector('input[name="name"]')
         history_name_input.clear()
-        history_name_input.send_keys(HISTORY1_NAME)
+        history_name_input.send_keys(self.history1_name)
         self.send_enter(history_name_input)
 
         message = self.wait_for_selector_visible('.infomessagelarge')
-        expected_message = 'History: Unnamed history renamed to: %s' % HISTORY1_NAME
+        expected_message = 'History: Unnamed history renamed to: %s' % self.history1_name
         self.assertEqual(expected_message, message.text)
 
         self.navigate_to_saved_histories_page()
-        self.assert_grid_histories_are([HISTORY1_NAME, HISTORY2_NAME, HISTORY3_NAME], False)
+
+        self.assert_histories_in_grid([self.history1_name, self.history2_name, self.history3_name])
 
     @selenium_test
     def test_delete_and_undelete_history(self):
         self.navigate_to_saved_histories_page()
 
         # Delete the history
-        self.click_popup_option(HISTORY2_NAME, 'Delete')
+        self.click_popup_option(self.history2_name, 'Delete')
 
-        self.assert_histories_in_grid([HISTORY2_NAME], False)
+        self.assert_histories_in_grid([self.history2_name], False)
 
         self.show_advanced_search()
         self.select_filter('deleted', 'True')
         time.sleep(1)
 
         # Restore the history
-        self.click_popup_option(HISTORY2_NAME, 'Undelete')
+        self.click_popup_option(self.history2_name, 'Undelete')
 
         self.wait_for_selector_visible('.donemessage')
         self.select_filter('deleted', 'False')
 
-        self.assert_histories_in_grid([HISTORY2_NAME])
+        self.assert_histories_in_grid([self.history2_name])
 
     @selenium_test
     def test_permanently_delete_history(self):
-        self.create_history(HISTORY4_NAME)
+        self.create_history(self.history4_name)
 
         self.navigate_to_saved_histories_page()
-        self.assert_histories_in_grid([HISTORY4_NAME])
+        self.assert_histories_in_grid([self.history4_name])
 
-        self.click_popup_option(HISTORY4_NAME, 'Delete Permanently')
+        self.click_popup_option(self.history4_name, 'Delete Permanently')
         alert = self.driver.switch_to.alert
         alert.accept()
 
-        self.assert_histories_in_grid([HISTORY4_NAME], False)
+        self.assert_histories_in_grid([self.history4_name], False)
 
         self.show_advanced_search()
         self.select_filter('deleted', 'True')
 
-        self.assert_histories_in_grid([HISTORY4_NAME])
+        self.assert_histories_in_grid([self.history4_name])
 
     @selenium_test
     def test_delete_and_undelete_multiple_histories(self):
@@ -122,35 +112,38 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         undelete_button_selector = 'input[type="button"][value="Undelete"]'
 
         # Delete multiple histories
-        self.check_histories([HISTORY2_NAME, HISTORY3_NAME])
+        self.check_histories([self.history2_name, self.history3_name])
         self.wait_for_and_click_selector(delete_button_selector)
 
-        self.assert_histories_in_grid([HISTORY2_NAME, HISTORY3_NAME], False)
+        self.assert_histories_in_grid([self.history2_name, self.history3_name], False)
 
         self.show_advanced_search()
         self.select_filter('deleted', 'True')
         time.sleep(1)
 
         # Restore multiple histories
-        self.check_histories([HISTORY2_NAME, HISTORY3_NAME])
+        self.check_histories([self.history2_name, self.history3_name])
         self.wait_for_and_click_selector(undelete_button_selector)
 
         self.wait_for_selector_visible('.donemessage')
         self.select_filter('deleted', 'False')
 
-        self.assert_histories_in_grid([HISTORY2_NAME, HISTORY3_NAME])
+        self.assert_histories_in_grid([self.history2_name, self.history3_name])
 
     @selenium_test
     def test_sort_by_name(self):
         self.navigate_to_saved_histories_page()
 
         self.wait_for_and_click_selector('.sort-link[sort_key="name"]')
-
         actual_histories = self.get_histories()
-        if 'Unnamed history' in actual_histories:
-            expected_histories = [HISTORY2_NAME, HISTORY3_NAME, 'Unnamed history']
-        else:
-            expected_histories = [HISTORY1_NAME, HISTORY2_NAME, HISTORY3_NAME]
+
+        expected_histories = [self.history2_name, self.history3_name]
+        if self.history1_name in actual_histories:
+            expected_histories.append(self.history1_name)
+        expected_histories = sorted(expected_histories)
+
+        # Filter out histories created by other tests
+        actual_histories = [x for x in actual_histories if x in self.all_histories]
 
         self.assertEqual(actual_histories, expected_histories)
 
@@ -160,14 +153,14 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         input_selector = '#input-free-text-search-filter'
         search_input = self.wait_for_selector(input_selector)
-        search_input.send_keys(HISTORY2_NAME)
+        search_input.send_keys(self.history2_name)
         self.send_enter(search_input)
 
-        self.assert_grid_histories_are([HISTORY2_NAME])
+        self.assert_grid_histories_are([self.history2_name])
 
-        self.unset_filter('free-text-search', HISTORY2_NAME)
+        self.unset_filter('free-text-search', self.history2_name)
         search_input = self.wait_for_selector(input_selector)
-        search_input.send_keys(HISTORY4_NAME)
+        search_input.send_keys(self.history4_name)
         self.send_enter(search_input)
 
         self.assert_grid_histories_are(['No Items'])
@@ -182,44 +175,44 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         tags_filter_selector = '#input-tags-filter'
 
         # Search by name
-        self.set_filter(name_filter_selector, HISTORY2_NAME)
-        self.assert_grid_histories_are([HISTORY2_NAME])
-        self.unset_filter('name', HISTORY2_NAME)
+        self.set_filter(name_filter_selector, self.history2_name)
+        self.assert_grid_histories_are([self.history2_name])
+        self.unset_filter('name', self.history2_name)
 
-        self.set_filter(name_filter_selector, HISTORY4_NAME)
+        self.set_filter(name_filter_selector, self.history4_name)
         self.assert_grid_histories_are(['No Items'])
-        self.unset_filter('name', HISTORY4_NAME)
+        self.unset_filter('name', self.history4_name)
 
         # Search by tags
-        self.set_filter(tags_filter_selector, HISTORY3_TAGS[0])
-        self.assert_grid_histories_are([HISTORY3_NAME])
-        self.unset_filter('tags', HISTORY3_TAGS[0])
+        self.set_filter(tags_filter_selector, self.history3_tags[0])
+        self.assert_grid_histories_are([self.history3_name])
+        self.unset_filter('tags', self.history3_tags[0])
 
-        self.set_filter(tags_filter_selector, HISTORY4_TAGS[0])
+        self.set_filter(tags_filter_selector, self.history4_tags[0])
         self.assert_grid_histories_are(['No Items'])
-        self.unset_filter('tags', HISTORY4_TAGS[0])
+        self.unset_filter('tags', self.history4_tags[0])
 
     @selenium_test
     def test_tags(self):
         self.navigate_to_saved_histories_page()
 
         # Click the add tag button
-        tags_cell = self.get_history_tags_cell(HISTORY2_NAME)
+        tags_cell = self.get_history_tags_cell(self.history2_name)
         add_tag_button = tags_cell.find_element_by_css_selector('.add-tag-button')
         add_tag_button.click()
 
         # Insert a tag
-        tags_cell = self.get_history_tags_cell(HISTORY2_NAME)
+        tags_cell = self.get_history_tags_cell(self.history2_name)
         tag_area = tags_cell.find_element_by_tag_name('textarea')
-        tag_area.send_keys(HISTORY2_TAGS[0])
+        tag_area.send_keys(self.history2_tags[0])
         self.send_enter(tag_area)
 
         # Search by tag
-        tags_cell = self.get_history_tags_cell(HISTORY2_NAME)
+        tags_cell = self.get_history_tags_cell(self.history2_name)
         tag = tags_cell.find_element_by_css_selector('span.tag-name')
         tag.click()
 
-        self.assert_grid_histories_are([HISTORY3_NAME, HISTORY2_NAME], False)
+        self.assert_grid_histories_are([self.history2_name], False)
 
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
         actual_histories = self.get_histories()
@@ -230,11 +223,11 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
     def assert_histories_in_grid(self, expected_histories, present=True):
         actual_histories = self.get_histories()
-        intersection = list(set(actual_histories).intersection(expected_histories))
+        intersection = set(actual_histories).intersection(expected_histories)
         if present:
-            self.assertEqual(intersection, expected_histories)
+            self.assertEqual(intersection, set(expected_histories))
         else:
-            self.assertEqual(intersection, [])
+            self.assertEqual(intersection, set())
 
     def get_histories(self):
         time.sleep(1.5)
@@ -271,11 +264,19 @@ class SavedHistoriesTestCase(SeleniumTestCase):
             return
 
         SavedHistoriesTestCase.user_email = self._get_random_email()
-        self.register(self.user_email)
+        SavedHistoriesTestCase.history1_name = self._get_random_name()
+        SavedHistoriesTestCase.history2_name = self._get_random_name()
+        SavedHistoriesTestCase.history3_name = self._get_random_name()
+        SavedHistoriesTestCase.history4_name = self._get_random_name()
+        SavedHistoriesTestCase.history2_tags = [self._get_random_name(len=5)]
+        SavedHistoriesTestCase.history3_tags = [self._get_random_name(len=5)]
+        SavedHistoriesTestCase.history4_tags = [self._get_random_name(len=5)]
+        SavedHistoriesTestCase.all_histories = [self.history1_name, self.history2_name, self.history3_name]
 
-        self.create_history(HISTORY2_NAME)
-        self.create_history(HISTORY3_NAME)
-        self.history_panel_add_tags(HISTORY3_TAGS)
+        self.register(self.user_email)
+        self.create_history(self.history2_name)
+        self.create_history(self.history3_name)
+        self.history_panel_add_tags(self.history3_tags)
 
     def create_history(self, name):
         self.home()
