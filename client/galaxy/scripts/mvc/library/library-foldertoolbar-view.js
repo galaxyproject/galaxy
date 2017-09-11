@@ -1040,7 +1040,7 @@ var FolderToolbarView = Backbone.View.extend({
           items_to_delete.push(folder);
       }
 
-      this.options.chain_call_control.total_number = items_total.length;
+      this.options.chain_call_control.total_number = items_total;
       // call the recursive function to call ajax one after each other (request FIFO queue)
       this.chainCallDeletingItems(items_to_delete);
     }
