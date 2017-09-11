@@ -296,9 +296,9 @@ define( ['utils/localization'], function(_l) {
 
     function setWindowTitle(title){
         if (title) {
-            window.document.title = "Galaxy " + (window.Galaxy.config.brand ? " / " + window.Galaxy.config.brand : '') + " | " + _l(title);
+            window.document.title = "Galaxy " + (window.Galaxy.config.brand ? " | " + window.Galaxy.config.brand : '') + " | " + _l(title);
         } else {
-            window.document.title = "Galaxy " + (window.Galaxy.config.brand ? " / " + window.Galaxy.config.brand : '');
+            window.document.title = "Galaxy " + (window.Galaxy.config.brand ? " | " + window.Galaxy.config.brand : '');
         }
     }
 
