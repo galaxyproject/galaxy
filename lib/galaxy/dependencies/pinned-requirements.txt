@@ -8,7 +8,7 @@ numpy==1.9.2
 pycrypto==2.6.1
 uWSGI==2.0.15
 # Flexible BAM index naming is new to core pysam
-pysam>=0.12
+pysam==0.12.0.1
 
 # Install python_lzo if you want to support indexed access to lzo-compressed
 # locally cached maf files via bx-python
