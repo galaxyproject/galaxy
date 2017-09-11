@@ -7,7 +7,8 @@ var jQuery = require( 'jquery' ),
     Ui = require( 'mvc/ui/ui-misc' ),
     QueryStringParsing = require( 'utils/query-string-parsing' ),
     Router = require( 'layout/router' ),
-    Page = require( 'layout/page' );
+    Page = require( 'layout/page' ),
+    UserAPIKeys = require( 'mvc/user/user_api_keys' );
 
 window.app = function app( options, bootstrapped ){
     window.Galaxy = new GalaxyApp( options, bootstrapped );
@@ -21,7 +22,8 @@ window.app = function app( options, bootstrapped ){
             '(/)admin(/)groups' : 'show_groups',
             '(/)admin(/)tool_versions' : 'show_tool_versions',
             '(/)admin(/)quotas' : 'show_quotas',
-            '(/)admin(/)forms(/)(:form_id)' : 'show_forms'
+            '(/)admin(/)forms(/)(:form_id)' : 'show_forms',
+            '(/)admin/api_keys': 'show_user_api_keys'
         },
 
         authenticate: function( args, name ) {
@@ -46,6 +48,10 @@ window.app = function app( options, bootstrapped ){
 
         show_quotas: function() {
             this.page.display( new GridView( { url_base: Galaxy.root + 'admin/quotas_list', url_data: Galaxy.params, dict_format: true } ) );
+        },
+
+        show_user_api_keys: function() {
+            this.page.display( new UserAPIKeys.View() );
         },
 
         show_forms : function( form_id ) {
