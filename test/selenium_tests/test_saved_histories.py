@@ -1,6 +1,10 @@
 import time
 
-from .framework import SeleniumTestCase, selenium_test
+from .framework import (
+    retry_assertion_during_transitions,
+    selenium_test,
+    SeleniumTestCase,
+)
 
 
 class SavedHistoriesTestCase(SeleniumTestCase):
@@ -214,6 +218,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
 
         self.assert_grid_histories_are([self.history2_name], False)
 
+    @retry_assertion_during_transitions
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
         actual_histories = self.get_histories()
         if not sort_matters:
@@ -221,6 +226,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
             expected_histories = set(expected_histories)
         self.assertEqual(actual_histories, expected_histories)
 
+    @retry_assertion_during_transitions
     def assert_histories_in_grid(self, expected_histories, present=True):
         actual_histories = self.get_histories()
         intersection = set(actual_histories).intersection(expected_histories)
