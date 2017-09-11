@@ -10,6 +10,8 @@ import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
 
+var UserAPIKeys = require( 'mvc/user/user_api_keys' );
+
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
     Galaxy.debug("admin app");
@@ -24,7 +26,8 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)quotas": "show_quotas",
             "(/)admin(/)repositories": "show_repositories",
             "(/)admin(/)forms": "show_forms",
-            "(/)admin(/)form(/)(:form_id)": "show_form"
+            "(/)admin(/)form(/)(:form_id)": "show_form",
+            '(/)admin/api_keys': 'show_user_api_keys'
         },
 
         authenticate: function(args, name) {
@@ -89,6 +92,10 @@ window.app = function app(options, bootstrapped) {
                     dict_format: true
                 })
             );
+        },
+
+        show_user_api_keys: function() {
+            this.page.display( new UserAPIKeys.View() );
         },
 
         show_forms: function() {
