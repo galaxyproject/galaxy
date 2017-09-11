@@ -6,16 +6,6 @@ from .framework import (
     SeleniumTestCase,
 )
 
-# Test case data
-HISTORY1_NAME = 'First'
-HISTORY2_NAME = 'Second'
-HISTORY3_NAME = 'Third'
-HISTORY4_NAME = 'Four'
-HISTORY1_TAGS = ['tag1', 'tag2']
-HISTORY2_TAGS = ['tag3']
-HISTORY3_TAGS = ['tag1']
-HISTORY3_ANNOT = 'some description'
-
 
 class HistoryGridTestCase(SeleniumTestCase):
 
@@ -26,7 +16,7 @@ class HistoryGridTestCase(SeleniumTestCase):
     @selenium_test
     def test_history_grid_histories(self):
         self.navigate_to_published_histories_page()
-        self.assert_grid_histories_are([HISTORY2_NAME, HISTORY3_NAME, HISTORY1_NAME])
+        self.assert_histories_in_grid(self.all_histories)
 
     @selenium_test
     def test_history_grid_search_standard(self):
@@ -34,23 +24,23 @@ class HistoryGridTestCase(SeleniumTestCase):
 
         input_selector = '#input-free-text-search-filter'
         search_input = self.wait_for_selector(input_selector)
-        search_input.send_keys(HISTORY1_NAME)
+        search_input.send_keys(self.history1_name)
         self.send_enter(search_input)
-        self.assert_grid_histories_are([HISTORY1_NAME])
 
-        self.unset_filter('free-text-search', HISTORY1_NAME)
+        self.assert_grid_histories_are([self.history1_name])
+
+        self.unset_filter('free-text-search', self.history1_name)
         search_input = self.wait_for_selector(input_selector)
-        search_input.send_keys(HISTORY4_NAME)
+        search_input.send_keys(self.history4_name)
         self.send_enter(search_input)
+
         self.assert_grid_histories_are(['No Items'])
 
     @selenium_test
     def test_history_grid_search_advanced(self):
         self.navigate_to_published_histories_page()
 
-        advanced_search_selector = '#standard-search .advanced-search-toggle'
-        advanced_search_link = self.wait_for_selector(advanced_search_selector)
-        advanced_search_link.click()
+        self.wait_for_and_click_selector('#standard-search .advanced-search-toggle')
 
         name_filter_selector = '#input-name-filter'
         annot_filter_selector = '#input-annotation-filter'
@@ -58,32 +48,35 @@ class HistoryGridTestCase(SeleniumTestCase):
         tags_filter_selector = '#input-tags-filter'
 
         # Search by name
-        self.set_filter(name_filter_selector, HISTORY1_NAME)
-        self.assert_grid_histories_are([HISTORY1_NAME])
-        self.unset_filter('name', HISTORY1_NAME)
+        self.set_filter(name_filter_selector, self.history1_name)
+        self.assert_grid_histories_are([self.history1_name])
+        self.unset_filter('name', self.history1_name)
+
+        self.set_filter(name_filter_selector, self.history4_name)
+        self.assert_grid_histories_are(['No Items'])
+        self.unset_filter('name', self.history4_name)
 
         # Search by annotation
-        annotation = HISTORY3_ANNOT.split(' ')[0]
-        self.set_filter(annot_filter_selector, annotation)
-        self.assert_grid_histories_are([HISTORY3_NAME])
-        self.unset_filter('annotation', annotation)
+        self.set_filter(annot_filter_selector, self.history3_annot)
+        self.assert_grid_histories_are([self.history3_name])
+        self.unset_filter('annotation', self.history3_annot)
 
         # Search by owner
         owner = self.user2_email.split('@')[0]
         self.set_filter(owner_filter_selector, owner)
-        self.assert_grid_histories_are([HISTORY2_NAME])
+        self.assert_grid_histories_are([self.history2_name])
         self.unset_filter('username', owner)
 
         # Search by tags
-        self.set_filter(tags_filter_selector, HISTORY1_TAGS[0])
-        self.assert_grid_histories_are([HISTORY3_NAME, HISTORY1_NAME])
-        self.unset_filter('tags', HISTORY1_TAGS[0])
+        self.set_filter(tags_filter_selector, self.history1_tags[0])
+        self.assert_grid_histories_are([self.history1_name, self.history3_name], False)
+        self.unset_filter('tags', self.history1_tags[0])
 
     @selenium_test
     def test_history_grid_sort_by_name(self):
         self.navigate_to_published_histories_page()
         self.wait_for_and_click_selector('th#name-header > a')
-        self.assert_grid_histories_are([HISTORY1_NAME, HISTORY2_NAME, HISTORY3_NAME])
+        self.assert_grid_histories_are(sorted(self.all_histories))
 
     @selenium_test
     def test_history_grid_sort_by_owner(self):
@@ -98,35 +91,35 @@ class HistoryGridTestCase(SeleniumTestCase):
         tags = None
         grid = self.wait_for_selector('#grid-table-body')
         for row in grid.find_elements_by_tag_name('tr'):
-            cell = row.find_elements_by_tag_name('td')[0]  # Name
-            if cell.text == HISTORY1_NAME:
-                tags = row.find_elements_by_tag_name('td')[4]  # Tags
+            td = row.find_elements_by_tag_name('td')
+            name = td[0].text
+            if name == self.history1_name:
+                tags = td[4]
                 break
-        assert tags is not None
+
+        if tags is None:
+            raise AssertionError('Failed to find history with name [%s]' % self.history1_name)
 
         tag_button_selector = '.tag-area > .tag-button:first-child > .tag-name'
         tag_button = tags.find_element_by_css_selector(tag_button_selector)
-        assert tag_button.text == HISTORY1_TAGS[0]
-
+        self.assertEqual(tag_button.text, self.history1_tags[0])
         tag_button.click()
 
-        self.assert_grid_histories_are([HISTORY3_NAME, HISTORY1_NAME])
+        self.assert_grid_histories_are([self.history1_name, self.history3_name], False)
 
     def get_histories(self, sleep=False):
         time.sleep(1.5)
-
         names = []
         grid = self.wait_for_selector('#grid-table-body')
         for row in grid.find_elements_by_tag_name('tr'):
             cell = row.find_elements_by_tag_name('td')[0]  # Name
             names.append(cell.text)
-
         return names
 
     @retry_assertion_during_transitions
     def assert_grid_histories_sorted_by_owner(self):
         histories = self.get_histories()
-        index_1, index_2, index_3 = [histories.index(n) for n in [HISTORY1_NAME, HISTORY2_NAME, HISTORY3_NAME]]
+        index_1, index_2, index_3 = [histories.index(n) for n in self.all_histories]
         # 1 and 3 are owned by a owner whose username lexicographically
         # precedes 2. So verify 1 and 3 come before 2.
         assert index_1 < index_2
@@ -135,11 +128,24 @@ class HistoryGridTestCase(SeleniumTestCase):
     @retry_assertion_during_transitions
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
         actual_histories = self.get_histories()
-        if not sort_matters:
-            expected_histories = set(expected_histories)
-            actual_histories = set(actual_histories)
 
-        self.assertEqual(expected_histories, actual_histories)
+        # Filter out histories created by other tests
+        all_histories = self.all_histories + ['No Items']
+        actual_histories = [x for x in actual_histories if x in all_histories]
+
+        if not sort_matters:
+            actual_histories = set(actual_histories)
+            expected_histories = set(expected_histories)
+        self.assertEqual(actual_histories, expected_histories)
+
+    @retry_assertion_during_transitions
+    def assert_histories_in_grid(self, expected_histories, present=True):
+        actual_histories = self.get_histories()
+        intersection = set(actual_histories).intersection(expected_histories)
+        if present:
+            self.assertEqual(intersection, set(expected_histories))
+        else:
+            self.assertEqual(intersection, set())
 
     def set_filter(self, selector, value):
         filter_input = self.wait_for_selector_clickable(selector)
@@ -153,34 +159,15 @@ class HistoryGridTestCase(SeleniumTestCase):
         close_link.click()
         time.sleep(.5)
 
-    def set_tags(self, tags):
-        tag_icon_selector = self.test_data['historyPanel']['selectors']['history']['tagIcon']
-        tag_area_selector = self.test_data['historyPanel']['selectors']['history']['tagArea']
-
-        if not self.is_displayed(tag_area_selector):
-            tag_icon = self.wait_for_selector_clickable(tag_icon_selector)
-            tag_icon.click()
-
-        tag_area_selector += ' .tags-input input'
-        tag_area = self.wait_for_selector_clickable(tag_area_selector)
-        tag_area.click()
-
-        for tag in tags:
-            tag_area.send_keys(tag)
-            self.send_enter(tag_area)
-            time.sleep(.5)
-
     def set_annotation(self, annotation):
         anno_icon_selector = self.test_data['historyPanel']['selectors']['history']['annoIcon']
         anno_area_selector = self.test_data['historyPanel']['selectors']['history']['annoArea']
 
-        if not self.is_displayed(anno_area_selector):
-            annon_icon = self.wait_for_selector_clickable(anno_icon_selector)
-            annon_icon.click()
+        if not self.selector_is_displayed(anno_area_selector):
+            self.wait_for_and_click_selector(anno_icon_selector)
 
         anno_area_selector += ' .annotation'
-        annon_area = self.wait_for_selector_clickable(anno_area_selector)
-        annon_area.click()
+        self.wait_for_and_click_selector(anno_area_selector)
 
         area_editable_selector = anno_area_selector + ' textarea'
         done_button_selector = anno_area_selector + ' button'
@@ -192,34 +179,46 @@ class HistoryGridTestCase(SeleniumTestCase):
         anno_done_button.click()
 
     def ensure_users_and_histories(self):
-        if getattr(HistoryGridTestCase, "user1_email", None):
+        if getattr(HistoryGridTestCase, 'user1_email', None):
+            self.home()  # ensure Galaxy is loaded
             return
 
-        HistoryGridTestCase.user1_email = self._get_random_email("test1")
-        HistoryGridTestCase.user2_email = self._get_random_email("test2")
+        tag1 = self._get_random_name(len=5)
+        tag2 = self._get_random_name(len=5)
+        tag3 = self._get_random_name(len=5)
+
+        HistoryGridTestCase.user1_email = self._get_random_email('test1')
+        HistoryGridTestCase.user2_email = self._get_random_email('test2')
+        HistoryGridTestCase.history1_name = self._get_random_name()
+        HistoryGridTestCase.history2_name = self._get_random_name()
+        HistoryGridTestCase.history3_name = self._get_random_name()
+        HistoryGridTestCase.history4_name = self._get_random_name()
+        HistoryGridTestCase.history1_tags = [tag1, tag2]
+        HistoryGridTestCase.history2_tags = [tag3]
+        HistoryGridTestCase.history3_tags = [tag1]
+        HistoryGridTestCase.history3_annot = self._get_random_name()
+        HistoryGridTestCase.all_histories = [self.history1_name, self.history2_name, self.history3_name]
+
         self.register(self.user1_email)
-        self.create_history(HISTORY1_NAME)
-        self.set_tags(HISTORY1_TAGS)
+        self.create_history(self.history1_name)
+        self.history_panel_add_tags(self.history1_tags)
         self.publish_current_history()
 
-        self.create_history(HISTORY3_NAME)
-        self.set_tags(HISTORY3_TAGS)
-        self.set_annotation(HISTORY3_ANNOT)
+        self.create_history(self.history3_name)
+        self.history_panel_add_tags(self.history3_tags)
+        self.set_annotation(self.history3_annot)
         self.publish_current_history()
         self.logout_if_needed()
 
         self.register(self.user2_email)
-        self.create_history(HISTORY2_NAME)
-        self.set_tags(HISTORY2_TAGS)
+        self.create_history(self.history2_name)
+        self.history_panel_add_tags(self.history2_tags)
         self.publish_current_history()
 
     def create_history(self, name):
+        self.home()
         self.click_history_option('Create New')
-
-        # Rename the history
-        editable_text_input_element = self.click_to_rename_history()
-        editable_text_input_element.send_keys(name)
-        self.send_enter(editable_text_input_element)
+        self.history_panel_rename(name)
 
     def publish_current_history(self):
         self.click_history_option('Share or Publish')
@@ -236,22 +235,4 @@ class HistoryGridTestCase(SeleniumTestCase):
         self.click_label(
             self.navigation_data['labels']['masthead']['menus']['libraries'])
         selector = 'a[href="/histories/list_published"]'
-        histories_link = self.wait_for_selector_clickable(selector)
-        histories_link.click()
-
-    def click_history_option(self, option_label):
-        self.home()
-        self.click_history_options()  # Open history menu
-
-        # Click labelled option
-        menu_option = self.driver.find_element_by_link_text(option_label)
-        menu_option.click()
-
-    def click_to_rename_history(self):
-        self.history_panel_name_element().click()
-        edit_title_input_selector = self.test_data['historyPanel']['selectors']['history']['nameEditableTextInput']
-        return self.wait_for_selector(edit_title_input_selector)
-
-    def is_displayed(self, selector):
-        element = self.driver.find_element_by_css_selector(selector)
-        return element.is_displayed()
+        self.wait_for_and_click_selector(selector)
