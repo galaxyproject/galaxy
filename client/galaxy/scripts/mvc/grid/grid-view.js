@@ -7,9 +7,8 @@ define([
     'utils/utils',
     'mvc/grid/grid-model',
     'mvc/grid/grid-template',
-    'mvc/ui/popup-menu',
-    'utils/localization'
-], function(Utils, GridModel, Templates, PopupMenu, _l) {
+    'mvc/ui/popup-menu'
+], function(Utils, GridModel, Templates, PopupMenu) {
 
 // grid view
 return Backbone.View.extend({
@@ -85,8 +84,8 @@ return Backbone.View.extend({
         // get options
         var options = this.grid.attributes;
 
-        if (this.allow_title_display){
-            window.document.title = "Galaxy " + (window.Galaxy.config.brand ? " / " + window.Galaxy.config.brand : '') + " | " + _l(options.title);
+        if (this.allow_title_display && options.title){
+            Utils.setWindowTitle(options.title);
         }
         // handle refresh requests
         this.handle_refresh(options.refresh_frames);

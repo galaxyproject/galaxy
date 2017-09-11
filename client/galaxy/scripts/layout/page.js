@@ -1,4 +1,4 @@
-define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal', 'utils/localization' ], function( Masthead, Panel, Modal, _l ) {
+define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal', 'utils/utils' ], function( Masthead, Panel, Modal, utils) {
     var View = Backbone.View.extend({
         el : 'body',
         className : 'full-content',
@@ -18,10 +18,10 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal', 'utils/localizat
             Galaxy.modal = this.modal = new Modal.View();
             Galaxy.display = this.display = function( view ) {
                 if ( view.title ){
-                    window.document.title = "Galaxy " + (window.Galaxy.config.brand ? " / " + window.Galaxy.config.brand : '') + " | " + _l(view.title);
+                    utils.setWindowTitle( view.title );
                     view.allow_title_display = false;
                 } else {
-                    window.document.title = "Galaxy " + (window.Galaxy.config.brand ? " / " + window.Galaxy.config.brand : '');
+                    utils.setWindowTitle();
                     view.allow_title_display = true;
                 }
                 self.center.display( view );
@@ -164,7 +164,7 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal', 'utils/localizat
                             }
                         }
                 })
-                .error( function( data ) { 
+                .error( function( data ) {
                     // hide the communication icon if the communication server is not available
                     $chat_icon_element.css( "visibility", "hidden" ); 
                 });
