@@ -1,4 +1,4 @@
-define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal', 'utils/utils' ], function( Masthead, Panel, Modal, utils) {
+define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal', 'utils/utils' ], function( Masthead, Panel, Modal, Utils) {
     var View = Backbone.View.extend({
         el : 'body',
         className : 'full-content',
@@ -18,10 +18,10 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal', 'utils/utils' ],
             Galaxy.modal = this.modal = new Modal.View();
             Galaxy.display = this.display = function( view ) {
                 if ( view.title ){
-                    utils.setWindowTitle( view.title );
+                    Utils.setWindowTitle( view.title );
                     view.allow_title_display = false;
                 } else {
-                    utils.setWindowTitle();
+                    Utils.setWindowTitle();
                     view.allow_title_display = true;
                 }
                 self.center.display( view );
