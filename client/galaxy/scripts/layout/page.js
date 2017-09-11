@@ -21,6 +21,7 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal', 'utils/localizat
                     window.document.title = "Galaxy " + (window.Galaxy.config.brand ? " / " + window.Galaxy.config.brand : '') + " | " + _l(view.title);
                     view.allow_title_display = false;
                 } else {
+                    window.document.title = "Galaxy " + (window.Galaxy.config.brand ? " / " + window.Galaxy.config.brand : '');
                     view.allow_title_display = true;
                 }
                 self.center.display( view );
