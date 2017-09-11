@@ -1043,11 +1043,11 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         # histories looks like: { userA: [ historyX, historyY ], userB: [ historyY ] }
         histories = histories or {}
         msg = ""
+        shared_histories = []
         if not histories:
             send_to_err += "No users have been specified or no histories can be sent without changing permissions or associating a sharing role.  "
         else:
             for send_to_user, send_to_user_histories in histories.items():
-                shared_histories = []
                 for history in send_to_user_histories:
                     share = trans.app.model.HistoryUserShareAssociation()
                     share.history = history

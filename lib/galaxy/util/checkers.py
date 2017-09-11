@@ -1,12 +1,17 @@
-import bz2
 import gzip
 import re
+import sys
 import zipfile
 
 from six import StringIO
 
 from galaxy import util
 from galaxy.util.image_util import image_type
+
+if sys.version_info < (3, 3):
+    import bz2file as bz2
+else:
+    import bz2
 
 HTML_CHECK_LINES = 100
 

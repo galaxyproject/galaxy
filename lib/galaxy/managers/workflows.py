@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 
 
 class WorkflowsManager(object):
-    """ Handle CRUD type operaitons related to workflows. More interesting
+    """ Handle CRUD type operations related to workflows. More interesting
     stuff regarding workflow execution, step sorting, etc... can be found in
     the galaxy.workflow module.
     """
@@ -666,10 +666,12 @@ class WorkflowContentsManager(UsesAnnotations):
                         data_input_names[prefixed_name] = True
                 # FIXME: this updates modules silently right now; messages from updates should be provided.
                 module.check_and_update_state()
-                visit_input_values(module.tool.inputs, module.state.inputs, callback)
-                # Filter
-                # FIXME: this removes connection without displaying a message currently!
-                input_connections = [conn for conn in input_connections if (conn.input_name in data_input_names or conn.non_data_connection)]
+                if module.tool:
+                    # If the tool is installed we attempt to verify input values
+                    # and connections, otherwise the last known state will be dumped without modifications.
+                    visit_input_values(module.tool.inputs, module.state.inputs, callback)
+                    # FIXME: this removes connection without displaying a message currently!
+                    input_connections = [conn for conn in input_connections if (conn.input_name in data_input_names or conn.non_data_connection)]
 
             # Encode input connections as dictionary
             input_conn_dict = {}

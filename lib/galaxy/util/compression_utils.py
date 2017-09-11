@@ -1,11 +1,16 @@
-import bz2
 import gzip
+import sys
 import zipfile
 
 from .checkers import (
     is_bz2,
     is_gzip
 )
+
+if sys.version_info < (3, 3):
+    import bz2file as bz2
+else:
+    import bz2
 
 
 def get_fileobj(filename, mode="r", gzip_only=False, bz2_only=False, zip_only=False):

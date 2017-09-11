@@ -405,7 +405,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
     /** autopair by exact match */
     autopairSimple : autoPairFnBuilder({
-        scoreThreshold: function(){ return 1.0; },
+        scoreThreshold: function(){ return 0.6; },
         match : function _match( params ){
             params = params || {};
             if( params.matchTo === params.possible ){
