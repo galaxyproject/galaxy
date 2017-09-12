@@ -3,6 +3,7 @@ Job control via a command line interface (e.g. qsub/qstat), possibly over a remo
 """
 
 import logging
+import time
 
 from galaxy import model
 from galaxy.jobs import JobDestination
@@ -19,6 +20,7 @@ log = logging.getLogger(__name__)
 __all__ = ('ShellJobRunner', )
 
 DEFAULT_EMBED_METADATA_IN_JOB = True
+MAX_SUBMIT_RETRY = 3
 
 
 class ShellJobRunner(AsynchronousJobRunner):
@@ -94,15 +96,13 @@ class ShellJobRunner(AsynchronousJobRunner):
 
         log.debug("(%s) submitting file: %s" % (galaxy_id_tag, ajs.job_file))
 
-        cmd_out = shell.execute(job_interface.submit(ajs.job_file))
-        if cmd_out.returncode != 0:
-            log.error('(%s) submission failed (stdout): %s' % (galaxy_id_tag, cmd_out.stdout))
-            log.error('(%s) submission failed (stderr): %s' % (galaxy_id_tag, cmd_out.stderr))
+        returncode, stdout = self.submit(shell, job_interface, ajs.job_file, galaxy_id_tag, retry=MAX_SUBMIT_RETRY)
+        if returncode != 0:
             job_wrapper.fail("failure submitting job")
             return
         # Some job runners return something like 'Submitted batch job XXXX'
         # Strip and split to get job ID.
-        external_job_id = cmd_out.stdout.strip().split()[-1]
+        external_job_id = stdout.strip().split()[-1]
         if not external_job_id:
             log.error('(%s) submission did not return a job identifier, failing job' % galaxy_id_tag)
             job_wrapper.fail("failure submitting job")
@@ -120,6 +120,29 @@ class ShellJobRunner(AsynchronousJobRunner):
 
         # Add to our 'queue' of jobs to monitor
         self.monitor_queue.put(ajs)
+
+    def submit(self, shell, job_interface, job_file, galaxy_id_tag, retry=MAX_SUBMIT_RETRY, timeout=10):
+        """
+        Handles actual job script submission.
+
+        If submission fails will retry `retry` time with a timeout of `timeout` seconds.
+        Retuns the returncode of the submission and the stdout, which contains the external job_id.
+        """
+        cmd_out = shell.execute(job_interface.submit(job_file))
+        if cmd_out.returncode == 0:
+            return cmd_out.returncode, cmd_out.stdout
+        stdout = '(%s) submission failed (stdout): %s' % (galaxy_id_tag, cmd_out.stdout)
+        stderr = '(%s) submission failed (stderr): %s' % (galaxy_id_tag, cmd_out.stderr)
+        log_func = log.warning if retry > 0 else log.error
+        if retry > 0:
+            log_func("%s, retrying in %s seconds" % (stdout, timeout))
+            log_func("%s, retrying in %s seconds" % (stderr, timeout))
+            time.sleep(timeout)
+            return self.submit(shell, job_interface, job_file, galaxy_id_tag, retry=retry - 1, timeout=timeout)
+        else:
+            log_func(stdout)
+            log_func(stderr)
+            return cmd_out.returncode, cmd_out.stdout
 
     def check_watched_items(self):
         """
