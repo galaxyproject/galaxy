@@ -6,8 +6,8 @@ from __future__ import absolute_import
 import imp
 import logging
 import os
-from string import Template
 from collections import OrderedDict as odict
+from string import Template
 from xml.etree.ElementTree import Element
 
 import yaml
