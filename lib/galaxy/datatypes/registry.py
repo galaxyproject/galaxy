@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import imp
 import logging
 import os
+from string import Template
 from collections import OrderedDict as odict
 from xml.etree.ElementTree import Element
 
@@ -72,6 +73,7 @@ class Registry(object):
         self.datatype_elems = []
         self.sniffer_elems = []
         self.xml_filename = None
+        self._registry_xml_string = None
         self._edam_formats_mapping = None
         self._edam_data_mapping = None
         self._converters_by_datatype = {}
@@ -874,29 +876,29 @@ class Registry(object):
             return self.xml_filename
         return self.xml_filename
 
-    def to_xml_file(self, path=None):
-        path = os.path.abspath(path)
-        if self.converters_path_attr:
-            converters_path_str = ' converters_path="%s"' % self.converters_path_attr
-        else:
-            converters_path_str = ''
-        if self.display_path_attr:
-            display_path_str = ' display_path="%s"' % self.display_path_attr
-        else:
-            display_path_str = ''
-        with open(path, 'w') as registry_xml:
+    def to_xml_file(self, path):
+        if not self._registry_xml_string:
+            registry_string_template = Template("""<?xml version="1.0"?>
+            <datatypes>
+              <registration converters_path="$converters_path" display_path="$display_path">
+                $datatype_elems
+              </registration>
+              <sniffers>
+                $sniffer_elems
+              </sniffers>
+            </datatypes>
+            """)
+            converters_path = self.converters_path_attr or ''
+            display_path = self.display_path_attr or ''
+            datatype_elems = "".join((galaxy.util.xml_to_string(elem) for elem in self.datatype_elems))
+            sniffer_elems = "".join((galaxy.util.xml_to_string(elem) for elem in self.sniffer_elems))
+            self._registry_xml_string = registry_string_template.substitute(converters_path=converters_path,
+                                                                            display_path=display_path,
+                                                                            datatype_elems=datatype_elems,
+                                                                            sniffer_elems=sniffer_elems)
+        with open(os.path.abspath(path), 'w') as registry_xml:
             os.chmod(path, 0o644)
-            registry_xml.write('<?xml version="1.0"?>\n')
-            registry_xml.write('<datatypes>\n')
-            registry_xml.write('<registration%s%s>\n' % (converters_path_str, display_path_str))
-            for elem in self.datatype_elems:
-                registry_xml.write('%s' % galaxy.util.xml_to_string(elem))
-            registry_xml.write('</registration>\n')
-            registry_xml.write('<sniffers>\n')
-            for elem in self.sniffer_elems:
-                registry_xml.write('%s' % galaxy.util.xml_to_string(elem))
-            registry_xml.write('</sniffers>\n')
-            registry_xml.write('</datatypes>\n')
+            registry_xml.write(self._registry_xml_string)
 
     def get_extension(self, elem):
         """
