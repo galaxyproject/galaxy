@@ -912,6 +912,14 @@ use_interactive = True
 # sub-directories of files contained in their directory.
 #user_library_import_dir = None
 
+# For security reasons, users may not import any files that actually lie
+# outside of their `user_library_import_dir` (e.g. using symbolic links). A
+# list of directories can be allowed by setting the following option (the list
+# is comma-separated). Be aware that *any* user with library import permissions
+# can import from anywhere in these directories (assuming they are able to
+# create symlinks to them).
+#user_library_import_symlink_whitelist = None
+
 # Allow admins to paste filesystem paths during upload. For libraries this
 # adds an option to the admin library upload tool allowing admins to paste
 # filesystem paths to files and directories in a box, and these paths will be
