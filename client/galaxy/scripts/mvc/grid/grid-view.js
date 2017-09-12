@@ -20,6 +20,7 @@ return Backbone.View.extend({
     initialize: function(grid_config) {
         this.grid = new GridModel();
         this.dict_format = grid_config.dict_format;
+        this.title = grid_config.title;
         var self = this;
         window.add_tag_to_grid_filter = function( tag_name, tag_value ){
             // Put tag name and value together.
@@ -83,6 +84,9 @@ return Backbone.View.extend({
         // get options
         var options = this.grid.attributes;
 
+        if (this.allow_title_display && options.title){
+            Utils.setWindowTitle(options.title);
+        }
         // handle refresh requests
         this.handle_refresh(options.refresh_frames);
 

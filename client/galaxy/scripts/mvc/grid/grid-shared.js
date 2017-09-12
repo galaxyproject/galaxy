@@ -6,6 +6,7 @@ define( [ 'mvc/grid/grid-view' ], function( GridView ) {
             this.setElement( $( '<div/>' ) );
             this.model = new Backbone.Model( options );
             this.item = this.model.get( 'item' );
+            this.title = this.model.get('plural');
             $.ajax({
                 url     : Galaxy.root + this.item + '/' + this.model.get( 'action_id' ),
                 success : function( response ) {
