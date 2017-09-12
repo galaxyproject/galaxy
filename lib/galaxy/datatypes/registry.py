@@ -72,7 +72,6 @@ class Registry(object):
         self.imported_modules = []
         self.datatype_elems = []
         self.sniffer_elems = []
-        self.xml_filename = None
         self._registry_xml_string = None
         self._edam_formats_mapping = None
         self._edam_data_mapping = None
@@ -869,12 +868,6 @@ class Registry(object):
         if not self._edam_data_mapping:
             self._edam_data_mapping = dict((k, v.edam_data) for k, v in self.datatypes_by_extension.items())
         return self._edam_data_mapping
-
-    @property
-    def integrated_datatypes_configs(self):
-        if self.xml_filename and os.path.isfile(self.xml_filename):
-            return self.xml_filename
-        return self.xml_filename
 
     def to_xml_file(self, path):
         if not self._registry_xml_string:
