@@ -107,7 +107,7 @@ class RemoteFilesAPIController( BaseAPIController ):
         subfolders and returns a flat list.
         """
         response = []
-        if os.path.exists( directory ):
+        if os.path.exists( directory ) and not os.path.islink( directory ):
             for ( dirpath, dirnames, filenames ) in os.walk( directory ):
                 for filename in filenames:
                     path = os.path.relpath( os.path.join( dirpath, filename ), directory )
@@ -130,7 +130,7 @@ class RemoteFilesAPIController( BaseAPIController ):
         """
         userdir_jstree = None
         jstree_paths = []
-        if os.path.exists( directory ):
+        if os.path.exists( directory ) and not os.path.islink( directory ):
             for ( dirpath, dirnames, filenames ) in os.walk( directory ):
                 for dirname in dirnames:
                     dir_path = os.path.relpath( os.path.join( dirpath, dirname ), directory )

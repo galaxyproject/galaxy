@@ -132,7 +132,7 @@ class FolderManager( object ):
         """
         parent_folder = self.get( trans, parent_folder_id )
         current_user_roles = trans.get_current_user_roles()
-        if not ( trans.user_is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, parent_folder ) ):
+        if not ( trans.user_is_admin() or trans.app.security_agent.can_add_library_item( current_user_roles, parent_folder ) ):
             raise InsufficientPermissionsException( 'You do not have proper permission to create folders under given folder.' )
         new_folder = trans.app.model.LibraryFolder( name=new_folder_name, description=new_folder_description )
         # We are associating the last used genome build with folders, so we will always
@@ -230,7 +230,7 @@ class FolderManager( object ):
         """
         Return true if the user has permissions to add item to the given folder.
         """
-        if trans.user_is_admin:
+        if trans.user_is_admin():
             return True
         current_user_roles = trans.get_current_user_roles()
         add_roles = set( trans.app.security_agent.get_roles_for_action( folder, trans.app.security_agent.permitted_actions.LIBRARY_ADD ) )

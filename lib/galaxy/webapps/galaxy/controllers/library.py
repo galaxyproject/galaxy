@@ -91,6 +91,7 @@ class Library( BaseUIController ):
                                         'app': app } )
 
     @web.expose
+    @web.require_admin
     def index( self, trans, **kwd ):
         message = escape( kwd.get( 'message', ''  ) )
         status = escape( kwd.get( 'status', 'done' ) )
@@ -101,6 +102,7 @@ class Library( BaseUIController ):
                                     status=status )
 
     @web.expose
+    @web.require_admin
     def browse_libraries( self, trans, **kwd ):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
