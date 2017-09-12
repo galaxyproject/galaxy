@@ -56,7 +56,7 @@ class GroupManager( object ):
         """
         Create a new group.
         """
-        if not trans.user_is_admin:
+        if not trans.user_is_admin():
             raise ItemAccessibilityException( 'Only administrators can create groups.' )
         else:
             if self.get( trans, name=name ):

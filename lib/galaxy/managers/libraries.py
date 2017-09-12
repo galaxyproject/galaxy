@@ -50,7 +50,7 @@ class LibraryManager( object ):
         """
         Create a new library.
         """
-        if not trans.user_is_admin:
+        if not trans.user_is_admin():
             raise exceptions.ItemAccessibilityException( 'Only administrators can create libraries.' )
         else:
             library = trans.app.model.Library( name=name, description=description, synopsis=synopsis )

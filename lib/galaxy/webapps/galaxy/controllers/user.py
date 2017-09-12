@@ -669,7 +669,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         subscribe_checked = CheckboxField.is_checked( subscribe )
         referer = trans.request.referer or ''
         redirect = kwd.get( 'redirect', referer ).strip()
-        is_admin = cntrller == 'admin' and trans.user_is_admin
+        is_admin = cntrller == 'admin' and trans.user_is_admin()
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
             if trans.app.config.error_email_to is not None:

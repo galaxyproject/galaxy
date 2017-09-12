@@ -19,6 +19,7 @@ from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import folders, roles
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
+from galaxy.util.path import safe_contains, safe_relpath, unsafe_walk
 from galaxy.util.streamball import StreamBall
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
@@ -422,29 +423,45 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         source = kwd.get( 'source', None )
         if source not in [ 'userdir_file', 'userdir_folder', 'importdir_file', 'importdir_folder', 'admin_path' ]:
             raise exceptions.RequestParameterMissingException( 'You have to specify "source" parameter. Possible values are "userdir_file", "userdir_folder", "admin_path", "importdir_file" and "importdir_folder". ')
-        if source in [ 'importdir_file', 'importdir_folder' ]:
-            if not trans.user_is_admin:
+        elif source in [ 'importdir_file', 'importdir_folder' ]:
+            if not trans.user_is_admin():
                 raise exceptions.AdminRequiredException( 'Only admins can import from importdir.' )
             if not trans.app.config.library_import_dir:
                 raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow admins to import into library from importdir.' )
             import_base_dir = trans.app.config.library_import_dir
+            if not safe_relpath(path):
+                # admins shouldn't be able to explicitly specify a path outside server_dir, but symlinks are allowed.
+                # the reasoning here is that galaxy admins may not have direct filesystem access or can only access
+                # library_import_dir via FTP (which cannot create symlinks), and may rely on sysadmins to set up the
+                # import directory. if they have filesystem access, all bets are off.
+                raise exceptions.RequestParameterInvalidException( 'The given path is invalid.' )
             path = os.path.join( import_base_dir, path )
-        if source in [ 'userdir_file', 'userdir_folder' ]:
+        elif source in [ 'userdir_file', 'userdir_folder' ]:
+            unsafe = None
             user_login = trans.user.email
             user_base_dir = trans.app.config.user_library_import_dir
             if user_base_dir is None:
                 raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow upload from user directories.' )
             full_dir = os.path.join( user_base_dir, user_login )
-            if not path.lower().startswith( full_dir.lower() ):
+            if not safe_contains( full_dir, path, whitelist=trans.app.config.user_library_import_symlink_whitelist ):
+                # the path is a symlink outside the user dir
                 path = os.path.join( full_dir, path )
+                log.error( 'User attempted to import a path that resolves to a path outside of their import dir: %s -> %s', path, os.path.realpath(path) )
+                raise exceptions.RequestParameterInvalidException( 'The given path is invalid.' )
+            path = os.path.join( full_dir, path )
+            for unsafe in unsafe_walk( path, whitelist=[full_dir] + trans.app.config.user_library_import_symlink_whitelist ):
+                # the path is a dir and contains files that symlink outside the user dir
+                log.error( 'User attempted to import a directory containing a path that resolves to a path outside of their import dir: %s -> %s', unsafe, os.path.realpath(unsafe) )
+            if unsafe:
+                raise exceptions.RequestParameterInvalidException( 'The given path is invalid.' )
             if not os.path.exists( path ):
                 raise exceptions.RequestParameterInvalidException( 'Given path does not exist on the host.' )
             if not self.folder_manager.can_add_item( trans, folder ):
                 raise exceptions.InsufficientPermissionsException( 'You do not have proper permission to add items to the given folder.' )
-        if source == 'admin_path':
+        elif source == 'admin_path':
             if not trans.app.config.allow_library_path_paste:
                 raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow admins to import into library from path.' )
-            if not trans.user_is_admin:
+            if not trans.user_is_admin():
                 raise exceptions.AdminRequiredException( 'Only admins can import from path.' )
 
         # Set up the traditional tool state/params
@@ -463,12 +480,12 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if source in [ 'importdir_folder' ]:
             kwd[ 'filesystem_paths' ] = os.path.join( import_base_dir, path )
         # user wants to import one file only
-        if source in [ "userdir_file", "importdir_file" ]:
+        elif source in [ "userdir_file", "importdir_file" ]:
             file = os.path.abspath( path )
             abspath_datasets.append( trans.webapp.controllers[ 'library_common' ].make_library_uploaded_dataset(
                 trans, 'api', kwd, os.path.basename( file ), file, 'server_dir', library_bunch ) )
         # user wants to import whole folder
-        if source == "userdir_folder":
+        elif source == "userdir_folder":
             uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
                 trans, 'api', kwd, library_bunch, 200, '' )
             uploaded_datasets = uploaded_datasets_bunch[ 0 ]
