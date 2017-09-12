@@ -338,15 +338,12 @@ class Cloud(ObjectStore):
                     start_time = datetime.now()
                     log.debug("Pushing cache file '%s' of size %s bytes to key '%s'", source_file,
                               os.path.getsize(source_file), rel_path)
-                    mb_size = os.path.getsize(source_file) / 1e6
                     self.transfer_progress = 0  # Reset transfer progress counter
                     if not self.bucket.get(rel_path):
                         created_obj = self.bucket.create_object(rel_path)
                         created_obj.upload_from_file(source_file)
                     else:
                         self.bucket.get(rel_path).upload_from_file(source_file)
-                    # else:
-                        # multipart_upload(self.s3server, bucket, bucket.get(rel_path).name, source_file, mb_size)
 
                     end_time = datetime.now()
                     log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)",
