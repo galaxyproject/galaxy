@@ -104,29 +104,3 @@ steps:
             'workflow_annotation': annotation,
         })
         self.click_submit(form_element)
-
-    def workflow_editor_click_option(self, option_label):
-        self.workflow_editor_click_options()
-        menu_element = self.workflow_editor_options_menu_element()
-        option_elements = menu_element.find_elements_by_css_selector("a")
-        assert len(option_elements) > 0, "Failed to find workflow editor options"
-        time.sleep(1)
-        found_option = False
-        for option_element in option_elements:
-            if option_label in option_element.text:
-                action_chains = self.action_chains()
-                action_chains.move_to_element(option_element)
-                action_chains.click()
-                action_chains.perform()
-                found_option = True
-                break
-
-        if not found_option:
-            raise Exception("Failed to find workflow editor option with label [%s]" % option_label)
-
-    def workflow_editor_click_options(self):
-        button = self.wait_for_selector("#workflow-options-button")
-        button.click()
-
-    def workflow_editor_options_menu_element(self):
-        return self.wait_for_selector_visible("#workflow-options-button-menu")
