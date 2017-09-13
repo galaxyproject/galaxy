@@ -171,3 +171,9 @@ class MockJobWrapper(object):
         self.stdout = stdout
         self.stderr = stderr
         self.exit_code = exit_code
+
+    def tmp_directory(self):
+        return None
+
+    def home_directory(self):
+        return None

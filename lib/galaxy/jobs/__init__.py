@@ -1133,6 +1133,19 @@ class JobWrapper(object, HasResourceParameters):
         if flush:
             self.sa_session.flush()
 
+    @property
+    def home_target(self):
+        home_target = self.tool.home_target
+        return home_target
+
+    @property
+    def tmp_target(self):
+        tmp_dir = self.get_destination_configuration("tmp_dir", default=None)
+        if tmp_dir:
+            return "job_tmp"
+        else:
+            return self.tool.tmp_target_default
+
     def get_destination_configuration(self, key, default=None):
         """ Get a destination parameter that can be defaulted back
         in app.config if it needs to be applied globally.
@@ -1623,6 +1636,32 @@ class JobWrapper(object, HasResourceParameters):
                 return dp.dataset_id
         return None
 
+    def home_directory(self):
+        home_target = self.home_target
+        return self._target_to_directory(home_target)
+
+    def tmp_directory(self):
+        tmp_target = self.tmp_target
+        return self._target_to_directory(tmp_target)
+
+    def _target_to_directory(self, target):
+        working_directory = self.working_directory
+
+        if target is None:
+            return None
+        elif target == "job_tmp":
+            tmp_dir = self.get_destination_configuration("tmp_dir", None)
+            if tmp_dir:
+                return tmp_dir
+            else:
+                return os.path.join(working_directory, "tmp")
+        elif target == "legacy_home":
+            return self.get_destination_configuration("legacy_home_dir", None)
+        elif target == "pwd":
+            return os.path.join(working_directory, "working")
+        else:
+            raise Exception("Unknown target type [%s]" % target)
+
     def get_tool_provided_job_metadata(self):
         if self.tool_provided_job_metadata is not None:
             return self.tool_provided_job_metadata
@@ -2047,6 +2086,14 @@ class ComputeEnvironment(object):
         be rewritten.)
         """
 
+    @abstractmethod
+    def home_directory(self):
+        """Home directory of target job - none if HOME should not be set."""
+
+    @abstractmethod
+    def tmp_directory(self):
+        """Temp directory of target job - none if HOME should not be set."""
+
 
 class SimpleComputeEnvironment(object):
 
@@ -2091,6 +2138,12 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
 
     def tool_directory(self):
         return os.path.abspath(self.job_wrapper.tool.tool_dir)
+
+    def home_directory(self):
+        return self.job_wrapper.home_directory()
+
+    def tmp_directory(self):
+        return self.job_wrapper.tmp_directory()
 
 
 class NoopQueue(object):

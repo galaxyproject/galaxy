@@ -48,6 +48,9 @@
   <tool file="maxseconds.xml" />
   -->
   <tool file="job_properties.xml" />
+  <tool file="job_environment_default.xml" />
+  <tool file="job_environment_default_legacy.xml" />
+  <tool file="job_environment_force_legacy_home.xml" />
   <tool file="version_command_plain.xml" />
   <tool file="version_command_interpreter.xml" />
   <tool file="version_command_tool_dir.xml" />

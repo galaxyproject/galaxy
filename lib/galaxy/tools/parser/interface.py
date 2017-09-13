@@ -91,6 +91,23 @@ class ToolSource(object):
         """ Return environment variable templates to expose.
         """
 
+    def parse_home_target(self):
+        """Should be "pwd", "legacy_home", "job_tmp", or None.
+        """
+        return "pwd"
+
+    def parse_tmp_target_default(self):
+        """Should be "pwd", "legacy_home", "job_tmp", or None.
+        """
+        return "job_tmp"
+
+    def parse_tmp_directories(self):
+        """Directories to override if a tmp_target is not None."""
+        return ["TMPDIR", "TMP", "TEMP"]
+
+    def parse_docker_env_pass_through(self):
+        return ["GALAXY_SLOTS", "HOME"] + self.parse_tmp_directories()
+
     @abstractmethod
     def parse_interpreter(self):
         """ Return string containing the interpreter to prepend to the command

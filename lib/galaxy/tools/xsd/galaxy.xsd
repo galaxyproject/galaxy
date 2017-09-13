@@ -2683,6 +2683,11 @@ deprecated and using the ``$__tool_directory__`` variable is superior.
             <xs:documentation></xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="use_legacy_home" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>When running a job for this tool, do not isolate its $HOME directory within the job's directory - use either the legacy_home_dir setting in Galaxy or the default $HOME specified in the job's default environment.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="interpreter" type="xs:string" gxdocs:deprecated="true">
           <xs:annotation>
             <xs:documentation xml:lang="en">This attribute defines the programming language in which the tool's executable file is written. Any language can be used (tools can be written in Python, C, Perl, Java, etc.). The executable file must be in the same directory of the XML file. If instead this attribute is not specified, the tag content should be a Bash command calling executable(s) available in the $PATH. </xs:documentation>

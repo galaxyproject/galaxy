@@ -279,21 +279,24 @@ class ToolInfo(object):
     # variables they can consume (e.g. JVM options, license keys, etc..)
     # and add these to env_path_through
 
-    def __init__(self, container_descriptions=[], requirements=[], requires_galaxy_python_environment=False):
+    def __init__(self, container_descriptions=[], requirements=[], requires_galaxy_python_environment=False, env_pass_through=["GALAXY_SLOTS"]):
         self.container_descriptions = container_descriptions
         self.requirements = requirements
         self.requires_galaxy_python_environment = requires_galaxy_python_environment
-        self.env_pass_through = ["GALAXY_SLOTS"]
+        self.env_pass_through = env_pass_through
 
 
 class JobInfo(object):
 
-    def __init__(self, working_directory, tool_directory, job_directory, job_directory_type):
+    def __init__(
+        self, working_directory, tool_directory, job_directory, tmp_directory, job_directory_type
+    ):
         self.working_directory = working_directory
         self.job_directory = job_directory
         # Tool files may be remote staged - so this is unintuitively a property
         # of the job not of the tool.
         self.tool_directory = tool_directory
+        self.tmp_directory = tmp_directory
         self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
 
 
@@ -390,6 +393,7 @@ class HasDockerLikeVolumes:
                 variables[name] = os.path.abspath(value)
 
         add_var("working_directory", self.job_info.working_directory)
+        add_var("tmp_directory", self.job_info.tmp_directory)
         add_var("job_directory", self.job_info.job_directory)
         add_var("tool_directory", self.job_info.tool_directory)
         add_var("galaxy_root", self.app_info.galaxy_root_dir)
@@ -404,6 +408,8 @@ class HasDockerLikeVolumes:
             defaults = "$galaxy_root:default_ro,$tool_directory:default_ro"
             if self.job_info.job_directory:
                 defaults += ",$job_directory:default_ro"
+            if self.job_info.tmp_directory is not None:
+                defaults += ",$tmp_directory:rw"
             if self.app_info.outputs_to_working_directory:
                 # Should need default_file_path (which is of course an estimate given
                 # object stores anyway).
@@ -450,6 +456,11 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         preprocessed_volumes_str = preprocess_volumes(volumes_raw, self.container_type)
         # TODO: Remove redundant volumes...
         volumes = docker_util.DockerVolume.volumes_from_str(preprocessed_volumes_str)
+        # If a tool definitely has a temp directory available set it to /tmp in container for compat.
+        # with CWL. This is part of that spec and should make it easier to share containers between CWL
+        # and Galaxy.
+        if self.job_info.tmp_directory is not None:
+            volumes.append(docker_util.DockerVolume.volume_from_str("%s:/tmp:rw" % self.job_info.tmp_directory))
         volumes_from = self.destination_info.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
 
         docker_host_props = dict(

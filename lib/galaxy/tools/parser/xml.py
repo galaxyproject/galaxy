@@ -128,6 +128,25 @@ class XmlToolSource(ToolSource):
             )
         return environment_variables
 
+    def parse_home_target(self):
+        target = "pwd" if self.parse_profile() >= "17.09" else "legacy_home"  # TODO: change to 18.01 pre-merge
+        command_el = self._command_el
+        command_legacy = (command_el is not None) and command_el.get("use_legacy_home", None)
+        if command_legacy is not None:
+            target = "legacy_home" if string_as_bool(command_legacy) else "pwd"
+        return target
+
+    def parse_tmp_target_default(self):
+        target = "job_tmp" if self.parse_profile() >= "17.09" else None  # TODO: change to 18.01 pre-merge
+        return target
+
+    def parse_docker_env_pass_through(self):
+        if self.parse_profile() < "17.09":  # TODO change to 18.01 pre-merge
+            return ["GALAXY_SLOTS"]
+        else:
+            # Pass home, etc...
+            return super(XmlToolSource, self).parse_docker_env_pass_through()
+
     def parse_interpreter(self):
         command_el = self._command_el
         interpreter = (command_el is not None) and command_el.get("interpreter", None)

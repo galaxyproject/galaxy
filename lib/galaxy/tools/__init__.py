@@ -622,6 +622,17 @@ class Tool(object, Dictifiable):
 
         self.parse_command(tool_source)
         self.environment_variables = self.parse_environment_variables(tool_source)
+        home_target = tool_source.parse_home_target()
+        tmp_target_default = tool_source.parse_tmp_target_default()
+        for environment_variable in self.environment_variables:
+            if environment_variable.get("name") == "HOME":
+                home_target = None
+            if environment_variable.get("name") == "TMP":
+                tmp_target_default = None
+        self.home_target = home_target
+        self.tmp_target_default = tmp_target_default
+        self.tmp_directories = tool_source.parse_tmp_directories()
+        self.docker_env_pass_through = tool_source.parse_docker_env_pass_through()
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
