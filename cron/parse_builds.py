@@ -11,7 +11,6 @@ import sys
 import xml.etree.ElementTree as ElementTree
 
 
-
 def getbuilds(url):
     try:
         text = requests.get(url).text

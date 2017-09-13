@@ -2,7 +2,6 @@
 Module for managing jobs in Pacific Bioscience's SMRT Portal and automatically transferring files
 produced by SMRT Portal.
 """
-import json
 import logging
 import requests
 from string import Template
