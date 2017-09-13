@@ -3,7 +3,6 @@ File format detector
 """
 from __future__ import absolute_import
 
-import bz2
 import codecs
 import gzip
 import logging
@@ -29,6 +28,11 @@ from galaxy.util.checkers import (
     is_bz2,
     is_gzip
 )
+
+if sys.version_info < (3, 3):
+    import bz2file as bz2
+else:
+    import bz2
 
 log = logging.getLogger(__name__)
 
@@ -386,6 +390,9 @@ def guess_ext(fname, sniff_order, is_multi_byte=False):
     >>> fname = get_test_fname('1.xls')
     >>> guess_ext(fname, sniff_order)
     'excel.xls'
+    >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
+    >>> guess_ext(fname, sniff_order)
+    'biom2'
     """
     file_ext = None
     for datatype in sniff_order:

@@ -28,6 +28,10 @@ class HasDriver:
         for element in elements:
             assert not element.is_displayed()
 
+    def selector_is_displayed(self, selector):
+        element = self.driver.find_element_by_css_selector(selector)
+        return element.is_displayed()
+
     def assert_selector_absent(self, selector):
         assert len(self.driver.find_elements_by_css_selector(selector)) == 0
 

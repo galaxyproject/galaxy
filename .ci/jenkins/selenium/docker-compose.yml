@@ -12,7 +12,7 @@ services:
     ports:
       - "${GALAXY_PORT}:8080"
   selenium:
-    image: selenium/standalone-chrome:3.0.1-aluminum
+    image: selenium/standalone-chrome:3.5.2
     ports:
       - "${SELENIUM_PORT}:4444"
     links:

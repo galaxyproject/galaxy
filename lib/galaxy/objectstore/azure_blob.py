@@ -427,8 +427,6 @@ class AzureBlobObjectStore(ObjectStore):
         #     return cache_path
         raise ObjectNotFound('objectstore.get_filename, no cache_path: %s, kwargs: %s' % (str(obj), str(kwargs)))
 
-        return cache_path  # Until the upload tool does not explicitly create the dataset, return expected path
-
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
         if create is True:
             self.create(obj, **kwargs)
