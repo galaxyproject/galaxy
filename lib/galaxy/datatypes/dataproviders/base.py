@@ -256,7 +256,6 @@ class LimitedOffsetDataProvider(FilteredDataProvider):
         """
         if self.limit is not None and self.limit <= 0:
             return
-            yield
 
         parent_gen = super(LimitedOffsetDataProvider, self).__iter__()
         for datum in parent_gen:

@@ -23,9 +23,6 @@ VALID_FUNCTIONS = BUILTIN_AND_MATH_FUNCTIONS + STRING_AND_LIST_METHODS
 def _check_name(ast_node, allowed_variables=[]):
     name = ast_node.id
     return name in (VALID_FUNCTIONS + allowed_variables)
-    if re.match(r'^c\d+$', name):
-        return True
-    return name in VALID_FUNCTIONS
 
 
 def _check_attribute(ast_node):
