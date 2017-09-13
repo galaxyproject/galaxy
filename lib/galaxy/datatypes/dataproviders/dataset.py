@@ -9,7 +9,6 @@ import logging
 import sys
 
 from bx import (
-    bbi as bx_bbi,
     seq as bx_seq,
     wiggle as bx_wig
 )

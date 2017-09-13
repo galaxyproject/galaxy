@@ -1,4 +1,3 @@
-import re
 from ast import (
     Module,
     parse,
