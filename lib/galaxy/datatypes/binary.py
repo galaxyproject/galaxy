@@ -254,7 +254,7 @@ class Bam(Binary):
 
         # Get the version of samtools via --version-only, if available
         try:
-            output = subprocess.check_output(['samtools', '--version-only'])
+            output = subprocess.check_output(['samtools', '--version-only'], stderr=subprocess.PIPE)
             # --version-only is available
             # Format is <version x.y.z>+htslib-<a.b.c>
             version = output.split('+')[0]
@@ -263,7 +263,7 @@ class Bam(Binary):
             # --version-only not available
             pass
 
-        output = subprocess.check_output(['samtools'])
+        output = subprocess.check_output(['samtools'], stderr=subprocess.PIPE)
         lines = output.split('\n')
         for line in lines:
             if line.lower().startswith('version'):
