@@ -7,6 +7,7 @@ from __future__ import absolute_import  # Need to import pulsar_client absolutel
 import errno
 import logging
 import os
+import subprocess
 from distutils.version import LooseVersion
 from time import sleep
 
@@ -382,8 +383,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         prepare_input_files_cmds = getattr(job_wrapper, 'prepare_input_files_cmds', None)
         if prepare_input_files_cmds is not None:
             for cmd in prepare_input_files_cmds:  # run the commands to stage the input files
-                if 0 != os.system(cmd):
-                    raise Exception('Error running file staging command: %s' % cmd)
+                subprocess.check_call(cmd, shell=True)
             job_wrapper.prepare_input_files_cmds = None  # prevent them from being used in-line
 
     def _populate_parameter_defaults(self, job_destination):
