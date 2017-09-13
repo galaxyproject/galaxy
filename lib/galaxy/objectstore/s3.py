@@ -68,7 +68,7 @@ class S3ObjectStore(ObjectStore):
             log.info("Cache cleaner manager started")
         # Test if 'axel' is available for parallel download and pull the key into cache
         try:
-            subprocess.call('axel')
+            subprocess.check_call(['axel'])
             self.use_axel = True
         except OSError:
             self.use_axel = False
@@ -341,7 +341,7 @@ class S3ObjectStore(ObjectStore):
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
-                ret_code = subprocess.call("axel -a -n %s '%s'" % (ncores, url))
+                ret_code = subprocess.call(['axel', '-a', '-n', ncores, url])
                 if ret_code == 0:
                     return True
             else:
