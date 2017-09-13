@@ -175,8 +175,13 @@ def build_docker_run_command(
     if set_user:
         user = set_user
         if set_user == DEFAULT_SET_USER:
-            user = str(os.geteuid())
-        command_parts.extend(["-u", user])
+            # If future-us is ever in here and fixing this for docker-machine just
+            # use cwltool.docker_id - it takes care of this default nicely.
+            euid = os.geteuid()
+            egid = os.getgid()
+
+            user = "%d:%d" % (euid, egid)
+        command_parts.extend(["--user", user])
     full_image = image
     if tag:
         full_image = "%s:%s" % (full_image, tag)
