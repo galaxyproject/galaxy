@@ -156,8 +156,8 @@ class TempfileDataProvider(base.DataProvider):
         # TODO:
         raise NotImplementedError()
         # write the file here
-        self.create_file
-        super(TempfileDataProvider, self).__init__(self.tmp_file, **kwargs)
+        # self.create_file
+        # super(TempfileDataProvider, self).__init__(self.tmp_file, **kwargs)
 
     def create_file(self):
         self.tmp_file = tempfile.NamedTemporaryFile()
