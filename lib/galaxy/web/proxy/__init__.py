@@ -8,8 +8,9 @@ from galaxy.util import sockets
 from galaxy.util.lazy_process import LazyProcess, NoOpLazyProcess
 from galaxy.util import sqlite
 from galaxy.util import unique_id
-import urllib2
 import time
+
+import requests
 
 log = logging.getLogger( __name__ )
 
@@ -301,21 +302,17 @@ class RestGolangProxyIpc(object):
             'ContainerIds': container_ids,
         }
 
-        req = urllib2.Request(self.api_url)
-        req.add_header('Content-Type', 'application/json')
-
         # Sometimes it takes our poor little proxy a second or two to get
         # going, so if this fails, re-call ourselves with an increased timeout.
         try:
-            urllib2.urlopen(req, json.dumps(values))
-        except urllib2.URLError as err:
-            log.debug(err)
+            requests.get(self.api_url, headers={'Content-Type': 'application/json'}, data=json.dumps(values))
+        except requests.exceptions.ConnectionError as err:
+            log.exception(err)
             if sleep > 5:
                 excp = "Could not contact proxy after %s seconds" % sum(range(sleep + 1))
                 raise Exception(excp)
             time.sleep(sleep)
-            self.handle_requests(authentication, proxy_requests, route_name, container_ids, sleep=sleep + 1)
-        pass
+            self.handle_requests(authentication, proxy_requests, route_name, container_ids, container_interface, sleep=sleep + 1)
 
 
 ProxyMapping = namedtuple('ProxyMapping', ['host', 'port', 'container_ids', 'container_interface'])

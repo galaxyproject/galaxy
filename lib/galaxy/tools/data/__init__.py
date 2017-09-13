@@ -16,7 +16,7 @@ import time
 from glob import glob
 from tempfile import NamedTemporaryFile
 
-from six.moves.urllib.request import urlopen
+import requests
 
 from galaxy import util
 from galaxy.util.dictifiable import Dictifiable
@@ -340,7 +340,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 if filename:
                     tmp_file = NamedTemporaryFile( prefix='TTDT_URL_%s-' % self.name )
                     try:
-                        tmp_file.write( urlopen( filename, timeout=url_timeout ).read() )
+                        tmp_file.write(requests.get(filename, timeout=url_timeout).text)
                     except Exception as e:
                         log.error( 'Error loading Data Table URL "%s": %s', filename, e )
                         continue

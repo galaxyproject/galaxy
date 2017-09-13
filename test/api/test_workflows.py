@@ -171,7 +171,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase ):
         )
         if jobs_descriptions is None:
             assert source_type != "path"
-            jobs_descriptions = yaml.load( has_workflow )
+            jobs_descriptions = yaml.safe_load(has_workflow)
 
         test_data = jobs_descriptions.get("test_data", {})
 

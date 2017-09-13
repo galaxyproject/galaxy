@@ -1042,7 +1042,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
                         continue
 
                     with open( image_file, 'r' ) as handle:
-                        self.gie_image_map[gie] = yaml.load( handle )
+                        self.gie_image_map[gie] = yaml.safe_load(handle)
 
         return trans.fill_template_mako(
             "visualization/gie.mako",

@@ -88,17 +88,12 @@ def get_affected_packages(args):
     """
     recipes_dir = args.recipes_dir
     hours = args.diff_hours
-    cmd = """cd '%s' && git log --diff-filter=ACMRTUXB --name-only --pretty="" --since="%s hours ago" | grep -E '^recipes/.*/meta.yaml' | sort | uniq""" % (recipes_dir, hours)
-    pkg_list = check_output(cmd, shell=True)
-    ret = list()
-    for pkg in pkg_list.strip().split('\n'):
-        if pkg and os.path.exists(os.path.join( recipes_dir, pkg )):
-            ret.append( (get_pkg_name(args, pkg), get_tests(args, pkg)) )
-    return ret
-
-
-def check_output(cmd, shell=True):
-    return subprocess.check_output(cmd, shell=shell)
+    cmd = ['git', 'log', '--diff-filter=ACMRTUXB', '--name-only', '--pretty=""', '--since="%s hours ago"' % hours]
+    changed_files = subprocess.check_output(cmd, cwd=recipes_dir).strip().split('\n')
+    pkg_list = set([x for x in changed_files if x.startswith('recipes/') and x.endswith('meta.yaml')])
+    for pkg in pkg_list:
+        if pkg and os.path.exists(os.path.join(recipes_dir, pkg)):
+            yield (get_pkg_name(args, pkg), get_tests(args, pkg))
 
 
 def conda_versions(pkg_name, file_name):

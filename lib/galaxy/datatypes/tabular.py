@@ -8,6 +8,7 @@ import csv
 import logging
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -518,15 +519,12 @@ class Sam( Tabular ):
         Multiple SAM files may each have headers. Since the headers should all be the same, remove
         the headers from files 1-n, keeping them in the first file only
         """
-        cmd = 'mv %s %s' % ( split_files[0], output_file )
-        result = os.system(cmd)
-        if result != 0:
-            raise Exception('Result %s from %s' % (result, cmd))
+        shutil.move(split_files[0], output_file)
+
         if len(split_files) > 1:
-            cmd = 'egrep -v -h "^@" %s >> %s' % ( ' '.join(split_files[1:]), output_file )
-        result = os.system(cmd)
-        if result != 0:
-            raise Exception('Result %s from %s' % (result, cmd))
+            cmd = ['egrep', '-v', '-h', '^@'] + split_files[1:] + ['>>', output_file]
+            subprocess.check_call(cmd, shell=True)
+
     merge = staticmethod(merge)
 
     # Dataproviders
