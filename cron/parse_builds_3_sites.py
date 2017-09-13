@@ -4,8 +4,9 @@ Connects to sites and determines which builds are available at each.
 """
 from __future__ import print_function
 
-import requests
 import xml.etree.ElementTree as ElementTree
+
+import requests
 
 sites = ['http://genome.ucsc.edu/cgi-bin/',
          'http://archaea.ucsc.edu/cgi-bin/',

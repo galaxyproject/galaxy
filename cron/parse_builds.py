@@ -6,10 +6,10 @@ build   description
 """
 from __future__ import print_function
 
-import requests
 import sys
 import xml.etree.ElementTree as ElementTree
 
+import requests
 
 def getbuilds(url):
     try:

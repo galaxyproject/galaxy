@@ -3,10 +3,11 @@ Module for managing jobs in Pacific Bioscience's SMRT Portal and automatically t
 produced by SMRT Portal.
 """
 import logging
-import requests
 from string import Template
 
 from .data_transfer import DataTransfer
+
+import requests
 
 log = logging.getLogger(__name__)
 

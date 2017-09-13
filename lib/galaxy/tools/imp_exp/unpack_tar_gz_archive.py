@@ -10,11 +10,12 @@ from __future__ import print_function
 import math
 import optparse
 import os
-import requests
 import sys
 import tarfile
 import tempfile
 from base64 import b64decode
+
+import requests
 
 # Set max size of archive/file that will be handled to be 100 GB. This is
 # arbitrary and should be adjusted as needed.
