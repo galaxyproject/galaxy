@@ -133,15 +133,14 @@ class ShellJobRunner(AsynchronousJobRunner):
             return cmd_out.returncode, cmd_out.stdout
         stdout = '(%s) submission failed (stdout): %s' % (galaxy_id_tag, cmd_out.stdout)
         stderr = '(%s) submission failed (stderr): %s' % (galaxy_id_tag, cmd_out.stderr)
-        log_func = log.warning if retry > 0 else log.error
         if retry > 0:
-            log_func("%s, retrying in %s seconds" % (stdout, timeout))
-            log_func("%s, retrying in %s seconds" % (stderr, timeout))
+            log.debug("%s, retrying in %s seconds", stdout, timeout)
+            log.debug("%s, retrying in %s seconds", stderr, timeout)
             time.sleep(timeout)
             return self.submit(shell, job_interface, job_file, galaxy_id_tag, retry=retry - 1, timeout=timeout)
         else:
-            log_func(stdout)
-            log_func(stderr)
+            log.error(stdout)
+            log.error(stderr)
             return cmd_out.returncode, cmd_out.stdout
 
     def check_watched_items(self):
