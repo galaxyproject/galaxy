@@ -119,7 +119,7 @@ def _handle_script_integrity(path, config):
     sleep_amt = getattr(config, "check_job_script_integrity_sleep", DEFAULT_INTEGRITY_SLEEP)
     for i in range(count):
         try:
-            proc = subprocess.Popen([path], shell=True, env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"})
+            proc = subprocess.Popen([path], env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"})
             proc.wait()
             if proc.returncode == 42:
                 script_integrity_verified = True
