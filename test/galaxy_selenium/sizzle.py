@@ -95,12 +95,18 @@ def find_elements_by_sizzle(driver, sizzle_selector):
 
 def _inject_sizzle(driver, sizzle_url, timeout):
     script = """
-        var _s = document.createElement("script");
-        _s.type = "text/javascript";
-        _s.src = "{src}";
-        var _h = document.getElementsByTagName("head")[0];
-        _h.appendChild(_s);
-    """.format(src=sizzle_url)
+        if(typeof(window.$) != "undefined") {
+            // Just reuse jQuery if it is available, avoids potential amd problems
+            // that have cropped up with Galaxy for instance.
+            window.Sizzle = window.$;
+        } else {
+            var _s = document.createElement("script");
+            _s.type = "text/javascript";
+            _s.src = "%s";
+            var _h = document.getElementsByTagName("head")[0];
+            _h.appendChild(_s);
+        }
+    """ % sizzle_url
     driver.execute_script(script)
     wait = WebDriverWait(driver, timeout)
     wait.until(lambda d: _is_sizzle_loaded(d),
@@ -121,8 +127,8 @@ def _make_sizzle_string(sizzle_selector):
 
 
 __all__ = (
-    "sizzle_selector_clickable",
-    "sizzle_presence_of_selector",
     "find_element_by_sizzle",
     "find_elements_by_sizzle",
+    "sizzle_selector_clickable",
+    "sizzle_presence_of_selector",
 )

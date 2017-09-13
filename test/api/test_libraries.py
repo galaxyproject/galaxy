@@ -113,6 +113,34 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
 
+    def test_update_dataset_in_folder(self):
+        library = self.library_populator.new_private_library("ForUpdateDataset")
+        folder_response = self._create_folder(library)
+        self._assert_status_code_is(folder_response, 200)
+        folder_id = folder_response.json()[0]['id']
+        history_id = self.dataset_populator.new_history()
+        hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")['id']
+        payload = {'from_hda_id': hda_id, 'create_type': 'file', 'folder_id': folder_id}
+        ld = self._post("libraries/%s/contents" % folder_id, payload)
+        data = {'name': 'updated_name', 'file_ext': 'fastq', 'misc_info': 'updated_info', 'genome_build': 'updated_genome_build'}
+        create_response = self._patch("libraries/datasets/%s" % ld.json()["id"], data=data)
+        self._assert_status_code_is(create_response, 200)
+        self._assert_has_keys(create_response.json(), "name", "file_ext", "misc_info", "genome_build")
+
+    def test_invalid_update_dataset_in_folder(self):
+        library = self.library_populator.new_private_library("ForInvalidUpdateDataset")
+        folder_response = self._create_folder(library)
+        self._assert_status_code_is(folder_response, 200)
+        folder_id = folder_response.json()[0]['id']
+        history_id = self.dataset_populator.new_history()
+        hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")['id']
+        payload = {'from_hda_id': hda_id, 'create_type': 'file', 'folder_id': folder_id}
+        ld = self._post("libraries/%s/contents" % folder_id, payload)
+        data = {'file_ext': 'nonexisting_type'}
+        create_response = self._patch("libraries/datasets/%s" % ld.json()["id"], data=data)
+        self._assert_status_code_is(create_response, 400)
+        assert 'This Galaxy does not recognize the datatype of:' in create_response.json()['err_msg']
+
     def test_create_datasets_in_library_from_collection(self):
         library = self.library_populator.new_private_library("ForCreateDatasetsFromCollection")
         folder_response = self._create_folder(library)

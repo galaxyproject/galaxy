@@ -22,7 +22,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
     @selenium_test
     def test_history_panel_rename(self):
         self.register()
-        editable_text_input_element = self.click_to_rename_history()
+        editable_text_input_element = self.history_panel_click_to_rename()
         editable_text_input_element.send_keys("New History Name")
         self.send_enter(editable_text_input_element)
 
@@ -32,20 +32,20 @@ class HistoryPanelTestCase(SeleniumTestCase):
     @selenium_test
     def test_history_rename_cancel_with_click(self):
         self.register()
-        editable_text_input_element = self.click_to_rename_history()
+        editable_text_input_element = self.history_panel_click_to_rename()
         editable_text_input_element.send_keys("New History Name")
         self.click_center()
-        self.assert_selector_absent(self.edit_title_input_selector())
+        self.assert_selector_absent(self.history_panel_edit_title_input_selector())
         name_element = self.history_panel_name_element()
         assert "New History Name" not in name_element.text
 
     @selenium_test
     def test_history_rename_cancel_with_escape(self):
         self.register()
-        editable_text_input_element = self.click_to_rename_history()
+        editable_text_input_element = self.history_panel_click_to_rename()
         editable_text_input_element.send_keys("New History Name")
         self.send_escape(editable_text_input_element)
-        self.assert_selector_absent(self.edit_title_input_selector())
+        self.assert_selector_absent(self.history_panel_edit_title_input_selector())
         name_element = self.history_panel_name_element()
         assert "New History Name" not in name_element.text
 
@@ -59,8 +59,8 @@ class HistoryPanelTestCase(SeleniumTestCase):
         tag_area_selector = self.test_data["historyPanel"]["selectors"]["history"]["tagArea"]
         anno_area_selector = self.test_data["historyPanel"]["selectors"]["history"]["annoArea"]
 
-        tag_icon = self.wait_for_selector(tag_icon_selector)
-        annon_icon = self.wait_for_selector(anno_icon_selector)
+        tag_icon = self.wait_for_selector_clickable(tag_icon_selector)
+        annon_icon = self.wait_for_selector_clickable(anno_icon_selector)
 
         self.assert_selector_absent_or_hidden(tag_area_selector)
         self.assert_selector_absent_or_hidden(anno_area_selector)
@@ -83,6 +83,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         self.assert_selector_absent_or_hidden(tag_area_selector)
         self.assert_selector_absent_or_hidden(anno_area_selector)
 
+    @selenium_test
     def test_refresh_preserves_state(self):
         self.register()
         self.perform_upload(self.get_filename("1.txt"))
@@ -95,24 +96,13 @@ class HistoryPanelTestCase(SeleniumTestCase):
         self.click_hda_title(hda_id, wait=True)
         self.wait_for_selector_visible(hda_body_selector)
 
-        self.click_history_refresh()
+        self.history_panel_refresh_click()
 
         title_selector = self.hda_div_selector(hda_id)
         self.wait_for_selector_visible(hda_body_selector)
 
         self.click_hda_title(hda_id, wait=True)
-        self.click_history_refresh()
+        self.history_panel_refresh_click()
 
         self.wait_for_selector(title_selector)
         self.assert_selector_absent_or_hidden(hda_body_selector)
-
-    def click_history_refresh(self):
-        refresh_button_element = self.wait_for_selector('a#history-refresh-button')
-        refresh_button_element.click()
-
-    def click_to_rename_history(self):
-        self.history_panel_name_element().click()
-        return self.wait_for_selector(self.edit_title_input_selector())
-
-    def edit_title_input_selector(self):
-        return self.test_data["historyPanel"]["selectors"]["history"]["nameEditableTextInput"]

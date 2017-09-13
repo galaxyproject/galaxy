@@ -835,7 +835,7 @@ class SelectToolParameter(ToolParameter):
         workflow_building_mode = trans.workflow_building_mode
         for context_value in other_values.values():
             if is_runtime_value(context_value):
-                workflow_building_mode = True
+                workflow_building_mode = workflow_building_modes.ENABLED
                 break
         if len(list(legal_values)) == 0 and workflow_building_mode:
             if self.multiple:

@@ -1,6 +1,6 @@
 """
-Build indexes for searching the TS.
-Run this script from the Tool Shed folder, example:
+Build indexes for searching the Tool Shed.
+Run this script from the root folder, example:
 
 $ python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.ini
 
@@ -8,10 +8,10 @@ Make sure you adjusted your config to:
  * turn on searching via toolshed_search_on
  * specify whoosh_index_dir where the indexes will be placed
 
-Also make sure that GALAXY_EGGS_PATH variable is properly set
-in case you are using non-default location for Galaxy.
+This script expects the Tool Shed's runtime virtualenv to be active.
 """
 import ConfigParser
+import logging
 import os
 import sys
 from optparse import OptionParser
@@ -20,6 +20,8 @@ from whoosh.fields import Schema, STORED, TEXT
 from whoosh.filedb.filestore import FileStorage
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
+
+logging.basicConfig(level='DEBUG')
 
 import galaxy.webapps.tool_shed.model.mapping
 from galaxy.tools.loader_directory import load_tool_elements_from_path

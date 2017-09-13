@@ -1,4 +1,4 @@
-define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Masthead, Panel, Modal ) {
+define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal', 'utils/utils' ], function( Masthead, Panel, Modal, Utils) {
     var View = Backbone.View.extend({
         el : 'body',
         className : 'full-content',
@@ -16,7 +16,16 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
 
             // attach global objects, build mastheads
             Galaxy.modal = this.modal = new Modal.View();
-            Galaxy.display = this.display = function( view ) { self.center.display( view ) };
+            Galaxy.display = this.display = function( view ) {
+                if ( view.title ){
+                    Utils.setWindowTitle( view.title );
+                    view.allow_title_display = false;
+                } else {
+                    Utils.setWindowTitle();
+                    view.allow_title_display = true;
+                }
+                self.center.display( view );
+            };
             Galaxy.router = this.router = options.Router && new options.Router( self, options );
             this.masthead = new Masthead.View( this.config );
             this.center = new Panel.CenterPanel();
@@ -155,7 +164,7 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
                             }
                         }
                 })
-                .error( function( data ) { 
+                .error( function( data ) {
                     // hide the communication icon if the communication server is not available
                     $chat_icon_element.css( "visibility", "hidden" ); 
                 });
