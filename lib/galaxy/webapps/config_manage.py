@@ -669,7 +669,7 @@ def _ordered_load(stream):
         def include(self, node):
             filename = os.path.join(self._root, self.construct_scalar(node))
             with open(filename, 'r') as f:
-                return yaml.safe_load(f, OrderedLoader)
+                return yaml.load(f, OrderedLoader)
 
     def construct_mapping(loader, node):
         loader.flatten_mapping(node)
@@ -680,7 +680,7 @@ def _ordered_load(stream):
         construct_mapping)
     OrderedLoader.add_constructor('!include', OrderedLoader.include)
 
-    return yaml.safe_load(stream, OrderedLoader)
+    return yaml.load(stream, OrderedLoader)
 
 
 def _ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
