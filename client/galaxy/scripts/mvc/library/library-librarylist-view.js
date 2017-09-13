@@ -1,15 +1,9 @@
 define([
-    "layout/masthead",
-    "mvc/base-mvc",
-    "utils/utils",
     "libs/toastr",
     "mvc/library/library-model",
     "mvc/library/library-libraryrow-view",
     "libs/underscore"
 ], function(
-    mod_masthead,
-    mod_baseMVC,
-    mod_utils,
     mod_toastr,
     mod_library_model,
     mod_library_libraryrow_view,
