@@ -339,7 +339,7 @@ var LibraryDatasetView = Backbone.View.extend({
         data: function (term, page) { // page is the one-based page number tracked by Select2
             return {
                 q: term, //search term
-                page_limit: 10, // page size
+                page_limit: 10, // page size, should be same as used in 'more' variable below
                 page: page // page number
             };
         },

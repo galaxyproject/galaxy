@@ -105,34 +105,26 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         current_user_roles = trans.get_current_user_roles()
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
         dataset = library_dataset.library_dataset_dataset_association.dataset
-
         # User has to have manage permissions permission in order to see the roles.
         can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin()
         if not can_manage:
             raise exceptions.InsufficientPermissionsException('You do not have proper permission to access permissions.')
-
         scope = kwd.get('scope', None)
-        if scope == 'current' or scope is None:
+        if scope in ['current', None]:
             return self._get_current_roles(trans, library_dataset)
-
-        #  Return roles that are available to select.
-        elif scope == 'available':
+        elif scope in ['available']:
             page = kwd.get('page', None)
             if page is not None:
                 page = int(page)
             else:
                 page = 1
-
             page_limit = kwd.get('page_limit', None)
             if page_limit is not None:
                 page_limit = int(page_limit)
             else:
                 page_limit = 10
-
             query = kwd.get('q', None)
-
             roles, total_roles = trans.app.security_agent.get_valid_roles(trans, dataset, query, page, page_limit)
-
             return_roles = []
             for role in roles:
                 role_id = trans.security.encode_id(role.id)
