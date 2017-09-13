@@ -217,7 +217,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         else:
             log.info("Loading Pulsar app configuration from %s" % pulsar_conf_path)
             with open(pulsar_conf_path, "r") as f:
-                conf.update(yaml.load(f) or {})
+                conf.update(yaml.safe_load(f) or {})
         if "job_metrics_config_file" not in conf:
             conf["job_metrics"] = self.app.job_metrics
         if "staging_directory" not in conf:

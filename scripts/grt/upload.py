@@ -28,11 +28,11 @@ def main(argv):
     logging.info('Loading GRT configuration...')
     try:
         with open(args.config) as handle:
-            config = yaml.load(handle)
+            config = yaml.safe_load(handle)
     except Exception:
         logging.info('Using default GRT configuration')
         with open(sample_config) as handle:
-            config = yaml.load(handle)
+            config = yaml.safe_load(handle)
 
     REPORT_DIR = args.report_directory
     GRT_URL = config['grt']['url'].rstrip('/') + '/'

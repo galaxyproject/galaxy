@@ -111,7 +111,7 @@ class InteractiveEnvironmentRequest(object):
                 raise Exception("[{0}] Could not find allowed_images.yml, or image tag in {0}.ini file for ".format(self.attr.viz_id))
 
         with open(fn, 'r') as handle:
-            self.allowed_images = [x['image'] for x in yaml.load(handle)]
+            self.allowed_images = [x['image'] for x in yaml.safe_load(handle)]
 
             if len(self.allowed_images) == 0:
                 raise Exception("No allowed images specified for " + self.attr.viz_id)
