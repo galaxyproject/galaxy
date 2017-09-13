@@ -1645,8 +1645,7 @@ class JobWrapper(object, HasResourceParameters):
 
     def setup_external_metadata(self, exec_dir=None, tmp_dir=None,
                                 dataset_files_path=None, config_root=None,
-                                config_file=None, datatypes_config=None,
-                                resolve_metadata_dependencies=False,
+                                config_file=None, resolve_metadata_dependencies=False,
                                 set_extension=True, **kwds):
         # extension could still be 'auto' if this is the upload tool.
         job = self.get_job()
@@ -1665,8 +1664,8 @@ class JobWrapper(object, HasResourceParameters):
             config_root = self.app.config.root
         if config_file is None:
             config_file = self.app.config.config_file
-        if datatypes_config is None:
-            datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
+        datatypes_config = os.path.join(self.working_directory, 'registry.xml')
+        self.app.datatypes_registry.to_xml_file(path=datatypes_config)
         command = self.external_output_metadata.setup_external_metadata([output_dataset_assoc.dataset for
                                                                          output_dataset_assoc in
                                                                          job.output_datasets + job.output_library_datasets],
@@ -1677,7 +1676,7 @@ class JobWrapper(object, HasResourceParameters):
                                                                         config_root=config_root,
                                                                         config_file=config_file,
                                                                         datatypes_config=datatypes_config,
-                                                                        job_metadata=os.path.join(self.tool_working_directory, self.tool.provided_metadata_file),
+                                                                        job_metadata=os.path.join(self.tool_working_directory, TOOL_PROVIDED_JOB_METADATA_FILE),
                                                                         max_metadata_value_size=self.app.config.max_metadata_value_size,
                                                                         **kwds)
         if resolve_metadata_dependencies:
@@ -1975,7 +1974,7 @@ class TaskWrapper(JobWrapper):
         pass
 
     def setup_external_metadata(self, exec_dir=None, tmp_dir=None, dataset_files_path=None,
-                                config_root=None, config_file=None, datatypes_config=None,
+                                config_root=None, config_file=None,
                                 set_extension=True, **kwds):
         # There is no metadata setting for tasks.  This is handled after the merge, at the job level.
         return ""
