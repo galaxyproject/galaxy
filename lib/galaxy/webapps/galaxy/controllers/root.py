@@ -3,7 +3,7 @@ Contains the main interface in the Universe class
 """
 import cgi
 import os
-import urllib
+import requests
 
 from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
 
@@ -470,8 +470,8 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
     def bucket_proxy(self, trans, bucket=None, **kwd):
         if bucket:
             trans.response.set_content_type('text/xml')
-            b_list_xml = urllib.urlopen('http://s3.amazonaws.com/%s/' % bucket)
-            return b_list_xml.read()
+            b_list_xml = requests.get('http://s3.amazonaws.com/%s/' % bucket)
+            return b_list_xml.text
         raise Exception("You must specify a bucket")
 
     # ---- Debug methods ----------------------------------------------------

@@ -11,7 +11,7 @@ import string
 import sys
 import tempfile
 from textwrap import TextWrapper
-import urllib2
+import requests
 
 import six
 from six import StringIO
@@ -307,9 +307,8 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
 
 
 def _build_uwsgi_schema(args, app_desc):
-    req = urllib2.Request('https://raw.githubusercontent.com/unbit/uwsgi-docs/master/Options.rst')
-    response = urllib2.urlopen(req)
-    rst_options = response.read()
+    req = requests.get('https://raw.githubusercontent.com/unbit/uwsgi-docs/master/Options.rst')
+    rst_options = req.text
     last_line = None
     current_opt = None
 

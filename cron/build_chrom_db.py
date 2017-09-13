@@ -15,10 +15,10 @@ from __future__ import print_function
 
 import fileinput
 import os
+import requests
 import sys
 
 from six.moves.urllib.parse import urlencode
-from six.moves.urllib.request import urlopen
 
 import parse_builds
 
@@ -36,8 +36,8 @@ def getchrominfo(url, db):
         "hgta_regionType": "",
         "position": "",
         "hgta_doTopSubmit": "get info"})
-    page = urlopen(URL)
-    for line in page:
+    page = requests.get(URL).text
+    for line in page.split('\n'):
         line = line.rstrip("\r\n")
         if line.startswith("#"):
             continue

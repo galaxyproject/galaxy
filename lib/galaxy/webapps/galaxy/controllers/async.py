@@ -4,6 +4,7 @@ Upload class
 
 import logging
 import urllib
+import requests
 
 from galaxy import jobs, web
 from galaxy.util import Params
@@ -162,8 +163,7 @@ class ASync(BaseUIController):
                 url = "%s%s%s" % (url, url_join_char, urllib.urlencode(params.flatten()))
                 log.debug("connecting to -> %s" % url)
                 trans.log_event("Async connecting to -> %s" % url)
-                text = urllib.urlopen(url).read(-1)
-                text = text.strip()
+                text = requests.get(url).text.strip()
                 if not text.endswith('OK'):
                     raise Exception(text)
                 data.state = data.blurb = data.states.RUNNING
