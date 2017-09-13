@@ -215,6 +215,7 @@ def transfer( app, transfer_job_id ):
 def http_transfer( transfer_job ):
     """Plugin" for handling http(s) transfers."""
     url = transfer_job.params['url']
+    assert url.startswith('http://') or url.startswith('https://')
     try:
         f = urllib2.urlopen( url )
     except urllib2.URLError as e:

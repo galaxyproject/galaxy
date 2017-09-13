@@ -72,9 +72,9 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath, plink):
     if not missval:
         print('### lped_to_pbed_converter.py cannot identify missing value in %s' % pedf)
         missval = '0'
-    cl = '%s --noweb --file %s --make-bed --out %s --missing-genotype %s' % (plink, inpedfilepath, outroot, missval)
-    p = subprocess.Popen(cl, shell=True, cwd=outfilepath)
-    p.wait()  # run plink
+    subprocess.check_call([plink, '--noweb', '--file', inpedfilepath,
+                           '--make-bed', '--out', outroot,
+                           '--missing-genotype', missval], cwd=outfilepath)
 
 
 def main():

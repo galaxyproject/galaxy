@@ -14,7 +14,8 @@ import csv
 import os
 import sys
 import urllib
-import urllib2
+
+import requests
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
@@ -39,9 +40,7 @@ def main( ini_file ):
 
 def build_index( search_url, dataset_file ):
     url = "%s/index?%s" % ( search_url, urllib.urlencode( { "docfile": dataset_file } ) )
-    request = urllib2.Request( url )
-    request.get_method = lambda: "PUT"
-    urllib2.urlopen( request )
+    requests.put(url)
 
 
 def create_dataset_file( dataset_iter ):

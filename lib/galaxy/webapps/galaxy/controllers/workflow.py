@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import sgmllib
-import urllib2
+import requests
 
 from sqlalchemy import and_
 from sqlalchemy.sql import expression
@@ -914,7 +914,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 # Load workflow from external URL
                 # NOTE: blocks the web thread.
                 try:
-                    workflow_data = urllib2.urlopen( url ).read()
+                    workflow_data = requests.get(url).text
                 except Exception as e:
                     message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( escape( url ), escape( str( e ) ) )
                     status = 'error'

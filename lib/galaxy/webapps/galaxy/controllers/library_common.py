@@ -1,4 +1,5 @@
 import glob
+import json
 import logging
 import operator
 import os
@@ -8,10 +9,9 @@ import sys
 import tarfile
 import tempfile
 import urllib
-import urllib2
 import zipfile
-from json import dumps, loads
 
+import requests
 from markupsafe import escape
 from sqlalchemy import and_, false
 from sqlalchemy.orm import eagerload_all
@@ -554,7 +554,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             if len(em_string):
                 payload = None
                 try:
-                    payload = loads(em_string)
+                    payload = json.loads(em_string)
                 except Exception:
                     message = 'Invalid JSON input'
                     status = 'error'
@@ -1121,8 +1121,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         json_file_path = upload_common.create_paramfile( trans, uploaded_datasets )
         data_list = [ ud.data for ud in uploaded_datasets ]
         job_params = {}
-        job_params['link_data_only'] = dumps( kwd.get( 'link_data_only', 'copy_files' ) )
-        job_params['uuid'] = dumps( kwd.get( 'uuid', None ) )
+        job_params['link_data_only'] = json.dumps(kwd.get('link_data_only', 'copy_files'))
+        job_params['uuid'] = json.dumps(kwd.get('uuid', None))
         job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder, job_params=job_params )
         trans.sa_session.add( job )
         trans.sa_session.flush()
@@ -2760,9 +2760,7 @@ def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     message = escape( kwd.get( 'message', '' ) )
     status = kwd.get( 'status', 'done' )
     full_url = "%s/find?%s" % ( search_url, urllib.urlencode( { "kwd" : search_term } ) )
-    response = urllib2.urlopen( full_url )
-    ldda_ids = loads( response.read() )[ "ids" ]
-    response.close()
+    ldda_ids = requests.get(full_url).json()['ids']
     lddas = [ trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id ) for ldda_id in ldda_ids ]
     return status, message, get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )
 

@@ -285,10 +285,8 @@ class Bam( Binary ):
 
     def _is_coordinate_sorted( self, file_name ):
         """See if the input BAM file is sorted from the header information."""
-        params = [ "samtools", "view", "-H", file_name ]
-        output = subprocess.Popen( params, stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[0]
-        # find returns -1 if string is not found
-        return output.find( "SO:coordinate" ) != -1 or output.find( "SO:sorted" ) != -1
+        output = subprocess.check_output(["samtools", "view", "-H", file_name])
+        return 'SO:coordinate' in output or 'SO:sorted' in output
 
     def dataset_content_needs_grooming( self, file_name ):
         """See if file_name is a sorted BAM file"""
@@ -313,8 +311,7 @@ class Bam( Binary ):
                 return False
             index_name = tempfile.NamedTemporaryFile( prefix="bam_index" ).name
             stderr_name = tempfile.NamedTemporaryFile( prefix="bam_index_stderr" ).name
-            command = 'samtools index %s %s' % ( file_name, index_name )
-            proc = subprocess.Popen( args=command, shell=True, stderr=open( stderr_name, 'wb' ) )
+            proc = subprocess.Popen(['samtools', 'index', file_name, index_name], stderr=open(stderr_name, 'wb'))
             proc.wait()
             stderr = open( stderr_name ).read().strip()
             if stderr:
@@ -357,8 +354,8 @@ class Bam( Binary ):
         tmp_sorted_dataset_file_name_prefix = os.path.join( tmp_dir, 'sorted' )
         stderr_name = tempfile.NamedTemporaryFile( dir=tmp_dir, prefix="bam_sort_stderr" ).name
         samtools_created_sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix  # samtools accepts a prefix, not a filename, it always adds .bam to the prefix
-        command = "samtools sort %s %s" % ( file_name, tmp_sorted_dataset_file_name_prefix )
-        proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=open( stderr_name, 'wb' ) )
+        proc = subprocess.Popen(['samtools', 'sort', file_name, tmp_sorted_dataset_file_name_prefix],
+                                cwd=tmp_dir, stderr=open(stderr_name, 'wb'))
         exit_code = proc.wait()
         # Did sort succeed?
         stderr = open( stderr_name ).read().strip()
