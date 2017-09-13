@@ -13,7 +13,7 @@ import time
 from datetime import datetime
 
 from galaxy.exceptions import ObjectNotFound, ObjectInvalid
-from galaxy.util import string_as_bool, umask_fix_perms, safe_relpath, directory_hash_id
+from galaxy.util import string_as_bool, umask_fix_perms, safe_relpath, directory_hash_id, which
 from galaxy.util.sleeper import Sleeper
 from .s3_multipart_upload import multipart_upload
 from ..objectstore import ObjectStore, convert_bytes
@@ -59,10 +59,9 @@ class S3ObjectStore(ObjectStore):
             self.cache_monitor_thread.start()
             log.info("Cache cleaner manager started")
         # Test if 'axel' is available for parallel download and pull the key into cache
-        try:
-            subprocess.call('axel')
+        if which('axel'):
             self.use_axel = True
-        except OSError:
+        else:
             self.use_axel = False
 
     def _configure_connection(self):
@@ -333,7 +332,7 @@ class S3ObjectStore(ObjectStore):
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
-                ret_code = subprocess.call("axel -a -n %s '%s'" % (ncores, url))
+                ret_code = subprocess.call(['axel', '-a', '-n', ncores, url])
                 if ret_code == 0:
                     return True
             else:
