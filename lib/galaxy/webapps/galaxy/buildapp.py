@@ -1055,12 +1055,12 @@ def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
     # wrap any static dirs for plugins
     plugin_frameworks = plugin_frameworks or []
     for framework in plugin_frameworks:
-        if framework and framework.serves_static:
-            # invert control to each plugin for finding their own static dirs
-            for plugin_url, plugin_static_path in framework.get_static_urls_and_paths():
-                plugin_url = '/plugins/' + plugin_url
-                urlmap[(plugin_url)] = Static(plugin_static_path, cache_time)
-                log.debug('added url, path to static middleware: %s, %s', plugin_url, plugin_static_path)
+        # invert control to each plugin for finding their own static dirs
+        for plugin in framework.plugins.values():
+            if plugin.serves_static:
+                plugin_url = '/plugins/' + plugin.static_url
+                urlmap[(plugin_url)] = Static(plugin.static_path, cache_time)
+                log.debug('added url, path to static middleware: %s, %s', plugin_url, plugin.static_path)
 
     # URL mapper becomes the root webapp
     return urlmap

@@ -153,25 +153,6 @@ class VisualizationsRegistry(object):
                 if self._is_plugin(plugin_path):
                     yield plugin_path
 
-    # ------------------------------------------------------------------------- serving static files
-    def get_static_urls_and_paths(self):
-        """
-        For each plugin, return a 2-tuple where the first element is a url path
-        to the plugin's static files and the second is a filesystem path to those
-        same files.
-
-        Meant to be passed to a Static url map.
-
-        :rtype:         list of 2-tuples
-        :returns:       all urls and paths for each plugin serving static content
-        """
-        # called during the static middleware creation (buildapp.py, wrap_in_static)
-        urls_and_paths = []
-        for plugin in self.plugins.values():
-            if plugin.serves_static:
-                urls_and_paths.append((plugin.static_url, plugin.static_path))
-        return urls_and_paths
-
     # ------------------------------------------------------------------------- templates
     def _build_plugin_template_lookup(self, plugin):
         """
