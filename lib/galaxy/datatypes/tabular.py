@@ -524,7 +524,7 @@ class Sam(Tabular):
         shutil.move(split_files[0], output_file)
 
         if len(split_files) > 1:
-            cmd = ['egrep', '-v', '-h' '^@'] + split_files[1:] + ['>>', output_file]
+            cmd = ['egrep', '-v', '-h', '^@'] + split_files[1:] + ['>>', output_file]
             subprocess.check_call(cmd, shell=True)
 
     merge = staticmethod(merge)

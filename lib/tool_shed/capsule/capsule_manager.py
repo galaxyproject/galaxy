@@ -7,6 +7,7 @@ import tempfile
 import threading
 from time import gmtime, strftime
 
+import requests
 from sqlalchemy import and_, false
 
 import tool_shed.repository_types.util as rt_util
@@ -19,8 +20,6 @@ from tool_shed.galaxy_install.repository_dependencies.repository_dependency_mana
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.util import (basic_util, commit_util, common_util, encoding_util,
     hg_util, metadata_util, repository_util, shed_util_common as suc, xml_util)
-
-import requests
 
 log = logging.getLogger(__name__)
 

@@ -4,6 +4,7 @@ Upload class
 
 import logging
 import urllib
+
 import requests
 
 from galaxy import jobs, web

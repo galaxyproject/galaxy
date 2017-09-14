@@ -11,8 +11,8 @@ import string
 import sys
 import tempfile
 from textwrap import TextWrapper
-import requests
 
+import requests
 import six
 from six import StringIO
 

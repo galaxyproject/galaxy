@@ -10,6 +10,8 @@ import re
 import subprocess
 import tempfile
 
+from six.moves import shlex_quote
+
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
 from galaxy.datatypes.sniff import iter_headers
@@ -149,12 +151,11 @@ class Ipynb(Json):
             ofile_handle.close()
             try:
                 cmd = ['jupyter', 'nbconvert', '--to', 'html', '--template', 'full', dataset.file_name, '--output', ofilename]
-                log.info("Calling command %s", ' '.join(cmd))
                 subprocess.check_call(cmd)
                 ofilename = '%s.html' % ofilename
             except subprocess.CalledProcessError:
                 ofilename = dataset.file_name
-                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', cmd)
+                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', map(shlex_quote, cmd))
             return open(ofilename)
 
     def set_meta(self, dataset, **kwd):

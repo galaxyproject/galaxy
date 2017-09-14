@@ -16,11 +16,11 @@ import time
 from glob import glob
 from tempfile import NamedTemporaryFile
 
+import requests
+
 from galaxy import util
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
-
-import requests
 
 log = logging.getLogger(__name__)
 

@@ -104,7 +104,7 @@ class ExternalServiceWebAPIActionResult(ExternalServiceResult):
     @property
     def content(self):
         if self._content is None:
-            self._content = requests.get(self.url).read()
+            self._content = requests.get(self.url).text
         return self._content
 
 

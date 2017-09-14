@@ -3,8 +3,8 @@ Contains the main interface in the Universe class
 """
 import cgi
 import os
-import requests
 
+import requests
 from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
 
 from galaxy import web

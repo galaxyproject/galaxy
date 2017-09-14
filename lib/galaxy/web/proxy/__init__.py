@@ -8,8 +8,9 @@ from galaxy.util import sockets
 from galaxy.util.lazy_process import LazyProcess, NoOpLazyProcess
 from galaxy.util import sqlite
 from galaxy.util import unique_id
-import requests
 import time
+
+import requests
 
 log = logging.getLogger(__name__)
 

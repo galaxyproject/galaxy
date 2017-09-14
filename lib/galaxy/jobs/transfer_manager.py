@@ -9,6 +9,8 @@ import socket
 import subprocess
 import threading
 
+from six.moves import shlex_quote
+
 from galaxy.util import listify, sleeper
 from galaxy.util.json import jsonrpc_request, validate_jsonrpc_response
 
@@ -68,8 +70,8 @@ class TransferManager(object):
             # The transfer script should daemonize fairly quickly - if this is
             # not the case, this process will need to be moved to a
             # non-blocking method.
-            cmd = self.command + [tj.id]
-            log.debug('Transfer command is: %s', ' '.join(cmd))
+            cmd = self.command.append(tj.id)
+            log.debug('Transfer command is: %s', ' '.join(map(shlex_quote, cmd)))
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             p.wait()
             output = p.stdout.read(32768)

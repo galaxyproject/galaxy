@@ -4,7 +4,6 @@ import logging
 import operator
 import os
 import os.path
-import requests
 import string
 import sys
 import tarfile
@@ -12,6 +11,7 @@ import tempfile
 import urllib
 import zipfile
 
+import requests
 from markupsafe import escape
 from sqlalchemy import and_, false
 from sqlalchemy.orm import eagerload_all
@@ -2762,9 +2762,7 @@ def lucene_search(trans, cntrller, search_term, search_url, **kwd):
     message = escape(kwd.get('message', ''))
     status = kwd.get('status', 'done')
     full_url = "%s/find?%s" % (search_url, urllib.urlencode({"kwd" : search_term}))
-    response = requests.get(full_url).text
-    ldda_ids = json.loads(response)["ids"]
-    response.close()
+    ldda_ids = requests.get(full_url).json()['ids']
     lddas = [trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(ldda_id) for ldda_id in ldda_ids]
     return status, message, get_sorted_accessible_library_items(trans, cntrller, lddas, 'name')
 

@@ -5,9 +5,9 @@ produced by SMRT Portal.
 import logging
 from string import Template
 
-from .data_transfer import DataTransfer
-
 import requests
+
+from .data_transfer import DataTransfer
 
 log = logging.getLogger(__name__)
 
