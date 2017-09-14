@@ -338,13 +338,15 @@ class DatasetAssociationManager(base.ModelManager,
 
     def stop_creating_job(self, dataset_assoc):
         """
-        Stops an dataset_assoc's creating job if all the job's other outputs are deleted.
+        Stops an dataset_assoc's creating job if all the job's other outputs are deleted or
+        the config option "delete_output_dataset_kills_job" is set.
         """
         if dataset_assoc.parent_id is None and len(dataset_assoc.creating_job_associations) > 0:
             # Mark associated job for deletion
             job = dataset_assoc.creating_job_associations[0].job
             if not job.finished:
-                # Are *all* of the job's other output datasets deleted?
+                # check if *all* of the job's other output datasets are deleted or
+                # the config option delete_output_dataset_kills_job is set
                 if job.check_if_output_datasets_deleted() or self.app.config.delete_output_dataset_kills_job:
                     job.mark_deleted(self.app.config.track_jobs_in_database)
                     self.app.job_manager.job_stop_queue.put(job.id)
