@@ -149,26 +149,9 @@ class VisualizationsRegistry(object):
                 if self._is_plugin(plugin_path):
                     yield plugin_path
 
-    def fill_template(self, trans, plugin, template_filename, **kwargs):
-        """
-        Pass control over to trans and render ``template_filename``.
-
-        :type   trans:              ``galaxy.web.framework.webapp.GalaxyWebTransaction``
-        :param  trans:              transaction doing the rendering
-        :type   plugin:             ``util.bunch.Bunch``
-        :param  plugin:             the plugin containing the template to render
-        :type   template_filename:  string
-        :param  template_filename:  the path of the template to render relative to
-            ``plugin.template_path``
-        :returns:       rendered template
-        """
-        # defined here to be overridden
-        return trans.fill_template(template_filename, template_lookup=plugin.template_lookup, **kwargs)
-
     # TODO: add fill_template fn that is able to load extra libraries beforehand (and remove after)
     # TODO: add template helpers specific to the plugins
     # TODO: some sort of url_for for these plugins
-
     def _is_plugin(self, plugin_path):
         """
         Determines whether the given filesystem path contains a plugin.
