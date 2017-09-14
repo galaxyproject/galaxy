@@ -46,10 +46,6 @@ class VisualizationsRegistry(object):
         'phyloviz'
     ]
 
-    #: does the class need static files served?
-    serves_static = True
-    #: does the class need template files served?
-    serves_templates = True
     #: default number of templates to search for plugin template lookup
     DEFAULT_TEMPLATE_COLLECTION_SIZE = 10
     #: default encoding of plugin templates
@@ -159,31 +155,6 @@ class VisualizationsRegistry(object):
                 plugin_path = os.path.join(directory, plugin_dir)
                 if self._is_plugin(plugin_path):
                     yield plugin_path
-
-    def _set_up_template_plugin(self, plugin):
-        """
-        Decorate the plugin with paths needed to fill templates.
-
-        Plugin bunches are decorated with:
-            * serves_templates :    whether this plugin will use templates
-
-        If the plugin path contains a 'static' sub-dir, the following are added:
-            * template_path   : the filesystem path to the template sub-dir
-            * template_lookup : the (currently Mako) TemplateLookup used to search
-                for templates
-
-        :type   plugin: ``util.bunch.Bunch``
-        :param  plugin: the plugin to decorate
-        :rtype:         ``util.bunch.Bunch``
-        :returns:       the loaded plugin object
-        """
-        plugin['serves_templates'] = False
-        template_path = os.path.join(plugin.path, 'templates')
-        if self.serves_templates and os.path.isdir(template_path):
-            plugin.serves_templates = True
-            plugin['template_path'] = template_path
-            plugin['template_lookup'] = self.build_plugin_template_lookup(plugin)
-        return plugin
 
     # ------------------------------------------------------------------------- serving static files
     def get_static_urls_and_paths(self):
