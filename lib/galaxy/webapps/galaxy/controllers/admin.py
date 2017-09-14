@@ -974,7 +974,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     build_select_input('in_groups', 'Groups', all_groups, []),
                     build_select_input('in_users', 'Users', all_users, []), {
                     'name'  : 'create_group_for_role',
-                    'label' : 'Create a new role of the same name for this group:',
+                    'label' : 'Create a new group of the same name for this role:',
                     'type'  : 'boolean'
                 }]}
         else:
