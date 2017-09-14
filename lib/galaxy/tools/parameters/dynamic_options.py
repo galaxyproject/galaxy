@@ -498,7 +498,7 @@ class DynamicOptions(object):
         self._tool_data_table = None
         self.elem = elem
         self.column_elem = elem.find("column")
-        _ = self.tool_data_table  # Need to touch tool data table once to populate self.columns
+        self.tool_data_table  # Need to touch tool data table once to populate self.columns
 
         # Options are defined by parsing tabular text data from a data file
         # on disk, a dataset, or the value of another parameter
@@ -541,7 +541,7 @@ class DynamicOptions(object):
                 if self.column_elem is not None:
                     self.parse_column_definitions(self.elem)
                 else:
-                    self.columns =  tool_data_table.columns
+                    self.columns = tool_data_table.columns
                 # Set self.missing_index_file if the index file to
                 # which the tool_data_table refers does not exist.
                 if tool_data_table.missing_index_file:

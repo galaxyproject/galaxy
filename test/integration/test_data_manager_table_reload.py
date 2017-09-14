@@ -1,8 +1,7 @@
 import os
+import random
 import shutil
 import string
-import random
-import time
 import tempfile
 from base import integration_util
 from base.populators import DatasetPopulator
@@ -28,9 +27,9 @@ CREATE_DBKEY_PAYLOAD = {'tool_shed_url': 'https://toolshed.g2.bx.psu.edu',
                         'owner': 'devteam',
                         'changeset_revision': 'b1bc53e9bbc5'}
 SAM_FASTA_PAYLOAD = {'tool_shed_url': 'https://toolshed.g2.bx.psu.edu',
-                        'name': 'data_manager_sam_fasta_index_builder',
-                        'owner': 'devteam',
-                        'changeset_revision': '1865e693d8b2'}
+                     'name': 'data_manager_sam_fasta_index_builder',
+                     'owner': 'devteam',
+                     'changeset_revision': '1865e693d8b2'}
 FETCH_TOOL_ID = 'toolshed.g2.bx.psu.edu/repos/devteam/data_manager_fetch_genome_dbkeys_all_fasta/data_manager_fetch_genome_all_fasta_dbkey/0.0.2'
 FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT = {"dbkey_source|dbkey_source_selector": "new",
                                        "dbkey_source|dbkey": "NC_001617.1",
@@ -41,7 +40,7 @@ FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT = {"dbkey_source|dbkey_source_selector": "ne
                                        "reference_source|requested_identifier": "NC_001617.1",
                                        "sorting|sort_selector": "as_is"}
 SAM_FASTA_ID = "toolshed.g2.bx.psu.edu/repos/devteam/data_manager_sam_fasta_index_builder/sam_fasta_index_builder/0.0.2"
-SAM_FASTA_INPUT = {"all_fasta_source":"NC_001617.1","sequence_name":"","sequence_id":""}
+SAM_FASTA_INPUT = {"all_fasta_source": "NC_001617.1", "sequence_name": "", "sequence_id": ""}
 
 
 class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase):
