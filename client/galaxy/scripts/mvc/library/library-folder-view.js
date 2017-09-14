@@ -49,10 +49,6 @@ var FolderView = Backbone.View.extend({
     });
   },
 
-  goBack: function(){
-    Galaxy.libraries.library_router.back();
-  },
-
   showPermissions: function(options){
     this.options = _.extend(this.options, options);
     $(".tooltip").remove();
