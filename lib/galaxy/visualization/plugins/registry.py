@@ -29,20 +29,28 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class PageServingPluginManager(object):
+class VisualizationsRegistry(object):
     """
-    Page serving plugins are files/directories that:
-        * are not tracked in the Galaxy repository and allow adding custom code
-            to a Galaxy installation
-        * serve static files (css, js, images, etc.),
-        * render templates
-
-    A PageServingPluginManager sets up all the above components.
+    Main responsibilities are:
+        - discovering visualization plugins in the filesystem
+        - testing if an object has a visualization that can be applied to it
+        - generating a link to controllers.visualization.render with
+            the appropriate params
+        - validating and parsing params into resources (based on a context)
+            used in the visualization template
     """
-    # TODO: I'm unclear of the utility of this class - it prob. will only have one subclass (vis reg). Fold into?
+    NAMED_ROUTE = 'visualization_plugin'
+    DEFAULT_BASE_URL = 'visualizations'
+    # these should be handled somewhat differently - and be passed onto their resp. methods in ctrl.visualization
+    # TODO: change/remove if/when they can be updated to use this system
+    #: any built in visualizations that have their own render method in ctrls/visualization
+    BUILT_IN_VISUALIZATIONS = [
+        'trackster',
+        'circster',
+        'sweepster',
+        'phyloviz'
+    ]
 
-    #: default static url base
-    DEFAULT_BASE_URL = ''
     #: does the class need static files served?
     serves_static = True
     #: does the class need template files served?
@@ -53,6 +61,9 @@ class PageServingPluginManager(object):
     DEFAULT_TEMPLATE_ENCODING = 'utf-8'
     #: name of files to search for additional template lookup directories
     additional_template_paths_config_filename = 'additional_template_paths.xml'
+
+    def __str__(self):
+        return self.__class__.__name__
 
     def __init__(self, app, base_url='', template_cache_dir=None, directories_setting=None, skip_bad_plugins=True, **kwargs):
         """
@@ -66,6 +77,8 @@ class PageServingPluginManager(object):
         :param  template_cache_dir: filesytem path to the directory where cached
             templates are kept
         """
+        self.app = weakref.ref(app)
+        self.config_parser = config_parser.VisualizationsConfigParser()
         self.base_url = base_url or self.DEFAULT_BASE_URL
         if not self.base_url:
             raise Exception('base_url or DEFAULT_BASE_URL required')
@@ -248,38 +261,6 @@ class PageServingPluginManager(object):
     # TODO: add fill_template fn that is able to load extra libraries beforehand (and remove after)
     # TODO: add template helpers specific to the plugins
     # TODO: some sort of url_for for these plugins
-
-
-# -------------------------------------------------------------------
-class VisualizationsRegistry(PageServingPluginManager):
-    """
-    Main responsibilities are:
-        - discovering visualization plugins in the filesystem
-        - testing if an object has a visualization that can be applied to it
-        - generating a link to controllers.visualization.render with
-            the appropriate params
-        - validating and parsing params into resources (based on a context)
-            used in the visualization template
-    """
-    NAMED_ROUTE = 'visualization_plugin'
-    DEFAULT_BASE_URL = 'visualizations'
-    # these should be handled somewhat differently - and be passed onto their resp. methods in ctrl.visualization
-    # TODO: change/remove if/when they can be updated to use this system
-    #: any built in visualizations that have their own render method in ctrls/visualization
-    BUILT_IN_VISUALIZATIONS = [
-        'trackster',
-        'circster',
-        'sweepster',
-        'phyloviz'
-    ]
-
-    def __str__(self):
-        return self.__class__.__name__
-
-    def __init__(self, app, skip_bad_plugins=True, **kwargs):
-        self.app = weakref.ref(app)
-        self.config_parser = config_parser.VisualizationsConfigParser()
-        super(VisualizationsRegistry, self).__init__(app, skip_bad_plugins=skip_bad_plugins, **kwargs)
 
     def _is_plugin(self, plugin_path):
         """
