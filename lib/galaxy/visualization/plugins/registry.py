@@ -34,8 +34,8 @@ class VisualizationsRegistry(object):
         - validating and parsing params into resources (based on a context)
             used in the visualization template
     """
-    NAMED_ROUTE = 'visualization_plugin'
-    DEFAULT_BASE_URL = 'visualizations'
+    #: base url to controller endpoint
+    BASE_URL = 'visualizations'
     #: default number of templates to search for plugin template lookup
     DEFAULT_TEMPLATE_COLLECTION_SIZE = 10
     #: default encoding of plugin templates
@@ -55,7 +55,7 @@ class VisualizationsRegistry(object):
     def __str__(self):
         return self.__class__.__name__
 
-    def __init__(self, app, base_url='', template_cache_dir=None, directories_setting=None, skip_bad_plugins=True, **kwargs):
+    def __init__(self, app, template_cache_dir=None, directories_setting=None, skip_bad_plugins=True, **kwargs):
         """
         Set up the manager and load all visualization plugins.
 
@@ -69,9 +69,7 @@ class VisualizationsRegistry(object):
         """
         self.app = weakref.ref(app)
         self.config_parser = config_parser.VisualizationsConfigParser()
-        self.base_url = base_url or self.DEFAULT_BASE_URL
-        if not self.base_url:
-            raise Exception('base_url or DEFAULT_BASE_URL required')
+        self.base_url = self.BASE_URL
         self.template_cache_dir = template_cache_dir
         self.additional_template_paths = []
         self.directories = []
@@ -410,7 +408,7 @@ class VisualizationsRegistry(object):
         elif isinstance(visualization, vis_plugins.InteractiveEnvironmentPlugin):
             url = url_for('interactive_environment_plugin', visualization_name=visualization.name, **params)
         else:
-            url = url_for(self.NAMED_ROUTE, visualization_name=visualization.name, **params)
+            url = url_for('visualization_plugin', visualization_name=visualization.name, **params)
 
         # TODO:?? not sure if embedded would fit/used here? or added in client...
         return url
