@@ -19,19 +19,6 @@ log = logging.getLogger(__name__)
 
 
 # =============================================================================
-class Plugin(object):
-    """
-    Plugin as object/class.
-    """
-    def __init__(self, app, path, name, config, context=None, **kwargs):
-        context = context or {}
-        self.app = app
-        self.path = path
-        self.name = name
-        self.config = config
-
-
-# =============================================================================
 # TODO:
 # move mixins to facade'd objects
 # allow config to override static/template settings
@@ -112,7 +99,7 @@ class ServesTemplatesPluginMixin(object):
 
 
 # =============================================================================
-class VisualizationPlugin(Plugin, ServesStaticPluginMixin, ServesTemplatesPluginMixin):
+class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
     """
     A plugin that instantiates resources, serves static files, and uses mako
     templates to render web pages.
@@ -122,8 +109,10 @@ class VisualizationPlugin(Plugin, ServesStaticPluginMixin, ServesTemplatesPlugin
 # TODO: concept/name collision between plugin config and visualization config
 
     def __init__(self, app, path, name, config, context=None, **kwargs):
-        super(VisualizationPlugin, self).__init__(app, path, name, config, context=None, **kwargs)
         context = context or {}
+        self.app = app
+        self.path = path
+        self.name = name
         self.config = config
 
         base_url = context.get('base_url', '')
