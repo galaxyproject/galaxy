@@ -9,9 +9,9 @@ import copy
 import mako
 
 from galaxy.managers import api_keys
-from galaxy.web.base import pluginframework
-from galaxy.web.base import interactive_environments
 
+from galaxy.visualization.plugins import interactive_environments
+from galaxy.visualization.plugins import pluginframework
 from galaxy.visualization.plugins import resource_parser
 from galaxy.visualization.plugins import utils
 
