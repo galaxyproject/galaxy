@@ -48,7 +48,7 @@ class PageServingPluginManager(object):
     #: name of files to search for additional template lookup directories
     additional_template_paths_config_filename = 'additional_template_paths.xml'
 
-    def __init__(self, app, base_url='', template_cache_dir=None, **kwargs):
+    def __init__(self, app, base_url='', template_cache_dir=None, directories_setting=None, skip_bad_plugins=True, **kwargs):
         """
         Set up the manager and load all plugins.
 
