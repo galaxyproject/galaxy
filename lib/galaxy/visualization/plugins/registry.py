@@ -275,7 +275,7 @@ class PageServingPluginManager(object):
 
 
 # -------------------------------------------------------------------
-class VisualizationsRegistry(pluginframework.PageServingPluginManager):
+class VisualizationsRegistry(PageServingPluginManager):
     """
     Main responsibilities are:
         - discovering visualization plugins in the filesystem
