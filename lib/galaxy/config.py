@@ -354,6 +354,7 @@ class Configuration(object):
         self.smtp_password = kwargs.get('smtp_password', None)
         self.smtp_ssl = kwargs.get('smtp_ssl', None)
         self.track_jobs_in_database = string_as_bool(kwargs.get('track_jobs_in_database', 'True'))
+        self.delete_output_dataset_kills_job  = string_as_bool(kwargs.get('delete_output_dataset_kills_job', 'False'))
         self.expose_dataset_path = string_as_bool(kwargs.get('expose_dataset_path', 'False'))
         self.expose_potentially_sensitive_job_metrics = string_as_bool(kwargs.get('expose_potentially_sensitive_job_metrics', 'False'))
         self.enable_communication_server = string_as_bool(kwargs.get('enable_communication_server', 'False'))
