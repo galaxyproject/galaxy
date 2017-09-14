@@ -67,7 +67,7 @@ class VisualizationsRegistry(object):
 
     def __init__(self, app, base_url='', template_cache_dir=None, directories_setting=None, skip_bad_plugins=True, **kwargs):
         """
-        Set up the manager and load all plugins.
+        Set up the manager and load all visualization plugins.
 
         :type   app:        UniverseApplication
         :param  app:        the application (and its configuration) using this manager
