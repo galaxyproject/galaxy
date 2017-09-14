@@ -83,44 +83,6 @@ class PluginManager(object):
                 if self._is_plugin(plugin_path):
                     yield plugin_path
 
-    def _is_plugin(self, plugin_path):
-        """
-        Determines whether the given filesystem path contains a plugin.
-
-        In this base class, all sub-directories are considered plugins.
-
-        :type   plugin_path:    string
-        :param  plugin_path:    relative or absolute filesystem path to the
-            potential plugin
-        :rtype:                 bool
-        :returns:               True if the path contains a plugin
-        """
-        if not os.path.isdir(plugin_path):
-            return False
-        return True
-
-    def _load_plugin(self, plugin_path):
-        """
-        Create, load, and/or initialize the plugin and return it.
-
-        Plugin bunches are decorated with:
-            * name : the plugin name
-            * path : the plugin path
-
-        :type   plugin_path:    string
-        :param  plugin_path:    relative or absolute filesystem path to the plugin
-        :rtype:                 ``util.bunch.Bunch``
-        :returns:               the loaded plugin object
-        """
-        plugin = bunch.Bunch(
-            # TODO: need a better way to define plugin names
-            #   pro: filesystem name ensures uniqueness
-            #   con: rel. inflexible
-            name=os.path.split(plugin_path)[1],
-            path=plugin_path
-        )
-        return plugin
-
 
 # ============================================================================= base
 class PageServingPluginManager(PluginManager):
@@ -219,7 +181,7 @@ class PageServingPluginManager(PluginManager):
         :rtype:                 bool
         :returns:               True if the path contains a plugin
         """
-        if not super(PageServingPluginManager, self)._is_plugin(plugin_path):
+        if os.path.isdir(plugin_path):
             return False
         # reject only if we don't have either
         listdir = os.listdir(plugin_path)
@@ -241,7 +203,14 @@ class PageServingPluginManager(PluginManager):
         :rtype:                 ``util.bunch.Bunch``
         :returns:               the loaded plugin object
         """
-        plugin = super(PageServingPluginManager, self).load_plugin(plugin_path)
+        plugin = bunch.Bunch(
+            # TODO: need a better way to define plugin names
+            #   pro: filesystem name ensures uniqueness
+            #   con: rel. inflexible
+            name=os.path.split(plugin_path)[1],
+            path=plugin_path
+        )
+
         # TODO: urlencode?
         plugin['base_url'] = '/'.join([self.base_url, plugin.name])
         plugin = self._set_up_static_plugin(plugin)
