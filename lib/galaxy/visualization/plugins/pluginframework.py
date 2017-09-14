@@ -104,29 +104,6 @@ class PageServingPluginManager(object):
                 additional_paths.append(os.path.join(base_directory, rel_path_elem.text))
         return additional_paths
 
-    def _is_plugin(self, plugin_path):
-        """
-        Determines whether the given filesystem path contains a plugin.
-
-        If the manager ``serves_templates`` and a sub-directory contains another
-        sub-directory named 'templates' it's considered valid.
-        If the manager ``serves_static`` and a sub-directory contains another
-        sub-directory named 'static' it's considered valid.
-
-        :type   plugin_path:    string
-        :param  plugin_path:    relative or absolute filesystem path to the
-            potential plugin
-        :rtype:                 bool
-        :returns:               True if the path contains a plugin
-        """
-        if os.path.isdir(plugin_path):
-            return False
-        # reject only if we don't have either
-        listdir = os.listdir(plugin_path)
-        if(('templates' not in listdir) and ('static' not in listdir)):
-            return False
-        return True
-
     def _load_plugins(self):
         """
         Search ``self.directories`` for potential plugins, load them, and cache
