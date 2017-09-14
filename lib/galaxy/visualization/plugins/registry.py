@@ -152,30 +152,6 @@ class PageServingPluginManager(object):
                 if self._is_plugin(plugin_path):
                     yield plugin_path
 
-    def _set_up_static_plugin(self, plugin):
-        """
-        Decorate the plugin with paths and urls needed to serve static content.
-
-        Plugin bunches are decorated with:
-            * serves_static : whether this plugin will serve static content
-
-        If the plugin path contains a 'static' sub-dir, the following are added:
-            * static_path   : the filesystem path to the static content
-            * static_url    : the url to use when serving static content
-
-        :type   plugin: ``util.bunch.Bunch``
-        :param  plugin: the plugin to decorate
-        :rtype:         ``util.bunch.Bunch``
-        :returns:       the loaded plugin object
-        """
-        plugin['serves_static'] = False
-        static_path = os.path.join(plugin.path, 'static')
-        if self.serves_static and os.path.isdir(static_path):
-            plugin.serves_static = True
-            plugin['static_path'] = static_path
-            plugin['static_url'] = '/'.join([plugin.base_url, 'static'])
-        return plugin
-
     def _set_up_template_plugin(self, plugin):
         """
         Decorate the plugin with paths needed to fill templates.
