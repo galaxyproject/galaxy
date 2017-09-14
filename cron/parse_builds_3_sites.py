@@ -20,11 +20,11 @@ def main():
         trackurl = sites[i] + "hgTracks?"
         builds = []
         try:
-            page = requests.get(site)
+            text = requests.get(site).text
         except:
             print("#Unable to connect to " + site)
             continue
-        text = page.text
+
         try:
             tree = ElementTree.fromstring(text)
         except:
