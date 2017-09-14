@@ -30,7 +30,7 @@ var ControlledFetchCollection = Backbone.Collection.extend({
      */
     fetch : function( options ){
         options = this._buildFetchOptions( options );
-        // console.log( 'fetch options:', options );
+        Galaxy.debug( 'fetch options:', options );
         return Backbone.Collection.prototype.fetch.call( this, options );
     },
 
@@ -52,15 +52,15 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         //      (i.e. this.on( 'sync', function( options ){ if( options.limit ){ ... } }))
         // however, when we send to xhr/jquery we copy them to data also so that they become API query params
         options.data = options.data || self._buildFetchData( options );
-        // console.log( 'data:', options.data );
+        Galaxy.debug( 'data:', options.data );
 
         // options.data.filters --> options.data.q, options.data.qv
         var filters = this._buildFetchFilters( options );
-        // console.log( 'filters:', filters );
+        Galaxy.debug( 'filters:', filters );
         if( !_.isEmpty( filters ) ){
             _.extend( options.data, this._fetchFiltersToAjaxData( filters ) );
         }
-        // console.log( 'data:', options.data );
+        Galaxy.debug( 'data:', options.data );
         return options;
     },
 
@@ -140,7 +140,6 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         // if( _.isUndefined( comparator ) ){ return; }
         if( comparator === collection.comparator ){ return; }
 
-        var oldOrder = collection.order;
         collection.order = order;
         collection.comparator = comparator;
 
@@ -256,7 +255,7 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
 
     /** fetch the first 'page' of data */
     fetchFirst : function( options ){
-        // console.log( 'ControlledFetchCollection.fetchFirst:', options );
+        Galaxy.debug( 'ControlledFetchCollection.fetchFirst:', options );
         options = options? _.clone( options ) : {};
         this.allFetched = false;
         this.lastFetched = 0;
@@ -268,20 +267,24 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
 
     /** fetch the next page of data */
     fetchMore : function( options ){
-        // console.log( 'ControlledFetchCollection.fetchMore:', options );
+        Galaxy.debug( 'ControlledFetchCollection.fetchMore:', options );
         options = _.clone( options || {} );
         var collection = this;
 
-        // console.log( 'fetchMore, options.reset:', options.reset );
+        Galaxy.debug( 'fetchMore, options.reset:', options.reset );
         if( ( !options.reset && collection.allFetched ) ){
             return jQuery.when();
         }
 
         // TODO: this fails in the edge case where
         //  the first fetch offset === limit (limit 4, offset 4, collection.length 4)
-        options.offset = options.reset? 0 : ( options.offset || collection.lastFetched );
+        if (options.reset){
+            options.offset = 0;
+        } else if (options.offset === undefined){
+            options.offset = collection.lastFetched;
+        }
         var limit = options.limit = options.limit || collection.limitPerFetch || null;
-        // console.log( 'fetchMore, limit:', limit, 'offset:', options.offset );
+        Galaxy.debug( 'fetchMore, limit:', limit, 'offset:', options.offset );
 
         collection.trigger( 'fetching-more' );
         return collection.fetch( options )
@@ -292,7 +295,7 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
             .done( function _postFetchMore( fetchedData ){
                 var numFetched = _.isArray( fetchedData )? fetchedData.length : 0;
                 collection.lastFetched += numFetched;
-                // console.log( 'fetchMore, lastFetched:', collection.lastFetched );
+                Galaxy.debug( 'fetchMore, lastFetched:', collection.lastFetched );
                 // anything less than a full page means we got all there is to get
                 if( !limit || numFetched < limit ){
                     collection.allFetched = true;
@@ -310,7 +313,7 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
         var self = this;
         options = _.pick( options, 'silent' );
         options.filters = {};
-        return self.fetch( options ).done( function( fetchData ){
+        return self.fetch( options ).done( function( ){
             self.allFetched = true;
             self.trigger( 'all-fetched', self );
         });
