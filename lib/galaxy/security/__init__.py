@@ -264,8 +264,8 @@ class GalaxyRBACAgent(RBACAgent):
             else:
                 # User is not an admin but the configuration exposes all private roles to all users.
                 db_query = trans.sa_session.query(trans.app.model.Role) \
-                            .filter(and_(self.model.Role.table.c.deleted == false(),
-                                         self.model.Role.table.c.type == self.model.Role.types.PRIVATE))
+                    .filter(and_(self.model.Role.table.c.deleted == false(),
+                                 self.model.Role.table.c.type == self.model.Role.types.PRIVATE))
             if search_query:
                 db_query = db_query.filter(self.model.Role.table.c.name.like(search_query, escape='/'))
             total_count = db_query.count()
