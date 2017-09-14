@@ -973,7 +973,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 },
                     build_select_input('in_groups', 'Groups', all_groups, []),
                     build_select_input('in_users', 'Users', all_users, []), {
-                    'name'  : 'create_group_for_role',
+                    'name'  : 'auto_create',
                     'label' : 'Create a new group of the same name for this role:',
                     'type'  : 'boolean'
                 }]}
