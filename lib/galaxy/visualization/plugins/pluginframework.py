@@ -146,35 +146,6 @@ class PageServingPluginManager(object):
                 if self._is_plugin(plugin_path):
                     yield plugin_path
 
-    def _load_plugin(self, plugin_path):
-        """
-        Create the plugin and decorate with static and/or template paths and urls.
-
-        Plugin bunches are decorated with:
-            * name : the plugin name
-            * path : the plugin path
-            * base_url : a url to the plugin
-
-        :type   plugin_path:    string
-        :param  plugin_path:    relative or absolute filesystem path to the plugin
-        :rtype:                 ``util.bunch.Bunch``
-        :returns:               the loaded plugin object
-        """
-        plugin = bunch.Bunch(
-            # TODO: need a better way to define plugin names
-            #   pro: filesystem name ensures uniqueness
-            #   con: rel. inflexible
-            name=os.path.split(plugin_path)[1],
-            path=plugin_path
-        )
-
-        # TODO: urlencode?
-        plugin['base_url'] = '/'.join([self.base_url, plugin.name])
-        plugin = self._set_up_static_plugin(plugin)
-        plugin = self._set_up_template_plugin(plugin)
-
-        return plugin
-
     def _set_up_static_plugin(self, plugin):
         """
         Decorate the plugin with paths and urls needed to serve static content.
