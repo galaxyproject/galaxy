@@ -942,8 +942,8 @@ var FolderToolbarView = Backbone.View.extend({
   chainCallDeletingItems: function( items_to_delete ){
   var self = this;
   this.deleted_items = new mod_library_model.Folder();
-  var popped_item = items_to_delete.pop();
-  if ( typeof popped_item === "undefined" ) {
+  var item_to_delete = items_to_delete.pop();
+  if ( typeof item_to_delete === "undefined" ) {
     if ( this.options.chain_call_control.failed_number === 0 ){
       mod_toastr.success( 'Selected items were deleted.' );
     } else if ( this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number ){
@@ -954,10 +954,9 @@ var FolderToolbarView = Backbone.View.extend({
     Galaxy.modal.hide();
     return this.deleted_items;
   }
-  var promise = $.when( popped_item.destroy() );
-
-  promise.done( function( item ){
-            Galaxy.libraries.folderListView.collection.remove( popped_item.id );
+  item_to_delete.destroy()
+      .done( function( item ){
+            Galaxy.libraries.folderListView.collection.remove( item_to_delete.id );
             self.updateProgress();
             // add the deleted item to collection, triggers rendering
             if ( Galaxy.libraries.folderListView.options.include_deleted ){
@@ -974,11 +973,11 @@ var FolderToolbarView = Backbone.View.extend({
             }
             self.chainCallDeletingItems( items_to_delete );
           })
-          .fail( function(){
-            self.options.chain_call_control.failed_number += 1;
-            self.updateProgress();
-            self.chainCallDeletingItems( items_to_delete );
-          });
+      .fail( function(){
+        self.options.chain_call_control.failed_number += 1;
+        self.updateProgress();
+        self.chainCallDeletingItems( items_to_delete );
+      });
   },
 
   /**
@@ -996,8 +995,10 @@ var FolderToolbarView = Backbone.View.extend({
    * Delete the selected items. Atomic. One by one.
    */
   deleteSelectedItems: function(){
-    var checkedValues = $('#folder_table').find(':checked');
-    if(checkedValues.length === 0){
+    var dataset_ids = [];
+    var folder_ids = [];
+    var $checkedValues = $('#folder_table').find(':checked');
+    if($checkedValues.length === 0){
         mod_toastr.info('You must select at least one item for deletion.');
     } else {
       var template = this.templateDeletingItemsProgressBar();
@@ -1013,10 +1014,7 @@ var FolderToolbarView = Backbone.View.extend({
       // init the control counters
       this.options.chain_call_control.total_number = 0;
       this.options.chain_call_control.failed_number = 0;
-
-      var dataset_ids = [];
-      var folder_ids = [];
-      checkedValues.each(function(){
+      $checkedValues.each(function(){
           var row_id = $(this).closest('tr').data('id');
           if (row_id !== undefined) {
               if (row_id.substring(0,1) == 'F'){
@@ -1042,7 +1040,7 @@ var FolderToolbarView = Backbone.View.extend({
           items_to_delete.push(folder);
       }
 
-      this.options.chain_call_control.total_number = items_total.length;
+      this.options.chain_call_control.total_number = items_total;
       // call the recursive function to call ajax one after each other (request FIFO queue)
       this.chainCallDeletingItems(items_to_delete);
     }
