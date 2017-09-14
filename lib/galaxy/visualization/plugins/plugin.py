@@ -3,10 +3,10 @@ Visualization plugins: instantiate/deserialize data and models
 from a query string and render a webpage based on those data.
 """
 
-import os
+import logging
 import copy
-
 import mako
+import os
 
 from galaxy.managers import api_keys
 
@@ -14,7 +14,6 @@ from galaxy.visualization.plugins import interactive_environments
 from galaxy.visualization.plugins import resource_parser
 from galaxy.visualization.plugins import utils
 
-import logging
 log = logging.getLogger(__name__)
 
 

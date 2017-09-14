@@ -5,26 +5,22 @@ Lower level of visualization framework which does three main things:
     - unpack a query string into the desired objects needed for rendering
 """
 import imp
-import os.path
-import sys
-
+import logging
 import mako.lookup
-
-from galaxy import util
-from galaxy.util import bunch
-from galaxy.util import odict
-
 import os
+import sys
 import weakref
 
+from galaxy.util import bunch
+from galaxy.util import config_directories_from_setting
+from galaxy.util import odict
+from galaxy.util import parse_xml
 from galaxy.web import url_for
-import galaxy.exceptions
-
+from galaxy.exceptions import ObjectNotFound
 from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins import plugin as vis_plugins
 from galaxy.visualization.plugins import utils as vis_utils
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -86,7 +82,7 @@ class VisualizationsRegistry(object):
         self.directories = []
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins = odict.odict()
-        self.directories = util.config_directories_from_setting(directories_setting, app.config.root)
+        self.directories = config_directories_from_setting(directories_setting, app.config.root)
         self._load_configuration()
         self._load_plugins()
 
@@ -115,7 +111,7 @@ class VisualizationsRegistry(object):
         :param  base_directory:     path prefixed to new, relative template paths
         """
         additional_paths = []
-        xml_tree = util.parse_xml(config_filepath)
+        xml_tree = parse_xml(config_filepath)
         paths_list = xml_tree.getroot()
         for rel_path_elem in paths_list.findall('path'):
             if rel_path_elem.text is not None:
@@ -331,7 +327,7 @@ class VisualizationsRegistry(object):
         Wrap to throw error if plugin not in registry.
         """
         if key not in self.plugins:
-            raise galaxy.exceptions.ObjectNotFound('Unknown or invalid visualization: ' + key)
+            raise ObjectNotFound('Unknown or invalid visualization: ' + key)
         return self.plugins[key]
 
     # -- building links to visualizations from objects --
