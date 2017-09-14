@@ -36,10 +36,6 @@ class VisualizationsRegistry(object):
     """
     #: base url to controller endpoint
     BASE_URL = 'visualizations'
-    #: default number of templates to search for plugin template lookup
-    DEFAULT_TEMPLATE_COLLECTION_SIZE = 10
-    #: default encoding of plugin templates
-    DEFAULT_TEMPLATE_ENCODING = 'utf-8'
     #: name of files to search for additional template lookup directories
     TEMPLATE_PATHS_CONFIG = 'additional_template_paths.xml'
     # these should be handled somewhat differently - and be passed onto their resp. methods in ctrl.visualization
@@ -152,39 +148,6 @@ class VisualizationsRegistry(object):
                 plugin_path = os.path.join(directory, plugin_dir)
                 if self._is_plugin(plugin_path):
                     yield plugin_path
-
-    # ------------------------------------------------------------------------- templates
-    def _build_plugin_template_lookup(self, plugin):
-        """
-        Builds the object that searches for templates (cached or not) when rendering.
-
-        :type   plugin: ``util.bunch.Bunch``
-        :param  plugin: the plugin containing the templates
-        :rtype:         ``Mako.lookup.TemplateLookup``
-        :returns:       template lookup for this plugin
-        """
-        if not plugin.serves_templates:
-            return None
-        template_lookup_paths = plugin.template_path
-        if self.additional_template_paths:
-            template_lookup_paths = [template_lookup_paths] + self.additional_template_paths
-        template_lookup = self._create_mako_template_lookup(self.template_cache_dir, template_lookup_paths)
-        return template_lookup
-
-    def _create_mako_template_lookup(self, cache_dir, paths,
-                                     collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE, output_encoding=DEFAULT_TEMPLATE_ENCODING):
-        """
-        Create a ``TemplateLookup`` with defaults.
-
-        :rtype:         ``Mako.lookup.TemplateLookup``
-        :returns:       all urls and paths for each plugin serving static content
-        """
-        # TODO: possible to add galaxy/templates into the lookup here?
-        return mako.lookup.TemplateLookup(
-            directories=paths,
-            module_directory=cache_dir,
-            collection_size=collection_size,
-            output_encoding=output_encoding)
 
     def fill_template(self, trans, plugin, template_filename, **kwargs):
         """
