@@ -36,6 +36,12 @@ class VisualizationsRegistry(object):
     """
     NAMED_ROUTE = 'visualization_plugin'
     DEFAULT_BASE_URL = 'visualizations'
+    #: default number of templates to search for plugin template lookup
+    DEFAULT_TEMPLATE_COLLECTION_SIZE = 10
+    #: default encoding of plugin templates
+    DEFAULT_TEMPLATE_ENCODING = 'utf-8'
+    #: name of files to search for additional template lookup directories
+    TEMPLATE_PATHS_CONFIG = 'additional_template_paths.xml'
     # these should be handled somewhat differently - and be passed onto their resp. methods in ctrl.visualization
     # TODO: change/remove if/when they can be updated to use this system
     #: any built in visualizations that have their own render method in ctrls/visualization
@@ -45,13 +51,6 @@ class VisualizationsRegistry(object):
         'sweepster',
         'phyloviz'
     ]
-
-    #: default number of templates to search for plugin template lookup
-    DEFAULT_TEMPLATE_COLLECTION_SIZE = 10
-    #: default encoding of plugin templates
-    DEFAULT_TEMPLATE_ENCODING = 'utf-8'
-    #: name of files to search for additional template lookup directories
-    TEMPLATE_PATHS_CONFIG = 'additional_template_paths.xml'
 
     def __str__(self):
         return self.__class__.__name__
