@@ -18,12 +18,6 @@ import logging
 log = logging.getLogger(__name__)
 
 
-# =============================================================================
-# TODO:
-# move mixins to facade'd objects
-# allow config to override static/template settings
-# allow config detection in alternate places: galaxy-visualization.xml
-# =============================================================================
 class ServesStaticPluginMixin(object):
     """
     An object that serves static files from the server.
@@ -54,7 +48,6 @@ class ServesStaticPluginMixin(object):
         return '/'.join([self.base_url, 'static'])
 
 
-# =============================================================================
 class ServesTemplatesPluginMixin(object):
     """
     An object that renders (mako) template files from the server.
@@ -98,7 +91,6 @@ class ServesTemplatesPluginMixin(object):
             output_encoding=output_encoding)
 
 
-# =============================================================================
 class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
     """
     A plugin that instantiates resources, serves static files, and uses mako
@@ -106,7 +98,7 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
     """
     # AKA: MakoVisualizationPlugin
     # config[ 'entry_point' ][ 'type' ] == 'mako'
-# TODO: concept/name collision between plugin config and visualization config
+    # TODO: concept/name collision between plugin config and visualization config
 
     def __init__(self, app, path, name, config, context=None, **kwargs):
         context = context or {}
@@ -242,7 +234,6 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
         return embedded
 
 
-# =============================================================================
 class InteractiveEnvironmentPlugin(VisualizationPlugin):
     """
     Serves web-based REPLs such as Jupyter and RStudio.
@@ -291,7 +282,6 @@ class InteractiveEnvironmentPlugin(VisualizationPlugin):
         return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
 
 
-# =============================================================================
 class ScriptVisualizationPlugin(VisualizationPlugin):
     """
     A visualization plugin that starts by loading a single (js) script.
@@ -322,7 +312,6 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
 
 
-# =============================================================================
 class StaticFileVisualizationPlugin(VisualizationPlugin):
     """
     A visualiztion plugin that starts by loading a static html file defined
@@ -342,12 +331,3 @@ class StaticFileVisualizationPlugin(VisualizationPlugin):
         static_file_path = os.path.join(self.path, static_file_path)
         with open(static_file_path, 'r') as outfile:
             return outfile.read()
-
-
-# # =============================================================================
-# class PyGeneratedVisualizationPlugin( VisualizationPlugin ):
-#     """
-#     Selectively import one module and call a specified fn within it to generate the
-#     HTML served.
-#     """
-#     pass
