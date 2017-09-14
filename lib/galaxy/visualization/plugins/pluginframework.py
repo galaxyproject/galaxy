@@ -202,8 +202,12 @@ class PageServingPluginManager(PluginManager):
             raise PluginManagerException('base_url or DEFAULT_BASE_URL required')
         self.template_cache_dir = template_cache_dir
         self.additional_template_paths = []
-
-        super(PageServingPluginManager, self).__init__(app, **kwargs)
+        self.directories = []
+        self.skip_bad_plugins = skip_bad_plugins
+        self.plugins = odict.odict()
+        self.directories = util.config_directories_from_setting(directories_setting, app.config.root)
+        self._load_configuration()
+        self._load_plugins()
 
     def _load_configuration(self):
         """
