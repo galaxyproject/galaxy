@@ -68,26 +68,26 @@ class PluginManager(object):
 
         self.directories = util.config_directories_from_setting(directories_setting, app.config.root)
 
-        self.load_configuration()
-        self.load_plugins()
+        self._load_configuration()
+        self._load_plugins()
 
-    def load_configuration(self):
+    def _load_configuration(self):
         """
         Override to load some framework/plugin specifc configuration.
         """
         # Abstract method
         return True
 
-    def load_plugins(self):
+    def _load_plugins(self):
         """
         Search ``self.directories`` for potential plugins, load them, and cache
         in ``self.plugins``.
         :rtype:                 odict
         :returns:               ``self.plugins``
         """
-        for plugin_path in self.find_plugins():
+        for plugin_path in self._find_plugins():
             try:
-                plugin = self.load_plugin(plugin_path)
+                plugin = self._load_plugin(plugin_path)
 
                 if plugin and plugin.name not in self.plugins:
                     self.plugins[plugin.name] = plugin
@@ -104,7 +104,7 @@ class PluginManager(object):
 
         return self.plugins
 
-    def find_plugins(self):
+    def _find_plugins(self):
         """
         Return the directory paths of plugins within ``self.directories``.
 
@@ -117,10 +117,10 @@ class PluginManager(object):
         for directory in self.directories:
             for plugin_dir in sorted(os.listdir(directory)):
                 plugin_path = os.path.join(directory, plugin_dir)
-                if self.is_plugin(plugin_path):
+                if self._is_plugin(plugin_path):
                     yield plugin_path
 
-    def is_plugin(self, plugin_path):
+    def _is_plugin(self, plugin_path):
         """
         Determines whether the given filesystem path contains a plugin.
 
@@ -136,7 +136,7 @@ class PluginManager(object):
             return False
         return True
 
-    def load_plugin(self, plugin_path):
+    def _load_plugin(self, plugin_path):
         """
         Create, load, and/or initialize the plugin and return it.
 

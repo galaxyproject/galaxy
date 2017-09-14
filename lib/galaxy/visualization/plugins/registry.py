@@ -51,7 +51,7 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
         self.config_parser = config_parser.VisualizationsConfigParser()
         super(VisualizationsRegistry, self).__init__(app, skip_bad_plugins=skip_bad_plugins, **kwargs)
 
-    def is_plugin(self, plugin_path):
+    def _is_plugin(self, plugin_path):
         """
         Determines whether the given filesystem path contains a plugin.
 
@@ -74,7 +74,7 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
             return False
         return True
 
-    def load_plugin(self, plugin_path):
+    def _load_plugin(self, plugin_path):
         """
         Create the visualization plugin object, parse its configuration file,
         and return it.
