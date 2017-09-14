@@ -248,10 +248,6 @@ var LibraryDatasetView = Backbone.View.extend({
       });
   },
 
-  goBack: function(){
-    Galaxy.libraries.library_router.back();
-  },
-
   showPermissions: function(options){
     this.options = _.extend(this.options, options);
     $(".tooltip").remove();
@@ -270,11 +266,13 @@ var LibraryDatasetView = Backbone.View.extend({
     var template = this.templateDatasetPermissions();
     this.$el.html(template({item: this.model, is_admin: is_admin}));
     var self = this;
-    $.get( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
-      self.prepareSelectBoxes({fetched_permissions: fetched_permissions, is_admin: is_admin});
-    }).fail(function(){
-        mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
-    });
+    $.get(Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=current")
+        .done(function(fetched_permissions) {
+            self.prepareSelectBoxes({fetched_permissions: fetched_permissions, is_admin: is_admin});
+        })
+        .fail(function(){
+            mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
+        });
     $("#center [data-toggle]").tooltip();
     $("#center").css('overflow','auto');
   },
