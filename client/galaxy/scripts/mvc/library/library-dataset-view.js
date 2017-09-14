@@ -964,7 +964,7 @@ var LibraryDatasetView = Backbone.View.extend({
         '<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can modify name, metadata, and other information about this library item.</div>',
         '<hr/>',
         '<h2>Dataset-related permissions</h2>',
-        '<divclass="alert alert-warning">Changes made below will affect <strong>every</strong> library item that was created from this dataset and also every history this dataset is part of.</div>',
+        '<div class="alert alert-warning">Changes made below will affect <strong>every</strong> library item that was created from this dataset and also every history this dataset is part of.</div>',
         '<% if (!item.get("is_unrestricted")) { %>',
           '<p>You can <span class="remove-restrictions"><a>remove all access restrictions</a></span> on this dataset.</p>',
         '<% } else { %>',
