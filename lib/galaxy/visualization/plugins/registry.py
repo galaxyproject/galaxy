@@ -20,7 +20,6 @@ import weakref
 from galaxy.web import url_for
 import galaxy.exceptions
 
-from galaxy.visualization.plugins import pluginframework
 from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins import plugin as vis_plugins
 from galaxy.visualization.plugins import utils as vis_utils

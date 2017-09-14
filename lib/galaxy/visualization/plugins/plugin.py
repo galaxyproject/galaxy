@@ -11,7 +11,6 @@ import mako
 from galaxy.managers import api_keys
 
 from galaxy.visualization.plugins import interactive_environments
-from galaxy.visualization.plugins import pluginframework
 from galaxy.visualization.plugins import resource_parser
 from galaxy.visualization.plugins import utils
 
