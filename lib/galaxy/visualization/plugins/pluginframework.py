@@ -218,7 +218,7 @@ class PageServingPluginManager(PluginManager):
 
         super(PageServingPluginManager, self).__init__(app, **kwargs)
 
-    def load_configuration(self):
+    def _load_configuration(self):
         """
         Load framework wide configuration, including:
             additional template lookup directories
@@ -226,10 +226,10 @@ class PageServingPluginManager(PluginManager):
         for directory in self.directories:
             possible_path = os.path.join(directory, self.additional_template_paths_config_filename)
             if os.path.exists(possible_path):
-                added_paths = self.parse_additional_template_paths(possible_path, directory)
+                added_paths = self._parse_additional_template_paths(possible_path, directory)
                 self.additional_template_paths.extend(added_paths)
 
-    def parse_additional_template_paths(self, config_filepath, base_directory):
+    def _parse_additional_template_paths(self, config_filepath, base_directory):
         """
         Parse an XML config file at `config_filepath` for template paths
         (relative to `base_directory`) to add to each plugin's template lookup.
@@ -250,7 +250,7 @@ class PageServingPluginManager(PluginManager):
                 additional_paths.append(os.path.join(base_directory, rel_path_elem.text))
         return additional_paths
 
-    def is_plugin(self, plugin_path):
+    def _is_plugin(self, plugin_path):
         """
         Determines whether the given filesystem path contains a plugin.
 
@@ -265,7 +265,7 @@ class PageServingPluginManager(PluginManager):
         :rtype:                 bool
         :returns:               True if the path contains a plugin
         """
-        if not super(PageServingPluginManager, self).is_plugin(plugin_path):
+        if not super(PageServingPluginManager, self)._is_plugin(plugin_path):
             return False
         # reject only if we don't have either
         listdir = os.listdir(plugin_path)
@@ -273,7 +273,7 @@ class PageServingPluginManager(PluginManager):
             return False
         return True
 
-    def load_plugin(self, plugin_path):
+    def _load_plugin(self, plugin_path):
         """
         Create the plugin and decorate with static and/or template paths and urls.
 
@@ -364,7 +364,7 @@ class PageServingPluginManager(PluginManager):
         return urls_and_paths
 
     # ------------------------------------------------------------------------- templates
-    def build_plugin_template_lookup(self, plugin):
+    def _build_plugin_template_lookup(self, plugin):
         """
         Builds the object that searches for templates (cached or not) when rendering.
 
