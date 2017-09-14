@@ -28,13 +28,6 @@ class PluginManagerException(Exception):
     """
     pass
 
-
-class PluginManagerConfigException(PluginManagerException):
-    """Exception for plugin framework configuration errors.
-    """
-    pass
-
-
 # ============================================================================= base
 class PluginManager(object):
     """
@@ -47,36 +40,6 @@ class PluginManager(object):
     This is an non-abstract class but its usefulness is limited and is meant
     to be inherited.
     """
-
-    def __init__(self, app, directories_setting=None, skip_bad_plugins=True, **kwargs):
-        """
-        Set up the manager and load all plugins.
-
-        :type   app:    UniverseApplication
-        :param  app:    the application (and its configuration) using this manager
-        :type   directories_setting: string (default: None)
-        :param  directories_setting: the filesystem path (or paths)
-            to search for plugins. Can be CSV string of paths. Will be treated as
-            absolute if a path starts with '/', relative otherwise.
-        :type   skip_bad_plugins:    boolean (default: True)
-        :param  skip_bad_plugins:    whether to skip plugins that cause
-            exceptions when loaded or to raise that exception
-        """
-        self.directories = []
-        self.skip_bad_plugins = skip_bad_plugins
-        self.plugins = odict.odict()
-
-        self.directories = util.config_directories_from_setting(directories_setting, app.config.root)
-
-        self._load_configuration()
-        self._load_plugins()
-
-    def _load_configuration(self):
-        """
-        Override to load some framework/plugin specifc configuration.
-        """
-        # Abstract method
-        return True
 
     def _load_plugins(self):
         """
