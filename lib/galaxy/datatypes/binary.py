@@ -1302,7 +1302,7 @@ class ExcelXls(Binary):
     edam_format = "format_3468"
 
     def sniff(self, filename):
-        mime_type = subprocess.check_output(['file', '--mime-type', filename]).strip()
+        mime_type = subprocess.check_output(['file', '--mime-type', filename])
         return "application/vnd.ms-excel" in mime_type
 
     def get_mime(self):

@@ -34,17 +34,15 @@ def _get_samtools_version():
     if not cmd_exists('samtools'):
         raise Exception('This tool needs samtools, but it is not on PATH.')
     # Get the version of samtools via --version-only, if available
-    try:
-        output = subprocess.check_output(['samtools', '--version-only'], stderr=subprocess.PIPE)
-        # --version-only is available
-        # Format is <version x.y.z>+htslib-<a.b.c>
+    p = subprocess.Popen(['samtools', '--version-only'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, error = p.communicate()
+    # --version-only is available
+    # Format is <version x.y.z>+htslib-<a.b.c>
+    if p.returncode == 0:
         version = output.split('+')[0]
         return version
-    except subprocess.CalledProcessError:
-        # --version-only not available
-        pass
 
-    output = subprocess.check_output(['samtools'], stderr=subprocess.PIPE)
+    output = subprocess.Popen(['samtools'], stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()[1]
     lines = output.split('\n')
     for line in lines:
         if line.lower().startswith('version'):
