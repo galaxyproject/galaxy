@@ -51,7 +51,7 @@ class VisualizationsRegistry(object):
     #: default encoding of plugin templates
     DEFAULT_TEMPLATE_ENCODING = 'utf-8'
     #: name of files to search for additional template lookup directories
-    additional_template_paths_config_filename = 'additional_template_paths.xml'
+    TEMPLATE_PATHS_CONFIG = 'additional_template_paths.xml'
 
     def __str__(self):
         return self.__class__.__name__
@@ -88,7 +88,7 @@ class VisualizationsRegistry(object):
             additional template lookup directories
         """
         for directory in self.directories:
-            possible_path = os.path.join(directory, self.additional_template_paths_config_filename)
+            possible_path = os.path.join(directory, self.TEMPLATE_PATHS_CONFIG)
             if os.path.exists(possible_path):
                 added_paths = self._parse_additional_template_paths(possible_path, directory)
                 self.additional_template_paths.extend(added_paths)
