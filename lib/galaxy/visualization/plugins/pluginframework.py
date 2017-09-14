@@ -23,69 +23,7 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
-class PluginManagerException(Exception):
-    """Base exception for plugin frameworks.
-    """
-    pass
-
-# ============================================================================= base
-class PluginManager(object):
-    """
-    Plugins represents an section of code that is not tracked in the
-    Galaxy repository, allowing the addition of custom code to a Galaxy
-    installation without changing the code base.
-
-    A PluginManager discovers and manages these plugins.
-
-    This is an non-abstract class but its usefulness is limited and is meant
-    to be inherited.
-    """
-
-    def _load_plugins(self):
-        """
-        Search ``self.directories`` for potential plugins, load them, and cache
-        in ``self.plugins``.
-        :rtype:                 odict
-        :returns:               ``self.plugins``
-        """
-        for plugin_path in self._find_plugins():
-            try:
-                plugin = self._load_plugin(plugin_path)
-
-                if plugin and plugin.name not in self.plugins:
-                    self.plugins[plugin.name] = plugin
-                    log.info('%s, loaded plugin: %s', self, plugin.name)
-                # NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
-                # TODO: overwriting may be desired
-                elif plugin and plugin.name in self.plugins:
-                    log.warning('%s, plugin with name already exists: %s. Skipping...', self, plugin.name)
-
-            except Exception:
-                if not self.skip_bad_plugins:
-                    raise
-                log.exception('Plugin loading raised exception: %s. Skipping...', plugin_path)
-
-        return self.plugins
-
-    def _find_plugins(self):
-        """
-        Return the directory paths of plugins within ``self.directories``.
-
-        Paths are considered a plugin path if they pass ``self.is_plugin``.
-        :rtype:                 string generator
-        :returns:               paths of valid plugins
-        """
-        # due to the ordering of listdir, there is an implicit plugin loading order here
-        # could instead explicitly list on/off in master config file
-        for directory in self.directories:
-            for plugin_dir in sorted(os.listdir(directory)):
-                plugin_path = os.path.join(directory, plugin_dir)
-                if self._is_plugin(plugin_path):
-                    yield plugin_path
-
-
-# ============================================================================= base
-class PageServingPluginManager(PluginManager):
+class PageServingPluginManager(object):
     """
     Page serving plugins are files/directories that:
         * are not tracked in the Galaxy repository and allow adding custom code
@@ -124,7 +62,7 @@ class PageServingPluginManager(PluginManager):
         """
         self.base_url = base_url or self.DEFAULT_BASE_URL
         if not self.base_url:
-            raise PluginManagerException('base_url or DEFAULT_BASE_URL required')
+            raise Exception('base_url or DEFAULT_BASE_URL required')
         self.template_cache_dir = template_cache_dir
         self.additional_template_paths = []
         self.directories = []
@@ -188,6 +126,48 @@ class PageServingPluginManager(PluginManager):
         if(('templates' not in listdir) and ('static' not in listdir)):
             return False
         return True
+
+    def _load_plugins(self):
+        """
+        Search ``self.directories`` for potential plugins, load them, and cache
+        in ``self.plugins``.
+        :rtype:                 odict
+        :returns:               ``self.plugins``
+        """
+        for plugin_path in self._find_plugins():
+            try:
+                plugin = self._load_plugin(plugin_path)
+
+                if plugin and plugin.name not in self.plugins:
+                    self.plugins[plugin.name] = plugin
+                    log.info('%s, loaded plugin: %s', self, plugin.name)
+                # NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
+                # TODO: overwriting may be desired
+                elif plugin and plugin.name in self.plugins:
+                    log.warning('%s, plugin with name already exists: %s. Skipping...', self, plugin.name)
+
+            except Exception:
+                if not self.skip_bad_plugins:
+                    raise
+                log.exception('Plugin loading raised exception: %s. Skipping...', plugin_path)
+
+        return self.plugins
+
+    def _find_plugins(self):
+        """
+        Return the directory paths of plugins within ``self.directories``.
+
+        Paths are considered a plugin path if they pass ``self.is_plugin``.
+        :rtype:                 string generator
+        :returns:               paths of valid plugins
+        """
+        # due to the ordering of listdir, there is an implicit plugin loading order here
+        # could instead explicitly list on/off in master config file
+        for directory in self.directories:
+            for plugin_dir in sorted(os.listdir(directory)):
+                plugin_path = os.path.join(directory, plugin_dir)
+                if self._is_plugin(plugin_path):
+                    yield plugin_path
 
     def _load_plugin(self, plugin_path):
         """
