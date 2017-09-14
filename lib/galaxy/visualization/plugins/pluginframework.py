@@ -159,19 +159,6 @@ class PluginManager(object):
         return plugin
 
 
-class PluginManagerStaticException(PluginManagerException):
-    """Exception for plugin framework static directory set up errors.
-    """
-    pass
-
-
-class PluginManagerTemplateException(PluginManagerException):
-    """Exception for plugin framework template directory
-    and template rendering errors.
-    """
-    pass
-
-
 # ============================================================================= base
 class PageServingPluginManager(PluginManager):
     """
