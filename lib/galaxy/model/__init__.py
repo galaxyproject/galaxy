@@ -1831,7 +1831,7 @@ class Dataset(StorableObject):
                 return self._calculate_size()
 
     def set_size(self):
-        """Returns the size of the data on disk"""
+        """Sets the size of the data on disk"""
         if not self.file_size:
             self.file_size = self._calculate_size()
 
