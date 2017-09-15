@@ -19,3 +19,5 @@ chronos-python==0.38.0
 
 # Synnefo / Pithos+ object store client
 kamaki
+
+watchdog
