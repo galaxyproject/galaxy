@@ -182,7 +182,7 @@ var FolderToolbarView = Backbone.View.extend({
               if (typeof response.responseJSON !== "undefined"){
                 mod_toastr.error(response.responseJSON.err_msg);
               } else {
-                mod_toastr.error('An error ocurred.');
+                mod_toastr.error('An error occurred.');
               }
             }
           });
@@ -231,7 +231,7 @@ var FolderToolbarView = Backbone.View.extend({
           if (typeof response.responseJSON !== "undefined"){
             mod_toastr.error(response.responseJSON.err_msg);
           } else {
-            mod_toastr.error('An error ocurred.');
+            mod_toastr.error('An error occurred.');
           }
         });
       }
@@ -251,7 +251,7 @@ var FolderToolbarView = Backbone.View.extend({
           that.processImportToHistory(new_history.id, new_history.name);
         })
         .fail(function( xhr, status, error ) {
-          mod_toastr.error('An error ocurred.');
+          mod_toastr.error('An error occurred.');
         })
         .always(function() {
           that.modal.enableButton('Import');
@@ -390,7 +390,7 @@ var FolderToolbarView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg);
         } else {
-          mod_toastr.error('An error ocurred.');
+          mod_toastr.error('An error occurred.');
         }
       });
   },
@@ -587,7 +587,7 @@ var FolderToolbarView = Backbone.View.extend({
             mod_toastr.error(response.responseJSON.err_msg);
           }
         } else {
-          mod_toastr.error('An error ocurred.');
+          mod_toastr.error('An error occurred.');
         }
       }
     })
@@ -740,7 +740,7 @@ var FolderToolbarView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg);
         } else {
-          mod_toastr.error('An error ocurred.');
+          mod_toastr.error('An error occurred.');
         }
       }
     });
@@ -1063,7 +1063,7 @@ var FolderToolbarView = Backbone.View.extend({
           if (typeof response.responseJSON !== "undefined"){
             mod_toastr.error(response.responseJSON.err_msg);
           } else {
-            mod_toastr.error('An error ocurred.');
+            mod_toastr.error('An error occurred.');
           }
         }
       })

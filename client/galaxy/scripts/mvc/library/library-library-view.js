@@ -43,7 +43,7 @@ var LibraryView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg + ' Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         } else {
-          mod_toastr.error('An error ocurred. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
+          mod_toastr.error('An error occurred. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         }
       }
     });
