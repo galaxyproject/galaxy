@@ -3,8 +3,10 @@ import random
 import shutil
 import string
 import tempfile
+
 from base import integration_util
 from base.populators import DatasetPopulator
+from nose.plugins.skip import SkipTest
 
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -55,6 +57,10 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        try:
+            import watchdog  # noqa: F401
+        except ImportError:
+            raise SkipTest("watchdog library is not available")
         cls.username = cls.get_secure_ascii_digits()
         cls.conda_tmp_prefix = tempfile.mkdtemp()
         cls.shed_tools_dir = tempfile.mkdtemp()
