@@ -279,7 +279,11 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
 
         // TODO: this fails in the edge case where
         //  the first fetch offset === limit (limit 4, offset 4, collection.length 4)
-        options.offset = options.reset? 0 : ( options.offset || collection.lastFetched );
+        if (options.reset){
+            options.offset = 0;
+        } else if (options.offset === undefined){
+            options.offset = collection.lastFetched;
+        }
         var limit = options.limit = options.limit || collection.limitPerFetch || null;
         // console.log( 'fetchMore, limit:', limit, 'offset:', options.offset );
 

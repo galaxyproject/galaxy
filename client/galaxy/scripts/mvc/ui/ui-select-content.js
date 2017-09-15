@@ -301,6 +301,7 @@ var View = Backbone.View.extend({
         } catch( e ) {
             this._handleDropStatus( 'danger' );
         }
+        ev.preventDefault();
     },
 
     /** Highlight drag result */

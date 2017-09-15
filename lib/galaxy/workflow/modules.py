@@ -560,7 +560,9 @@ class ToolModule( WorkflowModule ):
         tool_id = d.get( 'content_id' ) or d.get( 'tool_id' )
         if tool_id is None:
             raise exceptions.RequestParameterInvalidException( "No tool id could be located for step [%s]." % d )
-        tool_version = str( d.get( 'tool_version' ) )
+        tool_version = d.get( 'tool_version' )
+        if tool_version:
+            tool_version = str(tool_version)
         module = super( ToolModule, Class ).from_dict( trans, d, tool_id=tool_id, tool_version=tool_version, exact_tools=exact_tools )
         module.post_job_actions = d.get( 'post_job_actions', {} )
         module.workflow_outputs = d.get( 'workflow_outputs', [] )
@@ -1060,14 +1062,16 @@ class WorkflowModuleInjector(object):
         # Populate module.
         module = step.module = module_factory.from_workflow_step( self.trans, step )
 
-        # Fix any missing parameters
-        step.upgrade_messages = module.check_and_update_state()
-
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)
         module.add_dummy_datasets( connections=step.input_connections, steps=steps )
         state, step_errors = module.compute_runtime_state( self.trans, step_args )
         step.state = state
+
+        # Fix any missing parameters
+        step.upgrade_messages = module.check_and_update_state()
+
+        # Populate subworkflow components
         if step.type == "subworkflow":
             subworkflow = step.subworkflow
             populate_module_and_state( self.trans, subworkflow, param_map={}, )
