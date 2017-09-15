@@ -9,7 +9,7 @@ History
 17.9.6.dev0
 ---------------------
 
-    
+* Remove ``command`` lint check that is no longer valid.
 
 ---------------------
 17.9.5 (2017-09-06)
