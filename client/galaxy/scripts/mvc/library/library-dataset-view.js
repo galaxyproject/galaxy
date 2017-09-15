@@ -84,7 +84,7 @@ var LibraryDatasetView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg + ' Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         } else {
-          mod_toastr.error('An error ocurred. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
+          mod_toastr.error('An error occurred. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         }
       }
     });
@@ -116,7 +116,7 @@ var LibraryDatasetView = Backbone.View.extend({
           if (typeof response.responseJSON !== "undefined"){
             mod_toastr.error(response.responseJSON.err_msg);
           } else {
-            mod_toastr.error('An error ocurred.');
+            mod_toastr.error('An error occurred.');
           }
         }
       });
@@ -198,7 +198,7 @@ var LibraryDatasetView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg);
         } else {
-          mod_toastr.error('An error ocurred.');
+          mod_toastr.error('An error occurred.');
         }
       }
     });
@@ -214,7 +214,7 @@ var LibraryDatasetView = Backbone.View.extend({
           that.processImportToHistory(new_history.id);
         })
         .fail(function( xhr, status, error ) {
-          mod_toastr.error('An error ocurred.');
+          mod_toastr.error('An error occurred.');
         })
         .always(function() {
           that.modal.enableButton('Import');
@@ -980,7 +980,7 @@ var LibraryDatasetView = Backbone.View.extend({
         '<h4>Roles that can manage permissions on the dataset</h4>',
         '<div id="manage_perm" class="manage_perm roles-selection"></div>',
         '<div class="alert alert-info roles-selection">',
-          'User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will loose the ability manage this dataset unless you are an admin.',
+          'User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will lose the ability manage this dataset unless you are an admin.',
         '</div>',
         '<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-default toolbtn_save_permissions primary-button" type="button">',
           '<span class="fa fa-floppy-o"></span>',
