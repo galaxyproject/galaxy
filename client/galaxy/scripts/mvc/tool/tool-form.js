@@ -99,23 +99,23 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
             var self = this;
             var options = form.model.attributes;
             // build execute button
-            options.buttons = {
-                execute: execute_btn = new Ui.Button({
+            var execute_button = new Ui.Button({
                     icon     : 'fa-check',
                     tooltip  : 'Execute: ' + options.name + ' (' + options.version + ')',
                     title    : 'Execute',
                     cls      : 'btn btn-primary ui-clear-float',
                     wait_cls : 'btn btn-info ui-clear-float',
                     onclick  : function() {
-                        execute_btn.wait();
+                        execute_button.wait();
                         form.portlet.disable();
                         self.submit( options, function() {
-                            execute_btn.unwait();
+                            execute_button.unwait();
                             form.portlet.enable();
                         } );
                     }
-                })
-            }
+                });
+            options.buttons = { execute: execute_button };
+
             // remap feature
             if ( options.job_id && options.job_remap ) {
                 options.inputs.push({
