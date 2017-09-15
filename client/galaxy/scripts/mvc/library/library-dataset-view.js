@@ -275,7 +275,8 @@ var LibraryDatasetView = Backbone.View.extend({
   _serializeRoles : function(role_list){
     var selected_roles = [];
     for (var i = 0; i < role_list.length; i++) {
-      selected_roles.push(role_list[i][1] + ':' + role_list[i][0]);
+      // Replace the : and , in role's name since these are select2 separators for initialData
+      selected_roles.push(role_list[i][1] + ':' + role_list[i][0].replace(':', ' ').replace(',', ' &'));
     }
     return selected_roles;
   },
