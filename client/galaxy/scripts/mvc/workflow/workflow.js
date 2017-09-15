@@ -3,7 +3,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
 
     /** Build messages after user action */
     function build_messages() {
-        var $el_message = this.$( '.response-message' ),
+        var $el_message = $( '.response-message' ),
             response = {};
         response = {
             'status': Utils.getQueryString( 'status' ),
