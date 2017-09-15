@@ -1450,7 +1450,7 @@ class JobWrapper(object, HasResourceParameters):
 
     def cleanup(self, delete_files=True):
         # At least one of these tool cleanup actions (job import), is needed
-        # for thetool to work properly, that is why one might want to run
+        # for the tool to work properly, that is why one might want to run
         # cleanup but not delete files.
         try:
             if delete_files:
