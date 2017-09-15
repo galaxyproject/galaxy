@@ -4,14 +4,10 @@ Lower level of visualization framework which does three main things:
     - create urls to visualizations based on some target object(s)
     - unpack a query string into the desired objects needed for rendering
 """
-import imp
 import logging
-import mako.lookup
 import os
-import sys
 import weakref
 
-from galaxy.util import bunch
 from galaxy.util import config_directories_from_setting
 from galaxy.util import odict
 from galaxy.util import parse_xml
