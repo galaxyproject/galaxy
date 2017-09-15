@@ -84,7 +84,7 @@ var LibraryDatasetView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg + ' Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         } else {
-          mod_toastr.error('An error ocurred. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
+          mod_toastr.error('An error occurred. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         }
       }
     });
@@ -116,7 +116,7 @@ var LibraryDatasetView = Backbone.View.extend({
           if (typeof response.responseJSON !== "undefined"){
             mod_toastr.error(response.responseJSON.err_msg);
           } else {
-            mod_toastr.error('An error ocurred.');
+            mod_toastr.error('An error occurred.');
           }
         }
       });
@@ -198,7 +198,7 @@ var LibraryDatasetView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg);
         } else {
-          mod_toastr.error('An error ocurred.');
+          mod_toastr.error('An error occurred.');
         }
       }
     });
@@ -214,7 +214,7 @@ var LibraryDatasetView = Backbone.View.extend({
           that.processImportToHistory(new_history.id);
         })
         .fail(function( xhr, status, error ) {
-          mod_toastr.error('An error ocurred.');
+          mod_toastr.error('An error occurred.');
         })
         .always(function() {
           that.modal.enableButton('Import');
