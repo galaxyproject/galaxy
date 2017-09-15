@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.9.6.dev0
+17.9.6 (2017-09-15)
 ---------------------
 
 * Remove ``command`` lint check that is no longer valid.
