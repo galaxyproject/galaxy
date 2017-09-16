@@ -73,9 +73,11 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
         self.app = app
         if hasattr(self.app, 'watchers'):
             self._tool_watcher = self.app.watchers.tool_watcher
+            self._tool_config_watcher = self.app.watchers.tool_config_watcher
         else:
             # Toolbox is loaded but not used during toolshed tests
             self._tool_watcher = None
+            self._tool_config_watcher = None
         self._filter_factory = FilterFactory(self)
         self._tool_tag_manager = tool_tag_manager(app)
         self._init_tools_from_configs(config_filenames)
@@ -745,10 +747,13 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
             tool = self.create_tool(config_file=config_file, repository_id=repository_id, guid=guid, **kwds)
             if tool.tool_shed_repository or not guid:
                 self.add_tool_to_cache(tool, config_file)
-        if not tool.id.startswith("__") and self._tool_watcher:
+        if not tool.id.startswith("__"):
             # do not monitor special tools written to tmp directory - no reason
             # to monitor such a large directory.
-            self._tool_watcher.watch_file(config_file, tool.id)
+            if self._tool_watcher:
+                self._tool_watcher.watch_file(config_file, tool.id)
+            if self._tool_config_watcher:
+                [self._tool_config_watcher.watch_file(macro_path) for macro_path in tool._macro_paths]
         return tool
 
     def add_tool_to_cache(self, tool, config_file):

@@ -156,7 +156,7 @@ class JobConfiguration(object, ConfiguresHandlers):
         # Initialize the config
         job_config_file = self.app.config.job_config_file
         try:
-            tree = load(job_config_file)
+            tree, _ = load(job_config_file)
             self.__parse_job_conf_xml(tree)
         except IOError:
             log.warning('Job configuration "%s" does not exist, using legacy'
