@@ -1,6 +1,5 @@
 import os
 import random
-import shutil
 import string
 import tempfile
 
@@ -65,6 +64,7 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase):
         cls.conda_tmp_prefix = tempfile.mkdtemp()
         cls.shed_tools_dir = tempfile.mkdtemp()
         cls.shed_tool_data_dir = tempfile.mkdtemp()
+        cls._test_driver.temp_directories.extend([cls.conda_tmp_prefix, cls.shed_tool_data_dir, cls.shed_tools_dir])
         config["conda_auto_init"] = True
         config["conda_auto_install"] = True
         config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, 'conda')
@@ -82,14 +82,6 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase):
             shed_data_config.write(SHED_DATA_MANAGER_CONF)
         with open(config["shed_tool_data_table_config"], 'w') as shed_data_table_config:
             shed_data_table_config.write(SHED_DATA_TABLES)
-
-    @classmethod
-    def tearDownClass(cls):
-        """Shutdown Galaxy server and cleanup temp directory."""
-        for dir in [cls.conda_tmp_prefix, cls.shed_tool_data_dir, cls.shed_tools_dir]:
-            shutil.rmtree(dir)
-        cls._test_driver.tear_down()
-        cls._app_available = False
 
     def test_data_manager_installation_table_reload(self):
         """
