@@ -1704,14 +1704,14 @@ class JobWrapper(object, HasResourceParameters):
         else:
             return 'anonymous@unknown'
 
-    def __update_output(self, job, dataset, clean_only=False):
+    def __update_output(self, job, hda, clean_only=False):
         """Handle writing outputs to the object store.
 
         This should be called regardless of whether the job was failed or not so
         that writing of partial results happens and so that the object store is
         cleaned up if the dataset has been purged.
         """
-        dataset = dataset.dataset
+        dataset = hda.dataset
         if dataset not in job.output_library_datasets:
             purged = dataset.purged
             if not purged and not clean_only:
