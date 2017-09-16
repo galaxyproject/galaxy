@@ -1,4 +1,5 @@
 import logging
+import os
 from json import dumps
 
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
@@ -72,6 +73,8 @@ class SetMetadataToolAction( ToolAction ):
         input_paths = [DatasetPath( dataset.id, real_path=dataset.file_name, mutable=False )]
         app.object_store.create(job, base_dir='job_work', dir_only=True, extra_dir=str(job.id))
         job_working_dir = app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(job.id))
+        datatypes_config = os.path.join(job_working_dir, 'registry.xml')
+        app.datatypes_registry.to_xml_file(path=datatypes_config)
         external_metadata_wrapper = JobExternalOutputMetadataWrapper( job )
         cmd_line = external_metadata_wrapper.setup_external_metadata( dataset,
                                                                       sa_session,
@@ -81,7 +84,7 @@ class SetMetadataToolAction( ToolAction ):
                                                                       output_fnames=input_paths,
                                                                       config_root=app.config.root,
                                                                       config_file=app.config.config_file,
-                                                                      datatypes_config=app.datatypes_registry.integrated_datatypes_configs,
+                                                                      datatypes_config=datatypes_config,
                                                                       job_metadata=None,
                                                                       include_command=False,
                                                                       max_metadata_value_size=app.config.max_metadata_value_size,
