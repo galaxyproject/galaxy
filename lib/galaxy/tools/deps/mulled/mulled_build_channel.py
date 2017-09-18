@@ -19,9 +19,9 @@ See recent changes that would be built with:
 from __future__ import print_function
 
 import os
+import subprocess
 import sys
 import time
-import subprocess
 
 from ._cli import arg_parser
 from .mulled_build import (
