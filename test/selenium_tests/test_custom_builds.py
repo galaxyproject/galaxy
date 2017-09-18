@@ -80,8 +80,7 @@ class CustomBuildsTestcase(SeleniumTestCase):
         builds = []
         grid = self.wait_for_selector('table.grid > tbody')
         for row in grid.find_elements_by_tag_name('tr'):
-            td = row.find_elements_by_tag_name('td')
-            name = td[0].text
+            name = row.find_elements_by_tag_name('td')[0].text
             builds.append(name)
         return builds
 
