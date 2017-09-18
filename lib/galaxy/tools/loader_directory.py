@@ -22,7 +22,7 @@ TOOL_REGEX = re.compile(r"<tool\s")
 
 YAML_EXTENSIONS = [".yaml", ".yml", ".json"]
 CWL_EXTENSIONS = YAML_EXTENSIONS + [".cwl"]
-EXCLUDE_WALK_DIRS = ['.hg', '.git']
+EXCLUDE_WALK_DIRS = ['.hg', '.git', '.venv']
 
 
 def load_exception_handler(path, exc_info):
