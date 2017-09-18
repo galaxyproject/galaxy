@@ -12,16 +12,20 @@ var webpack = require( 'webpack' ),
         'jquery',
         'libs/jquery/jquery.migrate',
         // jquery plugins
-        'libs/jquery/select2',
+        'libs/jquery/jquery.autocomplete',
         'libs/jquery/jquery.event.hover',
+        'libs/jquery/jquery.event.drag',
+        'libs/jquery/jquery.mousewheel',
         'libs/jquery/jquery.form',
         'libs/jquery/jquery.rating',
+        'libs/jquery/select2',
         'libs/jquery.sparklines',
         'libs/jquery/jquery-ui',
+        'libs/jquery/jstorage',
+        'libs/jquery.complexify',
+        'libs/farbtastic',
         'libs/bootstrap',
         'libs/bootstrap-tour',
-        'libs/jquery.complexify',
-        'libs/jquery/jquery.autocomplete',
         // mvc
         'libs/underscore',
         'libs/backbone',
@@ -87,6 +91,7 @@ module.exports = {
             'window.jQuery':    'jquery',
             _:                  "underscore",
             Backbone:           'libs/backbone',
+
         })
         // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
     ],
