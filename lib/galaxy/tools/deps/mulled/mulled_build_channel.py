@@ -21,13 +21,13 @@ from __future__ import print_function
 import os
 import sys
 import time
+import subprocess
 
 from ._cli import arg_parser
 from .mulled_build import (
     add_build_arguments,
     args_to_mull_targets_kwds,
     build_target,
-    check_output,
     conda_versions,
     get_affected_packages,
     mull_targets,
@@ -42,7 +42,13 @@ def _fetch_repo_data(args):
         repo_data = "%s-repodata.json" % channel
     if not os.path.exists(repo_data):
         platform_tag = 'osx-64' if sys.platform == 'darwin' else 'linux-64'
-        check_output("wget --quiet https://conda.anaconda.org/%s/%s/repodata.json.bz2 -O '%s.bz2' && bzip2 -d '%s.bz2'" % (channel, platform_tag, repo_data, repo_data))
+        subprocess.check_call([
+            'wget', '--quiet', 'https://conda.anaconda.org/%s/%s/repodata.json.bz2' % (channel, platform_tag),
+            '-O', '%s.bz2' % repo_data
+        ])
+        subprocess.check_call([
+            'bzip2', '-d', '%s.bz2' % repo_data
+        ])
     return repo_data
 
 
