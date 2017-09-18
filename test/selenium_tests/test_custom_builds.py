@@ -16,22 +16,18 @@ class CustomBuildsTestcase(SeleniumTestCase):
     @selenium_test
     def test_build_add(self):
         self.navigate_to_custom_builds_page()
-
-        # self.add_custom_build(self.build_name1, self.build_key1, 'fasta')
-        # self.assert_custom_builds_in_grid([self.build_name1])
-
-        self.add_custom_build(self.build_name2, self.build_key2, 'len_file_c_p')
-        self.assert_custom_builds_in_grid([self.build_name2])
+        self.add_custom_build(self.build_name1, self.build_key1)
+        self.assert_custom_builds_in_grid([self.build_name1])
 
     @selenium_test
     def test_build_delete(self):
         self.navigate_to_custom_builds_page()
 
-        self.add_custom_build(self.build_name3, self.build_key3, 'len_file_c_p')
-        self.assert_custom_builds_in_grid([self.build_name3])
+        self.add_custom_build(self.build_name2, self.build_key2)
+        self.assert_custom_builds_in_grid([self.build_name2])
 
-        self.delete_custom_build(self.build_name3)
-        self.assert_custom_builds_in_grid([self.build_name3], False)
+        self.delete_custom_build(self.build_name2)
+        self.assert_custom_builds_in_grid([self.build_name2], False)
 
     @retry_assertion_during_transitions
     def assert_custom_builds_in_grid(self, expected_builds, present=True):
@@ -42,7 +38,7 @@ class CustomBuildsTestcase(SeleniumTestCase):
         else:
             self.assertEqual(intersection, set())
 
-    def add_custom_build(self, build_name, build_key, definition):
+    def add_custom_build(self, build_name, build_key):
         name_div = self.wait_for_selector('div[tour_id="name"')
         name_input = name_div.find_element_by_css_selector('.ui-form-field input')
         name_input.click()
@@ -57,15 +53,10 @@ class CustomBuildsTestcase(SeleniumTestCase):
         len_type_select = len_type_div.find_element_by_css_selector('.ui-form-field .ui-select')
         len_type_select.click()
 
-        if definition == 'fasta':
-            option = self.wait_for_sizzle_selector_clickable('div[role="option"]:contains("FASTA-file from history")')
-            option.click()
-
-        elif definition == 'len_file_c_p':
-            option = self.wait_for_sizzle_selector_clickable('div[role="option"]:contains("Len-file by copy/paste")')
-            option.click()
-            content_area = self.wait_for_and_click_selector('.ui-form-field > textarea')
-            content_area.send_keys('content')
+        option = self.wait_for_sizzle_selector_clickable('div[role="option"]:contains("Len-file by copy/paste")')
+        option.click()
+        content_area = self.wait_for_and_click_selector('.ui-form-field > textarea')
+        content_area.send_keys('content')
 
         self.wait_for_and_click_selector('button#save')
 
@@ -74,7 +65,7 @@ class CustomBuildsTestcase(SeleniumTestCase):
         grid = self.wait_for_selector('table.grid > tbody')
         for row in grid.find_elements_by_tag_name('tr'):
             td = row.find_elements_by_tag_name('td')
-            name = td[1].text  # Bug in Galaxy, replace to td[0] after the fix
+            name = td[0].text
             if name == build_name:
                 delete_button = td[3].find_element_by_css_selector('.ui-button-icon-plain')
                 break
@@ -90,7 +81,7 @@ class CustomBuildsTestcase(SeleniumTestCase):
         grid = self.wait_for_selector('table.grid > tbody')
         for row in grid.find_elements_by_tag_name('tr'):
             td = row.find_elements_by_tag_name('td')
-            name = td[1].text  # Bug in Galaxy, replace to td[0] after the fix
+            name = td[0].text
             builds.append(name)
         return builds
 
@@ -112,11 +103,5 @@ class CustomBuildsTestcase(SeleniumTestCase):
 
         CustomBuildsTestcase.build_name1 = self._get_random_name()
         CustomBuildsTestcase.build_name2 = self._get_random_name()
-        CustomBuildsTestcase.build_name3 = self._get_random_name()
         CustomBuildsTestcase.build_key1 = self._get_random_name(len=5)
         CustomBuildsTestcase.build_key2 = self._get_random_name(len=5)
-        CustomBuildsTestcase.build_key3 = self._get_random_name(len=5)
-
-        # Upload a FASTA file
-        # self.perform_upload(self.get_filename('2.fasta'))
-        # self.history_panel_wait_for_hid_ok(1)
