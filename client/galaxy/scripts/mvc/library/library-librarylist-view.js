@@ -43,7 +43,7 @@ var LibraryListView = Backbone.View.extend({
               if ( typeof response.responseJSON !== "undefined" ){
                 mod_toastr.error( response.responseJSON.err_msg );
               } else {
-                mod_toastr.error( 'An error ocurred.' );
+                mod_toastr.error( 'An error occurred.' );
               }
           }
         });
@@ -138,7 +138,7 @@ var LibraryListView = Backbone.View.extend({
               if ( typeof response.responseJSON !== "undefined" ){
                 mod_toastr.error( response.responseJSON.err_msg );
               } else {
-                mod_toastr.error( 'An error ocurred.' );
+                mod_toastr.error( 'An error occurred.' );
               }
           }
         });

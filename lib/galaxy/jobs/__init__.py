@@ -1450,7 +1450,7 @@ class JobWrapper(object, HasResourceParameters):
 
     def cleanup(self, delete_files=True):
         # At least one of these tool cleanup actions (job import), is needed
-        # for thetool to work properly, that is why one might want to run
+        # for the tool to work properly, that is why one might want to run
         # cleanup but not delete files.
         try:
             if delete_files:
@@ -1676,7 +1676,7 @@ class JobWrapper(object, HasResourceParameters):
                                                                         config_root=config_root,
                                                                         config_file=config_file,
                                                                         datatypes_config=datatypes_config,
-                                                                        job_metadata=os.path.join(self.tool_working_directory, TOOL_PROVIDED_JOB_METADATA_FILE),
+                                                                        job_metadata=os.path.join(self.tool_working_directory, self.tool.provided_metadata_file),
                                                                         max_metadata_value_size=self.app.config.max_metadata_value_size,
                                                                         **kwds)
         if resolve_metadata_dependencies:
@@ -1704,14 +1704,14 @@ class JobWrapper(object, HasResourceParameters):
         else:
             return 'anonymous@unknown'
 
-    def __update_output(self, job, dataset, clean_only=False):
+    def __update_output(self, job, hda, clean_only=False):
         """Handle writing outputs to the object store.
 
         This should be called regardless of whether the job was failed or not so
         that writing of partial results happens and so that the object store is
         cleaned up if the dataset has been purged.
         """
-        dataset = dataset.dataset
+        dataset = hda.dataset
         if dataset not in job.output_library_datasets:
             purged = dataset.purged
             if not purged and not clean_only:
