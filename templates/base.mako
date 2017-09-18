@@ -61,7 +61,6 @@
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
         'libs/require',
-        "libs/bootstrap-tour",
     )}
 
     <script type="text/javascript">
