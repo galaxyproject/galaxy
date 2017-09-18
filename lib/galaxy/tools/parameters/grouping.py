@@ -323,7 +323,7 @@ class UploadDataset(Group):
                     return looks_like_url
 
                 if start_of_url(url_paste):
-                    url_paste = url_paste.split()
+                    url_paste = url_paste.replace('\r', '').split('\n')
                     for line in url_paste:
                         line = line.strip()
                         if line:
