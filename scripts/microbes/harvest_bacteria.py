@@ -8,9 +8,9 @@ import os
 import sys
 import time
 from ftplib import FTP
-import requests
 from urllib import urlretrieve
 
+import requests
 from BeautifulSoup import BeautifulSoup
 from util import get_bed_from_genbank, get_bed_from_glimmer3, get_bed_from_GeneMarkHMM, get_bed_from_GeneMark
 

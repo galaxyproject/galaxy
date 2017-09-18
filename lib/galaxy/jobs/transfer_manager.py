@@ -70,7 +70,7 @@ class TransferManager(object):
             # The transfer script should daemonize fairly quickly - if this is
             # not the case, this process will need to be moved to a
             # non-blocking method.
-            cmd = self.command.append(tj.id)
+            cmd = self.command + [tj.id]
             log.debug('Transfer command is: %s', ' '.join(map(shlex_quote, cmd)))
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             p.wait()
