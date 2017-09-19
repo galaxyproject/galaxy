@@ -62,7 +62,8 @@
         // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
         window.Galaxy = window.Galaxy || {};
         window.Galaxy.root = '${h.url_for( "/" )}';
-        define( 'jquery', [], function(){ return $; })
+        window.jQuery = window.jquery = window.$;
+        define( 'jquery', [], function(){ return window.$; })
         // TODO: use one system
 
         // shims and paths
