@@ -3,15 +3,15 @@ import time
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
-    SeleniumTestCase,
+    SharedStateSeleniumTestCase,
 )
 
 
-class HistoryGridTestCase(SeleniumTestCase):
+class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
     def setUp(self):
         super(HistoryGridTestCase, self).setUp()
-        self.ensure_users_and_histories()
+        self.home()
 
     @selenium_test
     def test_history_grid_histories(self):
@@ -178,11 +178,7 @@ class HistoryGridTestCase(SeleniumTestCase):
         annon_area_editable.send_keys(annotation)
         anno_done_button.click()
 
-    def ensure_users_and_histories(self):
-        if getattr(HistoryGridTestCase, 'user1_email', None):
-            self.home()  # ensure Galaxy is loaded
-            return
-
+    def setup_shared_state(self):
         tag1 = self._get_random_name(len=5)
         tag2 = self._get_random_name(len=5)
         tag3 = self._get_random_name(len=5)

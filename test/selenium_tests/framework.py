@@ -6,8 +6,8 @@ import datetime
 import json
 import os
 import time
-
 import traceback
+import unittest
 
 from functools import partial, wraps
 
@@ -219,6 +219,38 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
     @property
     def workflow_populator(self):
         return SeleniumSessionWorkflowPopulator(self)
+
+
+class SharedStateSeleniumTestCase(SeleniumTestCase):
+    """This describes a class Selenium tests that setup class state for all tests.
+
+    This is a bit hacky because we are simulating class level initialization
+    with instance level methods. The problem is that super.setUp() works at
+    instance level. It might be worth considering having two variants of
+    SeleniumTestCase - one that initializes with the class and the other that
+    initializes with the instance but all the helpers are instance helpers.
+    """
+
+    shared_state_initialized = False
+    shared_state_in_error = False
+
+    def setUp(self):
+        super(SharedStateSeleniumTestCase, self).setUp()
+        if not self.__class__.shared_state_initialized:
+            try:
+                self.setup_shared_state()
+                self.logout_if_needed()
+            except Exception:
+                self.__class__.shared_state_in_error = True
+                raise
+            finally:
+                self.__class__.shared_state_initialized = True
+        else:
+            if self.__class__.shared_state_in_error:
+                raise unittest.SkipTest("Skipping test, failed to initialize state previously.")
+
+    def setup_shared_state(self):
+        """Override this to setup shared data for tests that gets initialized only once."""
 
 
 class UsesHistoryItemAssertions:
