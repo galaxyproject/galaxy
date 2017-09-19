@@ -866,6 +866,9 @@ class JobWrapper( object, HasResourceParameters ):
         self.galaxy_lib_dir
         # Shell fragment to inject dependencies
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
+        if self.tool.requires_galaxy_python_environment:
+            # These tools (upload, metadata, data_source) may need access to the datatypes registry.
+            self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, 'registry.xml'))
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         job.command_line = unicodify(self.command_line)
@@ -893,11 +896,6 @@ class JobWrapper( object, HasResourceParameters ):
 
             # The tool execution is given a working directory beneath the
             # "job" working directory.
-            if job.tool_id == 'upload1':
-                # We usually write the 'registry.xml' file together with the metadata tool,
-                # but if `embed_metadata_in_job` is set to false 'registry.xml' will not be available
-                # to the upload tool, which will then fail.
-                self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, 'registry.xml'))
             self.tool_working_directory = os.path.join(self.working_directory, "working")
             safe_makedirs(self.tool_working_directory)
             log.debug( '(%s) Working directory for job is: %s',
