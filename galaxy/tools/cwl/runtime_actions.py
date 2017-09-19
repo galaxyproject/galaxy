@@ -41,7 +41,13 @@ def handle_outputs(job_directory=None):
     # Build galaxy.json file.
     provided_metadata = {}
 
-    def move_output_file(output, target_path, output_name=None):
+    def move_directory(output, target_path, output_name=None):
+        assert output["class"] == "Directory"
+        output_path = _possible_uri_to_path(output["location"])
+        shutil.move(output_path, target_path)
+        return {"cwl_filename": output["basename"]}
+
+    def move_output(output, target_path, output_name=None):
         assert output["class"] == "File"
         output_path = _possible_uri_to_path(output["location"])
         shutil.move(output_path, target_path)
@@ -94,7 +100,7 @@ def handle_outputs(job_directory=None):
 
         return {"cwl_filename": output["basename"]}
 
-    def handle_known_output(output, target_path, output_name):
+    def handle_known_output(output, output_key, output_name):
         # if output["class"] != "File":
         #    # This case doesn't seem like it would be reached - why is this here?
         #    provided_metadata[output_name] = {
@@ -102,25 +108,29 @@ def handle_outputs(job_directory=None):
         #    }
         # else:
         assert output_name
-        file_metadata = move_output_file(output, target_path, output_name=output_name)
+        if output["class"] == "File":
+            target_path = job_proxy.output_path(output_name)
+            file_metadata = move_output(output, target_path, output_name=output_name)
+        elif output["class"] == "Directory":
+            target_path = job_proxy.output_directory_contents_dir(output_name)
+            file_metadata = move_directory(output, target_path, output_name=output_name)
+        else:
+            raise Exception("Unknown output type [%s] encountered" % output)
         provided_metadata[output_name] = file_metadata
 
     for output_name, output in outputs.items():
         if isinstance(output, dict) and "location" in output:
-            target_path = job_proxy.output_path(output_name)
-            handle_known_output(output, target_path, output_name)
+            handle_known_output(output, output_name, output_name)
         elif isinstance(output, dict):
             prefix = "%s|__part__|" % output_name
             for record_key, record_value in output.items():
                 record_value_output_key = "%s%s" % (prefix, record_key)
-                target_path = job_proxy.output_path(record_value_output_key)
-
-                handle_known_output(record_value, target_path, output_name)
+                handle_known_output(record_value, record_value_output_key, output_name)
         elif isinstance(output, list):
             elements = []
             for index, el in enumerate(output):
                 if isinstance(el, dict) and el["class"] == "File":
-                    output_path = ref_resolver.uri_file_path(el["location"])
+                    output_path = _possible_uri_to_path(el["location"])
                     elements.append({"name": str(index), "filename": output_path, "cwl_filename": el["basename"]})
                 else:
                     target_path = "%s____%s" % (output_name, str(index))

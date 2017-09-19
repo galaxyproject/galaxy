@@ -55,6 +55,7 @@ TYPE_REPRESENTATIONS = [
     TypeRepresentation("null", NO_GALAXY_INPUT, "no input", None),
     TypeRepresentation("integer", INPUT_TYPE.INTEGER, "an integer", None),
     TypeRepresentation("float", INPUT_TYPE.FLOAT, "a decimal number", None),
+    TypeRepresentation("double", INPUT_TYPE.FLOAT, "a decimal number", None),
     TypeRepresentation("file", INPUT_TYPE.DATA, "a dataset", None),
     TypeRepresentation("directory", INPUT_TYPE.DATA, "a directory", None),
     TypeRepresentation("boolean", INPUT_TYPE.BOOLEAN, "a boolean", None),
@@ -62,6 +63,7 @@ TYPE_REPRESENTATIONS = [
     TypeRepresentation("record", INPUT_TYPE.DATA_COLLECTON, "record as a dataset collection", "record"),
     TypeRepresentation("json", INPUT_TYPE.TEXT, "arbitrary JSON structure", None),
     TypeRepresentation("array", INPUT_TYPE.DATA_COLLECTON, "as a dataset list", "list"),
+    TypeRepresentation("enum", INPUT_TYPE.TEXT, "enum value", None),  # TODO: make this a select...
     TypeRepresentation("field", INPUT_TYPE.FIELD, "arbitrary JSON structure", None),
 ]
 FIELD_TYPE_REPRESENTATION = TYPE_REPRESENTATIONS[-1]
@@ -92,6 +94,8 @@ else:
         "Directory": ["directory"],
         "null": ["null"],
         "record": ["record"],
+        "enum": ["enum"],
+        "double": ["double"],
     }
 
 
@@ -106,7 +110,10 @@ def type_representation_from_name(type_representation_name):
 def type_descriptions_for_field_types(field_types):
     type_representation_names = set([])
     for field_type in field_types:
-        type_representation_names_for_field_type = CWL_TYPE_TO_REPRESENTATIONS.get(field_type)
+        try:
+            type_representation_names_for_field_type = CWL_TYPE_TO_REPRESENTATIONS.get(field_type)
+        except TypeError:
+            raise Exception("Failed to convert field_type %s" % field_type)
         assert type_representation_names_for_field_type is not None, field_type
         type_representation_names.update(type_representation_names_for_field_type)
     type_representations = []
@@ -202,11 +209,13 @@ def to_cwl_job(tool, param_dict, local_working_directory):
             return int(str(param_dict_value))
         elif type_representation.name == "long":
             return int(str(param_dict_value))
-        elif type_representation.name == "float":
+        elif type_representation.name in ["float", "double"]:
             return float(str(param_dict_value))
         elif type_representation.name == "boolean":
             return string_as_bool(param_dict_value)
         elif type_representation.name == "text":
+            return str(param_dict_value)
+        elif type_representation.name == "enum":
             return str(param_dict_value)
         elif type_representation.name == "json":
             raw_value = param_dict_value.value
