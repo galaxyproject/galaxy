@@ -90,6 +90,7 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
     });
   };
   var ToursView = Backbone.View.extend({
+    title: "Tours",
     // initialize
     initialize: function() {
       var self = this;
@@ -98,12 +99,12 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
       this.model.fetch({
         success: function() {
           self.render();
-        },
-        error: function() {
-          // Do something.
-          console.error("Failed to fetch tours.");
-        }
-      });
+      },
+      error: function(){
+        // Do something.
+        console.error("Failed to fetch tours.");
+      }
+    });
     },
 
     render: function() {

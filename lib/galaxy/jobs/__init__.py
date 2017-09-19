@@ -1450,7 +1450,7 @@ class JobWrapper(object, HasResourceParameters):
 
     def cleanup(self, delete_files=True):
         # At least one of these tool cleanup actions (job import), is needed
-        # for thetool to work properly, that is why one might want to run
+        # for the tool to work properly, that is why one might want to run
         # cleanup but not delete files.
         try:
             if delete_files:
@@ -1645,8 +1645,7 @@ class JobWrapper(object, HasResourceParameters):
 
     def setup_external_metadata(self, exec_dir=None, tmp_dir=None,
                                 dataset_files_path=None, config_root=None,
-                                config_file=None, datatypes_config=None,
-                                resolve_metadata_dependencies=False,
+                                config_file=None, resolve_metadata_dependencies=False,
                                 set_extension=True, **kwds):
         # extension could still be 'auto' if this is the upload tool.
         job = self.get_job()
@@ -1665,8 +1664,8 @@ class JobWrapper(object, HasResourceParameters):
             config_root = self.app.config.root
         if config_file is None:
             config_file = self.app.config.config_file
-        if datatypes_config is None:
-            datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
+        datatypes_config = os.path.join(self.working_directory, 'registry.xml')
+        self.app.datatypes_registry.to_xml_file(path=datatypes_config)
         command = self.external_output_metadata.setup_external_metadata([output_dataset_assoc.dataset for
                                                                          output_dataset_assoc in
                                                                          job.output_datasets + job.output_library_datasets],
@@ -1705,14 +1704,14 @@ class JobWrapper(object, HasResourceParameters):
         else:
             return 'anonymous@unknown'
 
-    def __update_output(self, job, dataset, clean_only=False):
+    def __update_output(self, job, hda, clean_only=False):
         """Handle writing outputs to the object store.
 
         This should be called regardless of whether the job was failed or not so
         that writing of partial results happens and so that the object store is
         cleaned up if the dataset has been purged.
         """
-        dataset = dataset.dataset
+        dataset = hda.dataset
         if dataset not in job.output_library_datasets:
             purged = dataset.purged
             if not purged and not clean_only:
@@ -1975,7 +1974,7 @@ class TaskWrapper(JobWrapper):
         pass
 
     def setup_external_metadata(self, exec_dir=None, tmp_dir=None, dataset_files_path=None,
-                                config_root=None, config_file=None, datatypes_config=None,
+                                config_root=None, config_file=None,
                                 set_extension=True, **kwds):
         # There is no metadata setting for tasks.  This is handled after the merge, at the job level.
         return ""

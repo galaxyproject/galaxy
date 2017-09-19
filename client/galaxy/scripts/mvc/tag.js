@@ -11,17 +11,25 @@ var TagsEditor = Backbone.View
         .extend( baseMVC.LoggableMixin )
         .extend( baseMVC.HiddenUntilActivatedViewMixin ).extend({
 
-    tagName     : 'div',
-    className   : 'tags-display',
+    tagName      : 'div',
+    className    : 'tags-display',
+    select_width : '100%',
+    events: {},
 
     /** Set up listeners, parse options */
     initialize : function( options ){
         //console.debug( this, options );
         // only listen to the model only for changes to tags - re-render
+        this.show_editor = false;
         if (options.usePrompt === false) {
             this.label = '';
         } else {
             this.label = '<label class="prompt">' + _l( 'Tags' ) + '</label>';
+        }
+        this.workflow_mode = options.workflow_mode || false;
+        if (this.workflow_mode) {
+            this.events.click = 'showEditor';
+            this.events.keydown = 'keydownHandler';
         }
         this.hiddenUntilActivated( options.$activator, options );
     },
@@ -29,11 +37,14 @@ var TagsEditor = Backbone.View
     /** Build the DOM elements, call select to on the created input, and set up behaviors */
     render : function(){
         var self = this;
-        this.$el.html( this._template() );
-
+        if (this.workflow_mode) {
+           this.$el.html(this._workflowTemplate());
+        } else {
+            this.$el.html(this._defaultTemplate());
+        }
         this.$input().select2({
             placeholder : 'Add tags',
-            width       : '100%',
+            width       : this.workflow_mode ? this.width : this.select_width,
             tags : function(){
                 // initialize possible tags in the dropdown based on all the tags the user has used so far
                 return self._getTagsUsed();
@@ -59,12 +70,59 @@ var TagsEditor = Backbone.View
     },
 
     /** @returns {String} the html text used to build the view's DOM */
-    _template : function(){
+    _defaultTemplate : function(){
         return [
             this.label,
-            // set up initial tags by adding as CSV to input vals (necc. to init select2)
-            '<input class="tags-input" value="', this.tagsToCSV(), '" />'
+            this._renderEditor()
         ].join( '' );
+    },
+
+    _workflowTemplate : function(){
+        // Shows labels by default, event handler controls whether we show tags or editor
+        return [
+            this.show_editor ? this._renderEditor() : this._renderTags(),
+        ].join( ' ' );
+    },
+
+    keydownHandler : function (e) {
+        switch (e.which) {
+            // esc
+            case 27 :
+                // hide the tag editor when pressing escape
+                this.hideEditor();
+                break;
+        }
+    },
+
+    showEditor: function() {
+        this.show_editor = true;
+        this.render();
+    },
+
+    hideEditor: function() {
+        this.show_editor = false;
+        this.render();
+    },
+
+    _renderEditor: function(){
+        // set up initial tags by adding as CSV to input vals (necc. to init select2)
+        return '<input class="tags-input" value="' + this.tagsToCSV() + '"/>'
+    },
+
+    _renderTags : function(){
+        var tags = this.model.get('tags');
+        var addButton = 'static/images/fugue/tag--plus.png';
+        var renderedArray = [];
+        _.each(tags, function(tag) {
+            tag = tag.indexOf("name:") == 0 ? tag.slice(5) : tag ;
+            var renderString = '<span class="label label-info">' + tag + '</span>';
+            renderedArray.push( renderString );
+        });
+        if (renderedArray.length === 0) {
+            // If there are no tags to render we just show the add-tag-button
+            renderedArray.push('<img src=' + addButton + ' class="add-tag-button" title="Add tags"/>');
+        }
+        return renderedArray.join(" ");
     },
 
     /** @returns {String} the sorted, comma-separated tags from the model */
@@ -132,8 +190,7 @@ var TagsEditor = Backbone.View
     toString : function(){ return [ 'TagsEditor(', this.model + '', ')' ].join(''); }
 });
 
-// =============================================================================
 return {
-    TagsEditor : TagsEditor
+    TagsEditor : TagsEditor,
 };
 });

@@ -206,15 +206,6 @@ class TaskedJobRunner(BaseJobRunner):
     def _check_pid(self, pid):
         # DBTODO Need to check all subtask pids and return some sort of cumulative result.
         return True
-        try:
-            os.kill(pid, 0)
-            return True
-        except OSError as e:
-            if e.errno == errno.ESRCH:
-                log.debug("_check_pid(): PID %d is dead" % pid)
-            else:
-                log.warning("_check_pid(): Got errno %s when attempting to check PID %d: %s" % (errno.errorcode[e.errno], pid, e.strerror))
-            return False
 
     def _stop_pid(self, pid, job_id):
         """

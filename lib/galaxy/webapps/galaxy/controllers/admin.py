@@ -973,8 +973,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 },
                     build_select_input('in_groups', 'Groups', all_groups, []),
                     build_select_input('in_users', 'Users', all_users, []), {
-                    'name'  : 'create_group_for_role',
-                    'label' : 'Create a new role of the same name for this group:',
+                    'name'  : 'auto_create',
+                    'label' : 'Create a new group of the same name for this role:',
                     'type'  : 'boolean'
                 }]}
         else:
@@ -1255,7 +1255,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     'status' : 'info',
                     'inputs' : [build_select_input('in_roles', 'Roles', all_roles, in_roles),
                                 build_select_input('in_users', 'Users', all_users, in_users)]}
-            return {'message' : 'Not showing associated datasets, there are too many.', 'info' : 'info'}
         else:
             in_users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_users'))]
             in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_roles'))]

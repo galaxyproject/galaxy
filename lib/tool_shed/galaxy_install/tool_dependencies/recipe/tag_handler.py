@@ -264,7 +264,6 @@ class Repository(RecipeTag, SyncDatabase):
             message = "Unable to retrieve required tool_dependencies.xml file from the Tool Shed for revision "
             message += "%s of installed repository %s owned by %s." % (str(changeset_revision), str(name), str(owner))
             raise Exception(message)
-            return None
 
     def create_tool_dependency_with_initialized_env_sh_file(self, dependent_install_dir, tool_shed_repository,
                                                             required_repository, package_name, package_version,

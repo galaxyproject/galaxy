@@ -322,7 +322,7 @@ class YamlInputSource(InputSource):
             else:
                 value = str(value)
 
-            # str here to loose type information like XML, needed?
+            # str here to lose type information like XML, needed?
             if not isinstance(block, list):
                 block = [block]
             case_page_source = YamlPageSource(block)

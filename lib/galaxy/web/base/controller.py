@@ -1205,10 +1205,8 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
     def get_stored_workflow(self, trans, id, check_ownership=True, check_accessible=False):
         """ Get a StoredWorkflow from the database by id, verifying ownership. """
         # Load workflow from database
-        try:
-            workflow = trans.sa_session.query(trans.model.StoredWorkflow).get(trans.security.decode_id(id))
-        except TypeError:
-            workflow = None
+        workflow_contents_manager = workflows.WorkflowsManager(self.app)
+        workflow = workflow_contents_manager.get_stored_workflow(trans=trans, workflow_id=id)
 
         if not workflow:
             error("Workflow not found")

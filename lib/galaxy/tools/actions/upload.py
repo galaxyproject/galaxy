@@ -19,7 +19,7 @@ class UploadToolAction(ToolAction):
 
         persisting_uploads_timer = ExecutionTimer()
         precreated_datasets = upload_common.get_precreated_datasets(trans, incoming, trans.app.model.HistoryDatasetAssociation)
-        incoming = upload_common.persist_uploads(incoming)
+        incoming = upload_common.persist_uploads(incoming, trans)
         log.debug("Persisted uploads %s" % persisting_uploads_timer)
         # We can pass an empty string as the cntrller here since it is used to check whether we
         # are in an admin view, and this tool is currently not used there.

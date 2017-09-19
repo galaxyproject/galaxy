@@ -7,6 +7,7 @@ import sgmllib
 import urllib2
 
 from sqlalchemy import and_
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
 from markupsafe import escape
 
@@ -18,7 +19,8 @@ from galaxy import web
 from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
-from galaxy.util import unicodify, FILENAME_VALID_CHARS
+from galaxy.tools.parameters.basic import workflow_building_modes
+from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
@@ -620,9 +622,12 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         if not id:
             error("Invalid workflow id")
         stored = self.get_stored_workflow(trans, id)
+        # The following query loads all user-owned workflows,
+        # So that they can be copied or inserted in the workflow editor.
         workflows = trans.sa_session.query(model.StoredWorkflow) \
             .filter_by(user=trans.user, deleted=False) \
             .order_by(desc(model.StoredWorkflow.table.c.update_time)) \
+            .options(joinedload('latest_workflow').joinedload('steps')) \
             .all()
         return trans.fill_template("workflow/editor.mako", workflows=workflows, stored=stored, annotation=self.get_item_annotation_str(trans.sa_session, trans.user, stored))
 
@@ -633,7 +638,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         encode it as a json string that can be read by the workflow editor
         web interface.
         """
-        trans.workflow_building_mode = True
+        trans.workflow_building_mode = workflow_building_modes.ENABLED
         stored = self.get_stored_workflow(trans, id, check_ownership=True, check_accessible=False)
         workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
         return workflow_contents_manager.workflow_to_dict(trans, stored, style="editor")
@@ -644,7 +649,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         """
         Exports a workflow to myExperiment website.
         """
-        trans.workflow_building_mode = True
+        trans.workflow_building_mode = workflow_building_modes.ENABLED
         stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
 
         # Convert workflow to dict.
@@ -707,32 +712,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         """
         stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
         return self._workflow_to_dict(trans, stored)
-
-    @web.json_pretty
-    def export_to_file(self, trans, id):
-        """
-        Get the latest Workflow for the StoredWorkflow identified by `id` and
-        encode it as a json string that can be imported back into Galaxy
-
-        This has slightly different information than the above. In particular,
-        it does not attempt to decode forms and build UIs, it just stores
-        the raw state.
-        """
-
-        # Get workflow.
-        stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
-
-        # Stream workflow to file.
-        stored_dict = self._workflow_to_dict(trans, stored)
-        if not stored_dict:
-            # This workflow has a tool that's missing from the distribution
-            trans.response.status = 400
-            return "Workflow cannot be exported due to missing tools."
-        sname = stored.name
-        sname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in sname)[0:150]
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.ga"' % (sname)
-        trans.response.set_content_type('application/galaxy-archive')
-        return stored_dict
 
     @web.expose
     @web.json

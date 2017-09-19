@@ -127,3 +127,15 @@ class AutoDecompressTestCase(BaseCheckUploadContentConfigurationTestCase):
         )
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset)
         assert dataset["file_ext"] == "sam", dataset
+
+
+class LocalAddressWhitelisting(BaseCheckUploadContentConfigurationTestCase):
+
+    def test_external_url(self):
+        payload = self.dataset_populator.upload_payload(
+            self.history_id, 'http://localhost/', ext="txt"
+        )
+        create_response = self._post("tools", data=payload)
+        # Ideally this would be 403 but the tool API endpoint isn't using
+        # the newer API decorator that handles those details.
+        assert create_response.status_code >= 400

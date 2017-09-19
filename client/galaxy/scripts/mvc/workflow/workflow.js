@@ -1,94 +1,241 @@
 /** Workflow view */
-define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
+define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( mod_toastr, TAGS, WORKFLOWS ) {
 
-    /** Build messages after user action */
-    function build_messages() {
-        var $el_message = $( '.response-message' ),
-            response = {};
-        response = {
-            'status': Utils.getQueryString( 'status' ),
-            'message': _.escape( Utils.getQueryString( 'message' ) ),
-            'persistent': true,
-            'cls': Utils.getQueryString( 'status' ) + 'message'
-        };
-        $el_message.empty().html( new Ui.Message( response ).$el );
-    }
- 
+    /** View of the individual workflows */
+    var WorkflowItemView = Backbone.View.extend({
+        tagName: 'tr', // name of (orphan) root tag in this.el
+        initialize: function(){
+            _.bindAll(this, 'render', '_rowTemplate', 'renderTagEditor', '_templateActions', 'removeWorkflow', 'copyWorkflow'); // every function that uses 'this' as the current object should be in here
+            mod_toastr.options.timeOut = 1500;
+        },
+
+        events: {
+            'click #show-in-tool-panel': 'showInToolPanel',
+            'click #delete-workflow'   : 'removeWorkflow',
+            'click #rename-workflow'   : 'renameWorkflow',
+            'click #copy-workflow'     : 'copyWorkflow',
+        },
+
+        render: function(){
+            $(this.el).html(this._rowTemplate());
+            return this;
+        },
+
+        showInToolPanel: function(){
+            this.model.set('show_in_tool_panel', !this.model.get('show_in_tool_panel'));
+            this.model.save();
+            // This reloads the whole page, so that the workflow appears in the tool panel.
+            // Ideally we would notify only the tool panel of a change
+            window.location = Galaxy.root + 'workflow';
+        },
+
+        removeWorkflow: function(){
+            var wfName = this.model.get('name');
+            if (confirm( "Are you sure you want to delete workflow '" + wfName + "'?" )) {
+                this.model.destroy({
+                    success: function() {
+                        mod_toastr.success("Successfully deleted workflow '" + wfName + "'");
+                        }
+                });
+                this.remove();
+            };
+        },
+
+        renameWorkflow: function(){
+            var oldName = this.model.get('name');
+            var newName = prompt("Enter a new Name for workflow '" + oldName + "'", oldName );
+            if (newName) {
+                this.model.save(
+                    { 'name': newName },
+                    { success: function() {
+                        mod_toastr.success("Successfully renamed workflow '" + oldName + "' to '" + newName + "'")
+                    }
+                });
+                this.render();
+            }
+        },
+
+        copyWorkflow: function(){
+            self = this;
+            var oldName = this.model.get('name');
+            $.getJSON(this.model.urlRoot + '/' + this.model.id + '/download', function(wfJson) {
+                var newName = 'Copy of ' + oldName;
+                var currentOwner = self.model.get('owner');
+                if (currentOwner != Galaxy.user.attributes.username) {
+                    newName += ' shared by user ' + currentOwner;
+                }
+                wfJson.name = newName;
+                self.collection.create(wfJson, { at: 0,
+                                                 wait: true,
+                                                 success: function() {
+                                                     mod_toastr.success("Successfully copied workflow '" + oldName + "' to '" + newName + "'")
+                                                 },
+                                                 error : function(model, resp, options) {
+                                                     // signature seems to have changed over the course of backbone dev
+                                                     // see https://github.com/jashkenas/backbone/issues/2606#issuecomment-19289483
+                                                     mod_toastr.error(options.errorThrown);
+                                                 }
+                });
+            }).error(function(jqXHR, textStatus, errorThrown) {
+                  mod_toastr.error(jqXHR.responseJSON.err_msg);
+            })
+        },
+
+        _rowTemplate: function() {
+            var show = this.model.get("show_in_tool_panel");
+            var wfId = this.model.id;
+            var checkboxHtml = '<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" '+ ( show ? 'checked="' + show + '"' : "" ) +' value="' + wfId + '">';
+            var trHtml =  '<td>' +
+                             '<div class="dropdown">' +
+                                 '<button class="menubutton" type="button" data-toggle="dropdown">' +
+                                     _.escape( this.model.get("name") ) + '<span class="caret"></span>' +
+                                 '</button>' +
+                                 this._templateActions( ) +
+                             '</div>' +
+                          '</td>' +
+                          '<td><span>' + '<div class="' + wfId + ' tags-display"></div>' + '</td>' +
+                          '<td>' + ( this.model.get('owner') === Galaxy.user.attributes.username ? "You" : this.model.get('owner') ) +'</span></td>' +
+                          '<td>' + this.model.get("number_of_steps") + '</td>' +
+                          '<td>' + ( this.model.get("published") ? "Yes" : "No" ) + '</td>' +
+                          '<td>'+ checkboxHtml + '</td>';
+            return trHtml;
+        },
+
+        renderTagEditor: function(){
+            var TagEditor = new TAGS.TagsEditor({
+            model           : this.model,
+            el              : $.find( '.' + this.model.id + '.tags-display' ),
+            workflow_mode   : true });
+            TagEditor.toggle( true );
+            TagEditor.render();
+        },
+
+        /** Template for user actions for workflows */
+        _templateActions: function( ) {
+            if( this.model.get("owner") === Galaxy.user.attributes.username ) {
+                return '<ul class="dropdown-menu action-dpd">' +
+                           '<li><a href="'+ Galaxy.root +'workflow/editor?id='+ this.model.id +'">Edit</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/run?id='+ this.model.id +'">Run</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/sharing?id='+ this.model.id +'">Share</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'api/workflows/'+ this.model.id +'/download?format=json-download">Download</a></li>' +
+                           '<li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li>' +
+                           '<li><a id="rename-workflow" style="cursor: pointer;">Rename</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/display_by_id?id='+ this.model.id +'">View</a></li>' +
+                           '<li><a id="delete-workflow" style="cursor: pointer;">Delete</a></li>' +
+                      '</ul>';
+            }
+            else {
+                return '<ul class="dropdown-menu action-dpd">' +
+                         '<li><a href="'+ Galaxy.root +'workflow/display_by_username_and_slug?username='+ workflow.owner +'&slug='+ workflow.slug +'">View</a></li>' +
+                         '<li><a href="'+ Galaxy.root +'workflow/run?id='+ this.model.id +'">Run</a></li>' +
+                         '<li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li>' +
+                         '<li><a class="link-confirm-shared-'+ this.model.id +'" href="'+ Galaxy.root +'workflow/sharing?unshare_me=True&id='+ this.model.id +'">Remove</a></li>' +
+                      '</ul>';
+            }
+        },
+    });
+
     /** View of the main workflow list page */
-    var View = Backbone.View.extend({
-
+    var WorkflowListView = Backbone.View.extend({
+        title: "Workflows",
         initialize: function() {
             this.setElement( '<div/>' );
-            this.render();
+            _.bindAll(this, 'adjustActiondropdown')
+            this.collection = new WORKFLOWS.WorkflowCollection();
+            this.collection.fetch().done(this.render());
+            this.collection.bind('add', this.appendItem);
+            this.collection.on('sync', this.render, this);
         },
+
+        events: {
+            'dragleave' : 'unhighlightDropZone',
+            'drop' : 'drop',
+            'dragover': function(ev) {
+                $( '.hidden_description_layer' ).addClass( 'dragover' );
+                $('.menubutton').addClass('background-none');
+                ev.preventDefault();
+            }
+        },
+
+        unhighlightDropZone: function() {
+            $( '.hidden_description_layer' ).removeClass( 'dragover' );
+            $('.menubutton').removeClass('background-none');
+        },
+
+        drop: function(e) {
+            // TODO: check that file is valid galaxy workflow
+            this.unhighlightDropZone();
+            e.preventDefault();
+            var files = e.dataTransfer.files;
+            var self = this;
+            for (var i = 0, f; f = files[i]; i++) {
+                self.readWorkflowFiles(f);
+            }
+        },
+
+        readWorkflowFiles: function(f) {
+                var self = this;
+                var reader = new FileReader();
+                reader.onload = function(theFile) {
+                    try {
+                        var wf_json = JSON.parse(reader.result);
+                    } catch(e) {
+                        mod_toastr.error("Could not read file '" + f.name + "'. Verify it is a valid Galaxy workflow");
+                        wf_json = null;
+                    }
+                    if (wf_json) {
+                        self.collection.create(wf_json, {
+                            at: 0,
+                            wait: true,
+                            success: function() {
+                                mod_toastr.success("Successfully imported workflow '" + wf_json.name + "'")
+                            },
+                            error : function(model, resp, options) {
+                                mod_toastr.error(options.errorThrown);
+                            }
+                        });
+                    }
+                };
+                reader.readAsText(f, 'utf-8');
+            },
 
         render: function() {
-            var self = this,
-                min_query_length = 3;
-            $.getJSON( Galaxy.root + 'api/workflows/', function( workflows ) {
-                var $el_workflow = null;
-                // Add workflow header
-                self.$el.empty().append( self._templateHeader() );
-                // Add user actions message if any
-                build_messages();
-                $el_workflow = self.$( '.user-workflows' );
-                // Add the actions buttons
-                $el_workflow.append( self._templateActionButtons() );
-                if( workflows.length > 0) {
-                    $el_workflow.append( self._templateWorkflowTable( self, workflows) );
-                    self.adjust_actiondropdown( $el_workflow );
-                    // Register delete and run workflow events
-                    _.each( workflows, function( wf ) {
-                        self.confirm_delete( wf );
-                    });
-                    self.register_show_tool_menu();
-                    // Register search workflow event
-                    self.search_workflow( self.$( '.search-wf' ), self.$( '.workflow-search tr' ), min_query_length );
-                }
-                else {
-                    $el_workflow.append( self._templateNoWorkflow() );
-                }
-            });
+            // Add workflow header
+            var header = this._templateHeader();
+            // Add the actions buttons
+            var templateActions = this._templateActionButtons();
+            var tableTemplate = this._templateWorkflowTable();
+            this.$el.html( header + templateActions + tableTemplate);
+            var self = this;
+            _(this.collection.models).each(function(item){ // in case collection is not empty
+                self.appendItem(item);
+                self.confirmDelete(item);
+            }, this);
+            var minQueryLength = 3;
+            this.searchWorkflow( this.$( '.search-wf' ), this.$( '.workflow-search tr' ), minQueryLength );
+            this.adjustActiondropdown();
+            return this;
         },
 
-        // Save the workflow as an item in Tool panel
-        register_show_tool_menu: function() {
-            var $el_checkboxes = this.$( '.show-in-tool-panel' );
-            $el_checkboxes.on( 'click', function( e ) {
-                var ids = [];
-                // Look for all the checked checkboxes
-                for( var item = 0; item < $el_checkboxes.length; item++ ) {
-                    var checkbox = $el_checkboxes[ item ];
-                    if( checkbox.checked ) {
-                        ids.push( checkbox.value );
-                    }
-                }
-                // Save all the checked workflows
-                $.ajax({
-                    type: 'PUT',
-                    url: Galaxy.root + 'api/workflows/menu/',
-                    data: JSON.stringify( { 'workflow_ids': ids } ),
-                    contentType : 'application/json'
-                }).done( function( response ) {
-                    window.location = Galaxy.root + 'workflow';
-                });
+        appendItem: function(item){
+            var workflowItemView = new WorkflowItemView({
+                model: item,
+                collection: this.collection,
             });
+            $( '.workflow-search' ).append(workflowItemView.render().el);
+            workflowItemView.renderTagEditor();
         },
 
         /** Add confirm box before removing/unsharing workflow */
-        confirm_delete: function( workflow ) {
-            var $el_wf_link = this.$( '.link-confirm-' + workflow.id ),
-                $el_shared_wf_link = this.$( '.link-confirm-shared-' + workflow.id );
-            $el_wf_link.click( function() {
-                return confirm( "Are you sure you want to delete workflow '" + workflow.name + "'?" );
-            });
+        confirmDelete: function( workflow ) {
+            var $el_shared_wf_link = this.$( '.link-confirm-shared-' + workflow.id );
             $el_shared_wf_link.click( function() {
-                return confirm( "Are you sure you want to remove the shared workflow '" + workflow.name + "'?" );
+                return confirm( "Are you sure you want to remove the shared workflow '" + workflow.attributes.name + "'?" );
             });
         },
 
         /** Implement client side workflow search/filtering */
-        search_workflow: function( $el_searchinput, $el_tabletr, min_querylen ) {
+        searchWorkflow: function( $el_searchinput, $el_tabletr, min_querylen ) {
             $el_searchinput.on( 'keyup', function () {
                 var query = $( this ).val();
                 // Filter when query is at least 3 characters
@@ -110,13 +257,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
         },
 
         /** Ajust the position of dropdown with respect to table */
-        adjust_actiondropdown: function( $el ) {
-            $el.on( 'show.bs.dropdown', function () {
-                $el.css( "overflow", "inherit" );
+        adjustActiondropdown: function( ) {
+            $(this.el).on( 'show.bs.dropdown', function () {
+                $(this.el).css( "overflow", "inherit" );
             });
-
-            $el.on( 'hide.bs.dropdown', function () {
-                $el.css( "overflow", "auto" );
+            $(this.el).on( 'hide.bs.dropdown', function () {
+                $(this.el).css( "overflow", "auto" );
             });
         },
 
@@ -143,57 +289,17 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
         },
 
         /** Template for workflow table */
-        _templateWorkflowTable: function( self, workflows ) {
-            var tableHtml = "", trHtml = "";
-            tableHtml = tableHtml + '<table class="table colored"><thead>' +
+        _templateWorkflowTable: function( ) {
+            var tableHtml = '<table class="table colored"><thead>' +
                     '<tr class="header">' +
                         '<th>Name</th>' +
+                        '<th>Tags</th>' +
                         '<th>Owner</th>' +
                         '<th># of Steps</th>' +
                         '<th>Published</th>' +
                         '<th>Show in tools panel</th>' +
                     '</tr></thead>';
-            _.each( workflows, function( wf ) {
-                var checkbox_html = '<input type="checkbox" class="show-in-tool-panel" '+ ( wf.show_in_tool_panel ? 'checked="' + wf.show_in_tool_panel + '"' : "" ) +' value="' + wf.id + '">';
-                trHtml = trHtml + '<tr>' +
-                             '<td>' +
-                                 '<div class="dropdown">' +
-                                     '<button class="menubutton" type="button" data-toggle="dropdown">' +
-                                         _.escape( wf.name ) + '<span class="caret"></span>' +
-                                     '</button>' +
-                                     self._templateActions( wf ) +
-                                 '</div>' +
-                              '</td>' +
-                              '<td>' + ( wf.owner === Galaxy.user.attributes.username ? "You" : wf.owner ) +'</td>' +
-                              '<td>' + wf.number_of_steps + '</td>' +
-                              '<td>' + ( wf.published ? "Yes" : "No" ) + '</td>' +
-                              '<td>'+ checkbox_html +'</td>' +
-                         '</tr>';
-            });
-            return tableHtml + '<tbody class="workflow-search">' + trHtml + '</tbody></table>';
-        },
-
-        /** Template for user actions for workflows */
-        _templateActions: function( workflow ) {
-            if( workflow.owner === Galaxy.user.attributes.username ) {
-                return '<ul class="dropdown-menu action-dpd">' +
-                           '<li><a href="'+ Galaxy.root +'workflow/editor?id='+ workflow.id +'">Edit</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'workflow/run?id='+ workflow.id +'">Run</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'workflow/sharing?id='+ workflow.id +'">Share or Download</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'workflow/rename?id='+ workflow.id +'">Rename</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'workflow/display_by_id?id='+ workflow.id +'">View</a></li>' +
-                           '<li><a class="link-confirm-'+ workflow.id +'" href="'+ Galaxy.root +'workflow/delete?id='+ workflow.id +'">Delete</a></li>' +
-                      '</ul>';
-            }
-            else {
-                return '<ul class="dropdown-menu action-dpd">' +
-                         '<li><a href="'+ Galaxy.root +'workflow/display_by_username_and_slug?username='+ workflow.owner +'&slug='+ workflow.slug +'">View</a></li>' +
-                         '<li><a href="'+ Galaxy.root +'workflow/run?id='+ workflow.id +'">Run</a></li>' +
-                         '<li><a href="'+ Galaxy.root +'workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
-                         '<li><a class="link-confirm-shared-'+ workflow.id +'" href="'+ Galaxy.root +'workflow/sharing?unshare_me=True&id='+ workflow.id +'">Remove</a></li>' +
-                      '</ul>';
-            }
+            return tableHtml + '<tbody class="workflow-search "><div class="hidden_description_layer"><p>Drop workflow files here to import</p>' + '</tbody></table></div>';
         },
 
         /** Main template */
@@ -264,11 +370,10 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
                        "</div>" +
                    "</div>";
         },
-
     });
 
     return {
-        View  : View,
+        View  : WorkflowListView,
         ImportWorkflowView : ImportWorkflowView
     };
 });

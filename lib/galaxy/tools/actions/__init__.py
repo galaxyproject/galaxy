@@ -558,7 +558,7 @@ class DefaultToolAction(object):
                         reductions[name] = []
                     reductions[name].append(dataset_collection)
 
-                # TODO: verify can have multiple with same name, don't want to loose tracability
+                # TODO: verify can have multiple with same name, don't want to lose traceability
                 job.add_input_dataset_collection(name, dataset_collection)
 
         # If this an input collection is a reduction, we expanded it for dataset security, type

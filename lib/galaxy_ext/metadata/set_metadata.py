@@ -10,8 +10,6 @@ set to the path of the dataset on which metadata is being set
 (output_filename_override could previously be left empty and the path would be
 constructed automatically).
 """
-
-import cPickle
 import json
 import logging
 import os
@@ -20,6 +18,7 @@ import sys
 # insert *this* galaxy before all others on sys.path
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
+from six.moves import cPickle
 from sqlalchemy.orm import clear_mappers
 
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
@@ -57,10 +56,10 @@ def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, data
             # https://trello.com/c/Nrwodu9d
             pass
 
-    for metadata_name, metadata_value in file_dict.get('metadata', {}).iteritems():
+    for metadata_name, metadata_value in file_dict.get('metadata', {}).items():
         setattr(dataset_instance.metadata, metadata_name, metadata_value)
     dataset_instance.datatype.set_meta(dataset_instance, **set_meta_kwds)
-    for metadata_name, metadata_value in file_dict.get('metadata', {}).iteritems():
+    for metadata_name, metadata_value in file_dict.get('metadata', {}).items():
         setattr(dataset_instance.metadata, metadata_name, metadata_value)
 
 
@@ -131,7 +130,7 @@ def set_metadata():
             file_dict = existing_job_metadata_dict.get(dataset.dataset.id, {})
             set_meta_with_tool_provided(dataset, file_dict, set_meta_kwds, datatypes_registry)
             if max_metadata_value_size:
-                for k, v in dataset.metadata.items():
+                for k, v in list(dataset.metadata.items()):
                     if total_size(v) > max_metadata_value_size:
                         log.info("Key %s too large for metadata, discarding" % k)
                         dataset.metadata.remove_key(k)
@@ -140,7 +139,7 @@ def set_metadata():
         except Exception as e:
             json.dump((False, str(e)), open(filename_results_code, 'wb+'))  # setting metadata has failed somehow
 
-    for i, (filename, file_dict) in enumerate(new_job_metadata_dict.iteritems(), start=1):
+    for i, (filename, file_dict) in enumerate(new_job_metadata_dict.items(), start=1):
         new_dataset_filename = os.path.join(tool_job_working_directory, "working", file_dict['filename'])
         new_dataset = galaxy.model.Dataset(id=-i, external_filename=new_dataset_filename)
         extra_files = file_dict.get('extra_files', None)
@@ -152,7 +151,7 @@ def set_metadata():
         file_dict['metadata'] = json.loads(new_dataset_instance.metadata.to_JSON_dict())  # storing metadata in external form, need to turn back into dict, then later jsonify
     if existing_job_metadata_dict or new_job_metadata_dict:
         with open(job_metadata, 'wb') as job_metadata_fh:
-            for value in existing_job_metadata_dict.values() + new_job_metadata_dict.values():
+            for value in list(existing_job_metadata_dict.values()) + list(new_job_metadata_dict.values()):
                 job_metadata_fh.write("%s\n" % (json.dumps(value)))
 
     clear_mappers()

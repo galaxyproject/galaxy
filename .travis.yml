@@ -15,13 +15,6 @@ env:
   - TOX_ENV=py27-lint-docstring-include-list
 
 matrix:
-  include:
-  - os: osx
-    env: TOX_ENV=first_startup
-    language: generic
-  - os: osx
-    env: TOX_ENV=py27-unit
-    language: generic
   allow_failures:
   - env: TOX_ENV=py27-lint-imports
 

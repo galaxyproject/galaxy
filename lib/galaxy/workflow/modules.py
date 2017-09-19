@@ -608,7 +608,7 @@ class ToolModule(WorkflowModule):
                     if not old_tool_shed_url:  # a tool from a different tool_shed has been found, but the original tool shed has been deactivated
                         old_tool_shed_url = "http://" + old_tool_shed  # let's just assume it's either http, or a http is forwarded to https.
                     old_url = old_tool_shed_url + "/view/%s/%s/" % (module.tool.repository_owner, module.tool.repository_name)
-                    new_url = module.tool.tool_shed_repository.get_sharable_url(module.tool.app) + '/%s/' % module.tool.tool_shed_repository.changeset_revision
+                    new_url = module.tool.sharable_url + '/%s/' % module.tool.changeset_revision
                     new_tool_shed_url = new_url.split("/view")[0]
                     message += "The tool \'%s\', version %s by the owner %s installed from <a href=\"%s\" target=\"_blank\">%s</a> is not available. " % (module.tool.name, tool_version, module.tool.repository_owner, old_url, old_tool_shed_url)
                     message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead. " % (new_url, new_tool_shed_url)
@@ -617,6 +617,8 @@ class ToolModule(WorkflowModule):
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
+        else:
+            log.warning("The tool '%s' is missing. Cannot build workflow module." % tool_id)
         return module
 
     # ---- Saving in various forms ------------------------------------------
@@ -686,6 +688,7 @@ class ToolModule(WorkflowModule):
                 if tool_output.collection:
                     extra_kwds["collection"] = True
                     extra_kwds["collection_type"] = tool_output.structure.collection_type
+                    extra_kwds["collection_type_source"] = tool_output.structure.collection_type_source
                     formats = ['input']  # TODO: fix
                 elif tool_output.format_source is not None:
                     formats = ['input']  # default to special name "input" which remove restrictions on connections
@@ -1087,17 +1090,19 @@ class WorkflowModuleInjector(object):
         # Populate module.
         module = step.module = module_factory.from_workflow_step(self.trans, step)
 
-        # Fix any missing parameters
-        step.upgrade_messages = module.check_and_update_state()
-
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)
         module.add_dummy_datasets(connections=step.input_connections, steps=steps)
         state, step_errors = module.compute_runtime_state(self.trans, step_args)
         step.state = state
+
+        # Fix any missing parameters
+        step.upgrade_messages = module.check_and_update_state()
+
+        # Populate subworkflow components
         if step.type == "subworkflow":
             subworkflow = step.subworkflow
-            populate_module_and_state(self.trans, subworkflow, param_map={}, )
+            populate_module_and_state(self.trans, subworkflow, param_map={})
         return step_errors
 
 

@@ -13,6 +13,7 @@ uWSGI==2.0.15
 #python_lzo==1.8
 
 # pure Python packages
+bz2file==0.98; python_version < '3.3'
 Paste==2.0.2
 PasteDeploy==1.5.2
 docutils==0.12
@@ -32,6 +33,7 @@ six==1.10.0
 Whoosh==2.7.4
 testfixtures==4.10.0
 galaxy_sequence_utils==1.0.2
+h5py==2.7.1
 
 # pykwalify and dependencies
 pykwalify==1.5.1
@@ -75,9 +77,6 @@ ecdsa==0.13
 
 # Flexible BAM index naming
 pysam==0.8.4+gx5
-
-# Chronos client
-chronos-python==0.38.0
 
 # GenomeSpace dependencies
 python-genomespaceclient==0.1.8

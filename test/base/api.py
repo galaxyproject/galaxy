@@ -10,7 +10,7 @@ from .api_asserts import (
 )
 from .api_util import get_master_api_key, get_user_api_key
 from .interactor import GalaxyInteractorApi as BaseInteractor
-from .twilltestcase import FunctionalTestCase
+from .testcase import FunctionalTestCase
 
 TEST_USER = "user@bx.psu.edu"
 ADMIN_TEST_USER = "test@bx.psu.edu"
