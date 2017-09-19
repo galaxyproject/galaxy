@@ -1019,7 +1019,7 @@ class ConfiguresGalaxyMixin:
 
         # Set up the tool sheds registry
         if os.path.isfile(self.config.tool_sheds_config_file):
-            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry(self.config.root, self.config.tool_sheds_config_file)
+            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry(self.config.tool_sheds_config_file)
         else:
             self.tool_shed_registry = None
 

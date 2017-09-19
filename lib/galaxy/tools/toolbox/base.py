@@ -741,7 +741,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
         tool = None
         if use_cached:
             tool = self.load_tool_from_cache(config_file)
-        if not tool:
+        if not tool or guid and guid != tool.guid:
             tool = self.create_tool(config_file=config_file, repository_id=repository_id, guid=guid, **kwds)
             if tool.tool_shed_repository or not guid:
                 self.add_tool_to_cache(tool, config_file)
