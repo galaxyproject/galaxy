@@ -108,11 +108,17 @@ class LibraryManager(object):
         :type   deleted: boolean (optional)
 
         :returns: query that will emit all accessible libraries
-        :rtype: sqlalchemy query
+        :rtype:   sqlalchemy query
+        :returns: set of library ids that have restricted access (not public)
+        :rtype:   set
         """
         is_admin = trans.user_is_admin()
         query = trans.sa_session.query(trans.app.model.Library)
-
+        library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
+        restricted_library_ids = {lp.library_id for lp in (
+            trans.sa_session.query(trans.model.LibraryPermissions).filter(
+                trans.model.LibraryPermissions.table.c.action == library_access_action
+            ).distinct())}
         if is_admin:
             if deleted is None:
                 #  Flag is not specified, do not filter on it.
@@ -124,11 +130,6 @@ class LibraryManager(object):
         else:
             #  Nonadmins can't see deleted libraries
             current_user_role_ids = [role.id for role in trans.get_current_user_roles()]
-            library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
-            restricted_library_ids = [lp.library_id for lp in (
-                trans.sa_session.query(trans.model.LibraryPermissions).filter(
-                    trans.model.LibraryPermissions.table.c.action == library_access_action
-                ).distinct())]
             accessible_restricted_library_ids = [lp.library_id for lp in (
                 trans.sa_session.query(trans.model.LibraryPermissions).filter(
                     and_(
@@ -139,7 +140,7 @@ class LibraryManager(object):
                 not_(trans.model.Library.table.c.id.in_(restricted_library_ids)),
                 trans.model.Library.table.c.id.in_(accessible_restricted_library_ids)
             ))
-        return query
+        return query, restricted_library_ids
 
     def secure(self, trans, library, check_accessible=True):
         """
@@ -171,22 +172,27 @@ class LibraryManager(object):
         else:
             return library
 
-    def get_library_dict(self, trans, library):
+    def get_library_dict(self, trans, library, restricted_library_ids=None):
         """
         Return library data in the form of a dictionary.
 
-        :param  library:       library
-        :type   library:       galaxy.model.Library
+        :param  library:                    library
+        :type   library:                    galaxy.model.Library
+        :param  restricted_library_ids:     ids of restricted libraries to speed up the
+                                            detection of public libraries
+        :type   restricted_library_ids:     list of ints
 
         :returns:   dict with data about the library
         :rtype:     dictionary
         """
         library_dict = library.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id})
-        if trans.app.security_agent.library_is_public(library, contents=False):
+        if restricted_library_ids and library.id in restricted_library_ids:
+            library_dict['public'] = False
+        else:
             library_dict['public'] = True
         library_dict['create_time_pretty'] = pretty_print_time_interval(library.create_time, precise=True)
-        current_user_roles = trans.get_current_user_roles()
         if not trans.user_is_admin():
+            current_user_roles = trans.get_current_user_roles()
             library_dict['can_user_add'] = trans.app.security_agent.can_add_library_item(current_user_roles, library)
             library_dict['can_user_modify'] = trans.app.security_agent.can_modify_library_item(current_user_roles, library)
             library_dict['can_user_manage'] = trans.app.security_agent.can_manage_library_item(current_user_roles, library)
