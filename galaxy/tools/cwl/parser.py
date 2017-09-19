@@ -384,6 +384,45 @@ class JobProxy(object):
         #    validate.validate_ex(self.names.get_name("input_record_schema", ""), builder.job,
         #                         strict=False, logger=_logger_validation_warnings)
 
+    def rewrite_inputs_for_staging(self):
+        if hasattr(self._cwl_job, "pathmapper"):
+            pass
+            # DO SOMETHING LIKE THE FOLLOWING?
+            # path_rewrites = {}
+            # for f, p in self._cwl_job.pathmapper.items():
+            #     if not p.staged:
+            #         continue
+            #     if p.type in ("File", "Directory"):
+            #         path_rewrites[p.resolved] = p.target
+            # for key, value in self._input_dict.items():
+            #     if key in path_rewrites:
+            #         self._input_dict[key]["location"] = path_rewrites[value]
+        else:
+            stagedir = os.path.join(self._job_directory, "cwlstagedir")
+            safe_makedirs(stagedir)
+
+            def stage_recursive(value):
+                is_list = isinstance(value, list)
+                is_dict = isinstance(value, dict)
+                log.info("handling value %s, is_list %s, is_dict %s" % (value, is_list, is_dict))
+                if is_list:
+                    for val in value:
+                        stage_recursive(val)
+                elif is_dict:
+                    if "location" in value and "basename" in value:
+                        location = value["location"]
+                        basename = value["basename"]
+                        if not location.endswith(basename):  # TODO: sep()[-1]
+                            staged_loc = os.path.join(stagedir, basename)
+                            if not os.path.exists(staged_loc):
+                                os.symlink(location, staged_loc)
+                            value["location"] = staged_loc
+                    for key, dict_value in value.items():
+                        stage_recursive(dict_value)
+                else:
+                    log.info("skipping simple value...")
+            stage_recursive(self._input_dict)
+
     def _select_resources(self, request):
         new_request = request.copy()
         new_request["cores"] = "$GALAXY_SLOTS"
@@ -435,7 +474,8 @@ class JobProxy(object):
 
     def collect_outputs(self, tool_working_directory):
         if not self.is_command_line_job:
-            self.cwl_job().run(
+            cwl_job = self.cwl_job()
+            cwl_job.run(
             )
             if not self._ok:
                 raise Exception("Final process state not ok, [%s]" % self._process_status)
@@ -464,6 +504,10 @@ class JobProxy(object):
     def output_path(self, output_name):
         output_id = self._output_dict[output_name]["path"]
         return output_id
+
+    def output_directory_contents_dir(self, output_name, create=False):
+        extra_files_dir = self._output_extra_files_dir(output_name)
+        return extra_files_dir
 
     def output_secondary_files_dir(self, output_name, create=False):
         extra_files_dir = self._output_extra_files_dir(output_name)

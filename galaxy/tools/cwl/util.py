@@ -46,9 +46,13 @@ def output_properties(path=None, content=None, basename=None, pseduo_location=Fa
     properties["checksum"] = "sha1$%s" % checksum.hexdigest()
     properties["size"] = filesize
     set_basename_and_derived_properties(properties, basename)
+    _handle_pseudo_location(properties, pseduo_location)
+    return properties
+
+
+def _handle_pseudo_location(properties, pseduo_location):
     if pseduo_location:
         properties["location"] = properties["basename"]
-    return properties
 
 
 def galactic_job_json(
@@ -308,38 +312,61 @@ def output_to_cwl_json(
     if output_metadata["history_content_type"] == "dataset":
         ext = output_metadata["file_ext"]
         assert output_metadata["state"] == "ok"
-        dataset_dict = get_dataset(output_metadata)
         if ext == "expression.json":
+            dataset_dict = get_dataset(output_metadata)
             return dataset_dict_to_json_content(dataset_dict)
         else:
-            properties = output_properties(pseduo_location=pseduo_location, **dataset_dict)
-            basename = properties["basename"]
-            extra_files = get_extra_files(output_metadata)
-            found_index = False
-            for extra_file in extra_files:
-                if extra_file["class"] == "File":
-                    path = extra_file["path"]
-                    if path == SECONDARY_FILES_INDEX_PATH:
-                        found_index = True
+            file_or_directory = "Directory" if ext == "directory" else "File"
+            if file_or_directory == "File":
+                dataset_dict = get_dataset(output_metadata)
+                properties = output_properties(pseduo_location=pseduo_location, **dataset_dict)
+                basename = properties["basename"]
+                extra_files = get_extra_files(output_metadata)
+                found_index = False
+                for extra_file in extra_files:
+                    if extra_file["class"] == "File":
+                        path = extra_file["path"]
+                        if path == SECONDARY_FILES_INDEX_PATH:
+                            found_index = True
 
-            if found_index:
-                ec = get_dataset(output_metadata, filename=SECONDARY_FILES_INDEX_PATH)
-                index = dataset_dict_to_json_content(ec)
-                for basename in index["order"]:
-                    for extra_file in extra_files:
-                        if extra_file["class"] == "File":
-                            path = extra_file["path"]
-                            if path == os.path.join(SECONDARY_FILES_EXTRA_PREFIX, basename):
-                                ec = get_dataset(output_metadata, filename=path)
-                                if not STORE_SECONDARY_FILES_WITH_BASENAME:
-                                    ec["basename"] = basename + os.path.basename(path)
-                                else:
-                                    ec["basename"] = os.path.basename(path)
-                                ec_properties = output_properties(pseduo_location=pseduo_location, **ec)
-                                if "secondaryFiles" not in properties:
-                                    properties["secondaryFiles"] = []
+                if found_index:
+                    ec = get_dataset(output_metadata, filename=SECONDARY_FILES_INDEX_PATH)
+                    index = dataset_dict_to_json_content(ec)
+                    for basename in index["order"]:
+                        for extra_file in extra_files:
+                            if extra_file["class"] == "File":
+                                path = extra_file["path"]
+                                if path == os.path.join(SECONDARY_FILES_EXTRA_PREFIX, basename):
+                                    ec = get_dataset(output_metadata, filename=path)
+                                    if not STORE_SECONDARY_FILES_WITH_BASENAME:
+                                        ec["basename"] = basename + os.path.basename(path)
+                                    else:
+                                        ec["basename"] = os.path.basename(path)
+                                    ec_properties = output_properties(pseduo_location=pseduo_location, **ec)
+                                    if "secondaryFiles" not in properties:
+                                        properties["secondaryFiles"] = []
 
-                                properties["secondaryFiles"].append(ec_properties)
+                                    properties["secondaryFiles"].append(ec_properties)
+            else:
+                basename = output_metadata.get("cwl_file_name")
+                if not basename:
+                    basename = output_metadata.get("name")
+
+                listing = []
+                properties = {
+                    "class": "Directory",
+                    "basename": basename,
+                    "listing": listing,
+                }
+
+                extra_files = get_extra_files(output_metadata)
+                for extra_file in extra_files:
+                    if extra_file["class"] == "File":
+                        path = extra_file["path"]
+                        ec = get_dataset(output_metadata, filename=path)
+                        ec["basename"] = os.path.basename(path)
+                        ec_properties = output_properties(pseduo_location=pseduo_location, **ec)
+                        listing.append(ec_properties)
 
             return properties
 
