@@ -3,15 +3,16 @@ import time
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
-    SeleniumTestCase,
+    SharedStateSeleniumTestCase,
 )
 
 
-class CustomBuildsTestcase(SeleniumTestCase):
+class CustomBuildsTestcase(SharedStateSeleniumTestCase):
 
     def setUp(self):
         super(CustomBuildsTestcase, self).setUp()
-        self.ensure_user()
+        self.home()  # ensure Galaxy is loaded
+        self.submit_login(self.user_email)
 
     @selenium_test
     def test_build_add(self):
@@ -91,12 +92,7 @@ class CustomBuildsTestcase(SeleniumTestCase):
         self.click_label(label)
         self.wait_for_and_click_selector('a[href="/custom_builds"]')
 
-    def ensure_user(self):
-        if getattr(CustomBuildsTestcase, 'user_email', None):
-            self.home()  # ensure Galaxy is loaded
-            self.submit_login(self.user_email)
-            return
-
+    def setup_shared_state(self):
         CustomBuildsTestcase.user_email = self._get_random_email()
         self.register(self.user_email)
 
