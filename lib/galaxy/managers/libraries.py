@@ -108,15 +108,17 @@ class LibraryManager(object):
         :type   deleted: boolean (optional)
 
         :returns: query that will emit all accessible libraries
-        :rtype: sqlalchemy query
+        :rtype:   sqlalchemy query
+        :returns: set of library ids that have restricted access (not public)
+        :rtype:   set
         """
         is_admin = trans.user_is_admin()
         query = trans.sa_session.query(trans.app.model.Library)
         library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
-        restricted_library_ids = [lp.library_id for lp in (
+        restricted_library_ids = {lp.library_id for lp in (
             trans.sa_session.query(trans.model.LibraryPermissions).filter(
                 trans.model.LibraryPermissions.table.c.action == library_access_action
-            ).distinct())]
+            ).distinct())}
         if is_admin:
             if deleted is None:
                 #  Flag is not specified, do not filter on it.
@@ -170,7 +172,7 @@ class LibraryManager(object):
         else:
             return library
 
-    def get_library_dict(self, trans, library, restricted_library_ids=[]):
+    def get_library_dict(self, trans, library, restricted_library_ids=None):
         """
         Return library data in the form of a dictionary.
 
@@ -184,7 +186,7 @@ class LibraryManager(object):
         :rtype:     dictionary
         """
         library_dict = library.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id})
-        if library.id in restricted_library_ids:
+        if restricted_library_ids and library.id in restricted_library_ids:
             library_dict['public'] = False
         else:
             library_dict['public'] = True
