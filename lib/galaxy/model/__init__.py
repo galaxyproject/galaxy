@@ -1441,7 +1441,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             HistoryDatasetAssociation.table.c.dataset_id == Dataset.table.c.id)
         distinct_datasets = (
             select([
-                # use labels here to better accrss from the query above
+                # use labels here to better access from the query above
                 HistoryDatasetAssociation.table.c.history_id.label('history_id'),
                 Dataset.total_size.label('dataset_size'),
                 Dataset.id.label('dataset_id')
