@@ -701,7 +701,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                     remote_datatypes_config = os.path.join(remote_galaxy_home, 'datatypes_conf.xml')
                 metadata_kwds['datatypes_config'] = remote_datatypes_config
             else:
-                datatypes_config = os.path.join(configs_directory, 'registry.xml')
+                datatypes_config = os.path.join(job_wrapper.working_directory, 'registry.xml')
                 self.app.datatypes_registry.to_xml_file(path=datatypes_config)
                 # Ensure this file gets pushed out to the remote config dir.
                 job_wrapper.extra_filenames.append(datatypes_config)
