@@ -1,3 +1,4 @@
+import hashlib
 import ipaddress
 import logging
 import os
@@ -5,7 +6,6 @@ import shlex
 import socket
 import subprocess
 import tempfile
-import hashlib
 from cgi import FieldStorage
 from json import dumps
 
