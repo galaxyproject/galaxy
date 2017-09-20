@@ -1,27 +1,30 @@
 from .framework import SeleniumTestCase
 from .framework import selenium_test
 
+# Remove hack when submit_login works more consistently.
+VALID_LOGIN_RETRIES = 3
+
 
 class HistorySharingTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_sharing_valid(self):
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history()
-        self.submit_login(user2_email)
+        self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
         response = self.api_get("histories/%s" % history_id, raw=True)
         assert response.status_code == 200, response.json()
 
     @selenium_test
     def test_sharing_valid_by_id(self):
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history(share_by_id=True)
-        self.submit_login(user2_email)
+        self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
         response = self.api_get("histories/%s" % history_id, raw=True)
         assert response.status_code == 200, response.json()
 
     @selenium_test
     def test_unsharing(self):
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history()
-        self.submit_login(user1_email)
+        self.submit_login(user1_email, retries=VALID_LOGIN_RETRIES)
         self.navigate_to_history_share_page()
 
         with self.main_panel():
@@ -36,7 +39,7 @@ class HistorySharingTestCase(SeleniumTestCase):
             self.assert_selector_absent("#user-0-popup")
 
         self.logout_if_needed()
-        self.submit_login(user2_email)
+        self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
         response = self.api_get("histories/%s" % history_id, raw=True)
         assert response.status_code == 403
 
@@ -80,7 +83,7 @@ class HistorySharingTestCase(SeleniumTestCase):
         user2_id = self.api_get("users")[0]["id"]
         self.logout_if_needed()
 
-        self.submit_login(user1_email)
+        self.submit_login(user1_email, retries=VALID_LOGIN_RETRIES)
         # Can't share an empty history...
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
