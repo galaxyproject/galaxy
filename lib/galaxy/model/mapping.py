@@ -162,7 +162,7 @@ model.Dataset.table = Table(
     Column('file_size', Numeric(15, 0)),
     Column('total_size', Numeric(15, 0)),
     Column('uuid', UUIDType()),
-    Column('checksum', TEXT, index=True))
+    Column('checksum', TEXT))
 
 # hda read access permission given by a user to a specific site (gen. for external display applications)
 model.HistoryDatasetAssociationDisplayAtAuthorization.table = Table(
