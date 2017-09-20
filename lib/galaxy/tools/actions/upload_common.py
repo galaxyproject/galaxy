@@ -383,7 +383,7 @@ def __get_checksum(filename):
     It reads small chunks of the file in memory because a file could
     potentially be large, and reading as a whole to memory could be
     suboptimal or not possible due to memory limit.
-    :param filename: absolute path of a file
+    :param filename: absolute path to a file
     :return: md5-based checksum
     """
     md5 = hashlib.md5()
