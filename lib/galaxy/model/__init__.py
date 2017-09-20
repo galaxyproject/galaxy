@@ -1756,7 +1756,8 @@ class Dataset(StorableObject):
     object_store = None  # This get initialized in mapping.py (method init) by app.py
     engine = None
 
-    def __init__(self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, uuid=None):
+    def __init__(self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None,
+                 purgable=True, uuid=None, checksum=None):
         super(Dataset, self).__init__(id=id)
         self.state = state
         self.deleted = False
@@ -1770,6 +1771,7 @@ class Dataset(StorableObject):
             self.uuid = uuid4()
         else:
             self.uuid = UUID(str(uuid))
+        self.checksum = checksum
 
     def in_ready_state(self):
         return self.state in self.ready_states
@@ -1918,7 +1920,7 @@ class DatasetInstance(object):
     permitted_actions = Dataset.permitted_actions
 
     def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
-                 dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
+                 dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None, checksum=None,
                  parent_id=None, validation_errors=None, visible=True, create_dataset=False, sa_session=None,
                  extended_metadata=None, flush=True):
         self.name = name or "Unnamed dataset"
@@ -1940,7 +1942,7 @@ class DatasetInstance(object):
         # Relationships
         if not dataset and create_dataset:
             # Had to pass the sqlalchemy session in order to create a new dataset
-            dataset = Dataset(state=Dataset.states.NEW)
+            dataset = Dataset(state=Dataset.states.NEW, checksum=checksum)
             if flush:
                 sa_session.add(dataset)
                 sa_session.flush()
