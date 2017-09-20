@@ -8,6 +8,7 @@ from operator import itemgetter
 from base import api
 from base.api_asserts import assert_status_code_is_ok
 from base.populators import (
+    DatasetCollectionPopulator,
     DatasetPopulator,
     wait_on,
     wait_on_state,
@@ -21,6 +22,7 @@ class JobsApiTestCase(api.ApiTestCase):
     def setUp(self):
         super(JobsApiTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     def test_index(self):
         # Create HDA to ensure at least one job exists...
@@ -295,16 +297,53 @@ class JobsApiTestCase(api.ApiTestCase):
         self.__run_cat_tool(history_id, dataset_id)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
+        search_count = self._search(search_payload)
+
+        self.assertEquals(search_count, 1)
+
+    def test_search_with_hdca_input(self):
+        history_id, collection_id = self.__history_with_ok_collection()
+
+        inputs = json.dumps(
+            dict(
+                f1=dict(
+                    src='hdca',
+                    id=collection_id
+                ),
+                f2=dict(
+                    src='hdca',
+                    id=collection_id
+                ),
+            )
+        )
+
+        search_payload = dict(
+            tool_id = "multi_data_param",
+            inputs=inputs,
+            history_id=history_id,
+            state='ok'
+        )
+
+        self._post("tools", data=search_payload)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        search_count = self._search(search_payload)
+
+        self.assertEquals(search_count, 1)
+
+        # inputs = {"tool_id":"multi_data_param","tool_version":"0.1.0","inputs":{"f1":{"values":[{"src":"hdca","name":"collection","tags":[],"keep":False,"hid":32,"id":"f2db41e1fa331b3e"}]},"f2":{"values":[{"src":"hdca","name":"collection","tags":[],"keep":false,"hid":32,"id":"f2db41e1fa331b3e"}]}}}
+
+        pass
+
+    def _search(self, payload):
         search_count = -1
         # in case job and history aren't updated at exactly the same
         # time give time to wait
         for i in range(5):
-            search_count = self._search_count(search_payload)
+            search_count = self._search_count(payload)
             if search_count == 1:
                 break
             time.sleep(.1)
-
-        self.assertEquals(search_count, 1)
+        return search_count
 
     def _search_count(self, search_payload):
         search_response = self._post("jobs/search", data=search_payload)
@@ -356,6 +395,13 @@ class JobsApiTestCase(api.ApiTestCase):
         history_id = self.dataset_populator.new_history()
         dataset_id = self.dataset_populator.new_dataset(history_id, wait=True)["id"]
         return history_id, dataset_id
+
+    def __history_with_ok_collection(self):
+        contents = ["a\tb\nc\td", "e\tf\ng\th"]
+        history_id = self.dataset_populator.new_history()
+        create_reposonse = self.dataset_collection_populator.create_list_in_history(history_id, contents=contents).json()
+        self.dataset_collection_populator.wait_for_dataset_collection(create_reposonse)
+        return history_id, create_reposonse['id']
 
     def __jobs_index(self, **kwds):
         jobs_response = self._get("jobs", **kwds)

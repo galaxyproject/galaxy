@@ -28,6 +28,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
     def __init__(self, app):
         super(JobController, self).__init__(app)
         self.hda_manager = managers.hdas.HDAManager(app)
+        self.dataset_collection_manager = managers.collections.DatasetCollectionManager(app)
         self.dataset_manager = managers.datasets.DatasetManager(app)
 
     @expose_api
@@ -267,9 +268,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         recycle the old results.
         """
 
-        tool_id = None
-        if 'tool_id' in payload:
-            tool_id = payload.get('tool_id')
+        tool_id = payload.get('tool_id')
         if tool_id is None:
             raise exceptions.ObjectAttributeMissingException("No tool id")
 
@@ -288,12 +287,19 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                 if 'id' in v:
                     if 'src' not in v or v['src'] == 'hda':
                         hda_id = self.decode_id(v['id'])
-                        dataset = self.hda_manager.get_accessible(hda_id, trans.user)
+                        datasets = self.hda_manager.get_accessible(hda_id, trans.user)
                     else:
-                        dataset = self.get_library_dataset_dataset_association(trans, v['id'])
-                    if dataset is None:
+                        if v['src'] == 'hdca':
+                            hdca = self.dataset_collection_manager.get_dataset_collection_instance(trans=trans,
+                                                                                                   instance_type='history',
+                                                                                                   id=v['id'],
+                                                                                                   )
+                            datasets = hdca.dataset_instances
+                        else:
+                            dataset = self.get_library_dataset_dataset_association(trans, v['id'])
+                    if datasets is None:
                         raise exceptions.ObjectNotFound("Dataset %s not found" % (v['id']))
-                    input_data[k] = dataset.dataset_id
+                    input_data[k] = [datasets.dataset_id] if isinstance(datasets, model.HistoryDatasetAssociation) else [d.dataset_id for d in datasets]
             else:
                 input_param[k] = json.dumps(str(v))
 
@@ -331,20 +337,23 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                 a.value == v
             ))
 
-        for k, v in input_data.items():
+        for datasets in input_data.values():
             # Here we are attempting to link the inputs to the underlying
             # dataset (not the dataset association).
             # This way, if the calculation was done using a copied HDA
             # (copied from the library or another history), the search will
             # still find the job
-            a = aliased(trans.app.model.JobToInputDatasetAssociation)
-            b = aliased(trans.app.model.HistoryDatasetAssociation)
-            query = query.filter(and_(
-                trans.app.model.Job.id == a.job_id,
-                a.dataset_id == b.id,
-                b.deleted == false(),
-                b.dataset_id == v
-            ))
+            for dataset in datasets:
+                a = aliased(trans.app.model.JobToInputDatasetAssociation)
+                b = aliased(trans.app.model.HistoryDatasetAssociation)
+                # TODO: I don't think this checks for the actual parameter name that the input matches to
+                # we may get a wrong result here
+                query = query.filter(and_(
+                    trans.app.model.Job.id == a.job_id,
+                    a.dataset_id == b.id,
+                    b.deleted == false(),
+                    b.dataset_id == dataset
+                ))
 
         out = []
         for job in query.all():
