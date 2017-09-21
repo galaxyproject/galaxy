@@ -43,7 +43,7 @@ def test_loader():
         def load(self, name="tool.xml", preprocess=True):
             path = os.path.join(self.temp_directory, name)
             if preprocess:
-                return load_tool(path)[0]
+                return load_tool(path)
             else:
                 return parse_xml(path)
 
