@@ -53,7 +53,7 @@ __all__ = (
 
 MINIMUM_PULSAR_VERSIONS = {
     '_default_': LooseVersion("0.7.0.dev3"),
-    'remote_metadata': LooseVersion("0.7.5"),
+    'remote_metadata': LooseVersion("0.8.0"),
 }
 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
