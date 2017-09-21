@@ -170,7 +170,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         search_input.send_keys(self.history4_name)
         self.send_enter(search_input)
 
-        self.assert_grid_histories_are(['No Items'])
+        self.assert_grid_histories_are([])
 
     @selenium_test
     def test_advanced_search(self):
@@ -187,7 +187,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.unset_filter('name', self.history2_name)
 
         self.set_filter(name_filter_selector, self.history4_name)
-        self.assert_grid_histories_are(['No Items'])
+        self.assert_grid_histories_are([])
         self.unset_filter('name', self.history4_name)
 
         # Search by tags
@@ -196,7 +196,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.unset_filter('tags', self.history3_tags[0])
 
         self.set_filter(tags_filter_selector, self.history4_tags[0])
-        self.assert_grid_histories_are(['No Items'])
+        self.assert_grid_histories_are([])
         self.unset_filter('tags', self.history4_tags[0])
 
     @selenium_test
