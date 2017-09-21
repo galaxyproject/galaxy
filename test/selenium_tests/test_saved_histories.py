@@ -86,7 +86,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         # Restore the history
         self.click_popup_option(self.history2_name, 'Undelete')
 
-        self.wait_for_selector_visible('.donemessage')
+        self.assert_grid_histories_are([])
         self.select_filter('deleted', 'False')
 
         self.assert_histories_in_grid([self.history2_name])
@@ -130,7 +130,9 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.check_histories([self.history2_name, self.history3_name])
         self.wait_for_and_click_selector(undelete_button_selector)
 
-        self.wait_for_selector_visible('.donemessage')
+        self.assert_grid_histories_are([])
+        # Following msg popups but goes away and so can cause transient errors.
+        # self.wait_for_selector_visible('.donemessage')
         self.select_filter('deleted', 'False')
 
         self.assert_histories_in_grid([self.history2_name, self.history3_name])
@@ -243,7 +245,8 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         for row in grid.find_elements_by_tag_name('tr'):
             td = row.find_elements_by_tag_name('td')
             name = td[1].text if td[0].text == '' else td[0].text
-            names.append(name)
+            if name != "No Items":
+                names.append(name)
         return names
 
     def set_filter(self, selector, value):
