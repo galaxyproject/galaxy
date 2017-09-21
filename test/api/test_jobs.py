@@ -279,6 +279,19 @@ class JobsApiTestCase(api.ApiTestCase):
             'input1': {'src': 'hda', 'id': dataset_id}
         })
         self._job_search(tool_id='cat1', history_id=history_id, inputs=inputs)
+        # We test that a job can be found even if the dataset has been copied to another history
+        new_history_id = self.dataset_populator.new_history()
+        copy_payload = {"content": dataset_id, "source": "hda", "type": "dataset"}
+        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
+        self._assert_status_code_is(copy_response, 200)
+        new_dataset_id = copy_response.json()['id']
+        copied_inputs = json.dumps({
+            'input1': {'src': 'hda', 'id': new_dataset_id}
+        })
+        search_payload = self._search_payload(history_id=history_id, tool_id='cat1', inputs=copied_inputs)
+        search_count = self._search(search_payload)
+        self.assertEquals(search_count, 1)
+
 
     def test_search_with_hdca_list_input(self):
         history_id, list_id_a = self.__history_with_ok_collection(collection_type='list')
@@ -304,6 +317,18 @@ class JobsApiTestCase(api.ApiTestCase):
             'f2': {'src': 'hdca', 'id': list_id_a},
         })
         self._job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
+        new_history_id = self.dataset_populator.new_history()
+        copy_payload = {"content": list_id_a, "source": "hdca", "type": "dataset_collection"}
+        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
+        self._assert_status_code_is(copy_response, 200)
+        new_list_a = copy_response.json()['id']
+        copied_inputs = json.dumps({
+            'f1': {'src': 'hdca', 'id': new_list_a},
+            'f2': {'src': 'hdca', 'id': new_list_a},
+        })
+        search_payload = self._search_payload(history_id=new_history_id, tool_id='multi_data_param', inputs=copied_inputs)
+        search_count = self._search(search_payload)
+        self.assertEquals(search_count, 1)
 
     def test_search_with_hdca_list_pair_input(self):
         history_id, list_id_a = self.__history_with_ok_collection(collection_type='list:pair')
