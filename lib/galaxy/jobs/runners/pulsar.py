@@ -670,7 +670,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 raise Exception(NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE)
             metadata_kwds['exec_dir'] = remote_galaxy_home
             outputs_directory = remote_job_config['outputs_directory']
-            configs_directory = remote_job_config['configs_directory']
             working_directory = remote_job_config['working_directory']
             metadata_directory = remote_job_config['metadata_directory']
             # For metadata calculation, we need to build a list of of output
