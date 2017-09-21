@@ -290,6 +290,11 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                     decoded_id = self.decode_id(v['id'])
                     if 'src' not in v or v['src'] == 'hda':
                         datasets = [self.hda_manager.get_accessible(decoded_id, trans.user)]
+                        all_history_associations = []
+                        for dataset in datasets:
+                            instances = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).filter(trans.app.model.HistoryDatasetAssociation.dataset_id == dataset.dataset_id).all()
+                            all_history_associations.extend(instances)
+                        decoded_ids = set(h.id for h in all_history_associations)
                     else:
                         if v['src'] == 'hdca':
                             hdca = self.dataset_collection_manager.get_dataset_collection_instance(trans=trans,
@@ -307,12 +312,6 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                             datasets = [self.get_library_dataset_dataset_association(trans, v['id'])]
                     if datasets is None:
                         raise exceptions.ObjectNotFound("Dataset %s not found" % (v['id']))
-                    if v['src'] != 'hdca':
-                        all_history_associations = []
-                        for dataset in datasets:
-                            instances = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).filter(trans.app.model.HistoryDatasetAssociation.dataset_id == dataset.dataset_id).all()
-                            all_history_associations.extend(instances)
-                        decoded_ids = [h.id for h in all_history_associations]
                     parameter_values = []
                     for decoded_id in decoded_ids:
                         parameter_value = v.copy()
@@ -380,7 +379,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             b = aliased(trans.app.model.HistoryDatasetAssociation)
             query = query.filter(and_(
                 trans.app.model.Job.id == a.job_id,
-                a.dataset_id == b.id,
+                a.dataset_id == b.dataset_id,
                 b.deleted == false(),
                 b.dataset_id.in_(datasets),
             ))

@@ -291,7 +291,14 @@ class JobsApiTestCase(api.ApiTestCase):
         search_payload = self._search_payload(history_id=history_id, tool_id='cat1', inputs=copied_inputs)
         search_count = self._search(search_payload)
         self.assertEquals(search_count, 1)
-
+        delete_respone = self._delete("histories/%s/contents/%s" % (history_id, dataset_id))
+        self._assert_status_code_is(delete_respone, 200)
+        search_count = self._search(search_payload)
+        self.assertEquals(search_count, 1)
+        delete_respone = self._delete("histories/%s/contents/%s" % (history_id, new_dataset_id))
+        self._assert_status_code_is(delete_respone, 200)
+        search_count = self._search(search_payload)
+        self.assertEquals(search_count, 0)
 
     def test_search_with_hdca_list_input(self):
         history_id, list_id_a = self.__history_with_ok_collection(collection_type='list')
