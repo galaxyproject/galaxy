@@ -161,8 +161,15 @@ model.Dataset.table = Table(
     Column("_extra_files_path", TEXT),
     Column('file_size', Numeric(15, 0)),
     Column('total_size', Numeric(15, 0)),
-    Column('uuid', UUIDType()),
-    Column('checksum', TEXT))
+    Column('uuid', UUIDType()))
+
+model.DatasetChecksum.table = Table(
+    "dataset_checksum", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
+    Column("hash_function", TEXT),
+    Column("hash_value", TEXT)
+)
 
 # hda read access permission given by a user to a specific site (gen. for external display applications)
 model.HistoryDatasetAssociationDisplayAtAuthorization.table = Table(
@@ -1660,6 +1667,10 @@ simple_mapping(model.Dataset,
         order_by=model.DatasetTagAssociation.table.c.id,
         backref='datasets')
 )
+
+mapper(model.DatasetChecksum, model.DatasetChecksum.table, properties=dict(
+    user=relation(model.Dataset)
+))
 
 mapper(model.HistoryDatasetAssociationDisplayAtAuthorization, model.HistoryDatasetAssociationDisplayAtAuthorization.table, properties=dict(
     history_dataset_association=relation(model.HistoryDatasetAssociation),
