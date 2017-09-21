@@ -172,6 +172,14 @@ class ModuleDependency(Dependency):
         self._exact = exact
 
     @property
+    def name(self):
+        return self.module_name
+
+    @property
+    def version(self):
+        return self.module_version
+
+    @property
     def exact(self):
         return self._exact
 
