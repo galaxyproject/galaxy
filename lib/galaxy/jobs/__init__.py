@@ -866,6 +866,9 @@ class JobWrapper( object, HasResourceParameters ):
         self.galaxy_lib_dir
         # Shell fragment to inject dependencies
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
+        if self.tool.requires_galaxy_python_environment:
+            # These tools (upload, metadata, data_source) may need access to the datatypes registry.
+            self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, 'registry.xml'))
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         job.command_line = unicodify(self.command_line)
