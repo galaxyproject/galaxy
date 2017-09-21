@@ -471,6 +471,12 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_table_row(self, workflow_index=0):
         return self.workflow_index_table_elements()[workflow_index]
 
+    @retry_during_transitions
+    def workflow_index_column_text(self, column_index, workflow_index=0):
+        row_element = self.workflow_index_table_row()
+        columns = row_element.find_elements_by_css_selector("td")
+        return columns[column_index].text
+
     def workflow_index_click_search(self):
         return self.wait_for_and_click_selector("input.search-wf")
 
@@ -484,9 +490,15 @@ class NavigatesGalaxy(HasDriver):
         alert.accept()
 
     def workflow_index_click_option(self, option_title, workflow_index=0):
-        workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
-        workflow_button = workflow_row.find_element_by_css_selector(".menubutton")
-        workflow_button.click()
+
+        @retry_during_transitions
+        def click_option():
+            workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
+            workflow_button = workflow_row.find_element_by_css_selector(".menubutton")
+            workflow_button.click()
+
+        click_option()
+
         menu_element = self.wait_for_selector_visible("ul.action-dpd")
         menu_options = menu_element.find_elements_by_css_selector("li a")
         found_option = False
