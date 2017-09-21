@@ -1,6 +1,7 @@
 import json
 import os
 import string
+import time
 import unittest
 
 import routes
@@ -12,10 +13,13 @@ from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
-from galaxy.tools.toolbox.watcher import get_tool_conf_watcher
 from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
 
 from .test_toolbox_filters import mock_trans
+from .test_tool_loader import (
+    SIMPLE_MACRO,
+    SIMPLE_TOOL_WITH_MACRO
+)
 
 
 CONFIG_TEST_TOOL_VERSION_TEMPLATE = string.Template(
@@ -162,6 +166,40 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         toolbox = self.toolbox
         assert toolbox.get_tool("test_tool") is not None
         assert toolbox.get_tool("not_a_test_tool") is None
+
+    def test_record_macros(self):
+        self._init_tool()
+        self._init_tool(filename="tool_with_macro.xml",
+                        tool_contents=SIMPLE_TOOL_WITH_MACRO,
+                        extra_file_contents=SIMPLE_MACRO.substitute(tool_version="2.0"),
+                        extra_file_path="external.xml")
+        self._add_config("""<toolbox><tool file="tool_with_macro.xml"/><tool file="tool.xml" /></toolbox>""")
+        toolbox = self.toolbox
+        tool = toolbox.get_tool("test_tool")
+        assert tool is not None
+        assert len(tool._macro_paths) == 0
+        tool = toolbox.get_tool("tool_with_macro")
+        assert tool is not None
+        assert len(tool._macro_paths) == 1
+
+    def test_tool_reload_when_macro_is_altered(self):
+        self._init_tool(filename="tool_with_macro.xml",
+                        tool_contents=SIMPLE_TOOL_WITH_MACRO,
+                        extra_file_contents=SIMPLE_MACRO.substitute(tool_version="2.0"),
+                        extra_file_path="external.xml")
+        self._add_config("""<toolbox><tool file="tool_with_macro.xml"/></toolbox>""")
+        toolbox = self.toolbox
+        tool = toolbox.get_tool("tool_with_macro")
+        assert tool is not None
+        assert len(tool._macro_paths) == 1
+        macro_path = tool._macro_paths[0]
+        time.sleep(1.5)
+        with open(macro_path, 'w') as macro_out:
+            macro_out.write(SIMPLE_MACRO.substitute(tool_version="3.0"))
+        time.sleep(1.5)
+        tool = self.app.toolbox.get_tool("tool_with_macro")
+
+        assert tool.version == "3.0"
 
     def test_enforce_tool_profile(self):
         self._init_tool(filename="old_tool.xml", version="1.0", profile="17.01", tool_id="test_old_tool_profile")
@@ -444,8 +482,9 @@ class SimplifiedToolBox(ToolBox):
 
     def __init__(self, test_case):
         app = test_case.app
+        app.watchers.tool_config_watcher.reload_callback = lambda: reload_callback(test_case)
         # Handle app/config stuff needed by toolbox but not by tools.
-        app.tool_cache = ToolCache()
+        app.tool_cache = ToolCache() if not hasattr(app, 'tool_cache') else app.tool_cache
         app.job_config.get_tool_resource_parameters = lambda tool_id: None
         app.config.update_integrated_tool_panel = True
         config_files = test_case.config_files
@@ -455,11 +494,11 @@ class SimplifiedToolBox(ToolBox):
             tool_root_dir,
             app,
         )
-        self._tool_conf_watcher = get_tool_conf_watcher(dummy_callback)
 
     def handle_panel_update(self, section_dict):
         self.create_section(section_dict)
 
 
-def dummy_callback():
-    pass
+def reload_callback(test_case):
+    test_case.app.tool_cache.cleanup()
+    test_case.__toolbox = test_case.app.toolbox = SimplifiedToolBox(test_case)

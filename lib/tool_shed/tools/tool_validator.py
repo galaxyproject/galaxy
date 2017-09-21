@@ -71,8 +71,6 @@ class ToolValidator(object):
                                                                                   persist=False)
                             if error:
                                 invalid_files_and_errors_tups.append(('tool_data_table_conf.xml.sample', correction_msg))
-                            else:
-                                options.missing_tool_data_table_name = None
                         else:
                             correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  "
                             correction_msg += "Upload a file named tool_data_table_conf.xml.sample to the repository "
@@ -89,7 +87,6 @@ class ToolValidator(object):
                             sample_file_name = basic_util.strip_path(sample_file)
                             if sample_file_name == '%s.sample' % index_file_name:
                                 options.index_file = index_file_name
-                                options.missing_index_file = None
                                 if options.tool_data_table:
                                     options.tool_data_table.missing_index_file = None
                                 sample_found = True

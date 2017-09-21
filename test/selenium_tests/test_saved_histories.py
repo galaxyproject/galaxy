@@ -3,15 +3,16 @@ import time
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
-    SeleniumTestCase,
+    SharedStateSeleniumTestCase,
 )
 
 
-class SavedHistoriesTestCase(SeleniumTestCase):
+class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     def setUp(self):
         super(SavedHistoriesTestCase, self).setUp()
-        self.ensure_user_and_histories()
+        self.home()
+        self.submit_login(self.user_email)
 
     @selenium_test
     def test_saved_histories_list(self):
@@ -263,12 +264,7 @@ class SavedHistoriesTestCase(SeleniumTestCase):
         self.click_label(label)
         self.wait_for_and_click_selector('a[href="/histories/list"]')
 
-    def ensure_user_and_histories(self):
-        if getattr(SavedHistoriesTestCase, 'user_email', None):
-            self.home()  # ensure Galaxy is loaded
-            self.submit_login(self.user_email)
-            return
-
+    def setup_shared_state(self):
         SavedHistoriesTestCase.user_email = self._get_random_email()
         SavedHistoriesTestCase.history1_name = self._get_random_name()
         SavedHistoriesTestCase.history2_name = self._get_random_name()

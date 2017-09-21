@@ -543,6 +543,16 @@ class BaseDatasetCollectionPopulator(object):
             datasets.append(self.dataset_populator.new_dataset(history_id, **new_kwds))
         return datasets
 
+    def wait_for_dataset_collection(self, create_payload, assert_ok=False, timeout=DEFAULT_TIMEOUT):
+        for element in create_payload["elements"]:
+            if element['element_type'] == 'hda':
+                self.dataset_populator.wait_for_dataset(history_id=element['object']['history_id'],
+                                                        dataset_id=element['object']['id'],
+                                                        assert_ok=assert_ok,
+                                                        timeout=timeout)
+            elif element['element_type'] == 'dataset_collection':
+                self.wait_for_dataset_collection(element['object'], assert_ok=assert_ok, timeout=timeout)
+
 
 class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
 

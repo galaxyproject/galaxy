@@ -3,15 +3,15 @@ import time
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
-    SeleniumTestCase,
+    SharedStateSeleniumTestCase,
 )
 
 
-class HistoryGridTestCase(SeleniumTestCase):
+class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
     def setUp(self):
         super(HistoryGridTestCase, self).setUp()
-        self.ensure_users_and_histories()
+        self.home()
 
     @selenium_test
     def test_history_grid_histories(self):
@@ -155,8 +155,7 @@ class HistoryGridTestCase(SeleniumTestCase):
     def unset_filter(self, filter_key, filter_value):
         close_link_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
             (filter_key, filter_value)
-        close_link = self.wait_for_selector_clickable(close_link_selector)
-        close_link.click()
+        self.wait_for_and_click_selector(close_link_selector)
         time.sleep(.5)
 
     def set_annotation(self, annotation):
@@ -178,11 +177,7 @@ class HistoryGridTestCase(SeleniumTestCase):
         annon_area_editable.send_keys(annotation)
         anno_done_button.click()
 
-    def ensure_users_and_histories(self):
-        if getattr(HistoryGridTestCase, 'user1_email', None):
-            self.home()  # ensure Galaxy is loaded
-            return
-
+    def setup_shared_state(self):
         tag1 = self._get_random_name(len=5)
         tag2 = self._get_random_name(len=5)
         tag3 = self._get_random_name(len=5)
@@ -223,10 +218,7 @@ class HistoryGridTestCase(SeleniumTestCase):
     def publish_current_history(self):
         self.click_history_option('Share or Publish')
         with self.main_panel():
-            selector = 'input[name="make_accessible_and_publish"]'
-            publish_button = self.wait_for_selector_clickable(selector)
-            publish_button.click()
-
+            self.wait_for_and_click_selector('input[name="make_accessible_and_publish"]')
             self.wait_for_selector_clickable('input[name="disable_link_access_and_unpublish"]')
 
     def navigate_to_published_histories_page(self):
