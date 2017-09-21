@@ -89,14 +89,18 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
             schema.ControlledSchema.create(engine, migrate_repository, version=1)
     # Verify that the code and the DB are in sync
     db_schema = schema.ControlledSchema(engine, migrate_repository)
-    if migrate_repository.versions.latest != db_schema.version:
-        config_arg = ''
-        if galaxy_config_file and os.path.abspath(os.path.join(os.getcwd(), 'config', 'galaxy.ini')) != galaxy_config_file:
-            config_arg = ' -c %s' % galaxy_config_file.replace(os.path.abspath(os.getcwd()), '.')
+    config_arg = ''
+    if galaxy_config_file and os.path.abspath(os.path.join(os.getcwd(), 'config', 'galaxy.ini')) != galaxy_config_file:
+        config_arg = ' -c %s' % galaxy_config_file.replace(os.path.abspath(os.getcwd()), '.')
+    template_args = (db_schema.version, migrate_repository.versions.latest, config_arg)
+    if migrate_repository.versions.latest > db_schema.version:
         raise Exception("Your database has version '%d' but this code expects version '%d'.  Please backup your database and then migrate the schema by running 'sh manage_db.sh%s upgrade'."
-                        % (db_schema.version, migrate_repository.versions.latest, config_arg))
+                        % template_args)
+    elif migrate_repository.versions.latest != db_schema.version:
+        log.warning("Your database version [%d] is a newer database version than Galaxy expects [%d], this will likely be okay but consider updating Galaxy or downgrading your database with 'sh managed_db.sh%s downgrade"
+                    % template_args)
     else:
-        log.info("At database version %d" % db_schema.version)
+        log.info("At expected database version %d" % db_schema.version)
 
 
 def migrate_to_current_version(engine, schema):
