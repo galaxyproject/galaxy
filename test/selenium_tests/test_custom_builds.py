@@ -12,7 +12,7 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
     def setUp(self):
         super(CustomBuildsTestcase, self).setUp()
         self.home()  # ensure Galaxy is loaded
-        self.submit_login(self.user_email)
+        self.submit_login(self.user_email, retries=2)
 
     @selenium_test
     def test_build_add(self):

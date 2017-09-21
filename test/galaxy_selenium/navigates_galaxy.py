@@ -15,7 +15,7 @@ import requests
 import yaml
 
 from .data import NAVIGATION_DATA
-from .has_driver import exception_indicates_stale_element, HasDriver
+from .has_driver import exception_indicates_stale_element, HasDriver, TimeoutException
 from . import sizzle
 
 # Test case data
@@ -219,7 +219,7 @@ class NavigatesGalaxy(HasDriver):
         domain = domain or 'test.test'
         return self._get_random_name(prefix=username, suffix="@" + domain)
 
-    def submit_login(self, email, password=None, assert_valid=True):
+    def submit_login(self, email, password=None, assert_valid=True, retries=0):
         if password is None:
             password = self.default_password
 
@@ -234,10 +234,20 @@ class NavigatesGalaxy(HasDriver):
         with self.main_panel():
             form = self.wait_for_selector(self.navigation_data["selectors"]["loginPage"]["form"])
             self.fill(form, login_info)
+            self.snapshot("logging-in")
             self.click_submit(form)
 
+        self.snapshot("login-submitted")
         if assert_valid:
-            self.wait_for_logged_in()
+            try:
+                self.wait_for_logged_in()
+            except NotLoggedInException:
+                self.snapshot("login-failed")
+                if retries > 0:
+                    self.submit_login(email, password, assert_valid, retries - 1)
+                else:
+                    raise
+            self.snapshot("logged-in")
 
     def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True):
         if email is None:
@@ -302,10 +312,9 @@ class NavigatesGalaxy(HasDriver):
             if "username" in user_info:
                 template = "Failed waiting for masthead to update for login, but user API response indicates [%s] is logged in. This seems to be a bug in Galaxy. API response was [%s]. "
                 message = template % (user_info["username"], user_info)
+                raise self.prepend_timeout_message(e, message)
             else:
-                template = "Failed waiting for masthead to update for login, API indicates no user is logged in - there is a problem with this test. API response was [%s]. "
-                message = template % user_info
-            raise self.prepend_timeout_message(e, message)
+                raise NotLoggedInException(e, user_info)
 
     def click_center(self):
         action_chains = self.action_chains()
@@ -851,3 +860,18 @@ class NavigatesGalaxy(HasDriver):
             action_chains = self.action_chains()
             action_chains.move_to_element(select_elem).click().perform()
         self.wait_for_selector_absent_or_hidden("#select2-drop")
+
+    def snapshot(self, description):
+        """Test case subclass overrides this to provide detailed logging."""
+
+
+class NotLoggedInException(TimeoutException):
+
+    def __init__(self, timeout_exception, user_info):
+        template = "Waiting for UI to reflect user logged in but it did not occur. API indicates no user is currently logged in. API response was [%s]. %s"
+        msg = template % (user_info, timeout_exception.msg)
+        super(NotLoggedInException, self).__init__(
+            msg=msg,
+            screen=timeout_exception.screen,
+            stacktrace=timeout_exception.stacktrace
+        )

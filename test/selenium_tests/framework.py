@@ -83,15 +83,19 @@ def selenium_test(f):
                     result_name = f.__name__ + datetime.datetime.now().strftime("%Y%m%d%H%M%s")
                     target_directory = os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, result_name)
 
-                    def write_file(name, content):
+                    def write_file(name, content, raw=False):
                         with open(os.path.join(target_directory, name), "wb") as buf:
-                            buf.write(content.encode("utf-8"))
+                            buf.write(content.encode("utf-8") if not raw else content)
 
                     os.makedirs(target_directory)
                     self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
                     write_file("page_source.txt", self.driver.page_source)
                     write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
                     write_file("stacktrace.txt", traceback.format_exc())
+
+                    for snapshot in getattr(self, "snapshots", []):
+                        snapshot.write_to_error_directory(write_file)
+
                     for log_type in ["browser", "driver"]:
                         try:
                             write_file("%s.log.json" % log_type, json.dumps(self.driver.get_log(log_type)))
@@ -116,6 +120,22 @@ def selenium_test(f):
 retry_assertion_during_transitions = partial(retry_during_transitions, exception_check=lambda e: isinstance(e, AssertionError))
 
 
+class TestSnapshot(object):
+
+    def __init__(self, driver, index, description):
+        self.screenshot_binary = driver.get_screenshot_as_png()
+        self.description = description
+        self.index = index
+        self.exc = traceback.format_exc()
+        self.stack = traceback.format_stack()
+
+    def write_to_error_directory(self, write_file_func):
+        prefix = "%d-%s" % (self.index, self.description)
+        write_file_func("%s-screenshot.png" % prefix, self.screenshot_binary, raw=True)
+        write_file_func("%s-traceback.txt" % prefix, self.exc)
+        write_file_func("%s-stack.txt" % prefix, str(self.stack))
+
+
 class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
 
     framework_tool_and_types = True
@@ -130,6 +150,7 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
         else:
             self.target_url_from_selenium = self.url
         self.setup_driver_and_session()
+        self.snapshots = []
 
     def tearDown(self):
         exception = None
@@ -145,6 +166,9 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
 
         if exception is not None:
             raise exception
+
+    def snapshot(self, description):
+        self.snapshots.append(TestSnapshot(self.driver, len(self.snapshots), description))
 
     def reset_driver_and_session(self):
         self.tear_down_driver()

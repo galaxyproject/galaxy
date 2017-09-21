@@ -12,7 +12,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     def setUp(self):
         super(SavedHistoriesTestCase, self).setUp()
         self.home()
-        self.submit_login(self.user_email)
+        self.submit_login(self.user_email, retries=3)
 
     @selenium_test
     def test_saved_histories_list(self):
