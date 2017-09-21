@@ -779,6 +779,7 @@ nglims_config_file = tool-data/nglims.yaml
 
 # Verbosity of console log messages.  Acceptable values can be found here:
 # https://docs.python.org/2/library/logging.html#logging-levels
+# A custom debug level of "TRACE" is available for even more verbosity.
 #log_level = DEBUG
 
 # Print database operations to the server log (warning, quite verbose!).
