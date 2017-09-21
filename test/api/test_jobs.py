@@ -302,37 +302,38 @@ class JobsApiTestCase(api.ApiTestCase):
         self.assertEquals(search_count, 1)
 
     def test_search_with_hdca_input(self):
-        history_id, collection_id = self.__history_with_ok_collection()
+        history_id, list_id_a = self.__history_with_ok_collection(collection_type='list')
+        history_id, list_id_b = self.__history_with_ok_collection(collection_type='list', history_id=history_id)
 
-        inputs = json.dumps(
-            dict(
-                f1=dict(
-                    src='hdca',
-                    id=collection_id
-                ),
-                f2=dict(
-                    src='hdca',
-                    id=collection_id
-                ),
-            )
-        )
-
-        search_payload = dict(
-            tool_id = "multi_data_param",
-            inputs=inputs,
-            history_id=history_id,
-            state='ok'
-        )
-
+        inputs = json.dumps({
+            'f1': {'src': 'hdca', 'id': list_id_a},
+            'f2': {'src': 'hdca', 'id': list_id_b},
+        })
+        search_payload = self._search_payload(history_id=history_id, tool_id='multi_data_param', inputs=inputs)
+        empty_search_response = self._post("jobs/search", data=search_payload)
+        self._assert_status_code_is(empty_search_response, 200)
+        self.assertEquals(len(empty_search_response.json()), 0)
         self._post("tools", data=search_payload)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         search_count = self._search(search_payload)
-
         self.assertEquals(search_count, 1)
+        # We switch the inputs, this should not return a match
+        inputs = json.dumps({
+            'f2': {'src': 'hdca', 'id': list_id_a},
+            'f1': {'src': 'hdca', 'id': list_id_b},
+        })
+        search_payload = self._search_payload(history_id=history_id, tool_id='multi_data_param', inputs=inputs)
+        search_count = self._search(search_payload)
+        self.assertEquals(search_count, 0)
 
-        # inputs = {"tool_id":"multi_data_param","tool_version":"0.1.0","inputs":{"f1":{"values":[{"src":"hdca","name":"collection","tags":[],"keep":False,"hid":32,"id":"f2db41e1fa331b3e"}]},"f2":{"values":[{"src":"hdca","name":"collection","tags":[],"keep":false,"hid":32,"id":"f2db41e1fa331b3e"}]}}}
-
-        pass
+    def _search_payload(self, history_id, tool_id, inputs, state='ok'):
+        search_payload = dict(
+            tool_id=tool_id,
+            inputs=inputs,
+            history_id=history_id,
+            state=state
+        )
+        return search_payload
 
     def _search(self, payload):
         search_count = -1
@@ -396,10 +397,15 @@ class JobsApiTestCase(api.ApiTestCase):
         dataset_id = self.dataset_populator.new_dataset(history_id, wait=True)["id"]
         return history_id, dataset_id
 
-    def __history_with_ok_collection(self):
-        contents = ["a\tb\nc\td", "e\tf\ng\th"]
-        history_id = self.dataset_populator.new_history()
-        create_reposonse = self.dataset_collection_populator.create_list_in_history(history_id, contents=contents).json()
+    def __history_with_ok_collection(self, collection_type='list', history_id=None):
+        if not history_id:
+            history_id = self.dataset_populator.new_history()
+        if collection_type == 'list':
+            create_reposonse = self.dataset_collection_populator.create_list_in_history(history_id).json()
+        elif collection_type == 'pair':
+            create_reposonse = self.dataset_collection_populator.create_pair_in_history(history_id).json()
+        elif collection_type == 'list:pair':
+            create_reposonse = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id).json()
         self.dataset_collection_populator.wait_for_dataset_collection(create_reposonse)
         return history_id, create_reposonse['id']
 

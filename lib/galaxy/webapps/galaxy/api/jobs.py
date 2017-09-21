@@ -281,13 +281,14 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         inputs = payload['inputs']
 
         input_data = {}
+        decoded_input_data = {}
         input_param = {}
         for k, v in inputs.items():
             if isinstance(v, dict):
                 if 'id' in v:
+                    decoded_id = self.decode_id(v['id'])
                     if 'src' not in v or v['src'] == 'hda':
-                        hda_id = self.decode_id(v['id'])
-                        datasets = self.hda_manager.get_accessible(hda_id, trans.user)
+                        datasets = self.hda_manager.get_accessible(decoded_id, trans.user)
                     else:
                         if v['src'] == 'hdca':
                             hdca = self.dataset_collection_manager.get_dataset_collection_instance(trans=trans,
@@ -296,10 +297,14 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                                                                                                    )
                             datasets = hdca.dataset_instances
                         else:
-                            dataset = self.get_library_dataset_dataset_association(trans, v['id'])
+                            datasets = self.get_library_dataset_dataset_association(trans, v['id'])
                     if datasets is None:
                         raise exceptions.ObjectNotFound("Dataset %s not found" % (v['id']))
                     input_data[k] = [datasets.dataset_id] if isinstance(datasets, model.HistoryDatasetAssociation) else [d.dataset_id for d in datasets]
+                    decoded_input_data[k] = v.copy()
+                    decoded_input_data[k]['id'] = decoded_id
+                    decoded_input_data[k] = json.dumps({'values': [decoded_input_data[k]]})
+                    input_param.update(decoded_input_data)
             else:
                 input_param[k] = json.dumps(str(v))
 
@@ -337,7 +342,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                 a.value == v
             ))
 
-        for datasets in input_data.values():
+        for k, datasets in input_data.items():
             # Here we are attempting to link the inputs to the underlying
             # dataset (not the dataset association).
             # This way, if the calculation was done using a copied HDA
@@ -346,13 +351,11 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             for dataset in datasets:
                 a = aliased(trans.app.model.JobToInputDatasetAssociation)
                 b = aliased(trans.app.model.HistoryDatasetAssociation)
-                # TODO: I don't think this checks for the actual parameter name that the input matches to
-                # we may get a wrong result here
                 query = query.filter(and_(
                     trans.app.model.Job.id == a.job_id,
                     a.dataset_id == b.id,
                     b.deleted == false(),
-                    b.dataset_id == dataset
+                    b.dataset_id == dataset,
                 ))
 
         out = []
