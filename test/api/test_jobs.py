@@ -275,31 +275,10 @@ class JobsApiTestCase(api.ApiTestCase):
 
     def test_search(self):
         history_id, dataset_id = self.__history_with_ok_dataset()
-
-        inputs = json.dumps(
-            dict(
-                input1=dict(
-                    src='hda',
-                    id=dataset_id,
-                )
-            )
-        )
-        search_payload = dict(
-            tool_id="cat1",
-            inputs=inputs,
-            state="ok",
-        )
-
-        empty_search_response = self._post("jobs/search", data=search_payload)
-        self._assert_status_code_is(empty_search_response, 200)
-        self.assertEquals(len(empty_search_response.json()), 0)
-
-        self.__run_cat_tool(history_id, dataset_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-
-        search_count = self._search(search_payload)
-
-        self.assertEquals(search_count, 1)
+        inputs = json.dumps({
+            'input1': {'src': 'hda', 'id': dataset_id}
+        })
+        self._job_search(tool_id='cat1', history_id=history_id, inputs=inputs)
 
     def test_search_with_hdca_list_input(self):
         history_id, list_id_a = self.__history_with_ok_collection(collection_type='list')
@@ -308,7 +287,7 @@ class JobsApiTestCase(api.ApiTestCase):
             'f1': {'src': 'hdca', 'id': list_id_a},
             'f2': {'src': 'hdca', 'id': list_id_b},
         })
-        self._collection_job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
+        self._job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
         # We switch the inputs, this should not return a match
         inputs = json.dumps({
             'f2': {'src': 'hdca', 'id': list_id_a},
@@ -324,7 +303,7 @@ class JobsApiTestCase(api.ApiTestCase):
             'f1': {'src': 'hdca', 'id': list_id_a},
             'f2': {'src': 'hdca', 'id': list_id_a},
         })
-        self._collection_job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
+        self._job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
 
     def test_search_with_hdca_list_pair_input(self):
         history_id, list_id_a = self.__history_with_ok_collection(collection_type='list:pair')
@@ -332,9 +311,9 @@ class JobsApiTestCase(api.ApiTestCase):
             'f1': {'src': 'hdca', 'id': list_id_a},
             'f2': {'src': 'hdca', 'id': list_id_a},
         })
-        self._collection_job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
+        self._job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
 
-    def _collection_job_search(self, tool_id, history_id, inputs):
+    def _job_search(self, tool_id, history_id, inputs):
         search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
         empty_search_response = self._post("jobs/search", data=search_payload)
         self._assert_status_code_is(empty_search_response, 200)
@@ -369,20 +348,6 @@ class JobsApiTestCase(api.ApiTestCase):
         self._assert_status_code_is(search_response, 200)
         search_json = search_response.json()
         return len(search_json)
-
-    def __run_cat_tool(self, history_id, dataset_id):
-        # Code duplication with test_jobs.py, eliminate
-        payload = self.dataset_populator.run_tool_payload(
-            tool_id='cat1',
-            inputs=dict(
-                input1=dict(
-                    src='hda',
-                    id=dataset_id
-                ),
-            ),
-            history_id=history_id,
-        )
-        self._post("tools", data=payload)
 
     def __run_randomlines_tool(self, lines, history_id, dataset_id):
         payload = self.dataset_populator.run_tool_payload(
