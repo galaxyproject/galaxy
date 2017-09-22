@@ -1284,8 +1284,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     trans.log_event('History renamed: id: %s, renamed to: \'%s\'' % (str(history.id), new_name))
                     messages.append('History \'' + cur_name + '\' renamed to \'' + new_name + '\'.')
             return {'message': ' '.join(messages), 'status': 'success'}
-            #return trans.show_message(change_msg, refresh_frames=['history'])
-
 
 
     # ------------------------------------------------------------------------- current history
