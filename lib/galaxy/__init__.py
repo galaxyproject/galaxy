@@ -10,11 +10,3 @@ __path__ = extend_path(__path__, __name__)
 import zipfile
 if not hasattr(zipfile, 'BadZipFile'):
     zipfile.BadZipFile = zipfile.error
-
-# compat: patch to add the NullHandler class to logging
-import logging
-if not hasattr(logging, 'NullHandler'):
-    class NullHandler(logging.Handler):
-        def emit(self, record):
-            pass
-    logging.NullHandler = NullHandler
