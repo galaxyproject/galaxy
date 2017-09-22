@@ -516,6 +516,7 @@ class NavigatesGalaxy(HasDriver):
         tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
         tag_display.click()
 
+    @retry_during_transitions
     def workflow_index_tags(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
         tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
