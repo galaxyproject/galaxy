@@ -140,5 +140,17 @@ class HasDriver:
         )
 
 
+def execption_indicates_not_clickable(exception):
+    return "not clickable" in str(exception)
+
+
 def exception_indicates_stale_element(exception):
     return "stale" in str(exception)
+
+
+__all__ = (
+    "execption_indicates_not_clickable",
+    "exception_indicates_stale_element",
+    "HasDriver",
+    "TimeoutException",
+)

@@ -15,7 +15,12 @@ import requests
 import yaml
 
 from .data import NAVIGATION_DATA
-from .has_driver import exception_indicates_stale_element, HasDriver, TimeoutException
+from .has_driver import (
+    execption_indicates_not_clickable,
+    exception_indicates_stale_element,
+    HasDriver,
+    TimeoutException,
+)
 from . import sizzle
 
 # Test case data
@@ -28,7 +33,24 @@ class NullTourCallback(object):
         pass
 
 
-def retry_call_during_transitions(f, attempts=5, sleep=.1, exception_check=exception_indicates_stale_element):
+def excepion_seems_to_indicate_transition(e):
+    """True if exception seems to indicate the page state is transitioning.
+
+    Galaxy features many different transition effects that change the page state over time.
+    These transitions make it slightly more difficult to test Galaxy because atomic input
+    actions take an indeterminate amount of time to be reflected on the screen. This method
+    takes a Selenium assertion and tries to infer if such a transition could be the root
+    cause of the exception. The methods that follow use it to allow retrying actions during
+    transitions.
+
+    Currently the two kinds of exceptions that we say may indicate a transition are
+    StaleElement exceptions (a DOM element grabbed at one step is no longer available)
+    and "not clickable" exceptions (so perhaps a popup modal is blocking a click).
+    """
+    return exception_indicates_stale_element(e) or execption_indicates_not_clickable(e)
+
+
+def retry_call_during_transitions(f, attempts=5, sleep=.1, exception_check=excepion_seems_to_indicate_transition):
     previous_attempts = 0
     while True:
         try:
@@ -44,7 +66,7 @@ def retry_call_during_transitions(f, attempts=5, sleep=.1, exception_check=excep
             previous_attempts += 1
 
 
-def retry_during_transitions(f, attempts=5, sleep=.1, exception_check=exception_indicates_stale_element):
+def retry_during_transitions(f, attempts=5, sleep=.1, exception_check=excepion_seems_to_indicate_transition):
 
     @wraps(f)
     def _retry(*args, **kwds):
