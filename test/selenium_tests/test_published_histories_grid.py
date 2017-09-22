@@ -9,10 +9,6 @@ from .framework import (
 
 class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
-    def setUp(self):
-        super(HistoryGridTestCase, self).setUp()
-        self.home()
-
     @selenium_test
     def test_history_grid_histories(self):
         self.navigate_to_published_histories_page()

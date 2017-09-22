@@ -9,18 +9,15 @@ from .framework import (
 
 class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
-    def setUp(self):
-        super(SavedHistoriesTestCase, self).setUp()
-        self.home()
-        self.submit_login(self.user_email, retries=3)
-
     @selenium_test
     def test_saved_histories_list(self):
+        self._login()
         self.navigate_to_saved_histories_page()
         self.assert_histories_in_grid([self.history2_name, self.history3_name])
 
     @selenium_test
     def test_history_switch(self):
+        self._login()
         self.navigate_to_saved_histories_page()
         self.click_popup_option(self.history2_name, 'Switch')
         time.sleep(1)
@@ -29,6 +26,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     @selenium_test
     def test_history_view(self):
+        self._login()
         self.navigate_to_saved_histories_page()
         self.click_popup_option(self.history2_name, 'View')
         history_name = self.wait_for_selector('.name.editable-text')
@@ -36,6 +34,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     @selenium_test
     def test_history_publish(self):
+        self._login()
         self.navigate_to_saved_histories_page()
 
         # Publish the history
@@ -52,6 +51,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     @selenium_test
     def test_rename_history(self):
+        self._login()
         self.navigate_to_saved_histories_page()
 
         self.click_popup_option('Unnamed history', 'Rename')
@@ -72,6 +72,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     @selenium_test
     def test_delete_and_undelete_history(self):
+        self._login()
         self.navigate_to_saved_histories_page()
 
         # Delete the history
@@ -93,6 +94,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     @selenium_test
     def test_permanently_delete_history(self):
+        self._login()
         self.create_history(self.history4_name)
 
         self.navigate_to_saved_histories_page()
@@ -111,6 +113,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     @selenium_test
     def test_delete_and_undelete_multiple_histories(self):
+        self._login()
         self.navigate_to_saved_histories_page()
 
         delete_button_selector = 'input[type="button"][value="Delete"]'
@@ -139,6 +142,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     @selenium_test
     def test_sort_by_name(self):
+        self._login()
         self.navigate_to_saved_histories_page()
 
         self.wait_for_and_click_selector('.sort-link[sort_key="name"]')
@@ -156,6 +160,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     @selenium_test
     def test_standard_search(self):
+        self._login()
         self.navigate_to_saved_histories_page()
 
         input_selector = '#input-free-text-search-filter'
@@ -174,6 +179,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     @selenium_test
     def test_advanced_search(self):
+        self._login()
         self.navigate_to_saved_histories_page()
 
         self.show_advanced_search()
@@ -201,6 +207,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     @selenium_test
     def test_tags(self):
+        self._login()
         self.navigate_to_saved_histories_page()
 
         # Click the add tag button
@@ -220,6 +227,10 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         tag.click()
 
         self.assert_grid_histories_are([self.history2_name], False)
+
+    def _login(self):
+        self.home()
+        self.submit_login(self.user_email, retries=3)
 
     @retry_assertion_during_transitions
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
