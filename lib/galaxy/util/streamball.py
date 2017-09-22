@@ -1,6 +1,8 @@
 """
 A simple wrapper for writing tarballs as a stream.
 """
+from __future__ import absolute_import
+
 import logging
 import os
 import tarfile
