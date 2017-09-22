@@ -289,18 +289,27 @@ class JobsApiTestCase(api.ApiTestCase):
             'input1': {'src': 'hda', 'id': new_dataset_id}
         })
         search_payload = self._search_payload(history_id=history_id, tool_id='cat1', inputs=copied_inputs)
-        search_count = self._search(search_payload)
-        self.assertEquals(search_count, 1)
-        # Now we delete the original HDA that was used -- we should still be able to find the job
+        self._search(search_payload, expected_search_count=1)
+        # Now we delete the original input HDA that was used -- we should still be able to find the job
         delete_respone = self._delete("histories/%s/contents/%s" % (history_id, dataset_id))
         self._assert_status_code_is(delete_respone, 200)
-        search_count = self._search(search_payload)
-        self.assertEquals(search_count, 1)
+        self._search(search_payload, expected_search_count=1)
         # Now we also delete the copy -- we shouldn't find a job
-        delete_respone = self._delete("histories/%s/contents/%s" % (history_id, new_dataset_id))
+        delete_respone = self._delete("histories/%s/contents/%s" % (new_history_id, new_dataset_id))
         self._assert_status_code_is(delete_respone, 200)
-        search_count = self._search(search_payload)
-        self.assertEquals(search_count, 0)
+        self._search(search_payload, expected_search_count=0)
+
+    def test_search_delete_outputs(self):
+        history_id, dataset_id = self.__history_with_ok_dataset()
+        inputs = json.dumps({
+            'input1': {'src': 'hda', 'id': dataset_id}
+        })
+        tool_response = self._job_search(tool_id='cat1', history_id=history_id, inputs=inputs)
+        output_id = tool_response.json()['outputs'][0]['id']
+        delete_respone = self._delete("histories/%s/contents/%s" % (history_id, output_id))
+        self._assert_status_code_is(delete_respone, 200)
+        search_payload = self._search_payload(history_id=history_id, tool_id='cat1', inputs=inputs)
+        self._search(search_payload, expected_search_count=0)
 
     def test_search_with_hdca_list_input(self):
         history_id, list_id_a = self.__history_with_ok_collection(collection_type='list')
@@ -309,15 +318,41 @@ class JobsApiTestCase(api.ApiTestCase):
             'f1': {'src': 'hdca', 'id': list_id_a},
             'f2': {'src': 'hdca', 'id': list_id_b},
         })
-        self._job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
+        tool_response = self._job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
         # We switch the inputs, this should not return a match
-        inputs = json.dumps({
+        inputs_switched = json.dumps({
             'f2': {'src': 'hdca', 'id': list_id_a},
             'f1': {'src': 'hdca', 'id': list_id_b},
         })
+        search_payload = self._search_payload(history_id=history_id, tool_id='multi_data_param', inputs=inputs_switched)
+        self._search(search_payload, expected_search_count=0)
+        # We delete the ouput (this is a HDA, as multi_data_param reduces collections)
+        # and use the correct input job definition, the job should not be found
+        output_id = tool_response.json()['outputs'][0]['id']
+        delete_respone = self._delete("histories/%s/contents/%s" % (history_id, output_id))
+        self._assert_status_code_is(delete_respone, 200)
         search_payload = self._search_payload(history_id=history_id, tool_id='multi_data_param', inputs=inputs)
-        search_count = self._search(search_payload)
-        self.assertEquals(search_count, 0)
+        self._search(search_payload, expected_search_count=0)
+
+    def test_search_delete_hdca_output(self):
+        history_id, list_id_a = self.__history_with_ok_collection(collection_type='list')
+        inputs = json.dumps({
+            'input1': {'src': 'hdca', 'id': list_id_a},
+        })
+        tool_response = self._job_search(tool_id='collection_creates_list', history_id=history_id, inputs=inputs)
+        output_id = tool_response.json()['outputs'][0]['id']
+        # We delete a single tool output, no job should be returned
+        delete_respone = self._delete("histories/%s/contents/%s" % (history_id, output_id))
+        self._assert_status_code_is(delete_respone, 200)
+        search_payload = self._search_payload(history_id=history_id, tool_id='collection_creates_list', inputs=inputs)
+        self._search(search_payload, expected_search_count=0)
+        tool_response = self._job_search(tool_id='collection_creates_list', history_id=history_id, inputs=inputs)
+        output_collection_id = tool_response.json()['output_collections'][0]['id']
+        # We delete a collection output, no job should be returned
+        delete_respone = self._delete("histories/%s/contents/dataset_collections/%s" % (history_id, output_collection_id))
+        self._assert_status_code_is(delete_respone, 200)
+        search_payload = self._search_payload(history_id=history_id, tool_id='collection_creates_list', inputs=inputs)
+        self._search(search_payload, expected_search_count=0)
 
     def test_search_with_hdca_pair_input(self):
         history_id, list_id_a = self.__history_with_ok_collection(collection_type='pair')
@@ -337,18 +372,15 @@ class JobsApiTestCase(api.ApiTestCase):
             'f2': {'src': 'hdca', 'id': new_list_a},
         })
         search_payload = self._search_payload(history_id=new_history_id, tool_id='multi_data_param', inputs=copied_inputs)
-        search_count = self._search(search_payload)
-        self.assertEquals(search_count, 1)
-        # Now we delete the original HDCA that was used -- we should still be able to find the job
-        delete_respone = self._delete("histories/%s/contents/%s" % (history_id, list_id_a))
+        self._search(search_payload, expected_search_count=1)
+        # Now we delete the original input HDCA that was used -- we should still be able to find the job
+        delete_respone = self._delete("histories/%s/contents/dataset_collections/%s" % (history_id, list_id_a))
         self._assert_status_code_is(delete_respone, 200)
-        search_count = self._search(search_payload)
-        self.assertEquals(search_count, 1)
+        self._search(search_payload, expected_search_count=1)
         # Now we also delete the copy -- we shouldn't find a job
-        delete_respone = self._delete("histories/%s/contents/%s" % (history_id, new_list_a))
+        delete_respone = self._delete("histories/%s/contents/dataset_collections/%s" % (history_id, new_list_a))
         self._assert_status_code_is(delete_respone, 200)
-        search_count = self._search(search_payload)
-        self.assertEquals(search_count, 0)
+        self._search(search_payload, expected_search_count=0)
 
     def test_search_with_hdca_list_pair_input(self):
         history_id, list_id_a = self.__history_with_ok_collection(collection_type='list:pair')
@@ -363,10 +395,10 @@ class JobsApiTestCase(api.ApiTestCase):
         empty_search_response = self._post("jobs/search", data=search_payload)
         self._assert_status_code_is(empty_search_response, 200)
         self.assertEquals(len(empty_search_response.json()), 0)
-        self._post("tools", data=search_payload)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        search_count = self._search(search_payload)
-        self.assertEquals(search_count, 1)
+        tool_response = self._post("tools", data=search_payload)
+        self.dataset_populator.wait_for_tool_run(history_id, run_response=tool_response)
+        self._search(search_payload, expected_search_count=1)
+        return tool_response
 
     def _search_payload(self, history_id, tool_id, inputs, state='ok'):
         search_payload = dict(
@@ -377,15 +409,15 @@ class JobsApiTestCase(api.ApiTestCase):
         )
         return search_payload
 
-    def _search(self, payload):
-        search_count = -1
+    def _search(self, payload, expected_search_count=1):
         # in case job and history aren't updated at exactly the same
         # time give time to wait
-        for i in range(5):
+        for i in range(15):
             search_count = self._search_count(payload)
-            if search_count == 1:
+            if search_count == expected_search_count:
                 break
-            time.sleep(.1)
+            time.sleep(1)
+        assert search_count == expected_search_count, "expected to find %d jobs, got %d jobs" % (expected_search_count, search_count)
         return search_count
 
     def _search_count(self, search_payload):
@@ -393,20 +425,6 @@ class JobsApiTestCase(api.ApiTestCase):
         self._assert_status_code_is(search_response, 200)
         search_json = search_response.json()
         return len(search_json)
-
-    def __run_randomlines_tool(self, lines, history_id, dataset_id):
-        payload = self.dataset_populator.run_tool_payload(
-            tool_id="random_lines1",
-            inputs=dict(
-                num_lines=lines,
-                input=dict(
-                    src='hda',
-                    id=dataset_id,
-                ),
-            ),
-            history_id=history_id,
-        )
-        self._post("tools", data=payload)
 
     def __uploads_with_state(self, *states):
         jobs_response = self._get("jobs", data=dict(state=states))

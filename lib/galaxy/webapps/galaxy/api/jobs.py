@@ -8,7 +8,7 @@ import json
 import logging
 
 from six import string_types
-from sqlalchemy import and_, false, or_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import aliased
 
 from galaxy import exceptions
@@ -283,18 +283,14 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         input_data = {}
         decoded_input_data = {}
         input_param = {}
-        decoded_ids = []
         for k, v in inputs.items():
             if isinstance(v, dict):
                 if 'id' in v:
                     decoded_id = self.decode_id(v['id'])
                     if 'src' not in v or v['src'] == 'hda':
-                        datasets = [self.hda_manager.get_accessible(decoded_id, trans.user)]
-                        all_history_associations = []
-                        for dataset in datasets:
-                            instances = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).filter(trans.app.model.HistoryDatasetAssociation.dataset_id == dataset.dataset_id).all()
-                            all_history_associations.extend(instances)
-                        decoded_ids = set(h.id for h in all_history_associations)
+                        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
+                        datasets = trans.sa_session.query(model.HistoryDatasetAssociation).filter(model.HistoryDatasetAssociation.dataset_id == dataset.dataset_id).all()
+                        hda_ids = decoded_ids = set(h.id for h in datasets)
                     else:
                         if v['src'] == 'hdca':
                             hdca = self.dataset_collection_manager.get_dataset_collection_instance(trans=trans,
@@ -302,14 +298,25 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                                                                                                    id=v['id'],
                                                                                                    )
                             copied_from = getattr(hdca, 'copied_from_history_dataset_collection_association_id', None)
+                            if hdca.deleted and not copied_from:
+                                # We don't return the job if an input HDCA is marked as deleted -- it isn't necessary to be that strict,
+                                # we could also just rely on the individual datasets to not be deleted.
+                                return []
                             if copied_from:
                                 # TODO: fetch these recursively or come up with a DB query to fetch all possible hdca ids
+                                if hdca.deleted:
+                                    hdca = trans.sa_session.query(model.HistoryDatasetCollectionAssociation).filter(
+                                        model.HistoryDatasetCollectionAssociation.id == copied_from).first()
+                                    if hdca.deleted:
+                                        return []
                                 decoded_ids = [decoded_id, copied_from]
                             else:
                                 decoded_ids = [decoded_id]
                             datasets = hdca.dataset_instances
+                            hda_ids = set(h.id for h in datasets)
                         else:
-                            datasets = [self.get_library_dataset_dataset_association(trans, v['id'])]
+                            dataset = self.get_library_dataset_dataset_association(trans, v['id'])
+                            hda_ids = decoded_ids = dataset.id
                     if datasets is None:
                         raise exceptions.ObjectNotFound("Dataset %s not found" % (v['id']))
                     parameter_values = []
@@ -317,41 +324,45 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                         parameter_value = v.copy()
                         parameter_value['id'] = decoded_id
                         parameter_values.append(json.dumps({'values': [parameter_value]}))
-                        decoded_input_data[k] = parameter_values
-                    input_data[k] = [d.dataset_id for d in datasets]
+                    decoded_input_data[k] = parameter_values
+                    # We store the possible input hda ids keyed on input parameter if any of the
+                    # corresponding HDAs exists
+                    input_data[k] = hda_ids if any([d for d in datasets if not d.deleted]) else []
+                    if not input_data[k]:
+                        return []
             else:
                 input_param[k] = json.dumps(str(v))
 
-        query = trans.sa_session.query(trans.app.model.Job).filter(
-            trans.app.model.Job.tool_id == tool_id,
-            trans.app.model.Job.user == trans.user
+        query = trans.sa_session.query(model.Job).filter(
+            model.Job.tool_id == tool_id,
+            model.Job.user == trans.user
         )
 
         if 'state' not in payload:
             query = query.filter(
                 or_(
-                    trans.app.model.Job.state == 'running',
-                    trans.app.model.Job.state == 'queued',
-                    trans.app.model.Job.state == 'waiting',
-                    trans.app.model.Job.state == 'running',
-                    trans.app.model.Job.state == 'ok',
+                    model.Job.state == 'running',
+                    model.Job.state == 'queued',
+                    model.Job.state == 'waiting',
+                    model.Job.state == 'running',
+                    model.Job.state == 'ok',
                 )
             )
         else:
             if isinstance(payload['state'], string_types):
-                query = query.filter(trans.app.model.Job.state == payload['state'])
+                query = query.filter(model.Job.state == payload['state'])
             elif isinstance(payload['state'], list):
                 o = []
                 for s in payload['state']:
-                    o.append(trans.app.model.Job.state == s)
+                    o.append(model.Job.state == s)
                 query = query.filter(
                     or_(*o)
                 )
 
         for k, v in input_param.items():
-            a = aliased(trans.app.model.JobParameter)
+            a = aliased(model.JobParameter)
             query = query.filter(and_(
-                trans.app.model.Job.id == a.job_id,
+                model.Job.id == a.job_id,
                 a.name == k,
                 a.value == v
             ))
@@ -362,32 +373,27 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             # matches the right input data parameter for a job to be equivalent.
             # If we don't do this we return false positive jobs in case
             # a different combination of identical inputs has been used in a job.
-            a = aliased(trans.app.model.JobParameter)
+            a = aliased(model.JobParameter)
             query = query.filter(and_(
-                trans.app.model.Job.id == a.job_id,
+                model.Job.id == a.job_id,
                 a.name == k,
                 a.value.in_(v)
             ))
 
-        for k, datasets in input_data.items():
-            # Here we are attempting to link the inputs to the underlying
-            # dataset (not the dataset association).
-            # This way, if the calculation was done using a copied HDA
-            # (copied from the library or another history), the search will
-            # still find the job
-            a = aliased(trans.app.model.JobToInputDatasetAssociation)
-            b = aliased(trans.app.model.HistoryDatasetAssociation)
-            query = query.filter(and_(
-                trans.app.model.Job.id == a.job_id,
-                a.dataset_id == b.dataset_id,
-                b.deleted == false(),
-                b.dataset_id.in_(datasets),
-            ))
-
         out = []
         for job in query.all():
-            # check to make sure none of the output files have been deleted
-            if all(list(a.dataset.deleted is False for a in job.output_datasets)):
+            # check to make sure none of the output datasets or collections have been deleted
+            outputs_deleted = False
+            for hda in job.output_datasets:
+                if hda.dataset.deleted:
+                    outputs_deleted = True
+                    break
+            if not outputs_deleted:
+                for collection_instance in job.output_dataset_collection_instances:
+                    if collection_instance.dataset_collection_instance.deleted:
+                        outputs_deleted = True
+                        break
+            if not outputs_deleted:
                 out.append(self.encode_all_ids(trans, job.to_dict('element'), True))
         return out
 
