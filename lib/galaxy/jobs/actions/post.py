@@ -3,14 +3,14 @@ Actions to be run at job completion (or output hda creation, as in the case of
 immediate_actions listed below.  Currently only used in workflows.
 """
 import datetime
-import logging
 import socket
 
 from markupsafe import escape
 
 from galaxy.util import send_mail
+from galaxy.util.log import get_logger
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 
 class DefaultJobAction(object):
