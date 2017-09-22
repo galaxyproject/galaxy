@@ -1,5 +1,6 @@
 from .framework import (
     retry_assertion_during_transitions,
+    retry_during_transitions,
     selenium_test,
     SeleniumTestCase,
 )
@@ -73,20 +74,13 @@ class WorkflowManagementTestCase(SeleniumTestCase):
         self.workflow_index_rename("searchforthis")
         self._assert_showing_n_workflows(1)
 
-        search_box = self.workflow_index_click_search()
-        search_box.send_keys("doesnotmatch")
+        self._click_and_search("doesnotmatch")
         self._assert_showing_n_workflows(0)
 
-        # Prevent stale element textbox by re-fetching, seems to be
-        # needed but I don't understand why exactly. -John
-        search_box = self.workflow_index_click_search()
-        search_box.clear()
-        self.send_enter(search_box)
+        self._click_and_search()
         self._assert_showing_n_workflows(1)
 
-        search_box = self.workflow_index_click_search()
-        search_box.send_keys("searchforthis")
-        self.send_enter(search_box)
+        self._click_and_search("searchforthis")
         self._assert_showing_n_workflows(1)
 
     @selenium_test
@@ -108,6 +102,16 @@ class WorkflowManagementTestCase(SeleniumTestCase):
 
         self.workflow_index_open()
         assert_published_column_text_is("Yes")
+
+    @retry_during_transitions
+    def _click_and_search(self, search_term=None):
+        # Allow default search_term of None to just clear search
+        search_box = self.workflow_index_click_search()
+        search_box.clear()
+        if search_term is not None:
+            search_box.send_keys(search_term)
+        self.send_enter(search_box)
+        return search_box
 
     @retry_assertion_during_transitions
     def _assert_showing_n_workflows(self, n):
