@@ -223,11 +223,26 @@ class NavigatesGalaxy(HasDriver):
             raise self.prepend_timeout_message(e, message)
         return history_item_selector_state
 
+    def published_grid_search_for(self, search_term=None):
+        return self._inline_search_for(
+            '#input-free-text-search-filter',
+            search_term,
+        )
+
     def get_logged_in_user(self):
         return self.api_get("users/current")
 
     def is_logged_in(self):
         return "email" in self.get_logged_in_user()
+
+    @retry_during_transitions
+    def _inline_search_for(self, selector, search_term=None):
+        search_box = self.wait_for_and_click_selector(selector)
+        search_box.clear()
+        if search_term is not None:
+            search_box.send_keys(search_term)
+        self.send_enter(search_box)
+        return search_box
 
     def _get_random_name(self, prefix=None, suffix=None, len=10):
         return '%s%s%s' % (
@@ -501,6 +516,12 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_click_search(self):
         return self.wait_for_and_click_selector("input.search-wf")
+
+    def workflow_index_search_for(self, search_term=None):
+        return self._inline_search_for(
+            "input.search-wf",
+            search_term,
+        )
 
     def workflow_index_click_import(self):
         self.wait_for_and_click_selector(self.test_data["selectors"]["workflows"]["import_button"])
