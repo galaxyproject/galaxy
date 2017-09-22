@@ -1,6 +1,8 @@
 """
 Classes for wrapping Objects and Sanitizing string output.
 """
+from __future__ import absolute_import
+
 import collections
 import inspect
 import logging

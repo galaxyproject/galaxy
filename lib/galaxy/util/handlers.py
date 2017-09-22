@@ -3,6 +3,7 @@
 A 'handler' is a named Python process running the Galaxy application responsible
 for some activity such as queuing up jobs or scheduling workflows.
 """
+from __future__ import absolute_import
 
 import logging
 import os
