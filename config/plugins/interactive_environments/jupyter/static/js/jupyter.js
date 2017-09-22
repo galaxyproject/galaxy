@@ -38,6 +38,7 @@ function load_notebook(password, notebook_login_url, notebook_access_url){
     // we've successfully connected to the IE.
     test_ie_availability(notebook_login_url, function(){
         _handle_notebook_loading(password, notebook_login_url, notebook_access_url);
+        keep_alive();
     });
 }
 
@@ -48,34 +49,38 @@ function keep_alive(){
     * this function is not constantly pinging the container, the container will
     * terminate itself.
     */
-
-    var request_count = 0;
-    interval = setInterval(function(){
-        $.ajax({
-            url: notebook_access_url,
-            xhrFields: {
-                withCredentials: true
-            },
-            type: "GET",
-            timeout: 500,
-            success: function(){
-                console.log("Connected to IE, returning");
-            },
-            error: function(jqxhr, status, error){
-                request_count++;
-                console.log("Request " + request_count);
-                if(request_count > 30){
-                    clearInterval(interval);
-                    clear_main_area();
-                    toastr.error(
-                        "Could not connect to IE, contact your administrator",
-                        "Error",
-                        {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': false}
-                    );
-                }
-            }
-        });
-    }, 30000);
+    var warn_at = 4;
+    var count_max = 60;
+    var spin_state = make_spin_state("IE keep alive", 2000, 8000, 250, 15, 15, 0);
+    var success = function() {
+        console.log("IE is alive");
+        toastr.clear()
+        if(spin_state.count >= warn_at){
+            toastr.clear();
+            toastr.success(
+                "Interactive environment connection restored",
+                {'closeButton': true, 'timeOut': 5000, 'tapToDismiss': true}
+            );
+        }
+        spin_state.count = 0;
+    }
+    var timeout = function() {
+        console.log("IE keep alive request failed " + spin_state.count + " time(s) of " + count_max + " max");
+        if(request_count == warn_at){
+            toastr.warning(
+                "Your browser has been unable to contact the interactive environment for "
+                + warn_at * spin_state.sleep + " secounds, if you do not reestablish"
+                + " a connection, your IE container may be terminated.",
+                {'closeButton': true, 'tapToDismiss': false}
+            );
+        }else if(spin_state.count > count_max){
+            make_error_callback("IE timeout limit reached", "Lost connection to interactive environment, contact your administrator", true)();
+        }
+    }
+    var error = function() {
+        console.log("IE keep alive request error: " + error);
+    }
+    spin(notebook_access_url, false, success, timeout, error, spin_state);
 }
 
 
