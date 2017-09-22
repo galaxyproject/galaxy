@@ -277,8 +277,10 @@ class PulsarJobRunner(AsynchronousJobRunner):
             dependencies_description = PulsarJobRunner.__dependencies_description(client, job_wrapper)
             rewrite_paths = not PulsarJobRunner.__rewrite_parameters(client)
             unstructured_path_rewrites = {}
+            output_names = []
             if compute_environment:
                 unstructured_path_rewrites = compute_environment.unstructured_path_rewrites
+                output_names = compute_environment.output_names()
 
             client_job_description = ClientJobDescription(
                 command_line=command_line,
@@ -292,6 +294,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 env=client.env,
                 rewrite_paths=rewrite_paths,
                 arbitrary_files=unstructured_path_rewrites,
+                touch_outputs=output_names,
             )
             job_id = pulsar_submit_job(client, client_job_description, remote_job_config)
             log.info("Pulsar job submitted with job_id %s" % job_id)
@@ -782,6 +785,10 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         if new_version_path:
             version_path = new_version_path
         self._version_path = version_path
+
+    def output_names(self):
+        # Maybe this should use the path mapper, but the path mapper just uses basenames
+        return self.job_wrapper.get_output_basenames()
 
     def output_paths(self):
         local_output_paths = self._wrapper_output_paths
