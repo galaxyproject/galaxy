@@ -819,6 +819,18 @@ class NavigatesGalaxy(HasDriver):
             self.click_center()
         return text
 
+    @retry_during_transitions
+    def assert_selector_absent_or_hidden_after_transitions(self, selector):
+        """Variant of assert_selector_absent_or_hidden that retries during transitions.
+
+        In the parent method - the element is found and then it is checked to see
+        if it is visible. It may disappear from the page in the middle there
+        and cause a StaleElement error. For checks where we care about the final
+        resting state after transitions - this method can be used to retry
+        during those transitions.
+        """
+        return self.assert_selector_absent_or_hidden(selector)
+
     def assert_tooltip_text(self, element, expected, sleep=0, click_away=True):
         text = self.get_tooltip_text(element, sleep=sleep, click_away=click_away)
         assert text == expected, "Tooltip text [%s] was not expected text [%s]." % (text, expected)
