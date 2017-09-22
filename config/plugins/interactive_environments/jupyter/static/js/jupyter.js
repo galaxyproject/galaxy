@@ -51,7 +51,9 @@ function keep_alive(){
     */
     var warn_at = 4;
     var count_max = 60;
-    var spin_state = make_spin_state("IE keep alive", 2000, 8000, 250, 15, 15, 0);
+    // we sleep 15 seconds between requests and the default timeout for the
+    // Jupyter container is 120 seconds, so start with a pretty high ajax timeout
+    var spin_state = make_spin_state("IE keep alive", 8000, 16000, 2000, 15000, 15000, 0, false);
     var success = function() {
         console.log("IE is alive");
         toastr.clear()
@@ -59,27 +61,30 @@ function keep_alive(){
             toastr.clear();
             toastr.success(
                 "Interactive environment connection restored",
-                {'closeButton': true, 'timeOut': 5000, 'tapToDismiss': true}
+                {'closeButton': true, 'timeOut': 3000, 'extendedTimeout': 5000, 'tapToDismiss': true}
             );
         }
         spin_state.count = 0;
+        spin_again(spin_state);
     }
     var timeout = function() {
         console.log("IE keep alive request failed " + spin_state.count + " time(s) of " + count_max + " max");
-        if(request_count == warn_at){
+        if(spin_state.count == warn_at){
             toastr.warning(
                 "Your browser has been unable to contact the interactive environment for "
-                + warn_at * spin_state.sleep + " secounds, if you do not reestablish"
+                + warn_at * (spin_state.sleep / 1000) + " seconds, if you do not reestablish"
                 + " a connection, your IE container may be terminated.",
-                {'closeButton': true, 'tapToDismiss': false}
+                {'closeButton': true, 'timeOut': 0, 'extendedTimeout': 0, 'tapToDismiss': false}
             );
         }else if(spin_state.count > count_max){
             make_error_callback("IE timeout limit reached", "Lost connection to interactive environment, contact your administrator", true)();
         }
     }
+    // FIXME: we probably want to treat timeouts and 502s the same here as well (could just be a proxy error that might recover), although I think we probably ought to give up on 502s quicker than timeouts.
     var error = function() {
         console.log("IE keep alive request error: " + error);
     }
+    console.log("IE keep alive worker starting");
     spin(notebook_access_url, false, success, timeout, error, spin_state);
 }
 
