@@ -26,6 +26,9 @@ from . import sizzle
 # Test case data
 DEFAULT_PASSWORD = '123456'
 
+RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT = .1
+RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT = 10
+
 
 class NullTourCallback(object):
 
@@ -50,7 +53,7 @@ def excepion_seems_to_indicate_transition(e):
     return exception_indicates_stale_element(e) or execption_indicates_not_clickable(e)
 
 
-def retry_call_during_transitions(f, attempts=5, sleep=.1, exception_check=excepion_seems_to_indicate_transition):
+def retry_call_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT, sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT, exception_check=excepion_seems_to_indicate_transition):
     previous_attempts = 0
     while True:
         try:
@@ -66,7 +69,7 @@ def retry_call_during_transitions(f, attempts=5, sleep=.1, exception_check=excep
             previous_attempts += 1
 
 
-def retry_during_transitions(f, attempts=5, sleep=.1, exception_check=excepion_seems_to_indicate_transition):
+def retry_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT, sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT, exception_check=excepion_seems_to_indicate_transition):
 
     @wraps(f)
     def _retry(*args, **kwds):
