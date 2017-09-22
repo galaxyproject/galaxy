@@ -8,7 +8,7 @@ import socket
 from markupsafe import escape
 
 from galaxy.util import send_mail
-from galaxy.util.log import get_logger
+from galaxy.util.logging import get_logger
 
 log = get_logger(__name__)
 

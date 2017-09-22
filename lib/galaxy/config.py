@@ -29,7 +29,7 @@ from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util import unicodify
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.util.log import LOGLV_TRACE
+from galaxy.util.logging import LOGLV_TRACE
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.web.stack import register_postfork_function
 from .version import VERSION_MAJOR
