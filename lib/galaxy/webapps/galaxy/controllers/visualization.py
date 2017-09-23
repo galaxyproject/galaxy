@@ -276,9 +276,9 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
     @web.expose
     @web.json
     @web.require_login("use Galaxy visualizations", use_panels=True)
-    def list(self, trans, *args, **kwargs):
-
-        # Handle operation
+    def list(self, trans, **kwargs):
+        message = kwargs.get('message')
+        status = kwargs.get('status')
         if 'operation' in kwargs and 'id' in kwargs:
             session = trans.sa_session
             operation = kwargs['operation'].lower()
@@ -294,7 +294,10 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         # Build grid
         kwargs['embedded'] = True
         kwargs['dict_format'] = True
-        grid = self._visualization_list_grid(trans, *args, **kwargs)
+        if message and status:
+            kwargs['message'] = sanitize_text(message)
+            kwargs['status'] = status
+        grid = self._visualization_list_grid(trans, **kwargs)
         grid['shared_by_others'] = self._get_shared(trans)
         return grid
 
