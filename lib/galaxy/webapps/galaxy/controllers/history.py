@@ -1251,9 +1251,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         id = listify(id)
         histories = []
         for history_id in id:
-            history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
-            if history and history.user_id == user.id:
-                histories.append(history)
+            h = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+            if h and h.user_id == user.id:
+                histories.append(h)
         if trans.request.method == 'GET':
             return {
                 'title'  : 'Change history name(s)',
@@ -1272,18 +1272,17 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 if not isinstance(new_name, string_types) or not new_name.strip():
                     messages.append('You must specify a valid name for History \'%s\'.' % cur_name)
                 # skip if not the owner
-                elif history.user_id != user.id:
+                elif h.user_id != user.id:
                     messages.append('History \'%s\' does not appear to belong to you.' % cur_name)
                 # skip if it wouldn't be a change
                 elif new_name != cur_name:
                     # escape, sanitize, set, and log the change
-                    new_name = escape(new_name)
-                    history.name = sanitize_html(new_name)
-                    trans.sa_session.add(history)
+                    h.name = sanitize_html(escape(new_name))
+                    trans.sa_session.add(h)
                     trans.sa_session.flush()
-                    trans.log_event('History renamed: id: %s, renamed to: \'%s\'' % (str(history.id), new_name))
+                    trans.log_event('History renamed: id: %s, renamed to: %s' % (str(h.id), new_name))
                     messages.append('History \'' + cur_name + '\' renamed to \'' + new_name + '\'.')
-            return {'message': ' '.join(messages), 'status': 'success'}
+            return {'message': sanitize_text(' '.join(messages)), 'status': 'success'}
 
 
     # ------------------------------------------------------------------------- current history
