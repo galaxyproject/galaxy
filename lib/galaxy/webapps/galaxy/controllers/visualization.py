@@ -622,7 +622,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 'title'  : 'Edit visualization attributes',
                 'inputs' : [{
                     'name'  : 'title',
-                    'label' : 'Title',
+                    'label' : 'Name',
                     'value' : v.title
                 }, {
                     'name'  : 'slug',
@@ -637,7 +637,25 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 }]
             }
         else:
-            return {'message': '', 'status': 'success'}
+            v_title = payload.get('title')
+            v_slug = payload.get('slug')
+            v_annotation = payload.get('annotation')
+            if not v_title:
+                return message_exception(trans, 'Please provide a visualization name is required.')
+            elif not v_slug:
+                return message_exception(trans, 'Please provide a unique identifier.')
+            elif not self._is_valid_slug(v_slug):
+                return message_exception(trans, 'Visualization identifier must consist of only lowercase letters, numbers, and the \'-\' character.')
+            elif v_slug != v.slug and trans.sa_session.query(model.Visualization).filter_by(user=v.user, slug=v_slug, deleted=False).first():
+                return message_exception(trans, 'Visualization id must be unique.')
+            else:
+                v.title = v_title
+                v.slug = v_slug
+                if v_annotation:
+                    v_annotation = sanitize_html(v_annotation, 'utf-8', 'text/html')
+                    self.add_item_annotation(trans.sa_session, trans.get_user(), v, v_annotation)
+                #trans.session.flush()
+            return {'message': 'Attributes successfully saved.', 'status': 'success'}
 
     # ------------------------- registry.
     @web.expose
