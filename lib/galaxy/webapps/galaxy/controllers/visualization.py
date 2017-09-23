@@ -170,12 +170,8 @@ class VisualizationListGrid(grids.Grid):
             cols_to_filter=[columns[0], columns[2]],
             key="free-text-search", visible=False, filterable="standard")
     )
-    global_actions = [
-        grids.GridAction("Create new visualization", dict(action='create'), target="inbound")
-    ]
     operations = [
         grids.GridOperation("Open", allow_multiple=False, url_args=get_url_args),
-        grids.GridOperation("Open in Circster", allow_multiple=False, condition=(lambda item: item.type == 'trackster'), url_args=dict(action='circster')),
         grids.GridOperation("Edit Attributes", allow_multiple=False, url_args=dict(controller="", action='visualizations/edit')),
         grids.GridOperation("Copy", allow_multiple=False, condition=(lambda item: not item.deleted)),
         grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
@@ -550,45 +546,6 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         visualization_config = self.get_visualization_config(trans, visualization)
         return trans.fill_template_mako("visualization/item_content.mako", encoded_id=trans.security.encode_id(visualization.id),
                                         item=visualization, item_data=visualization_config, content_only=True)
-
-    @web.expose
-    @web.require_login("create visualizations")
-    def create(self, trans, visualization_title="", visualization_slug="", visualization_annotation="", visualization_dbkey="",
-               visualization_type=""):
-        """
-        Creates a new visualization or returns a form for creating visualization.
-        """
-        visualization_title_err = visualization_slug_err = visualization_annotation_err = ""
-        if trans.request.method == "POST":
-            rval = self.create_visualization(trans, title=visualization_title,
-                                             slug=visualization_slug,
-                                             annotation=visualization_annotation,
-                                             dbkey=visualization_dbkey,
-                                             type=visualization_type)
-            if isinstance(rval, dict):
-                # Found error creating viz.
-                visualization_title_err = rval['title_err']
-                visualization_slug_err = rval['slug_err']
-            else:
-                # Successfully created viz.
-                return trans.response.send_redirect(web.url_for(controller='visualizations', action='list'))
-
-        viz_type_options = [(t, t) for t in self.viz_types]
-        return trans.show_form(
-            web.FormBuilder(web.url_for(controller='visualization', action='create'), "Create new visualization", submit_text="Submit")
-            .add_text("visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err)
-            .add_select("visualization_type", "Type", options=viz_type_options, error=None)
-            .add_text("visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
-                      help="""A unique identifier that will be used for
-                            public links to this visualization. A default is generated
-                            from the visualization title, but can be edited. This field
-                            must contain only lowercase letters, numbers, and
-                            the '-' character.""")
-            .add_select("visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=trans.app.genomes.get_dbkeys(trans, chrom_info=True), error=None)
-            .add_text("visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
-                      help="A description of the visualization; annotation is shown alongside published visualizations."),
-            template="visualization/create.mako"
-        )
 
     @web.json
     def save(self, trans, vis_json=None, type=None, id=None, title=None, dbkey=None, annotation=None):

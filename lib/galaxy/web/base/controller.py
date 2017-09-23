@@ -634,8 +634,6 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
     Mixin for controllers that use Visualization objects.
     """
 
-    viz_types = ["trackster"]
-
     def get_visualization(self, trans, id, check_ownership=True, check_accessible=False):
         """
         Get a Visualization from the database by id, verifying ownership.
