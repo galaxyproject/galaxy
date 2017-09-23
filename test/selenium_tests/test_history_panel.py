@@ -92,7 +92,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         hda_body_selector = self.hda_body_selector(hda_id)
         self.assert_selector_absent_or_hidden(hda_body_selector)
 
-        self.click_hda_title(hda_id, wait=True)
+        self.history_panel_click_item_title(hda_id, wait=True)
         self.wait_for_selector_visible(hda_body_selector)
 
         self.history_panel_refresh_click()
@@ -100,7 +100,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         title_selector = self.hda_div_selector(hda_id)
         self.wait_for_selector_visible(hda_body_selector)
 
-        self.click_hda_title(hda_id, wait=True)
+        self.history_panel_click_item_title(hda_id, wait=True)
         self.history_panel_refresh_click()
 
         self.wait_for_selector(title_selector)

@@ -21,12 +21,13 @@ class HistoryOptionsTestCase(SeleniumTestCase):
 
         self.assert_selector_absent_or_hidden(menu_selector)
 
-        hda_id = self.latest_history_item()["id"]
-        self.click_hda_title(hda_id, wait=True)
+        hda = self.latest_history_item()
+        hid = hda["hid"]
+        self.history_panel_click_item_title(hid=hid, wait=True)
 
-        hda_body_selector = self.hda_body_selector(hda_id)
+        hda_body_selector = self.hda_body_selector(hda["id"])
         self.wait_for_selector_visible(hda_body_selector)
 
-        self.click_hda_title(hda_id, wait=True)
+        self.history_panel_click_item_title(hid=hid, wait=True)
 
         self.assert_selector_absent_or_hidden_after_transitions(hda_body_selector)

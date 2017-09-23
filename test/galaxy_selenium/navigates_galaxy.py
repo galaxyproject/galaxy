@@ -791,10 +791,6 @@ class NavigatesGalaxy(HasDriver):
             else:
                 self.wait_for_selector_visible(details_selector)
 
-    def click_hda_title(self, hda_id, wait=False):
-        # TODO: Replace with calls to history_panel_click_item_title.
-        return self.history_panel_click_item_title(hda_id=hda_id, wait=wait)
-
     def collection_builder_set_name(self, name):
         name_element = self.wait_for_selector_visible("input.collection-name")
         name_element.send_keys(name)
