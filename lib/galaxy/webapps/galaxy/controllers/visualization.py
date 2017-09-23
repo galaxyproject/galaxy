@@ -11,7 +11,7 @@ from sqlalchemy import and_, desc, false, or_, true
 from galaxy import managers, model, util, web
 from galaxy.datatypes.interval import Bed
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
-from galaxy.util import unicodify
+from galaxy.util import sanitize_text, unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.data_providers.genome import RawBedDataProvider
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
@@ -273,8 +273,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         grid['shared_by_others'] = self._get_shared(trans)
         return grid
 
-    @web.expose
-    @web.json
+    @web.expose_api
     @web.require_login("use Galaxy visualizations", use_panels=True)
     def list(self, trans, **kwargs):
         message = kwargs.get('message')
@@ -290,8 +289,6 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 if operation == "copy":
                     self.copy(trans, **kwargs)
             session.flush()
-
-        # Build grid
         kwargs['embedded'] = True
         kwargs['dict_format'] = True
         if message and status:
