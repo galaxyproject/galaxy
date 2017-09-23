@@ -659,6 +659,11 @@ class NavigatesGalaxy(HasDriver):
         menu_selector = self.test_data["historyOptions"]["selectors"]["menu"]
         return menu_selector
 
+    @retry_during_transitions
+    def histories_click_advanced_search(self):
+        search_selector = '#standard-search .advanced-search-toggle'
+        self.wait_for_and_click_selector(search_selector)
+
     def history_panel_add_tags(self, tags):
         tag_icon_selector = self.test_data['historyPanel']['selectors']['history']['tagIcon']
         tag_area_selector = self.test_data['historyPanel']['selectors']['history']['tagArea']

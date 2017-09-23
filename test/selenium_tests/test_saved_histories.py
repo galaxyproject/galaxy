@@ -43,7 +43,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         self.navigate_to_saved_histories_page()
 
-        self.show_advanced_search()
+        self.histories_click_advanced_search()
         self.select_filter('sharing', 'published')
         time.sleep(1)
 
@@ -80,7 +80,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_grid([self.history2_name], False)
 
-        self.show_advanced_search()
+        self.histories_click_advanced_search()
         self.select_filter('deleted', 'True')
         time.sleep(1)
 
@@ -106,7 +106,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_grid([self.history4_name], False)
 
-        self.show_advanced_search()
+        self.histories_click_advanced_search()
         self.select_filter('deleted', 'True')
 
         self.assert_histories_in_grid([self.history4_name])
@@ -125,7 +125,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_grid([self.history2_name, self.history3_name], False)
 
-        self.show_advanced_search()
+        self.histories_click_advanced_search()
         self.select_filter('deleted', 'True')
         time.sleep(1)
 
@@ -182,7 +182,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_saved_histories_page()
 
-        self.show_advanced_search()
+        self.histories_click_advanced_search()
 
         name_filter_selector = '#input-name-filter'
         tags_filter_selector = '#input-tags-filter'
@@ -298,10 +298,6 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.home()
         self.click_history_option('Create New')
         self.history_panel_rename(name)
-
-    def show_advanced_search(self):
-        search_selector = '#standard-search .advanced-search-toggle'
-        self.wait_for_and_click_selector(search_selector)
 
     def select_filter(self, filter_key, filter_value):
         filter_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
