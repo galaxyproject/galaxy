@@ -1250,9 +1250,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         id = listify(id)
         histories = []
         for history_id in id:
-            h = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
-            if h and h.user_id == user.id:
-                histories.append(h)
+            history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+            if history and history.user_id == user.id:
+                histories.append(history)
         if trans.request.method == 'GET':
             return {
                 'title'  : 'Change history name(s)',
@@ -1283,7 +1283,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     messages.append('History \'' + cur_name + '\' renamed to \'' + new_name + '\'.')
             message = sanitize_text(' '.join(messages)) if messages else 'History names remain unchanged.'
             return {'message': message, 'status': 'success'}
-
 
     # ------------------------------------------------------------------------- current history
     @web.expose
