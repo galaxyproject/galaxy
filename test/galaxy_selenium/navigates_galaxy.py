@@ -755,10 +755,14 @@ class NavigatesGalaxy(HasDriver):
         else:
             item_selector = self.history_panel_item_selector(kwds["hid"])
         title_selector = "%s .title" % item_selector
+        details_selector = "%s .details" % item_selector
+        details_displayed = self.selector_is_displayed(details_selector)
         self.wait_for_and_click_selector(title_selector)
         if kwds.get("wait", False):
-            # Find a better way to wait for transition
-            time.sleep(.5)
+            if details_displayed:
+                self.wait_for_selector_absent_or_hidden(details_selector)
+            else:
+                self.wait_for_selector_visible(details_selector)
 
     def click_hda_title(self, hda_id, wait=False):
         # TODO: Replace with calls to history_panel_click_item_title.
