@@ -84,24 +84,25 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_refresh_preserves_state(self):
+        refresh_wait = .5
         self.register()
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
 
-        hda_id = self.latest_history_item()["id"]
-        hda_body_selector = self.hda_body_selector(hda_id)
-        self.assert_selector_absent_or_hidden(hda_body_selector)
-
-        self.history_panel_click_item_title(hda_id, wait=True)
-        self.wait_for_selector_visible(hda_body_selector)
-
+        # Open the details, verify they are open and do a refresh.
+        self.history_panel_ensure_showing_item_details(hid=1)
+        self.history_panel_item_body_selector(1, wait=True)
         self.history_panel_refresh_click()
 
-        title_selector = self.hda_div_selector(hda_id)
-        self.wait_for_selector_visible(hda_body_selector)
+        # After the refresh, verify the details are still open.
+        time.sleep(refresh_wait)
+        self.wait_for_selector_clickable(self.history_panel_item_selector(hid=1))
+        assert self.history_panel_item_showing_details(hid=1)
 
-        self.history_panel_click_item_title(hda_id, wait=True)
+        # Close the detailed display, refresh, and ensure they are still closed.
+        self.history_panel_click_item_title(hid=1, wait=True)
+        assert not self.history_panel_item_showing_details(hid=1)
         self.history_panel_refresh_click()
-
-        self.wait_for_selector(title_selector)
-        self.assert_selector_absent_or_hidden(hda_body_selector)
+        time.sleep(refresh_wait)
+        self.wait_for_selector_clickable(self.history_panel_item_selector(hid=1))
+        assert not self.history_panel_item_showing_details(hid=1)
