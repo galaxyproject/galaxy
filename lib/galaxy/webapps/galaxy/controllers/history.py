@@ -247,7 +247,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         current_history = trans.get_history()
         message = kwargs.get('message')
         status = kwargs.get('status')
-        print kwargs
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
             history_ids = listify(kwargs.get('id', []))
