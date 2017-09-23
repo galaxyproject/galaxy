@@ -607,55 +607,36 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
 
     @web.expose_api
     @web.require_login("edit visualizations")
-    def edit(self, trans, payload=None, **kwds):
+    def edit(self, trans, payload=None, **kwd):
         """
         Edit a visualization's attributes.
         """
-        return {'title': 'test', 'inputs': []}
-        #, id, visualization_title="", visualization_slug="", visualization_annotation=""
-        visualization = self.get_visualization(trans, id, check_ownership=True)
-        session = trans.sa_session
-
-        visualization_title_err = visualization_slug_err = visualization_annotation_err = ""
-        if trans.request.method == "POST":
-            if not visualization_title:
-                visualization_title_err = "Visualization name is required"
-            elif not visualization_slug:
-                visualization_slug_err = "Visualization id is required"
-            elif not self._is_valid_slug(visualization_slug):
-                visualization_slug_err = "Visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-            elif visualization_slug != visualization.slug and trans.sa_session.query(model.Visualization).filter_by(user=visualization.user, slug=visualization_slug, deleted=False).first():
-                visualization_slug_err = "Visualization id must be unique"
-            else:
-                visualization.title = visualization_title
-                visualization.slug = visualization_slug
-                if visualization_annotation != "":
-                    visualization_annotation = sanitize_html(visualization_annotation, 'utf-8', 'text/html')
-                    self.add_item_annotation(trans.sa_session, trans.get_user(), visualization, visualization_annotation)
-                session.flush()
-                # Redirect to visualization list.
-                return trans.response.send_redirect(web.url_for(controller='visualizations', action='list'))
+        id = kwd.get('id')
+        if not id:
+            return message_exception(trans, 'No visualization id received for editing.')
+        v = self.get_visualization(trans, id, check_ownership=True)
+        if trans.request.method == 'GET':
+            if v.slug is None:
+                self.create_item_slug(trans.sa_session, v)
+            return {
+                'title'  : 'Edit visualization attributes',
+                'inputs' : [{
+                    'name'  : 'title',
+                    'label' : 'Visualization title',
+                    'value' : v.title
+                }, {
+                    'name'  : 'slug',
+                    'label' : 'Visualization identifier',
+                    'value' : v.slug,
+                    'help'  : 'A unique identifier that will be used for public links to this visualization. A default is generated from the visualization title, but can be edited. This field must contain only lowercase letters, numbers, and the \'-\' character.'
+                }, {
+                    'name'  : 'annotation',
+                    'label' : 'Visualization annotation',
+                    'value' : self.get_item_annotation_str(trans.sa_session, trans.user, v)
+                }]
+            }
         else:
-            visualization_title = visualization.title
-            # Create slug if it's not already set.
-            if visualization.slug is None:
-                self.create_item_slug(trans.sa_session, visualization)
-            visualization_slug = visualization.slug
-            visualization_annotation = self.get_item_annotation_str(trans.sa_session, trans.user, visualization)
-            if not visualization_annotation:
-                visualization_annotation = ""
-        return trans.show_form(
-            web.FormBuilder(web.url_for(controller='visualization', action='edit', id=id), "Edit visualization attributes", submit_text="Submit")
-            .add_text("visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err)
-            .add_text("visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
-                      help="""A unique identifier that will be used for
-                            public links to this visualization. A default is generated
-                            from the visualization title, but can be edited. This field
-                            must contain only lowercase letters, numbers, and
-                            the '-' character.""")
-            .add_text("visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
-                      help="A description of the visualization; annotation is shown alongside published visualizations."),
-            template="visualization/create.mako")
+            return {'message': '', 'status': 'success'}
 
     # ------------------------- registry.
     @web.expose
