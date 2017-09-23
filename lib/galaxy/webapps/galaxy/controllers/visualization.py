@@ -590,13 +590,15 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                     'name'      : 'dbkey',
                     'label'     : 'Build',
                     'type'      : 'select',
+                    'optional'  : True,
                     'value'     : v.dbkey,
-                    'options'   : trans.app.genomes.get_dbkeys(trans, chrom_info=True)
+                    'options'   : trans.app.genomes.get_dbkeys(trans, chrom_info=True),
+                    'help'      : 'Parameter to associate your visualization with a database key.'
                 }, {
                     'name'      : 'annotation',
                     'label'     : 'Annotation',
                     'value'     : self.get_item_annotation_str(trans.sa_session, trans.user, v),
-                    'help'      : 'A description of the visualization; annotation is shown alongside published visualizations.'
+                    'help'      : 'A description of the visualization. The annotation is shown alongside published visualizations.'
                 }]
             }
         else:
