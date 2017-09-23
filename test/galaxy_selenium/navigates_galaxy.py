@@ -806,6 +806,15 @@ class NavigatesGalaxy(HasDriver):
             else:
                 self.wait_for_selector_visible(details_selector)
 
+    def history_panel_ensure_showing_item_details(self, hid):
+        if not self.history_panel_item_showing_details(hid):
+            self.history_panel_click_item_title(hid=hid, wait=True)
+
+    def history_panel_item_showing_details(self, hid):
+        item_selector = self.history_panel_item_selector(hid)
+        details_selector = "%s .details" % item_selector
+        return self.selector_is_displayed(details_selector)
+
     def collection_builder_set_name(self, name):
         name_element = self.wait_for_selector_visible("input.collection-name")
         name_element.send_keys(name)
