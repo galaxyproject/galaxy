@@ -621,24 +621,31 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             return {
                 'title'  : 'Edit visualization attributes',
                 'inputs' : [{
-                    'name'  : 'title',
-                    'label' : 'Name',
-                    'value' : v.title
+                    'name'      : 'title',
+                    'label'     : 'Name',
+                    'value'     : v.title
                 }, {
-                    'name'  : 'slug',
-                    'label' : 'Identifier',
-                    'value' : v.slug,
-                    'help'  : 'A unique identifier that will be used for public links to this visualization. A default is generated from the visualization title, but can be edited. This field must contain only lowercase letters, numbers, and the \'-\' character.'
+                    'name'      : 'slug',
+                    'label'     : 'Identifier',
+                    'value'     : v.slug,
+                    'help'      : 'A unique identifier that will be used for public links to this visualization. A default is generated from the visualization title, but can be edited. This field must contain only lowercase letters, numbers, and the \'-\' character.'
                 }, {
-                    'name'  : 'annotation',
-                    'label' : 'Annotation',
-                    'value' : self.get_item_annotation_str(trans.sa_session, trans.user, v),
-                    'help'  : 'A description of the visualization; annotation is shown alongside published visualizations.'
+                    'name'      : 'dbkey',
+                    'label'     : 'Build',
+                    'type'      : 'select',
+                    'value'     : v.dbkey,
+                    'options'   : trans.app.genomes.get_dbkeys(trans, chrom_info=True)
+                }, {
+                    'name'      : 'annotation',
+                    'label'     : 'Annotation',
+                    'value'     : self.get_item_annotation_str(trans.sa_session, trans.user, v),
+                    'help'      : 'A description of the visualization; annotation is shown alongside published visualizations.'
                 }]
             }
         else:
             v_title = payload.get('title')
             v_slug = payload.get('slug')
+            v_dbkey = payload.get('dbkey')
             v_annotation = payload.get('annotation')
             if not v_title:
                 return message_exception(trans, 'Please provide a visualization name is required.')
@@ -651,6 +658,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             else:
                 v.title = v_title
                 v.slug = v_slug
+                v.dbkey = v_dbkey
                 if v_annotation:
                     v_annotation = sanitize_html(v_annotation, 'utf-8', 'text/html')
                     self.add_item_annotation(trans.sa_session, trans.get_user(), v, v_annotation)
