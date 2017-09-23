@@ -4,17 +4,15 @@ API operations on a jobs.
 .. seealso:: :class:`galaxy.model.Jobs`
 """
 
-import json
 import logging
 
 from six import string_types
-from sqlalchemy import and_, or_
-from sqlalchemy.orm import aliased
+from sqlalchemy import or_
 
 from galaxy import exceptions
-from galaxy import managers
 from galaxy import model
 from galaxy import util
+from galaxy.jobs.search import JobSearch
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
@@ -27,9 +25,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
 
     def __init__(self, app):
         super(JobController, self).__init__(app)
-        self.hda_manager = managers.hdas.HDAManager(app)
-        self.dataset_collection_manager = managers.collections.DatasetCollectionManager(app)
-        self.dataset_manager = managers.datasets.DatasetManager(app)
+        self.job_search = JobSearch(app)
 
     @expose_api
     def index(self, trans, **kwd):
@@ -267,135 +263,17 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
         recycle the old results.
         """
-
         tool_id = payload.get('tool_id')
         if tool_id is None:
             raise exceptions.ObjectAttributeMissingException("No tool id")
-
         tool = trans.app.toolbox.get_tool(tool_id)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if 'inputs' not in payload:
             raise exceptions.ObjectAttributeMissingException("No inputs defined")
-
         inputs = payload['inputs']
-
-        input_data = {}
-        decoded_input_data = {}
-        input_param = {}
-        for k, v in inputs.items():
-            if isinstance(v, dict):
-                if 'id' in v:
-                    decoded_id = self.decode_id(v['id'])
-                    if 'src' not in v or v['src'] == 'hda':
-                        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
-                        datasets = trans.sa_session.query(model.HistoryDatasetAssociation).filter(model.HistoryDatasetAssociation.dataset_id == dataset.dataset_id).all()
-                        hda_ids = decoded_ids = set(h.id for h in datasets)
-                    else:
-                        if v['src'] == 'hdca':
-                            hdca = self.dataset_collection_manager.get_dataset_collection_instance(trans=trans,
-                                                                                                   instance_type='history',
-                                                                                                   id=v['id'],
-                                                                                                   )
-                            copied_from = getattr(hdca, 'copied_from_history_dataset_collection_association_id', None)
-                            if hdca.deleted and not copied_from:
-                                # We don't return the job if an input HDCA is marked as deleted -- it isn't necessary to be that strict,
-                                # we could also just rely on the individual datasets to not be deleted.
-                                return []
-                            if copied_from:
-                                # TODO: fetch these recursively or come up with a DB query to fetch all possible hdca ids
-                                if hdca.deleted:
-                                    hdca = trans.sa_session.query(model.HistoryDatasetCollectionAssociation).filter(
-                                        model.HistoryDatasetCollectionAssociation.id == copied_from).first()
-                                    if hdca.deleted:
-                                        return []
-                                decoded_ids = [decoded_id, copied_from]
-                            else:
-                                decoded_ids = [decoded_id]
-                            datasets = hdca.dataset_instances
-                            hda_ids = set(h.id for h in datasets)
-                        else:
-                            dataset = self.get_library_dataset_dataset_association(trans, v['id'])
-                            hda_ids = decoded_ids = dataset.id
-                    if datasets is None:
-                        raise exceptions.ObjectNotFound("Dataset %s not found" % (v['id']))
-                    parameter_values = []
-                    for decoded_id in decoded_ids:
-                        parameter_value = v.copy()
-                        parameter_value['id'] = decoded_id
-                        parameter_values.append(json.dumps({'values': [parameter_value]}))
-                    decoded_input_data[k] = parameter_values
-                    # We store the possible input hda ids keyed on input parameter if any of the
-                    # corresponding HDAs exists
-                    input_data[k] = hda_ids if any([d for d in datasets if not d.deleted]) else []
-                    if not input_data[k]:
-                        return []
-            else:
-                input_param[k] = json.dumps(str(v))
-
-        query = trans.sa_session.query(model.Job).filter(
-            model.Job.tool_id == tool_id,
-            model.Job.user == trans.user
-        )
-
-        if 'state' not in payload:
-            query = query.filter(
-                or_(
-                    model.Job.state == 'running',
-                    model.Job.state == 'queued',
-                    model.Job.state == 'waiting',
-                    model.Job.state == 'running',
-                    model.Job.state == 'ok',
-                )
-            )
-        else:
-            if isinstance(payload['state'], string_types):
-                query = query.filter(model.Job.state == payload['state'])
-            elif isinstance(payload['state'], list):
-                o = []
-                for s in payload['state']:
-                    o.append(model.Job.state == s)
-                query = query.filter(
-                    or_(*o)
-                )
-
-        for k, v in input_param.items():
-            a = aliased(model.JobParameter)
-            query = query.filter(and_(
-                model.Job.id == a.job_id,
-                a.name == k,
-                a.value == v
-            ))
-
-        for k, v in decoded_input_data.items():
-            # Here we make sure that the incoming hdca/hda id
-            # (v is a list of possible text representations of a input data parameter)
-            # matches the right input data parameter for a job to be equivalent.
-            # If we don't do this we return false positive jobs in case
-            # a different combination of identical inputs has been used in a job.
-            a = aliased(model.JobParameter)
-            query = query.filter(and_(
-                model.Job.id == a.job_id,
-                a.name == k,
-                a.value.in_(v)
-            ))
-
-        out = []
-        for job in query.all():
-            # check to make sure none of the output datasets or collections have been deleted
-            outputs_deleted = False
-            for hda in job.output_datasets:
-                if hda.dataset.deleted:
-                    outputs_deleted = True
-                    break
-            if not outputs_deleted:
-                for collection_instance in job.output_dataset_collection_instances:
-                    if collection_instance.dataset_collection_instance.deleted:
-                        outputs_deleted = True
-                        break
-            if not outputs_deleted:
-                out.append(self.encode_all_ids(trans, job.to_dict('element'), True))
-        return out
+        jobs = self.job_search.by_tool_input(trans=trans, tool_id=tool_id, inputs=inputs, job_state=payload.get('state'))
+        return [self.encode_all_ids(trans, job.to_dict('element'), True) for job in jobs]
 
     @expose_api
     def error(self, trans, id, **kwd):
