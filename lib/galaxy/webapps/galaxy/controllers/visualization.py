@@ -176,7 +176,7 @@ class VisualizationListGrid(grids.Grid):
     operations = [
         grids.GridOperation("Open", allow_multiple=False, url_args=get_url_args),
         grids.GridOperation("Open in Circster", allow_multiple=False, condition=(lambda item: item.type == 'trackster'), url_args=dict(action='circster')),
-        grids.GridOperation("Edit Attributes", allow_multiple=False, url_args=dict(action='edit'), target="inbound"),
+        grids.GridOperation("Edit Attributes", allow_multiple=False, url_args=dict(controller="", action='visualizations/edit')),
         grids.GridOperation("Copy", allow_multiple=False, condition=(lambda item: not item.deleted)),
         grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
         grids.GridOperation("Delete", condition=(lambda item: not item.deleted), confirm="Are you sure you want to delete this visualization?"),
@@ -605,12 +605,14 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         vis_annotation = annotation or vis_config.get('annotation', None)
         return self.save_visualization(trans, vis_config, vis_type, vis_id, vis_title, vis_dbkey, vis_annotation)
 
-    @web.expose
+    @web.expose_api
     @web.require_login("edit visualizations")
-    def edit(self, trans, id, visualization_title="", visualization_slug="", visualization_annotation=""):
+    def edit(self, trans, payload=None, **kwds):
         """
         Edit a visualization's attributes.
         """
+        return {'title': 'test', 'inputs': []}
+        #, id, visualization_title="", visualization_slug="", visualization_annotation=""
         visualization = self.get_visualization(trans, id, check_ownership=True)
         session = trans.sa_session
 
