@@ -622,17 +622,18 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 'title'  : 'Edit visualization attributes',
                 'inputs' : [{
                     'name'  : 'title',
-                    'label' : 'Visualization title',
+                    'label' : 'Title',
                     'value' : v.title
                 }, {
                     'name'  : 'slug',
-                    'label' : 'Visualization identifier',
+                    'label' : 'Identifier',
                     'value' : v.slug,
                     'help'  : 'A unique identifier that will be used for public links to this visualization. A default is generated from the visualization title, but can be edited. This field must contain only lowercase letters, numbers, and the \'-\' character.'
                 }, {
                     'name'  : 'annotation',
-                    'label' : 'Visualization annotation',
-                    'value' : self.get_item_annotation_str(trans.sa_session, trans.user, v)
+                    'label' : 'Annotation',
+                    'value' : self.get_item_annotation_str(trans.sa_session, trans.user, v),
+                    'help'  : 'A description of the visualization; annotation is shown alongside published visualizations.'
                 }]
             }
         else:
