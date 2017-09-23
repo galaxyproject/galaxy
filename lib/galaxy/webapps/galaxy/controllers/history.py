@@ -13,7 +13,7 @@ from galaxy import model
 from galaxy import web
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.item_attrs import UsesItemRatings
-from galaxy.util import nice_size, Params, parse_int, sanitize_text, listify
+from galaxy.util import listify, nice_size, Params, parse_int, sanitize_text
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
