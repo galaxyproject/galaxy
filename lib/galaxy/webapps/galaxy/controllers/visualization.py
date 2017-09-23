@@ -654,8 +654,9 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 if v_annotation:
                     v_annotation = sanitize_html(v_annotation, 'utf-8', 'text/html')
                     self.add_item_annotation(trans.sa_session, trans.get_user(), v, v_annotation)
-                #trans.session.flush()
-            return {'message': 'Attributes successfully saved.', 'status': 'success'}
+                trans.sa_session.add(v)
+                trans.sa_session.flush()
+            return {'message': 'Attributes of \'%s\' successfully saved.' % v.title, 'status': 'success'}
 
     # ------------------------- registry.
     @web.expose
