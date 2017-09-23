@@ -1002,3 +1002,8 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                     name = fields[4]
                 rows.append([location, name])
         return {'data': rows}
+
+
+def message_exception(trans, message):
+    trans.response.status = 400
+    return {'err_msg': sanitize_text(message)}
