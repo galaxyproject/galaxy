@@ -15,11 +15,19 @@ import requests
 import yaml
 
 from .data import NAVIGATION_DATA
-from .has_driver import exception_indicates_stale_element, HasDriver, TimeoutException
+from .has_driver import (
+    execption_indicates_not_clickable,
+    exception_indicates_stale_element,
+    HasDriver,
+    TimeoutException,
+)
 from . import sizzle
 
 # Test case data
 DEFAULT_PASSWORD = '123456'
+
+RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT = .1
+RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT = 10
 
 
 class NullTourCallback(object):
@@ -28,7 +36,24 @@ class NullTourCallback(object):
         pass
 
 
-def retry_call_during_transitions(f, attempts=5, sleep=.1, exception_check=exception_indicates_stale_element):
+def excepion_seems_to_indicate_transition(e):
+    """True if exception seems to indicate the page state is transitioning.
+
+    Galaxy features many different transition effects that change the page state over time.
+    These transitions make it slightly more difficult to test Galaxy because atomic input
+    actions take an indeterminate amount of time to be reflected on the screen. This method
+    takes a Selenium assertion and tries to infer if such a transition could be the root
+    cause of the exception. The methods that follow use it to allow retrying actions during
+    transitions.
+
+    Currently the two kinds of exceptions that we say may indicate a transition are
+    StaleElement exceptions (a DOM element grabbed at one step is no longer available)
+    and "not clickable" exceptions (so perhaps a popup modal is blocking a click).
+    """
+    return exception_indicates_stale_element(e) or execption_indicates_not_clickable(e)
+
+
+def retry_call_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT, sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT, exception_check=excepion_seems_to_indicate_transition):
     previous_attempts = 0
     while True:
         try:
@@ -44,7 +69,7 @@ def retry_call_during_transitions(f, attempts=5, sleep=.1, exception_check=excep
             previous_attempts += 1
 
 
-def retry_during_transitions(f, attempts=5, sleep=.1, exception_check=exception_indicates_stale_element):
+def retry_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT, sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT, exception_check=excepion_seems_to_indicate_transition):
 
     @wraps(f)
     def _retry(*args, **kwds):
@@ -201,11 +226,26 @@ class NavigatesGalaxy(HasDriver):
             raise self.prepend_timeout_message(e, message)
         return history_item_selector_state
 
+    def published_grid_search_for(self, search_term=None):
+        return self._inline_search_for(
+            '#input-free-text-search-filter',
+            search_term,
+        )
+
     def get_logged_in_user(self):
         return self.api_get("users/current")
 
     def is_logged_in(self):
         return "email" in self.get_logged_in_user()
+
+    @retry_during_transitions
+    def _inline_search_for(self, selector, search_term=None):
+        search_box = self.wait_for_and_click_selector(selector)
+        search_box.clear()
+        if search_term is not None:
+            search_box.send_keys(search_term)
+        self.send_enter(search_box)
+        return search_box
 
     def _get_random_name(self, prefix=None, suffix=None, len=10):
         return '%s%s%s' % (
@@ -480,6 +520,12 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_click_search(self):
         return self.wait_for_and_click_selector("input.search-wf")
 
+    def workflow_index_search_for(self, search_term=None):
+        return self._inline_search_for(
+            "input.search-wf",
+            search_term,
+        )
+
     def workflow_index_click_import(self):
         self.wait_for_and_click_selector(self.test_data["selectors"]["workflows"]["import_button"])
 
@@ -516,6 +562,7 @@ class NavigatesGalaxy(HasDriver):
         tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
         tag_display.click()
 
+    @retry_during_transitions
     def workflow_index_tags(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
         tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
@@ -795,6 +842,18 @@ class NavigatesGalaxy(HasDriver):
         if click_away:
             self.click_center()
         return text
+
+    @retry_during_transitions
+    def assert_selector_absent_or_hidden_after_transitions(self, selector):
+        """Variant of assert_selector_absent_or_hidden that retries during transitions.
+
+        In the parent method - the element is found and then it is checked to see
+        if it is visible. It may disappear from the page in the middle there
+        and cause a StaleElement error. For checks where we care about the final
+        resting state after transitions - this method can be used to retry
+        during those transitions.
+        """
+        return self.assert_selector_absent_or_hidden(selector)
 
     def assert_tooltip_text(self, element, expected, sleep=0, click_away=True):
         text = self.get_tooltip_text(element, sleep=sleep, click_away=click_away)
