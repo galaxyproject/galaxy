@@ -201,6 +201,12 @@ class NavigatesGalaxy(HasDriver):
             self.history_panel_refresh_click()
         return rval
 
+    def history_panel_wait_for_history_loaded(self):
+        # Use the search box showing up as a proxy that the history display
+        # has left the "loading" state and is showing a valid set of history contents
+        # (even if empty).
+        self.wait_for_selector_visible("#current-history-panel input.search-query")
+
     def history_panel_wait_for_hid_hidden(self, hid, timeout=60):
         current_history_id = self.current_history_id()
         contents = self.api_get("histories/%s/contents" % current_history_id)
