@@ -20,6 +20,7 @@ from cgi import escape
 from six.moves.urllib.parse import quote_plus
 
 from galaxy.datatypes import metadata
+from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.text import Html
@@ -31,6 +32,7 @@ verbose = False
 
 # https://genome.ucsc.edu/goldenpath/help/hgGenomeHelp.html
 VALID_GENOME_GRAPH_MARKERS = re.compile('^(chr.*|RH.*|rs.*|SNP_.*|CN.*|A_.*)')
+VALID_GENOTYPES_LINE = re.compile('^([a-zA-Z0-9]+)(\\s([0-9]{2}|[A-Z]{2}|NC|\?\?))+\\s*$')
 
 
 class GenomeGraphs(Tabular):
@@ -825,6 +827,637 @@ class MAlist(RexpBase):
         self.add_composite_file('%s.malist',
                                 description='MAlist R object saved to file',
                                 substitute_name_with_metadata='base_name', is_binary=True)
+
+
+class LinkageStudies(Text):
+    """
+    superclass for classical linkage analysis suites
+    """
+    test_files = [
+        'linkstudies.allegro_fparam', 'linkstudies.allegro_ihaplo',
+        'linkstudies.alohomora_gts', 'linkstudies.alohomora_maf',
+        'linkstudies.alohomora_map', 'linkstudies.alohomora_ped',
+        'linkstudies.linkage_datain', 'linkstudies.linkage_map',
+        'linkstudies.linkage_pedin'
+    ]
+
+    def __init__(self, **kwd):
+        Text.__init__(self, **kwd)
+        self.lcount = 0
+        self.max_lines = 10
+        # iterate whole file without errors
+        self.eof_res = True
+
+    @staticmethod
+    def __is_binary_file(fstream):
+        """
+        Private binary file tester
+        """
+        result = False
+        if '\x00' in fstream.readline(512):
+            result = True
+
+        fstream.seek(0)
+        return result
+
+    @staticmethod
+    def tokenizer(line, sep=None):
+        """
+        General purpose string tokenizer
+        """
+        if sep is None:
+            return line.splitlines()[0].split(sep)
+
+        return line.splitlines()[0].split(sep)
+
+    def eof_function(self):
+        """
+        Overridable end-of-file function
+        """
+        return self.eof_res
+
+    def __per_line_op(self, line):
+        """
+        Private per-line operation and line counter
+        """
+        self.lcount += 1
+        if self.lcount > self.max_lines:
+            return -1
+
+        return self.line_op(line)
+
+    def line_op(self, line):
+        """
+        Overridable per line operation
+        """
+        return None
+
+    def header_check(self, fio):
+        """
+        Overrideable post-binary file check function
+        """
+        return True
+
+    def sniffer(self, filename):
+        with open(filename, "r") as fio:
+
+            if LinkageStudies.__is_binary_file(fio):
+                return False
+
+            if not self.header_check(fio):
+                return False
+
+            for line in fio:
+                line_res = self.__per_line_op(line)
+
+                if line_res == -1:
+                    # run eof_function
+                    break
+
+                if line_res is not None:
+                    return line_res
+
+            return self.eof_function()
+        return False
+
+
+class PreMakePed(LinkageStudies):
+    """
+    Common linkage pedin format
+    Extended linkage pedigree file containing:
+         fam, indiv, fath, moth, gender, affectation, [genotypes]
+    """
+    file_ext = "linkage_pedin"
+
+    def __init__(self, **kwd):
+        LinkageStudies.__init__(self, **kwd)
+        self.num_colns = None
+        self.max_lines = 10
+        self.fam_id = -1
+        self.cols_found = -1
+
+    def line_op(self, line):
+        tokens = LinkageStudies.tokenizer(line)
+
+        if line.startswith("   "):
+            return False
+
+        if self.num_colns is not None:
+            if len(tokens) != self.num_colns:
+                return False
+
+        else:
+            if self.cols_found == -1:
+                self.cols_found = len(tokens)
+                # absolute minimum for pedinfo + alleles
+                if self.cols_found < 7:
+                    return False
+
+            elif self.cols_found != len(tokens):
+                return False
+
+        try:
+            if set([int(val) >= 0 for val in tokens]) != {True}:
+                return False
+
+            if self.fam_id == -1:
+                self.fam_id = int(tokens[0])
+            elif self.fam_id != int(tokens[0]):
+                return False
+
+        except ValueError:
+            return False
+
+        return None
+
+    def sniff(self, filename):
+        """
+        >>> cname = "PreMakePed"
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> extn_true = eval(cname)().file_ext
+        >>> file_true = get_test_fname("linkstudies." + extn_true)
+        >>> eval(cname)().sniff(file_true)
+        True
+
+        >>> false_files = list(LinkageStudies.test_files)
+        >>> false_files.remove("linkstudies." + extn_true)
+        >>> result_true = []
+        >>> for fname in false_files:
+        ...     file_false = get_test_fname(fname)
+        ...     res = eval(cname)().sniff(file_false)
+        ...     if res:
+        ...         result_true.append(fname)
+        >>>
+        >>> result_true
+        []
+        """
+        return self.sniffer(filename)
+
+
+class Pedfile(PreMakePed):
+    """
+    Truncated PreMakePed file:
+       - individuals specified on a single line
+       - no genotype data
+    """
+    file_ext = "alohomora_ped"
+
+    def __init__(self, **kwd):
+        PreMakePed.__init__(self, **kwd)
+        self.num_colns = 6
+
+    def sniff(self, filename):
+        """
+        >>> cname = "Pedfile"
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> extn_true = eval(cname)().file_ext
+        >>> file_true = get_test_fname("linkstudies." + extn_true)
+        >>> eval(cname)().sniff(file_true)
+        True
+
+        >>> false_files = list(LinkageStudies.test_files)
+        >>> false_files.remove("linkstudies." + extn_true)
+        >>> result_true = []
+        >>> for fname in false_files:
+        ...     file_false = get_test_fname(fname)
+        ...     res = eval(cname)().sniff(file_false)
+        ...     if res:
+        ...         result_true.append(fname)
+        >>>
+        >>> result_true
+        []
+        """
+        return self.sniffer(filename)
+
+
+class GenotypeMatrix(LinkageStudies):
+    """
+    Sample matrix of genotypes
+    - GTs as columns
+    """
+    file_ext = "alohomora_gts"
+
+    def __init__(self, **kwd):
+        LinkageStudies.__init__(self, **kwd)
+        self.num_cols = -1
+
+    def line_op(self, line):
+        tokens = line.split('\t')
+
+        if self.num_cols == -1:
+            self.num_cols = len(tokens)
+
+        elif self.num_cols != len(tokens):
+            return False
+
+        if not VALID_GENOTYPES_LINE.match(line):
+            return False
+
+        return None
+
+    def header_check(self, fio):
+        header_elems = LinkageStudies.tokenizer(fio.readline(), '\t')
+
+        if header_elems[0] != "Name":
+            return False
+
+        try:
+            [int(sid) > 0 for sid in header_elems[1:]]
+        except ValueError:
+            return False
+
+        return True
+
+    def sniff(self, filename):
+        """
+        >>> cname = "GenotypeMatrix"
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> extn_true = eval(cname)().file_ext
+        >>> file_true = get_test_fname("linkstudies." + extn_true)
+        >>> eval(cname)().sniff(file_true)
+        True
+
+        >>> false_files = list(LinkageStudies.test_files)
+        >>> false_files.remove("linkstudies." + extn_true)
+        >>> result_true = []
+        >>> for fname in false_files:
+        ...     file_false = get_test_fname(fname)
+        ...     res = eval(cname)().sniff(file_false)
+        ...     if res:
+        ...         result_true.append(fname)
+        >>>
+        >>> result_true
+        []
+        """
+        return self.sniffer(filename)
+
+
+class MarkerMap(LinkageStudies):
+    """
+    Map of genetic markers including physical and genetic distance
+    Common input format for linkage programs
+
+    chrom, genetic pos, markername, physical pos, Nr
+    """
+    file_ext = "linkage_map"
+
+    def header_check(self, fio):
+        headers = fio.readline().split()
+
+        if len(headers) == 5 and headers[0] == "#Chr":
+            return True
+
+        return False
+
+    def line_op(self, line):
+
+        try:
+            chrm, gpos, nam, bpos, row = LinkageStudies.tokenizer(line)
+
+            float(gpos)
+            int(bpos)
+
+            try:
+                int(chrm)
+            except ValueError:
+                if not chrm.lower()[0] in ('x', 'y', 'm'):
+                    return False
+
+        except ValueError:
+            return False
+
+        return None
+
+    def sniff(self, filename):
+        """
+        >>> cname = "MarkerMap"
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> extn_true = eval(cname)().file_ext
+        >>> file_true = get_test_fname("linkstudies." + extn_true)
+        >>> eval(cname)().sniff(file_true)
+        True
+
+        >>> false_files = list(LinkageStudies.test_files)
+        >>> false_files.remove("linkstudies." + extn_true)
+        >>> result_true = []
+        >>> for fname in false_files:
+        ...     file_false = get_test_fname(fname)
+        ...     res = eval(cname)().sniff(file_false)
+        ...     if res:
+        ...         result_true.append(fname)
+        >>>
+        >>> result_true
+        []
+        """
+        return self.sniffer(filename)
+
+
+class AlohomoraMarkerMap(LinkageStudies):
+    """
+    Map of genetic markers including physical and genetic distance
+
+    chrom, markername, genetic pos, physical pos, markername, "x"
+    """
+    file_ext = "alohomora_map"
+
+    def __init__(self, **kwd):
+        LinkageStudies.__init__(self, **kwd)
+
+    def header_check(self, fio):
+        headers = fio.readline().split()
+
+        if len(headers) == 6 and headers[0] == "Chr" and (
+                headers[1] == headers[4] == "Name"
+        ):
+            return True
+
+        return False
+
+    def line_op(self, line):
+        try:
+            chrm, nam1, gpos, bpos, nam2, junk = LinkageStudies.tokenizer(line)
+
+            float(gpos)
+            int(bpos)
+
+            try:
+                int(chrm)
+            except ValueError:
+                if not chrm.lower()[0] in ('x', 'y', 'm'):
+                    return False
+
+            if nam1 != nam2:
+                return False
+
+        except ValueError:
+            return False
+
+        return None
+
+    def sniff(self, filename):
+        """
+        >>> cname = "AlohomoraMarkerMap"
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> extn_true = eval(cname)().file_ext
+        >>> file_true = get_test_fname("linkstudies." + extn_true)
+        >>> eval(cname)().sniff(file_true)
+        True
+
+        >>> false_files = list(LinkageStudies.test_files)
+        >>> false_files.remove("linkstudies." + extn_true)
+        >>> result_true = []
+        >>> for fname in false_files:
+        ...     file_false = get_test_fname(fname)
+        ...     res = eval(cname)().sniff(file_false)
+        ...     if res:
+        ...         result_true.append(fname)
+        >>>
+        >>> result_true
+        []
+        """
+        return self.sniffer(filename)
+
+
+class AlohomoraMAF(LinkageStudies):
+    """
+    Minor Allele Frequencies of marker lists
+    """
+    file_ext = "alohomora_maf"
+
+    def header_check(self, fio):
+        header = fio.readline()  # seek ahead
+        return header[:4] == "Name"
+
+    def line_op(self, line):
+        tokens = line.split()
+
+        if len(tokens) != 2:
+            return False
+
+        try:
+            int(tokens[0])
+            return False
+        except ValueError:
+            pass
+
+        try:
+            float(tokens[1])
+        except ValueError:
+            return False
+
+        return None
+
+    def sniff(self, filename):
+        """
+        >>> cname = "AlohomoraMAF"
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> extn_true = eval(cname)().file_ext
+        >>> file_true = get_test_fname("linkstudies." + extn_true)
+        >>> eval(cname)().sniff(file_true)
+        True
+
+        >>> false_files = list(LinkageStudies.test_files)
+        >>> false_files.remove("linkstudies." + extn_true)
+        >>> result_true = []
+        >>> for fname in false_files:
+        ...     file_false = get_test_fname(fname)
+        ...     res = eval(cname)().sniff(file_false)
+        ...     if res:
+        ...         result_true.append(fname)
+        >>>
+        >>> result_true
+        []
+        """
+        return self.sniffer(filename)
+
+
+class DataIn(LinkageStudies):
+    """
+    Common linkage input file for intermarker distances
+    and recombination rates
+    """
+    file_ext = "linkage_datain"
+
+    def __init__(self, **kwd):
+        LinkageStudies.__init__(self, **kwd)
+        self.num_markers = None
+        self.intermarkers = 0
+
+    def eof_function(self):
+        return self.intermarkers > 0
+
+    def line_op(self, line):
+
+        tokens = LinkageStudies.tokenizer(line)
+
+        try:
+
+            if self.lcount == 1:
+                self.num_markers = int(tokens[0])
+                map(int, tokens[1:])
+
+            elif self.lcount == 2:
+
+                map(float, tokens)
+
+                if len(tokens) != 4:
+                    return False
+
+            elif self.lcount == 3:
+
+                map(int, tokens)
+                last_token = int(tokens[-1])
+
+                if self.num_markers is None:
+                    return False
+
+                if len(tokens) != last_token:
+                    return False
+
+                if self.num_markers != last_token:
+                    return False
+
+            elif tokens[0] == "3" and tokens[1] == "2":
+                self.intermarkers += 1
+
+            return None
+
+        except (ValueError, IndexError):
+            return False
+
+    def sniff(self, filename):
+        """
+        >>> cname = "DataIn"
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> extn_true = eval(cname)().file_ext
+        >>> file_true = get_test_fname("linkstudies." + extn_true)
+        >>> eval(cname)().sniff(file_true)
+        True
+
+        >>> false_files = list(LinkageStudies.test_files)
+        >>> false_files.remove("linkstudies." + extn_true)
+        >>> result_true = []
+        >>> for fname in false_files:
+        ...     file_false = get_test_fname(fname)
+        ...     res = eval(cname)().sniff(file_false)
+        ...     if res:
+        ...         result_true.append(fname)
+        >>>
+        >>> result_true
+        []
+        """
+        return self.sniffer(filename)
+
+
+class AllegroHaplo(PreMakePed):
+    """
+    Allegro output format for phased haplotypes
+    """
+    file_ext = "allegro_ihaplo"
+
+    def header_check(self, fio):
+        header = []
+        max_line = 0
+        while max_line < 100:
+            max_line += 1
+            line = fio.readline()
+            if line.startswith("          "):
+                header.append(line.splitlines()[0])
+            else:
+                break
+
+        if header == []:
+            return False
+
+        # transpose headers
+        markers = ["".join(x[::-1]).strip() for x in zip(*header)]
+        markers = [mark for mark in markers if mark != ""]
+
+        for mark in markers:
+            if len(mark.split(" ")) > 1:
+                return False
+        return True
+
+    def sniff(self, filename):
+        """
+        >>> cname = "AllegroHaplo"
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> extn_true = eval(cname)().file_ext
+        >>> file_true = get_test_fname("linkstudies." + extn_true)
+        >>> eval(cname)().sniff(file_true)
+        True
+
+        >>> false_files = list(LinkageStudies.test_files)
+        >>> false_files.remove("linkstudies." + extn_true)
+        >>> result_true = []
+        >>> for fname in false_files:
+        ...     file_false = get_test_fname(fname)
+        ...     res = eval(cname)().sniff(file_false)
+        ...     if res:
+        ...         result_true.append(fname)
+        >>>
+        >>> result_true
+        []
+        """
+        return self.sniffer(filename)
+
+
+class AllegroLOD(LinkageStudies):
+    """
+    Allegro output format for LOD scores
+    """
+    file_ext = "allegro_fparam"
+
+    def header_check(self, fio):
+        header = fio.readline().splitlines()[0].split()
+        try:
+            if header[0] == "family" and header[1] == "location":
+                if header[2] == "LOD" and header[3] == "marker":
+                    # somehow nesting is more pleasing to pep8 and pyunit
+                    return True
+
+        except IndexError:
+            pass
+
+        return False
+
+    def line_op(self, line):
+        tokens = LinkageStudies.tokenizer(line)
+
+        try:
+            int(tokens[0])
+            float(tokens[1])
+
+            if tokens[2] != "-inf":
+                float(tokens[2])
+
+        except (ValueError, IndexError):
+            return False
+
+        return None
+
+    def sniff(self, filename):
+        """
+        >>> cname = "AllegroLOD"
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> extn_true = eval(cname)().file_ext
+        >>> file_true = get_test_fname("linkstudies." + extn_true)
+        >>> eval(cname)().sniff(file_true)
+        True
+
+        >>> false_files = list(LinkageStudies.test_files)
+        >>> false_files.remove("linkstudies." + extn_true)
+        >>> result_true = []
+        >>> for fname in false_files:
+        ...     file_false = get_test_fname(fname)
+        ...     res = eval(cname)().sniff(file_false)
+        ...     if res:
+        ...         result_true.append(fname)
+        >>>
+        >>> result_true
+        []
+        """
+        return self.sniffer(filename)
 
 
 if __name__ == '__main__':
