@@ -1,0 +1,167 @@
+<section expanded="false" name="general_options" title="General options">
+	<param argument="-h" help="Print help usage." label="Print help usage." type="boolean" value="None"/>
+	<param argument="-s" help="Specify input alignment file in PHYLIP, FASTA, NEXUS, CLUSTAL or MSF format." label="Specify input alignment file in PHYLIP, FASTA, NEXUS, CLUSTAL or MSF format." type="data"/>
+	<param argument="-st" help="Specify sequence type as either of DNA, AA, BIN, MORPH, CODON or NT2AA for DNA, amino-acid, binary, morphological, codon or DNA-to-AA-translated sequences. This is only necessary if IQ-TREE did not detect the sequence type correctly. Note that -st CODON is always necessary when using codon models (otherwise, IQ-TREE applies DNA models) and you also need to specify a genetic code like this if differed from the standard genetic code. -st NT2AA tells IQ-TREE to translate protein-coding DNA into AA sequences and then subsequent analysis will work on the AA sequences. You can also use a genetic code like -st NT2AA5 for the Invertebrate Mitochondrial Code (see genetic code table)." label="Specify sequence type as either of DNA, AA, BIN, MORPH, CODON or NT2AA for DNA, amino-acid, binary, morphological, codon or DNA-to-AA-translated sequences" type="text" value="None"/>
+	<param argument="-t" help="Specify a file containing starting tree for tree search. The special option -t BIONJ starts tree search from BIONJ tree and -t RANDOM starts tree search from completely random tree. DEFAULT: 100 parsimony trees + BIONJ tree" label="Specify a file containing starting tree for tree search" type="data"/>
+	<param argument="-te" help="Like -t but fixing user tree. That means, no tree search is performed and IQ-TREE computes the log-likelihood of the fixed user tree." label="Like -t but fixing user tree" type="boolean" value="None"/>
+	<param argument="-o" help="Specify an outgroup taxon name to root the tree. The output tree in .treefile will be rooted accordingly. DEFAULT: first taxon in alignment" label="Specify an outgroup taxon name to root the tree" type="text" value="None"/>
+	<param argument="-pre" help="Specify a prefix for all output files. DEFAULT: either alignment file name (-s) or partition file name (-q, -spp or -sp)" label="Specify a prefix for all output files" type="text" value="None"/>
+	<param argument="-nt" help="Specify the number of CPU cores for iqtree-omp version. A special option -nt AUTO will tell IQ-TREE to automatically determine the best number of cores given the current data and computer." label="Specify the number of CPU cores for iqtree-omp version" type="integer" value="None"/>
+	<param argument="-seed" help="Specify a random number seed to reproduce a previous run. This is normally used for debugging purposes. DEFAULT: based on current machine clock" label="Specify a random number seed to reproduce a previous run" type="integer" value="None"/>
+	<param argument="-v" help="Turn on verbose mode for printing more messages to screen. This is normally used for debugging purposes. DFAULT: OFF" label="Turn on verbose mode for printing more messages to screen" type="boolean" value="false"/>
+	<param argument="-quiet" help="Silent mode, suppress printing to the screen. Note that .log file is still written." label="Silent mode, suppress printing to the screen" type="boolean" value="None"/>
+	<param argument="-keep-ident" help="Keep identical sequences in the alignment. Bu default: IQ-TREE will remove them during the analysis and add them in the end." label="Keep identical sequences in the alignment" type="boolean" value="None"/>
+	<param argument="-safe" help="Turn on safe numerical mode to avoid numerical underflow for large data sets with many sequences (typically in the order of thousands). This mode is automatically turned on when having more than 2000 sequences." label="Turn on safe numerical mode to avoid numerical underflow for large data sets with many sequences (typically in the order of thousands)" type="boolean" value="None"/>
+	<param argument="-mem" help="Specify maximal RAM usage, for example, -mem 64G to use at most 64 GB of RAM. By default, IQ-TREE will try to not to exceed the computer RAM size." label="Specify maximal RAM usage, for example, -mem 64G to use at most 64 GB of RAM" type="text" value="None"/>
+</section>
+
+<section expanded="false" name="checkpointing_to" title="Checkpointing to resume stopped run">
+	<param argument="-redo" help="Redo the entire analysis no matter if it was stopped or successful. WARNING: This option will overwrite all existing output files." label="Redo the entire analysis no matter if it was stopped or successful" type="boolean" value="None"/>
+	<param argument="-cptime" help="Specify the minimum checkpoint time interval in seconds (default: 20s)" label="Specify the minimum checkpoint time interval in seconds (default: 20s)" type="text" value="None"/>
+</section>
+
+<section expanded="false" name="likelihood_mapping" title="Likelihood mapping analysis">
+	<param argument="-lmap" help="Specify the number of quartets to be randomly drawn. If you specify -lmap ALL, all unique quartets will be drawn, instead." label="Specify the number of quartets to be randomly drawn" type="integer" value="None"/>
+	<param argument="-lmclust" help="Specify a NEXUS file containing taxon clusters (see below for example) for quartet mapping analysis." label="Specify a NEXUS file containing taxon clusters (see below for example) for quartet mapping analysis." type="data"/>
+	<param argument="-wql" help="Write quartet log-likelihoods into .lmap.quartetlh file (typically not needed)." label="Write quartet log-likelihoods into .lmap.quartetlh file (typically not needed)." type="boolean" value="None"/>
+	<param argument="-n" help="Skip subsequent tree search, useful when you only want to assess the phylogenetic information of the alignment." label="Skip subsequent tree search, useful when you only want to assess the phylogenetic information of the alignment." type="boolean" value="None"/>
+</section>
+
+<section expanded="false" name="automatic_model" title="Automatic model selection">
+	<param argument="-m" type="select">
+		<option help="Perform standard model selection like jModelTest (for DNA) and ProtTest (for protein). Moreover, IQ-TREE also works for codon, binary and morphogical data." value="TESTONLY">TESTONLY</option>
+		<option help="Like -m TESTONLY but immediately followed by tree reconstruction using the best-fit model found. So this performs both model selection and tree inference within a single run." value="TEST">TEST</option>
+		<option help="Perform an extended model selection that additionally includes FreeRate model compared with -m TESTONLY. Recommended as replacement for -m TESTONLY. Note that LG4X is a FreeRate model, but by default is not included because it is also a protein mixture model. To include it, use -madd option (see table below)." value="TESTNEWONLY">TESTNEWONLY</option>
+		<option help="Like -m MF but immediately followed by tree reconstruction using the best-fit model found." value="TESTNEW">TESTNEW</option>
+		<option help="Select best-fit partitioning scheme like PartitionFinder." value="TESTMERGEONLY">TESTMERGEONLY</option>
+		<option help="Like -m TESTMERGEONLY but immediately followed by tree reconstruction using the best partitioning scheme found." value="TESTMERGE">TESTMERGE</option>
+		<option help="Like -m TESTMERGEONLY but additionally includes FreeRate model." value="TESTNEWMERGEONLY">TESTNEWMERGEONLY</option>
+		<option help="Like -m MF+MERGE but immediately followed by tree reconstruction using the best partitioning scheme found." value="TESTNEWMERGE">TESTNEWMERGE</option>
+	</param>
+</section>
+
+<section expanded="false" name="automatic_model" title="Automatic model selection-X-">
+	<param argument="-rcluster" help="Specify the percentage for the relaxed clustering algorithm (Lanfear et al., 2014). This is similar to --rcluster-percent option of PartitionFinder. For example, with -rcluster 10 only the top 10% partition schemes are considered to save computations." label="Specify the percentage for the relaxed clustering algorithm (Lanfear et al., 2014)" type="text" value="None"/>
+	<param argument="-mset" help="Specify the name of a program (raxml, phyml or mrbayes) to restrict to only those models supported by the specified program. Alternatively, one can specify a comma-separated list of base models. For example, -mset WAG,LG,JTT will restrict model selection to WAG, LG, and JTT instead of all 18 AA models to save computations." label="Specify the name of a program (raxml, phyml or mrbayes) to restrict to only those models supported by the specified program" type="text" value="None"/>
+	<param argument="-msub" help="Specify either nuclear, mitochondrial, chloroplast or viral to restrict to those AA models designed for specified source." label="Specify either nuclear, mitochondrial, chloroplast or viral to restrict to those AA models designed for specified source." type="text" value="None"/>
+	<param argument="-mfreq" help="Specify a comma-separated list of frequency types for model selection. DEFAULT: -mfreq FU,F for protein models (FU = AA frequencies given by the protein matrix, F = empirical AA frequencies from the data), -mfreq ,F1x4,F3x4,F for codon models" label="Specify a comma-separated list of frequency types for model selection" type="text" value="None"/>
+	<param argument="-mrate" help="Specify a comma-separated list of rate heterogeneity types for model selection. DEFAULT: -mrate E,I,G,I+G for standard procedure, -mrate E,I,G,I+G,R for new selection procedure" label="Specify a comma-separated list of rate heterogeneity types for model selection" type="text" value="None"/>
+	<param argument="-cmin" help="Specify minimum number of categories for FreeRate model. DEFAULT: 2" label="Specify minimum number of categories for FreeRate model" type="integer" value="2"/>
+	<param argument="-cmax" help="Specify maximum number of categories for FreeRate model. It is recommended to increase if alignment is long enough. DEFAULT: 10" label="Specify maximum number of categories for FreeRate model" type="integer" value="10"/>
+	<param argument="-merit" help="Specify either AIC, AICc or BIC for the optimality criterion to apply for new procedure. DEFAULT: all three criteria are considered" label="Specify either AIC, AICc or BIC for the optimality criterion to apply for new procedure" type="text" value="None"/>
+	<param argument="-mtree" help="Turn on full tree search for each model considered, to obtain more accurate result. Only recommended if enough computational resources are available. DEFAULT: fixed starting tree" label="Turn on full tree search for each model considered, to obtain more accurate result" type="boolean" value="None"/>
+	<param argument="-mredo" help="Ignore .model file computed earlier. DEFAULT: .model file (if exists) is loaded to reuse previous computations" label="Ignore .model file computed earlier" type="boolean" value="None"/>
+	<param argument="-madd" help="Specify a comma-separated list of mixture models to additionally consider for model selection. For example, -madd LG4M,LG4X to additionally include these two protein mixture models." label="Specify a comma-separated list of mixture models to additionally consider for model selection" type="text" value="None"/>
+	<param argument="-mdef" help="Specify a NEXUS model file to define new models." label="Specify a NEXUS model file to define new models." type="data"/>
+</section>
+
+<section expanded="false" name="specifying_substitution" title="Specifying substitution models"/>
+
+<section expanded="false" name="specifying_substitution" title="Specifying substitution models-X-"/>
+
+<section expanded="false" name="specifying_substitution" title="Specifying substitution models-X--X-">
+	<param argument="-mwopt" help="Turn on optimizing weights of mixture models. Note that for models like LG+C20+F+G this mode is automatically turned on, but not for LG+C20+G." label="Turn on optimizing weights of mixture models" type="boolean" value="None"/>
+</section>
+
+<section expanded="false" name="rate_heterogeneity" title="Rate heterogeneity"/>
+
+<section expanded="false" name="rate_heterogeneity-x-" title="Rate heterogeneity-X-">
+	<param argument="-a" help="Specify the Gamma shape parameter (default: estimate)" label="Specify the Gamma shape parameter (default: estimate)" type="text" value="None"/>
+	<param argument="-gmedian" help="Perform the median approximation for Gamma rate heterogeneity instead of the default mean approximation (Yang, 1994)" label="Perform the median approximation for Gamma rate heterogeneity instead of the default mean approximation (Yang, 1994)" type="boolean" value="None"/>
+	<param argument="-i" help="Specify the proportion of invariable sites (default: estimate)" label="Specify the proportion of invariable sites (default: estimate)" type="text" value="None"/>
+	<param argument="--opt-gamma-inv" help="Perform more thorough estimation for +I+G model parameters" label="Perform more thorough estimation for +I+G model parameters" type="boolean" value="None"/>
+	<param argument="-wsr" help="Write per-site rates to .rate file" label="Write per-site rates to .rate file" type="boolean" value="None"/>
+</section>
+
+<section expanded="false" name="partition_model" title="Partition model options">
+	<param argument="-q" help="Specify partition file for edge-equal partition model. That means, all partitions share the same set of branch lengths (like -q option of RAxML)." label="Specify partition file for edge-equal partition model" type="data"/>
+	<param argument="-spp" help="Like -q but allowing partitions to have different evolutionary speeds (edge-proportional partition model)." label="Like -q but allowing partitions to have different evolutionary speeds (edge-proportional partition model)." type="boolean" value="None"/>
+	<param argument="-sp" help="Specify partition file for edge-unlinked partition model. That means, each partition has its own set of branch lengths (like -M option of RAxML). This is the most parameter-rich partition model to accomodate heterotachy." label="Specify partition file for edge-unlinked partition model" type="data"/>
+</section>
+
+<section expanded="false" name="site-specific_frequency" title="Site-specific frequency model options">
+	<param argument="-ft" help="Specify a guide tree (in Newick format) to infer site frequency profiles." label="Specify a guide tree (in Newick format) to infer site frequency profiles." type="text" value="None"/>
+	<param argument="-fs" help="Specify a site frequency file, e.g. the .sitefreq file obtained from -ft run. This will save memory used for the first phase of the analysis." label="Specify a site frequency file, e.g" type="float" value="None"/>
+	<param argument="-fmax" help="Switch to posterior maximum mode for obtaining site-specific profiles. Default: posterior mean." label="Switch to posterior maximum mode for obtaining site-specific profiles" type="boolean" value="None"/>
+</section>
+
+<section expanded="false" name="tree_search" title="Tree search parameters">
+	<param argument="-ninit" help="Specify number of initial parsimony trees. DEFAULT: 100. Here the PLL library (Flouri et al., 2015) is used, which implements the randomized stepwise addition and parsimony subtree pruning and regafting (SPR)." label="Specify number of initial parsimony trees" type="integer" value="100"/>
+	<param argument="-ntop" help="Specify number of top initial parsimony trees to optimize with ML nearest neighbor interchange (NNI) search to initialize the candidate set. DEFAULT: 20" label="Specify number of top initial parsimony trees to optimize with ML nearest neighbor interchange (NNI) search to initialize the candidate set" type="integer" value="20"/>
+	<param argument="-nbest" help="Specify number of trees in the candidate set to maintain during ML tree search. DEFAULT: 5" label="Specify number of trees in the candidate set to maintain during ML tree search" type="integer" value="5"/>
+	<param argument="-nstop" help="Specify number of unsuccessful iterations to stop. DEFAULT: 100" label="Specify number of unsuccessful iterations to stop" type="integer" value="100"/>
+	<param argument="-n" help="Specify number of iterations to stop. This option overrides -nstop criterion." label="Specify number of iterations to stop" type="integer" value="None"/>
+	<param argument="-sprrad" help="Specify SPR radius for the initial parsimony tree search. DEFAULT: 6" label="Specify SPR radius for the initial parsimony tree search" type="text" value="6.0"/>
+	<param argument="-pers" help="Specify perturbation strength (between 0 and 1) for randomized NNI. DEFAULT: 0.5" label="Specify perturbation strength (between 0 and 1) for randomized NNI" type="text" value="0.5"/>
+	<param argument="-allnni" help="Turn on more thorough and slower NNI search. It means that IQ-TREE will consider all possible NNIs instead of only those in the vicinity of previously applied NNIs. DEFAULT: OFF" label="Turn on more thorough and slower NNI search" type="boolean" value="false"/>
+	<param argument="-djc" help="Avoid computing ML pairwise distances and BIONJ tree." label="Avoid computing ML pairwise distances and BIONJ tree." type="boolean" value="None"/>
+	<param argument="-g" help="Specify a topological constraint tree file in NEWICK format. The constraint tree can be a multifurcating tree and need not to include all taxa." label="Specify a topological constraint tree file in NEWICK format" type="data"/>
+</section>
+
+<section expanded="false" name="ultrafast_bootstrap" title="Ultrafast bootstrap parameters">
+	<param argument="-bb" help="Specify number of bootstrap replicates (&gt;=1000)." label="Specify number of bootstrap replicates (&gt;=1000)." type="integer" value="None"/>
+	<param argument="-wbt" help="Turn on writing bootstrap trees to .ufboot file. DEFAULT: OFF" label="Turn on writing bootstrap trees to .ufboot file" type="boolean" value="false"/>
+	<param argument="-wbtl" help="Like -wbt but bootstrap trees written with branch lengths. DEFAULT: OFF" label="Like -wbt but bootstrap trees written with branch lengths" type="boolean" value="false"/>
+	<param argument="-nm" help="Specify maximum number of iterations to stop. DEFAULT: 1000" label="Specify maximum number of iterations to stop" type="integer" value="1000"/>
+	<param argument="-bcor" help="Specify minimum correlation coefficient for UFBoot convergence criterion. DEFAULT: 0.99" label="Specify minimum correlation coefficient for UFBoot convergence criterion" type="text" value="0.99"/>
+	<param argument="-nstep" help="Specify iteration interval checking for UFBoot convergence. DEFAULT: every 100 iterations" label="Specify iteration interval checking for UFBoot convergence" type="text" value="None"/>
+	<param argument="-beps" help="Specify a small epsilon to break tie in RELL evaluation for bootstrap trees. DEFAULT: 0.5" label="Specify a small epsilon to break tie in RELL evaluation for bootstrap trees" type="text" value="0.5"/>
+	<param argument="-bspec" help="Specify the resampling strategies for partitioned analysis. By default, IQ-TREE resamples alignment sites within partitions. With -bspec GENE IQ-TREE will resample partitions. With -bspec GENESITE IQ-TREE will resample partitions and then resample sites within resampled partitions (Gadagkar et al., 2005)." label="Specify the resampling strategies for partitioned analysis" type="text" value="None"/>
+	<param argument="-bnni" help="Perform an additional step to further optimize UFBoot trees by nearest neighbor interchange (NNI) based directly on bootstrap alignments. This option is recommended in the presence of severe model violations. It increases computing time by 2-fold but reduces the risk of overestimating branch supports due to severe model violations. Introduced in IQ-TREE 1.6." label="Perform an additional step to further optimize UFBoot trees by nearest neighbor interchange (NNI) based directly on bootstrap alignments" type="boolean" value="None"/>
+</section>
+
+<section expanded="false" name="nonparametric_bootstrap" title="Nonparametric bootstrap">
+	<param argument="-b" help="Specify number of bootstrap replicates (recommended &gt;=100). This will perform both bootstrap and analysis on original alignment and provide a consensus tree." label="Specify number of bootstrap replicates (recommended &gt;=100)" type="integer" value="None"/>
+	<param argument="-bc" help="Like -b but omit analysis on original alignment." label="Like -b but omit analysis on original alignment." type="boolean" value="None"/>
+	<param argument="-bo" help="Like -b but only perform bootstrap analysis (no analysis on original alignment and no consensus tree)." label="Like -b but only perform bootstrap analysis (no analysis on original alignment and no consensus tree)." type="boolean" value="None"/>
+</section>
+
+<section expanded="false" name="single_branch" title="Single branch tests">
+	<param argument="-alrt" help="Specify number of replicates (&gt;=1000) to perform SH-like approximate likelihood ratio test (SH-aLRT) (Guindon et al., 2010). If number of replicates is set to 0 (-alrt 0), then the parametric aLRT test (Anisimova and Gascuel 2006) is performed, instead of SH-aLRT." label="Specify number of replicates (&gt;=1000) to perform SH-like approximate likelihood ratio test (SH-aLRT) (Guindon et al., 2010)" type="integer" value="None"/>
+	<param argument="-abayes" help="Perform approximate Bayes test (Anisimova et al., 2011)." label="Perform approximate Bayes test (Anisimova et al., 2011)." type="boolean" value="None"/>
+	<param argument="-lbp" help="Specify number of replicates (&gt;=1000) to perform fast local bootstrap probability method (Adachi and Hasegawa, 1996)." label="Specify number of replicates (&gt;=1000) to perform fast local bootstrap probability method (Adachi and Hasegawa, 1996)." type="integer" value="None"/>
+</section>
+
+<section expanded="false" name="tree_topology" title="Tree topology tests">
+	<param argument="-z" help="Specify a file containing a set of trees. IQ-TREE will compute the log-likelihoods of all trees." label="Specify a file containing a set of trees" type="data"/>
+	<param argument="-zb" help="Specify the number of RELL (Kishino et al., 1990) replicates (&gt;=1000) to perform several tree topology tests for all trees passed via -z. The tests include bootstrap proportion (BP), KH test (Kishino and Hasegawa, 1989), SH test (Shimodaira and Hasegawa, 1999) and expected likelihood weights (ELW) (Strimmer and Rambaut, 2002)." label="Specify the number of RELL (Kishino et al., 1990) replicates (&gt;=1000) to perform several tree topology tests for all trees passed via -z" type="integer" value="None"/>
+	<param argument="-zw" help="Used together with -zb to additionally perform the weighted-KH and weighted-SH tests." label="Used together with -zb to additionally perform the weighted-KH and weighted-SH tests." type="boolean" value="None"/>
+	<param argument="-au" help="Used together with -zb to additionally perform the approximately unbiased (AU) test (Shimodaira, 2002). Note that you have to specify the number of replicates for the AU test via -zb." label="Used together with -zb to additionally perform the approximately unbiased (AU) test (Shimodaira, 2002)" type="boolean" value="None"/>
+	<param argument="-n" help="Only estimate model parameters on an initial parsimony tree and ignore a full tree search to save time." label="Only estimate model parameters on an initial parsimony tree and ignore a full tree search to save time." type="boolean" value="None"/>
+	<param argument="-te" help="Specify a fixed user tree to estimate model parameters. Thus it behaves like -n 0 but uses a user-defined tree instead of parsimony tree." label="Specify a fixed user tree to estimate model parameters" type="text" value="None"/>
+</section>
+
+<section expanded="false" name="constructing_consensus" title="Constructing consensus tree">
+	<param argument="-t" help="Specify a file containing a set of trees." label="Specify a file containing a set of trees." type="data"/>
+	<param argument="-con" help="Compute consensus tree of the trees passed via -t. Resulting consensus tree is written to .contree file." label="Compute consensus tree of the trees passed via -t" type="boolean" value="None"/>
+	<param argument="-net" help="Compute consensus network of the trees passed via -t. Resulting consensus network is written to .nex file." label="Compute consensus network of the trees passed via -t" type="boolean" value="None"/>
+	<param argument="-minsup" help="Specify a minimum threshold (between 0 and 1) to keep branches in the consensus tree. -minsup 0.5 means to compute majority-rule consensus tree. DEFAULT: 0 to compute extended majority-rule consensus." label="Specify a minimum threshold (between 0 and 1) to keep branches in the consensus tree" type="text" value="0.0"/>
+	<param argument="-bi" help="Specify a burn-in, which is the number of beginning trees passed via -t to discard before consensus construction. This is useful e.g. when summarizing trees from MrBayes analysis." label="Specify a burn-in, which is the number of beginning trees passed via -t to discard before consensus construction" type="integer" value="None"/>
+	<param argument="-sup" help="Specify an input “target” tree file. That means, support values are first extracted from the trees passed via -t, and then mapped onto the target tree. Resulting tree with assigned support values is written to .suptree file. This option is useful to map and compare support values from different approaches onto a single tree." label="Specify an input “target” tree file" type="text" value="None"/>
+	<param argument="-suptag" help="Specify name of a node in -sup target tree. The corresponding node of .suptree will then be assigned with IDs of trees where this node appears. Special option -suptag ALL will assign such IDs for all nodes of the target tree." label="Specify name of a node in -sup target tree" type="text" value="None"/>
+</section>
+
+<section expanded="false" name="computing_robinson-foulds" title="Computing Robinson-Foulds distance">
+	<param argument="-t" help="Specify a file containing a set of trees." label="Specify a file containing a set of trees." type="data"/>
+	<param argument="-rf" help="Specify a second set of trees. IQ-TREE computes all pairwise RF distances between two tree sets passed via -t and -rf" label="Specify a second set of trees" type="text" value="None"/>
+	<param argument="-rf_all" help="Compute all-to-all RF distances between all trees passed via -t" label="Compute all-to-all RF distances between all trees passed via -t" type="boolean" value="None"/>
+	<param argument="-rf_adj" help="Compute RF distances between adjacent trees passed via -t" label="Compute RF distances between adjacent trees passed via -t" type="boolean" value="None"/>
+</section>
+
+<section expanded="false" name="generating_random" title="Generating random trees">
+	<param argument="-r" help="Specify number of taxa. IQ-TREE will create a random tree under Yule-Harding model with specified number of taxa" label="Specify number of taxa" type="integer" value="None"/>
+	<param argument="-ru" help="Like -r, but a random tree is created under uniform model." label="Like -r, but a random tree is created under uniform model." type="boolean" value="None"/>
+	<param argument="-rcat" help="Like -r, but a random caterpillar tree is created." label="Like -r, but a random caterpillar tree is created." type="boolean" value="None"/>
+	<param argument="-rbal" help="Like -r, but a random balanced tree is created." label="Like -r, but a random balanced tree is created." type="boolean" value="None"/>
+	<param argument="-rcsg" help="Like -r, bur a random circular split network is created." label="Like -r, bur a random circular split network is created." type="boolean" value="None"/>
+	<param argument="-rlen" help="Specify three numbers: minimum, mean and maximum branch lengths of the random tree. DEFAULT: -rlen 0.001 0.1 0.999" label="Specify three numbers: minimum, mean and maximum branch lengths of the random tree" type="text" value="None"/>
+</section>
+
+<section expanded="false" name="miscellaneous_options" title="Miscellaneous options">
+	<param argument="-wt" help="Turn on writing all locally optimal trees into .treels file. DEFAULT: OFF" label="Turn on writing all locally optimal trees into .treels file" type="boolean" value="false"/>
+	<param argument="-fixbr" help="Turn on fixing branch lengths of tree passed via -t or -te. This is useful to evaluate the log-likelihood of an input tree with fixed tolopogy and branch lengths. DEFAULT: OFF" label="Turn on fixing branch lengths of tree passed via -t or -te" type="boolean" value="false"/>
+	<param argument="-wsl" help="Turn on writing site log-likelihoods to .sitelh file in TREE-PUZZLE format. Such file can then be passed on to CONSEL for further tree tests. DEFAULT: OFF" label="Turn on writing site log-likelihoods to .sitelh file in TREE-PUZZLE format" type="boolean" value="false"/>
+	<param argument="-wslg" help="Turn on writing site log-likelihoods per rate category. DEFAULT: OFF" label="Turn on writing site log-likelihoods per rate category" type="boolean" value="false"/>
+	<param argument="-fconst" help="Specify a list of comma-separated integer numbers. The number of entries should be equal to the number of states in the model (e.g. 4 for DNA and 20 for protein). IQ-TREE will then add a number of constant sites accordingly. For example, -fconst 10,20,15,40 will add 10 constant sites of all A, 20 constant sites of all C, 15 constant sites of all G and 40 constant sites of all T into the alignment." label="Specify a list of comma-separated integer numbers" type="text" value="None"/>
+</section>
+
