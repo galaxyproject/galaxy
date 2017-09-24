@@ -1,0 +1,39 @@
+
+<tool id="merlin_1" name="Merlin" version="0.1.0" >
+    <description>Linkage and Haplotype analysis</description>
+    <command>./merlin.sh $inp_ped $inp_dat $analysis_type</command>
+    <inputs>
+      <!-- Not needed yet
+	   <param name="inp_map" type="data" format="link_map" label="linkage map file" />
+      -->
+      <!-- Have to add this format to the list of expected types -->
+      <param name="inp_ped"  type="data" format="linkage_pedin"  label="Pedigree" />
+      <param name="inp_data" type="data" format="linkage_recomb" label="Recombination Freqs." />
+      <param name="analysis_type" type="select" label="from">
+	<option value="--best" >Linkage and Haplotypes</option>
+	<option value="">Linkage only</option>
+      </param>
+    </inputs>
+
+    <outputs>
+     <data name="Haplotypes"   format="merlin_haplo"   label="Merlin Haplotypes File"  />
+     <data name="Linkage" format="merlin_linkage" label="Merlin MPT Linkage File" />
+     <data name="Descent" format="merlin_descent" label="Merlin Descent File"     />
+    </outputs>
+    <!-- TEST -->
+
+    <tests>
+      <test>
+	<param name="inp_ped" value="pedin_1.22" />
+	<param name="inp_dat" value="datain_1.22" />
+	<param name="analysis_type" value="--best" />
+	<output name="Haplotypes"   ftype="merlin_haplo" />
+	<output name="Linkage" ftype="merlin_link" />
+	<output name="Descent" ftype="merlin_descent" />
+      </test>
+    </tests>
+
+    <help>
+      This tool computes linkage anaysis and/or haplotype analysis for a set of input linkage files
+    </help>
+</tool>

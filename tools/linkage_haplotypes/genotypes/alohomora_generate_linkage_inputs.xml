@@ -1,0 +1,110 @@
+
+<tool id="alohomora_1" name="Alohomora" version="0.1.0" >
+    <description>Convert genotypes and pedigrees into linkage input</description>
+    <command interpreter="perl">./alohomora.pl $input_perl</command>
+
+   <configfiles>
+     <configfile name="input_perl">
+       
+	use Switch;
+
+	# Read in files
+	$infile="${inp_gt}";
+	$pedfilepro="${inp_ped}";
+
+	# Override Illumina map
+	$chip="Illumina";
+	$genmap="Other";
+	$other_map_illumi="${inp_map}";
+
+	# Override Caucasian MAF on input
+	if "${inp_maf}" == "":
+	    $allfreq="Equal"
+	else:
+	    $allfreq="Caucasian";
+	    $freq_cauc_illumi="${inp_maf}";
+
+	$del_errors=0;
+
+	$skip_notinf=0;
+	$del_errors=1;
+	$del_unlikely=1;
+
+	# The likelihood of a user injecting perl code via HTML input is so low...
+	# &#38;"${inp_prog}"
+	#
+	# But better to be safe:
+	switch ("${inp_prog}") {
+	   case "Allegro"    { &#38;Allegro;   }
+	   case "Genehunter" { &#38;Genehunter;}
+	   case "Merlin"     { &#38;Merlin;    }
+	   case "Mega2"      { &#38;Mega2;     }
+	}
+      </configfile>
+    </configfiles>
+    
+    <inputs>
+      <!-- Have to add this format to the list of expected types -->
+      <param name="inp_prog" type="select" label="Linkage Program" >
+	<option value="Allegro"   >Allegro</option>
+	<option value="Genehunter">GeneHunter</option>
+	<option value="Merlin"    >Merlin</option>
+	<option value="Mega2"     >Simwalk</option>
+	<option value="Allegro"   >SwiftLink</option><!--Yes, the value is accurate...-->
+      </param>
+	
+      <param name="inp_gt"  type="data" format="alohomora_gts" label="Genotypes" />
+      <param name="inp_ped" type="data" format="ped" label="Pedigree" />
+      <param name="inp_map" type="data" format="alohomora_map" label="Marker Map" />
+      <param name="inp_maf" type="data" format="alohomora_maf" optional="true" label="(optional) MAF file?" />
+      <param name="inp_chr" type="select" label="Chromosome" >
+	<option value="c01" >c01</option>
+	<option value="c02" >c02</option>
+	<option value="c03" >c03</option>
+	<option value="c04" >c04</option>
+	<option value="c05" >c05</option>
+	<option value="c06" >c06</option>
+	<option value="c07" >c07</option>
+	<option value="c08" >c08</option>
+	<option value="c09" >c09</option>
+	<option value="c10" >c10</option>
+	<option value="c11" >c11</option>
+	<option value="c12" >c12</option>
+	<option value="c13" >c13</option>
+	<option value="c14" >c14</option>
+	<option value="c15" >c15</option>
+	<option value="c16" >c16</option>
+	<option value="c17" >c17</option>
+	<option value="c18" >c18</option>
+	<option value="c19" >c19</option>
+	<option value="c20" >c20</option>
+	<option value="c21" >c21</option>
+	<option value="c22" >c22</option>
+	<option value="cXY" >cXY</option>
+      </param>
+    </inputs>
+
+    <outputs>
+      <data name="Pedigree"              format="linkage_pedin"  label="Linkage Pedigree"     />
+      <data name="Recombination Freqs."  format="linkage_recomb" label="Recombination Freqs." />
+      <data name="Map"                   format="linkage_map"    label="Linkage Map"          />
+    </outputs>
+
+    <tests>
+      <test>
+	<param name="inp_prog" value="Allegro" />
+	<param name="inp_gt" value="genotypes" />
+	<param name="inp_ped" value="pedfile.pro" />
+	<param name="inp_map" value="map.txt" />
+
+	<!-- This should be multiple -->
+	<output name="Pedigree"   ftype="linkage_recomb" />
+	<output name="Recombination Freqs." ftype="linkage_recomb" />
+	<output name="Map" ftype="linkage_map" />
+      </test>
+    </tests>
+
+    <help>
+This tool converts a set of input genotypes, marker maps, and pedigrees into common linkage formats
+    </help>
+</tool>
