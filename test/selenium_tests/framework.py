@@ -49,6 +49,9 @@ GALAXY_TEST_EXTERNAL_FROM_SELENIUM = os.environ.get("GALAXY_TEST_EXTERNAL_FROM_S
 # Auto-retry selenium tests this many times.
 GALAXY_TEST_SELENIUM_RETRIES = int(os.environ.get("GALAXY_TEST_SELENIUM_RETRIES", "0"))
 
+GALAXY_TEST_SELENIUM_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_USER_EMAIL", None)
+GALAXY_TEST_SELENIUM_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_USER_PASSWORD", None)
+
 
 try:
     from nose.tools import nottest
@@ -129,8 +132,14 @@ class TestSnapshot(object):
 
 
 class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
-
+    # If run one-off via nosetests, the next line ensures test
+    # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
+
+    # Override this in subclasses to ensure a user is logged in
+    # before each test. If GALAXY_TEST_SELENIUM_USER_EMAIL and
+    # GALAXY_TEST_SELENIUM_USER_PASSWORD are set these values
+    # will be used to login.
     ensure_registered = False
 
     def setUp(self):
@@ -174,6 +183,18 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
         self.driver.set_window_size(1280, 900)
 
         if self.ensure_registered:
+            self.login()
+
+    def login(self):
+        if GALAXY_TEST_SELENIUM_USER_EMAIL:
+            assert GALAXY_TEST_SELENIUM_USER_PASSWORD, "If GALAXY_TEST_SELENIUM_USER_EMAIL is set, a password must be set also with GALAXY_TEST_SELENIUM_USER_PASSWORD"
+            self.home()
+            self.submit_login(
+                email=GALAXY_TEST_SELENIUM_USER_EMAIL,
+                password=GALAXY_TEST_SELENIUM_USER_PASSWORD,
+                assert_valid=True,
+            )
+        else:
             self.register()
 
     def tear_down_driver(self):
