@@ -50,7 +50,7 @@ class PageListGrid(grids.Grid):
     operations = [
         grids.DisplayByUsernameAndSlugGridOperation("View", allow_multiple=False),
         grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(action='edit_content')),
-        grids.GridOperation("Edit attributes", allow_multiple=False, url_args=dict(action='edit')),
+        grids.GridOperation("Edit attributes", allow_multiple=False, url_args=dict(controller="", action='pages/edit')),
         grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
         grids.GridOperation("Delete", confirm="Are you sure you want to delete this page?"),
     ]
@@ -399,10 +399,11 @@ class PageController(BaseUIController, SharableMixin,
                       help="A description of the page; annotation is shown alongside published pages."),
             template="page/create.mako")
 
-    @web.expose
+    @web.expose_api
     @web.require_login("edit pages")
-    def edit(self, trans, id, page_title="", page_slug="", page_annotation=""):
+    def edit(self, trans, payload=None, **kwd):
         """
+        , id, page_title="", page_slug="", page_annotation=""
         Edit a page's attributes.
         """
         encoded_id = id

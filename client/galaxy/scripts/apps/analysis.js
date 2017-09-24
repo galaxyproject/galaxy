@@ -46,6 +46,7 @@ window.app = function app( options, bootstrapped ){
             '(/)user(/)(:form_id)' : 'show_user_form',
             '(/)workflow(/)' : 'show_workflows',
             '(/)workflow/run(/)' : 'show_run',
+            '(/)pages(/)edit(/)' : 'show_pages_edit',
             '(/)pages(/)(:action_id)' : 'show_pages',
             '(/)visualizations(/)edit(/)' : 'show_visualizations_edit',
             '(/)visualizations/(:action_id)' : 'show_visualizations',
@@ -112,6 +113,10 @@ window.app = function app( options, bootstrapped ){
 
         show_pages : function( action_id ) {
             this.page.display( new GridShared.View( { action_id: action_id, plural: 'Pages', item: 'page' } ) );
+        },
+
+        show_pages_edit : function() {
+            this.page.display( new FormWrapper.View ( { url : 'pages/edit?id=' + QueryStringParsing.get( 'id' ), redirect: 'pages/list' } ) );
         },
 
         show_workflows : function(){
