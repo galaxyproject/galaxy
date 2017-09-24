@@ -23,6 +23,7 @@ class JobSearch(object):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         user = trans.user
         input_param = {}
+        input_data = {}
         for k, v in inputs.items():
             if isinstance(v, dict):
                 if 'id' in v:
@@ -43,13 +44,10 @@ class JobSearch(object):
                                 return []
                         else:
                             return []
-                    parameter_values = []
-                    for item in all_items:
-                        parameter_values.append(json.dumps({'values': [{'src': src, 'id': item.id}]}))
-                    input_param[k] = parameter_values
+                    input_data[k] = {src: {item.id for item in all_items}}
             else:
                 input_param[k] = json.dumps(str(v))
-        return self.__search(tool_id=tool_id, user=user, input_param=input_param, job_state=job_state)
+        return self.__search(tool_id=tool_id, user=user, input_param=input_param, input_data=input_data, job_state=job_state)
 
     def one_not_deleted(self, items):
         return any((True for item in items if not item.deleted))
@@ -61,12 +59,10 @@ class JobSearch(object):
             model.HistoryDatasetAssociation.dataset_id == hda.dataset_id).all()
 
     def _get_all_lddas(self, trans, ldda_id):
-        """Given a decoded `ldda_id`, find other instances that refer to the same dataset."""
+        """Given a decoded `ldda_id` return the corresponding ldda"""
+        # TODO: implement looking up HDAs that point to the same dataset
         ldda = self.ldda_manager.get(trans=trans, id=ldda_id)
-        hdas = self.sa_session.query(model.HistoryDatasetAssociation).filter(
-            model.HistoryDatasetAssociation.dataset_id == ldda.dataset_id).all()
-        hdas.append(ldda)
-        return hdas
+        return [ldda]
 
     def _get_all_hdcas(self, trans, hdca_id):
         """Given an hdca, returns a list of other hdcas that were copied from this hdca."""
@@ -80,7 +76,7 @@ class JobSearch(object):
             hdcas.append(copied_from)
         return hdcas
 
-    def __search(self, tool_id, user, input_param, job_state=None):
+    def __search(self, tool_id, user, input_param, input_data, job_state=None):
 
         query = self.sa_session.query(model.Job).filter(
             model.Job.tool_id == tool_id,
@@ -116,16 +112,36 @@ class JobSearch(object):
                     a.name == k,
                     a.value == v
                 ))
-            elif isinstance(v, list):
-                query = query.filter(and_(
-                    model.Job.id == a.job_id,
-                    a.name == k,
-                    a.value.in_(v)
-                ))
+        for k, type_values in input_data.items():
+            for t, v in type_values.items():
+                if t == 'hda':
+                    a = aliased(model.JobToInputDatasetAssociation)
+                    query = query.filter(and_(
+                        model.Job.id == a.job_id,
+                        a.name == k,
+                        a.dataset_id.in_(v)
+                    ))
+                elif t == 'ldda':
+                        a = aliased(model.JobToInputDatasetCollectionAssociation)
+                        query = query.filter(and_(
+                            model.Job.id == a.job_id,
+                            a.name == k,
+                            a.ldda_id.in_(v)
+                        ))
+                elif t == 'hdca':
+                    a = aliased(model.JobToInputLibraryDatasetAssociation)
+                    query = query.filter(and_(
+                        model.Job.id == a.job_id,
+                        a.name == k,
+                        a.dataset_collection_id.in_(v)
+                    ))
+                else:
+                    return []
 
         jobs = []
         for job in query.all():
             # check to make sure none of the output datasets or collections have been deleted
+            # TODO: find copies if output is deleted
             outputs_deleted = False
             for hda in job.output_datasets:
                 if hda.dataset.deleted:
