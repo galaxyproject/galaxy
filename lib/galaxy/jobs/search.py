@@ -45,9 +45,7 @@ class JobSearch(object):
                             return []
                     parameter_values = []
                     for item in all_items:
-                        parameter_value = v.copy()
-                        parameter_value['id'] = item.id
-                        parameter_values.append(json.dumps({'values': [parameter_value]}))
+                        parameter_values.append(json.dumps({'values': [{'src': src, 'id': item.id}]}))
                     input_param[k] = parameter_values
             else:
                 input_param[k] = json.dumps(str(v))
