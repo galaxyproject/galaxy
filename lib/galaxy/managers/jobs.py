@@ -44,6 +44,10 @@ class JobSearch(object):
                                 return []
                         else:
                             return []
+                    else:
+                        # We don't know how to deal with inputs that are not HDCA/HDA/LDDA
+                        # and possibly LDCA in the future.
+                        return []
                     input_data[k] = {src: {item.id for item in all_items}}
             else:
                 input_param[k] = json.dumps(str(v))
