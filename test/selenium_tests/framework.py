@@ -49,9 +49,6 @@ GALAXY_TEST_EXTERNAL_FROM_SELENIUM = os.environ.get("GALAXY_TEST_EXTERNAL_FROM_S
 # Auto-retry selenium tests this many times.
 GALAXY_TEST_SELENIUM_RETRIES = int(os.environ.get("GALAXY_TEST_SELENIUM_RETRIES", "0"))
 
-# Test case data
-DEFAULT_PASSWORD = '123456'
-
 
 try:
     from nose.tools import nottest
