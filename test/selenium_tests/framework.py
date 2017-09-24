@@ -60,6 +60,28 @@ except ImportError:
         return x
 
 
+def managed_history(f):
+    """Ensure a Selenium test has a distinct, named history.
+
+    Cleanup the history after the job is complete as well unless
+    GALAXY_TEST_NO_CLEANUP is set in the environment.
+    """
+
+    @wraps(f)
+    def func_wrapper(self, *args, **kwds):
+        self.home()
+        history_name = f.__name__ + datetime.datetime.now().strftime("%Y%m%d%H%M%s")
+        self.history_panel_create_new_with_name(history_name)
+        try:
+            f(self, *args, **kwds)
+        finally:
+            if "GALAXY_TEST_NO_CLEANUP" not in os.environ:
+                current_history_id = self.current_history_id()
+                self.api_delete("histories/%s" % current_history_id)
+
+    return func_wrapper
+
+
 @nottest
 def selenium_test(f):
 

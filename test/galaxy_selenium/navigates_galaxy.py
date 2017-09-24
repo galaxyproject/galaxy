@@ -162,6 +162,14 @@ class NavigatesGalaxy(HasDriver):
         else:
             return response.json()
 
+    def api_delete(self, endpoint, raw=False):
+        full_url = self.build_url("api/" + endpoint, for_selenium=False)
+        response = requests.get(full_url, cookies=self.selenium_to_requests_cookies())
+        if raw:
+            return response
+        else:
+            return response.json()
+
     def get_galaxy_session(self):
         for cookie in self.driver.get_cookies():
             if cookie["name"] == "galaxysession":
@@ -214,6 +222,15 @@ class NavigatesGalaxy(HasDriver):
         if assert_ok:
             assert final_state == "ok", final_state
         return final_state
+
+    def history_panel_create_new_with_name(self, name):
+        self.history_panel_create_new()
+        self.history_panel_rename(name)
+
+    def history_panel_create_new(self):
+        """Click create new and pause a bit for the history to begin to refresh."""
+        self.click_history_option('Create New')
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
 
     def history_panel_wait_for_hid_ok(self, hid, allowed_force_refreshes=0):
         self.history_panel_wait_for_hid_state(hid, 'ok', allowed_force_refreshes=allowed_force_refreshes)
