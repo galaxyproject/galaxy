@@ -1,5 +1,4 @@
 from .framework import (
-    DEFAULT_PASSWORD,
     selenium_test,
     SeleniumTestCase
 )
@@ -33,7 +32,7 @@ class RegistrationTestCase(SeleniumTestCase):
     def test_reregister_email_fails(self):
         self.home()
         email = self._get_random_email()
-        password = DEFAULT_PASSWORD
+        password = self.default_password
         confirm = password
         username = email.split("@")[0]
         self.register(email, password, username, confirm)
@@ -47,7 +46,7 @@ class RegistrationTestCase(SeleniumTestCase):
         self.home()
         email1 = self._get_random_email()
         email2 = self._get_random_email()
-        password = DEFAULT_PASSWORD
+        password = self.default_password
         confirm = password
         username = email1.split("@")[0]
         self.register(email1, password, username, confirm)
@@ -60,7 +59,7 @@ class RegistrationTestCase(SeleniumTestCase):
     def test_bad_emails(self):
         bad_emails = ['bob', 'bob@', 'bob@idontwanttocleanup', 'bob.cantmakeme']
         good_email = self._get_random_email()
-        password = DEFAULT_PASSWORD
+        password = self.default_password
         confirm = password
         username = good_email.split("@")[0]
 
