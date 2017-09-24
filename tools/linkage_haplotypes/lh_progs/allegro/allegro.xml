@@ -1,0 +1,240 @@
+
+<tool id="allegro_1" name="Allegro" version="0.1.0" >
+    <description>Linkage and Haplotype analysis</description>
+    <command>./allegro $allegro_conf</command>
+
+    <configfiles>
+      <configfile name="allegro_conf" >
+	PREFILE "${inp_ped}"
+	DATFILE "${inp_dat}"
+
+	#if ${opt_linkage}:
+	   #if ${extra_linkage_type}.value == "Allele Sharing":
+              MODEL ${extra_linkage_mptspt} ${extra_linkage_linexp} ${extra_linkage_scoring} ${extra_weighting}  param.mpt ${out_linexp}
+
+	   #elif ${extra_linkage_type}.value == "Classical":
+	       #if ${opt_custom_freqs}:
+               MODEL ${extra_linkage_mptspt} par ${extra_xlinked} freq:${extra_linkage_par_freq} pen:${extra_linkage_par_pen} ${extra_linkage_par_het} param.mpt ${out_fparam}
+	       #else:
+	       MODEL ${extra_linkage_mptspt} par ${extra_xlinked} param.mpt ${out_fparam}
+	       #end if
+ 	#end if
+
+	#if ${opt_haplotypes}:
+           HAPLOTYPE haplo.out ${out_ihaplo} ${out_founder} inher.out
+	#end if
+
+        UNINFORMATIVE ${out_uninformative}
+	
+	#if ${opt_crossover}:
+           CROSSOVERRATE combined.out ${out_combined_cross}
+	#end if
+	
+	ENTROPY #if ${opt_entropy}# on#else off#end if
+	NPLEXACTP #if ${opt_nplexactp}# on#else off#end if
+
+	#if ${opt_pairwise}:
+            PAIRWISEIBD ${extra_linkage_mptspt} ${extra_pairwise_type}
+        #end if
+	    
+	#if ${opt_sim}:
+	    SIMULATE ${extra_sim_dloc} ${extra_sim_npre} ${extra_rep} ${extra_sim_err} ${extra_sim_yield} ${extra_sim_het}
+	#end if
+
+	#if ${opt_sexspecific}:
+	    SEXSPECIFIC on
+	#endif
+
+	#if ${extra_steps_type}.value=="STEPS":
+            STEPS ${extra_steps}
+	#elif ${extra_steps_type}.value=="STEPFILE":
+            STEPFILE ${inp_stepfile}
+	#elif ${extra_steps_type}.value=="MAXSTEPLENGTH":
+	    MAXSTEPLENGTH ${extra_maxstep}
+	#end if
+
+	
+	MAXMEMORY ${extra_maxmem}
+	MAXUNLOOP ${extra_maxunloop}
+	UNIT ${extra_unit}
+
+      </configfile>
+    </configfiles>
+
+    
+    <inputs>
+      <!-- Have to add this format to the list of expected types -->
+      <param name="inp_ped" type="data" format="linkage_pedin"  label="Pedigree" />
+      <param name="inp_dat" type="data" format="linkage_recomb" label="Recombination Freqs." />
+      <param name="inp_map" type="data" format="linkage_map"    label="Marker Positions" optional="true" />
+
+      <section name="section_haplotypes" title="Haplotypes" expanded="true" >
+	<param name="opt_haplotypes" type="boolean" value="false"
+	       label="Haplotypes" />
+
+	<param name="opt_crossover" type="boolean" value="false"
+	       label="Show crossover rate" />
+      </section>
+
+
+      <section name="section_linkage" title="Linkage" expanded="true" >
+
+	<conditional name="cond_linktype" >
+	  <param name="extra_linkage_type" type="select"
+		 label="Type of analysis" >
+	    <option value="Allele Sharing" >Allele Sharing</option>
+	    <option value="Classical" >Classical</option>
+	  </param>
+	  <when value="Allele Sharing">
+	    <param name="extra_linkage_linexp" type="select"
+		   label="Linear or Exponential" >
+	      <option value="lin" >Linear</option>
+	      <option value="exp" >Exponential</option>
+	    </param>
+	    <param name="extra_linkage_scoring" type="select"
+		   label="Scoring function" >
+	      <option value="pairs">Pairs</option>
+	      <option value="all">All</option>
+	      <option value="homoz">Homozygous</option>
+	      <option value="mnallele">MNAllele</option>
+	      <option value="robdom">RobDom</option>
+	      <option value="ps:mm/mf/ff">PS:MM/MF/FF</option>
+	    </param>
+
+	    <param name="extra_weighting" type="select"
+		   label="Weighting function" >
+	      <option value="equal">Equal</option>
+	      <option value="power:0.5">Power</option>
+	    </param>		
+	  </when>
+	  
+	  <when value="Classical" >
+	    <conditional name="cond_customfreqs" >
+	      <param name="opt_custom_freqs" value="false" type="boolean"
+		     label="Use custom frequencies instead of datafile" />
+	      <when value="false" />
+	      <when value="true" >
+		<param name="extra_linkage_par_freq" type="float" value="0" min="0" max="1"
+		       label="Frequency" />
+		<param name="extra_linkage_par_pen" type="text" value="p0/p1/p2"
+		       label="Penetrance" />
+	      </when>
+	    </conditional>
+	    
+	    <param name="extra_linkage_par_het" type="float" value=""
+		   label="HET Frequency (leave blank for dynamic)" />
+	    
+	  </when>
+	</conditional>
+
+	<conditional name="cond_steps" >
+	  <param name="extra_steps_type" type="select"
+		 label="Step Type" >
+	    <option value="STEPS">Calculations between adjacent markers</option>
+	    <option value="STEPFILE">Calculations at positions set in file</option>
+	    <option value="MAXSTEPLENGTH">Calculations at periodic (cM) intervals</option>
+	  </param>
+	  <when value="STEPS">
+	    <param name="extra_steps" type="integer" min="1" value="2"
+		   label="# Steps" />
+	  </when>
+	  <when value="STEPFILE">
+	    <param name="inp_stepfile" type="data"
+		   label="Step file" />
+	  </when>
+	  <when value="MAXSTEPLENGTH">
+	    <param name="extra_maxstep" type="float" min="1" value="2"
+		   label="cM" />
+	  </when>
+	</conditional>
+      </section>
+
+      <param name="opt_xlinked" type="select"
+	     label="Disease model" >
+	<option value="">Autosomal</option>
+	<option value="X">X-Linked</option>
+      </param>
+
+
+      <param name="opt_entropy" type="boolean" value="false"
+	     label="Entropy" />
+
+      <param name="opt_nplexactp" type="boolean" value="false"
+	     label="Use exact P-values" />
+
+
+      <conditional name="cond_pairwise" >
+	<param name="opt_pairwise" type="boolean" value="false"
+	       label="Pairwise Analysis" />
+
+	<when value="false" />
+	<when value="true" >
+	  <param name="extra_linkage_mptspt" type="select"
+		 label="IBD sharing probabilities" >
+	    <option value="mpt" >Multi-Point</option>
+	    <option value="spt" >Single-Point</option>
+	  </param>
+
+	  <param name="extra_pairwise_type" type="select"
+		 label="Weighting" >
+	    <option value="all">All</option>
+	    <option value="genotype">Genotype</option>
+	    <option value="affected">Affected</option>
+	    <option value="informative">Informative</option>
+	  </param>
+	</when>
+      </conditional>
+
+      <conditional name="cond_sim" >
+	<param name="opt_sim" type="boolean" value="false"
+	       label="Simulate multipoint data" />
+	<when value="false" />
+	<when value="true" >
+	  <param name="extra_sim_dloc" type="float" value="" min="0"
+		 label="Disease Locus (cM).\
+			Leave blank for unlinked disease locus." />
+	  <param name="extra_sim_npre" type="integer" value="1"
+		 label="Number of prefiles to generate" />
+	  <param name="extra_sim_rep" type="integer" value="1"
+		 label="How many times to repeat family pattern" />
+	  <param name="extra_sim_err" type="float" value="0" min="0"
+		 label="Error Rate" />
+	  <param name="extra_sim_yield" type="float" value="1"
+		 label="Genotype Yield" />
+	  <param name="extra_sim_het" type="float" value="0"
+		 label="HET probability" />
+	</when>
+      </conditional>
+
+      <param name="opt_sexspecific" value="off" type="boolean"
+	     label="Use Sex-Specific Penetrances (specified in data file)" />
+
+
+      <param name="opt_entropy" type="boolean" value="false"
+	     label="Entropy" />
+
+    </inputs>
+
+    <outputs>
+     <data name="Haplotypes"   format="allegro_haplo"   label="Allegro Haplotypes File"  />
+     <data name="Linkage" format="allegro_linkage" label="Allegro MPT Linkage File" />
+     <data name="Descent" format="allegro_descent" label="Allegro Descent File"     />
+    </outputs>
+    <!-- TEST -->
+
+    <tests>
+      <test>
+	<param name="inp_ped" value="pedin.22" />
+	<param name="inp_dat" value="datain.22" />
+	<param name="analysis_type" value="MODEL mpt par het\nHAPLOTYPES"  />
+	<output name="Haplotypes"   ftype="allegro_haplo" />
+	<output name="Linkage" ftype="allegro_linkage" />
+	<output name="Descent" ftype="alegro_descent" />
+      </test>
+    </tests>
+
+    <help>
+      This tool computes linkage anaysis and/or haplotype analysis for a set of input linkage files
+    </help>
+
+</tool>

@@ -1,0 +1,92 @@
+
+
+* Visualization:
+
+** HaploForge :: https://github.com/mtekman/haploforge
+
+*** TODO Incorporate whole app as 'visualization' (if possible)
+
+*** TODO Incorporate visualization and pedigree-creation parts as seperate Visualization components 
+**** Split off haplotype visualization component
+***** TODO as standalone Visualization
+
+**** Split off pedigree creation component
+***** TODO as a standalone UI tool? Need to ask BG.
+
+
+
+* Linkage Programs
+
+** TODO Datatypes:
+ - Write methods for each new file type in `datatypes_conf.xml`:
+   * Alohomora [0/4]
+     + [ ] alohomora_gts :: galaxy.datatypes.linkagestudies:Genotypes
+     + [ ] alohomora_map :: galaxy.datatypes.linkagestudies:MarkerMap
+     + [ ] alohomora_maf :: galaxy.datatypes.linkagestudies:MAF
+     + [ ] ped :: galaxy.datatypes.linkagestudies:ShortPedigree
+   * Common Linkage Input [0/3]
+     * [ ] linkage_recomb :: galaxy.datatypes.linkagestudies:RecFreqs
+     * [ ] linkage_pedin :: galaxy.datatypes.linkagestudies:PedigreeGT
+     * [ ] linkage_map :: galaxy.datatypes.linkagestudies:Map
+   * Allegro [0/3]
+     * [ ] allegro_haplo :: galaxy.datatypes.linkagestudies:AllegroHaplo
+     * [ ] allegro_descent :: galaxy.datatypes.linkagestudies:AllegroDescent
+     * [ ] allegro_linkage :: galaxy.datatypes.linkagestudies:AllegroLOD
+   * Genehunter [0/3]
+     * [ ] ghm_haplo :: galaxy.datatypes.linkagestudies:GHMHaplo
+     * [ ] ghm_descent :: galaxy.datatypes.linkagestudies:GHMDescent
+     * [ ] ghm_linkage :: galaxy.datatypes.linkagestudies:GHMLOD
+   * Merlin [0/3]
+     * [ ] merlin_haplo :: galaxy.datatypes.linkagestudies:MerlinHaplo
+     * [ ] merlin_descent :: galaxy.datatypes.linkagestudies:MerlinDescent
+     * [ ] merlin_linkage :: galaxy.datatypes.linkagestudies:MerlinLOD
+   * Simwalk [0/2]
+     * [ ] mega2_haplo_descent :: galaxy.datatypes.linkagestudies:Mega2Descent
+     * [ ] mega2_linkage :: galaxy.datatypes.linkagestudies:Mega2LOD
+   * Swiftlink [0/1]
+     * [ ] swift_linkage :: galaxy.datatypes.linkagestudies:SwiftLOD
+
+
+** Allegro
+**** Params [2/2]:
+***** DONE Basic params
+***** DONE Extensive params
+**** Tests [1/2]:
+***** DONE Basic test
+***** TODO Extensive tests
+
+
+** Genehunter
+**** Params [2/2]:
+***** DONE Basic params
+***** DONE Extensive params
+**** Tests [1/2]:
+***** DONE Basic test
+***** TODO Extensive tests
+
+
+** Merlin
+**** Params [1/2]:
+***** DONE Basic params
+***** TODO Extensive params
+**** Tests [1/2]:
+***** DONE Basic test
+***** TODO Extensive tests
+
+
+** Simwalk
+**** Params [1/2]:
+***** DONE Basic params
+***** TODO Extensive params
+**** Tests [1/2]:
+***** DONE Basic test
+***** TODO Extensive tests
+
+
+** Swiftlink
+**** Params [1/2]:
+***** DONE Basic params
+***** TODO Extensive params
+**** Tests [1/2]:
+***** DONE Basic test
+***** TODO Extensive tests

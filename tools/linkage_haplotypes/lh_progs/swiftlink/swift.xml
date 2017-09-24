@@ -1,0 +1,34 @@
+
+<tool id="swift_1" name="SwiftLink" version="0.1.0" >
+    <description>Linkage analysis</description>
+    <command>./swift.sh $inp_ped $inp_dat $analysis_type</command>
+    <inputs>
+      <!-- Not needed yet
+	   <param name="inp_map" type="data" format="link_map" label="linkage map file" />
+      -->
+      <!-- Have to add this format to the list of expected types -->
+      <param name="inp_ped" type="data" format="linkage_pedin"  label="Pedigree" />
+      <param name="inp_dat" type="data" format="linkage_recomb" label="Recombination Freqs." />
+      <param name="analysis_type" type="select" label="from">
+	<option value="" selected="true" >Linkage only</option>
+      </param>
+    </inputs>
+
+    <outputs>
+     <data name="Linkage" format="swift_linkage"  type="data" label="SwiftLink MPT Linkage File" />
+    </outputs>
+    <!-- TEST -->
+
+    <tests>
+      <test>
+	<param name="inp_ped" value="pedin.22" />
+	<param name="inp_dat" value="datain.22" />
+	<param name="analysis_type" value="" />
+	<output name="Linkage" ftype="swift_link" />
+      </test>
+    </tests>
+
+    <help>
+      This tool computes linkage anaysis and/or haplotype analysis for a set of input linkage files
+    </help>
+</tool>

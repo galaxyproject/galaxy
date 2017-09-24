@@ -1,0 +1,42 @@
+
+<tool id="mega_1" name="Simwalk" version="0.1.0" >
+    <description>Linkage and Haplotype analysis</description>
+    <command>./mega2.sh $inp_ped $inp_dat $analysis_type</command>
+    <inputs>
+      <!-- Not needed yet
+	   <param name="inp_map" type="data" format="link_map" label="linkage map file" />
+      -->
+      <!-- Have to add this format to the list of expected types -->
+      <param name="inp_ped" type="data" format="linkage_pedin"  label="Pedigree" />
+      <param name="inp_dat" type="data" format="linkage_recomb" label="Recombination Freqs." />
+      <param name="analysis_type" type="select" label="from">
+	<option value="1" >Haplotypes only</option>
+	<option value="2" >Linkage only</option>
+      </param>
+    </inputs>
+
+    <outputs>
+     <data name="Haplotypes (with Descent)" format="mega2_haplo_descent" label="Simwalk Haplotype and Descent File"/>
+     <data name="Linkage" format="mega2_linkage"     label="Simwalk MPT Linkage File" />
+    </outputs>
+    <!-- TEST -->
+
+    <tests>
+      <test>
+	<param name="inp_ped" value="pedin.22" />
+	<param name="inp_dat" value="datain.22" />
+	<param name="analysis_type" value="1" />
+	<output name="Haplotypes"   ftype="mega2_haplo_descent" />
+      </test>
+      <test>
+	<param name="inp_ped" value="pedin.22" />
+	<param name="inp_dat" value="datain.22" />
+	<param name="analysis_type" value="2" />
+	<output name="Linkage"   ftype="mega2_linkage" />
+      </test>
+    </tests>
+
+    <help>
+      This tool computes linkage anaysis and/or haplotype analysis for a set of input linkage files
+    </help>
+</tool>

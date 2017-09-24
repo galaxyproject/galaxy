@@ -1,0 +1,445 @@
+
+<tool id="ghm_1" name="GeneHunter" version="0.1.0" >
+    <description>Linkage and Haplotypes analysis</description>
+        
+    <macros>
+      <xml name="macro_npl_opts" >
+	<param name="extra_npl_score" type="select"
+	       label="Type of NPL scoring">
+	  <option value="all"   selected="true" />
+	  <option value="pairs"  />
+	  <option value="hom"    />
+	</param>
+      </xml>
+    </macros>
+    
+    <command>$__tool_directory__/ghm &#60; $setup_file </command>
+
+    
+    <configfiles>
+      <configfile name="setup_file" >
+	photo gh.out
+	load markers "${inp_dat}"
+
+	#if ${inp_map}:
+           read map "${inp_map}"
+	#end if
+
+	use
+	ps off
+	
+	scan ${inp_ped}
+
+	## Initiate mod score lod calculation and store IVs, off by default
+	modcalc ${extra_modcalc}  ## global / single / off
+	
+	#for $i, $anal in enumerate( ${analysis} ):
+	    #if $anal.value == "haplotype":
+              haplotype ${extra_haplotype}               ## on / off, generate Haplotypes
+	      haplotype method ${extra_haplotype_method} ## [MaxProb] / Viterbi
+	    #end if
+            #if $anal.value == "linkage":
+                analysis ${extra_mod_analysis} ## NPL / LOD / BOTH, type of linkage analysis
+	    	#if ${extra_mod_analysis}.value != "LOD":
+                   score ${extra_npl_score} ## pairs / all / hom
+                #end if
+                single point ${extra_singlepoint} ## on / off, dont use multi-point parametric
+	    #end if
+	#end for
+
+	## Show total scores from a scan of multiple peds
+	##  - 'het' [alpha], if not given then alpha varies
+	##  - 'stat' 
+	#if ${extra_stat}:
+           total ${extra_stathet} ${extra_statalpha}
+	#end if
+	
+	## Algebraic calculation for P-values, default on
+	alg #if ${extra_alg}# on#else off#end if
+	## Use more memory for algebraic calculations
+	algebra ${extra_alg_mem}# on#else off#end if
+
+	## Add custom trait models
+	#if ${extra_mod_model}
+            model ${extra_mod_modeldisfreq} ${extra_mod_modelpenet}
+        #end if
+
+	## Range of markers positions instead of all range
+	#if ${extra_mod_positions}:
+	    positions ${extra_mod_positions_lowest} ${extra_mod_positions_highest}
+	#end if
+
+	## Untyped, default on
+	#if ${use_haplotypes} or ${extra_includeuntyped}:
+           include untyped on
+	#else:
+	   include untyped off
+        #end if
+
+	## Eliminate uninformative individuals, default off
+	discard #if ${extra_discard}## on#else off#end if
+
+	## Use untyped founders, default off
+	ufo #if ${extra_ufo}## on#else off#endif
+
+	## Restrict penetrances so that hom wildtype LEQ het LEQ hom mutant, on default
+	pr #if ${extra_mod_penetrancerestrict}## on#else off#end if
+
+	## Restrict disease allele frequency to be not higher than the highest allfreq  (default 0.5)
+	ar #if ${extra_mod_allfreq}## on#else off#endif
+
+	## Set upper disease allele freq for MOD, default 0.5 ( 0 -> 1 )
+	ha ${extra_mod_highallele}
+
+	## Number of parameters varied together in MOD, default 2 ( 1 -> 5 )
+	dimensions "${extra_mod_dimensions}"
+
+        ## Normalize Allele Frequencies, default off
+	naf #if ${extra_nmaf}## on#else ## off#end if
+
+
+	## off by default
+	#if ${extra_modcalc}.value == "single":
+	    ## Number of trait models saved in MOD score. Only works if algebraic calc is off, and in single modcalc
+	    #if !${extra_alg}:
+	        #if ${extra_mod_savedmodels}!=-1:
+                   saved models ${extra_mod_savedmodels}
+                #end if
+            #end if
+		
+	    ## Long output for modcalc single    
+	    #if ${extra_mod_longmod}:
+                lm on
+	    #end if
+
+            ## Calculate P-values only at the best position, off by default
+ 	    #if ${extra_mod_bep}:
+                bep on
+            #end if
+	#end if
+
+
+	## Calculate p-values for MOD/LOD scores
+	#if ${extra_calcpval}
+           cpv ${extra_calcpval_file}
+           ## Number of replicates in P-score evaluation, default 0
+	   #if ${extra_cpv_nor} > 0:
+               nor ${extra_cpv_nor}
+	   #end if
+	#endif
+	
+	#if ${extra_calcpval} and 
+	#end if 
+
+	## Number of sequential simulations in P-score evaluation, default 0
+	seq ${extra_seq}
+
+	## Store replicates during P-score evaluation, default off
+	#if ${extra_storereplicates}.value != "off":
+            str "${extra_storereplicates}" ## pre / both,
+	#end if
+
+	## Simulate untyped individuals, required for haplotypes
+	#if ${use_haplotypes} or ${extra_sun}:
+	   sun on
+	#else:
+	   sun off
+	#end if
+
+	## Set random seed for P-score evaluation, default -1
+	srs ${extra_srs}
+
+	## Display distribution of replicates, default off
+	sdi #if ${extra_sdi}# on#else off#end if
+
+	#### General
+	## Count the number of recombintions, default off
+	count recs #if ${extra_countrec}# on#else off#end if
+
+	## Do not skip fully homozygous markers when generating haplotypes, default off 
+	fin #if ${extra_cpv_fin}# on #else off#end if
+
+	## Print scores to screen, default on
+	display scores #if ${extra_displayscores}# on#else off#end if
+		
+	## Margin before and after marker range to compute scores, default 0 cM
+	off end ${extra_offend}
+
+	## Distance between adjacent scores, either in cM 'distance' irrespective of map, or equal 'steps'. Default steps 5
+	increment ${extra_increment_type} ${extra_increment_sizepavu}
+
+	## Units, default haldane
+	map function #if ${extra_mapfunc}# haldane#else kosambi#end if
+	## Units in scan output, default cM
+	units #if ${extra_scan_units}# cM#else rec-frac#end if
+
+	## Max pedigree size  calculated by 2N - F, default 19, trim individuals beyond this
+	max bits ${extra_maxbits}
+	## Split pedigree larger than max ped size, default off
+	skip large #if ${extra_maxbits_skiplarge}# on#else off#end if
+	## Stores IBD matrics for linkage, default off
+	cs #if ${extra_computesharing}# on#else off#end if
+
+	## TODO:
+	##    Qualitative / Quantitative trait mapping of sibs, Variance component analysis, TDT	
+      </configfile>
+    </configfiles>
+
+
+    <inputs>
+      <param name="inp_ped" type="data" format="linkage_pedin"  label="Pedigree" />
+      <param name="inp_dat" type="data" format="linkage_recomb" label="Recombination Freqs." />
+      <param name="inp_map" type="data" format="linkage_map"    label="Marker Positions" optional="true" />
+
+      <section name="section_haplo" title="Haplotypes" expanded="true" >
+	<conditional name="analysis_haplo" >
+	  <param name="extra_haplotype" type="boolean" value="false"
+		 label="Haplotype Analysis" />
+
+	  <when value="true">
+	    <param name="extra_haplotype_method" type="select"
+		   label="Haplotype Reconstruction Algorithm" >
+	      <option value="MaxProb"  />
+	      <option value="Viterbi" selected="true" />
+	    </param>
+	  </when>
+	  <when value="false" />
+	</conditional>
+      </section>
+      
+      <section name="section_linkage" title="Linkage" expanded="false" >
+	<param name="extra_singlepoint" type="boolean" value="false"
+	     label="Single-point Analysis"/> 
+
+	<conditional name="npl_scoring" >
+	
+	  <param name="extra_mod_analysis" type="select"
+		 label="Type of linkage analysis" >
+	    <option value="BOTH" selected="true" >Both</option>
+	    <option value="NPL"  >Non-paremetric Linkage</option>
+	    <option value="LOD"  >Logarithm-of-the-Odds</option>
+	  </param>
+	  <when value="BOTH" ><expand macro="macro_npl_opts" /></when>
+	  <when value="NPL" ><expand macro="macro_npl_opts" /></when>
+	  <when value="LOD" />
+	</conditional>
+      </section>
+ 
+      <section name="section_options" expanded="false" title="Advanced Options" >
+
+	<!-- P-values -->
+	<section name="section_pvalues" expanded="false"
+		 title="P-value Options" >
+
+	  <conditional name="advanced_options_alg" >
+	    <param name="extra_alg" value="true" type="boolean"
+		   label="Use Algebraic calculations for P-Values"/>
+
+	    <when value="true" >
+	      <param name="extra_alg_mem" value="true" type="boolean"
+		     label="Remove large memory restrictions for algebraic calculations" />
+	    </when>
+	    <when value="false" >
+	      <param name="extra_mod_savedmodels" type="integer" value="-1"
+		     label="Number of models to save" />
+	    </when>
+	  </conditional>
+	
+	  <conditional name="advanced_options_model" >
+	    <param name="extra_mod_model" type="boolean" value="false"
+		   label="Use custom trait models" />
+	    <when value="true" >
+	      <param name="extra_mod_modeldisfreq" type="float" value="" min="0" max="1"
+		     label="Disease allele frequency" />
+	      <param name="extra_mod_modelpenet" type="text" value=""
+		     label="3 or 4 penetrances" />
+	    </when>
+	    <when value="false" />
+	  </conditional>
+	  
+	  <conditional name="advanced_options_calcpval" >
+	    <param name="extra_calcpval" type="boolean" value="false"
+		   label="Calculate P-values for MOD/LOD scores" />
+
+	    <when value="true" >
+	      <param name="extra_calcpval_file" type="data" format="plain"
+		     label="Filename to produce values" />
+	      <param name="extra_cpv_nor" type="integer" value="0" min="0"
+		     label="Number of replicates in P-value calculations" />
+	    </when>
+	    <when value="false" />
+	  </conditional>
+
+	  <conditional name="advanced_options_modcalc" >
+	    <param name="extra_modcalc" type="select"
+		   label="Inheritance Vector storage for LOD and P-value calculations" >
+	      <option value="global"  />
+	      <option value="single"  />
+	      <option value="off" selected="true" />
+	    </param>
+	    <when value="single" >
+	      <param name="extra_mod_longmod" type="boolean" value="false"
+		     label="Produce long output for scores" />
+	      <param name="extra_mod_bep" type="boolean" value="false"
+		     label="Calculate P-values only at the best LOD positions" />
+	    </when>
+	    <when value="global" />
+	    <when value="off" />
+	  </conditional>
+	  
+	  <param name="extra_seq" type="integer" value="0" min="0"
+		 label="Number of sequential simulations in P-value calculations" />
+	  <param name="extra_storereplicates" type="boolean" value="false"
+		 label="Store replicates during P-value calculations" />
+	  <param name="extra_srs" type="integer" value="-1"
+		 label="Set Random seed for P-value calculations" />
+	  <param name="extra_computesharing" type="boolean" value="false"
+		 label="Store IBD matrices" />
+	  <param name="extra_mod_dimension" type="integer" min="1" max="5" value="2"
+		 label="Number of parameters to vary in LOD calculations" />
+	</section>
+	<!-- End of P Values: Works -->
+
+	<!-- Display Options -->
+	<section name="section_display" expanded="false" title="Display options" >
+	  
+	  <conditional name="advanced_options_stat" >
+	    <param name="extra_stat" type="boolean" value="false"
+		   label="Show total scores from a scan of multiple peds"/>
+	    <when value="true" >
+	      <conditional name="advanced_options_stat_het" >
+		<param name="extra_stathet" type="select"
+		       label="Options" >
+		  <option value="het"  >Calculate LOD scores under heterogeneity too</option>
+		  <option value="stat" >Show general LOD statistics</option>
+		</param>
+		<when value="het" >
+		  <param name="extra_statalpha" value="" type="float" min="0" max="1"
+			 label="Assuming a fixed alpha (leave blank for dynamic alpha):"/>
+		</when>
+		<when value="stat" ></when>
+	      </conditional>
+	    </when>
+	    <when value="false" />
+	  </conditional>
+	  
+	  <param name="extra_sdi" type="boolean" value="false"
+		 label="Display distribution of replicates" />
+	  <param name="extra_countrec" type="boolean" value="false"
+		 label="Print the number of recombinations" />
+	  <param name="extra_displayscores" type="boolean" value="true"
+		 label="Print scores to screen" />
+	  <param name="extra_mapfunc" type="select"
+		 label="Genetic map function units" >
+	    <option value="haldane" selected="true">Haldane</option>
+	    <option value="kosambi" >Kosambi</option>
+	  </param>
+	  <param name="extra_scan_units" type="select"
+		 label="Output units" >
+	    <option value="cM" selected="true">CentiMorgans</option>
+	    <option value="rec-frac" >Recombination Fractions</option>
+	  </param>
+	</section>
+	<!-- End of display: Works -->
+
+	<!-- Range section -->
+	<section name="section_range" expanded="false" title="Range options" >
+
+	  <conditional name="advanced_options_positions" >
+	    <param name="extra_mod_positions" type="boolean" value="false"
+		   label="Define custom position range" />
+	    <when value="false" />
+	    <when value="true" >
+	      <param name="extra_mod_positions_lowest" type="float" value="0" min="0" max="1000"
+		     label="Lowest position (cM)" />
+	      <param name="extra_mod_positions_highest" type="float" value="1"
+		     min="0" max="1000"
+		     label="Highest position (cM)" />
+	      <!-- TODO: Vary this so that lowest < higher --> 
+	    </when>
+	  </conditional>	  
+
+	  <param name="extra_offend" type="float" value="0.0"
+		 label="Margin before and after marker range to compute scores (cM)" />
+
+	  <conditional name="advanced_options_increment" >
+	    <param name="extra_increment_type" type="select"
+	  	   label="Increment either the genetic distance across the whole range of markers, or the number of equally-spaced steps between adjacent markers" >
+	      <option value="distance" >Distance</option>
+	      <option value="steps" selected="true" >Steps</option>
+	    </param>
+	    <when value="distance" >
+	      <param name="extra_increment_sizepavu" type="float" min="1.0" value="1" max="1000"
+	    	     label="centiMorgan interval" />
+	    </when>
+	    <when value="steps" >
+	      <param name="extra_increment_sizepavu" type="integer" min="1" value="5" max="500"
+	  	     label="Number of steps between markers" />
+	    </when>
+	  </conditional>
+
+	  <param name="extra_maxbits" type="integer" min="3" value="19" max="30"
+		 label="Max bit-size of the pedigree, computed via '2N-F', for F founders and N non-founders" />
+	  <param name="extra_maxbits_skiplarge" type="boolean" value="false"
+		 label="Split pedigrees if larger than the max pedigree size" />
+	    
+	</section>
+	<!-- End of range:Works -->
+
+	<!-- Frequency section -->
+	<section name="section_allfreq" title="Allele Frequency Options">
+	  <param name="extra_nmaf" type="boolean" value="false"
+		 label="Normalize Allele Frequencies" />
+
+	  <param name="extra_mod_allfreq" type="float" min="0" max="1" value="0.5"
+		 label="Restrict disease allele frequency" />
+
+	  <param name="extra_mod_highallele" type="float" min="0" max="1" value="0.5"
+		 label="Set maximum disease allele frequency" />
+
+	  <param name="extra_mod_penetrancerestrict" type="boolean" value="true"
+		 label="Restrict Penetrances" />
+
+	</section>
+	<!-- End of Frequency section:Works -->
+
+	<!-- Sample Individuals section -->
+	<section name="section_sample" title="Sample Options" >
+	  <param name="extra_sun" type="boolean" value="false"
+		 label="Simulate untyped individuals" />
+	  <param name="extra_includeuntyped" type="boolean" value="true"
+		 label="Include untyped individuals" />
+	  <param name="extra_cpv_fin" type="boolean" value="false"
+		 label="Process fully homozygous (uninformative) genotypes" />
+	  <param name="extra_discard" type="boolean" value="false"
+		 label="Discard uninformative individuals"  />
+	  <param name="extra_ufo" type="boolean" value="false"
+		 label="Use untyped founders" />
+	</section>
+	<!-- End of sample individuals -->
+      </section>
+      <!-- End of advanced options -->
+    </inputs>
+
+    <outputs>
+     <data name="Haplotypes" format="ghm_haplo"    label="GeneHunter Haplotypes File"  />
+     <data name="Linkage"    format="ghm_linkage"  label="GeneHunter MPT Linkage File" />
+     <data name="Descent"    format="ghm_vectors"  label="GeneHunter Descent File"     />
+    </outputs>
+    <!-- TEST -->
+
+    <tests>
+      <test>
+	<param name="inp_ped" value="pedin_1.22" />
+	<param name="inp_dat" value="datain_1.22" />
+	<param name="analysis_type" value="haplo on" />
+	<output name="Haplotypes"   ftype="ghm_haplo" />
+	<output name="Linkage" ftype="ghm_link" />
+	<output name="Descent" ftype="ghm_descent" />
+      </test>
+    </tests>
+
+    <help>
+Genehunter-MODscore calculates a maximized LOD score (MOD) linkage and haplotype analysis, with many configurable options.
+    </help>
+</tool>
