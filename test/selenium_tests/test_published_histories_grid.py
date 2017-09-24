@@ -200,8 +200,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
     def create_history(self, name):
         self.home()
-        self.click_history_option('Create New')
-        self.history_panel_rename(name)
+        self.history_panel_create_new_with_name(name)
 
     def publish_current_history(self):
         self.click_history_option('Share or Publish')

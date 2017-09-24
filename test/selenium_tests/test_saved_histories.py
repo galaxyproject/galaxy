@@ -297,8 +297,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     def create_history(self, name):
         self.home()
-        self.click_history_option('Create New')
-        self.history_panel_rename(name)
+        self.history_panel_create_new_with_name(name)
 
     def select_filter(self, filter_key, filter_value):
         filter_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
