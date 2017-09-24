@@ -20,9 +20,14 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_saved_histories_page()
         self.click_popup_option(self.history2_name, 'Switch')
-        time.sleep(1)
-        history_name = self.history_panel_name_element()
-        self.assertEqual(history_name.text, self.history2_name)
+        time.sleep(.5)
+
+        @retry_assertion_during_transitions
+        def assert_history_name_switched():
+            history_name = self.history_panel_name_element()
+            self.assertEqual(history_name.text, self.history2_name)
+
+        assert_history_name_switched()
 
     @selenium_test
     def test_history_view(self):
