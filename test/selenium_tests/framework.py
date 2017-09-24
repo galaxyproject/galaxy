@@ -149,8 +149,8 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
             self.target_url_from_selenium = GALAXY_TEST_EXTERNAL_FROM_SELENIUM
         else:
             self.target_url_from_selenium = self.url
-        self.setup_driver_and_session()
         self.snapshots = []
+        self.setup_driver_and_session()
 
     def tearDown(self):
         exception = None
