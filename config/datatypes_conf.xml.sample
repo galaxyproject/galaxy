@@ -633,6 +633,36 @@
     <datatype extension="pttgf" type="galaxy.datatypes.plant_tribes:PlantTribesTargetedGeneFamilies" />
     <datatype extension="pttree" type="galaxy.datatypes.plant_tribes:PlantTribesPhylogeneticTree" />
     <datatype extension="smat" type="galaxy.datatypes.plant_tribes:Smat" display_in_upload="true" />
+
+    <!-- Start Haplotype / LOD Datatypes -->
+    <datatype extension="alohomora_gts" type="galaxy.datatypes.linkagestudies:Genotypes" />
+    <datatype extension="alohomora_map" type="galaxy.datatypes.linkagestudies:MarkerMap" />
+    <datatype extension="alohomora_maf" type="galaxy.datatypes.linkagestudies:MAF" />
+    <datatype extension="ped"           type="galaxy.datatypes.linkagestudies:ShortPedigree" />
+
+    <!-- Common input formats -->
+    <datatype extension="linkage_recomb" type="galaxy.datatypes.linkagestudies:RecFreqs" />
+    <datatype extension="linkage_pedin"  type="galaxy.datatypes.linkagestudies:PedigreeGT" />
+    <datatype extension="linkage_map"    type="galaxy.datatypes.linkagestudies:Map" />
+    <!-- Output formats -->
+    <!--    Allegro -->
+    <datatype extension="allegro_haplo" type="galaxy.datatypes.linkagestudies:AllegroHaplo" />
+    <datatype extension="allegro_descent" type="galaxy.datatypes.linkagestudies:AllegroDescent" />
+    <datatype extension="allegro_linkage" type="galaxy.datatypes.linkagestudies:AllegroLOD" />
+    <!--    Genehunter -->
+    <datatype extension="ghm_haplo" type="galaxy.datatypes.linkagestudies:GHMHaplo" />
+    <datatype extension="ghm_descent" type="galaxy.datatypes.linkagestudies:GHMDescent" />
+    <datatype extension="ghm_linkage" type="galaxy.datatypes.linkagestudies:GHMLOD" />
+    <!--    Merlin -->
+    <datatype extension="merlin_haplo" type="galaxy.datatypes.linkagestudies:MerlinHaplo" />
+    <datatype extension="merlin_descent" type="galaxy.datatypes.linkagestudies:MerlinDescent" />
+    <datatype extension="merlin_linkage" type="galaxy.datatypes.linkagestudies:MerlinLOD" />
+    <!--    Simwalk -->
+    <datatype extension="mega2_haplo_descent" type="galaxy.datatypes.linkagestudies:Mega2Descent" />
+    <datatype extension="mega2_linkage" type="galaxy.datatypes.linkagestudies:Mega2LOD" />
+    <!--    Swiftlink -->
+    <datatype extension="swift_linkage" type="galaxy.datatypes.linkagestudies:SwiftLOD" />
+    <!-- End Haplotype / LOD Datatypes -->
   </registration>
   <sniffers>
     <!--
