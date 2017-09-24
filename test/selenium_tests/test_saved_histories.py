@@ -1,6 +1,7 @@
 import time
 
 from .framework import (
+    retry_during_transitions,
     retry_assertion_during_transitions,
     selenium_test,
     SharedStateSeleniumTestCase,
@@ -254,8 +255,9 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         else:
             self.assertEqual(intersection, set())
 
+    @retry_during_transitions
     def get_histories(self):
-        time.sleep(1.5)
+        time.sleep(.5)
         names = []
         grid = self.wait_for_selector('#grid-table-body')
         for row in grid.find_elements_by_tag_name('tr'):
