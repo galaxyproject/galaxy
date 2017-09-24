@@ -406,6 +406,7 @@ class PageController(BaseUIController, SharableMixin,
         , id, page_title="", page_slug="", page_annotation=""
         Edit a page's attributes.
         """
+        print "here"
         encoded_id = id
         id = self.decode_id(id)
         session = trans.sa_session
