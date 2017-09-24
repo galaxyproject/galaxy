@@ -460,13 +460,19 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def upload_build(self):
-        build_button = self.wait_for_selector_clickable("div#collection button#btn-build")
-        # TODO: Eliminate the need for this hack. This hack is in here because the test
-        # occasionally fails at the next step because the UI has not transitioned to the
-        # new content. I assume that means this click is sent before the callback is
-        # registered.
+        build_selector = "div#collection button#btn-build"
+        # Pause a bit to let the callback on the build button be registered.
         time.sleep(.5)
-        build_button.click()
+        # Click the Build button and make sure it disappears.
+        self.wait_for_and_click_selector(build_selector)
+        try:
+            self.wait_for_selector_absent_or_hidden(build_selector)
+        except TimeoutException:
+            # Sometimes the callback in the JS hasn't be registered by the
+            # time that the build button is clicked. By the time the timeout
+            # has been registered - it should have been.
+            self.wait_for_and_click_selector(build_selector)
+            self.wait_for_selector_absent_or_hidden(build_selector)
 
     def upload_queue_local_file(self, test_path, tab_id="regular"):
         self.wait_for_and_click_selector("div#%s button#btn-local" % tab_id)
