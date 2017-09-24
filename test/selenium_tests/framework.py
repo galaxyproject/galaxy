@@ -279,6 +279,15 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
     def workflow_populator(self):
         return SeleniumSessionWorkflowPopulator(self)
 
+    def ensure_visualization_available(self, hid, visualization_name):
+        """Skip or fail a test if visualization for file doesn't appear.
+
+        Precondition: viz menu has been opened with history_panel_item_click_visualization_menu.
+        """
+        visualization_names = self.history_panel_item_available_visualizations(hid)
+        if visualization_name not in visualization_names:
+            raise unittest.SkipTest("Skipping test, visualization [%s] doesn't appear to be configured." % visualization_name)
+
 
 class SharedStateSeleniumTestCase(SeleniumTestCase):
     """This describes a class Selenium tests that setup class state for all tests.

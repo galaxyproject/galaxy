@@ -46,6 +46,8 @@ WAIT_TYPES = Bunch(
     DATABASE_OPERATION=WaitType("database_operation", 10),
     # Wait time for jobs to complete in default environment.
     JOB_COMPLETION=WaitType("job_completion", 30),
+    # Wait time for a GIE to spawn.
+    GIE_SPAWN=WaitType("gie_spawn", 30),
 )
 
 # Choose a moderate wait type for operations that don't specify a type.
@@ -805,6 +807,30 @@ class NavigatesGalaxy(HasDriver):
         menu_element = self.wait_for_selector_visible(".list-action-menu.open")
         action_element = menu_element.find_element_by_link_text(action)
         action_element.click()
+
+    def history_panel_item_click_visualization_menu(self, hid):
+        viz_button_selector = "%s %s" % (self.history_panel_item_selector(hid), ".visualizations-dropdown")
+        self.wait_for_and_click_selector(viz_button_selector)
+        self.wait_for_selector_visible("%s %s" % (viz_button_selector, ".dropdown-menu"))
+
+    def history_panel_item_available_visualizations_elements(self, hid):
+        # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu
+        viz_menu_selectors = "%s %s" % (self.history_panel_item_selector(hid), "a.visualization-link")
+        return self.driver.find_elements_by_css_selector(viz_menu_selectors)
+
+    def history_panel_item_available_visualizations(self, hid):
+        # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu
+        return [e.text for e in self.history_panel_item_available_visualizations_elements(hid)]
+
+    def history_panel_item_click_visualization(self, hid, visualization_name):
+        # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu
+        elements = self.history_panel_item_available_visualizations_elements(hid)
+        for element in elements:
+            if element.text == visualization_name:
+                element.click()
+                return element
+
+        assert False, "No visualization [%s] found." % visualization_name
 
     def history_panel_item_selector(self, hid, wait=False):
         current_history_id = self.current_history_id()
