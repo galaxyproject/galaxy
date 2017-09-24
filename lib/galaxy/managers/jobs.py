@@ -122,14 +122,14 @@ class JobSearch(object):
                         a.dataset_id.in_(v)
                     ))
                 elif t == 'ldda':
-                        a = aliased(model.JobToInputDatasetCollectionAssociation)
+                        a = aliased(model.JobToInputLibraryDatasetAssociation)
                         query = query.filter(and_(
                             model.Job.id == a.job_id,
                             a.name == k,
                             a.ldda_id.in_(v)
                         ))
                 elif t == 'hdca':
-                    a = aliased(model.JobToInputLibraryDatasetAssociation)
+                    a = aliased(model.JobToInputDatasetCollectionAssociation)
                     query = query.filter(and_(
                         model.Job.id == a.job_id,
                         a.name == k,
