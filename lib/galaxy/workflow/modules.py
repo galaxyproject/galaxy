@@ -873,6 +873,14 @@ class ToolModule(WorkflowModule):
             param_combinations.append(execution_state.inputs)
 
         complete = False
+        completed_jobs = {}
+        for i, param in enumerate(param_combinations):
+            completed_jobs[i] = tool.job_search.by_tool_input(
+                trans=trans,
+                tool_id=tool.id,
+                param_dump=tool.params_to_strings(param, trans.app, nested=True),
+                is_workflow_step=True
+            )
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
             max_num_jobs = progress.maximum_jobs_to_schedule_or_none
@@ -886,6 +894,7 @@ class ToolModule(WorkflowModule):
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 job_callback=lambda job: self._handle_post_job_actions(step, job, invocation.replacement_dict),
+                completed_jobs=completed_jobs
             )
             complete = True
         except PartialJobExecution as pje:

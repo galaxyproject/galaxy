@@ -474,6 +474,7 @@ class Job(object, JobLike, UsesCreateAndUpdateTime, Dictifiable):
         self.user_id = None
         self.tool_id = None
         self.tool_version = None
+        self.copied_from_job_id = None
         self.command_line = None
         self.dependencies = []
         self.param_filename = None
@@ -541,6 +542,9 @@ class Job(object, JobLike, UsesCreateAndUpdateTime, Dictifiable):
 
     def get_parameters(self):
         return self.parameters
+
+    def get_copied_from_job_id(self):
+        return self.copied_from_job_id
 
     def get_input_datasets(self):
         return self.input_datasets
@@ -624,6 +628,9 @@ class Job(object, JobLike, UsesCreateAndUpdateTime, Dictifiable):
 
     def set_parameters(self, parameters):
         self.parameters = parameters
+
+    def set_copied_from_job_id(self, job_id):
+        self.copied_from_job_id = job_id
 
     def set_input_datasets(self, input_datasets):
         self.input_datasets = input_datasets

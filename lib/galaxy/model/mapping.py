@@ -464,6 +464,7 @@ model.Job.table = Table(
     Column("tool_version", TEXT, default="1.0.0"),
     Column("state", String(64), index=True),
     Column("info", TrimmedString(255)),
+    Column("copied_from_job_id", Integer, nullable=True),
     Column("command_line", TEXT),
     Column("dependencies", JSONType, nullable=True),
     Column("param_filename", String(1024)),

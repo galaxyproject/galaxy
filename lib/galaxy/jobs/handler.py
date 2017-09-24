@@ -313,7 +313,19 @@ class JobHandlerQueue(Monitors, object):
                 elif job_state == JOB_INPUT_DELETED:
                     log.info("(%d) Job unable to run: one or more inputs deleted" % job.id)
                 elif job_state == JOB_READY:
-                    self.dispatcher.put(self.job_wrappers.pop(job.id))
+                    if job.copied_from_job_id:
+                        copied_from_job = self.sa_session.query(model.Job).get(job.copied_from_job_id)
+                        job.state = copied_from_job.state
+                        job.stderr = copied_from_job.stderr
+                        job.stdout = copied_from_job.stdout
+                        job.command_line = copied_from_job.command_line
+                        job.traceback = copied_from_job.traceback
+                        job.tool_version = copied_from_job.tool_version
+                        job.exit_code = copied_from_job.exit_code
+                        job.job_runner_name = copied_from_job.job_runner_name
+                        job.job_runner_external_id = copied_from_job.job_runner_external_id
+                    else:
+                        self.dispatcher.put(self.job_wrappers.pop(job.id))
                     log.info("(%d) Job dispatched" % job.id)
                 elif job_state == JOB_DELETED:
                     log.info("(%d) Job deleted by user while still queued" % job.id)

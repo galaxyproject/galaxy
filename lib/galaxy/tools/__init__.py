@@ -26,6 +26,7 @@ from galaxy import (
 )
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.managers import histories
+from galaxy.managers.jobs import JobSearch
 from galaxy.queue_worker import send_control_task
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -438,6 +439,7 @@ class Tool(object, Dictifiable):
             raise e
         self.history_manager = histories.HistoryManager(app)
         self._view = views.DependencyResolversView(app)
+        self.job_search = JobSearch(app=self.app)
 
     @property
     def version_object(self):
@@ -1294,7 +1296,14 @@ class Tool(object, Dictifiable):
             raise exceptions.MessageException(', '.join(msg for msg in err_data.values()), err_data=err_data)
         else:
             mapping_params = MappingParameters(incoming, all_params)
-            execution_tracker = execute_job(trans, self, mapping_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info)
+            completed_jobs = {}
+            for i, param in enumerate(all_params):
+                completed_jobs[i] = self.job_search.by_tool_input(
+                    trans=trans,
+                    tool_id=self.id,
+                    param_dump=self.params_to_strings(param, self.app, nested=True),
+                )
+            execution_tracker = execute_job(trans, self, mapping_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info, completed_jobs=completed_jobs)
             # Raise an exception if there were jobs to execute and none of them were submitted,
             # if at least one is submitted or there are no jobs to execute - return aggregate
             # information including per-job errors. Arguably we should just always return the

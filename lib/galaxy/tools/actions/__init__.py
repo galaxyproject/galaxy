@@ -195,7 +195,7 @@ class DefaultToolAction(object):
 
         return history, inp_data, inp_dataset_collections
 
-    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None):
+    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
@@ -223,7 +223,7 @@ class DefaultToolAction(object):
                 continue
 
             # Convert LDDA to an HDA.
-            if isinstance(data, LibraryDatasetDatasetAssociation):
+            if isinstance(data, LibraryDatasetDatasetAssociation) and not completed_job:
                 data = data.to_history_dataset_association(None)
                 inp_data[name] = data
 
@@ -246,13 +246,14 @@ class DefaultToolAction(object):
             inp_data.update({"chromInfo": db_dataset})
         incoming["chromInfo"] = chrom_info
 
-        # Determine output dataset permission/roles list
-        existing_datasets = [inp for inp in inp_data.values() if inp]
-        if existing_datasets:
-            output_permissions = app.security_agent.guess_derived_permissions_for_datasets(existing_datasets)
-        else:
-            # No valid inputs, we will use history defaults
-            output_permissions = app.security_agent.history_get_default_permissions(history)
+        if not completed_job:
+            # Determine output dataset permission/roles list
+            existing_datasets = [inp for inp in inp_data.values() if inp]
+            if existing_datasets:
+                output_permissions = app.security_agent.guess_derived_permissions_for_datasets(existing_datasets)
+            else:
+                # No valid inputs, we will use history defaults
+                output_permissions = app.security_agent.history_get_default_permissions(history)
 
         # Add the dbkey to the incoming parameters
         incoming["dbkey"] = input_dbkey
@@ -301,7 +302,18 @@ class DefaultToolAction(object):
                     inp_dataset_collections,
                     input_ext
                 )
-                data = app.model.HistoryDatasetAssociation(extension=ext, create_dataset=True, flush=False)
+                create_datasets = True
+                dataset = None
+
+                if completed_job:
+                    for output_dataset in completed_job.output_datasets:
+                        if output_dataset.name == name:
+                            create_datasets = False
+                            completed_data = output_dataset.dataset
+                            dataset = output_dataset.dataset.dataset
+                            break
+
+                data = app.model.HistoryDatasetAssociation(extension=ext, dataset=dataset, create_dataset=create_datasets, flush=False)
                 if hidden is None:
                     hidden = output.hidden
                 if not hidden and dataset_collection_elements is not None:  # Mapping over a collection - hide datasets
@@ -311,14 +323,17 @@ class DefaultToolAction(object):
                 if dataset_collection_elements is not None and name in dataset_collection_elements:
                     dataset_collection_elements[name].hda = data
                 trans.sa_session.add(data)
-                trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True)
+                if not completed_job:
+                    trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True)
             for _, tag in preserved_tags.items():
                 data.tags.append(tag.copy())
 
             # Must flush before setting object store id currently.
             # TODO: optimize this.
+
             trans.sa_session.flush()
-            object_store_populator.set_object_store_id(data)
+            if not completed_job:
+                object_store_populator.set_object_store_id(data)
 
             # This may not be neccesary with the new parent/child associations
             data.designation = name
@@ -338,7 +353,11 @@ class DefaultToolAction(object):
             # Take dbkey from LAST input
             data.dbkey = str(input_dbkey)
             # Set state
-            data.blurb = "queued"
+            if completed_job:
+                data.blurb = completed_data.blurb
+                data.peek = completed_data.peek
+            else:
+                data.blurb = "queued"
             # Set output label
             data.name = self.get_output_name(output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params)
             # Store output
@@ -447,6 +466,8 @@ class DefaultToolAction(object):
         if job_params:
             job.params = dumps(job_params)
         job.set_handler(tool.get_job_handler(job_params))
+        if completed_job:
+            job.set_copied_from_job_id(completed_job.id)
         trans.sa_session.add(job)
         # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
