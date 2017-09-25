@@ -57,7 +57,7 @@ class _Ga4ghToolClient(object):
         if as_string:
             return descriptor_str
         else:
-            return yaml.load(descriptor_str)
+            return yaml.safe_load(descriptor_str)
 
     @property
     def _requests(self):
