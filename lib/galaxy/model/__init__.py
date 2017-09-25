@@ -1757,8 +1757,7 @@ class Dataset(StorableObject):
     object_store = None  # This get initialized in mapping.py (method init) by app.py
     engine = None
 
-    def __init__(self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None,
-                 purgable=True, uuid=None):
+    def __init__(self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, uuid=None):
         super(Dataset, self).__init__(id=id)
         self.state = state
         self.deleted = False
