@@ -45,13 +45,13 @@ class PageListGrid(grids.Grid):
         cols_to_filter=[columns[0], columns[2]],
         key="free-text-search", visible=False, filterable="standard"))
     global_actions = [
-        grids.GridAction("Add new page", dict(action='create'), target="inbound")
+        grids.GridAction("Add new page", dict(controller="", action="pages/create"))
     ]
     operations = [
         grids.DisplayByUsernameAndSlugGridOperation("View", allow_multiple=False),
-        grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(action='edit_content')),
-        grids.GridOperation("Edit attributes", allow_multiple=False, url_args=dict(controller="", action='pages/edit')),
-        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
+        grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(action="edit_content")),
+        grids.GridOperation("Edit attributes", allow_multiple=False, url_args=dict(controller="", action="pages/edit")),
+        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action="sharing")),
         grids.GridOperation("Delete", confirm="Are you sure you want to delete this page?"),
     ]
 
