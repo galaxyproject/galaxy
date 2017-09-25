@@ -373,7 +373,7 @@ class InteractiveEnvironmentRequest(object):
         p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
-            log.error("%s\n%s" % (stdout, stderr))
+            log.error("Container Launch error\n\n%s\n%s" % (stdout, stderr))
             return None
         else:
             container_id = stdout.strip()
@@ -484,7 +484,7 @@ class InteractiveEnvironmentRequest(object):
         p = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
-            log.error("%s\n%s" % (stdout, stderr))
+            log.error("Container Launch error\n\n%s\n%s" % (stdout, stderr))
             return None
 
         inspect_data = json.loads(stdout)
