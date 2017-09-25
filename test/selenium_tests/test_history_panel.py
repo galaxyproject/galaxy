@@ -1,5 +1,3 @@
-import time
-
 from .framework import (
     selenium_test,
     SeleniumTestCase
@@ -70,21 +68,20 @@ class HistoryPanelTestCase(SeleniumTestCase):
         self.assert_selector_absent_or_hidden(anno_area_selector)
 
         tag_icon.click()
-        time.sleep(.5)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
         annon_icon.click()
 
         self.wait_for_selector(anno_area_selector)
         self.assert_selector_absent_or_hidden(tag_area_selector)
 
         annon_icon.click()
-        time.sleep(.5)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
 
         self.assert_selector_absent_or_hidden(tag_area_selector)
         self.assert_selector_absent_or_hidden(anno_area_selector)
 
     @selenium_test
     def test_refresh_preserves_state(self):
-        refresh_wait = .5
         self.register()
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
@@ -95,7 +92,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         self.history_panel_refresh_click()
 
         # After the refresh, verify the details are still open.
-        time.sleep(refresh_wait)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
         self.wait_for_selector_clickable(self.history_panel_item_selector(hid=1))
         assert self.history_panel_item_showing_details(hid=1)
 
@@ -103,6 +100,6 @@ class HistoryPanelTestCase(SeleniumTestCase):
         self.history_panel_click_item_title(hid=1, wait=True)
         assert not self.history_panel_item_showing_details(hid=1)
         self.history_panel_refresh_click()
-        time.sleep(refresh_wait)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
         self.wait_for_selector_clickable(self.history_panel_item_selector(hid=1))
         assert not self.history_panel_item_showing_details(hid=1)

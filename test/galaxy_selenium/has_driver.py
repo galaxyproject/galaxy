@@ -35,66 +35,74 @@ class HasDriver:
     def assert_selector_absent(self, selector):
         assert len(self.driver.find_elements_by_css_selector(selector)) == 0
 
-    def wait_for_xpath(self, xpath):
+    def wait_for_xpath(self, xpath, **kwds):
         element = self._wait_on(
             ec.presence_of_element_located((By.XPATH, xpath)),
             "XPATH selector [%s] to become present" % xpath,
+            **kwds
         )
         return element
 
-    def wait_for_xpath_visible(self, xpath):
+    def wait_for_xpath_visible(self, xpath, **kwds):
         element = self._wait_on(
             ec.visibility_of_element_located((By.XPATH, xpath)),
             "XPATH selector [%s] to become visible" % xpath,
+            **kwds
         )
         return element
 
-    def wait_for_selector(self, selector):
+    def wait_for_selector(self, selector, **kwds):
         element = self._wait_on(
             ec.presence_of_element_located((By.CSS_SELECTOR, selector)),
             "CSS selector [%s] to become present" % selector,
+            **kwds
         )
         return element
 
-    def wait_for_selector_visible(self, selector):
+    def wait_for_selector_visible(self, selector, **kwds):
         element = self._wait_on(
             ec.visibility_of_element_located((By.CSS_SELECTOR, selector)),
             "CSS selector [%s] to become visible" % selector,
+            **kwds
         )
         return element
 
-    def wait_for_selector_clickable(self, selector):
+    def wait_for_selector_clickable(self, selector, **kwds):
         element = self._wait_on(
             ec.element_to_be_clickable((By.CSS_SELECTOR, selector)),
             "CSS selector [%s] to become clickable" % selector,
+            **kwds
         )
         return element
 
-    def wait_for_selector_absent_or_hidden(self, selector):
+    def wait_for_selector_absent_or_hidden(self, selector, **kwds):
         element = self._wait_on(
             ec.invisibility_of_element_located((By.CSS_SELECTOR, selector)),
             "CSS selector [%s] to become absent or hidden" % selector,
+            **kwds
         )
         return element
 
-    def wait_for_selector_absent(self, selector):
+    def wait_for_selector_absent(self, selector, **kwds):
         element = self._wait_on(
             lambda driver: len(driver.find_elements_by_css_selector(selector)) == 0,
             "CSS selector [%s] to become absent" % selector,
+            **kwds
         )
         return element
 
-    def wait_for_id(self, id):
+    def wait_for_id(self, id, **kwds):
         return self._wait_on(
             ec.presence_of_element_located((By.ID, id)),
             "presence of DOM ID [%s]" % id,
+            **kwds
         )
 
-    def _wait_on(self, condition, on_str=None):
+    def _wait_on(self, condition, on_str=None, **kwds):
         if on_str is None:
             on_str = str(condition)
         message = "Timeout waiting on %s." % on_str
-        wait = self.wait()
+        wait = self.wait(**kwds)
         return wait.until(condition, message)
 
     def action_chains(self):
@@ -106,9 +114,9 @@ class HasDriver:
     def send_escape(self, element):
         element.send_keys(Keys.ESCAPE)
 
-    def wait(self, timeout=UNSPECIFIED_TIMEOUT):
+    def wait(self, timeout=UNSPECIFIED_TIMEOUT, **kwds):
         if timeout is UNSPECIFIED_TIMEOUT:
-            timeout = self.default_timeout
+            timeout = self.timeout_for(**kwds)
         return WebDriverWait(self.driver, timeout)
 
     def click_xpath(self, xpath):

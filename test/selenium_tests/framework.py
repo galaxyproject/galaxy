@@ -5,7 +5,6 @@ from __future__ import print_function
 import datetime
 import json
 import os
-import time
 import traceback
 import unittest
 from functools import partial, wraps
@@ -30,7 +29,7 @@ from galaxy_selenium import (  # noqa: I100
 from galaxy_selenium.navigates_galaxy import NavigatesGalaxy, retry_during_transitions  # noqa: I100
 from galaxy.util import asbool
 
-DEFAULT_WAIT_TIMEOUT = 60
+DEFAULT_TIMEOUT_MULTIPLIER = 1
 DEFAULT_TEST_ERRORS_DIRECTORY = os.path.abspath("database/test_errors")
 DEFAULT_SELENIUM_BROWSER = "auto"
 DEFAULT_SELENIUM_REMOTE = False
@@ -38,6 +37,7 @@ DEFAULT_SELENIUM_REMOTE_PORT = "4444"
 DEFAULT_SELENIUM_REMOTE_HOST = "127.0.0.1"
 DEFAULT_SELENIUM_HEADLESS = "auto"
 
+TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
 # Test browser can be ["CHROME", "FIREFOX", "OPERA", "PHANTOMJS"]
 GALAXY_TEST_SELENIUM_BROWSER = os.environ.get("GALAXY_TEST_SELENIUM_BROWSER", DEFAULT_SELENIUM_BROWSER)
@@ -196,8 +196,8 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
         return default_web_host_for_selenium_tests()
 
     @property
-    def default_timeout(self):
-        return DEFAULT_WAIT_TIMEOUT
+    def timeout_multiplier(self):
+        return TIMEOUT_MULTIPLIER
 
     def build_url(self, url, for_selenium=True):
         if for_selenium:
@@ -312,7 +312,7 @@ class UsesHistoryItemAssertions:
     def _assert_item_button(self, buttons_area, expected_button, button_def):
         selector = button_def["selector"]
         # Let old tooltip expire, etc...
-        time.sleep(1)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
         button_item = self.wait_for_selector_visible("%s %s" % (buttons_area, selector))
         expected_tooltip = button_def.get("tooltip")
         self.assert_tooltip_text(button_item, expected_tooltip)

@@ -4,6 +4,7 @@ Implementer must provide a self.build_url method to target Galaxy.
 """
 from __future__ import print_function
 
+import collections
 import contextlib
 import random
 import string
@@ -12,6 +13,8 @@ from functools import partial, wraps
 
 import requests
 import yaml
+
+from galaxy.util.bunch import Bunch
 
 from . import sizzle
 from .data import NAVIGATION_DATA
@@ -27,6 +30,26 @@ DEFAULT_PASSWORD = '123456'
 
 RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT = .1
 RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT = 10
+
+WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
+
+# Default wait times should make sense for a development server under low
+# load. Wait times for production servers can be scaled up with a multiplier.
+WAIT_TYPES = Bunch(
+    # Rendering a form and registering callbacks, etc...
+    UX_RENDER=WaitType("ux_render", 1),
+    # Fade in, fade out, etc...
+    UX_TRANSITION=WaitType("ux_transition", 5),
+    # Toastr popup and dismissal, etc...
+    UX_POPUP=WaitType("ux_popup", 10),
+    # Creating a new history and loading it into the panel.
+    DATABASE_OPERATION=WaitType("database_operation", 10),
+    # Wait time for jobs to complete in default environment.
+    JOB_COMPLETION=WaitType("job_completion", 30),
+)
+
+# Choose a moderate wait type for operations that don't specify a type.
+DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
 
 
 class NullTourCallback(object):
@@ -95,6 +118,7 @@ class NavigatesGalaxy(HasDriver):
     """
 
     default_password = DEFAULT_PASSWORD
+    wait_types = WAIT_TYPES
 
     def get(self, url=""):
         full_url = self.build_url(url)
@@ -103,6 +127,16 @@ class NavigatesGalaxy(HasDriver):
     @property
     def navigation_data(self):
         return NAVIGATION_DATA
+
+    def wait_length(self, wait_type):
+        return wait_type.default_length * self.timeout_multiplier
+
+    def sleep_for(self, wait_type):
+        time.sleep(self.wait_length(wait_type))
+
+    def timeout_for(self, **kwds):
+        wait_type = kwds.get("wait_type", DEFAULT_WAIT_TYPE)
+        return self.wait_length(wait_type)
 
     def home(self):
         self.get()
@@ -166,7 +200,7 @@ class NavigatesGalaxy(HasDriver):
         assert len(history_contents) > 0
         return history_contents[-1]
 
-    def wait_for_history(self, timeout=30, assert_ok=True):
+    def wait_for_history(self, assert_ok=True):
         def history_becomes_terminal(driver):
             current_history_id = self.current_history_id()
             state = self.api_get("histories/%s" % current_history_id)["state"]
@@ -175,21 +209,23 @@ class NavigatesGalaxy(HasDriver):
             else:
                 return None
 
-        final_state = self.wait(timeout).until(history_becomes_terminal)
+        timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
+        final_state = self.wait(timeout=timeout).until(history_becomes_terminal)
         if assert_ok:
             assert final_state == "ok", final_state
         return final_state
 
-    def history_panel_wait_for_hid_ok(self, hid, timeout=60, allowed_force_refreshes=0):
-        self.history_panel_wait_for_hid_state(hid, 'ok', timeout=timeout, allowed_force_refreshes=allowed_force_refreshes)
+    def history_panel_wait_for_hid_ok(self, hid, allowed_force_refreshes=0):
+        self.history_panel_wait_for_hid_state(hid, 'ok', allowed_force_refreshes=allowed_force_refreshes)
 
-    def history_panel_wait_for_hid_visible(self, hid, timeout=60, allowed_force_refreshes=0):
+    def history_panel_wait_for_hid_visible(self, hid, allowed_force_refreshes=0):
         current_history_id = self.current_history_id()
 
         def history_has_hid(driver):
             contents = self.api_get("histories/%s/contents" % current_history_id)
             return any([d for d in contents if d["hid"] == hid])
 
+        timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
         self.wait(timeout).until(history_has_hid)
         contents = self.api_get("histories/%s/contents" % current_history_id)
         history_item = [d for d in contents if d["hid"] == hid][0]
@@ -209,7 +245,7 @@ class NavigatesGalaxy(HasDriver):
         attempt = 0
         while True:
             try:
-                rval = self.wait_for_selector_visible(history_item_selector)
+                rval = self.wait_for_selector_visible(history_item_selector, wait_type=WAIT_TYPES.JOB_COMPLETION)
                 break
             except self.TimeoutException:
                 if attempt >= allowed_force_refreshes:
@@ -223,18 +259,18 @@ class NavigatesGalaxy(HasDriver):
         # Use the search box showing up as a proxy that the history display
         # has left the "loading" state and is showing a valid set of history contents
         # (even if empty).
-        self.wait_for_selector_visible("#current-history-panel input.search-query")
+        self.wait_for_selector_visible("#current-history-panel input.search-query", wait_type=WAIT_TYPES.DATABASE_OPERATION)
 
-    def history_panel_wait_for_hid_hidden(self, hid, timeout=60):
+    def history_panel_wait_for_hid_hidden(self, hid):
         current_history_id = self.current_history_id()
         contents = self.api_get("histories/%s/contents" % current_history_id)
         history_item = [d for d in contents if d["hid"] == hid][0]
         history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
-        self.wait_for_selector_absent(history_item_selector)
+        self.wait_for_selector_absent(history_item_selector, wait_type=WAIT_TYPES.JOB_COMPLETION)
         return history_item_selector
 
-    def history_panel_wait_for_hid_state(self, hid, state, timeout=60, allowed_force_refreshes=0):
-        history_item_selector = self.history_panel_wait_for_hid_visible(hid, timeout=timeout, allowed_force_refreshes=allowed_force_refreshes)
+    def history_panel_wait_for_hid_state(self, hid, state, allowed_force_refreshes=0):
+        history_item_selector = self.history_panel_wait_for_hid_visible(hid, allowed_force_refreshes=allowed_force_refreshes)
         history_item_selector_state = "%s.state-%s" % (history_item_selector, state)
         try:
             self.history_item_wait_for_selector(history_item_selector_state, allowed_force_refreshes)
@@ -509,7 +545,7 @@ class NavigatesGalaxy(HasDriver):
         menu_element = self.workflow_editor_options_menu_element()
         option_elements = menu_element.find_elements_by_css_selector("a")
         assert len(option_elements) > 0, "Failed to find workflow editor options"
-        time.sleep(1)
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
         found_option = False
         for option_element in option_elements:
             if option_label in option_element.text:

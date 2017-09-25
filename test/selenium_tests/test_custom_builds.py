@@ -1,5 +1,3 @@
-import time
-
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -81,7 +79,7 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
         delete_button.click()
 
     def get_custom_builds(self):
-        time.sleep(1)
+        self.sleep_for(self.wait_types.UX_RENDER)
         builds = []
         grid = self.wait_for_selector('table.grid > tbody')
         for row in grid.find_elements_by_tag_name('tr'):
