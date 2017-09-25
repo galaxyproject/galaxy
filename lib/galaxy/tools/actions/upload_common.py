@@ -1,4 +1,3 @@
-import hashlib
 import ipaddress
 import logging
 import os
@@ -221,7 +220,6 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     hda = trans.app.model.HistoryDatasetAssociation(name=uploaded_dataset.name,
                                                     extension=uploaded_dataset.file_type,
                                                     dbkey=uploaded_dataset.dbkey,
-                                                    checksum=uploaded_dataset.checksum,
                                                     history=history,
                                                     create_dataset=True,
                                                     sa_session=trans.sa_session)
@@ -339,7 +337,6 @@ def get_uploaded_datasets(trans, cntrller, params, precreated_datasets, dataset_
         uploaded_datasets.extend(dataset_upload_input.get_uploaded_datasets(trans, params))
     for uploaded_dataset in uploaded_datasets:
         data = get_precreated_dataset(precreated_datasets, uploaded_dataset.name)
-        uploaded_dataset.checksum = __get_checksum(uploaded_dataset.path)
         if not data:
             data = new_upload(trans, cntrller, uploaded_dataset, library_bunch=library_bunch, history=history)
         else:
@@ -375,22 +372,6 @@ def get_uploaded_datasets(trans, cntrller, params, precreated_datasets, dataset_
                 history.genome_build = uploaded_dataset.dbkey
         uploaded_dataset.data = data
     return uploaded_datasets
-
-
-def __get_checksum(filename):
-    """
-    This function calculates an md5-based checksum for a given file.
-    It reads small chunks of the file in memory because a file could
-    potentially be large, and reading as a whole to memory could be
-    suboptimal or not possible due to memory limit.
-    :param filename: absolute path to a file
-    :return: md5-based checksum
-    """
-    md5 = hashlib.md5()
-    with open(filename, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            md5.update(chunk)
-    return md5.hexdigest()
 
 
 def create_paramfile(trans, uploaded_datasets):
