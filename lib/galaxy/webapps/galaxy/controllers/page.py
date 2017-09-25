@@ -403,53 +403,55 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("edit pages")
     def edit(self, trans, payload=None, **kwd):
         """
-        , id, page_title="", page_slug="", page_annotation=""
         Edit a page's attributes.
         """
-        encoded_id = id
-        id = self.decode_id(id)
-        session = trans.sa_session
-        page = session.query(model.Page).get(id)
-        user = trans.user
-        assert page.user == user
-        page_title_err = page_slug_err = page_annotation_err = ""
-        if trans.request.method == "POST":
-            if not page_title:
-                page_title_err = "Page name is required"
-            elif not page_slug:
-                page_slug_err = "Page id is required"
-            elif not self._is_valid_slug(page_slug):
-                page_slug_err = "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
-            elif page_slug != page.slug and trans.sa_session.query(model.Page).filter_by(user=user, slug=page_slug, deleted=False).first():
-                page_slug_err = "Page id must be unique"
-            elif not page_annotation:
-                page_annotation_err = "Page annotation is required"
-            else:
-                page.title = page_title
-                page.slug = page_slug
-                page_annotation = sanitize_html(page_annotation, 'utf-8', 'text/html')
-                self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
-                session.flush()
-                # Redirect to page list.
-                return trans.response.send_redirect(web.url_for(controller='pages', action='list'))
+        id = kwd.get('id')
+        if not id:
+            return message_exception(trans, 'No page id received for editing.')
+        decoded_id = self.decode_id(id)
+        p = trans.sa_session.query(model.Page).get(decoded_id)
+        if trans.request.method == 'GET':
+            if p.slug is None:
+                self.create_item_slug(trans.sa_session, p)
+            return {
+                'title'  : 'Edit visualization attributes',
+                'inputs' : [{
+                    'name'      : 'title',
+                    'label'     : 'Name',
+                    'value'     : p.title
+                }, {
+                    'name'      : 'slug',
+                    'label'     : 'Identifier',
+                    'value'     : p.slug,
+                    'help'      : 'A unique identifier that will be used for public links to this page. A default is generated from the page title, but can be edited. This field must contain only lowercase letters, numbers, and the \'-\' character.'
+                }, {
+                    'name'      : 'annotation',
+                    'label'     : 'Annotation',
+                    'value'     : self.get_item_annotation_str(trans.sa_session, trans.user, p),
+                    'help'      : 'A description of the page. The annotation is shown alongside published pages.'
+                }]
+            }
         else:
-            page_title = page.title
-            page_slug = page.slug
-            page_annotation = self.get_item_annotation_str(trans.sa_session, trans.user, page)
-            if not page_annotation:
-                page_annotation = ""
-        return trans.show_form(
-            web.FormBuilder(web.url_for(controller='page', action='edit', id=encoded_id), "Edit page attributes", submit_text="Submit")
-            .add_text("page_title", "Page title", value=page_title, error=page_title_err)
-            .add_text("page_slug", "Page identifier", value=page_slug, error=page_slug_err,
-                      help="""A unique identifier that will be used for
-                       public links to this page. A default is generated
-                       from the page title, but can be edited. This field
-                       must contain only lowercase letters, numbers, and
-                       the '-' character.""")
-            .add_text("page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
-                      help="A description of the page; annotation is shown alongside published pages."),
-            template="page/create.mako")
+            p_title = payload.get('title')
+            p_slug = payload.get('slug')
+            p_annotation = payload.get('annotation')
+            if not p_title:
+                return message_exception(trans, 'Please provide a page name is required.')
+            elif not p_slug:
+                return message_exception(trans, 'Please provide a unique identifier.')
+            elif not self._is_valid_slug(p_slug):
+                return message_exception(trans, 'Page identifier must consist of only lowercase letters, numbers, and the \'-\' character.')
+            elif p_slug != p.slug and trans.sa_session.query(model.Page).filter_by(user=p.user, slug=p_slug, deleted=False).first():
+                return message_exception(trans, 'Page id must be unique.')
+            else:
+                p.title = p_title
+                p.slug = p_slug
+                if p_annotation:
+                    p_annotation = sanitize_html(p_annotation, 'utf-8', 'text/html')
+                    self.add_item_annotation(trans.sa_session, trans.get_user(), p, p_annotation)
+                trans.sa_session.add(p)
+                trans.sa_session.flush()
+            return {'message': 'Attributes of \'%s\' successfully saved.' % p.title, 'status': 'success'}
 
     @web.expose
     @web.require_login("edit pages")
@@ -825,3 +827,8 @@ class PageController(BaseUIController, SharableMixin,
 
         elif item_class == model.Page:
             pass
+
+
+def message_exception(trans, message):
+    trans.response.status = 400
+    return {'err_msg': sanitize_text(message)}
