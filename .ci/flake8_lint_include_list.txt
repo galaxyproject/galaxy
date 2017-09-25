@@ -52,6 +52,7 @@ lib/galaxy/managers/collections_util.py
 lib/galaxy/managers/context.py
 lib/galaxy/managers/deletable.py
 lib/galaxy/managers/__init__.py
+lib/galaxy/managers/jobs.py
 lib/galaxy/managers/lddas.py
 lib/galaxy/managers/libraries.py
 lib/galaxy/managers/secured.py

@@ -1,11 +1,12 @@
 import json
+
 from six import string_types
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import aliased
 
 from galaxy import model
-from galaxy.managers.hdas import HDAManager
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 
 
@@ -40,7 +41,7 @@ class JobSearch(object):
                     elif src == 'hdca':
                         all_items = self._get_all_hdcas(trans=trans, hdca_id=v['id'])
                         if self.one_not_deleted(all_items):
-                            if any((True for hda in all_items[0].dataset_instances if hda.deleted)):
+                            if any(True for hda in all_items[0].dataset_instances if hda.deleted):
                                 return []
                         else:
                             return []
@@ -50,11 +51,11 @@ class JobSearch(object):
                         return []
                     input_data[k] = {src: {item.id for item in all_items}}
             else:
-                input_param[k] = json.dumps(str(v))
+                input_param[k] = json.dumps(v) if not isinstance(v, int) else json.dumps(str(v))
         return self.__search(tool_id=tool_id, user=user, input_param=input_param, input_data=input_data, job_state=job_state)
 
     def one_not_deleted(self, items):
-        return any((True for item in items if not item.deleted))
+        return any(True for item in items if not item.deleted)
 
     def _get_all_hdas(self, trans, hda_id):
         """Given a decoded `hda_id`, find other instances that refer to the same dataset."""
