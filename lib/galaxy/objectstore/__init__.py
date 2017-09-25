@@ -566,6 +566,10 @@ class DistributedObjectStore(NestedObjectStore):
             self.filesystem_monitor_thread.start()
             log.info("Filesystem space monitor started")
 
+        for directory in self.extra_dirs.items():
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
     def __parse_distributed_config(self, config, config_xml=None):
         if config_xml is None:
             root = ElementTree.parse(self.distributed_config).getroot()
