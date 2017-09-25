@@ -330,6 +330,7 @@ class Forms(BaseUIController):
 
 # ---- Utility methods -------------------------------------------------------
 
+
 def get_form(trans, form_id):
     """Get a FormDefinition from the database by id."""
     form = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(trans.security.decode_id(form_id))
