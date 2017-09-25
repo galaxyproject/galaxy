@@ -32,7 +32,7 @@ class PageListGrid(grids.Grid):
     default_filter = {"published": "All", "tags": "All", "title": "All", "sharing": "All"}
     default_sort_key = "-update_time"
     columns = [
-        grids.TextColumn("Title", key="title", attach_popup=True, filterable="advanced"),
+        grids.TextColumn("Title", key="title", attach_popup=True, filterable="advanced", link=(lambda item: dict(action="display_by_username_and_slug", username=item.user.username, slug=item.slug))),
         URLColumn("Public URL"),
         grids.OwnerAnnotationColumn("Annotation", key="annotation", model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced"),
         grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageListGrid"),
