@@ -308,6 +308,7 @@ class DeleteIntermediatesAction(DefaultJobAction):
                     safe_to_delete = True
                     for job_to_check in [d_j.job for d_j in input_dataset.dependent_jobs]:
                         if job_to_check != job and job_to_check.state not in [job.states.OK, job.states.DELETED]:
+                            log.trace("Workflow Intermediates cleanup attempted, but non-terminal state '%s' detected for job %s" % (job_to_check.state, job_to_check.id))
                             safe_to_delete = False
                     if safe_to_delete:
                         # Support purging here too.
