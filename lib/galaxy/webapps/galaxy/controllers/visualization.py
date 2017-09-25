@@ -585,7 +585,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                     'name'      : 'slug',
                     'label'     : 'Identifier',
                     'value'     : v.slug,
-                    'help'      : 'A unique identifier that will be used for public links to this visualization. A default is generated from the visualization title, but can be edited. This field must contain only lowercase letters, numbers, and the \'-\' character.'
+                    'help'      : 'A unique identifier that will be used for public links to this visualization. This field must contain only lowercase letters, numbers, and the \'-\' character.'
                 }, {
                     'name'      : 'dbkey',
                     'label'     : 'Build',

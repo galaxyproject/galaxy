@@ -428,7 +428,7 @@ class PageController(BaseUIController, SharableMixin,
                     'name'      : 'slug',
                     'label'     : 'Identifier',
                     'value'     : p.slug,
-                    'help'      : 'A unique identifier that will be used for public links to this page. A default is generated from the page title, but can be edited. This field must contain only lowercase letters, numbers, and the \'-\' character.'
+                    'help'      : 'A unique identifier that will be used for public links to this page. This field must contain only lowercase letters, numbers, and the \'-\' character.'
                 }, {
                     'name'      : 'annotation',
                     'label'     : 'Annotation',
