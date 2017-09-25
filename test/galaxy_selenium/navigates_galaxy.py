@@ -35,7 +35,7 @@ class NullTourCallback(object):
         pass
 
 
-def excepion_seems_to_indicate_transition(e):
+def exception_seems_to_indicate_transition(e):
     """True if exception seems to indicate the page state is transitioning.
 
     Galaxy features many different transition effects that change the page state over time.
@@ -52,7 +52,7 @@ def excepion_seems_to_indicate_transition(e):
     return exception_indicates_stale_element(e) or exception_indicates_not_clickable(e)
 
 
-def retry_call_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT, sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT, exception_check=excepion_seems_to_indicate_transition):
+def retry_call_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT, sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT, exception_check=exception_seems_to_indicate_transition):
     previous_attempts = 0
     while True:
         try:
@@ -68,7 +68,7 @@ def retry_call_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_
             previous_attempts += 1
 
 
-def retry_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT, sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT, exception_check=excepion_seems_to_indicate_transition):
+def retry_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT, sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT, exception_check=exception_seems_to_indicate_transition):
 
     @wraps(f)
     def _retry(*args, **kwds):
