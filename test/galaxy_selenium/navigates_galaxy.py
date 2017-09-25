@@ -201,6 +201,12 @@ class NavigatesGalaxy(HasDriver):
             self.history_panel_refresh_click()
         return rval
 
+    def history_panel_wait_for_history_loaded(self):
+        # Use the search box showing up as a proxy that the history display
+        # has left the "loading" state and is showing a valid set of history contents
+        # (even if empty).
+        self.wait_for_selector_visible("#current-history-panel input.search-query")
+
     def history_panel_wait_for_hid_hidden(self, hid, timeout=60):
         current_history_id = self.current_history_id()
         contents = self.api_get("histories/%s/contents" % current_history_id)
@@ -460,13 +466,19 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def upload_build(self):
-        build_button = self.wait_for_selector_clickable("div#collection button#btn-build")
-        # TODO: Eliminate the need for this hack. This hack is in here because the test
-        # occasionally fails at the next step because the UI has not transitioned to the
-        # new content. I assume that means this click is sent before the callback is
-        # registered.
+        build_selector = "div#collection button#btn-build"
+        # Pause a bit to let the callback on the build button be registered.
         time.sleep(.5)
-        build_button.click()
+        # Click the Build button and make sure it disappears.
+        self.wait_for_and_click_selector(build_selector)
+        try:
+            self.wait_for_selector_absent_or_hidden(build_selector)
+        except TimeoutException:
+            # Sometimes the callback in the JS hasn't be registered by the
+            # time that the build button is clicked. By the time the timeout
+            # has been registered - it should have been.
+            self.wait_for_and_click_selector(build_selector)
+            self.wait_for_selector_absent_or_hidden(build_selector)
 
     def upload_queue_local_file(self, test_path, tab_id="regular"):
         self.wait_for_and_click_selector("div#%s button#btn-local" % tab_id)
@@ -659,6 +671,11 @@ class NavigatesGalaxy(HasDriver):
         menu_selector = self.test_data["historyOptions"]["selectors"]["menu"]
         return menu_selector
 
+    @retry_during_transitions
+    def histories_click_advanced_search(self):
+        search_selector = '#standard-search .advanced-search-toggle'
+        self.wait_for_and_click_selector(search_selector)
+
     def history_panel_add_tags(self, tags):
         tag_icon_selector = self.test_data['historyPanel']['selectors']['history']['tagIcon']
         tag_area_selector = self.test_data['historyPanel']['selectors']['history']['tagArea']
@@ -755,10 +772,14 @@ class NavigatesGalaxy(HasDriver):
         else:
             item_selector = self.history_panel_item_selector(kwds["hid"])
         title_selector = "%s .title" % item_selector
+        details_selector = "%s .details" % item_selector
+        details_displayed = self.selector_is_displayed(details_selector)
         self.wait_for_and_click_selector(title_selector)
         if kwds.get("wait", False):
-            # Find a better way to wait for transition
-            time.sleep(.5)
+            if details_displayed:
+                self.wait_for_selector_absent_or_hidden(details_selector)
+            else:
+                self.wait_for_selector_visible(details_selector)
 
     def click_hda_title(self, hda_id, wait=False):
         # TODO: Replace with calls to history_panel_click_item_title.

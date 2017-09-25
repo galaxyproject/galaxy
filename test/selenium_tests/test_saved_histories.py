@@ -2,6 +2,7 @@ import time
 
 from .framework import (
     retry_assertion_during_transitions,
+    retry_during_transitions,
     selenium_test,
     SharedStateSeleniumTestCase,
 )
@@ -20,9 +21,14 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_saved_histories_page()
         self.click_popup_option(self.history2_name, 'Switch')
-        time.sleep(1)
-        history_name = self.history_panel_name_element()
-        self.assertEqual(history_name.text, self.history2_name)
+        time.sleep(.5)
+
+        @retry_assertion_during_transitions
+        def assert_history_name_switched():
+            history_name = self.history_panel_name_element()
+            self.assertEqual(history_name.text, self.history2_name)
+
+        assert_history_name_switched()
 
     @selenium_test
     def test_history_view(self):
@@ -43,7 +49,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         self.navigate_to_saved_histories_page()
 
-        self.show_advanced_search()
+        self.histories_click_advanced_search()
         self.select_filter('sharing', 'published')
         time.sleep(1)
 
@@ -80,7 +86,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_grid([self.history2_name], False)
 
-        self.show_advanced_search()
+        self.histories_click_advanced_search()
         self.select_filter('deleted', 'True')
         time.sleep(1)
 
@@ -106,7 +112,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_grid([self.history4_name], False)
 
-        self.show_advanced_search()
+        self.histories_click_advanced_search()
         self.select_filter('deleted', 'True')
 
         self.assert_histories_in_grid([self.history4_name])
@@ -125,7 +131,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_grid([self.history2_name, self.history3_name], False)
 
-        self.show_advanced_search()
+        self.histories_click_advanced_search()
         self.select_filter('deleted', 'True')
         time.sleep(1)
 
@@ -182,7 +188,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_saved_histories_page()
 
-        self.show_advanced_search()
+        self.histories_click_advanced_search()
 
         name_filter_selector = '#input-name-filter'
         tags_filter_selector = '#input-tags-filter'
@@ -249,8 +255,9 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         else:
             self.assertEqual(intersection, set())
 
+    @retry_during_transitions
     def get_histories(self):
-        time.sleep(1.5)
+        time.sleep(.5)
         names = []
         grid = self.wait_for_selector('#grid-table-body')
         for row in grid.find_elements_by_tag_name('tr'):
@@ -298,10 +305,6 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.home()
         self.click_history_option('Create New')
         self.history_panel_rename(name)
-
-    def show_advanced_search(self):
-        search_selector = '#standard-search .advanced-search-toggle'
-        self.wait_for_and_click_selector(search_selector)
 
     def select_filter(self, filter_key, filter_value):
         filter_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
