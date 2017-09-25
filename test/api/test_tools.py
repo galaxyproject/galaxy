@@ -6,8 +6,8 @@ from base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
-    skip_without_tool,
     skip_without_datatype,
+    skip_without_tool,
 )
 from galaxy.tools.verify.test_data import TestDataResolver
 

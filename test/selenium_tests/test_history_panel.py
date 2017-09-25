@@ -1,7 +1,9 @@
 import time
 
-from .framework import SeleniumTestCase
-from .framework import selenium_test
+from .framework import (
+    selenium_test,
+    SeleniumTestCase
+)
 
 
 class HistoryPanelTestCase(SeleniumTestCase):

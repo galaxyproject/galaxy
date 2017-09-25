@@ -4,25 +4,24 @@
 See doc/source/admin/grt.rst for more detailed usage information.
 """
 import argparse
-import tarfile
 import json
+import logging
 import os
-import sqlalchemy as sa
 import subprocess
 import sys
+import tarfile
 import time
-import yaml
-import logging
-
 from collections import defaultdict
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
+import sqlalchemy as sa
+import yaml
 
-from galaxy.util.properties import load_app_properties
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 import galaxy
 import galaxy.config
-from galaxy.objectstore import build_object_store_from_config
 from galaxy.model import mapping
+from galaxy.objectstore import build_object_store_from_config
+from galaxy.util.properties import load_app_properties
 
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml.sample'))
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))

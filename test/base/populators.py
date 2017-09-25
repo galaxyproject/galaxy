@@ -1,17 +1,15 @@
 import contextlib
 import json
 import time
-
 from functools import wraps
 from operator import itemgetter
 
 import requests
-
 from pkg_resources import resource_string
 from six import StringIO
 
-from base import api_asserts
-from base.workflows_format_2 import (
+from . import api_asserts
+from .workflows_format_2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )

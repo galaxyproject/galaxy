@@ -8,20 +8,19 @@ import contextlib
 import random
 import string
 import time
-
 from functools import partial, wraps
 
 import requests
 import yaml
 
+from . import sizzle
 from .data import NAVIGATION_DATA
 from .has_driver import (
-    execption_indicates_not_clickable,
+    exception_indicates_not_clickable,
     exception_indicates_stale_element,
     HasDriver,
     TimeoutException,
 )
-from . import sizzle
 
 # Test case data
 DEFAULT_PASSWORD = '123456'
@@ -50,7 +49,7 @@ def excepion_seems_to_indicate_transition(e):
     StaleElement exceptions (a DOM element grabbed at one step is no longer available)
     and "not clickable" exceptions (so perhaps a popup modal is blocking a click).
     """
-    return exception_indicates_stale_element(e) or execption_indicates_not_clickable(e)
+    return exception_indicates_stale_element(e) or exception_indicates_not_clickable(e)
 
 
 def retry_call_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT, sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT, exception_check=excepion_seems_to_indicate_transition):

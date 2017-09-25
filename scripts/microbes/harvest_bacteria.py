@@ -12,7 +12,12 @@ from urllib import urlretrieve
 
 import requests
 from BeautifulSoup import BeautifulSoup
-from util import get_bed_from_genbank, get_bed_from_glimmer3, get_bed_from_GeneMarkHMM, get_bed_from_GeneMark
+from util import (
+    get_bed_from_genbank,
+    get_bed_from_GeneMark,
+    get_bed_from_GeneMarkHMM,
+    get_bed_from_glimmer3
+)
 
 assert sys.version_info[:2] >= (2, 4)
 
