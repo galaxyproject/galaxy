@@ -1,6 +1,13 @@
 If you use or extend Galaxy in your published work, please cite each of the
 following publications:
 
+- Afgan E, Baker D, van den Beek M, Blankenberg D, Bouvier D, Čech M, Chilton
+  J, Clements D, Coraor N, Eberhard C, Grüning B, Guerler A, Hillman-Jackson
+  J,Von Kuster G, Rasche E, Soranzo N, Turaga N, Taylor J, Nekrutenko A, Goecks
+  J. "The Galaxy platform for accessible, reproducible and collaborative
+  biomedical analyses: 2016 update." 
+  Nucleic acids research, 44(W1), W3-W10.
+
 - Goecks, J, Nekrutenko, A, Taylor, J and The Galaxy Team. "Galaxy: a
   comprehensive approach for supporting accessible, reproducible, and
   transparent computational research in the life sciences." 
@@ -21,6 +28,17 @@ See also: https://galaxyproject.org/citing-galaxy
 
 
 BibTeX format:
+
+@article{afgan2016galaxy,
+  title={The Galaxy platform for accessible, reproducible and collaborative biomedical analyses: 2016 update},
+  author={Afgan, Enis and Baker, Dannon and Van den Beek, Marius and Blankenberg, Daniel and Bouvier, Dave and Čech, Martin and Chilton, John and Clements, Dave and Coraor, Nate and Eberhard, Carl and others},
+  journal={Nucleic acids research},
+  volume={44},
+  number={W1},
+  pages={W3--W10},
+  year={2016},
+  publisher={Oxford University Press}
+}
 
 @article{goecks2010galaxy,
   title={Galaxy: a comprehensive approach for supporting accessible, reproducible, and transparent computational research in the life sciences},
