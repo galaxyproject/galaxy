@@ -183,12 +183,15 @@ class BaseUIController(BaseController):
         try:
             return BaseController.get_object(self, trans, id, class_name,
                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
-
         except exceptions.MessageException:
             raise       # handled in the caller
         except:
             log.exception("Exception in get_object check for %s %s:", class_name, str(id))
             raise Exception('Server error retrieving %s id ( %s ).' % (class_name, str(id)))
+
+    def message_exception(self, trans, message):
+        trans.response.status = 400
+        return {'err_msg': util.sanitize_text(message)}
 
 
 class BaseAPIController(BaseController):

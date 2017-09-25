@@ -407,7 +407,7 @@ class PageController(BaseUIController, SharableMixin,
         """
         id = kwd.get('id')
         if not id:
-            return message_exception(trans, 'No page id received for editing.')
+            return self.message_exception(trans, 'No page id received for editing.')
         decoded_id = self.decode_id(id)
         p = trans.sa_session.query(model.Page).get(decoded_id)
         if trans.request.method == 'GET':
@@ -436,13 +436,13 @@ class PageController(BaseUIController, SharableMixin,
             p_slug = payload.get('slug')
             p_annotation = payload.get('annotation')
             if not p_title:
-                return message_exception(trans, 'Please provide a page name is required.')
+                return self.message_exception(trans, 'Please provide a page name is required.')
             elif not p_slug:
-                return message_exception(trans, 'Please provide a unique identifier.')
+                return self.message_exception(trans, 'Please provide a unique identifier.')
             elif not self._is_valid_slug(p_slug):
-                return message_exception(trans, 'Page identifier must consist of only lowercase letters, numbers, and the \'-\' character.')
+                return self.message_exception(trans, 'Page identifier must consist of only lowercase letters, numbers, and the \'-\' character.')
             elif p_slug != p.slug and trans.sa_session.query(model.Page).filter_by(user=p.user, slug=p_slug, deleted=False).first():
-                return message_exception(trans, 'Page id must be unique.')
+                return self.message_exception(trans, 'Page id must be unique.')
             else:
                 p.title = p_title
                 p.slug = p_slug
@@ -827,8 +827,3 @@ class PageController(BaseUIController, SharableMixin,
 
         elif item_class == model.Page:
             pass
-
-
-def message_exception(trans, message):
-    trans.response.status = 400
-    return {'err_msg': sanitize_text(message)}
