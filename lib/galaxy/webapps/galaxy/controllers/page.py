@@ -356,7 +356,7 @@ class PageController(BaseUIController, SharableMixin,
         """
         if trans.request.method == 'GET':
             return {
-                'title'  : 'Create page attributes',
+                'title'  : 'Create a new page',
                 'inputs' : [{
                     'name'      : 'title',
                     'label'     : 'Name'
