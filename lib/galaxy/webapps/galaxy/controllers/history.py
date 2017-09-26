@@ -1257,16 +1257,16 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             return {
                 'title'  : 'Change history name(s)',
                 'inputs' : [{
-                    'name'  : trans.security.encode_id(h.id),
+                    'name'  : 'name_%i' % i,
                     'label' : 'Current: %s' % h.name,
                     'value' : h.name
-                } for h in histories]
+                } for i, h in enumerate(histories)]
             }
         else:
             messages = []
-            for h in histories:
+            for i, h in enumerate(histories):
                 cur_name = h.get_display_name()
-                new_name = payload.get(trans.security.encode_id(h.id))
+                new_name = payload.get('name_%i' % i)
                 # validate name is empty
                 if not isinstance(new_name, string_types) or not new_name.strip():
                     messages.append('You must specify a valid name for History \'%s\'.' % cur_name)
