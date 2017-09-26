@@ -143,10 +143,10 @@ def galactic_job_json(
                 "order": order
             }
             for secondary_file in secondary_files:
-                secondary_file_path = secondary_file.get("location", None) or value.get("path", None)
+                secondary_file_path = secondary_file.get("location", None) or secondary_file.get("path", None)
                 assert secondary_file_path, "Invalid secondaryFile entry found [%s]" % secondary_file
                 full_secondary_file_path = os.path.join(test_data_directory, secondary_file_path)
-                basename = secondary_file.get("basename") or secondary_file_path
+                basename = secondary_file.get("basename") or os.path.basename(secondary_file_path)
                 order.append(basename)
                 tf.add(full_secondary_file_path, os.path.join(SECONDARY_FILES_EXTRA_PREFIX, basename))
             tmp_index = tempfile.NamedTemporaryFile(delete=False)
