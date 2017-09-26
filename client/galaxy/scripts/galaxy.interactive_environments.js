@@ -20,36 +20,37 @@ function display_spinner(){
 
 /* Create a spin_state object used by spin() and spin_again() */
 function make_spin_state(type, ajax_timeout_init, ajax_timeout_max, ajax_timeout_step, sleep_init, sleep_max, sleep_step, log_attempts){
-    var s = {};
-    s.type = (typeof type !== 'undefined') ? type : "GIE spin";
-    s.ajax_timeout = (typeof ajax_timeout_init !== 'undefined') ? ajax_timeout_init : 2000;
-    s.ajax_timeout_max = (typeof ajax_timeout_max !== 'undefined') ? ajax_timeout_max : 10000;
-    s.ajax_timeout_step = (typeof ajax_timeout_step !== 'undefined') ? ajax_timeout_step : 500;
-    s.sleep = (typeof sleep_init !== 'undefined') ? sleep_init : 500;
-    s.sleep_max = (typeof sleep_max !== 'undefined') ? sleep_max : 8000;
-    s.sleep_step = (typeof sleep_step !== 'undefined') ? sleep_step : 100;
-    s.log_attempts = (typeof log_attempts !== 'undefined') ? log_attempts : true;
-    s.count = 0;
+    var s = {
+        type: (typeof type !== 'undefined') ? type : "GIE spin",
+        ajax_timeout: (typeof ajax_timeout_init !== 'undefined') ? ajax_timeout_init : 2000,
+        ajax_timeout_max: (typeof ajax_timeout_max !== 'undefined') ? ajax_timeout_max : 16000,
+        ajax_timeout_step: (typeof ajax_timeout_step !== 'undefined') ? ajax_timeout_step : 500,
+        sleep: (typeof sleep_init !== 'undefined') ? sleep_init : 500,
+        sleep_max: (typeof sleep_max !== 'undefined') ? sleep_max : 8000,
+        sleep_step: (typeof sleep_step !== 'undefined') ? sleep_step : 100,
+        log_attempts: (typeof log_attempts !== 'undefined') ? log_attempts : true,
+        count: 0,
+        timeout_count: 0,
+        error_count: 0,
+    }
     return s;
 }
 
 
-/* FIXME: Maybe don't need this anymore */
-function make_error_callback(console_msg, user_msg, clear){
-    var f = function() {
-        console.log(console_msg);
-        if(clear) clear_main_area();
-        if(typeof user_msg == "string"){
-            toastr.clear();
-            toastr.error(
-                user_msg,
-                "Error",
-                {'closeButton': true, 'timeOut': 0, 'extendedTimeout': 0, 'tapToDismiss': false}
-            );
-        }
+/* Log/display an error when spinning fails. */
+function spin_error(console_msg, user_msg, clear){
+    console.log(console_msg);
+    if(clear) clear_main_area();
+    if(typeof user_msg == "string"){
+        toastr.clear();
+        toastr.error(
+            user_msg,
+            "Error",
+            {'closeButton': true, 'timeOut': 0, 'extendedTimeout': 0, 'tapToDismiss': false}
+        );
     }
-    return f;
 }
+
 
 /* Increase sleep time and spin again. */
 function spin_again(spin_state){
@@ -64,11 +65,9 @@ function spin_again(spin_state){
 
 
 /*
- * Spin on a URL as long as it times out, otherwise, call the provided success or error callback and stop spinning.
- *
- * NOTE: the caller needs to call spin_again(spin_state) in the success callback if so desired, or else the spinner terminates.
- *
- * Could pass in a flag saying whether it should be done for us by spin(), but only keep_alive() would use that.
+ * Spin on a URL as long as it times out, otherwise, call the provided success or error callback. If the callback
+ * returns `true`, the condition is considered "resolved" and spinning stops. Otherwise, continue spinning, increasing
+ * AJAX timeouts and/or sleep values as configured in the spin_state.
  */
 function spin(url, bool_response, success_callback, timeout_callback, error_callback, spin_state){
     var spinner = function(){
@@ -79,17 +78,21 @@ function spin(url, bool_response, success_callback, timeout_callback, error_call
             },
             type: "GET",
             timeout: spin_state.ajax_timeout,
-            success: success_callback,
+            success: function(data, status, jqxhr){
+                if(!success_callback(data, status, jqxhr)) spin_again(spin_state);
+            },
             error: function(jqxhr, status, error){
                 if(status == "timeout"){
                     if(spin_state.ajax_timeout < spin_state.ajax_timeout_max){
                         spin_state.ajax_timeout += spin_state.ajax_timeout_step;
                     }
                     spin_state.count++;
-                    timeout_callback();
-                    spin_again(spin_state);
+                    spin_state.timeout_count++;
+                    if(!timeout_callback(jqxhr, status, error)) spin_again(spin_state);
                 }else{
-                    error_callback();
+                    spin_state.count++;
+                    spin_state.error_count++;
+                    if(!error_callback(jqxhr, status, error)) spin_again(spin_state);
                 }
             },
         }
@@ -109,11 +112,15 @@ function spin(url, bool_response, success_callback, timeout_callback, error_call
  *     as soon as a successful response is received.
  */
 function spin_until(url, bool_response, messages, success_callback, spin_state){
-    var message_once = function(message, spin_state) {
+    // There is no timeout max for these callers, but do timeout if enough errors are encountered because these should
+    // not happen more than a couple times (during proxy startup) on a working GIE setup.
+    var error_count_max = 40;
+    var message_once = function(message, spin_state){
         if(spin_state.count == 1){
             display_spinner();
             toastr.info(
                 message,
+                null,
                 {'closeButton': true, 'timeOut': 0, 'extendedTimeout': 0, 'tapToDismiss': false}
             );
         }
@@ -126,26 +133,27 @@ function spin_until(url, bool_response, messages, success_callback, spin_state){
             success_callback();
         }else if(bool_response && data == false){
             message_once(messages["not_ready"], spin_state);
-            spin_again(spin_state);
+            return false;  // keep spinning
         }else{
-            make_error_callback("Invalid response to " + spin_state.type + " request", messages["invalid_response"], true)();
+            spin_error("Invalid response to " + spin_state.type + " request", messages["invalid_response"], true);
         }
+        return true;  // stop spinning
+    }
+    var error = function(jqxhr, status, error){
+        message_once(messages["timeout"], spin_state);
+        if(spin_state.error_count >= error_count_max){
+            spin_error("Error completing " + spin_state.type + " request: " + error, messages["error"], true);
+            return true;
+        }
+        return false;
+
     }
     spin(
         url,
         bool_response,
         wrapped_success,
-        function(){
-            message_once(messages["timeout"], spin_state);
-        },
-        // FIXME: turns out with the ready/available functions we want to
-        // ignore 502s as well (but maybe if we get enough of them we should
-        // eventually time out)?
-        function(){
-            spin_state.count++;
-            message_once(messages["timeout"], spin_state);
-            spin_again(spin_state);
-        },
+        function(){ message_once(messages["timeout"], spin_state); return false; },
+        error,
         spin_state
     );
 }
@@ -181,7 +189,7 @@ function load_when_ready(url, success_callback){
 function test_ie_availability(url, success_callback){
     var messages = {
         success: "IE connection succeeded, returning",
-        timeout: "Attempting to connect to the interactive environment. Please wait...",
+        timeout: "Interactive environment container is running, attempting to connect to the IE. Please wait...",
         error: "An error was encountered while attempting to connect to the interactive environment, contact your administrator."
     }
     var spin_state = make_spin_state("IE availability");

@@ -50,11 +50,12 @@ function keep_alive(){
     * terminate itself.
     */
     var warn_at = 4;
-    var count_max = 60;
+    var timeout_count_max = 60;
+    var error_count_max = 10;
     // we sleep 15 seconds between requests and the default timeout for the
     // Jupyter container is 120 seconds, so start with a pretty high ajax timeout
     var spin_state = make_spin_state("IE keep alive", 8000, 16000, 2000, 15000, 15000, 0, false);
-    var success = function() {
+    var success = function(){
         console.log("IE is alive");
         toastr.clear()
         if(spin_state.count >= warn_at){
@@ -65,24 +66,31 @@ function keep_alive(){
             );
         }
         spin_state.count = 0;
-        spin_again(spin_state);
+        spin_state.timeout_count = 0;
+        spin_state.error_count = 0;
+        return false;  // keep spinning
     }
-    var timeout = function() {
-        console.log("IE keep alive request failed " + spin_state.count + " time(s) of " + count_max + " max");
+    var timeout_error = function(status, error, count, max){
+        console.log("IE keep alive request failed " + count + " time(s) of " + max + " max for '" + status + "' failure type with message: " + error);
         if(spin_state.count == warn_at){
             toastr.warning(
                 "Your browser has been unable to contact the interactive environment for "
-                + warn_at * (spin_state.sleep / 1000) + " seconds, if you do not reestablish"
-                + " a connection, your IE container may be terminated.",
+                + spin_state.count + " consecutive attempts, if you do not reestablish "
+                + "a connection, your IE container may be terminated.",
+                "Warning",
                 {'closeButton': true, 'timeOut': 0, 'extendedTimeout': 0, 'tapToDismiss': false}
             );
-        }else if(spin_state.count > count_max){
-            make_error_callback("IE timeout limit reached", "Lost connection to interactive environment, contact your administrator", true)();
+            return false;  // keep spinning
+        }else if(count >= max){
+            spin_error("IE " + status + " limit reached", "Lost connection to interactive environment, contact your administrator", false);
+            return true;  // stop spinning
         }
     }
-    // FIXME: we probably want to treat timeouts and 502s the same here as well (could just be a proxy error that might recover), although I think we probably ought to give up on 502s quicker than timeouts.
-    var error = function() {
-        console.log("IE keep alive request error: " + error);
+    var timeout = function(jqxhr, status, error){
+        return timeout_error(status, error, spin_state.timeout_count, timeout_count_max);
+    }
+    var error = function(jqxhr, status, error){
+        return timeout_error(status, error, spin_state.error_count, error_count_max);
     }
     console.log("IE keep alive worker starting");
     spin(notebook_access_url, false, success, timeout, error, spin_state);
