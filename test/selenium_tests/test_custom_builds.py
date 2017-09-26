@@ -9,19 +9,19 @@ from .framework import (
 
 class CustomBuildsTestcase(SharedStateSeleniumTestCase):
 
-    def setUp(self):
-        super(CustomBuildsTestcase, self).setUp()
-        self.home()  # ensure Galaxy is loaded
-        self.submit_login(self.user_email, retries=2)
-
     @selenium_test
     def test_build_add(self):
+        self._login()
+
         self.navigate_to_custom_builds_page()
+
         self.add_custom_build(self.build_name1, self.build_key1)
         self.assert_custom_builds_in_grid([self.build_name1])
 
     @selenium_test
     def test_build_delete(self):
+        self._login()
+
         self.navigate_to_custom_builds_page()
 
         self.add_custom_build(self.build_name2, self.build_key2)
@@ -38,6 +38,10 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
             self.assertEqual(intersection, set(expected_builds))
         else:
             self.assertEqual(intersection, set())
+
+    def _login(self):
+        self.home()  # ensure Galaxy is loaded
+        self.submit_login(self.user_email, retries=2)
 
     def add_custom_build(self, build_name, build_key):
         name_div = self.wait_for_selector('div[tour_id="name"')

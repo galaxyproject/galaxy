@@ -7,7 +7,6 @@ import unittest
 import routes
 from six import string_types
 
-import tools_support
 from galaxy import model
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
@@ -15,11 +14,12 @@ from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
 from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
 
-from .test_toolbox_filters import mock_trans
 from .test_tool_loader import (
     SIMPLE_MACRO,
     SIMPLE_TOOL_WITH_MACRO
 )
+from .test_toolbox_filters import mock_trans
+from ..tools_support import UsesApp, UsesTools
 
 
 CONFIG_TEST_TOOL_VERSION_TEMPLATE = string.Template(
@@ -37,7 +37,7 @@ CONFIG_TEST_TOOL_VERSION_1 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(d
 CONFIG_TEST_TOOL_VERSION_2 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(dict(version="2"))
 
 
-class BaseToolBoxTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.UsesTools):
+class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
 
     @property
     def integerated_tool_panel_path(self):

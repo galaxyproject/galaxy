@@ -836,7 +836,7 @@ class JobExternalOutputMetadataWrapper(object):
                 sa_session.add(metadata_files)
                 sa_session.flush()
             metadata_files_list.append(metadata_files)
-        args = '"%s" "%s" %s %s' % (datatypes_config,
+        args = '"%s" "%s" %s %s' % (metadata_path_on_compute(datatypes_config),
                                     job_metadata,
                                     " ".join(map(__metadata_files_list_to_cmd_line, metadata_files_list)),
                                     max_metadata_value_size)
