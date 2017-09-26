@@ -1,5 +1,7 @@
-from .framework import SeleniumTestCase
-from .framework import selenium_test
+from .framework import (
+    selenium_test,
+    SeleniumTestCase
+)
 
 
 class AnonymousHistoriesTestCase(SeleniumTestCase):
@@ -38,10 +40,7 @@ class AnonymousHistoriesTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_anon_history_after_registration(self):
-        self.home()
-        self.perform_upload(self.get_filename("1.txt"))
-        self.wait_for_history()
-        self.register()
+        self._upload_file_anonymous_then_register_user()
         hda = self.latest_history_item()
         self.home()
         element = self.wait_for_selector(self.hda_div_selector(hda["id"]))
@@ -49,10 +48,16 @@ class AnonymousHistoriesTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_clean_anon_history_after_logout(self):
+        self._upload_file_anonymous_then_register_user()
+        self.logout_if_needed()
+        # Give Galaxy a chance to load the new empty history for that now
+        # anonymous user. Make sure this new history is empty.
+        self.history_panel_wait_for_history_loaded()
+        history_contents = self.current_history_contents()
+        assert len(history_contents) == 0
+
+    def _upload_file_anonymous_then_register_user(self):
         self.home()
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
         self.register()
-        self.logout_if_needed()
-        history_contents = self.current_history_contents()
-        assert len(history_contents) == 0

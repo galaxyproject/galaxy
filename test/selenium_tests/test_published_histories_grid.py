@@ -9,10 +9,6 @@ from .framework import (
 
 class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
-    def setUp(self):
-        super(HistoryGridTestCase, self).setUp()
-        self.home()
-
     @selenium_test
     def test_history_grid_histories(self):
         self.navigate_to_published_histories_page()
@@ -22,17 +18,11 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
     def test_history_grid_search_standard(self):
         self.navigate_to_published_histories_page()
 
-        input_selector = '#input-free-text-search-filter'
-        search_input = self.wait_for_selector(input_selector)
-        search_input.send_keys(self.history1_name)
-        self.send_enter(search_input)
-
+        self.published_grid_search_for(self.history1_name)
         self.assert_grid_histories_are([self.history1_name])
 
         self.unset_filter('free-text-search', self.history1_name)
-        search_input = self.wait_for_selector(input_selector)
-        search_input.send_keys(self.history4_name)
-        self.send_enter(search_input)
+        self.published_grid_search_for(self.history4_name)
 
         self.assert_grid_histories_are(['No Items'])
 

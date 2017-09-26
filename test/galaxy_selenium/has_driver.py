@@ -4,9 +4,9 @@ This should be mixed into classes with a self.driver and self.default_timeout
 attribute.
 """
 
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
@@ -140,5 +140,17 @@ class HasDriver:
         )
 
 
+def exception_indicates_not_clickable(exception):
+    return "not clickable" in str(exception)
+
+
 def exception_indicates_stale_element(exception):
     return "stale" in str(exception)
+
+
+__all__ = (
+    "exception_indicates_not_clickable",
+    "exception_indicates_stale_element",
+    "HasDriver",
+    "TimeoutException",
+)

@@ -28,7 +28,7 @@ sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir,
 from galaxy.util import asbool
 from tool_shed.util import hg_util
 
-from common import get_api_url, get_repository_dict, json_from_url
+from common import get_api_url, get_repository_dict, json_from_url  # noqa: I100
 
 
 def main(options):

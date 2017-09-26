@@ -73,20 +73,13 @@ class WorkflowManagementTestCase(SeleniumTestCase):
         self.workflow_index_rename("searchforthis")
         self._assert_showing_n_workflows(1)
 
-        search_box = self.workflow_index_click_search()
-        search_box.send_keys("doesnotmatch")
+        self.workflow_index_search_for("doesnotmatch")
         self._assert_showing_n_workflows(0)
 
-        # Prevent stale element textbox by re-fetching, seems to be
-        # needed but I don't understand why exactly. -John
-        search_box = self.workflow_index_click_search()
-        search_box.clear()
-        self.send_enter(search_box)
+        self.workflow_index_search_for()
         self._assert_showing_n_workflows(1)
 
-        search_box = self.workflow_index_click_search()
-        search_box.send_keys("searchforthis")
-        self.send_enter(search_box)
+        self.workflow_index_search_for("searchforthis")
         self._assert_showing_n_workflows(1)
 
     @selenium_test
