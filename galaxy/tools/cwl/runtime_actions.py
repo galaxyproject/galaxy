@@ -2,6 +2,8 @@ import json
 import os
 import shutil
 
+from galaxy.util import safe_makedirs
+
 from .cwltool_deps import ref_resolver
 from .parser import (
     JOB_JSON_FILE,
@@ -14,12 +16,45 @@ from .util import (
 )
 
 
+class FileDescription(object):
+    pass
+
+
+class PathFileDescription(object):
+
+    def __init__(self, path):
+        self.path = path
+
+    def write_to(self, destination):
+        # TODO: Move if we can be sure this is in the working directory for instance...
+        shutil.copy(self.path, destination)
+
+
+class LiteralFileDescription(object):
+
+    def __init__(self, content):
+        self.content = content
+
+    def write_to(self, destination):
+        with open(destination, "wb") as f:
+            f.write(self.content.encode("UTF-8"))
+
+
 def _possible_uri_to_path(location):
     if location.startswith("file://"):
         path = ref_resolver.uri_file_path(location)
     else:
         path = location
     return path
+
+
+def file_dict_to_description(file_dict):
+    assert file_dict["class"] == "File", file_dict
+    location = file_dict["location"]
+    if location.startswith("_:"):
+        return LiteralFileDescription(file_dict["contents"])
+    else:
+        return PathFileDescription(_possible_uri_to_path(location))
 
 
 def handle_outputs(job_directory=None):
@@ -44,13 +79,22 @@ def handle_outputs(job_directory=None):
     def move_directory(output, target_path, output_name=None):
         assert output["class"] == "Directory"
         output_path = _possible_uri_to_path(output["location"])
-        shutil.move(output_path, target_path)
+        if output_path.startswith("_:"):
+            # No a real path, just copy listing to target path.
+            safe_makedirs(target_path)
+            for listed_file in output["listing"]:
+                # TODO: handle directories
+                assert listed_file["class"] == "File"
+                file_description = file_dict_to_description(listed_file)
+                file_description.write_to(os.path.join(target_path, listed_file["basename"]))
+        else:
+            shutil.move(output_path, target_path)
         return {"cwl_filename": output["basename"]}
 
     def move_output(output, target_path, output_name=None):
         assert output["class"] == "File"
-        output_path = _possible_uri_to_path(output["location"])
-        shutil.move(output_path, target_path)
+        file_description = file_dict_to_description(output)
+        file_description.write_to(target_path)
 
         secondary_files = output.get("secondaryFiles", [])
         if secondary_files:
@@ -65,7 +109,7 @@ def handle_outputs(job_directory=None):
                     raise NotImplementedError("secondaryFiles are unimplemented for dynamic list elements")
 
                 # TODO: handle nested files...
-                secondary_file_path = _possible_uri_to_path(secondary_file["location"])
+                secondary_file_description = file_dict_to_description(secondary_file)
                 # assert secondary_file_path.startswith(output_path), "[%s] does not start with [%s]" % (secondary_file_path, output_path)
                 secondary_file_basename = secondary_file["basename"]
 
@@ -89,10 +133,7 @@ def handle_outputs(job_directory=None):
                     output_name, create=True
                 )
                 extra_target = os.path.join(secondary_files_dir, secondary_file_name)
-                shutil.move(
-                    secondary_file_path,
-                    extra_target,
-                )
+                secondary_file_description.write_to(extra_target)
                 order.append(secondary_file_name)
 
             with open(os.path.join(secondary_files_dir, "..", SECONDARY_FILES_INDEX_PATH), "w") as f:

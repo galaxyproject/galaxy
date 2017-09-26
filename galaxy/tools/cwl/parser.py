@@ -14,6 +14,7 @@ from abc import ABCMeta, abstractmethod
 
 import six
 
+from galaxy.exceptions import MessageException
 from galaxy.util import listify, safe_makedirs
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
@@ -839,8 +840,9 @@ class InputProxy(object):
         cwl_input_id = cwl_input["id"]
         cwl_source_id = cwl_input.get("source", None)
         if cwl_source_id is None:
-            if "valueFrom" not in cwl_input:
-                raise NotImplementedError("Workflow step input must define a source or a valueFrom value.")
+            if "valueFrom" not in cwl_input and "default" not in cwl_input:
+                msg = "Workflow step input must define a source, a valueFrom, or a default value. Obtained [%s]." % cwl_input
+                raise MessageException(msg)
 
         assert cwl_input_id
         step_name, input_name = split_step_references(
@@ -873,6 +875,8 @@ class InputProxy(object):
         if "valueFrom" in self._cwl_input:
             # TODO: Add a table for expressions - mark the type as CWL 1.0 JavaScript.
             as_dict["value_from"] = self._cwl_input["valueFrom"]
+        if "default" in self._cwl_input:
+            as_dict["default"] = self._cwl_input["default"]
         return as_dict
 
 

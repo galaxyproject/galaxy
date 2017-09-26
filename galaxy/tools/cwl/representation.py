@@ -110,6 +110,9 @@ def type_representation_from_name(type_representation_name):
 def type_descriptions_for_field_types(field_types):
     type_representation_names = set([])
     for field_type in field_types:
+        if isinstance(field_type, dict) and field_type.get("type"):
+            field_type = field_type.get("type")
+
         try:
             type_representation_names_for_field_type = CWL_TYPE_TO_REPRESENTATIONS.get(field_type)
         except TypeError:
@@ -154,6 +157,7 @@ def dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper):
         path = new_input_path
 
     raw_file_object["location"] = path
+    raw_file_object["size"] = int(dataset_wrapper.get_size())
     set_basename_and_derived_properties(raw_file_object, str(dataset_wrapper.cwl_filename or dataset_wrapper.name))
     return raw_file_object
 
