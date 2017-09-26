@@ -50,19 +50,18 @@ function keep_alive(){
     * terminate itself.
     */
     var warn_at = 4;
-    var timeout_count_max = 60;
-    var error_count_max = 10;
-    // we sleep 15 seconds between requests and the default timeout for the
-    // Jupyter container is 120 seconds, so start with a pretty high ajax timeout
-    var spin_state = make_spin_state("IE keep alive", 8000, 16000, 2000, 15000, 15000, 0, false);
+    var count_max = 60;
+    // we sleep 15 seconds between requests and the default timeout for the Jupyter container is 120 seconds, so start
+    // with a pretty high ajax timeout. sleep starts low because we want to get the warning up pretty quickly
+    var spin_state = make_spin_state("IE keep alive", 8000, 16000, 2000, 5000, 15000, 5000, false);
     var success = function(){
-        console.log("IE is alive");
+        console.log("IE keepalive request succeeded");
         toastr.clear()
         if(spin_state.count >= warn_at){
             toastr.clear();
             toastr.success(
                 "Interactive environment connection restored",
-                {'closeButton': true, 'timeOut': 3000, 'extendedTimeout': 5000, 'tapToDismiss': true}
+                {'closeButton': true, 'timeOut': 5000, 'extendedTimeOut': 2000, 'tapToDismiss': true}
             );
         }
         spin_state.count = 0;
@@ -70,30 +69,24 @@ function keep_alive(){
         spin_state.error_count = 0;
         return false;  // keep spinning
     }
-    var timeout_error = function(status, error, count, max){
-        console.log("IE keep alive request failed " + count + " time(s) of " + max + " max for '" + status + "' failure type with message: " + error);
+    var timeout_error = function(jqxhr, status, error){
+        console.log("IE keepalive request failed " + spin_state.count + " time(s) of " + count_max + " max: " + status + ": " + error);
         if(spin_state.count == warn_at){
             toastr.warning(
                 "Your browser has been unable to contact the interactive environment for "
                 + spin_state.count + " consecutive attempts, if you do not reestablish "
                 + "a connection, your IE container may be terminated.",
                 "Warning",
-                {'closeButton': true, 'timeOut': 0, 'extendedTimeout': 0, 'tapToDismiss': false}
+                {'closeButton': true, 'timeOut': 0, 'extendedTimeOut': 0, 'tapToDismiss': false}
             );
             return false;  // keep spinning
-        }else if(count >= max){
-            spin_error("IE " + status + " limit reached", "Lost connection to interactive environment, contact your administrator", false);
+        }else if(spin_state.count >= count_max){
+            spin_error("IE keepalive failure limit reached", "Lost connection to interactive environment, contact your administrator", false);
             return true;  // stop spinning
         }
     }
-    var timeout = function(jqxhr, status, error){
-        return timeout_error(status, error, spin_state.timeout_count, timeout_count_max);
-    }
-    var error = function(jqxhr, status, error){
-        return timeout_error(status, error, spin_state.error_count, error_count_max);
-    }
     console.log("IE keep alive worker starting");
-    spin(notebook_access_url, false, success, timeout, error, spin_state);
+    spin(notebook_access_url, false, success, timeout_error, timeout_error, spin_state);
 }
 
 

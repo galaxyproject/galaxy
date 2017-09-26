@@ -30,8 +30,6 @@ function make_spin_state(type, ajax_timeout_init, ajax_timeout_max, ajax_timeout
         sleep_step: (typeof sleep_step !== 'undefined') ? sleep_step : 100,
         log_attempts: (typeof log_attempts !== 'undefined') ? log_attempts : true,
         count: 0,
-        timeout_count: 0,
-        error_count: 0,
     }
     return s;
 }
@@ -46,7 +44,7 @@ function spin_error(console_msg, user_msg, clear){
         toastr.error(
             user_msg,
             "Error",
-            {'closeButton': true, 'timeOut': 0, 'extendedTimeout': 0, 'tapToDismiss': false}
+            {'closeButton': true, 'timeOut': 0, 'extendedTimeOut': 0, 'tapToDismiss': false}
         );
     }
 }
@@ -87,11 +85,9 @@ function spin(url, bool_response, success_callback, timeout_callback, error_call
                         spin_state.ajax_timeout += spin_state.ajax_timeout_step;
                     }
                     spin_state.count++;
-                    spin_state.timeout_count++;
                     if(!timeout_callback(jqxhr, status, error)) spin_again(spin_state);
                 }else{
                     spin_state.count++;
-                    spin_state.error_count++;
                     if(!error_callback(jqxhr, status, error)) spin_again(spin_state);
                 }
             },
@@ -112,16 +108,14 @@ function spin(url, bool_response, success_callback, timeout_callback, error_call
  *     as soon as a successful response is received.
  */
 function spin_until(url, bool_response, messages, success_callback, spin_state){
-    // There is no timeout max for these callers, but do timeout if enough errors are encountered because these should
-    // not happen more than a couple times (during proxy startup) on a working GIE setup.
-    var error_count_max = 40;
+    var warn_at = 40;  // ~2 mins
     var message_once = function(message, spin_state){
         if(spin_state.count == 1){
             display_spinner();
             toastr.info(
                 message,
                 null,
-                {'closeButton': true, 'timeOut': 0, 'extendedTimeout': 0, 'tapToDismiss': false}
+                {'closeButton': true, 'timeOut': 0, 'extendedTimeOut': 0, 'tapToDismiss': false}
             );
         }
     }
@@ -139,21 +133,23 @@ function spin_until(url, bool_response, messages, success_callback, spin_state){
         }
         return true;  // stop spinning
     }
-    var error = function(jqxhr, status, error){
-        message_once(messages["timeout"], spin_state);
-        if(spin_state.error_count >= error_count_max){
-            spin_error("Error completing " + spin_state.type + " request: " + error, messages["error"], true);
-            return true;
+    var timeout_error = function(jqxhr, status, error){
+        message_once(messages["waiting"], spin_state)
+        if(spin_state.count == warn_at){
+            toastr.warning(
+                messages["wait_warn"],
+                "Warning",
+                {'closeButton': true, 'timeOut': 0, 'extendedTimeOut': 0, 'tapToDismiss': false}
+            );
         }
-        return false;
-
+        return false; // keep spinning
     }
     spin(
         url,
         bool_response,
         wrapped_success,
-        function(){ message_once(messages["timeout"], spin_state); return false; },
-        error,
+        timeout_error,
+        timeout_error,
         spin_state
     );
 }
@@ -170,9 +166,10 @@ function load_when_ready(url, success_callback){
     var messages = {
         success: "Galaxy reports IE container ready, returning",
         not_ready: "Galaxy is launching a container in which to run this interactive environment. Please wait...",
-        unknown_response: "Galaxy failed to launch a container in which to run this interactive environment, contact your administrator.",
-        timeout: "Galaxy is launching a container in which to run this interactive environment. Please wait...",
-        error: "Galaxy encountered an error while attempting to determine the readiness of this interactive environment's container, contact your administrator."
+        unknown_response: "Galaxy failed to launch a container in which to run this interactive environment, contact a Galaxy administrator.",
+        waiting: "Galaxy is launching a container in which to run this interactive environment. Please wait...",
+        wait_warn: "It is taking an usually long time to start a container. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
+        error: "Galaxy encountered an error while attempting to determine the readiness of this interactive environment's container, contact a Galaxy administrator."
     }
     var spin_state = make_spin_state("IE container readiness");
     spin_until(url, true, messages, success_callback, spin_state);
@@ -189,7 +186,8 @@ function load_when_ready(url, success_callback){
 function test_ie_availability(url, success_callback){
     var messages = {
         success: "IE connection succeeded, returning",
-        timeout: "Interactive environment container is running, attempting to connect to the IE. Please wait...",
+        waiting: "Interactive environment container is running, attempting to connect to the IE. Please wait...",
+        wait_warn: "It is taking an usually long time to connect to the interactive environment. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
         error: "An error was encountered while attempting to connect to the interactive environment, contact your administrator."
     }
     var spin_state = make_spin_state("IE availability");
