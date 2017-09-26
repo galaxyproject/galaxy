@@ -8,8 +8,8 @@ from uuid import uuid4
 import yaml
 from requests import delete, put
 
-from base import api
-from base.populators import (
+from base import api  # noqa: I100
+from base.populators import (  # noqa: I100
     DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_tool,

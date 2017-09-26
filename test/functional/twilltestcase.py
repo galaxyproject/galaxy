@@ -15,7 +15,7 @@ from six import string_types, StringIO
 from six.moves.urllib.parse import urlencode, urlparse
 from twill.other_packages._mechanize_dist import ClientForm
 
-from base.testcase import FunctionalTestCase
+from base.testcase import FunctionalTestCase  # noqa: I100
 
 # Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
 buffer = StringIO()

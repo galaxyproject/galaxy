@@ -2,17 +2,18 @@
 Visualization plugins: instantiate/deserialize data and models
 from a query string and render a webpage based on those data.
 """
-
-import logging
 import copy
-import mako
+import logging
 import os
 
-from galaxy.managers import api_keys
+import mako.lookup
 
-from galaxy.visualization.plugins import interactive_environments
-from galaxy.visualization.plugins import resource_parser
-from galaxy.visualization.plugins import utils
+from galaxy.managers import api_keys
+from galaxy.visualization.plugins import (
+    interactive_environments,
+    resource_parser,
+    utils
+)
 
 log = logging.getLogger(__name__)
 

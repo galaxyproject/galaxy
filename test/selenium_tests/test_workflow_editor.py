@@ -1,15 +1,14 @@
 import time
 
+from ._workflow_fixtures import (
+    WORKFLOW_SIMPLE_CAT_TWICE,
+    WORKFLOW_WITH_INVALID_STATE,
+    WORKFLOW_WITH_OLD_TOOL_VERSION,
+)
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
     SeleniumTestCase
-)
-
-from ._workflow_fixtures import (
-    WORKFLOW_SIMPLE_CAT_TWICE,
-    WORKFLOW_WITH_OLD_TOOL_VERSION,
-    WORKFLOW_WITH_INVALID_STATE,
 )
 
 

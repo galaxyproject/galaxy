@@ -1,14 +1,13 @@
 import time
 
+from ._workflow_fixtures import (
+    WORKFLOW_SIMPLE_CAT_TWICE,
+    WORKFLOW_WITH_OLD_TOOL_VERSION,
+)
 from .framework import (
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
-)
-
-from ._workflow_fixtures import (
-    WORKFLOW_SIMPLE_CAT_TWICE,
-    WORKFLOW_WITH_OLD_TOOL_VERSION,
 )
 
 

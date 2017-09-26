@@ -11,7 +11,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 from galaxy.util.pastescript import serve
 
-from check_python import check_python
+from check_python import check_python  # noqa: I100
 
 # ensure supported version
 try:

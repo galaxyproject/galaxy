@@ -4,11 +4,12 @@
 See doc/source/admin/grt.rst for more detailed usage information.
 """
 import argparse
+import logging
 import os
 import sys
-import yaml
-import logging
+
 import requests
+import yaml
 
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml.sample'))
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))
