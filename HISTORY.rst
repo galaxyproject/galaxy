@@ -9,7 +9,7 @@ History
 17.9.8.dev0
 ---------------------
 
-    
+* Bring in updated CWL utilities from the upstream work on CWL integration.
 
 ---------------------
 17.9.7 (2017-09-19)
