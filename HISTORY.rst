@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.9.9.dev0
+17.9.9 (2017-09-27)
 ---------------------
 
 * Bring in latest updates from the 17.09 branch of Galaxy - including updating the default target Conda version and fixes for module resolution.
