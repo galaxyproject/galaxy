@@ -1,5 +1,5 @@
 /** Workflow view */
-define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( mod_toastr, TAGS, WORKFLOWS ) {
+define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model", "utils/query-string-parsing"  ], function( mod_toastr, TAGS, WORKFLOWS, QueryStringParsing) {
 
     /** View of the individual workflows */
     var WorkflowItemView = Backbone.View.extend({
@@ -199,6 +199,17 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
                 reader.readAsText(f, 'utf-8');
             },
 
+        _showArgErrors: _.once(function(){
+            // Parse args out of params, display if there's a message.
+            var msg_text = QueryStringParsing.get('message');
+            var msg_status = QueryStringParsing.get('status');
+            if (msg_status === "error"){
+                mod_toastr.error(_.escape(msg_text || "Unknown Error, please report this to an administrator."));
+            } else if (msg_text){
+                mod_toastr.info(_.escape(msg_text));
+            }
+        }),
+
         render: function() {
             // Add workflow header
             var header = this._templateHeader();
@@ -214,6 +225,7 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model"  ], function( 
             var minQueryLength = 3;
             this.searchWorkflow( this.$( '.search-wf' ), this.$( '.workflow-search tr' ), minQueryLength );
             this.adjustActiondropdown();
+            this._showArgErrors();
             return this;
         },
 
