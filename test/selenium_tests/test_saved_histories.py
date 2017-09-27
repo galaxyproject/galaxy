@@ -25,8 +25,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         @retry_assertion_during_transitions
         def assert_history_name_switched():
-            history_name = self.history_panel_name_element()
-            self.assertEqual(history_name.text, self.history2_name)
+            self.assertEqual(self.history_panel_name(), self.history2_name)
 
         assert_history_name_switched()
 

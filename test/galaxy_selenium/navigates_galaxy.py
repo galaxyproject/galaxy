@@ -130,6 +130,10 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_name_element(self):
         return self.wait_for_selector(self.history_panel_name_selector())
 
+    @retry_during_transitions
+    def history_panel_name(self):
+        return self.history_panel_name_element().text
+
     def current_history(self):
         history = self.api_get("histories")[0]
         return history

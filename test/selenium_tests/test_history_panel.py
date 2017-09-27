@@ -28,8 +28,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         editable_text_input_element.send_keys("New History Name")
         self.send_enter(editable_text_input_element)
 
-        name_element = self.history_panel_name_element()
-        assert "New History Name" in name_element.text
+        assert "New History Name" in self.history_panel_name()
 
     @selenium_test
     def test_history_rename_cancel_with_click(self):
@@ -38,8 +37,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         editable_text_input_element.send_keys("New History Name")
         self.click_center()
         self.assert_selector_absent(self.history_panel_edit_title_input_selector())
-        name_element = self.history_panel_name_element()
-        assert "New History Name" not in name_element.text
+        assert "New History Name" not in self.history_panel_name()
 
     @selenium_test
     def test_history_rename_cancel_with_escape(self):
@@ -48,8 +46,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         editable_text_input_element.send_keys("New History Name")
         self.send_escape(editable_text_input_element)
         self.assert_selector_absent(self.history_panel_edit_title_input_selector())
-        name_element = self.history_panel_name_element()
-        assert "New History Name" not in name_element.text
+        assert "New History Name" not in self.history_panel_name()
 
     @selenium_test
     def test_history_tags_and_annotations_buttons(self):
