@@ -735,6 +735,42 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return trans.fill_template("/sharing_base.mako", controller_list='histories', item=history, use_panels=True)
 
     @web.expose
+    def permissions(self, trans, id=None, **kwd):
+        """Sets the permissions on a history.
+        """
+        # TODO: unencoded id
+        if trans.user:
+            if 'update_roles_button' in kwd:
+                history = None
+                if id:
+                    try:
+                        id = int(id)
+                    except:
+                        id = None
+                    if id:
+                        history = trans.sa_session.query(trans.app.model.History).get(id)
+                if not history:
+                    # If we haven't retrieved a history, use the current one
+                    history = trans.get_history()
+                p = Params(kwd)
+                permissions = {}
+                for k, v in trans.app.model.Dataset.permitted_actions.items():
+                    in_roles = p.get(k + '_in', [])
+                    if not isinstance(in_roles, list):
+                        in_roles = [in_roles]
+                    in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in in_roles]
+                    permissions[trans.app.security_agent.get_action(v.action)] = in_roles
+                dataset = 'dataset' in kwd
+                bypass_manage_permission = 'bypass_manage_permission' in kwd
+                trans.app.security_agent.history_set_default_permissions(history, permissions,
+                                                                         dataset=dataset, bypass_manage_permission=bypass_manage_permission)
+                return trans.show_ok_message('Default history permissions have been changed.')
+            return trans.fill_template('history/permissions.mako')
+        else:
+            # user not logged in, history group must be only public
+            return trans.show_error_message("You must be logged in to change a history's default permissions.")
+
+    @web.expose
     @web.require_login("share histories with other users")
     def share(self, trans, id=None, email="", **kwd):
         # If a history contains both datasets that can be shared and others that cannot be shared with the desired user,

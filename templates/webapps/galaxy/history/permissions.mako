@@ -5,5 +5,5 @@
 %if trans.user:
     <% history = trans.get_history() %>
     ${render_permission_form( history, history.name,
-        h.url_for( controller='root', action='history_set_default_permissions' ), trans.user.all_roles() )}
+        h.url_for( controller='history', action='permissions' ), trans.user.all_roles() )}
 %endif
