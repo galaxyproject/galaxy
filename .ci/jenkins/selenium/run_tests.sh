@@ -107,7 +107,8 @@ export GALAXY_TEST_SELENIUM_RETRIES=1
 export GALAXY_TEST_PORT="${GALAXY_PORT}"
 
 # Have Selenium access Galaxy at this URL
-export GALAXY_TEST_EXTERNAL_FROM_SELENIUM="http://galaxy:8080"
+export GALAXY_TEST_EXTERNAL_FROM_SELENIUM="http://galaxy:8080/galaxypf"
+export GALAXY_TEST_EXTERNAL="http://localhost:${GALAXY_TEST_PORT}/galaxypf"
 
 cd ../../..
 
