@@ -82,6 +82,40 @@ def managed_history(f):
     return func_wrapper
 
 
+def dump_test_information(self, name_prefix):
+    if GALAXY_TEST_ERRORS_DIRECTORY and GALAXY_TEST_ERRORS_DIRECTORY != "0":
+        if not os.path.exists(GALAXY_TEST_ERRORS_DIRECTORY):
+            os.makedirs(GALAXY_TEST_ERRORS_DIRECTORY)
+        result_name = name_prefix + datetime.datetime.now().strftime("%Y%m%d%H%M%s")
+        target_directory = os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, result_name)
+
+        def write_file(name, content, raw=False):
+            with open(os.path.join(target_directory, name), "wb") as buf:
+                buf.write(content.encode("utf-8") if not raw else content)
+
+        os.makedirs(target_directory)
+        self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
+        write_file("page_source.txt", self.driver.page_source)
+        write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
+        write_file("stacktrace.txt", traceback.format_exc())
+
+        for snapshot in getattr(self, "snapshots", []):
+            snapshot.write_to_error_directory(write_file)
+
+        for log_type in ["browser", "driver"]:
+            try:
+                write_file("%s.log.json" % log_type, json.dumps(self.driver.get_log(log_type)))
+            except Exception:
+                continue
+        iframes = self.driver.find_elements_by_css_selector("iframe")
+        for iframe in iframes:
+            pass
+            # TODO: Dump content out for debugging in the future.
+            # iframe_id = iframe.get_attribute("id")
+            # if iframe_id:
+            #     write_file("iframe_%s" % iframe_id, "My content")
+
+
 @nottest
 def selenium_test(f):
 
@@ -94,38 +128,7 @@ def selenium_test(f):
             try:
                 return f(self, *args, **kwds)
             except Exception:
-                if GALAXY_TEST_ERRORS_DIRECTORY and GALAXY_TEST_ERRORS_DIRECTORY != "0":
-                    if not os.path.exists(GALAXY_TEST_ERRORS_DIRECTORY):
-                        os.makedirs(GALAXY_TEST_ERRORS_DIRECTORY)
-                    result_name = f.__name__ + datetime.datetime.now().strftime("%Y%m%d%H%M%s")
-                    target_directory = os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, result_name)
-
-                    def write_file(name, content, raw=False):
-                        with open(os.path.join(target_directory, name), "wb") as buf:
-                            buf.write(content.encode("utf-8") if not raw else content)
-
-                    os.makedirs(target_directory)
-                    self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
-                    write_file("page_source.txt", self.driver.page_source)
-                    write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
-                    write_file("stacktrace.txt", traceback.format_exc())
-
-                    for snapshot in getattr(self, "snapshots", []):
-                        snapshot.write_to_error_directory(write_file)
-
-                    for log_type in ["browser", "driver"]:
-                        try:
-                            write_file("%s.log.json" % log_type, json.dumps(self.driver.get_log(log_type)))
-                        except Exception:
-                            continue
-                    iframes = self.driver.find_elements_by_css_selector("iframe")
-                    for iframe in iframes:
-                        pass
-                        # TODO: Dump content out for debugging in the future.
-                        # iframe_id = iframe.get_attribute("id")
-                        # if iframe_id:
-                        #     write_file("iframe_%s" % iframe_id, "My content")
-
+                dump_test_information(self, f.__name__)
                 if retry_attempts < GALAXY_TEST_SELENIUM_RETRIES:
                     retry_attempts += 1
                 else:
@@ -174,6 +177,18 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
             self.target_url_from_selenium = self.url
         self.snapshots = []
         self.setup_driver_and_session()
+        try:
+            self.setup_with_driver()
+        except Exception:
+            dump_test_information(self, self.__class__.__name__ + "_setup")
+            raise
+
+    def setup_with_driver(self):
+        """Override point that allows setting up data using self.driver and Selenium connection.
+
+        Using this instead of overriding will ensure debug data such as screenshots and stack traces
+        are dumped if there are problems with the setup.
+        """
 
     def tearDown(self):
         exception = None
@@ -302,8 +317,7 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
     shared_state_initialized = False
     shared_state_in_error = False
 
-    def setUp(self):
-        super(SharedStateSeleniumTestCase, self).setUp()
+    def setup_with_driver(self):
         if not self.__class__.shared_state_initialized:
             try:
                 self.setup_shared_state()
