@@ -746,17 +746,15 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             return self.message_exception(trans, 'Invalid history_id id (%s) received' % str(history_id))
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         if trans.request.method == 'GET':
+            inputs = []
             all_roles = trans.user.all_roles()
             current_actions = history.default_permissions
             permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-            inputs = []
             for action_key, action in permitted_actions:
                 in_roles = sets.Set()
                 for a in current_actions:
                     if a.action == action.action:
                         in_roles.add(a.role)
-                print all_roles
-                print in_roles
                 inputs.append({ 'type'      : 'select',
                                 'multiple'  : True,
                                 'optional'  : True,
@@ -764,58 +762,17 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                                 'name'      : action_key,
                                 'label'     : action.action,
                                 'help'      : action.description,
-                                'options'   : [(role.id, role.name) for role in set(all_roles)],
-                                'value'     : [role.id for role in in_roles]})
+                                'options'   : [(role.name, trans.security.encode_id(role.id)) for role in set(all_roles)],
+                                'value'     : [trans.security.encode_id(role.id) for role in in_roles]})
             return {'title'  : 'Default dataset permissions for history \'%s\'' % history.name, 'inputs' : inputs}
-            '''
-            import sets
-            in_roles = sets.Set()
-            for a in current_actions:
-                if a.action == action.action:
-                    in_roles.add( a.role )
-            out_roles = filter( lambda x: x not in in_roles, roles )
-            <b>${action.action}:</b> ${action.description}
-            %if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
-                <br/>
-                NOTE: Users must have every role associated with this dataset in order to access it
-            %endif
-
-
-
-            <%inherit file="/base.mako"/>
-            <%def name="title()">Change Default Permissions on New Datasets in This History</%def>
-            <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
-            %if trans.user:
-                <% history = trans.get_history() %>
-                ${render_permission_form( history, history.name,
-                    h.url_for( controller='history', action='permissions' ), trans.user.all_roles() )}
-            %endif'''
-
         else:
-            '''history = None
-            if id:
-                try:
-                    id = int(id)
-                except:
-                    id = None
-                if id:
-                    history = trans.sa_session.query(trans.app.model.History).get(id)
-            if not history:
-                # If we haven't retrieved a history, use the current one
-                history = trans.get_history()
-            p = Params(kwd)
             permissions = {}
-            for k, v in trans.app.model.Dataset.permitted_actions.items():
-                in_roles = p.get(k + '_in', [])
-                if not isinstance(in_roles, list):
-                    in_roles = [in_roles]
-                in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in in_roles]
-                permissions[trans.app.security_agent.get_action(v.action)] = in_roles
-            dataset = 'dataset' in kwd
-            bypass_manage_permission = 'bypass_manage_permission' in kwd
-            trans.app.security_agent.history_set_default_permissions(history, permissions,
-                                                                     dataset=dataset, bypass_manage_permission=bypass_manage_permission)'''
-            return trans.show_ok_message('Default history permissions have been changed.')
+            for action_key, action in trans.app.model.Dataset.permitted_actions.items():
+                in_roles = payload.get(action_key) or []
+                in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in in_roles]
+                permissions[trans.app.security_agent.get_action(action.action)] = in_roles
+            trans.app.security_agent.history_set_default_permissions(history, permissions)
+            return {'message': 'Default history permissions have been changed.'}
 
     @web.expose
     @web.require_login("share histories with other users")
