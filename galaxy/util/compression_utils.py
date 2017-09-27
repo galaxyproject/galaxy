@@ -1,10 +1,10 @@
-import bz2
 import gzip
 import zipfile
 
 from .checkers import (
+    bz2,
     is_bz2,
-    is_gzip
+    is_gzip,
 )
 
 

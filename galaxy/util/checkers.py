@@ -1,12 +1,21 @@
-import bz2
 import gzip
 import re
+import sys
 import zipfile
 
 from six import StringIO
 
 from galaxy import util
 from galaxy.util.image_util import image_type
+
+if sys.version_info < (3, 3):
+    try:
+        import bz2file as bz2
+    except ImportError:
+        # If bz2file is unavailable, just fallback to not having pbzip2 support.
+        import bz2
+else:
+    import bz2
 
 HTML_CHECK_LINES = 100
 
