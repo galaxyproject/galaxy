@@ -110,7 +110,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_histories_permissions : function() {
-            this.page.display( new FormWrapper.View ( { url : 'history/permissions?id=' + QueryStringParsing.get( 'id' ) } ) );
+            this.page.display( new FormWrapper.View ( { url : 'history/permissions?id=' + QueryStringParsing.get( 'id' ), redirect: 'histories/list' } ) );
         },
 
         show_datasets : function() {

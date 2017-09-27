@@ -108,9 +108,10 @@ class HistoryListGrid(grids.Grid):
     operations = [
         grids.GridOperation("Switch", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=True),
         grids.GridOperation("View", allow_multiple=False, url_args=dict(action='view')),
-        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
-        grids.GridOperation("Copy", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=False),
         grids.GridOperation("Rename", condition=(lambda item: not item.deleted), url_args=dict(controller="", action="histories/rename"), target="top"),
+        grids.GridOperation("Copy", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=False),
+        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
+        grids.GridOperation("Change Permissions", condition=(lambda item: not item.deleted), url_args=dict(controller="", action="histories/permissions")),
         grids.GridOperation("Delete", condition=(lambda item: not item.deleted), async_compatible=True),
         grids.GridOperation("Delete Permanently", condition=(lambda item: not item.purged), confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True),
         grids.GridOperation("Undelete", condition=(lambda item: item.deleted and not item.purged), async_compatible=True),
@@ -764,7 +765,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                                 'help'      : action.description,
                                 'options'   : [(role.name, trans.security.encode_id(role.id)) for role in set(all_roles)],
                                 'value'     : [trans.security.encode_id(role.id) for role in in_roles]})
-            return {'title'  : 'Default dataset permissions for history \'%s\'' % history.name, 'inputs' : inputs}
+            return {'title'  : 'Change default dataset permissions for history \'%s\'' % history.name, 'inputs' : inputs}
         else:
             permissions = {}
             for action_key, action in trans.app.model.Dataset.permitted_actions.items():
@@ -772,7 +773,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in in_roles]
                 permissions[trans.app.security_agent.get_action(action.action)] = in_roles
             trans.app.security_agent.history_set_default_permissions(history, permissions)
-            return {'message': 'Default history permissions have been changed.'}
+            return {'message': 'Default history \'%s\' dataset permissions have been changed.' % history.name}
 
     @web.expose
     @web.require_login("share histories with other users")
