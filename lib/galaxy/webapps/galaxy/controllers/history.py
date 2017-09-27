@@ -756,15 +756,15 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 for a in current_actions:
                     if a.action == action.action:
                         in_roles.add(a.role)
-                inputs.append({ 'type'      : 'select',
-                                'multiple'  : True,
-                                'optional'  : True,
-                                'individual': True,
-                                'name'      : action_key,
-                                'label'     : action.action,
-                                'help'      : action.description,
-                                'options'   : [(role.name, trans.security.encode_id(role.id)) for role in set(all_roles)],
-                                'value'     : [trans.security.encode_id(role.id) for role in in_roles]})
+                inputs.append({'type'      : 'select',
+                               'multiple'  : True,
+                               'optional'  : True,
+                               'individual': True,
+                               'name'      : action_key,
+                               'label'     : action.action,
+                               'help'      : action.description,
+                               'options'   : [(role.name, trans.security.encode_id(role.id)) for role in set(all_roles)],
+                               'value'     : [trans.security.encode_id(role.id) for role in in_roles]})
             return {'title'  : 'Change default dataset permissions for history \'%s\'' % history.name, 'inputs' : inputs}
         else:
             permissions = {}

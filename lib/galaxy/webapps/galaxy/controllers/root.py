@@ -11,7 +11,7 @@ from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
 
 from galaxy import web
 from galaxy import util
-from galaxy.util import listify, Params, string_as_bool, FILENAME_VALID_CHARS
+from galaxy.util import listify, string_as_bool, FILENAME_VALID_CHARS
 
 from galaxy.web.base import controller
 from galaxy.model.item_attrs import UsesAnnotations
