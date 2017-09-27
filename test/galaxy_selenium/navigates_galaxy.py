@@ -550,6 +550,13 @@ class NavigatesGalaxy(HasDriver):
         alert.send_keys(new_name)
         alert.accept()
 
+    @retry_during_transitions
+    def workflow_index_name(self, workflow_index=0):
+        """Get workflow name for workflow_index'th row."""
+        row_element = self.workflow_index_table_row(workflow_index=workflow_index)
+        workflow_button = row_element.find_element_by_css_selector(".menubutton")
+        return workflow_button.text
+
     def workflow_index_click_option(self, option_title, workflow_index=0):
 
         @retry_during_transitions
