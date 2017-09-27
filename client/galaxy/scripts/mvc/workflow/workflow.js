@@ -31,24 +31,24 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model", "utils/query-
 
         removeWorkflow: function(){
             var wfName = this.model.get('name');
-            if (confirm( "Are you sure you want to delete workflow '" + wfName + "'?" )) {
+            if (window.confirm( "Are you sure you want to delete workflow '" + wfName + "'?" )) {
                 this.model.destroy({
                     success: function() {
                         mod_toastr.success("Successfully deleted workflow '" + wfName + "'");
                         }
                 });
                 this.remove();
-            };
+            }
         },
 
         renameWorkflow: function(){
             var oldName = this.model.get('name');
-            var newName = prompt("Enter a new Name for workflow '" + oldName + "'", oldName );
+            var newName = window.prompt("Enter a new Name for workflow '" + oldName + "'", oldName );
             if (newName) {
                 this.model.save(
                     { 'name': newName },
                     { success: function() {
-                        mod_toastr.success("Successfully renamed workflow '" + oldName + "' to '" + newName + "'")
+                        mod_toastr.success("Successfully renamed workflow '" + oldName + "' to '" + newName + "'");
                     }
                 });
                 this.render();
@@ -56,7 +56,7 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model", "utils/query-
         },
 
         copyWorkflow: function(){
-            self = this;
+            var self = this;
             var oldName = this.model.get('name');
             $.getJSON(this.model.urlRoot + '/' + this.model.id + '/download', function(wfJson) {
                 var newName = 'Copy of ' + oldName;
@@ -68,7 +68,7 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model", "utils/query-
                 self.collection.create(wfJson, { at: 0,
                                                  wait: true,
                                                  success: function() {
-                                                     mod_toastr.success("Successfully copied workflow '" + oldName + "' to '" + newName + "'")
+                                                     mod_toastr.success("Successfully copied workflow '" + oldName + "' to '" + newName + "'");
                                                  },
                                                  error : function(model, resp, options) {
                                                      // signature seems to have changed over the course of backbone dev
@@ -78,7 +78,7 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model", "utils/query-
                 });
             }).error(function(jqXHR, textStatus, errorThrown) {
                   mod_toastr.error(jqXHR.responseJSON.err_msg);
-            })
+            });
         },
 
         _rowTemplate: function() {
@@ -125,8 +125,9 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model", "utils/query-
                       '</ul>';
             }
             else {
+                console.debug(this.model);
                 return '<ul class="dropdown-menu action-dpd">' +
-                         '<li><a href="'+ Galaxy.root +'workflow/display_by_username_and_slug?username='+ workflow.owner +'&slug='+ workflow.slug +'">View</a></li>' +
+                         '<li><a href="'+ Galaxy.root +'workflow/display_by_username_and_slug?username='+ this.model.get("owner") +'&slug='+ this.model.get("slug") +'">View</a></li>' +
                          '<li><a href="'+ Galaxy.root +'workflow/run?id='+ this.model.id +'">Run</a></li>' +
                          '<li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li>' +
                          '<li><a class="link-confirm-shared-'+ this.model.id +'" href="'+ Galaxy.root +'workflow/sharing?unshare_me=True&id='+ this.model.id +'">Remove</a></li>' +
@@ -140,7 +141,7 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model", "utils/query-
         title: "Workflows",
         initialize: function() {
             this.setElement( '<div/>' );
-            _.bindAll(this, 'adjustActiondropdown')
+            _.bindAll(this, 'adjustActiondropdown');
             this.collection = new WORKFLOWS.WorkflowCollection();
             this.collection.fetch().done(this.render());
             this.collection.bind('add', this.appendItem);
@@ -177,8 +178,9 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model", "utils/query-
                 var self = this;
                 var reader = new FileReader();
                 reader.onload = function(theFile) {
+                    var wf_json;
                     try {
-                        var wf_json = JSON.parse(reader.result);
+                        wf_json = JSON.parse(reader.result);
                     } catch(e) {
                         mod_toastr.error("Could not read file '" + f.name + "'. Verify it is a valid Galaxy workflow");
                         wf_json = null;
@@ -188,7 +190,7 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model", "utils/query-
                             at: 0,
                             wait: true,
                             success: function() {
-                                mod_toastr.success("Successfully imported workflow '" + wf_json.name + "'")
+                                mod_toastr.success("Successfully imported workflow '" + wf_json.name + "'");
                             },
                             error : function(model, resp, options) {
                                 mod_toastr.error(options.errorThrown);
@@ -242,7 +244,7 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model", "utils/query-
         confirmDelete: function( workflow ) {
             var $el_shared_wf_link = this.$( '.link-confirm-shared-' + workflow.id );
             $el_shared_wf_link.click( function() {
-                return confirm( "Are you sure you want to remove the shared workflow '" + workflow.attributes.name + "'?" );
+                return window.confirm( "Are you sure you want to remove the shared workflow '" + workflow.attributes.name + "'?" );
             });
         },
 
