@@ -93,7 +93,11 @@ var menu = [
     },
     {
         html    : _l( 'Dataset Security' ),
-        href    : 'root/history_set_default_permissions',
+        func    : function() {
+            if ( Galaxy && Galaxy.currHistoryPanel && Galaxy.router ) {
+                Galaxy.router.push( 'histories/permissions?id=' + Galaxy.currHistoryPanel.model.id);
+            }
+        }
     },
     {
         html    : _l( 'Resume Paused Jobs' ),
@@ -106,7 +110,7 @@ var menu = [
             if( Galaxy && Galaxy.currHistoryPanel ){
                 Galaxy.currHistoryPanel.collapseAll();
             }
-        },
+        }
     },
     {
         html    : _l( 'Unhide Hidden Datasets' ),

@@ -127,6 +127,7 @@ def paste_app_factory(global_conf, **kwargs):
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')
     webapp.add_client_route('/histories/rename')
+    webapp.add_client_route('/histories/permissions')
     webapp.add_client_route('/datasets/list')
     webapp.add_client_route('/datasets/edit')
     webapp.add_client_route('/datasets/error')

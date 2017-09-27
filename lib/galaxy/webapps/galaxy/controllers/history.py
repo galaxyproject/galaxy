@@ -734,11 +734,14 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
 
         return trans.fill_template("/sharing_base.mako", controller_list='histories', item=history, use_panels=True)
 
-    @web.expose
+    @web.expose_api
+    @web.require_login("changing default permissions")
     def permissions(self, trans, id=None, **kwd):
-        """Sets the permissions on a history.
+        """
+        Sets the permissions on a history.
         """
         # TODO: unencoded id
+        print id
         if trans.user:
             if 'update_roles_button' in kwd:
                 history = None
