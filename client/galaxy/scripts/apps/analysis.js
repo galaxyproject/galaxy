@@ -117,7 +117,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_pages_create : function() {
-            this.page.display( new FormWrapper.View ( { url : 'page/create?id=' + QueryStringParsing.get( 'id' ), redirect: 'pages/list' } ) );
+            this.page.display( new FormWrapper.View ( { url : 'page/create', redirect: 'pages/list' } ) );
         },
 
         show_pages_edit : function() {
