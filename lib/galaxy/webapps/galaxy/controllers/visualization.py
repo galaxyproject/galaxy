@@ -585,7 +585,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                     'name'      : 'slug',
                     'label'     : 'Identifier',
                     'value'     : v.slug,
-                    'help'      : 'A unique identifier that will be used for public links to this visualization. This field must contain only lowercase letters, numbers, and the \'-\' character.'
+                    'help'      : 'A unique identifier that will be used for public links to this visualization. This field can only contain lowercase letters, numbers, and dashes (-).'
                 }, {
                     'name'      : 'dbkey',
                     'label'     : 'Build',
@@ -611,7 +611,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             elif not v_slug:
                 return self.message_exception(trans, 'Please provide a unique identifier.')
             elif not self._is_valid_slug(v_slug):
-                return self.message_exception(trans, 'Visualization identifier must consist of only lowercase letters, numbers, and the \'-\' character.')
+                return self.message_exception(trans, 'Visualization identifier can only contain lowercase letters, numbers, and dashes (-).')
             elif v_slug != v.slug and trans.sa_session.query(model.Visualization).filter_by(user=v.user, slug=v_slug, deleted=False).first():
                 return self.message_exception(trans, 'Visualization id must be unique.')
             else:

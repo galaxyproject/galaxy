@@ -363,7 +363,7 @@ class PageController(BaseUIController, SharableMixin,
                 }, {
                     'name'      : 'slug',
                     'label'     : 'Identifier',
-                    'help'      : 'A unique identifier that will be used for public links to this page. This field must contain only lowercase letters, numbers, and the \'-\' character.'
+                    'help'      : 'A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-).'
                 }, {
                     'name'      : 'annotation',
                     'label'     : 'Annotation',
@@ -380,7 +380,7 @@ class PageController(BaseUIController, SharableMixin,
             elif not p_slug:
                 return self.message_exception(trans, 'Please provide a unique identifier.')
             elif not self._is_valid_slug(p_slug):
-                return self.message_exception(trans, 'Page identifier must consist of only lowercase letters, numbers, and the \'-\' character.')
+                return self.message_exception(trans, 'Page identifier can only contain lowercase letters, numbers, and dashes (-).')
             elif trans.sa_session.query(model.Page).filter_by(user=user, slug=p_slug, deleted=False).first():
                 return self.message_exception(trans, 'Page id must be unique.')
             else:
@@ -428,7 +428,7 @@ class PageController(BaseUIController, SharableMixin,
                     'name'      : 'slug',
                     'label'     : 'Identifier',
                     'value'     : p.slug,
-                    'help'      : 'A unique identifier that will be used for public links to this page. This field must contain only lowercase letters, numbers, and the \'-\' character.'
+                    'help'      : 'A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-).'
                 }, {
                     'name'      : 'annotation',
                     'label'     : 'Annotation',
@@ -445,7 +445,7 @@ class PageController(BaseUIController, SharableMixin,
             elif not p_slug:
                 return self.message_exception(trans, 'Please provide a unique identifier.')
             elif not self._is_valid_slug(p_slug):
-                return self.message_exception(trans, 'Page identifier must consist of only lowercase letters, numbers, and the \'-\' character.')
+                return self.message_exception(trans, 'Page identifier can only contain lowercase letters, numbers, and dashes (-).')
             elif p_slug != p.slug and trans.sa_session.query(model.Page).filter_by(user=p.user, slug=p_slug, deleted=False).first():
                 return self.message_exception(trans, 'Page id must be unique.')
             else:
