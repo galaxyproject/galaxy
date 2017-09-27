@@ -125,7 +125,6 @@ define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model", "utils/query-
                       '</ul>';
             }
             else {
-                console.debug(this.model);
                 return '<ul class="dropdown-menu action-dpd">' +
                          '<li><a href="'+ Galaxy.root +'workflow/display_by_username_and_slug?username='+ this.model.get("owner") +'&slug='+ this.model.get("slug") +'">View</a></li>' +
                          '<li><a href="'+ Galaxy.root +'workflow/run?id='+ this.model.id +'">Run</a></li>' +
