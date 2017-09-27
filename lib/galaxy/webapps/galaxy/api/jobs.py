@@ -17,6 +17,7 @@ from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesLibraryMixinItems
+from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -271,9 +272,25 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             raise exceptions.ObjectNotFound("Requested tool not found")
         if 'inputs' not in payload:
             raise exceptions.ObjectAttributeMissingException("No inputs defined")
-        inputs = payload['inputs']
-        jobs = self.job_search.by_tool_input(trans=trans, tool_id=tool_id, inputs=inputs, job_state=payload.get('state'))
-        return [self.encode_all_ids(trans, job.to_dict('element'), True) for job in jobs]
+        inputs = payload.get('inputs', {})
+        # Find files coming in as multipart file data and add to inputs.
+        for k, v in payload.iteritems():
+            if k.startswith('files_') or k.startswith('__files_'):
+                inputs[k] = v
+        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
+        all_params, all_errors, _, _ = tool.expand_incoming(trans=trans, incoming=inputs, request_context=request_context)
+        if any(all_errors):
+            return []
+        params_dump = [tool.params_to_strings(param, self.app, nested=True) for param in all_params]
+        jobs = []
+        for param_dump in params_dump:
+            job = self.job_search.by_tool_input(trans=trans,
+                                                tool_id=tool_id,
+                                                param_dump=param_dump,
+                                                job_state=payload.get('state'))
+            if job:
+                jobs.append(job)
+        return [self.encode_all_ids(trans, single_job.to_dict('element'), True) for single_job in jobs]
 
     @expose_api
     def error(self, trans, id, **kwd):
