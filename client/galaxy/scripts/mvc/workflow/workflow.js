@@ -1,5 +1,5 @@
 /** Workflow view */
-define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model", "utils/query-string-parsing"  ], function( mod_toastr, TAGS, WORKFLOWS, QueryStringParsing) {
+define( [ "libs/toastr", "mvc/tag", "mvc/workflow/workflow-model", "utils/query-string-parsing" ], function( mod_toastr, TAGS, WORKFLOWS, QueryStringParsing ) {
 
     /** View of the individual workflows */
     var WorkflowItemView = Backbone.View.extend({
