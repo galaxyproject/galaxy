@@ -136,13 +136,13 @@ def _handle_script_integrity(path, config):
                 # under high load.
                 subprocess.check_call(INTEGRITY_SYNC_COMMAND)
             except Exception as e:
-                log.debug("Error syncing the filesystem %s", e)
+                log.debug("Error syncing the filesystem %s", unicodify(e))
 
             time.sleep(sleep_amt)
         except OSError as ose:
-            log.debug("Script not available yet %s", ose)
+            log.debug("Script not available yet %s", unicodify(ose))
         except Exception as exc:
-            log.debug("Script not available yet %s", exc)
+            log.debug("Script not available yet %s", unicodify(exc))
 
     if not script_integrity_verified:
         raise Exception("Failed to write job script, could not verify job script integrity.")
