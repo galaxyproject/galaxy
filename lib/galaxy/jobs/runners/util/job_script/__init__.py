@@ -120,22 +120,24 @@ def _handle_script_integrity(path, config):
     for i in range(count):
         try:
             returncode = subprocess.call([path], env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"})
-            if returncode == 42:
-                script_integrity_verified = True
-                break
-
-            # Else we will sync and wait to see if the script becomes
-            # executable.
-            try:
-                # sync file system to avoid "Text file busy" problems.
-                # These have occurred both in Docker containers and on EC2 clusters
-                # under high load.
-                subprocess.check_call(INTEGRITY_SYNC_COMMAND)
-            except Exception:
-                pass
+        except OSError:
+            # The integrity check script may not have been written yet
             time.sleep(sleep_amt)
+            continue
+        if returncode == 42:
+            script_integrity_verified = True
+            break
+
+        # Else we will sync and wait to see if the script becomes
+        # executable.
+        try:
+            # sync file system to avoid "Text file busy" problems.
+            # These have occurred both in Docker containers and on EC2 clusters
+            # under high load.
+            subprocess.check_call(INTEGRITY_SYNC_COMMAND)
         except Exception:
             pass
+        time.sleep(sleep_amt)
 
     if not script_integrity_verified:
         raise Exception("Failed to write job script, could not verify job script integrity.")
