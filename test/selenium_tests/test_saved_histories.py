@@ -63,14 +63,11 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.click_popup_option('Unnamed history', 'Rename')
 
         # Rename the history
-        history_name_input = self.wait_for_selector('input[name="name"]')
+        history_name_input = self.wait_for_selector('.ui-form-element input.ui-input')
         history_name_input.clear()
         history_name_input.send_keys(self.history1_name)
-        self.send_enter(history_name_input)
 
-        message = self.wait_for_selector_visible('.infomessagelarge')
-        expected_message = 'History: Unnamed history renamed to: %s' % self.history1_name
-        self.assertEqual(expected_message, message.text)
+        self.wait_for_and_click_selector("button#submit")
 
         self.navigate_to_saved_histories_page()
 

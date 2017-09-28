@@ -58,12 +58,6 @@ var notebook_login_url = '${ notebook_login_url }';
 var notebook_access_url = '${ notebook_access_url }';
 ${ ie.plugin_require_config() }
 
-// Keep container running
-requirejs(['interactive_environments', 'plugin/jupyter'], function(){
-    keep_alive();
-});
-
-
 // Load notebook
 
 requirejs(['interactive_environments', 'plugin/jupyter'], function(){

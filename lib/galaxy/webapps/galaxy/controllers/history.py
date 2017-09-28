@@ -13,7 +13,7 @@ from galaxy import model
 from galaxy import web
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.item_attrs import UsesItemRatings
-from galaxy.util import nice_size, Params, parse_int
+from galaxy.util import listify, nice_size, Params, parse_int, sanitize_text
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
@@ -109,7 +109,7 @@ class HistoryListGrid(grids.Grid):
         grids.GridOperation("View", allow_multiple=False, url_args=dict(action='view')),
         grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
         grids.GridOperation("Copy", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=False),
-        grids.GridOperation("Rename", condition=(lambda item: not item.deleted), url_args=dict(action='rename')),
+        grids.GridOperation("Rename", condition=(lambda item: not item.deleted), url_args=dict(controller="", action="histories/rename"), target="top"),
         grids.GridOperation("Delete", condition=(lambda item: not item.deleted), async_compatible=True),
         grids.GridOperation("Delete Permanently", condition=(lambda item: not item.purged), confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True),
         grids.GridOperation("Undelete", condition=(lambda item: item.deleted and not item.purged), async_compatible=True),
@@ -240,16 +240,16 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         kwargs['dict_format'] = True
         return self.published_list_grid(trans, **kwargs)
 
-    @web.expose
-    @web.json
+    @web.expose_api
     @web.require_login("work with multiple histories")
     def list(self, trans, **kwargs):
         """List all available histories"""
         current_history = trans.get_history()
-        status = message = None
+        message = kwargs.get('message')
+        status = kwargs.get('status')
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
-            history_ids = galaxy.util.listify(kwargs.get('id', []))
+            history_ids = listify(kwargs.get('id', []))
             # Display no message by default
             status, message = None, None
             # Load the histories and ensure they all belong to the current user
@@ -308,7 +308,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 trans.sa_session.flush()
         # Render the list view
         kwargs['dict_format'] = True
-        return self.stored_list_grid(trans, status=status, message=message, **kwargs)
+        if message and status:
+            kwargs['message'] = sanitize_text(message)
+            kwargs['status'] = status
+        return self.stored_list_grid(trans, **kwargs)
 
     def _list_delete(self, trans, histories, purge=False):
         """Delete histories"""
@@ -424,7 +427,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         """List histories shared with current user by others"""
         status = message = None
         if 'operation' in kwargs:
-            ids = galaxy.util.listify(kwargs.get('id', []))
+            ids = listify(kwargs.get('id', []))
             operation = kwargs['operation'].lower()
             if operation == 'unshare':
                 if not ids:
@@ -680,7 +683,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         session = trans.sa_session
         # Id values take precedence over histories passed in; last resort is current history.
         if id:
-            ids = galaxy.util.listify(id)
+            ids = listify(id)
             if ids:
                 histories = [self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
                              for history_id in ids]
@@ -747,7 +750,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             if not id:
                 # Default to the current history
                 id = trans.security.encode_id(trans.history.id)
-            id = galaxy.util.listify(id)
+            id = listify(id)
             send_to_err = err_msg
             histories = []
             for history_id in id:
@@ -887,7 +890,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         if not ids:
             # Default to the current history
             ids = trans.security.encode_id(trans.history.id)
-        ids = galaxy.util.listify(ids)
+        ids = listify(ids)
         histories = []
         for history_id in ids:
             history_id = self.decode_id(history_id)
@@ -898,7 +901,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def _get_users(self, trans, user, emails_or_ids):
         send_to_users = []
         send_to_err = ""
-        for string in galaxy.util.listify(emails_or_ids):
+        for string in listify(emails_or_ids):
             string = string.strip()
             if not string:
                 continue
@@ -1237,59 +1240,49 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return
         # TODO: used in page/editor.mako
 
-    @web.expose
+    @web.expose_api
     @web.require_login("rename histories")
-    def rename(self, trans, id=None, name=None, **kwd):
-        user = trans.get_user()
+    def rename(self, trans, payload=None, **kwd):
+        id = kwd.get('id')
         if not id:
-            # Default to the current history
-            history = trans.get_history()
-            if not history.user:
-                return trans.show_error_message("You must save your history before renaming it.")
-            id = trans.security.encode_id(history.id)
-        id = galaxy.util.listify(id)
-        name = galaxy.util.listify(name)
+            return message_exception(trans, 'No history id received for renaming.')
+        user = trans.get_user()
+        id = listify(id)
         histories = []
-
         for history_id in id:
             history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
             if history and history.user_id == user.id:
                 histories.append(history)
-        if not name or len(histories) != len(name):
-            return trans.fill_template("/history/rename.mako", histories=histories)
-
-        change_msgs = []
-        for i in range(len(histories)):
-            cur_name = histories[i].get_display_name()
-            new_name = name[i]
-
-            # skip if name is empty
-            if not isinstance(new_name, string_types) or not new_name.strip():
-                change_msgs.append("You must specify a valid name for History: " + cur_name)
-                continue
-
-            # skip if not the owner
-            # ??: isn't this already handled in get_history/if statement above?
-            if histories[i].user_id != user.id:
-                change_msgs.append("History: " + cur_name + " does not appear to belong to you.")
-                continue
-
-            # skip if it wouldn't be a change
-            if new_name == cur_name:
-                change_msgs.append("History: " + cur_name + " is already named: " + new_name)
-                continue
-
-            # escape, sanitize, set, and log the change
-            new_name = escape(new_name)
-            histories[i].name = sanitize_html(new_name)
-            trans.sa_session.add(histories[i])
-            trans.sa_session.flush()
-
-            trans.log_event("History renamed: id: %s, renamed to: '%s'" % (str(histories[i].id), new_name))
-            change_msgs.append("History: " + cur_name + " renamed to: " + new_name)
-
-        change_msg = '<br />'.join(change_msgs)
-        return trans.show_message(change_msg, refresh_frames=['history'])
+        if trans.request.method == 'GET':
+            return {
+                'title'  : 'Change history name(s)',
+                'inputs' : [{
+                    'name'  : 'name_%i' % i,
+                    'label' : 'Current: %s' % h.name,
+                    'value' : h.name
+                } for i, h in enumerate(histories)]
+            }
+        else:
+            messages = []
+            for i, h in enumerate(histories):
+                cur_name = h.get_display_name()
+                new_name = payload.get('name_%i' % i)
+                # validate name is empty
+                if not isinstance(new_name, string_types) or not new_name.strip():
+                    messages.append('You must specify a valid name for History \'%s\'.' % cur_name)
+                # skip if not the owner
+                elif h.user_id != user.id:
+                    messages.append('History \'%s\' does not appear to belong to you.' % cur_name)
+                # skip if it wouldn't be a change
+                elif new_name != cur_name:
+                    # escape, sanitize, set, and log the change
+                    h.name = sanitize_html(escape(new_name))
+                    trans.sa_session.add(h)
+                    trans.sa_session.flush()
+                    trans.log_event('History renamed: id: %s, renamed to: %s' % (str(h.id), new_name))
+                    messages.append('History \'' + cur_name + '\' renamed to \'' + new_name + '\'.')
+            message = sanitize_text(' '.join(messages)) if messages else 'History names remain unchanged.'
+            return {'message': message, 'status': 'success'}
 
     # ------------------------------------------------------------------------- current history
     @web.expose
@@ -1337,3 +1330,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         new_history = trans.new_history(name)
         return self.history_data(trans, new_history)
     # TODO: /history/current to do all of the above: if ajax, return json; if post, read id and set to current
+
+
+def message_exception(trans, message):
+    trans.response.status = 400
+    return {'err_msg': sanitize_text(message)}

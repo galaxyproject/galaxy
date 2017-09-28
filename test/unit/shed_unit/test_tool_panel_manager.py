@@ -4,7 +4,8 @@ from galaxy.util import parse_xml
 
 from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.tools import tool_version_manager
-from tools.test_toolbox import (
+
+from ..tools.test_toolbox import (
     BaseToolBoxTestCase,
     SimplifiedToolBox
 )

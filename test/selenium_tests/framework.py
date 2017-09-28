@@ -8,31 +8,26 @@ import os
 import time
 import traceback
 import unittest
-
 from functools import partial, wraps
 
 import requests
-
-from galaxy_selenium import (
-    driver_factory,
-)
-from galaxy_selenium.navigates_galaxy import NavigatesGalaxy, retry_during_transitions
-
 try:
     from pyvirtualdisplay import Display
 except ImportError:
     Display = None
-
 from six.moves.urllib.parse import urljoin
 
-from base import populators
-from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address
-from base.testcase import FunctionalTestCase
-from base.workflows_format_2 import (
-    ImporterGalaxyInterface,
+from base import populators  # noqa: I100
+from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address  # noqa: I100
+from base.testcase import FunctionalTestCase  # noqa: I100
+from base.workflows_format_2 import (  # noqa: I100
     convert_and_import_workflow,
+    ImporterGalaxyInterface,
 )
-
+from galaxy_selenium import (  # noqa: I100
+    driver_factory,
+)
+from galaxy_selenium.navigates_galaxy import NavigatesGalaxy, retry_during_transitions  # noqa: I100
 from galaxy.util import asbool
 
 DEFAULT_WAIT_TIMEOUT = 60

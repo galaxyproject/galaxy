@@ -15,6 +15,7 @@ var jQuery = require( 'jquery' ),
     Workflows = require( 'mvc/workflow/workflow' ),
     HistoryList = require( 'mvc/history/history-list' ),
     ToolFormComposite = require( 'mvc/tool/tool-form-composite' ),
+    QueryStringParsing = require( 'utils/query-string-parsing' ),
     Utils = require( 'utils/utils' ),
     Ui = require( 'mvc/ui/ui-misc' ),
     DatasetError = require( 'mvc/dataset/dataset-error' ),
@@ -46,8 +47,10 @@ window.app = function app( options, bootstrapped ){
             '(/)workflow(/)' : 'show_workflows',
             '(/)workflow/run(/)' : 'show_run',
             '(/)pages(/)(:action_id)' : 'show_pages',
+            '(/)visualizations(/)edit(/)' : 'show_visualizations_edit',
             '(/)visualizations/(:action_id)' : 'show_visualizations',
             '(/)workflows/list_published(/)' : 'show_workflows_published',
+            '(/)histories(/)rename(/)' : 'show_histories_rename',
             '(/)histories(/)(:action_id)' : 'show_histories',
             '(/)datasets(/)list(/)' : 'show_datasets',
             '(/)workflow/import_workflow' : 'show_import_workflow',
@@ -87,12 +90,20 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new GridShared.View( { action_id: action_id, plural: 'Visualizations', item: 'visualization' } ) );
         },
 
+        show_visualizations_edit : function() {
+            this.page.display( new FormWrapper.View ( { url : 'visualization/edit?id=' + QueryStringParsing.get( 'id' ), redirect: 'visualizations/list' } ) );
+        },
+
         show_workflows_published : function() {
             this.page.display( new GridView( { url_base: Galaxy.root + 'workflow/list_published', dict_format: true } ) );
         },
 
         show_histories : function( action_id ) {
             this.page.display( new HistoryList.View( { action_id: action_id } ) );
+        },
+
+        show_histories_rename : function() {
+            this.page.display( new FormWrapper.View ( { url : 'history/rename?id=' + QueryStringParsing.get( 'id' ), redirect: 'histories/list' } ) );
         },
 
         show_datasets : function() {
