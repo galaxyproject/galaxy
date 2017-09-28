@@ -87,7 +87,7 @@ class Forms(BaseUIController):
         if 'operation' in kwd:
             id = kwd.get('id')
             if not id:
-                return message_exception(trans, 'Invalid form id (%s) received.' % str(id))
+                return self.message_exception(trans, 'Invalid form id (%s) received.' % str(id))
             ids = util.listify(id)
             operation = kwd['operation'].lower()
             if operation == 'delete':
@@ -147,7 +147,7 @@ class Forms(BaseUIController):
                     index = index + 1
             new_form, message = self.save_form_definition(trans, None, payload)
             if new_form is None:
-                return message_exception(trans, message)
+                return self.message_exception(trans, message)
             imported = (' with %i imported fields' % index) if index > 0 else ''
             message = 'The form \'%s\' has been created%s.' % (payload.get('name'), imported)
             return {'message': util.sanitize_text(message)}
@@ -157,7 +157,7 @@ class Forms(BaseUIController):
     def edit_form(self, trans, payload=None, **kwd):
         id = kwd.get('id')
         if not id:
-            return message_exception(trans, 'No form id received for editing.')
+            return self.message_exception(trans, 'No form id received for editing.')
         form = get_form(trans, id)
         latest_form = form.latest_form
         if trans.request.method == 'GET':
@@ -232,7 +232,7 @@ class Forms(BaseUIController):
         else:
             new_form, message = self.save_form_definition(trans, id, payload)
             if new_form is None:
-                return message_exception(trans, message)
+                return self.message_exception(trans, message)
             message = 'The form \'%s\' has been updated.' % payload.get('name')
             return {'message': util.sanitize_text(message)}
 
@@ -329,11 +329,6 @@ class Forms(BaseUIController):
         return ('Undeleted %i form(s).' % len(ids), 'done')
 
 # ---- Utility methods -------------------------------------------------------
-
-
-def message_exception(trans, message):
-    trans.response.status = 400
-    return {'err_msg': util.sanitize_text(message)}
 
 
 def get_form(trans, form_id):

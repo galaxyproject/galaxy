@@ -570,7 +570,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         """
         id = kwd.get('id')
         if not id:
-            return message_exception(trans, 'No visualization id received for editing.')
+            return self.message_exception(trans, 'No visualization id received for editing.')
         v = self.get_visualization(trans, id, check_ownership=True)
         if trans.request.method == 'GET':
             if v.slug is None:
@@ -585,7 +585,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                     'name'      : 'slug',
                     'label'     : 'Identifier',
                     'value'     : v.slug,
-                    'help'      : 'A unique identifier that will be used for public links to this visualization. A default is generated from the visualization title, but can be edited. This field must contain only lowercase letters, numbers, and the \'-\' character.'
+                    'help'      : 'A unique identifier that will be used for public links to this visualization. This field can only contain lowercase letters, numbers, and dashes (-).'
                 }, {
                     'name'      : 'dbkey',
                     'label'     : 'Build',
@@ -607,13 +607,13 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             v_dbkey = payload.get('dbkey')
             v_annotation = payload.get('annotation')
             if not v_title:
-                return message_exception(trans, 'Please provide a visualization name is required.')
+                return self.message_exception(trans, 'Please provide a visualization name is required.')
             elif not v_slug:
-                return message_exception(trans, 'Please provide a unique identifier.')
+                return self.message_exception(trans, 'Please provide a unique identifier.')
             elif not self._is_valid_slug(v_slug):
-                return message_exception(trans, 'Visualization identifier must consist of only lowercase letters, numbers, and the \'-\' character.')
+                return self.message_exception(trans, 'Visualization identifier can only contain lowercase letters, numbers, and dashes (-).')
             elif v_slug != v.slug and trans.sa_session.query(model.Visualization).filter_by(user=v.user, slug=v_slug, deleted=False).first():
-                return message_exception(trans, 'Visualization id must be unique.')
+                return self.message_exception(trans, 'Visualization id must be unique.')
             else:
                 v.title = v_title
                 v.slug = v_slug
@@ -967,8 +967,3 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                     name = fields[4]
                 rows.append([location, name])
         return {'data': rows}
-
-
-def message_exception(trans, message):
-    trans.response.status = 400
-    return {'err_msg': sanitize_text(message)}

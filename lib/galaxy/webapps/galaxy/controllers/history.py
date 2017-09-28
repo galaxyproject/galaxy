@@ -1245,7 +1245,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def rename(self, trans, payload=None, **kwd):
         id = kwd.get('id')
         if not id:
-            return message_exception(trans, 'No history id received for renaming.')
+            return self.message_exception(trans, 'No history id received for renaming.')
         user = trans.get_user()
         id = listify(id)
         histories = []
@@ -1330,8 +1330,3 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         new_history = trans.new_history(name)
         return self.history_data(trans, new_history)
     # TODO: /history/current to do all of the above: if ajax, return json; if post, read id and set to current
-
-
-def message_exception(trans, message):
-    trans.response.status = 400
-    return {'err_msg': sanitize_text(message)}
