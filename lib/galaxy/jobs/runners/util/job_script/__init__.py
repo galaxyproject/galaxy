@@ -138,9 +138,10 @@ def _handle_script_integrity(path, config):
             except Exception as e:
                 log.debug("Error syncing the filesystem: %s", unicodify(e))
 
-            time.sleep(sleep_amt)
         except Exception as exc:
             log.debug("Script not available yet: %s", unicodify(exc))
+
+        time.sleep(sleep_amt)
 
     if not script_integrity_verified:
         raise Exception("Failed to write job script, could not verify job script integrity.")
