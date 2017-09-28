@@ -38,6 +38,7 @@ function load_notebook(password, notebook_login_url, notebook_access_url){
     // we've successfully connected to the IE.
     test_ie_availability(notebook_login_url, function(){
         _handle_notebook_loading(password, notebook_login_url, notebook_access_url);
+        keep_alive();
     });
 }
 
@@ -48,34 +49,44 @@ function keep_alive(){
     * this function is not constantly pinging the container, the container will
     * terminate itself.
     */
-
-    var request_count = 0;
-    interval = setInterval(function(){
-        $.ajax({
-            url: notebook_access_url,
-            xhrFields: {
-                withCredentials: true
-            },
-            type: "GET",
-            timeout: 500,
-            success: function(){
-                console.log("Connected to IE, returning");
-            },
-            error: function(jqxhr, status, error){
-                request_count++;
-                console.log("Request " + request_count);
-                if(request_count > 30){
-                    clearInterval(interval);
-                    clear_main_area();
-                    toastr.error(
-                        "Could not connect to IE, contact your administrator",
-                        "Error",
-                        {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': false}
-                    );
-                }
-            }
-        });
-    }, 30000);
+    var warn_at = 4;
+    var count_max = 60;
+    // we sleep 15 seconds between requests and the default timeout for the Jupyter container is 120 seconds, so start
+    // with a pretty high ajax timeout. sleep starts low because we want to get the warning up pretty quickly
+    var spin_state = make_spin_state("IE keep alive", 8000, 16000, 2000, 5000, 15000, 5000, false);
+    var success = function(){
+        console.log("IE keepalive request succeeded");
+        toastr.clear()
+        if(spin_state.count >= warn_at){
+            toastr.clear();
+            toastr.success(
+                "Interactive environment connection restored",
+                {'closeButton': true, 'timeOut': 5000, 'extendedTimeOut': 2000, 'tapToDismiss': true}
+            );
+        }
+        spin_state.count = 0;
+        spin_state.timeout_count = 0;
+        spin_state.error_count = 0;
+        return false;  // keep spinning
+    }
+    var timeout_error = function(jqxhr, status, error){
+        console.log("IE keepalive request failed " + spin_state.count + " time(s) of " + count_max + " max: " + status + ": " + error);
+        if(spin_state.count == warn_at){
+            toastr.warning(
+                "Your browser has been unable to contact the interactive environment for "
+                + spin_state.count + " consecutive attempts, if you do not reestablish "
+                + "a connection, your IE container may be terminated.",
+                "Warning",
+                {'closeButton': true, 'timeOut': 0, 'extendedTimeOut': 0, 'tapToDismiss': false}
+            );
+            return false;  // keep spinning
+        }else if(spin_state.count >= count_max){
+            spin_error("IE keepalive failure limit reached", "Lost connection to interactive environment, contact your administrator", false);
+            return true;  // stop spinning
+        }
+    }
+    console.log("IE keep alive worker starting");
+    spin(notebook_access_url, false, success, timeout_error, timeout_error, spin_state);
 }
 
 

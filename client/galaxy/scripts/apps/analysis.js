@@ -122,7 +122,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_pages_create : function() {
-            this.page.display( new FormWrapper.View ( { url : 'page/create?id=' + QueryStringParsing.get( 'id' ), redirect: 'pages/list' } ) );
+            this.page.display( new FormWrapper.View ( { url : 'page/create', redirect: 'pages/list' } ) );
         },
 
         show_pages_edit : function() {
@@ -202,14 +202,13 @@ window.app = function app( options, bootstrapped ){
         _loadWorkflow: function() {
             var self = this;
             Utils.get({
-                url: Galaxy.root + 'api/workflows/' + Utils.getQueryString( 'id' ) + '/download',
-                data: { 'style': 'run' },
+                url: Galaxy.root + 'api/workflows/' + Utils.getQueryString( 'id' ) + '/download?style=run',
                 success: function( response ) {
                     self.page.display( new ToolFormComposite.View( response ) );
                 },
                 error: function( response ) {
-                    var error_msg = "Error occurred while loading the resource.",
-                        options = { 'message': error_msg, 'status': 'error', 'persistent': true, 'cls': 'errormessage' };
+                    var error_msg = response.err_msg || 'Error occurred while loading the resource.';
+                    var options = { 'message': error_msg, 'status': 'danger', 'persistent': true };
                     self.page.display( new Ui.Message( options ) );
                 }
             });
