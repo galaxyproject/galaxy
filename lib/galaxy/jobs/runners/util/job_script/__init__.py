@@ -126,6 +126,8 @@ def _handle_script_integrity(path, config):
                 script_integrity_verified = True
                 break
 
+            log.debug("Script integrity error: returncode was %d", returncode)
+
             # Else we will sync and wait to see if the script becomes
             # executable.
             try:
