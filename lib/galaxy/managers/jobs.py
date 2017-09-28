@@ -49,7 +49,7 @@ class JobSearch(object):
         self.ldda_manager = LDDAManager(app)
         self.decode_id = self.app.security.decode_id
 
-    def by_tool_input(self, trans, tool_id, param_dump=None, job_state='ok', is_workflow_step=False):
+    def by_tool_input(self, trans, tool_id, param_dump=None, job_state='ok'):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         user = trans.user
         input_data = defaultdict(list)
@@ -74,10 +74,9 @@ class JobSearch(object):
                              input_data=input_data,
                              job_state=job_state,
                              param_dump=param_dump,
-                             input_ids=input_ids,
-                             is_workflow_step=is_workflow_step)
+                             input_ids=input_ids)
 
-    def __search(self, tool_id, user, input_data, input_ids=None, job_state=None, param_dump=None, is_workflow_step=False):
+    def __search(self, tool_id, user, input_data, input_ids=None, job_state=None, param_dump=None):
         search_timer = ExecutionTimer()
         query = self.sa_session.query(model.Job).filter(
             model.Job.tool_id == tool_id,
@@ -220,14 +219,17 @@ class JobSearch(object):
                 ))
             if query.first() is None:
                 continue
-            if is_workflow_step:
-                add_n_parameters = 3
-            else:
-                add_n_parameters = 2
-            if not len(job.parameters) == (len(new_param_dump) + add_n_parameters):
-                # Verify that equivalent jobs had the same number of job parameters
-                # We add 2 or 3 to new_param_dump because chrominfo and dbkey (and __workflow_invocation_uuid__) are not passed
-                # as input parameters
+            n_parameters = 0
+            # Verify that equivalent jobs had the same number of job parameters
+            # We skip chrominfo, dbkey, __workflow_invocation_uuid__ and identifer
+            # parameter as these are not passed along when expanding tool parameters
+            # and they can differ without affecting the resulting dataset (when referencing identifier
+            # in the tool xml this may not be entirely true).
+            for parameter in job.parameters:
+                if parameter.name in {'__workflow_invocation_uuid__', 'chromInfo', 'dbkey'} or parameter.name.endswith('|__identifier__'):
+                    continue
+                n_parameters += 1
+            if not n_parameters == len(new_param_dump):
                 continue
             # check to make sure none of the output datasets or collections have been deleted
             # TODO: refactors this into the initial job query

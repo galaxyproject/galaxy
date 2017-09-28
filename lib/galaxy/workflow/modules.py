@@ -879,7 +879,6 @@ class ToolModule(WorkflowModule):
                 trans=trans,
                 tool_id=tool.id,
                 param_dump=tool.params_to_strings(param, trans.app, nested=True),
-                is_workflow_step=True
             )
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
