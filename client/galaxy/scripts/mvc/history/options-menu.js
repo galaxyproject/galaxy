@@ -95,7 +95,7 @@ var menu = [
         html    : _l( 'Dataset Security' ),
         func    : function() {
             if ( Galaxy && Galaxy.currHistoryPanel && Galaxy.router ) {
-                Galaxy.router.push( 'histories/permissions?id=' + Galaxy.currHistoryPanel.model.id);
+                Galaxy.router.push( '/histories/permissions?id=' + Galaxy.currHistoryPanel.model.id );
             }
         }
     },
