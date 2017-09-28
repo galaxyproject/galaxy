@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 import time
@@ -8,6 +9,7 @@ from six import text_type
 
 from galaxy.util import unicodify
 
+log = logging.getLogger(__name__)
 DEFAULT_SHELL = '/bin/bash'
 
 DEFAULT_JOB_FILE_TEMPLATE = Template(
@@ -131,11 +133,14 @@ def _handle_script_integrity(path, config):
                 # These have occurred both in Docker containers and on EC2 clusters
                 # under high load.
                 subprocess.check_call(INTEGRITY_SYNC_COMMAND)
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug("Error syncing the filesystem %s", e)
+
             time.sleep(sleep_amt)
-        except Exception:
-            pass
+        except OSError as ose:
+            log.debug("Script not available yet %s", ose)
+        except Exception as exc:
+            log.debug("Script not available yet %s", exc)
 
     if not script_integrity_verified:
         raise Exception("Failed to write job script, could not verify job script integrity.")
