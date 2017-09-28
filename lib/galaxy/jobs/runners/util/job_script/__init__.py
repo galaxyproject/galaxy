@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 import time
@@ -7,6 +8,9 @@ from pkg_resources import resource_string
 from six import text_type
 
 from galaxy.util import unicodify
+
+
+log = logging.getLogger(__name__)
 
 DEFAULT_SHELL = '/bin/bash'
 
@@ -134,8 +138,11 @@ def _handle_script_integrity(path, config):
             except Exception:
                 pass
             time.sleep(sleep_amt)
-        except Exception:
-            pass
+        except OSError:
+            # Script doesn't exist yet.
+            log.debug("Script does not exist yet.")
+        except Exception as e:
+            log.exception("Unexpected error in checking script integrity: %s", unicodify(e))
 
     if not script_integrity_verified:
         raise Exception("Failed to write job script, could not verify job script integrity.")
