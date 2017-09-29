@@ -92,6 +92,10 @@ class SDF(GenericMolFile):
         """
         Try to guess if the file is a SDF2 file.
 
+        An SDF file can contain multiple molecules.
+        Each molecule must contain a line equal to 'M  END' followed later on by
+        a final line equal to '$$$$'.
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('drugbank_drugs.sdf')
         >>> SDF().sniff(fname)
@@ -101,17 +105,27 @@ class SDF(GenericMolFile):
         >>> SDF().sniff(fname)
         False
         """
-        counter = count_special_lines("^M\s*END", filename) + count_special_lines("^\$\$\$\$", filename)
-        if counter > 0 and counter % 2 == 0:
-            return True
-        else:
-            return False
+        m_end_found = False
+        limit = 500
+        idx = 0
+        with open(filename) as in_file:
+            for line in in_file:
+                line = line.rstrip('\n\r')
+                if not m_end_found:
+                    if line == 'M  END':
+                        m_end_found = True
+                elif line == '$$$$':
+                    return True
+                idx += 1
+                if idx == limit:
+                    break
+        return False
 
     def set_meta(self, dataset, **kwd):
         """
         Set the number of molecules in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines("^\$\$\$\$", dataset.file_name)
+        dataset.metadata.number_of_molecules = count_special_lines("^\$\$\$\$$", dataset.file_name)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
@@ -180,10 +194,17 @@ class MOL2(GenericMolFile):
         >>> MOL2().sniff(fname)
         False
         """
-        if count_special_lines("@<TRIPOS>MOLECULE", filename) > 0:
-            return True
-        else:
-            return False
+        limit = 60
+        idx = 0
+        with open(filename) as in_file:
+            for line in in_file:
+                line = line.rstrip('\n\r')
+                if line == '@<TRIPOS>MOLECULE':
+                    return True
+                idx += 1
+                if idx == limit:
+                    break
+        return False
 
     def set_meta(self, dataset, **kwd):
         """
@@ -716,16 +737,13 @@ class CML(GenericXml):
         >>> CML().sniff(fname)
         True
         """
-        handle = open(filename)
-        line = handle.readline()
-        if line.strip() != '<?xml version="1.0"?>':
-            handle.close()
-            return False
-        line = handle.readline()
-        if line.strip().find('http://www.xml-cml.org/schema') == -1:
-            handle.close()
-            return False
-        handle.close()
+        with open(filename) as handle:
+            line = handle.readline()
+            if line.strip() != '<?xml version="1.0"?>':
+                return False
+            line = handle.readline()
+            if line.strip().find('http://www.xml-cml.org/schema') == -1:
+                return False
         return True
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
