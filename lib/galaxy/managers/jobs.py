@@ -49,7 +49,7 @@ class JobSearch(object):
         self.ldda_manager = LDDAManager(app)
         self.decode_id = self.app.security.decode_id
 
-    def by_tool_input(self, trans, tool_id, param_dump=None, job_state='ok'):
+    def by_tool_input(self, trans, tool_id, tool_version, param_dump=None, job_state='ok'):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         user = trans.user
         input_data = defaultdict(list)
@@ -70,18 +70,21 @@ class JobSearch(object):
 
         remap(param_dump, visit=populate_input_data_input_id)
         return self.__search(tool_id=tool_id,
+                             tool_version=tool_version,
                              user=user,
                              input_data=input_data,
                              job_state=job_state,
                              param_dump=param_dump,
                              input_ids=input_ids)
 
-    def __search(self, tool_id, user, input_data, input_ids=None, job_state=None, param_dump=None):
+    def __search(self, tool_id, tool_version, user, input_data, input_ids=None, job_state=None, param_dump=None):
         search_timer = ExecutionTimer()
         query = self.sa_session.query(model.Job).filter(
             model.Job.tool_id == tool_id,
             model.Job.user == user
         )
+        if tool_version:
+            query = query.filter(model.Job.tool_version == tool_version)
 
         if job_state is None:
             query = query.filter(

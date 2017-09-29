@@ -305,6 +305,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         for param_dump in params_dump:
             job = self.job_search.by_tool_input(trans=trans,
                                                 tool_id=tool_id,
+                                                tool_version=tool.version,
                                                 param_dump=param_dump,
                                                 job_state=payload.get('state'))
             if job:
