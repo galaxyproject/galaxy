@@ -53,6 +53,7 @@ window.app = function app( options, bootstrapped ){
             '(/)visualizations/(:action_id)' : 'show_visualizations',
             '(/)workflows/list_published(/)' : 'show_workflows_published',
             '(/)histories(/)rename(/)' : 'show_histories_rename',
+            '(/)histories(/)permissions(/)' : 'show_histories_permissions',
             '(/)histories(/)(:action_id)' : 'show_histories',
             '(/)datasets(/)list(/)' : 'show_datasets',
             '(/)workflow/import_workflow' : 'show_import_workflow',
@@ -106,6 +107,10 @@ window.app = function app( options, bootstrapped ){
 
         show_histories_rename : function() {
             this.page.display( new FormWrapper.View ( { url : 'history/rename?id=' + QueryStringParsing.get( 'id' ), redirect: 'histories/list' } ) );
+        },
+
+        show_histories_permissions : function() {
+            this.page.display( new FormWrapper.View ( { url : 'history/permissions?id=' + QueryStringParsing.get( 'id' ), redirect: 'histories/list' } ) );
         },
 
         show_datasets : function() {

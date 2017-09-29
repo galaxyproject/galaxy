@@ -11,7 +11,7 @@ from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
 
 from galaxy import web
 from galaxy import util
-from galaxy.util import listify, Params, string_as_bool, FILENAME_VALID_CHARS
+from galaxy.util import listify, string_as_bool, FILENAME_VALID_CHARS
 
 from galaxy.web.base import controller
 from galaxy.model.item_attrs import UsesAnnotations
@@ -408,42 +408,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             log.error(msg)
             trans.log_event(msg)
             return trans.show_error_message("Adding File to History has Failed")
-
-    @web.expose
-    def history_set_default_permissions(self, trans, id=None, **kwd):
-        """Sets the permissions on a history.
-        """
-        # TODO: unencoded id
-        if trans.user:
-            if 'update_roles_button' in kwd:
-                history = None
-                if id:
-                    try:
-                        id = int(id)
-                    except:
-                        id = None
-                    if id:
-                        history = trans.sa_session.query(trans.app.model.History).get(id)
-                if not history:
-                    # If we haven't retrieved a history, use the current one
-                    history = trans.get_history()
-                p = Params(kwd)
-                permissions = {}
-                for k, v in trans.app.model.Dataset.permitted_actions.items():
-                    in_roles = p.get(k + '_in', [])
-                    if not isinstance(in_roles, list):
-                        in_roles = [in_roles]
-                    in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in in_roles]
-                    permissions[trans.app.security_agent.get_action(v.action)] = in_roles
-                dataset = 'dataset' in kwd
-                bypass_manage_permission = 'bypass_manage_permission' in kwd
-                trans.app.security_agent.history_set_default_permissions(history, permissions,
-                                                                         dataset=dataset, bypass_manage_permission=bypass_manage_permission)
-                return trans.show_ok_message('Default history permissions have been changed.')
-            return trans.fill_template('history/permissions.mako')
-        else:
-            # user not logged in, history group must be only public
-            return trans.show_error_message("You must be logged in to change a history's default permissions.")
 
     @web.expose
     def dataset_make_primary(self, trans, id=None):

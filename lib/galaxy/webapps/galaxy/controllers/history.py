@@ -1,4 +1,5 @@
 import logging
+import sets
 import urllib
 
 from markupsafe import escape
@@ -108,6 +109,7 @@ class HistoryListGrid(grids.Grid):
         grids.GridOperation("Switch", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=True),
         grids.GridOperation("View", allow_multiple=False, url_args=dict(action='view')),
         grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
+        grids.GridOperation("Change Permissions", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(controller="", action="histories/permissions")),
         grids.GridOperation("Copy", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=False),
         grids.GridOperation("Rename", condition=(lambda item: not item.deleted), url_args=dict(controller="", action="histories/rename"), target="top"),
         grids.GridOperation("Delete", condition=(lambda item: not item.deleted), async_compatible=True),
@@ -733,6 +735,45 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         session.flush()
 
         return trans.fill_template("/sharing_base.mako", controller_list='histories', item=history, use_panels=True)
+
+    @web.expose_api
+    @web.require_login("changing default permissions")
+    def permissions(self, trans, payload=None, **kwd):
+        """
+        Sets the permissions on a history.
+        """
+        history_id = kwd.get('id')
+        if not history_id:
+            return self.message_exception(trans, 'Invalid history id (%s) received' % str(history_id))
+        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+        if trans.request.method == 'GET':
+            inputs = []
+            all_roles = trans.user.all_roles()
+            current_actions = history.default_permissions
+            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
+            for action_key, action in permitted_actions:
+                in_roles = sets.Set()
+                for a in current_actions:
+                    if a.action == action.action:
+                        in_roles.add(a.role)
+                inputs.append({'type'      : 'select',
+                               'multiple'  : True,
+                               'optional'  : True,
+                               'individual': True,
+                               'name'      : action_key,
+                               'label'     : action.action,
+                               'help'      : action.description,
+                               'options'   : [(role.name, trans.security.encode_id(role.id)) for role in set(all_roles)],
+                               'value'     : [trans.security.encode_id(role.id) for role in in_roles]})
+            return {'title'  : 'Change default dataset permissions for history \'%s\'' % history.name, 'inputs' : inputs}
+        else:
+            permissions = {}
+            for action_key, action in trans.app.model.Dataset.permitted_actions.items():
+                in_roles = payload.get(action_key) or []
+                in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in in_roles]
+                permissions[trans.app.security_agent.get_action(action.action)] = in_roles
+            trans.app.security_agent.history_set_default_permissions(history, permissions)
+            return {'message': 'Default history \'%s\' dataset permissions have been changed.' % history.name}
 
     @web.expose
     @web.require_login("share histories with other users")
