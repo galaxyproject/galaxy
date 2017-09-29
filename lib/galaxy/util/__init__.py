@@ -68,6 +68,9 @@ BINARY_CHARS = [NULL_CHAR]
 FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
+defaultdict = collections.defaultdict
+
+
 def remove_protocol_from_url(url):
     """ Supplied URL may be null, if not ensure http:// or https://
     etc... is stripped off.
