@@ -367,7 +367,7 @@ class BaseJobRunner(object):
                 if job_state.runner_state_handled:
                     break
         except:
-            log.exception('Caught exception in runner state handler:')
+            log.exception('Caught exception in runner state handler')
 
     def fail_job(self, job_state, exception=False):
         if getattr(job_state, 'stop_job', True):
@@ -593,11 +593,11 @@ class AsynchronousJobRunner(BaseJobRunner):
 
         # wait for the files to appear
         which_try = 0
-        while which_try < (self.app.config.retry_job_output_collection + 1):
+        while which_try < self.app.config.retry_job_output_collection + 1:
             try:
                 stdout = shrink_stream_by_size(open(job_state.output_file, "r"), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
                 stderr = shrink_stream_by_size(open(job_state.error_file, "r"), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-                which_try = (self.app.config.retry_job_output_collection + 1)
+                break
             except Exception as e:
                 if which_try == self.app.config.retry_job_output_collection:
                     stdout = ''

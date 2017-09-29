@@ -7,7 +7,7 @@ from xml.etree import ElementInclude, ElementTree
 REQUIRED_PARAMETER = object()
 
 
-def load_with_refereces(path):
+def load_with_references(path):
     """Load XML documentation from file system and preprocesses XML macros.
 
     Return the XML representation of the expanded tree and paths to
@@ -29,7 +29,7 @@ def load_with_refereces(path):
 
 
 def load(path):
-    tree, _ = load_with_refereces(path)
+    tree, _ = load_with_references(path)
     return tree
 
 
@@ -307,7 +307,7 @@ def _parse_xml(fname):
 __all__ = (
     "imported_macro_paths",
     "load",
-    "load_with_refereces",
+    "load_with_references",
     "raw_xml_tree",
     "template_macro_params",
 )
