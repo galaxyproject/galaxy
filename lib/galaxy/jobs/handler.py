@@ -94,7 +94,10 @@ class JobHandlerQueue( object ):
         return job, self.job_wrapper( job, use_persisted_destination=True )
 
     def __write_registry_file_if_absent(self, job):
-        job_wrapper =  self.job_wrapper(job)
+        # TODO: remove this and the one place it is called in late 2018, this
+        # hack attempts to minimize the job failures due to upgrades from 17.05
+        # Galaxies.
+        job_wrapper = self.job_wrapper(job)
         cwd = job_wrapper.working_directory
         datatypes_config = os.path.join(cwd, "registry.xml")
         if not os.path.exists(datatypes_config):
