@@ -14,6 +14,7 @@ uWSGI==2.0.15
 
 # pure Python packages
 bz2file==0.98; python_version < '3.3'
+boltons==17.1.0
 Paste==2.0.2
 PasteDeploy==1.5.2
 docutils==0.12
