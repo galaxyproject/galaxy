@@ -744,7 +744,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         """
         history_id = kwd.get('id')
         if not history_id:
-            return self.message_exception(trans, 'Invalid history_id id (%s) received' % str(history_id))
+            return self.message_exception(trans, 'Invalid history id (%s) received' % str(history_id))
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         if trans.request.method == 'GET':
             inputs = []
