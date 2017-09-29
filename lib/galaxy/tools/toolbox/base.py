@@ -264,6 +264,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
         # See if a version of this tool is already loaded into the tool panel.
         # The value of panel_component will be a ToolSection (if the value of
         # section=True) or self._tool_panel (if section=False).
+        if tool.hidden:
+            log.debug("Skipping tool panel addition of hidden tool: %s, version: %s", tool.id, tool.version)
+            return
         tool_id = str(tool.id)
         tool = self._tools_by_id[tool_id]
         log_msg = ""
