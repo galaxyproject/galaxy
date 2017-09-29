@@ -64,7 +64,7 @@ class JobSearch(object):
                     current_case = current_case[p]
                 src = current_case['src']
                 input_data[path_key].append({'src': src, 'id': value})
-                input_ids[src][value] = True
+                input_ids[src][value] = "__id_wildcard__"
                 return key, value
             return key, value
 
@@ -84,7 +84,7 @@ class JobSearch(object):
             model.Job.user == user
         )
         if tool_version:
-            query = query.filter(model.Job.tool_version == tool_version)
+            query = query.filter(model.Job.tool_version == str(tool_version))
 
         if job_state is None:
             query = query.filter(
@@ -148,6 +148,14 @@ class JobSearch(object):
                     ))
                 else:
                     return []
+
+        for k, v in param_dump.items():
+            a = aliased(model.JobParameter)
+            query = query.filter(and_(
+                model.Job.id == a.job_id,
+                a.name == k,
+                a.value.like(json.dumps(v).replace('id: "__id_wildcard__"', 'id: %'))
+            ))
 
         for job in query.all():
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
