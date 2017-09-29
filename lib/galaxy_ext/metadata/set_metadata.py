@@ -81,6 +81,16 @@ def set_metadata():
 
     # Set up datatypes registry
     datatypes_config = sys.argv.pop( 1 )
+    if not os.path.exists(datatypes_config):
+        # This path should exist, except for jobs that started running on release 17.05, where a global
+        # datatypes_config (instead of a datatypes_config per job) was used. For a while release 17.05
+        # would remove the global datatypes config on shutdown and toolbox reload, which would lead to
+        # failed metadata jobs. To remedy this we scan jobs at startup for missing registry.xml files,
+        # and if we detect such a job we write out the current registry.xml file.
+        datatypes_config = os.path.join(tool_job_working_directory, "registry.xml")
+        if not os.path.exists(datatypes_config):
+            print("Metadata setting failed because registry.xml could not be found. You may retry setting metadata.")
+            sys.exit(1)
     datatypes_registry = galaxy.datatypes.registry.Registry()
     datatypes_registry.load_datatypes( root_dir=galaxy_root, config=datatypes_config )
     galaxy.model.set_datatypes_registry( datatypes_registry )
