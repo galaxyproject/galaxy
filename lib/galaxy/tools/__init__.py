@@ -1302,6 +1302,7 @@ class Tool(object, Dictifiable):
                     trans=trans,
                     tool_id=self.id,
                     tool_version=self.version,
+                    param=param,
                     param_dump=self.params_to_strings(param, self.app, nested=True),
                 )
             execution_tracker = execute_job(trans, self, mapping_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info, completed_jobs=completed_jobs)

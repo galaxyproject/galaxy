@@ -879,6 +879,7 @@ class ToolModule(WorkflowModule):
                 trans=trans,
                 tool_id=tool.id,
                 tool_version=tool.version,
+                param=param,
                 param_dump=tool.params_to_strings(param, trans.app, nested=True),
             )
         try:

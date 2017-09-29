@@ -49,7 +49,7 @@ class JobSearch(object):
         self.ldda_manager = LDDAManager(app)
         self.decode_id = self.app.security.decode_id
 
-    def by_tool_input(self, trans, tool_id, tool_version, param_dump=None, job_state='ok'):
+    def by_tool_input(self, trans, tool_id, tool_version, param=None, param_dump=None, job_state='ok'):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         user = trans.user
         input_data = defaultdict(list)
@@ -63,7 +63,19 @@ class JobSearch(object):
                 for p in path:
                     current_case = current_case[p]
                 src = current_case['src']
-                input_data[path_key].append({'src': src, 'id': value})
+                current_case = param
+                for i, p in enumerate(path):
+                    if p == 'values' and i == len(path) - 2:
+                        continue
+                    if isinstance(current_case, (list, dict)):
+                        current_case = current_case[p]
+                identifier = getattr(current_case, "element_identifier", None)
+                name = current_case.name
+                input_data[path_key].append({'src': src,
+                                             'id': value,
+                                             'identifier': identifier,
+                                             'name': name,
+                                             })
                 input_ids[src][value] = "__id_wildcard__"
                 return key, value
             return key, value
@@ -111,18 +123,32 @@ class JobSearch(object):
             for type_values in input_list:
                 t = type_values['src']
                 v = type_values['id']
+                identifier = type_values['identifier']
                 if t == 'hda':
                     a = aliased(model.JobToInputDatasetAssociation)
                     b = aliased(model.HistoryDatasetAssociation)
                     c = aliased(model.HistoryDatasetAssociation)
+                    d = aliased(model.JobParameter)
                     query = query.filter(and_(
                         model.Job.id == a.job_id,
                         a.name == k,
                         a.dataset_id == b.id,
                         c.dataset_id == b.dataset_id,
-                        c.id == v,
+                        c.id == v,  # c is the requested job input HDA
+                        # We can only compare input dataset names and metadata for a job
+                        # if we know that the input dataset hasn't changed since the job was run.
+                        # This is relatively strict, we may be able to lift this requirement if we record the jobs'
+                        # relevant parameters as JobParameters in the database
+                        b.update_time < model.Job.create_time,
+                        b.name == c.name,
+                        b.extension == c.extension,
+                        b._metadata == c._metadata,
                         or_(b.deleted == false(), c.deleted == false())
                     ))
+                    if identifier:
+                        query = query.filter(model.Job.id == d.job_id,
+                                             d.name == "%s|__identifier__" % k,
+                                             d.value == json.dumps(identifier))
                 elif t == 'ldda':
                         a = aliased(model.JobToInputLibraryDatasetAssociation)
                         query = query.filter(and_(
@@ -134,15 +160,17 @@ class JobSearch(object):
                     a = aliased(model.JobToInputDatasetCollectionAssociation)
                     b = aliased(model.HistoryDatasetCollectionAssociation)
                     c = aliased(model.HistoryDatasetCollectionAssociation)
+                    name = type_values['name']
                     query = query.filter(and_(
                         model.Job.id == a.job_id,
                         a.name == k,
                         b.id == a.dataset_collection_id,
                         c.id == v,
-                        or_(and_(b.deleted == false(), b.id == v),
+                        or_(and_(b.deleted == false(), b.id == v, b.name == name),
                             and_(or_(c.copied_from_history_dataset_collection_association_id == b.id,
                                      b.copied_from_history_dataset_collection_association_id == c.id),
-                                 c.deleted == false()
+                                 c.deleted == false(),
+                                 c.name == name,
                                  )
                             )
                     ))

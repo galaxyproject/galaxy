@@ -298,6 +298,21 @@ class JobsApiTestCase(api.ApiTestCase):
         self._assert_status_code_is(delete_respone, 200)
         self._search(search_payload, expected_search_count=0)
 
+    def test_search_handle_identifiers(self):
+        # Test that input name and element identifier of a jobs' output must match for a job to be returned.
+        history_id, dataset_id = self.__history_with_ok_dataset()
+        inputs = json.dumps({
+            'input1': {'src': 'hda', 'id': dataset_id}
+        })
+        self._job_search(tool_id='identifier_single', history_id=history_id, inputs=inputs)
+        dataset_details = self._get("histories/%s/contents/%s" % (history_id, dataset_id)).json()
+        dataset_details['name'] = 'Renamed Test Dataset'
+        dataset_update_response = self._put("histories/%s/contents/%s" % (history_id, dataset_id), data=dict(name='Renamed Test Dataset'))
+        self._assert_status_code_is(dataset_update_response, 200)
+        assert dataset_update_response.json()['name'] == 'Renamed Test Dataset'
+        search_payload = self._search_payload(history_id=history_id, tool_id='identifier_single', inputs=inputs)
+        self._search(search_payload, expected_search_count=0)
+
     def test_search_delete_outputs(self):
         history_id, dataset_id = self.__history_with_ok_dataset()
         inputs = json.dumps({
