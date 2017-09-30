@@ -15,7 +15,6 @@ selectors:
         main: 'galaxy_main'
     masthead: 
         id: '#masthead'
-        adminLink: '#masthead a[href="/admin/index"]'
         userMenu: 
             userEmail_xpath: '//a[contains(text(), "Logged in as")]'
 
