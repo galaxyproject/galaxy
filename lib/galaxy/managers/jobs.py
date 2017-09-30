@@ -53,7 +53,7 @@ class JobSearch(object):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         user = trans.user
         input_data = defaultdict(list)
-        input_ids = defaultdict(dict)
+        input_ids = defaultdict(list)
 
         def populate_input_data_input_id(path, key, value):
             """Traverses expanded incoming using remap and collects input_ids and input_data."""
@@ -70,26 +70,25 @@ class JobSearch(object):
                     if isinstance(current_case, (list, dict)):
                         current_case = current_case[p]
                 identifier = getattr(current_case, "element_identifier", None)
-                name = current_case.name
                 input_data[path_key].append({'src': src,
                                              'id': value,
                                              'identifier': identifier,
-                                             'name': name,
                                              })
-                input_ids[src][value] = "__id_wildcard__"
-                return key, value
+                input_ids[src].append(value)
+                return key, "__id_wildcard__"
             return key, value
 
-        remap(param_dump, visit=populate_input_data_input_id)
+        wildcard_param_dump = remap(param_dump, visit=populate_input_data_input_id)
         return self.__search(tool_id=tool_id,
                              tool_version=tool_version,
                              user=user,
                              input_data=input_data,
                              job_state=job_state,
                              param_dump=param_dump,
+                             wildcard_param_dump=wildcard_param_dump,
                              input_ids=input_ids)
 
-    def __search(self, tool_id, tool_version, user, input_data, input_ids=None, job_state=None, param_dump=None):
+    def __search(self, tool_id, tool_version, user, input_data, input_ids=None, job_state=None, param_dump=None, wildcard_param_dump=None):
         search_timer = ExecutionTimer()
         query = self.sa_session.query(model.Job).filter(
             model.Job.tool_id == tool_id,
@@ -139,10 +138,10 @@ class JobSearch(object):
                         # if we know that the input dataset hasn't changed since the job was run.
                         # This is relatively strict, we may be able to lift this requirement if we record the jobs'
                         # relevant parameters as JobParameters in the database
-                        b.update_time < model.Job.create_time,
+                        # b.update_time < model.Job.create_time,
                         b.name == c.name,
                         b.extension == c.extension,
-                        b._metadata == c._metadata,
+                        #b._metadata == c._metadata,
                         or_(b.deleted == false(), c.deleted == false())
                     ))
                     if identifier:
@@ -160,29 +159,29 @@ class JobSearch(object):
                     a = aliased(model.JobToInputDatasetCollectionAssociation)
                     b = aliased(model.HistoryDatasetCollectionAssociation)
                     c = aliased(model.HistoryDatasetCollectionAssociation)
-                    name = type_values['name']
                     query = query.filter(and_(
                         model.Job.id == a.job_id,
                         a.name == k,
                         b.id == a.dataset_collection_id,
                         c.id == v,
-                        or_(and_(b.deleted == false(), b.id == v, b.name == name),
+                        b.name == c.name,
+                        or_(and_(b.deleted == false(), b.id == v),
                             and_(or_(c.copied_from_history_dataset_collection_association_id == b.id,
                                      b.copied_from_history_dataset_collection_association_id == c.id),
                                  c.deleted == false(),
-                                 c.name == name,
                                  )
                             )
                     ))
                 else:
                     return []
 
-        for k, v in param_dump.items():
+        for k, v in wildcard_param_dump.items():
+            test = json.dumps(v).replace('"id": "__id_wildcard__"', '"id": %')
             a = aliased(model.JobParameter)
             query = query.filter(and_(
                 model.Job.id == a.job_id,
                 a.name == k,
-                a.value.like(json.dumps(v).replace('id: "__id_wildcard__"', 'id: %'))
+                a.value.like(test)
             ))
 
         for job in query.all():

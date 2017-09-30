@@ -274,15 +274,16 @@ class JobsApiTestCase(api.ApiTestCase):
 
     def test_search(self):
         history_id, dataset_id = self.__history_with_ok_dataset()
+        # We first copy the datasets, so that the update time is lower than the job creation time
+        new_history_id = self.dataset_populator.new_history()
+        copy_payload = {"content": dataset_id, "source": "hda", "type": "dataset"}
+        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
+        self._assert_status_code_is(copy_response, 200)
         inputs = json.dumps({
             'input1': {'src': 'hda', 'id': dataset_id}
         })
         self._job_search(tool_id='cat1', history_id=history_id, inputs=inputs)
         # We test that a job can be found even if the dataset has been copied to another history
-        new_history_id = self.dataset_populator.new_history()
-        copy_payload = {"content": dataset_id, "source": "hda", "type": "dataset"}
-        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
-        self._assert_status_code_is(copy_response, 200)
         new_dataset_id = copy_response.json()['id']
         copied_inputs = json.dumps({
             'input1': {'src': 'hda', 'id': new_dataset_id}
