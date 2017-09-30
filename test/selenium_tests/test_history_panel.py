@@ -11,13 +11,14 @@ class HistoryPanelTestCase(SeleniumTestCase):
         self.register()
         self.assert_initial_history_panel_state_correct()
 
-        tag_icon_selector = self.test_data["historyPanel"]["selectors"]["history"]["tagIcon"]
-        anno_icon_selector = self.test_data["historyPanel"]["selectors"]["history"]["annoIcon"]
-        self.assert_selector(tag_icon_selector)
-        self.assert_selector(anno_icon_selector)
+        tag_icon_selector = self.navigation.history_panel.selectors.tag_icon
+        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
+
+        self.wait_for_visible(tag_icon_selector)
+        self.wait_for_visible(annotation_icon_selector)
 
         name_element = self.history_panel_name_element()
-        self.assert_tooltip_text(name_element, self.test_data["historyPanel"]["text"]["history"]["tooltips"]["name"])
+        self.assert_tooltip_text(name_element, self.navigation.history_panel.text.tooltip_name)
 
     @selenium_test
     def test_history_panel_rename(self):
@@ -34,7 +35,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         editable_text_input_element = self.history_panel_click_to_rename()
         editable_text_input_element.send_keys("New History Name")
         self.click_center()
-        self.assert_selector_absent(self.history_panel_edit_title_input_selector())
+        self.assert_absent(self.navigation.history_panel.selectors.name_edit_input)
         assert "New History Name" not in self.history_panel_name()
 
     @selenium_test
@@ -43,7 +44,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         editable_text_input_element = self.history_panel_click_to_rename()
         editable_text_input_element.send_keys("New History Name")
         self.send_escape(editable_text_input_element)
-        self.assert_selector_absent(self.history_panel_edit_title_input_selector())
+        self.assert_absent(self.navigation.history_panel.selectors.name_edit_input)
         assert "New History Name" not in self.history_panel_name()
 
     @selenium_test
@@ -51,34 +52,35 @@ class HistoryPanelTestCase(SeleniumTestCase):
         # TODO: Test actually editing these values.
         self.register()
 
-        tag_icon_selector = self.test_data["historyPanel"]["selectors"]["history"]["tagIcon"]
-        anno_icon_selector = self.test_data["historyPanel"]["selectors"]["history"]["annoIcon"]
-        tag_area_selector = self.test_data["historyPanel"]["selectors"]["history"]["tagArea"]
-        anno_area_selector = self.test_data["historyPanel"]["selectors"]["history"]["annoArea"]
+        tag_icon_selector = self.navigation.history_panel.selectors.tag_icon
+        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
 
-        tag_icon = self.wait_for_selector_clickable(tag_icon_selector)
-        annon_icon = self.wait_for_selector_clickable(anno_icon_selector)
+        tag_area_selector = self.navigation.history_panel.selectors.tag_area
+        annotation_area_selector = self.navigation.history_panel.selectors.annotation_area
 
-        self.assert_selector_absent_or_hidden(tag_area_selector)
-        self.assert_selector_absent_or_hidden(anno_area_selector)
+        tag_icon = self.wait_for_clickable(tag_icon_selector)
+        annon_icon = self.wait_for_clickable(annotation_icon_selector)
+
+        self.assert_absent_or_hidden(tag_area_selector)
+        self.assert_absent_or_hidden(annotation_area_selector)
 
         tag_icon.click()
 
-        self.wait_for_selector(tag_area_selector)
-        self.assert_selector_absent_or_hidden(anno_area_selector)
+        self.wait_for_visible(tag_area_selector)
+        self.assert_absent_or_hidden(annotation_area_selector)
 
         tag_icon.click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         annon_icon.click()
 
-        self.wait_for_selector(anno_area_selector)
-        self.assert_selector_absent_or_hidden(tag_area_selector)
+        self.wait_for_visible(annotation_area_selector)
+        self.assert_absent_or_hidden(tag_area_selector)
 
         annon_icon.click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
 
-        self.assert_selector_absent_or_hidden(tag_area_selector)
-        self.assert_selector_absent_or_hidden(anno_area_selector)
+        self.assert_absent_or_hidden(tag_area_selector)
+        self.assert_absent_or_hidden(annotation_area_selector)
 
     @selenium_test
     def test_refresh_preserves_state(self):

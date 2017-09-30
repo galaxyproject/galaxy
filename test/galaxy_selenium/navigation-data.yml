@@ -1,3 +1,4 @@
+# Deprecated navigation constants - prefer navigation.yml.
 selectors:
     tooltipBalloon: '.tooltip'
     editableText: '.editable-text'

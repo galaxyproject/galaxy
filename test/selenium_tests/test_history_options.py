@@ -13,13 +13,13 @@ class HistoryOptionsTestCase(SeleniumTestCase):
         self.wait_for_history()
         self.click_history_options()
 
-        menu_selector = self.history_options_menu_selector()
-        self.wait_for_selector_visible(menu_selector)
+        menu_selector = self.navigation.history_panel.selectors.options_menu
+        self.wait_for_visible(menu_selector)
 
         # Click away closes history options
         self.click_center()
 
-        self.assert_selector_absent_or_hidden(menu_selector)
+        self.wait_for_absent_or_hidden(menu_selector)
 
         hda = self.latest_history_item()
         hid = hda["hid"]

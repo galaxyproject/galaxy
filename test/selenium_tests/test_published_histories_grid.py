@@ -147,23 +147,22 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def set_annotation(self, annotation):
-        anno_icon_selector = self.test_data['historyPanel']['selectors']['history']['annoIcon']
-        anno_area_selector = self.test_data['historyPanel']['selectors']['history']['annoArea']
+        self.ensure_annotation_area_displayed()
 
-        if not self.selector_is_displayed(anno_area_selector):
-            self.wait_for_and_click_selector(anno_icon_selector)
+        self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_editable_text)
 
-        anno_area_selector += ' .annotation'
-        self.wait_for_and_click_selector(anno_area_selector)
+        annon_area_editable = self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_edit)
+        anno_done_button = self.wait_for_clickable(self.navigation.history_panel.selectors.annotation_done)
 
-        area_editable_selector = anno_area_selector + ' textarea'
-        done_button_selector = anno_area_selector + ' button'
-        annon_area_editable = self.wait_for_selector_clickable(area_editable_selector)
-        anno_done_button = self.wait_for_selector_clickable(done_button_selector)
-
-        annon_area_editable.click()
         annon_area_editable.send_keys(annotation)
         anno_done_button.click()
+
+    def ensure_annotation_area_displayed(self):
+        annotation_area_selector = self.navigation.history_panel.selectors.annotation_area
+        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
+
+        if not self.is_displayed(annotation_area_selector):
+            self.wait_for_and_click(annotation_icon_selector)
 
     def setup_shared_state(self):
         tag1 = self._get_random_name(len=5)
@@ -210,8 +209,6 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
     def navigate_to_published_histories_page(self):
         self.home()
-        self.click_masthead_user()  # Open masthead menu
-        self.click_label(
-            self.navigation_data['labels']['masthead']['menus']['libraries'])
+        self.click_masthead_libraries()
         selector = 'a[href="/histories/list_published"]'
         self.wait_for_and_click_selector(selector)
