@@ -1618,6 +1618,7 @@ class PostgresqlArchive(CompressedArchive):
         except:
             return "PostgreSQL Archive (%s)" % (nice_size(dataset.get_size()))
 
+
 Binary.register_sniffable_binary_format("postgresql_archiv", "postgresql", PostgresqlArchive)
 
 
