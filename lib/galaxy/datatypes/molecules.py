@@ -55,7 +55,7 @@ def count_lines(filename, non_empty=False):
 
 class GenericMolFile(data.Text):
     """
-        abstract class for most of the molecule files
+    Abstract class for most of the molecule files.
     """
     MetadataElement(name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
 
@@ -92,31 +92,44 @@ class SDF(GenericMolFile):
         """
         Try to guess if the file is a SDF2 file.
 
-        An SDF file can contain multiple molecules.
-        Each molecule must contain a line equal to 'M  END' followed later on by
-        a final line equal to '$$$$'.
+        An SDfile (structure-data file) can contain multiple compounds.
+
+        Each compound starts with a block in V2000 or V3000 molfile format,
+        which ends with a line equal to 'M  END'.
+        This is followed by a non-structural data block, which ends with a line
+        equal to '$$$$'.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('drugbank_drugs.sdf')
         >>> SDF().sniff(fname)
         True
 
-        >>> fname = get_test_fname('drugbank_drugs.cml')
+        >>> fname = get_test_fname('github88.v3k.sdf')
+        >>> SDF().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('chebi_57262.v3k.mol')
         >>> SDF().sniff(fname)
         False
         """
         m_end_found = False
-        limit = 500
+        limit = 10000
         idx = 0
         with open(filename) as in_file:
             for line in in_file:
+                idx += 1
                 line = line.rstrip('\n\r')
-                if not m_end_found:
+                if idx < 4:
+                    continue
+                elif idx == 4:
+                    if len(line) != 39 or not(line.endswith(' V2000') or
+                            line.endswith(' V3000')):
+                        return False
+                elif not m_end_found:
                     if line == 'M  END':
                         m_end_found = True
                 elif line == '$$$$':
                     return True
-                idx += 1
                 if idx == limit:
                     break
         return False
