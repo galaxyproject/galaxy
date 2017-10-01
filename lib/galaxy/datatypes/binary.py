@@ -1575,7 +1575,7 @@ class PostgresqlArchive(CompressedArchive):
     >>> PostgresqlArchive().sniff( fname )
     True
     >>> fname = get_test_fname( 'test.fast5.tar' )
-    >>> Fast5Archive().sniff( fname )
+    >>> PostgresqlArchive().sniff( fname )
     False
     """
     MetadataElement(name="version", default=None, param=MetadataParameter, desc="PostgreSQL database version",
