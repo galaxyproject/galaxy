@@ -1571,9 +1571,12 @@ class PostgresqlArchive(CompressedArchive):
     Class describing a Postgresql database packed into a tar archive
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'test.postgresql.tar' )
+    >>> fname = get_test_fname( 'postgresql_fake.tar.bz2' )
     >>> PostgresqlArchive().sniff( fname )
     True
+    >>> fname = get_test_fname( 'test.fast5.tar' )
+    >>> Fast5Archive().sniff( fname )
+    False
     """
     MetadataElement(name="version", default=None, param=MetadataParameter, desc="PostgreSQL database version",
                     readonly=True, visible=True, no_value=None)
@@ -1584,7 +1587,7 @@ class PostgresqlArchive(CompressedArchive):
         try:
             if dataset and tarfile.is_tarfile(dataset.file_name):
                 with tarfile.open(dataset.file_name, 'r') as temptar:
-                    pg_version_file = temptar.extractfile('./postgresql/db/PG_VERSION')
+                    pg_version_file = temptar.extractfile('postgresql/db/PG_VERSION')
                     dataset.metadata.version = pg_version_file.read().strip()
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
@@ -1593,7 +1596,7 @@ class PostgresqlArchive(CompressedArchive):
         try:
             if filename and tarfile.is_tarfile(filename):
                 with tarfile.open(filename, 'r') as temptar:
-                    if './postgresql/db/PG_VERSION' in temptar.getnames():
+                    if 'postgresql/db/PG_VERSION' in temptar.getnames():
                         return True
                     else:
                         return False
