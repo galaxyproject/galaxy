@@ -1,5 +1,3 @@
-import time
-
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -98,7 +96,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.assert_grid_histories_are([self.history1_name, self.history3_name], False)
 
     def get_histories(self, sleep=False):
-        time.sleep(1.5)
+        self.sleep_for(self.wait_types.UX_RENDER)
         names = []
         grid = self.wait_for_selector('#grid-table-body')
         for row in grid.find_elements_by_tag_name('tr'):
@@ -146,7 +144,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         close_link_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
             (filter_key, filter_value)
         self.wait_for_and_click_selector(close_link_selector)
-        time.sleep(.5)
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     def set_annotation(self, annotation):
         anno_icon_selector = self.test_data['historyPanel']['selectors']['history']['annoIcon']
@@ -202,8 +200,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
     def create_history(self, name):
         self.home()
-        self.click_history_option('Create New')
-        self.history_panel_rename(name)
+        self.history_panel_create_new_with_name(name)
 
     def publish_current_history(self):
         self.click_history_option('Share or Publish')

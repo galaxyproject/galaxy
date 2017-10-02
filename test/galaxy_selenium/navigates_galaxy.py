@@ -4,6 +4,7 @@ Implementer must provide a self.build_url method to target Galaxy.
 """
 from __future__ import print_function
 
+import collections
 import contextlib
 import random
 import string
@@ -12,6 +13,8 @@ from functools import partial, wraps
 
 import requests
 import yaml
+
+from galaxy.util.bunch import Bunch
 
 from . import sizzle
 from .data import NAVIGATION_DATA
@@ -28,6 +31,28 @@ DEFAULT_PASSWORD = '123456'
 RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT = .1
 RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT = 10
 
+WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
+
+# Default wait times should make sense for a development server under low
+# load. Wait times for production servers can be scaled up with a multiplier.
+WAIT_TYPES = Bunch(
+    # Rendering a form and registering callbacks, etc...
+    UX_RENDER=WaitType("ux_render", 1),
+    # Fade in, fade out, etc...
+    UX_TRANSITION=WaitType("ux_transition", 5),
+    # Toastr popup and dismissal, etc...
+    UX_POPUP=WaitType("ux_popup", 10),
+    # Creating a new history and loading it into the panel.
+    DATABASE_OPERATION=WaitType("database_operation", 10),
+    # Wait time for jobs to complete in default environment.
+    JOB_COMPLETION=WaitType("job_completion", 30),
+    # Wait time for a GIE to spawn.
+    GIE_SPAWN=WaitType("gie_spawn", 30),
+)
+
+# Choose a moderate wait type for operations that don't specify a type.
+DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
+
 
 class NullTourCallback(object):
 
@@ -35,7 +60,7 @@ class NullTourCallback(object):
         pass
 
 
-def excepion_seems_to_indicate_transition(e):
+def exception_seems_to_indicate_transition(e):
     """True if exception seems to indicate the page state is transitioning.
 
     Galaxy features many different transition effects that change the page state over time.
@@ -52,7 +77,7 @@ def excepion_seems_to_indicate_transition(e):
     return exception_indicates_stale_element(e) or exception_indicates_not_clickable(e)
 
 
-def retry_call_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT, sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT, exception_check=excepion_seems_to_indicate_transition):
+def retry_call_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT, sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT, exception_check=exception_seems_to_indicate_transition):
     previous_attempts = 0
     while True:
         try:
@@ -68,7 +93,7 @@ def retry_call_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_
             previous_attempts += 1
 
 
-def retry_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT, sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT, exception_check=excepion_seems_to_indicate_transition):
+def retry_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT, sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT, exception_check=exception_seems_to_indicate_transition):
 
     @wraps(f)
     def _retry(*args, **kwds):
@@ -78,8 +103,24 @@ def retry_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAU
 
 
 class NavigatesGalaxy(HasDriver):
+    """Class with helpers methods for driving components of the Galaxy interface.
+
+    In most cases, methods for interacting with Galaxy components that appear in
+    multiple tests or applications should be refactored into this class for now.
+    Keep in mind that this class is used outside the context of ``TestCase``s as
+    well - so some methods more explicitly related to test data or assertion checking
+    may make more sense in SeleniumTestCase for instance.
+
+    Some day this class will likely be split up into smaller mixins for particular
+    components of Galaxy, but until that day the best practice is to prefix methods
+    for driving or querying the interface with the name of the component or page
+    the method operates on. These serve as psedu-namespaces until we decompose this
+    class. For instance, the method for clicking an option in the workflow editor is
+    workflow_editor_click_option instead of click_workflow_editor_option.
+    """
 
     default_password = DEFAULT_PASSWORD
+    wait_types = WAIT_TYPES
 
     def get(self, url=""):
         full_url = self.build_url(url)
@@ -88,6 +129,16 @@ class NavigatesGalaxy(HasDriver):
     @property
     def navigation_data(self):
         return NAVIGATION_DATA
+
+    def wait_length(self, wait_type):
+        return wait_type.default_length * self.timeout_multiplier
+
+    def sleep_for(self, wait_type):
+        time.sleep(self.wait_length(wait_type))
+
+    def timeout_for(self, **kwds):
+        wait_type = kwds.get("wait_type", DEFAULT_WAIT_TYPE)
+        return self.wait_length(wait_type)
 
     def home(self):
         self.get()
@@ -113,6 +164,14 @@ class NavigatesGalaxy(HasDriver):
         else:
             return response.json()
 
+    def api_delete(self, endpoint, raw=False):
+        full_url = self.build_url("api/" + endpoint, for_selenium=False)
+        response = requests.get(full_url, cookies=self.selenium_to_requests_cookies())
+        if raw:
+            return response
+        else:
+            return response.json()
+
     def get_galaxy_session(self):
         for cookie in self.driver.get_cookies():
             if cookie["name"] == "galaxysession":
@@ -129,6 +188,10 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_name_element(self):
         return self.wait_for_selector(self.history_panel_name_selector())
+
+    @retry_during_transitions
+    def history_panel_name(self):
+        return self.history_panel_name_element().text
 
     def current_history(self):
         history = self.api_get("histories")[0]
@@ -147,7 +210,7 @@ class NavigatesGalaxy(HasDriver):
         assert len(history_contents) > 0
         return history_contents[-1]
 
-    def wait_for_history(self, timeout=30, assert_ok=True):
+    def wait_for_history(self, assert_ok=True):
         def history_becomes_terminal(driver):
             current_history_id = self.current_history_id()
             state = self.api_get("histories/%s" % current_history_id)["state"]
@@ -156,21 +219,32 @@ class NavigatesGalaxy(HasDriver):
             else:
                 return None
 
-        final_state = self.wait(timeout).until(history_becomes_terminal)
+        timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
+        final_state = self.wait(timeout=timeout).until(history_becomes_terminal)
         if assert_ok:
             assert final_state == "ok", final_state
         return final_state
 
-    def history_panel_wait_for_hid_ok(self, hid, timeout=60, allowed_force_refreshes=0):
-        self.history_panel_wait_for_hid_state(hid, 'ok', timeout=timeout, allowed_force_refreshes=allowed_force_refreshes)
+    def history_panel_create_new_with_name(self, name):
+        self.history_panel_create_new()
+        self.history_panel_rename(name)
 
-    def history_panel_wait_for_hid_visible(self, hid, timeout=60, allowed_force_refreshes=0):
+    def history_panel_create_new(self):
+        """Click create new and pause a bit for the history to begin to refresh."""
+        self.click_history_option('Create New')
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
+
+    def history_panel_wait_for_hid_ok(self, hid, allowed_force_refreshes=0):
+        self.history_panel_wait_for_hid_state(hid, 'ok', allowed_force_refreshes=allowed_force_refreshes)
+
+    def history_panel_wait_for_hid_visible(self, hid, allowed_force_refreshes=0):
         current_history_id = self.current_history_id()
 
         def history_has_hid(driver):
             contents = self.api_get("histories/%s/contents" % current_history_id)
             return any([d for d in contents if d["hid"] == hid])
 
+        timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
         self.wait(timeout).until(history_has_hid)
         contents = self.api_get("histories/%s/contents" % current_history_id)
         history_item = [d for d in contents if d["hid"] == hid][0]
@@ -190,7 +264,7 @@ class NavigatesGalaxy(HasDriver):
         attempt = 0
         while True:
             try:
-                rval = self.wait_for_selector_visible(history_item_selector)
+                rval = self.wait_for_selector_visible(history_item_selector, wait_type=WAIT_TYPES.JOB_COMPLETION)
                 break
             except self.TimeoutException:
                 if attempt >= allowed_force_refreshes:
@@ -204,18 +278,18 @@ class NavigatesGalaxy(HasDriver):
         # Use the search box showing up as a proxy that the history display
         # has left the "loading" state and is showing a valid set of history contents
         # (even if empty).
-        self.wait_for_selector_visible("#current-history-panel input.search-query")
+        self.wait_for_selector_visible("#current-history-panel input.search-query", wait_type=WAIT_TYPES.DATABASE_OPERATION)
 
-    def history_panel_wait_for_hid_hidden(self, hid, timeout=60):
+    def history_panel_wait_for_hid_hidden(self, hid):
         current_history_id = self.current_history_id()
         contents = self.api_get("histories/%s/contents" % current_history_id)
         history_item = [d for d in contents if d["hid"] == hid][0]
         history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
-        self.wait_for_selector_absent(history_item_selector)
+        self.wait_for_selector_absent(history_item_selector, wait_type=WAIT_TYPES.JOB_COMPLETION)
         return history_item_selector
 
-    def history_panel_wait_for_hid_state(self, hid, state, timeout=60, allowed_force_refreshes=0):
-        history_item_selector = self.history_panel_wait_for_hid_visible(hid, timeout=timeout, allowed_force_refreshes=allowed_force_refreshes)
+    def history_panel_wait_for_hid_state(self, hid, state, allowed_force_refreshes=0):
+        history_item_selector = self.history_panel_wait_for_hid_visible(hid, allowed_force_refreshes=allowed_force_refreshes)
         history_item_selector_state = "%s.state-%s" % (history_item_selector, state)
         try:
             self.history_item_wait_for_selector(history_item_selector_state, allowed_force_refreshes)
@@ -490,7 +564,7 @@ class NavigatesGalaxy(HasDriver):
         menu_element = self.workflow_editor_options_menu_element()
         option_elements = menu_element.find_elements_by_css_selector("a")
         assert len(option_elements) > 0, "Failed to find workflow editor options"
-        time.sleep(1)
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
         found_option = False
         for option_element in option_elements:
             if option_label in option_element.text:
@@ -545,6 +619,13 @@ class NavigatesGalaxy(HasDriver):
         alert = self.driver.switch_to.alert
         alert.send_keys(new_name)
         alert.accept()
+
+    @retry_during_transitions
+    def workflow_index_name(self, workflow_index=0):
+        """Get workflow name for workflow_index'th row."""
+        row_element = self.workflow_index_table_row(workflow_index=workflow_index)
+        workflow_button = row_element.find_element_by_css_selector(".menubutton")
+        return workflow_button.text
 
     def workflow_index_click_option(self, option_title, workflow_index=0):
 
@@ -727,6 +808,30 @@ class NavigatesGalaxy(HasDriver):
         action_element = menu_element.find_element_by_link_text(action)
         action_element.click()
 
+    def history_panel_item_click_visualization_menu(self, hid):
+        viz_button_selector = "%s %s" % (self.history_panel_item_selector(hid), ".visualizations-dropdown")
+        self.wait_for_and_click_selector(viz_button_selector)
+        self.wait_for_selector_visible("%s %s" % (viz_button_selector, ".dropdown-menu"))
+
+    def history_panel_item_available_visualizations_elements(self, hid):
+        # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu
+        viz_menu_selectors = "%s %s" % (self.history_panel_item_selector(hid), "a.visualization-link")
+        return self.driver.find_elements_by_css_selector(viz_menu_selectors)
+
+    def history_panel_item_available_visualizations(self, hid):
+        # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu
+        return [e.text for e in self.history_panel_item_available_visualizations_elements(hid)]
+
+    def history_panel_item_click_visualization(self, hid, visualization_name):
+        # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu
+        elements = self.history_panel_item_available_visualizations_elements(hid)
+        for element in elements:
+            if element.text == visualization_name:
+                element.click()
+                return element
+
+        assert False, "No visualization [%s] found." % visualization_name
+
     def history_panel_item_selector(self, hid, wait=False):
         current_history_id = self.current_history_id()
         contents = self.api_get("histories/%s/contents" % current_history_id)
@@ -780,9 +885,14 @@ class NavigatesGalaxy(HasDriver):
             else:
                 self.wait_for_selector_visible(details_selector)
 
-    def click_hda_title(self, hda_id, wait=False):
-        # TODO: Replace with calls to history_panel_click_item_title.
-        return self.history_panel_click_item_title(hda_id=hda_id, wait=wait)
+    def history_panel_ensure_showing_item_details(self, hid):
+        if not self.history_panel_item_showing_details(hid):
+            self.history_panel_click_item_title(hid=hid, wait=True)
+
+    def history_panel_item_showing_details(self, hid):
+        item_selector = self.history_panel_item_selector(hid)
+        details_selector = "%s .details" % item_selector
+        return self.selector_is_displayed(details_selector)
 
     def collection_builder_set_name(self, name):
         name_element = self.wait_for_selector_visible("input.collection-name")
