@@ -357,10 +357,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def __get_k8s_container_name(self, job_wrapper):
         # These must follow a specific regex for Kubernetes.
         raw_id = job_wrapper.job_destination.id
-        cleaned_id = re.sub("[^-a-z0-9]", "-", raw_id)
-        if cleaned_id.startswith("-") or cleaned_id.endswith("-"):
-            cleaned_id = "x%sx" % cleaned_id
-        return cleaned_id
+        if isinstance(raw_id, str):
+            cleaned_id = re.sub("[^-a-z0-9]", "-", raw_id)
+            if cleaned_id.startswith("-") or cleaned_id.endswith("-"):
+                cleaned_id = "x%sx" % cleaned_id
+            return cleaned_id
+        return "job-container"
 
     def check_watched_item(self, job_state):
         """Checks the state of a job already submitted on k8s. Job state is a AsynchronousJobState"""
