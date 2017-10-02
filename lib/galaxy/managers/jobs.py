@@ -138,10 +138,10 @@ class JobSearch(object):
                         # if we know that the input dataset hasn't changed since the job was run.
                         # This is relatively strict, we may be able to lift this requirement if we record the jobs'
                         # relevant parameters as JobParameters in the database
-                        # b.update_time < model.Job.create_time,
+                        b.update_time < model.Job.create_time,
                         b.name == c.name,
                         b.extension == c.extension,
-                        #b._metadata == c._metadata,
+                        b.metadata == c.metadata,
                         or_(b.deleted == false(), c.deleted == false())
                     ))
                     if identifier:
