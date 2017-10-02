@@ -1593,15 +1593,12 @@ class PostgresqlArchive(CompressedArchive):
             log.warning('%s, set_meta Exception: %s', self, e)
 
     def sniff(self, filename):
-        try:
-            if filename and tarfile.is_tarfile(filename):
+        if filename and tarfile.is_tarfile(filename):
+            try:
                 with tarfile.open(filename, 'r') as temptar:
-                    if 'postgresql/db/PG_VERSION' in temptar.getnames():
-                        return True
-                    else:
-                        return False
-        except Exception as e:
-            log.warning('%s, sniff Exception: %s', self, e)
+                    return 'postgresql/db/PG_VERSION' in temptar.getnames()
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):
