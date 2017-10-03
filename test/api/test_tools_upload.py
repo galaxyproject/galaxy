@@ -1,15 +1,15 @@
 from base import api
-
+from base.constants import (
+    ONE_TO_SIX_ON_WINDOWS,
+    ONE_TO_SIX_WITH_SPACES,
+    ONE_TO_SIX_WITH_TABS,
+)
 from base.populators import (
     DatasetPopulator,
     skip_without_datatype,
 )
 
 from galaxy.tools.verify.test_data import TestDataResolver
-
-ONE_TO_SIX_WITH_SPACES = "1 2 3\n4 5 6\n"
-ONE_TO_SIX_WITH_TABS = "1\t2\t3\n4\t5\t6\n"
-ONE_TO_SIX_ON_WINDOWS = "1\t2\t3\r4\t5\t6\r"
 
 
 class ToolsUploadTestCase(api.ApiTestCase):
