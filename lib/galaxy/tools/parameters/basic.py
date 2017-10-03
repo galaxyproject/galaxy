@@ -303,7 +303,7 @@ class IntegerToolParameter(TextToolParameter):
     ValueError: An integer or workflow parameter e.g. ${name} is required
     """
 
-    dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ('min', 'max')
+    dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ['min', 'max']
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
@@ -379,7 +379,7 @@ class FloatToolParameter(TextToolParameter):
     ValueError: A real number or workflow parameter e.g. ${name} is required
     """
 
-    dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ('min', 'max')
+    dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ['min', 'max']
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
