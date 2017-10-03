@@ -22,6 +22,7 @@ class ModelMapping(Bunch):
     def __init__(self, model_modules, engine):
         self.engine = engine
         Session = sessionmaker(autoflush=False, autocommit=True)
+        versioned_session(Session)
         context = scoped_session(Session)
         # For backward compatibility with "context.current"
         # deprecated?

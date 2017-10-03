@@ -128,6 +128,7 @@ class JobSearch(object):
                     b = aliased(model.HistoryDatasetAssociation)
                     c = aliased(model.HistoryDatasetAssociation)
                     d = aliased(model.JobParameter)
+                    e = aliased(model.HistoryDatasetAssociationHistory)
                     query = query.filter(and_(
                         model.Job.id == a.job_id,
                         a.name == k,
@@ -138,10 +139,18 @@ class JobSearch(object):
                         # if we know that the input dataset hasn't changed since the job was run.
                         # This is relatively strict, we may be able to lift this requirement if we record the jobs'
                         # relevant parameters as JobParameters in the database
-                        b.update_time < model.Job.create_time,
-                        b.name == c.name,
-                        b.extension == c.extension,
-                        b.metadata == c.metadata,
+                        or_(and_(
+                            b.update_time < model.Job.create_time,
+                            b.name == c.name,
+                            b.extension == c.extension,
+                            b._metadata == c._metadata,
+                        ), and_(
+                            b.id == e.history_dataset_association_id,
+                            a.dataset_version == e.version,
+                            e.name == c.name,
+                            e.extension == c.extension,
+                            e.metadata == c._metadata,
+                    )),
                         or_(b.deleted == false(), c.deleted == false())
                     ))
                     if identifier:

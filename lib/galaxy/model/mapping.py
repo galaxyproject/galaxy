@@ -142,10 +142,25 @@ model.HistoryDatasetAssociation.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("visible", Boolean),
     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
+    Column("version", Integer, default=1, nullable=True, index=True),
     Column("hid", Integer),
     Column("purged", Boolean, index=True, default=False),
     Column("hidden_beneath_collection_instance_id",
            ForeignKey("history_dataset_collection_association.id"), nullable=True))
+
+
+model.HistoryDatasetAssociationHistory.table = Table(
+    "history_dataset_association_history", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("update_time", DateTime, default=now),
+    Column("version", Integer),
+    Column("name", TrimmedString(255)),
+    Column("extension", TrimmedString(64)),
+    Column("metadata", MetadataType()),
+    Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
+)
+
 
 model.Dataset.table = Table(
     "dataset", metadata,
@@ -505,6 +520,7 @@ model.JobToInputDatasetAssociation.table = Table(
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("dataset_version", Integer),
     Column("name", String(255)))
 
 model.JobToOutputDatasetAssociation.table = Table(
@@ -1474,6 +1490,8 @@ simple_mapping(model.Dataset,
         order_by=model.DatasetTagAssociation.table.c.id,
         backref='datasets')
 )
+
+mapper(model.HistoryDatasetAssociationHistory, model.HistoryDatasetAssociationHistory.table)
 
 mapper(model.HistoryDatasetAssociationDisplayAtAuthorization, model.HistoryDatasetAssociationDisplayAtAuthorization.table, properties=dict(
     history_dataset_association=relation(model.HistoryDatasetAssociation),

@@ -16,10 +16,20 @@ from string import Template
 from uuid import UUID, uuid4
 
 from six import string_types
-from sqlalchemy import (and_, func, join, not_, or_, select, true, type_coerce,
-                        types)
+from sqlalchemy import (
+    and_,
+    func,
+    inspect,
+    join,
+    not_,
+    or_,
+    select,
+    true,
+    type_coerce,
+    types)
 from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import aliased, joinedload, object_session
+
 
 import galaxy.model.metadata
 import galaxy.model.orm.now
@@ -1000,6 +1010,7 @@ class JobToInputDatasetAssociation(object):
     def __init__(self, name, dataset):
         self.name = name
         self.dataset = dataset
+        self.dataset_version = dataset.version
 
 
 class JobToOutputDatasetAssociation(object):
@@ -2401,6 +2412,36 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
 
+    def __create_version__(self, session):
+        state = inspect(self)
+        changes = {}
+
+        for attr in state.attrs:
+            hist = state.get_history(attr.key, True)
+
+            if not hist.has_changes():
+                continue
+
+            # hist.deleted holds old value(s)
+            changes[attr.key] = hist.deleted
+        if self.update_time:
+            # We only record changes to HDAs that exist in the database and have a update_time
+            new_values = {}
+            new_values['name'] = changes.get('name', self.name)
+            new_values['dbkey'] = changes.get('dbkey', self.dbkey)
+            new_values['extension'] = changes.get('extension', self.extension)
+            new_values['extended_metadata_id'] = changes.get('extended_metadata_id', self.extended_metadata_id)
+            for k, v in new_values.items():
+                if isinstance(v, list):
+                    new_values[k] = v[0]
+            new_values['update_time'] = self.update_time
+            new_values['version'] = self.version or 1
+            new_values['metadata'] = self._metadata
+            past_hda = HistoryDatasetAssociationHistory(history_dataset_association_id=self.id,
+                                                        **new_values)
+            self.version = self.version + 1 if self.version else 1
+            session.add(past_hda)
+
     def copy(self, parent_id=None):
         """
         Create a copy of this HDA.
@@ -2614,6 +2655,27 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             new_tag_assoc = source_tag_assoc.copy()
             new_tag_assoc.user = target_user
             self.tags.append(new_tag_assoc)
+
+
+class HistoryDatasetAssociationHistory(object):
+    def __init__(self,
+                 history_dataset_association_id,
+                 name,
+                 dbkey,
+                 update_time,
+                 version,
+                 extension,
+                 extended_metadata_id,
+                 metadata,
+                 ):
+        self.history_dataset_association_id = history_dataset_association_id
+        self.name = name
+        self.dbkey = dbkey
+        self.update_time = update_time
+        self.version = version
+        self.extension = extension
+        self.extended_metadata_id = extended_metadata_id
+        self.metadata = metadata
 
 
 class HistoryDatasetAssociationDisplayAtAuthorization(object):
