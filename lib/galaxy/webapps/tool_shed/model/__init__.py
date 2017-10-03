@@ -23,8 +23,8 @@ class APIKeys(object):
 
 
 class User(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'username')
-    dict_element_visible_keys = ('id', 'username')
+    dict_collection_visible_keys = ['id', 'username']
+    dict_element_visible_keys = ['id', 'username']
 
     def __init__(self, email=None, password=None):
         self.email = email
@@ -75,8 +75,8 @@ class PasswordResetToken(object):
 
 
 class Group(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'name')
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'name']
 
     def __init__(self, name=None):
         self.name = name
@@ -84,8 +84,8 @@ class Group(object, Dictifiable):
 
 
 class Role(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'name', 'description', 'type')
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'name', 'description', 'type']
     private_id = None
     types = Bunch(PRIVATE='private',
                   SYSTEM='system',
@@ -159,10 +159,10 @@ class GalaxySession(object):
 
 
 class Repository(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'user_id', 'private', 'deleted',
-                                    'times_downloaded', 'deprecated')
-    dict_element_visible_keys = ('id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'long_description', 'user_id', 'private',
-                                 'deleted', 'times_downloaded', 'deprecated')
+    dict_collection_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'user_id', 'private', 'deleted',
+                                    'times_downloaded', 'deprecated']
+    dict_element_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'long_description', 'user_id', 'private',
+                                 'deleted', 'times_downloaded', 'deprecated']
     file_states = Bunch(NORMAL='n',
                         NEEDS_MERGING='m',
                         MARKED_FOR_REMOVAL='r',
@@ -304,12 +304,12 @@ class Repository(object, Dictifiable):
 
 
 class RepositoryMetadata(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
+    dict_collection_visible_keys = ['id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
                                     'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
-                                    'includes_tools_for_display_in_tool_panel', 'includes_workflows')
-    dict_element_visible_keys = ('id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
+                                    'includes_tools_for_display_in_tool_panel', 'includes_workflows']
+    dict_element_visible_keys = ['id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
                                  'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
-                                 'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'repository_dependencies')
+                                 'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'repository_dependencies']
 
     def __init__(self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False,
                  downloadable=False, missing_test_components=None, tools_functionally_correct=False, test_install_error=False,
@@ -347,8 +347,8 @@ class RepositoryMetadata(object, Dictifiable):
 
 
 class RepositoryReview(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted')
-    dict_element_visible_keys = ('id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted')
+    dict_collection_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
+    dict_element_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
     approved_states = Bunch(NO='no', YES='yes')
 
     def __init__(self, repository_id=None, changeset_revision=None, user_id=None, rating=None, deleted=False):
@@ -360,8 +360,8 @@ class RepositoryReview(object, Dictifiable):
 
 
 class ComponentReview(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted')
-    dict_element_visible_keys = ('id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted')
+    dict_collection_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
+    dict_element_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
     approved_states = Bunch(NO='no', YES='yes', NA='not_applicable')
 
     def __init__(self, repository_review_id=None, component_id=None, comment=None, private=False, approved=False, rating=None, deleted=False):
@@ -402,8 +402,8 @@ class RepositoryRatingAssociation(ItemRatingAssociation):
 
 
 class Category(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name', 'description', 'deleted')
-    dict_element_visible_keys = ('id', 'name', 'description', 'deleted')
+    dict_collection_visible_keys = ['id', 'name', 'description', 'deleted']
+    dict_element_visible_keys = ['id', 'name', 'description', 'deleted']
 
     def __init__(self, name=None, description=None, deleted=False):
         self.name = name

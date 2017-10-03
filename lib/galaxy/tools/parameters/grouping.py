@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 class Group(object, Dictifiable):
 
-    dict_collection_visible_keys = ('name', 'type')
+    dict_collection_visible_keys = ['name', 'type']
 
     def __init__(self):
         self.name = None
@@ -65,7 +65,7 @@ class Group(object, Dictifiable):
 
 class Repeat(Group):
 
-    dict_collection_visible_keys = ('name', 'type', 'title', 'help', 'default', 'min', 'max')
+    dict_collection_visible_keys = ['name', 'type', 'title', 'help', 'default', 'min', 'max']
     type = "repeat"
 
     def __init__(self):
@@ -140,7 +140,7 @@ class Repeat(Group):
 
 class Section(Group):
 
-    dict_collection_visible_keys = ('name', 'type', 'title', 'help', 'expanded')
+    dict_collection_visible_keys = ['name', 'type', 'title', 'help', 'expanded']
     type = "section"
 
     def __init__(self):
@@ -634,7 +634,7 @@ class Conditional(Group):
 
 
 class ConditionalWhen(object, Dictifiable):
-    dict_collection_visible_keys = ('value', )
+    dict_collection_visible_keys = ['value']
 
     def __init__(self):
         self.value = None

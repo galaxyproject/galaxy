@@ -68,7 +68,7 @@ class ToolParameter(object, Dictifiable):
     moment but in the future should encapsulate more complex parameters (lists
     of valid choices, validation logic, ...)
     """
-    dict_collection_visible_keys = ('name', 'argument', 'type', 'label', 'help', 'refresh_on_change')
+    dict_collection_visible_keys = ['name', 'argument', 'type', 'label', 'help', 'refresh_on_change']
 
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)

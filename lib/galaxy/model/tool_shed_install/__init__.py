@@ -12,10 +12,10 @@ log = logging.getLogger(__name__)
 
 
 class ToolShedRepository(object):
-    dict_collection_visible_keys = ('id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                    'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message')
-    dict_element_visible_keys = ('id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                 'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message')
+    dict_collection_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
+                                    'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message']
+    dict_element_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
+                                 'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message']
     installation_status = Bunch(NEW='New',
                                 CLONING='Cloning',
                                 SETTING_TOOL_VERSIONS='Setting tool versions',
@@ -583,7 +583,7 @@ class ToolDependency(object):
 
 
 class ToolVersion(object, Dictifiable):
-    dict_element_visible_keys = ('id', 'tool_shed_repository')
+    dict_element_visible_keys = ['id', 'tool_shed_repository']
 
     def __init__(self, id=None, create_time=None, tool_id=None, tool_shed_repository=None):
         self.id = id
