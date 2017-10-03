@@ -1062,16 +1062,16 @@ of ``type`` ``data``.</xs:documentation>
   </xs:complexType>
   <xs:complexType name="TestCompositeData">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Define extra composite input files for test input.</xs:documentation>
+      <xs:documentation xml:lang="en">Define extra composite input files for test
+input. The specified ``ftype`` on the parent ``param`` should specify a composite
+datatype with defined static composite files. The order of the defined composite
+files on the datatype must match the order specified with these elements and All
+non-optional composite inputs must be specified as part of the ``param``.
+</xs:documentation>
     </xs:annotation>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Path relative to test-data of composite file.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="ftype" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Optional datatype of composite file for test input.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -1299,7 +1299,7 @@ provides a demonstration of using this tag.
     </xs:annotation>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Name of the metdata element to check.</xs:documentation>
+        <xs:documentation xml:lang="en">Name of the metadata element to check.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
@@ -2770,7 +2770,7 @@ dataset for the contained input of the type specified using the ``type`` tag.
     </xs:annotation>
     <xs:attribute name="name" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Name of cheetah variable to create for converted dataset.</xs:documentation>
+        <xs:documentation xml:lang="en">Name of Cheetah variable to create for converted dataset.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="type" type="xs:string">

@@ -11,7 +11,7 @@ from sqlalchemy import and_, desc, false, or_, true
 from galaxy import managers, model, util, web
 from galaxy.datatypes.interval import Bed
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
-from galaxy.util import unicodify
+from galaxy.util import sanitize_text, unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.data_providers.genome import RawBedDataProvider
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
@@ -170,13 +170,9 @@ class VisualizationListGrid(grids.Grid):
             cols_to_filter=[columns[0], columns[2]],
             key="free-text-search", visible=False, filterable="standard")
     )
-    global_actions = [
-        grids.GridAction("Create new visualization", dict(action='create'), target="inbound")
-    ]
     operations = [
         grids.GridOperation("Open", allow_multiple=False, url_args=get_url_args),
-        grids.GridOperation("Open in Circster", allow_multiple=False, condition=(lambda item: item.type == 'trackster'), url_args=dict(action='circster')),
-        grids.GridOperation("Edit Attributes", allow_multiple=False, url_args=dict(action='edit'), target="inbound"),
+        grids.GridOperation("Edit Attributes", allow_multiple=False, url_args=dict(controller="", action='visualizations/edit')),
         grids.GridOperation("Copy", allow_multiple=False, condition=(lambda item: not item.deleted)),
         grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
         grids.GridOperation("Delete", condition=(lambda item: not item.deleted), confirm="Are you sure you want to delete this visualization?"),
@@ -273,12 +269,11 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         grid['shared_by_others'] = self._get_shared(trans)
         return grid
 
-    @web.expose
-    @web.json
+    @web.expose_api
     @web.require_login("use Galaxy visualizations", use_panels=True)
-    def list(self, trans, *args, **kwargs):
-
-        # Handle operation
+    def list(self, trans, **kwargs):
+        message = kwargs.get('message')
+        status = kwargs.get('status')
         if 'operation' in kwargs and 'id' in kwargs:
             session = trans.sa_session
             operation = kwargs['operation'].lower()
@@ -290,11 +285,12 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 if operation == "copy":
                     self.copy(trans, **kwargs)
             session.flush()
-
-        # Build grid
         kwargs['embedded'] = True
         kwargs['dict_format'] = True
-        grid = self._visualization_list_grid(trans, *args, **kwargs)
+        if message and status:
+            kwargs['message'] = sanitize_text(message)
+            kwargs['status'] = status
+        grid = self._visualization_list_grid(trans, **kwargs)
         grid['shared_by_others'] = self._get_shared(trans)
         return grid
 
@@ -551,45 +547,6 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         return trans.fill_template_mako("visualization/item_content.mako", encoded_id=trans.security.encode_id(visualization.id),
                                         item=visualization, item_data=visualization_config, content_only=True)
 
-    @web.expose
-    @web.require_login("create visualizations")
-    def create(self, trans, visualization_title="", visualization_slug="", visualization_annotation="", visualization_dbkey="",
-               visualization_type=""):
-        """
-        Creates a new visualization or returns a form for creating visualization.
-        """
-        visualization_title_err = visualization_slug_err = visualization_annotation_err = ""
-        if trans.request.method == "POST":
-            rval = self.create_visualization(trans, title=visualization_title,
-                                             slug=visualization_slug,
-                                             annotation=visualization_annotation,
-                                             dbkey=visualization_dbkey,
-                                             type=visualization_type)
-            if isinstance(rval, dict):
-                # Found error creating viz.
-                visualization_title_err = rval['title_err']
-                visualization_slug_err = rval['slug_err']
-            else:
-                # Successfully created viz.
-                return trans.response.send_redirect(web.url_for(controller='visualizations', action='list'))
-
-        viz_type_options = [(t, t) for t in self.viz_types]
-        return trans.show_form(
-            web.FormBuilder(web.url_for(controller='visualization', action='create'), "Create new visualization", submit_text="Submit")
-            .add_text("visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err)
-            .add_select("visualization_type", "Type", options=viz_type_options, error=None)
-            .add_text("visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
-                      help="""A unique identifier that will be used for
-                            public links to this visualization. A default is generated
-                            from the visualization title, but can be edited. This field
-                            must contain only lowercase letters, numbers, and
-                            the '-' character.""")
-            .add_select("visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=trans.app.genomes.get_dbkeys(trans, chrom_info=True), error=None)
-            .add_text("visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
-                      help="A description of the visualization; annotation is shown alongside published visualizations."),
-            template="visualization/create.mako"
-        )
-
     @web.json
     def save(self, trans, vis_json=None, type=None, id=None, title=None, dbkey=None, annotation=None):
         """
@@ -605,55 +562,68 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         vis_annotation = annotation or vis_config.get('annotation', None)
         return self.save_visualization(trans, vis_config, vis_type, vis_id, vis_title, vis_dbkey, vis_annotation)
 
-    @web.expose
+    @web.expose_api
     @web.require_login("edit visualizations")
-    def edit(self, trans, id, visualization_title="", visualization_slug="", visualization_annotation=""):
+    def edit(self, trans, payload=None, **kwd):
         """
         Edit a visualization's attributes.
         """
-        visualization = self.get_visualization(trans, id, check_ownership=True)
-        session = trans.sa_session
-
-        visualization_title_err = visualization_slug_err = visualization_annotation_err = ""
-        if trans.request.method == "POST":
-            if not visualization_title:
-                visualization_title_err = "Visualization name is required"
-            elif not visualization_slug:
-                visualization_slug_err = "Visualization id is required"
-            elif not self._is_valid_slug(visualization_slug):
-                visualization_slug_err = "Visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-            elif visualization_slug != visualization.slug and trans.sa_session.query(model.Visualization).filter_by(user=visualization.user, slug=visualization_slug, deleted=False).first():
-                visualization_slug_err = "Visualization id must be unique"
-            else:
-                visualization.title = visualization_title
-                visualization.slug = visualization_slug
-                if visualization_annotation != "":
-                    visualization_annotation = sanitize_html(visualization_annotation, 'utf-8', 'text/html')
-                    self.add_item_annotation(trans.sa_session, trans.get_user(), visualization, visualization_annotation)
-                session.flush()
-                # Redirect to visualization list.
-                return trans.response.send_redirect(web.url_for(controller='visualizations', action='list'))
+        id = kwd.get('id')
+        if not id:
+            return self.message_exception(trans, 'No visualization id received for editing.')
+        v = self.get_visualization(trans, id, check_ownership=True)
+        if trans.request.method == 'GET':
+            if v.slug is None:
+                self.create_item_slug(trans.sa_session, v)
+            return {
+                'title'  : 'Edit visualization attributes',
+                'inputs' : [{
+                    'name'      : 'title',
+                    'label'     : 'Name',
+                    'value'     : v.title
+                }, {
+                    'name'      : 'slug',
+                    'label'     : 'Identifier',
+                    'value'     : v.slug,
+                    'help'      : 'A unique identifier that will be used for public links to this visualization. This field can only contain lowercase letters, numbers, and dashes (-).'
+                }, {
+                    'name'      : 'dbkey',
+                    'label'     : 'Build',
+                    'type'      : 'select',
+                    'optional'  : True,
+                    'value'     : v.dbkey,
+                    'options'   : trans.app.genomes.get_dbkeys(trans, chrom_info=True),
+                    'help'      : 'Parameter to associate your visualization with a database key.'
+                }, {
+                    'name'      : 'annotation',
+                    'label'     : 'Annotation',
+                    'value'     : self.get_item_annotation_str(trans.sa_session, trans.user, v),
+                    'help'      : 'A description of the visualization. The annotation is shown alongside published visualizations.'
+                }]
+            }
         else:
-            visualization_title = visualization.title
-            # Create slug if it's not already set.
-            if visualization.slug is None:
-                self.create_item_slug(trans.sa_session, visualization)
-            visualization_slug = visualization.slug
-            visualization_annotation = self.get_item_annotation_str(trans.sa_session, trans.user, visualization)
-            if not visualization_annotation:
-                visualization_annotation = ""
-        return trans.show_form(
-            web.FormBuilder(web.url_for(controller='visualization', action='edit', id=id), "Edit visualization attributes", submit_text="Submit")
-            .add_text("visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err)
-            .add_text("visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
-                      help="""A unique identifier that will be used for
-                            public links to this visualization. A default is generated
-                            from the visualization title, but can be edited. This field
-                            must contain only lowercase letters, numbers, and
-                            the '-' character.""")
-            .add_text("visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
-                      help="A description of the visualization; annotation is shown alongside published visualizations."),
-            template="visualization/create.mako")
+            v_title = payload.get('title')
+            v_slug = payload.get('slug')
+            v_dbkey = payload.get('dbkey')
+            v_annotation = payload.get('annotation')
+            if not v_title:
+                return self.message_exception(trans, 'Please provide a visualization name is required.')
+            elif not v_slug:
+                return self.message_exception(trans, 'Please provide a unique identifier.')
+            elif not self._is_valid_slug(v_slug):
+                return self.message_exception(trans, 'Visualization identifier can only contain lowercase letters, numbers, and dashes (-).')
+            elif v_slug != v.slug and trans.sa_session.query(model.Visualization).filter_by(user=v.user, slug=v_slug, deleted=False).first():
+                return self.message_exception(trans, 'Visualization id must be unique.')
+            else:
+                v.title = v_title
+                v.slug = v_slug
+                v.dbkey = v_dbkey
+                if v_annotation:
+                    v_annotation = sanitize_html(v_annotation, 'utf-8', 'text/html')
+                    self.add_item_annotation(trans.sa_session, trans.get_user(), v, v_annotation)
+                trans.sa_session.add(v)
+                trans.sa_session.flush()
+            return {'message': 'Attributes of \'%s\' successfully saved.' % v.title, 'status': 'success'}
 
     # ------------------------- registry.
     @web.expose
@@ -961,7 +931,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                         continue
 
                     with open(image_file, 'r') as handle:
-                        self.gie_image_map[gie] = yaml.load(handle)
+                        self.gie_image_map[gie] = yaml.safe_load(handle)
 
         return trans.fill_template_mako(
             "visualization/gie.mako",

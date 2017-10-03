@@ -65,7 +65,7 @@ var menu = [
         anon    : true,
         func    : function() {
             if( Galaxy && Galaxy.currHistoryPanel && confirm( _l( 'Really delete the current history?' ) ) ){
-                galaxy_main.window.location.href = 'history/delete?id=' + Galaxy.currHistoryPanel.model.id;
+                Galaxy.currHistoryPanel.model._delete().done(function(){Galaxy.currHistoryPanel.loadCurrentHistory();});
             }
         },
     },
@@ -76,7 +76,7 @@ var menu = [
         func    : function() {
             if( Galaxy && Galaxy.currHistoryPanel
             &&  confirm( _l( 'Really delete the current history permanently? This cannot be undone.' ) ) ){
-                galaxy_main.window.location.href = 'history/delete?purge=True&id=' + Galaxy.currHistoryPanel.model.id;
+                Galaxy.currHistoryPanel.model.purge().done(function(){Galaxy.currHistoryPanel.loadCurrentHistory();});
             }
         },
     },
@@ -93,7 +93,11 @@ var menu = [
     },
     {
         html    : _l( 'Dataset Security' ),
-        href    : 'root/history_set_default_permissions',
+        func    : function() {
+            if ( Galaxy && Galaxy.currHistoryPanel && Galaxy.router ) {
+                Galaxy.router.push( '/histories/permissions?id=' + Galaxy.currHistoryPanel.model.id );
+            }
+        }
     },
     {
         html    : _l( 'Resume Paused Jobs' ),
@@ -106,7 +110,7 @@ var menu = [
             if( Galaxy && Galaxy.currHistoryPanel ){
                 Galaxy.currHistoryPanel.collapseAll();
             }
-        },
+        }
     },
     {
         html    : _l( 'Unhide Hidden Datasets' ),

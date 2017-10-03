@@ -6,33 +6,28 @@ import datetime
 import json
 import os
 import time
-
 import traceback
-
+import unittest
 from functools import partial, wraps
 
 import requests
-
-from galaxy_selenium import (
-    driver_factory,
-)
-from galaxy_selenium.navigates_galaxy import NavigatesGalaxy, retry_during_transitions
-
 try:
     from pyvirtualdisplay import Display
 except ImportError:
     Display = None
-
 from six.moves.urllib.parse import urljoin
 
-from base import populators
-from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address
-from base.twilltestcase import FunctionalTestCase
-from base.workflows_format_2 import (
-    ImporterGalaxyInterface,
+from base import populators  # noqa: I100
+from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address  # noqa: I100
+from base.testcase import FunctionalTestCase  # noqa: I100
+from base.workflows_format_2 import (  # noqa: I100
     convert_and_import_workflow,
+    ImporterGalaxyInterface,
 )
-
+from galaxy_selenium import (  # noqa: I100
+    driver_factory,
+)
+from galaxy_selenium.navigates_galaxy import NavigatesGalaxy, retry_during_transitions  # noqa: I100
 from galaxy.util import asbool
 
 DEFAULT_WAIT_TIMEOUT = 60
@@ -83,15 +78,19 @@ def selenium_test(f):
                     result_name = f.__name__ + datetime.datetime.now().strftime("%Y%m%d%H%M%s")
                     target_directory = os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, result_name)
 
-                    def write_file(name, content):
+                    def write_file(name, content, raw=False):
                         with open(os.path.join(target_directory, name), "wb") as buf:
-                            buf.write(content.encode("utf-8"))
+                            buf.write(content.encode("utf-8") if not raw else content)
 
                     os.makedirs(target_directory)
                     self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
                     write_file("page_source.txt", self.driver.page_source)
                     write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
                     write_file("stacktrace.txt", traceback.format_exc())
+
+                    for snapshot in getattr(self, "snapshots", []):
+                        snapshot.write_to_error_directory(write_file)
+
                     for log_type in ["browser", "driver"]:
                         try:
                             write_file("%s.log.json" % log_type, json.dumps(self.driver.get_log(log_type)))
@@ -116,6 +115,22 @@ def selenium_test(f):
 retry_assertion_during_transitions = partial(retry_during_transitions, exception_check=lambda e: isinstance(e, AssertionError))
 
 
+class TestSnapshot(object):
+
+    def __init__(self, driver, index, description):
+        self.screenshot_binary = driver.get_screenshot_as_png()
+        self.description = description
+        self.index = index
+        self.exc = traceback.format_exc()
+        self.stack = traceback.format_stack()
+
+    def write_to_error_directory(self, write_file_func):
+        prefix = "%d-%s" % (self.index, self.description)
+        write_file_func("%s-screenshot.png" % prefix, self.screenshot_binary, raw=True)
+        write_file_func("%s-traceback.txt" % prefix, self.exc)
+        write_file_func("%s-stack.txt" % prefix, str(self.stack))
+
+
 class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
 
     framework_tool_and_types = True
@@ -129,6 +144,7 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
             self.target_url_from_selenium = GALAXY_TEST_EXTERNAL_FROM_SELENIUM
         else:
             self.target_url_from_selenium = self.url
+        self.snapshots = []
         self.setup_driver_and_session()
 
     def tearDown(self):
@@ -145,6 +161,9 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
 
         if exception is not None:
             raise exception
+
+    def snapshot(self, description):
+        self.snapshots.append(TestSnapshot(self.driver, len(self.snapshots), description))
 
     def reset_driver_and_session(self):
         self.tear_down_driver()
@@ -219,6 +238,38 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
     @property
     def workflow_populator(self):
         return SeleniumSessionWorkflowPopulator(self)
+
+
+class SharedStateSeleniumTestCase(SeleniumTestCase):
+    """This describes a class Selenium tests that setup class state for all tests.
+
+    This is a bit hacky because we are simulating class level initialization
+    with instance level methods. The problem is that super.setUp() works at
+    instance level. It might be worth considering having two variants of
+    SeleniumTestCase - one that initializes with the class and the other that
+    initializes with the instance but all the helpers are instance helpers.
+    """
+
+    shared_state_initialized = False
+    shared_state_in_error = False
+
+    def setUp(self):
+        super(SharedStateSeleniumTestCase, self).setUp()
+        if not self.__class__.shared_state_initialized:
+            try:
+                self.setup_shared_state()
+                self.logout_if_needed()
+            except Exception:
+                self.__class__.shared_state_in_error = True
+                raise
+            finally:
+                self.__class__.shared_state_initialized = True
+        else:
+            if self.__class__.shared_state_in_error:
+                raise unittest.SkipTest("Skipping test, failed to initialize state previously.")
+
+    def setup_shared_state(self):
+        """Override this to setup shared data for tests that gets initialized only once."""
 
 
 class UsesHistoryItemAssertions:

@@ -1,14 +1,14 @@
 import time
 
-from .framework import (
-    selenium_test,
-    SeleniumTestCase
-)
-
 from ._workflow_fixtures import (
     WORKFLOW_SIMPLE_CAT_TWICE,
-    WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_INVALID_STATE,
+    WORKFLOW_WITH_OLD_TOOL_VERSION,
+)
+from .framework import (
+    retry_assertion_during_transitions,
+    selenium_test,
+    SeleniumTestCase
 )
 
 
@@ -52,10 +52,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_OLD_TOOL_VERSION, exact_tools=True)
         self.workflow_index_open()
         self.workflow_index_click_option("Edit")
-        time.sleep(.5)
-        modal_element = self.wait_for_selector_visible(self.modal_body_selector())
-        text = modal_element.text
-        assert "Using version '0.2' instead of version '0.0.1'" in text, text
+        self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
 
     @selenium_test
     def test_editor_invalid_tool_state(self):
@@ -63,11 +60,8 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_INVALID_STATE, exact_tools=True)
         self.workflow_index_open()
         self.workflow_index_click_option("Edit")
-        time.sleep(.5)
-        modal_element = self.wait_for_selector_visible(self.modal_body_selector())
-        text = modal_element.text
-        assert "Using version '0.2' instead of version '0.0.1'" in text, text
-        assert "Using default: '1'" in text, text
+        self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
+        self.assert_modal_has_text("Using default: '1'")
 
     @selenium_test
     def test_missing_tools(self):
@@ -84,10 +78,7 @@ steps:
 """)
         self.workflow_index_open()
         self.workflow_index_click_option("Edit")
-        time.sleep(.5)
-        modal_element = self.wait_for_selector_visible(self.modal_body_selector())
-        text = modal_element.text
-        assert "Tool is not installed" in text, text
+        self.assert_modal_has_text("Tool is not installed")
 
     def workflow_create_new(self, name=None, annotation=None):
         self.workflow_index_open()
@@ -105,28 +96,8 @@ steps:
         })
         self.click_submit(form_element)
 
-    def workflow_editor_click_option(self, option_label):
-        self.workflow_editor_click_options()
-        menu_element = self.workflow_editor_options_menu_element()
-        option_elements = menu_element.find_elements_by_css_selector("a")
-        assert len(option_elements) > 0, "Failed to find workflow editor options"
-        time.sleep(1)
-        found_option = False
-        for option_element in option_elements:
-            if option_label in option_element.text:
-                action_chains = self.action_chains()
-                action_chains.move_to_element(option_element)
-                action_chains.click()
-                action_chains.perform()
-                found_option = True
-                break
-
-        if not found_option:
-            raise Exception("Failed to find workflow editor option with label [%s]" % option_label)
-
-    def workflow_editor_click_options(self):
-        button = self.wait_for_selector("#workflow-options-button")
-        button.click()
-
-    def workflow_editor_options_menu_element(self):
-        return self.wait_for_selector_visible("#workflow-options-button-menu")
+    @retry_assertion_during_transitions
+    def assert_modal_has_text(self, expected_text):
+        modal_element = self.wait_for_selector_visible(self.modal_body_selector())
+        text = modal_element.text
+        assert expected_text in text, "Failed to find expected text [%s] in modal text [%s]" % (expected_text, text)

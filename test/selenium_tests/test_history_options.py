@@ -1,5 +1,7 @@
-from .framework import SeleniumTestCase
-from .framework import selenium_test
+from .framework import (
+    selenium_test,
+    SeleniumTestCase
+)
 
 
 class HistoryOptionsTestCase(SeleniumTestCase):
@@ -27,4 +29,4 @@ class HistoryOptionsTestCase(SeleniumTestCase):
 
         self.click_hda_title(hda_id, wait=True)
 
-        self.assert_selector_absent_or_hidden(hda_body_selector)
+        self.assert_selector_absent_or_hidden_after_transitions(hda_body_selector)

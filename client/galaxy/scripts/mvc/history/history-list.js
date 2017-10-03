@@ -2,12 +2,13 @@
 define( [ 'utils/utils', 'mvc/grid/grid-view', 'mvc/history/history-model', 'mvc/history/copy-dialog' ], function( Utils, GridView, HistoryModel, historyCopyDialog ) {
 
     var View = Backbone.View.extend({
+        title: "Histories",
         initialize: function( options ) {
             var self = this;
             this.setElement( $( '<div/>' ) );
             this.model = new Backbone.Model();
             Utils.get({
-                url     : Galaxy.root + 'history/' + options.action_id,
+                url     : Galaxy.root + 'history/' + options.action_id + '?' +  $.param( Galaxy.params ),
                 success : function( response ) {
                     response[ 'dict_format' ] = true;
                     _.each( response[ 'operations' ], function( operation ) {

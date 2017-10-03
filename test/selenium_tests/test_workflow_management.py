@@ -73,20 +73,13 @@ class WorkflowManagementTestCase(SeleniumTestCase):
         self.workflow_index_rename("searchforthis")
         self._assert_showing_n_workflows(1)
 
-        search_box = self.workflow_index_click_search()
-        search_box.send_keys("doesnotmatch")
+        self.workflow_index_search_for("doesnotmatch")
         self._assert_showing_n_workflows(0)
 
-        # Prevent stale element textbox by re-fetching, seems to be
-        # needed but I don't understand why exactly. -John
-        search_box = self.workflow_index_click_search()
-        search_box.clear()
-        self.send_enter(search_box)
+        self.workflow_index_search_for()
         self._assert_showing_n_workflows(1)
 
-        search_box = self.workflow_index_click_search()
-        search_box.send_keys("searchforthis")
-        self.send_enter(search_box)
+        self.workflow_index_search_for("searchforthis")
         self._assert_showing_n_workflows(1)
 
     @selenium_test
@@ -95,27 +88,25 @@ class WorkflowManagementTestCase(SeleniumTestCase):
         self._workflow_import_from_url()
         self.workflow_index_rename("managementesttopublish")
 
-        row_element = self.workflow_index_table_row()
-        columns = row_element.find_elements_by_css_selector("td")
-        assert columns[4].text == "No"
+        published_column_index = 4
 
+        @retry_assertion_during_transitions
+        def assert_published_column_text_is(expected_text):
+            column_text = self.workflow_index_column_text(published_column_index)
+            self.assertEqual(expected_text, column_text)
+
+        assert_published_column_text_is("No")
         self.workflow_index_click_option("Share")
         self.workflow_sharing_click_publish()
 
         self.workflow_index_open()
-        row_element = self.workflow_index_table_row()
-        columns = row_element.find_elements_by_css_selector("td")
-        assert columns[4].text == "Yes"
+        assert_published_column_text_is("Yes")
 
     @retry_assertion_during_transitions
     def _assert_showing_n_workflows(self, n):
         self.assertEqual(len(self.workflow_index_table_elements()), n)
 
     def _workflow_import_from_url(self):
-        element = self.wait_for_selector_clickable(self.test_data["selectors"]["workflows"]["import_button"])
-        element.click()
+        self.workflow_index_click_import()
         url = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test/base/data/test_workflow_1.ga"
-        form_element = self.driver.find_element_by_css_selector("#center form")
-        url_element = form_element.find_element_by_css_selector("input[type='text']")
-        url_element.send_keys(url)
-        self.click_submit(form_element)
+        self.workflow_import_submit_url(url)

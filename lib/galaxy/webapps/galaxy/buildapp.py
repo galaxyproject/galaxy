@@ -105,10 +105,11 @@ def paste_app_factory(global_conf, **kwargs):
 
     webapp.add_client_route('/admin/users', 'admin')
     webapp.add_client_route('/admin/roles', 'admin')
+    webapp.add_client_route('/admin/forms', 'admin')
     webapp.add_client_route('/admin/groups', 'admin')
     webapp.add_client_route('/admin/tool_versions', 'admin')
     webapp.add_client_route('/admin/quotas', 'admin')
-    webapp.add_client_route('/admin/forms/{form_id}', 'admin')
+    webapp.add_client_route('/admin/form/{form_id}', 'admin')
     webapp.add_client_route('/tours')
     webapp.add_client_route('/tours/{tour_id}')
     webapp.add_client_route('/user')
@@ -117,11 +118,16 @@ def paste_app_factory(global_conf, **kwargs):
     webapp.add_client_route('/workflows/list_published')
     webapp.add_client_route('/visualizations/list_published')
     webapp.add_client_route('/visualizations/list')
+    webapp.add_client_route('/visualizations/edit')
     webapp.add_client_route('/pages/list')
     webapp.add_client_route('/pages/list_published')
+    webapp.add_client_route('/pages/create')
+    webapp.add_client_route('/pages/edit')
     webapp.add_client_route('/histories/list')
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')
+    webapp.add_client_route('/histories/rename')
+    webapp.add_client_route('/histories/permissions')
     webapp.add_client_route('/datasets/list')
     webapp.add_client_route('/datasets/edit')
     webapp.add_client_route('/datasets/error')
@@ -651,43 +657,49 @@ def populate_api_routes(webapp, app):
 
     webapp.mapper.connect('show_ld_item',
                           '/api/libraries/datasets/{id}',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='show',
                           conditions=dict(method=["GET"]))
 
     webapp.mapper.connect('load_ld',
                           '/api/libraries/datasets/',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='load',
                           conditions=dict(method=["POST"]))
 
     webapp.mapper.connect('show_version_of_ld_item',
                           '/api/libraries/datasets/{encoded_dataset_id}/versions/{encoded_ldda_id}',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='show_version',
                           conditions=dict(method=["GET"]))
 
-    webapp.mapper.connect('show_legitimate_lda_roles',
+    webapp.mapper.connect('update_ld',
+                          '/api/libraries/datasets/{encoded_dataset_id}',
+                          controller='library_datasets',
+                          action='update',
+                          conditions=dict(method=["PATCH"]))
+
+    webapp.mapper.connect('show_legitimate_ld_roles',
                           '/api/libraries/datasets/{encoded_dataset_id}/permissions',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='show_roles',
                           conditions=dict(method=["GET"]))
 
-    webapp.mapper.connect('update_lda_permissions',
+    webapp.mapper.connect('update_ld_permissions',
                           '/api/libraries/datasets/{encoded_dataset_id}/permissions',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='update_permissions',
                           conditions=dict(method=["POST"]))
 
-    webapp.mapper.connect('delete_lda_item',
+    webapp.mapper.connect('delete_ld_item',
                           '/api/libraries/datasets/{encoded_dataset_id}',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='delete',
                           conditions=dict(method=["DELETE"]))
 
-    webapp.mapper.connect('download_lda_items',
+    webapp.mapper.connect('download_ld_items',
                           '/api/libraries/datasets/download/{format}',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='download',
                           conditions=dict(method=["POST", "GET"]))
 
@@ -1049,12 +1061,12 @@ def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
     # wrap any static dirs for plugins
     plugin_frameworks = plugin_frameworks or []
     for framework in plugin_frameworks:
-        if framework and framework.serves_static:
-            # invert control to each plugin for finding their own static dirs
-            for plugin_url, plugin_static_path in framework.get_static_urls_and_paths():
-                plugin_url = '/plugins/' + plugin_url
-                urlmap[(plugin_url)] = Static(plugin_static_path, cache_time)
-                log.debug('added url, path to static middleware: %s, %s', plugin_url, plugin_static_path)
+        # invert control to each plugin for finding their own static dirs
+        for plugin in framework.plugins.values():
+            if plugin.serves_static:
+                plugin_url = '/plugins/' + plugin.static_url
+                urlmap[(plugin_url)] = Static(plugin.static_path, cache_time)
+                log.debug('added url, path to static middleware: %s, %s', plugin_url, plugin.static_path)
 
     # URL mapper becomes the root webapp
     return urlmap

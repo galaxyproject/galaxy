@@ -884,6 +884,9 @@ class JobWrapper(object, HasResourceParameters):
         self.galaxy_lib_dir
         # Shell fragment to inject dependencies
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
+        if self.tool.requires_galaxy_python_environment:
+            # These tools (upload, metadata, data_source) may need access to the datatypes registry.
+            self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, 'registry.xml'))
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         job.command_line = unicodify(self.command_line)
@@ -1450,7 +1453,7 @@ class JobWrapper(object, HasResourceParameters):
 
     def cleanup(self, delete_files=True):
         # At least one of these tool cleanup actions (job import), is needed
-        # for thetool to work properly, that is why one might want to run
+        # for the tool to work properly, that is why one might want to run
         # cleanup but not delete files.
         try:
             if delete_files:
@@ -1568,6 +1571,9 @@ class JobWrapper(object, HasResourceParameters):
                     paths.append(DatasetPath(da.id, real_path=real_path, false_path=false_path, mutable=False))
         return paths
 
+    def get_output_basenames(self):
+        return map(os.path.basename, map(str, self.get_output_fnames()))
+
     def get_output_fnames(self):
         if self.output_paths is None:
             self.compute_outputs()
@@ -1666,7 +1672,8 @@ class JobWrapper(object, HasResourceParameters):
         if config_file is None:
             config_file = self.app.config.config_file
         if datatypes_config is None:
-            datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
+            datatypes_config = os.path.join(self.working_directory, 'registry.xml')
+            self.app.datatypes_registry.to_xml_file(path=datatypes_config)
         command = self.external_output_metadata.setup_external_metadata([output_dataset_assoc.dataset for
                                                                          output_dataset_assoc in
                                                                          job.output_datasets + job.output_library_datasets],
@@ -1705,14 +1712,14 @@ class JobWrapper(object, HasResourceParameters):
         else:
             return 'anonymous@unknown'
 
-    def __update_output(self, job, dataset, clean_only=False):
+    def __update_output(self, job, hda, clean_only=False):
         """Handle writing outputs to the object store.
 
         This should be called regardless of whether the job was failed or not so
         that writing of partial results happens and so that the object store is
         cleaned up if the dataset has been purged.
         """
-        dataset = dataset.dataset
+        dataset = hda.dataset
         if dataset not in job.output_library_datasets:
             purged = dataset.purged
             if not purged and not clean_only:
@@ -1996,6 +2003,10 @@ class ComputeEnvironment(object):
     """
 
     @abstractmethod
+    def output_names(self):
+        """ Output unqualified filenames defined by job. """
+
+    @abstractmethod
     def output_paths(self):
         """ Output DatasetPaths defined by job. """
 
@@ -2059,6 +2070,9 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
         self.app = job_wrapper.app
         self.job_wrapper = job_wrapper
         self.job = job
+
+    def output_names(self):
+        return self.job_wrapper.get_output_basenames()
 
     def output_paths(self):
         return self.job_wrapper.get_output_fnames()

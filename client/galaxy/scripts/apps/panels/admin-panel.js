@@ -116,7 +116,8 @@ var AdminPanel = Backbone.View.extend({
             title : 'Form Definitions',
             items : [ {
                 title   : 'Form definitions',
-                url     : 'forms/browse_form_definitions'
+                url     : 'admin/forms',
+                target  : '__use_router__'
             } ]
         },{
             title : 'Sample Tracking',

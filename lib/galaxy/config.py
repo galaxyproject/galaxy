@@ -4,6 +4,7 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
+import ipaddress
 import logging
 import logging.config
 import os
@@ -26,6 +27,7 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.util import ExecutionTimer
 from galaxy.util import listify
 from galaxy.util import string_as_bool
+from galaxy.util import unicodify
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.web.stack import register_postfork_function
@@ -226,6 +228,13 @@ class Configuration(object):
         self.remote_user_logout_href = kwargs.get("remote_user_logout_href", None)
         self.remote_user_secret = kwargs.get("remote_user_secret", None)
         self.require_login = string_as_bool(kwargs.get("require_login", "False"))
+        self.fetch_url_whitelist_ips = [
+            ipaddress.ip_network(unicodify(ip.strip()))  # If it has a slash, assume 127.0.0.1/24 notation
+            if '/' in ip else
+            ipaddress.ip_address(unicodify(ip.strip()))  # Otherwise interpret it as an ip address.
+            for ip in kwargs.get("fetch_url_whitelist", "").split(',')
+            if len(ip.strip()) > 0
+        ]
         self.allow_user_creation = string_as_bool(kwargs.get("allow_user_creation", "True"))
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
         self.allow_user_dataset_purge = string_as_bool(kwargs.get("allow_user_dataset_purge", "True"))
@@ -1010,7 +1019,7 @@ class ConfiguresGalaxyMixin:
 
         # Set up the tool sheds registry
         if os.path.isfile(self.config.tool_sheds_config_file):
-            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry(self.config.root, self.config.tool_sheds_config_file)
+            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry(self.config.tool_sheds_config_file)
         else:
             self.tool_shed_registry = None
 

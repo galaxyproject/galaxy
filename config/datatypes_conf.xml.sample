@@ -9,7 +9,6 @@
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true" description="blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Axt"/>
     <datatype extension="fli" type="galaxy.datatypes.tabular:FeatureLocationIndex" display_in_upload="false"/>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
-      <converter file="bam_to_bai.xml" target_datatype="bai"/>
       <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <display file="ucsc/bam.xml" />
       <display file="ensembl/ensembl_bam.xml" />
@@ -236,6 +235,9 @@
     <datatype extension="cps" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
     <datatype extension="ct" type="galaxy.datatypes.tabular:ConnectivityTable" display_in_upload="true"/>
     <datatype extension="searchgui_archive" type="galaxy.datatypes.binary:SearchGuiArchive" display_in_upload="true"/>
+    <datatype extension="fast5.tar" type="galaxy.datatypes.binary:Fast5Archive" display_in_upload="true"/>
+    <datatype extension="fast5.tar.gz" type="galaxy.datatypes.binary:Fast5ArchiveGz" display_in_upload="true"/>
+    <datatype extension="fast5.tar.bz2" type="galaxy.datatypes.binary:Fast5ArchiveBz2" display_in_upload="true"/>
     <datatype extension="peptideshaker_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="percin" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
     <datatype extension="percout" type="galaxy.datatypes.xml:GenericXml" subclass="true" />
@@ -505,9 +507,13 @@
     <datatype extension="plybinary" type="galaxy.datatypes.constructive_solid_geometry:PlyBinary" display_in_upload="true" />
     <datatype extension="vtkascii" type="galaxy.datatypes.constructive_solid_geometry:VtkAscii" display_in_upload="true" />
     <datatype extension="vtkbinary" type="galaxy.datatypes.constructive_solid_geometry:VtkBinary" display_in_upload="true" />
-    <!-- Metagenomic Datatype -->
+    <!-- Metagenomic Datatypes -->
     <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="true" subclass="true" mimetype="application/json">
         <display file="biom/biom_simple.xml" />
+        <converter file="biom1_to_biom2.xml" target_datatype="biom2"/>
+    </datatype>
+    <datatype extension="biom2" type="galaxy.datatypes.binary:Biom2" mimetype="application/octet-stream" display_in_upload="true">
+        <converter file="biom2_to_biom1.xml" target_datatype="biom1"/>
     </datatype>
     <!-- Strand-specific Coordinate Count Datatype used by the Center for Eukaryotic Gene Regulation labs at Penn State -->
     <datatype extension="scidx" type="galaxy.datatypes.interval:ScIdx" display_in_upload="true" />
@@ -662,6 +668,7 @@
     <sniffer type="galaxy.datatypes.binary:MzSQlite"/>
     <sniffer type="galaxy.datatypes.binary:IdpDB"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
+    <sniffer type="galaxy.datatypes.binary:Biom2"/>
     <sniffer type="galaxy.datatypes.binary:H5"/>
     <sniffer type="galaxy.datatypes.binary:Bam"/>
     <sniffer type="galaxy.datatypes.binary:CRAM"/>
@@ -669,6 +676,9 @@
     <sniffer type="galaxy.datatypes.binary:Sra"/>
     <sniffer type="galaxy.datatypes.binary:NetCDF"/>
     <sniffer type="galaxy.datatypes.binary:DMND" />
+    <sniffer type="galaxy.datatypes.binary:Fast5ArchiveGz" />
+    <sniffer type="galaxy.datatypes.binary:Fast5ArchiveBz2" />
+    <sniffer type="galaxy.datatypes.binary:Fast5Archive" />
     <sniffer type="galaxy.datatypes.triples:Rdf"/>
     <sniffer type="galaxy.datatypes.blast:BlastXml"/>
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>

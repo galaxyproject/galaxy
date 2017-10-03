@@ -41,8 +41,7 @@ def pruneLD(plinktasks=[], cd='./', vclbase=[]):
     for task in plinktasks:  # each is a list
         vcl = vclbase + task
         with open(plog, 'w') as sto:
-            x = subprocess.Popen(' '.join(vcl), shell=True, stdout=sto, stderr=sto, cwd=cd)
-            x.wait()
+            subprocess.check_call(vcl, stdout=sto, stderr=sto, cwd=cd)
         try:
             lplog = open(plog, 'r').readlines()
             lplog = [elem for elem in lplog if elem.find('Pruning SNP') == -1]

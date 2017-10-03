@@ -68,6 +68,9 @@ BINARY_CHARS = [NULL_CHAR]
 FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
+defaultdict = collections.defaultdict
+
+
 def remove_protocol_from_url(url):
     """ Supplied URL may be null, if not ensure http:// or https://
     etc... is stripped off.
@@ -782,9 +785,9 @@ def rst_to_html(s, error=False):
                                   # number of sections in help content.
     }
 
-    return unicodify(docutils_core.publish_string(s,
-                      writer=docutils_html4css1.Writer(),
-                      settings_overrides=settings_overrides))
+    return unicodify(docutils_core.publish_string(
+        s, writer=docutils_html4css1.Writer(),
+        settings_overrides=settings_overrides))
 
 
 def xml_text(root, name=None):

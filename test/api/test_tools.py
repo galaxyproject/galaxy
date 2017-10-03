@@ -6,7 +6,8 @@ from base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
-    skip_without_tool
+    skip_without_datatype,
+    skip_without_tool,
 )
 from galaxy.tools.verify.test_data import TestDataResolver
 
@@ -118,6 +119,164 @@ class ToolsTestCase(api.ApiTestCase):
         rdata_path = TestDataResolver().get_filename("1.RData")
         rdata_metadata = self._upload_and_get_details(open(rdata_path, "rb"), file_type="auto")
         self.assertEquals(rdata_metadata["file_ext"], "rdata")
+
+    @skip_without_datatype("velvet")
+    def test_composite_datatype(self):
+        with self.dataset_populator.test_history() as history_id:
+            dataset = self._velvet_upload(history_id, extra_inputs={
+                "files_1|url_paste": "roadmaps content",
+                "files_1|type": "upload_dataset",
+                "files_2|url_paste": "log content",
+                "files_2|type": "upload_dataset",
+            })
+
+            roadmaps_content = self._get_roadmaps_content(history_id, dataset)
+            assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
+
+    @skip_without_datatype("velvet")
+    def test_composite_datatype_space_to_tab(self):
+        # Like previous test but set one upload with space_to_tab to True to
+        # verify that works.
+        with self.dataset_populator.test_history() as history_id:
+            dataset = self._velvet_upload(history_id, extra_inputs={
+                "files_1|url_paste": "roadmaps content",
+                "files_1|type": "upload_dataset",
+                "files_1|space_to_tab": "Yes",
+                "files_2|url_paste": "log content",
+                "files_2|type": "upload_dataset",
+            })
+
+            roadmaps_content = self._get_roadmaps_content(history_id, dataset)
+            assert roadmaps_content.strip() == "roadmaps\tcontent", roadmaps_content
+
+    @skip_without_datatype("velvet")
+    def test_composite_datatype_posix_lines(self):
+        # Like previous test but set one upload with space_to_tab to True to
+        # verify that works.
+        with self.dataset_populator.test_history() as history_id:
+            dataset = self._velvet_upload(history_id, extra_inputs={
+                "files_1|url_paste": "roadmaps\rcontent",
+                "files_1|type": "upload_dataset",
+                "files_1|space_to_tab": "Yes",
+                "files_2|url_paste": "log\rcontent",
+                "files_2|type": "upload_dataset",
+            })
+
+            roadmaps_content = self._get_roadmaps_content(history_id, dataset)
+            assert roadmaps_content.strip() == "roadmaps\ncontent", roadmaps_content
+
+    def _velvet_upload(self, history_id, extra_inputs):
+        payload = self.dataset_populator.upload_payload(
+            history_id,
+            "sequences content",
+            file_type="velvet",
+            extra_inputs=extra_inputs,
+        )
+        run_response = self.dataset_populator.tools_post(payload)
+        self.dataset_populator.wait_for_tool_run(history_id, run_response)
+        datasets = run_response.json()["outputs"]
+
+        assert len(datasets) == 1
+        dataset = datasets[0]
+
+        return dataset
+
+    def _get_roadmaps_content(self, history_id, dataset):
+        roadmaps_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=dataset, filename="Roadmaps")
+        return roadmaps_content
+
+    def test_upload_dbkey(self):
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.upload_payload(history_id, "Test123", dbkey="hg19")
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response)
+            datasets = run_response.json()["outputs"]
+            assert datasets[0].get("genome_build") == "hg19", datasets[0]
+
+    def test_upload_multiple_files_1(self):
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+                dbkey="hg19",
+                extra_inputs={
+                    "files_1|url_paste": "SecondOutputContent",
+                    "files_1|NAME": "SecondOutputName",
+                    "files_1|file_type": "tabular",
+                    "files_1|dbkey": "hg18",
+                    "file_count": "2",
+                }
+            )
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response)
+            datasets = run_response.json()["outputs"]
+
+            assert len(datasets) == 2, datasets
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=datasets[0])
+            assert content.strip() == "Test123"
+            assert datasets[0]["file_ext"] == "txt"
+            assert datasets[0]["genome_build"] == "hg19", datasets
+
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=datasets[1])
+            assert content.strip() == "SecondOutputContent"
+            assert datasets[1]["file_ext"] == "tabular"
+            assert datasets[1]["genome_build"] == "hg18", datasets
+
+    def test_upload_multiple_files_2(self):
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+                file_type="tabular",
+                dbkey="hg19",
+                extra_inputs={
+                    "files_1|url_paste": "SecondOutputContent",
+                    "files_1|NAME": "SecondOutputName",
+                    "files_1|file_type": "txt",
+                    "files_1|dbkey": "hg18",
+                    "file_count": "2",
+                }
+            )
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response)
+            datasets = run_response.json()["outputs"]
+
+            assert len(datasets) == 2, datasets
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=datasets[0])
+            assert content.strip() == "Test123"
+            assert datasets[0]["file_ext"] == "tabular", datasets
+            assert datasets[0]["genome_build"] == "hg19", datasets
+
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=datasets[1])
+            assert content.strip() == "SecondOutputContent"
+            assert datasets[1]["file_ext"] == "txt"
+            assert datasets[1]["genome_build"] == "hg18", datasets
+
+    def test_upload_multiple_files_3(self):
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+                file_type="tabular",
+                dbkey="hg19",
+                extra_inputs={
+                    "files_0|file_type": "txt",
+                    "files_0|dbkey": "hg18",
+                    "files_1|url_paste": "SecondOutputContent",
+                    "files_1|NAME": "SecondOutputName",
+                    "files_1|file_type": "txt",
+                    "files_1|dbkey": "hg18",
+                    "file_count": "2",
+                }
+            )
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response)
+            datasets = run_response.json()["outputs"]
+
+            assert len(datasets) == 2, datasets
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=datasets[0])
+            assert content.strip() == "Test123"
+            assert datasets[0]["file_ext"] == "txt", datasets
+            assert datasets[0]["genome_build"] == "hg18", datasets
+
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=datasets[1])
+            assert content.strip() == "SecondOutputContent"
+            assert datasets[1]["file_ext"] == "txt"
+            assert datasets[1]["genome_build"] == "hg18", datasets
 
     def test_unzip_collection(self):
         with self.dataset_populator.test_history() as history_id:

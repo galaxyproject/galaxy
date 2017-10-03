@@ -10,6 +10,8 @@ import re
 import subprocess
 import tempfile
 
+from six.moves import shlex_quote
+
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
 from galaxy.datatypes.sniff import iter_headers
@@ -148,13 +150,12 @@ class Ipynb(Json):
             ofilename = ofile_handle.name
             ofile_handle.close()
             try:
-                cmd = 'jupyter nbconvert --to html --template full %s --output %s' % (dataset.file_name, ofilename)
-                log.info("Calling command %s" % cmd)
-                subprocess.call(cmd, shell=True)
+                cmd = ['jupyter', 'nbconvert', '--to', 'html', '--template', 'full', dataset.file_name, '--output', ofilename]
+                subprocess.check_call(cmd)
                 ofilename = '%s.html' % ofilename
-            except:
+            except subprocess.CalledProcessError:
                 ofilename = dataset.file_name
-                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', cmd)
+                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex_quote, cmd)))
             return open(ofilename)
 
     def set_meta(self, dataset, **kwd):
@@ -170,6 +171,7 @@ class Biom1(Json):
         http://biom-format.org/documentation/format_versions/biom-1.0.html
     """
     file_ext = "biom1"
+    edam_format = "format_3746"
 
     MetadataElement(name="table_rows", default=[], desc="table_rows", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
     MetadataElement(name="table_matrix_element_type", default="", desc="table_matrix_element_type", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="")

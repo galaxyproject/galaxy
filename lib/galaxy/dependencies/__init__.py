@@ -82,6 +82,9 @@ class ConditionalDependencies(object):
     def check_python_openid(self):
         return asbool(self.config["enable_openid"])
 
+    def check_chronos_python(self):
+        return "galaxy.jobs.runners.chronos:ChronosJobRunner" in self.job_runners
+
     def check_fluent_logger(self):
         return asbool(self.config["fluent_log"])
 
@@ -111,6 +114,11 @@ class ConditionalDependencies(object):
 
     def check_kamaki(self):
         return 'pithos' in self.object_stores
+
+    def check_watchdog(self):
+        install_set = {'auto', 'True', 'true', 'polling'}
+        return (self.config['watch_tools'] in install_set or
+                self.config['watch_tool_data_dir'] in install_set)
 
 
 def optional(config_file):

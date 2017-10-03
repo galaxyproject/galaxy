@@ -7,6 +7,7 @@ var jQuery = require( 'jquery' ),
     Ui = require( 'mvc/ui/ui-misc' ),
     QueryStringParsing = require( 'utils/query-string-parsing' ),
     Router = require( 'layout/router' ),
+    Utils = require( 'utils/utils' ),
     Page = require( 'layout/page' );
 
 window.app = function app( options, bootstrapped ){
@@ -21,7 +22,8 @@ window.app = function app( options, bootstrapped ){
             '(/)admin(/)groups' : 'show_groups',
             '(/)admin(/)tool_versions' : 'show_tool_versions',
             '(/)admin(/)quotas' : 'show_quotas',
-            '(/)admin(/)forms(/)(:form_id)' : 'show_forms'
+            '(/)admin(/)forms' : 'show_forms',
+            '(/)admin(/)form(/)(:form_id)' : 'show_form'
         },
 
         authenticate: function( args, name ) {
@@ -48,7 +50,11 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new GridView( { url_base: Galaxy.root + 'admin/quotas_list', url_data: Galaxy.params, dict_format: true } ) );
         },
 
-        show_forms : function( form_id ) {
+        show_forms: function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'forms/forms_list', url_data: Galaxy.params, dict_format: true } ) );
+        },
+
+        show_form : function( form_id ) {
             var id = '?id=' + QueryStringParsing.get( 'id' );
             var form_defs = {
                 reset_user_password: {
@@ -107,6 +113,14 @@ window.app = function app( options, bootstrapped ){
                     url             : 'admin/set_quota_default' + id,
                     redirect        : 'admin/quotas'
                 },
+                create_form: {
+                    url             : 'forms/create_form',
+                    redirect        : 'admin/forms'
+                },
+                edit_form: {
+                    url             : 'forms/edit_form' + id,
+                    redirect        : 'admin/forms'
+                },
             };
             this.page.display( new FormWrapper.View ( form_defs[ form_id ] ) );
         }
@@ -114,6 +128,7 @@ window.app = function app( options, bootstrapped ){
 
     $(function() {
         _.extend( options.config, { active_view : 'admin' } );
+        Utils.setWindowTitle("Administration");
         Galaxy.page = new Page.View( _.extend( options, {
             Left    : AdminPanel,
             Router  : AdminRouter

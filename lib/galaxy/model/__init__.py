@@ -1441,7 +1441,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             HistoryDatasetAssociation.table.c.dataset_id == Dataset.table.c.id)
         distinct_datasets = (
             select([
-                # use labels here to better accrss from the query above
+                # use labels here to better access from the query above
                 HistoryDatasetAssociation.table.c.history_id.label('history_id'),
                 Dataset.total_size.label('dataset_size'),
                 Dataset.id.label('dataset_id')
@@ -1831,7 +1831,7 @@ class Dataset(StorableObject):
                 return self._calculate_size()
 
     def set_size(self):
-        """Returns the size of the data on disk"""
+        """Sets the size of the data on disk"""
         if not self.file_size:
             self.file_size = self._calculate_size()
 
@@ -2035,7 +2035,7 @@ class DatasetInstance(object):
         return self.dataset.get_size()
 
     def set_size(self):
-        """Returns the size of the data on disk"""
+        """Sets and gets the size of the data on disk"""
         return self.dataset.set_size()
 
     def get_total_size(self):

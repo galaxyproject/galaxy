@@ -15,6 +15,7 @@ var jQuery = require( 'jquery' ),
     Workflows = require( 'mvc/workflow/workflow' ),
     HistoryList = require( 'mvc/history/history-list' ),
     ToolFormComposite = require( 'mvc/tool/tool-form-composite' ),
+    QueryStringParsing = require( 'utils/query-string-parsing' ),
     Utils = require( 'utils/utils' ),
     Ui = require( 'mvc/ui/ui-misc' ),
     DatasetError = require( 'mvc/dataset/dataset-error' ),
@@ -45,9 +46,14 @@ window.app = function app( options, bootstrapped ){
             '(/)user(/)(:form_id)' : 'show_user_form',
             '(/)workflow(/)' : 'show_workflows',
             '(/)workflow/run(/)' : 'show_run',
+            '(/)pages(/)create(/)' : 'show_pages_create',
+            '(/)pages(/)edit(/)' : 'show_pages_edit',
             '(/)pages(/)(:action_id)' : 'show_pages',
+            '(/)visualizations(/)edit(/)' : 'show_visualizations_edit',
             '(/)visualizations/(:action_id)' : 'show_visualizations',
             '(/)workflows/list_published(/)' : 'show_workflows_published',
+            '(/)histories(/)rename(/)' : 'show_histories_rename',
+            '(/)histories(/)permissions(/)' : 'show_histories_permissions',
             '(/)histories(/)(:action_id)' : 'show_histories',
             '(/)datasets(/)list(/)' : 'show_datasets',
             '(/)workflow/import_workflow' : 'show_import_workflow',
@@ -87,6 +93,10 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new GridShared.View( { action_id: action_id, plural: 'Visualizations', item: 'visualization' } ) );
         },
 
+        show_visualizations_edit : function() {
+            this.page.display( new FormWrapper.View ( { url : 'visualization/edit?id=' + QueryStringParsing.get( 'id' ), redirect: 'visualizations/list' } ) );
+        },
+
         show_workflows_published : function() {
             this.page.display( new GridView( { url_base: Galaxy.root + 'workflow/list_published', dict_format: true } ) );
         },
@@ -95,12 +105,28 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new HistoryList.View( { action_id: action_id } ) );
         },
 
+        show_histories_rename : function() {
+            this.page.display( new FormWrapper.View ( { url : 'history/rename?id=' + QueryStringParsing.get( 'id' ), redirect: 'histories/list' } ) );
+        },
+
+        show_histories_permissions : function() {
+            this.page.display( new FormWrapper.View ( { url : 'history/permissions?id=' + QueryStringParsing.get( 'id' ), redirect: 'histories/list' } ) );
+        },
+
         show_datasets : function() {
             this.page.display( new GridView( { url_base: Galaxy.root + 'dataset/list', dict_format: true } ) );
         },
 
         show_pages : function( action_id ) {
             this.page.display( new GridShared.View( { action_id: action_id, plural: 'Pages', item: 'page' } ) );
+        },
+
+        show_pages_create : function() {
+            this.page.display( new FormWrapper.View ( { url : 'page/create', redirect: 'pages/list' } ) );
+        },
+
+        show_pages_edit : function() {
+            this.page.display( new FormWrapper.View ( { url : 'page/edit?id=' + QueryStringParsing.get( 'id' ), redirect: 'pages/list' } ) );
         },
 
         show_workflows : function(){
@@ -176,14 +202,13 @@ window.app = function app( options, bootstrapped ){
         _loadWorkflow: function() {
             var self = this;
             Utils.get({
-                url: Galaxy.root + 'api/workflows/' + Utils.getQueryString( 'id' ) + '/download',
-                data: { 'style': 'run' },
+                url: Galaxy.root + 'api/workflows/' + Utils.getQueryString( 'id' ) + '/download?style=run',
                 success: function( response ) {
                     self.page.display( new ToolFormComposite.View( response ) );
                 },
                 error: function( response ) {
-                    var error_msg = "Error occurred while loading the resource.",
-                        options = { 'message': error_msg, 'status': 'error', 'persistent': true, 'cls': 'errormessage' };
+                    var error_msg = response.err_msg || 'Error occurred while loading the resource.';
+                    var options = { 'message': error_msg, 'status': 'danger', 'persistent': true };
                     self.page.display( new Ui.Message( options ) );
                 }
             });
