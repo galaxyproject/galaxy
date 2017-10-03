@@ -18,8 +18,7 @@ from galaxy.util.bunch import Bunch
 
 from . import sizzle
 from .data import (
-    NAVIGATION,  # newer variant of NAVIGATION_DATA
-    NAVIGATION_DATA,
+    NAVIGATION,
 )
 from .has_driver import (
     exception_indicates_not_clickable,
@@ -27,6 +26,7 @@ from .has_driver import (
     HasDriver,
     TimeoutException,
 )
+from .smart_components import SmartComponent
 
 # Test case data
 DEFAULT_PASSWORD = '123456'
@@ -137,6 +137,10 @@ class NavigatesGalaxy(HasDriver):
     def navigation(self):
         return NAVIGATION
 
+    @property
+    def components(self):
+        return SmartComponent(self.navigation, self)
+
     def wait_length(self, wait_type):
         return wait_type.default_length * self.timeout_multiplier
 
@@ -240,6 +244,15 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_wait_for_hid_ok(self, hid, allowed_force_refreshes=0):
         self.history_panel_wait_for_hid_state(hid, 'ok', allowed_force_refreshes=allowed_force_refreshes)
 
+    def history_panel_item_component(self, history_item=None, hid=None):
+        if history_item is None:
+            assert hid
+            history_item = self.hid_to_history_item(hid)
+        return self.components.history_panel.item.selector(
+            history_content_type=history_item["history_content_type"],
+            id=history_item["id"]
+        )
+
     def history_panel_wait_for_hid_visible(self, hid, allowed_force_refreshes=0):
         current_history_id = self.current_history_id()
 
@@ -249,12 +262,8 @@ class NavigatesGalaxy(HasDriver):
 
         timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
         self.wait(timeout).until(history_has_hid)
-        contents = self.api_get("histories/%s/contents" % current_history_id)
-        history_item = [d for d in contents if d["hid"] == hid][0]
-        history_item_selector = self.navigation.history_panel.item.selector(
-            history_content_type=history_item["history_content_type"],
-            id=history_item["id"]
-        )
+        history_item = self.hid_to_history_item(hid, current_history_id=current_history_id)
+        history_item_selector = self.history_panel_item_component(history_item)
         try:
             self.history_item_wait_for(history_item_selector, allowed_force_refreshes)
         except self.TimeoutException as e:
@@ -264,6 +273,13 @@ class NavigatesGalaxy(HasDriver):
             message = template % (hid, ",".join(div_ids))
             raise self.prepend_timeout_message(e, message)
         return history_item_selector
+
+    def hid_to_history_item(self, hid, current_history_id=None):
+        if current_history_id is None:
+            current_history_id = self.current_history_id()
+        contents = self.api_get("histories/%s/contents" % current_history_id)
+        history_item = [d for d in contents if d["hid"] == hid][0]
+        return history_item
 
     def history_item_wait_for(self, history_item_selector, allowed_force_refreshes):
         attempt = 0
@@ -286,13 +302,8 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_visible(self.navigation.history_panel.selectors.search, wait_type=WAIT_TYPES.DATABASE_OPERATION)
 
     def history_panel_wait_for_hid_hidden(self, hid):
-        current_history_id = self.current_history_id()
-        contents = self.api_get("histories/%s/contents" % current_history_id)
-        history_item = [d for d in contents if d["hid"] == hid][0]
-        history_item_selector = self.navigation.history_panel.item.selector(
-            history_content_type=history_item["history_content_type"],
-            id=history_item["id"]
-        )
+        history_item = self.hid_to_history_item(hid)
+        history_item_selector = self.history_panel_item_component(history_item)
         self.wait_for_absent_or_hidden(history_item_selector, wait_type=WAIT_TYPES.JOB_COMPLETION)
         return history_item_selector
 
@@ -595,8 +606,8 @@ class NavigatesGalaxy(HasDriver):
     def libraries_open(self):
         self.home()
         self.click_masthead_shared_data()
-        self.click_label(self.navigation_data["labels"]["masthead"]["sharedMenu"]["libraries"])
-        self.wait_for_selector('.library_style_container')
+        self.components.masthead.libraries.wait_for_and_click()
+        self.components.libraries.selector.wait_for_visible()
 
     @retry_during_transitions
     def libraries_index_table_elements(self):
@@ -704,7 +715,7 @@ class NavigatesGalaxy(HasDriver):
         )
 
     def workflow_index_click_import(self):
-        self.wait_for_and_click_selector(self.test_data["selectors"]["workflows"]["import_button"])
+        return self.components.workflows.import_button.wait_for_and_click()
 
     def workflow_index_rename(self, new_name, workflow_index=0):
         self.workflow_index_click_option("Rename", workflow_index=workflow_index)
@@ -801,16 +812,13 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click_selector("button#execute")
 
     def click_masthead_user(self):
-        self.wait_for_and_click(self.navigation.masthead.selectors.user)
-
-    def click_masthead_libraries(self):
-        self.wait_for_and_click(self.navigation.masthead.labels.libraries)
-
-    def click_masthead_workflow(self):
-        self.wait_for_and_click(self.navigation.masthead.labels.workflow)
+        self.components.masthead.user.wait_for_and_click()
 
     def click_masthead_shared_data(self):
-        self.click_xpath(self.navigation_data["selectors"]["masthead"]["shared_data"])
+        self.components.masthead.shared_data.wait_for_and_click()
+
+    def click_masthead_workflow(self):
+        self.components.masthead.workflow.wait_for_and_click()
 
     def click_button_new_workflow(self):
         self.wait_for_and_click(self.navigation.workflows.selectors.new_button)
@@ -824,22 +832,14 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def click_history_options(self):
-        history_options_button_selector = self.test_data["historyOptions"]["selectors"]["button"]
-        history_options_element = self.wait_for_selector(history_options_button_selector)
-        assert history_options_element.is_displayed()
-
-        history_options_button_icon_selector = self.test_data["historyOptions"]["selectors"]["buttonIcon"]
-        history_options_button_icon_element = self.wait_for_selector(history_options_button_icon_selector)
-        assert history_options_button_icon_element.is_displayed()
-
-        history_options_element.click()
+        self.components.history_panel.options_button_icon.wait_for_and_click()
 
     def click_history_option(self, option_label):
         # Open menu
         self.click_history_options()
 
         # Click labelled option
-        self.wait_for_visible(self.navigation.history_panel.selectors.options_menu)
+        self.wait_for_visible(self.navigation.history_panel.options_menu)
         menu_item_sizzle_selector = '#history-options-button-menu > li > a:contains("%s")' % option_label
         menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
@@ -850,14 +850,14 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click_selector(search_selector)
 
     def history_panel_add_tags(self, tags):
-        tag_icon_selector = self.test_data['historyPanel']['selectors']['history']['tagIcon']
-        tag_area_selector = self.test_data['historyPanel']['selectors']['history']['tagArea']
+        tag_icon_selector = self.components.history_panel.tag_icon
+        tag_area_selector = self.components.history_panel.tag_area
+        tag_area_input_selector = self.components.history_panel.tag_area_input
 
-        if not self.selector_is_displayed(tag_area_selector):
-            self.wait_for_and_click_selector(tag_icon_selector)
+        if not tag_area_selector.is_displayed:
+            tag_icon_selector.wait_for_and_click()
 
-        tag_area_selector += ' .tags-input input'
-        tag_area = self.wait_for_and_click_selector(tag_area_selector)
+        tag_area = tag_area_input_selector.wait_for_and_click()
 
         for tag in tags:
             tag_area.send_keys(tag)
@@ -935,52 +935,37 @@ class NavigatesGalaxy(HasDriver):
     def modal_body_selector(self):
         return ".modal-body"
 
-    def history_panel_item_body_selector(self, hid, wait=False):
-        selector = "%s %s" % (self.history_panel_item_selector(hid), self.test_data["historyPanel"]["selectors"]["hda"]["body"])
+    def history_panel_item_body_component(self, hid, wait=False):
+        details_component = self.history_panel_item_component(hid=hid).details
         if wait:
-            self.wait_for_selector_visible(selector)
-        return selector
-
-    def hda_div_selector(self, hda_id):
-        return "#dataset-%s" % hda_id
-
-    def hda_body_selector(self, hda_id):
-        return "%s %s" % (self.hda_div_selector(hda_id), self.test_data["historyPanel"]["selectors"]["hda"]["body"])
+            details_component.wait_for_visible()
+        return details_component
 
     def hda_click_primary_action_button(self, hid, button_key):
-        self.history_panel_click_item_title(hid=hid, wait=True)
-        body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
+        item_component = self.history_panel_click_item_title(hid=hid, wait=True)
+        item_component.primary_action_buttons.wait_for_visible()
+        button_component = item_component["%s_button" % button_key]
+        button_component.wait_for_and_click()
 
-        buttons_selector = body_selector + " " + self.test_data["historyPanel"]["selectors"]["hda"]["primaryActionButtons"]
-        self.wait_for_selector_visible(buttons_selector)
-
-        button_def = self.test_data["historyPanel"]["hdaPrimaryActionButtons"][button_key]
-        button_selector = button_def["selector"]
-        return self.wait_for_and_click_selector("%s %s" % (buttons_selector, button_selector))
-
-    def history_panel_click_item_title(self, **kwds):
-        if "hda_id" in kwds:
-            item_selector = self.hda_div_selector(kwds["hda_id"])
-        else:
-            item_selector = self.history_panel_item_selector(kwds["hid"])
-        title_selector = "%s .title" % item_selector
-        details_selector = "%s .details" % item_selector
-        details_displayed = self.selector_is_displayed(details_selector)
-        self.wait_for_and_click_selector(title_selector)
+    def history_panel_click_item_title(self, hid, **kwds):
+        item_component = self.history_panel_item_component(hid=hid)
+        details_component = item_component.details
+        details_displayed = details_component.is_displayed
+        item_component.title.wait_for_and_click()
         if kwds.get("wait", False):
             if details_displayed:
-                self.wait_for_selector_absent_or_hidden(details_selector)
+                details_component.wait_for_absent_or_hidden()
             else:
-                self.wait_for_selector_visible(details_selector)
+                details_component.wait_for_visible()
+        return item_component
 
     def history_panel_ensure_showing_item_details(self, hid):
         if not self.history_panel_item_showing_details(hid):
             self.history_panel_click_item_title(hid=hid, wait=True)
 
     def history_panel_item_showing_details(self, hid):
-        item_selector = self.history_panel_item_selector(hid)
-        details_selector = "%s .details" % item_selector
-        return self.selector_is_displayed(details_selector)
+        item_component = self.history_panel_item_component(hid=hid)
+        return item_component.details.is_displayed
 
     def collection_builder_set_name(self, name):
         name_element = self.wait_for_selector_visible("input.collection-name")
@@ -1045,8 +1030,8 @@ class NavigatesGalaxy(HasDriver):
         return element
 
     def get_tooltip_text(self, element, sleep=0, click_away=True):
-        tooltip_selector = self.test_data["selectors"]["tooltipBalloon"]
-        self.wait_for_selector_absent(tooltip_selector)
+        tooltip_balloon = self.components._.tooltip_balloon
+        tooltip_balloon.wait_for_absent()
 
         action_chains = self.action_chains()
         action_chains.move_to_element(element)
@@ -1055,7 +1040,7 @@ class NavigatesGalaxy(HasDriver):
         if sleep > 0:
             time.sleep(sleep)
 
-        tooltip_element = self.wait_for_selector_visible(tooltip_selector)
+        tooltip_element = tooltip_balloon.wait_for_visible()
         text = tooltip_element.text
         if click_away:
             self.click_center()
@@ -1073,6 +1058,14 @@ class NavigatesGalaxy(HasDriver):
         """
         return self.assert_selector_absent_or_hidden(selector)
 
+    @retry_during_transitions
+    def assert_absent_or_hidden_after_transitions(self, selector):
+        """Variant of assert_absent_or_hidden that retries during transitions.
+
+        See details above for more information about this.
+        """
+        return self.assert_absent_or_hidden(selector)
+
     def assert_tooltip_text(self, element, expected, sleep=0, click_away=True):
         if hasattr(expected, "text"):
             expected = expected.text
@@ -1085,8 +1078,8 @@ class NavigatesGalaxy(HasDriver):
     def assert_warning_message(self, contains=None):
         return self._assert_message("warning", contains=contains)
 
-    def _assert_message(self, type, contains=None):
-        element = self.wait_for_selector_visible(self.test_data["selectors"]["messages"][type])
+    def _assert_message(self, message_type, contains=None):
+        element = self.components._.messages[message_type].wait_for_visible()
         assert element, "No error message found, one expected."
         if contains is not None:
             text = element.text
@@ -1095,7 +1088,7 @@ class NavigatesGalaxy(HasDriver):
                 raise AssertionError(message)
 
     def assert_no_error_message(self):
-        self.wait_for_selector_absent(self.test_data["selectors"]["messages"]["error"])
+        self.components._.messages.error.assert_absent_or_hidden()
 
     def run_tour_step(self, step, step_index, tour_callback):
         preclick = step.get("preclick", [])

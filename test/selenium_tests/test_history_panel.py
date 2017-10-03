@@ -90,7 +90,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
         # Open the details, verify they are open and do a refresh.
         self.history_panel_ensure_showing_item_details(hid=1)
-        self.history_panel_item_body_selector(1, wait=True)
+        self.history_panel_item_body_component(1, wait=True)
         self.history_panel_refresh_click()
 
         # After the refresh, verify the details are still open.
