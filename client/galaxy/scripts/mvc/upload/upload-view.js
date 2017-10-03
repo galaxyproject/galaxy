@@ -154,9 +154,7 @@ function( Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposi
             }
             // add upload tools input data
             if ( items && items.length > 0 ) {
-                var inputs = {};
-                inputs[ 'dbkey' ] = items[0].get( 'genome', null );
-                inputs[ 'file_type' ] = items[0].get( 'extension', null );
+                var inputs = { 'file_count' : items.length };
                 for ( var index in items ) {
                     var it = items[ index ];
                     it.set( 'status', 'running' );
@@ -165,6 +163,8 @@ function( Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposi
                         inputs[ prefix + 'type' ] = 'upload_dataset';
                         inputs[ prefix + 'space_to_tab' ] = it.get( 'space_to_tab' ) && 'Yes' || null;
                         inputs[ prefix + 'to_posix_lines' ] = it.get( 'to_posix_lines' ) && 'Yes' || null;
+                        inputs[ prefix + 'dbkey' ] = it.get( 'genome', null );
+                        inputs[ prefix + 'file_type' ] = it.get( 'extension', null );
                         switch ( it.get( 'file_mode' ) ) {
                             case 'new':
                                 inputs[ prefix + 'url_paste' ] = it.get( 'url_paste' );
