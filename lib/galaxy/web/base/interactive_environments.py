@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import stat
+import string
 import tempfile
 import uuid
 from subprocess import PIPE, Popen
@@ -307,15 +308,35 @@ class InteractiveEnvironmentRequest(object):
         else:
             return True
 
+    def _get_command_inject_env(self):
+        """For the containers interface, parse any -e/--env flags from `command_inject`.
+        """
+        # using a list ensures that later vars override earlier ones with the
+        # same name, which is how `docker run` works on the command line
+        envsets = []
+        command_inject = self.attr.viz_config.get("docker", "command_inject").strip().split()
+        for i, item in enumerate(command_inject):
+            if item.startswith('-e=') or item.startswith('--env='):
+                envsets.append(item.split('=', 1)[1])
+            elif item == ('-e') or item == ('--env'):
+                envsets.append(command_inject[i+1])
+            elif item.startswith('-e'):
+                envsets.append(item[2:])
+            elif item.startswith('--env'):
+                envsets.append(item[5:])
+        return dict(map(lambda s: string.split(s, '=', 1), envsets))
+
     def container_run_args(self, image, env_override=None, volumes=None):
         if volumes is None:
             volumes = []
         import_volume_def = self._get_import_volume_for_run()
         if import_volume_def:
             volumes.append(import_volume_def)
+        env = self._get_command_inject_env()
+        env.update(self._get_env_for_run(env_override))
         args = {
             'image': image,
-            'environment': self._get_env_for_run(env_override),
+            'environment': env,
             'volumes': volumes,
             'name': self._get_name_for_run(),
             'detach': True,
