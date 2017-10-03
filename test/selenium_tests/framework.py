@@ -17,6 +17,7 @@ except ImportError:
 from six.moves.urllib.parse import urljoin
 
 from base import populators  # noqa: I100
+from base.api import UsesApiTestCaseMixin  # noqa: I100
 from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address  # noqa: I100
 from base.testcase import FunctionalTestCase  # noqa: I100
 from base.workflows_format_2 import (  # noqa: I100
@@ -36,6 +37,8 @@ DEFAULT_SELENIUM_REMOTE = False
 DEFAULT_SELENIUM_REMOTE_PORT = "4444"
 DEFAULT_SELENIUM_REMOTE_HOST = "127.0.0.1"
 DEFAULT_SELENIUM_HEADLESS = "auto"
+DEFAULT_ADMIN_USER = "test@bx.psu.edu"
+DEFAULT_ADMIN_PASSWORD = "testpass"
 
 TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
@@ -51,7 +54,8 @@ GALAXY_TEST_SELENIUM_RETRIES = int(os.environ.get("GALAXY_TEST_SELENIUM_RETRIES"
 
 GALAXY_TEST_SELENIUM_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_USER_EMAIL", None)
 GALAXY_TEST_SELENIUM_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_USER_PASSWORD", None)
-
+GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL", DEFAULT_ADMIN_USER)
+GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD", DEFAULT_ADMIN_PASSWORD)
 
 try:
     from nose.tools import nottest
@@ -156,7 +160,7 @@ class TestSnapshot(object):
         write_file_func("%s-stack.txt" % prefix, str(self.stack))
 
 
-class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
+class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin):
     # If run one-off via nosetests, the next line ensures test
     # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
@@ -166,6 +170,7 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
     # GALAXY_TEST_SELENIUM_USER_PASSWORD are set these values
     # will be used to login.
     ensure_registered = False
+    requires_admin = False
 
     def setUp(self):
         super(SeleniumTestCase, self).setUp()
@@ -177,6 +182,9 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
             self.target_url_from_selenium = self.url
         self.snapshots = []
         self.setup_driver_and_session()
+        if self.requires_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
+            self._setup_interactor()
+            self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
         try:
             self.setup_with_driver()
         except Exception:
@@ -289,6 +297,15 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
         empty_msg_element = self.wait_for_selector(empty_msg_selector)
         assert empty_msg_element.is_displayed()
         assert empty_msg_str in empty_msg_element.text
+
+    def admin_login(self):
+        self.home()
+        self.submit_login(
+            GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL,
+            GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD
+        )
+        with self.main_panel():
+            self.assert_no_error_message()
 
     @property
     def workflow_populator(self):

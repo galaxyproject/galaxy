@@ -359,6 +359,7 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click(self.navigation.masthead.labels.login)
 
         with self.main_panel():
+            self.sleep_for(WAIT_TYPES.UX_RENDER)
             form = self.wait_for_visible(self.navigation.login.selectors.form)
             self.fill(form, login_info)
             self.snapshot("logging-in")
@@ -591,6 +592,90 @@ class NavigatesGalaxy(HasDriver):
     def workflow_editor_options_menu_element(self):
         return self.wait_for_selector_visible("#workflow-options-button-menu")
 
+    def libraries_open(self):
+        self.home()
+        self.click_masthead_shared_data()
+        self.click_label(self.navigation_data["labels"]["masthead"]["sharedMenu"]["libraries"])
+        self.wait_for_selector('.library_style_container')
+
+    @retry_during_transitions
+    def libraries_index_table_elements(self):
+        container = self.wait_for_selector_visible(".library_container")
+        elements = container.find_elements_by_css_selector("#library_list_body")
+        if not elements:
+            return []
+        else:
+            assert len(elements) == 1
+            element = elements[0]
+            return element.find_elements_by_css_selector("tr")  # [style='display: table-row']
+
+    def libraries_index_click_create_new(self):
+        self.wait_for_and_click_selector("#create_new_library_btn")
+
+    def libraries_index_create(self, name):
+        self.libraries_index_click_create_new()
+        name_text_box = self.wait_for_selector_clickable("input[name='Name']")
+        name_text_box.send_keys(name)
+
+        self.wait_for_and_click_selector("#button-0")
+
+    def libraries_index_click_search(self):
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
+        search_element = self.wait_for_selector_clickable("input.library-search-input")
+        search_element.click()
+        return search_element
+
+    def libraries_index_sort_selector(self):
+        return ".sort-libraries-link"
+
+    def libraries_index_sort_click(self):
+        sort_element = self.wait_for_selector_clickable(self.libraries_index_sort_selector())
+        sort_element.click()
+        return sort_element
+
+    def libraries_index_search_for(self, text):
+        self.wait_for_overlays_cleared()
+        search_box = self.libraries_index_click_search()
+        search_box.clear()
+        search_box.send_keys(text)
+        value = search_box.get_attribute("value")
+        assert value == text, value
+        self.driver.execute_script("$(arguments[0]).keyup();", search_box)
+
+    def libraries_folder_create(self, name):
+        create_folder_button = self.wait_for_selector_clickable("#toolbtn_create_folder")
+        create_folder_button.click()
+
+        name_text_box = self.wait_for_selector_clickable("input[name='Name']")
+        name_text_box.send_keys(name)
+
+        create_button = self.wait_for_selector_clickable("#button-0")
+        create_button.click()
+
+    def libraries_click_dataset_import(self):
+        self.wait_for_and_click(self.navigation.libraries.folder.selectors.add_items_button)
+
+    def libraries_dataset_import_from_history(self):
+        self.libraries_click_dataset_import()
+
+        self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
+        self.wait_for_and_click(self.navigation.libraries.folder.labels.from_history)
+
+    def libraries_dataset_import_from_path(self):
+        self.libraries_click_dataset_import()
+
+        self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
+        self.wait_for_and_click(self.navigation.libraries.folder.labels.from_path)
+
+    def libraries_table_elements(self):
+        tbody_element = self.wait_for_selector_visible("#folder_list_body")
+        return tbody_element.find_elements_by_css_selector("tr")[1:]
+
+    def wait_for_overlays_cleared(self):
+        """Wait for modals and Toast notifications to disappear."""
+        self.wait_for_selector_absent_or_hidden(".ui-modal")
+        self.wait_for_selector_absent_or_hidden(".toast")
+
     def workflow_index_open(self):
         self.home()
         self.click_masthead_workflow()
@@ -723,6 +808,9 @@ class NavigatesGalaxy(HasDriver):
 
     def click_masthead_workflow(self):
         self.wait_for_and_click(self.navigation.masthead.labels.workflow)
+
+    def click_masthead_shared_data(self):
+        self.click_xpath(self.navigation_data["selectors"]["masthead"]["shared_data"])
 
     def click_button_new_workflow(self):
         self.wait_for_and_click(self.navigation.workflows.selectors.new_button)
