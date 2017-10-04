@@ -268,7 +268,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         return resources
 
-
     def __get_memory_request(self, job_wrapper):
         """Obtains memory requests for job, checking if available on the destination, otherwise using the default"""
         job_destinantion = job_wrapper.job_destination
@@ -312,7 +311,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if not isinstance(cpu_value, str) and float(cpu_value) == 0:
             return None
         if isinstance(cpu_value, float):
-            return str(int(cpu_value*1000))+"m"
+            return str(int(cpu_value * 1000)) + "m"
         elif isinstance(cpu_value, int):
             return str(cpu_value)
         return cpu_value
@@ -328,11 +327,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if not isinstance(mem_value, str) and float(mem_value) == 0:
             return None
         if isinstance(mem_value, float):
-            return str(int(mem_value*1000))+"M"
+            return str(int(mem_value * 1000)) + "M"
         elif isinstance(mem_value, int):
-            return str(mem_value)+"G"
+            return str(mem_value) + "G"
         return mem_value
-
 
     def __assemble_k8s_container_image_name(self, job_wrapper):
         """Assembles the container image name as repo/owner/image:tag, where repo, owner and tag are optional"""
