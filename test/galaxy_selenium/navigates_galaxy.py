@@ -130,10 +130,6 @@ class NavigatesGalaxy(HasDriver):
         return self.driver.get(full_url)
 
     @property
-    def navigation_data(self):
-        return NAVIGATION_DATA
-
-    @property
     def navigation(self):
         return NAVIGATION
 
