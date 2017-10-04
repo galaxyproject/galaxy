@@ -76,7 +76,7 @@ function( Connector, Toastr ) {
             this.has_changes = true;
         },
         remove_all : function() {
-            wf = this;
+            var wf = this;
             $.each( this.nodes, function ( k, v ) {
                 v.destroy();
                 wf.remove_node( v );
@@ -102,7 +102,7 @@ function( Connector, Toastr ) {
                 $.each(this.nodes, function (k, node ){
                     if (node.type === 'tool'){
                         var node_changed = false;
-                        if (node.post_job_actions == null){
+                        if (node.post_job_actions === null){
                             node.post_job_actions = {};
                             node_changed = true;
                         }
@@ -127,7 +127,7 @@ function( Connector, Toastr ) {
                                         action_type : "HideDatasetAction",
                                         output_name : ot.name,
                                         action_arguments : {}
-                                    }
+                                    };
                                     node.post_job_actions['HideDatasetAction'+ot.name] = null;
                                     node.post_job_actions['HideDatasetAction'+ot.name] = pja;
                                 }
@@ -149,7 +149,7 @@ function( Connector, Toastr ) {
                     input_connections[ t.name ] = null;
                     // There should only be 0 or 1 connectors, so this is
                     // really a sneaky if statement
-                    var cons = []
+                    var cons = [];
                     $.each( t.connectors, function ( i, c ) {
                         if ( c.handle1 ) {
                             var con_dict = { id: c.handle1.node.id, output_name: c.handle1.name };
@@ -169,7 +169,7 @@ function( Connector, Toastr ) {
                             action_type : act.action_type,
                             output_name : act.output_name,
                             action_arguments : act.action_arguments
-                        }
+                        };
                         post_job_actions[ act.action_type + act.output_name ] = null;
                         post_job_actions[ act.action_type + act.output_name ] = pja;
                     });
@@ -343,11 +343,11 @@ function( Connector, Toastr ) {
                 // Everything without a predecessor
                 var level_parents = [];
                 for ( var pred_k in n_pred ) {
-                    if ( n_pred[ pred_k ] == 0 ) {
+                    if ( n_pred[ pred_k ] === 0 ) {
                         level_parents.push( pred_k );
                     }
                 }
-                if ( level_parents.length == 0 ) {
+                if ( level_parents.length === 0 ) {
                     break;
                 }
                 node_ids_by_level.push( level_parents );
