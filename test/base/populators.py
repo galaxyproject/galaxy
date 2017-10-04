@@ -239,6 +239,8 @@ class BaseDatasetPopulator(object):
         # the last dataset in the history will be fetched.
         if "dataset_id" in kwds:
             history_content_id = kwds["dataset_id"]
+        elif "content_id" in kwds:
+            history_content_id = kwds["content_id"]
         elif "dataset" in kwds:
             history_content_id = kwds["dataset"]["id"]
         else:
@@ -513,7 +515,7 @@ class BaseDatasetCollectionPopulator(object):
         return element_identifiers
 
     def list_identifiers(self, history_id, contents=None):
-        count = 3 if not contents else len(contents)
+        count = 3 if contents is None else len(contents)
         # Contents can be a list of strings (with name auto-assigned here) or a list of
         # 2-tuples of form (name, dataset_content).
         if contents and isinstance(contents[0], tuple):

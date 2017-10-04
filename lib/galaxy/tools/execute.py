@@ -18,15 +18,27 @@ log = logging.getLogger(__name__)
 EXECUTION_SUCCESS_MESSAGE = "Tool [%s] created job [%s] %s"
 
 
-def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None):
+class PartialJobExecution(Exception):
+
+    def __init__(self, jobs):
+        self.jobs = jobs
+
+
+MappingParameters = collections.namedtuple("MappingParameters", ["param_template", "param_combinations"])
+
+
+def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, invocation_step=None, max_num_jobs=None):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
     """
     all_jobs_timer = ExecutionTimer()
+    param_combinations = mapping_params.param_combinations
     execution_tracker = ToolExecutionTracker(tool, param_combinations, collection_info)
     app = trans.app
     execution_cache = ToolExecutionCache(trans)
+
+    new_jobs = []
 
     def execute_single_job(params):
         job_timer = ExecutionTimer()
@@ -41,6 +53,7 @@ def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, c
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
             log.debug(message)
             execution_tracker.record_success(job, result)
+            new_jobs.append(job)
         else:
             execution_tracker.record_error(result)
 
@@ -59,11 +72,27 @@ def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, c
                 history
             )
 
+    if invocation_step:
+        execution_tracker.recover_successful_jobs(invocation_step)
+
+    previously_executed_jobs_count = len(execution_tracker.successful_jobs)
     job_count = len(execution_tracker.param_combinations)
-    if job_count < burst_at or burst_threads < 2:
-        for params in execution_tracker.param_combinations:
-            execute_single_job(params)
+
+    jobs_executed = 0
+    has_remaining_jobs = False
+
+    if (job_count < burst_at or burst_threads < 2):
+        for index, params in enumerate(execution_tracker.param_combinations):
+            if index < previously_executed_jobs_count:
+                continue
+            elif max_num_jobs and jobs_executed >= max_num_jobs:
+                has_remaining_jobs = True
+                break
+            else:
+                execute_single_job(params)
+                jobs_executed += 1
     else:
+        # TODO: re-record success...
         q = Queue()
 
         def worker():
@@ -77,20 +106,26 @@ def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, c
             t.daemon = True
             t.start()
 
-        for params in execution_tracker.param_combinations:
-            q.put(params)
+        for index, params in enumerate(execution_tracker.param_combinations):
+            if index < previously_executed_jobs_count:
+                continue
+            elif max_num_jobs and jobs_executed >= max_num_jobs:
+                has_remaining_jobs = True
+                break
+            else:
+                q.put(params)
+                jobs_executed += 1
 
         q.join()
+
+    if has_remaining_jobs:
+        raise PartialJobExecution(new_jobs)
 
     log.debug("Executed %d job(s) for tool %s request: %s" % (job_count, tool.id, all_jobs_timer))
     if collection_info:
         history = history or tool.get_default_history_by_trans(trans)
-        if len(param_combinations) == 0:
-            template = "Attempting to map over an empty collection, this is not yet implemented. collection_info is [%s]"
-            message = template % collection_info
-            log.warning(message)
-            raise Exception(message)
-        params = param_combinations[0]
+        # TODO: this perhaps should always just be the param_template. Going to try to be safe first. -John
+        params = param_combinations[0] if param_combinations else mapping_params.param_template
         execution_tracker.create_output_collections(trans, history, params)
 
     return execution_tracker
@@ -109,6 +144,17 @@ class ToolExecutionTracker(object):
         self.output_collections = []
         self.outputs_by_output_name = collections.defaultdict(list)
         self.implicit_collections = {}
+
+    def recover_successful_jobs(self, invocation_step):
+        # TODO: Optimize away the need to do this - we should just be dealing with IDs
+        # and such and we shouldn't fetch them until the very end when we need them to create
+        # collections.
+        for job_assoc in invocation_step.jobs:
+            job = job_assoc.job
+            for job_output in job.output_datasets:
+                self.outputs_by_output_name[job_output.name].append(job_output.dataset)
+            for job_output in job.output_dataset_collections:
+                self.outputs_by_output_name[job_output.name].append(job_output.dataset_collection)
 
     def record_success(self, job, outputs):
         self.successful_jobs.append(job)
@@ -150,13 +196,13 @@ class ToolExecutionTracker(object):
         collections = {}
 
         implicit_inputs = list(self.collection_info.collections.items())
-        for output_name, outputs in self.outputs_by_output_name.items():
+        for output_name, output in self.tool.outputs.items():
+            outputs = self.outputs_by_output_name[output_name]
             if not len(structure) == len(outputs):
                 # Output does not have the same structure, if all jobs were
                 # successfully submitted this shouldn't have happened.
                 log.warning("Problem matching up datasets while attempting to create implicit dataset collections")
                 continue
-            output = self.tool.outputs[output_name]
 
             element_identifiers = None
             if hasattr(output, "default_identifier_source"):
