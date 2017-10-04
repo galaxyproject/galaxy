@@ -61,8 +61,8 @@ class AdminToolshed(AdminGalaxy):
                                                             status=status))
         message = 'The <b>%s</b> repository has been activated.' % escape(repository.name)
         status = 'done'
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='browse_repositories',
+        return trans.response.send_redirect(web.url_for(controller='admin',
+                                                        action='repositories',
                                                         message=message,
                                                         status=status))
 
@@ -132,8 +132,8 @@ class AdminToolshed(AdminGalaxy):
                 message = "Unable to get latest revision for repository <b>%s</b> from " % escape(str(repository.name))
                 message += "the Tool Shed, so repository re-installation is not possible at this time."
                 status = "error"
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='browse_repositories',
+                return trans.response.send_redirect(web.url_for(controller='admin',
+                                                                action='repositories',
                                                                 message=message,
                                                                 status=status))
         else:
@@ -239,8 +239,8 @@ class AdminToolshed(AdminGalaxy):
                         status = max(status, statuses.index('error'))
         status = statuses[status]
         if kwd.get('deactivate_or_uninstall_repository_button', False):
-            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                            action='browse_repositories',
+            return trans.response.send_redirect(web.url_for(controller='admin',
+                                                            action='repositories',
                                                             message=message,
                                                             status=status))
         remove_from_disk_check_box = CheckboxField('remove_from_disk', checked=remove_from_disk_checked)
@@ -488,8 +488,8 @@ class AdminToolshed(AdminGalaxy):
         else:
             message = 'The request parameters did not include the required encoded <b>id</b> of installed repository.'
             status = 'error'
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='browse_repositories',
+        return trans.response.send_redirect(web.url_for(controller='admin',
+                                                        action='repositories',
                                                         message=message,
                                                         status=status))
 
@@ -935,8 +935,8 @@ class AdminToolshed(AdminGalaxy):
                     message += 'to update the repository resulted in the following error.  Contact the Tool Shed '
                     message += 'administrator if necessary.<br/>%s' % str(e)
                     status = 'error'
-                    return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                    action='browse_repositories',
+                    return trans.response.send_redirect(web.url_for(controller='admin',
+                                                                    action='repositories',
                                                                     message=message,
                                                                     status=status))
                 changeset_revisions = updating_to_changeset_revision
@@ -1180,8 +1180,8 @@ class AdminToolshed(AdminGalaxy):
         else:
             new_kwd['status'] = 'error'
             new_kwd['message'] = 'Invalid repository id value "None" received for repository to be purged.'
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='browse_repositories',
+        return trans.response.send_redirect(web.url_for(controller='admin',
+                                                        action='repositories',
                                                         **new_kwd))
 
     @web.expose
@@ -1347,8 +1347,8 @@ class AdminToolshed(AdminGalaxy):
         if not repository_id:
             message = 'Invalid installed tool shed repository id %s received.' % str(repository_id)
             status = 'error'
-            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                            action='browse_repositories',
+            return trans.response.send_redirect(web.url_for(controller='admin',
+                                                            action='repositories',
                                                             message=message,
                                                             status=status))
         tool_shed_repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
@@ -1657,8 +1657,8 @@ class AdminToolshed(AdminGalaxy):
             new_kwd = {}
             new_kwd['message'] = "You can now attempt to install the repository named <b>%s</b> again." % escape(str(repository.name))
             new_kwd['status'] = "done"
-            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                            action='browse_repositories',
+            return trans.response.send_redirect(web.url_for(controller='admin',
+                                                            action='repositories',
                                                             **new_kwd))
         return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                         action='manage_repository',
