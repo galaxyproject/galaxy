@@ -158,7 +158,7 @@ class InstalledRepositoryGrid(grids.Grid):
     ]
     operations = [grids.GridOperation(label="Update tool shed status",
                                       condition=(lambda item: not item.deleted),
-                                      allow_multiple=False)),
+                                      allow_multiple=False),
                   grids.GridOperation(label="Get updates",
                                       condition=(lambda item:
                                                  not item.deleted and
