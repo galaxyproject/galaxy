@@ -1091,8 +1091,8 @@ class ShedTwillTestCase(TwillTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def reactivate_repository(self, installed_repository):
-        params = dict(operation='activate or reinstall', id=self.security.encode_id(installed_repository.id))
-        url = '/admin_toolshed/browse_repositories'
+        params = dict(id=self.security.encode_id(installed_repository.id))
+        url = '/admin_toolshed/restore_repository'
         self.visit_galaxy_url(url, params)
         strings_displayed = [installed_repository.name, 'repository has been activated']
         self.check_for_strings(strings_displayed, [])
