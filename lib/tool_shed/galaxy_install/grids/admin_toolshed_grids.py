@@ -187,6 +187,7 @@ class InstalledRepositoryGrid(grids.Grid):
                                                  not item.deleted and
                                                  item.status != tool_shed_install.ToolShedRepository.installation_status.NEW),
                                       allow_multiple=True,
+                                      target='top',
                                       url_args=dict(controller='admin_toolshed',
                                                     action='deactivate_or_uninstall_repository')),
                   grids.GridOperation(label="Reset to install",
