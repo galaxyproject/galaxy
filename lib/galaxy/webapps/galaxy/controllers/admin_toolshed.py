@@ -77,7 +77,7 @@ class AdminToolshed(AdminGalaxy):
                                    message=message,
                                    status=status)
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
     def browse_repositories(self, trans, **kwd):
         if 'operation' in kwd:
@@ -161,6 +161,7 @@ class AdminToolshed(AdminGalaxy):
                 # The user is attempting to install a white ghost.
                 kwd['status'] = 'error'
                 kwd['message'] = 'It seems you are attempting to install a "white ghost", which should instead be purged.'
+        kwd[ 'dict_format' ] = True
         return self.installed_repository_grid(trans, **kwd)
 
     @web.expose

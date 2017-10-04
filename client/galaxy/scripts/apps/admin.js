@@ -23,7 +23,7 @@ window.app = function app( options, bootstrapped ){
             '(/)admin(/)tool_versions' : 'show_tool_versions',
             '(/)admin(/)quotas' : 'show_quotas',
             '(/)admin(/)form(/)(:form_id)' : 'show_form',
-            '(/)admin(/)repositories(/)browse' : 'browse_repositories'
+            '(/)admin(/)repositories' : 'show_repositories'
         },
 
         authenticate: function( args, name ) {
@@ -43,7 +43,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_repositories: function() {
-            this.page.display( new GridView( { url_base: Galaxy.root + 'admin_toolshed/show', url_data: Galaxy.params, dict_format: true } ) );
+            this.page.display( new GridView( { url_base: Galaxy.root + 'admin_toolshed/browse_repositories', url_data: Galaxy.params, dict_format: true } ) );
         },
 
         show_tool_versions: function() {
