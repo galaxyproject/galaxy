@@ -10,6 +10,17 @@ _:  # global stuff
 
   selectors:
     editable_text: '.editable-text'
+    tooltip_balloon: '.tooltip'
+
+  messages:
+    selectors:
+      all: '[class*="message"]'
+      error: '.errormessage'
+      warning: '.alert-warning'
+      done: '.donemessage'
+      info: '.infomessage'
+      donelarge: '.donemessagelarge'
+      infolarge: '.infomessagelarge'
 
 masthead:
 
@@ -34,7 +45,7 @@ masthead:
     # top-level menus
     analyze: 'Analyze Data'
     workflow: 'Workflow'
-    libraries: 'Shared Data'
+    shared_data: 'Shared Data'
     visualization: 'Visualization'
     help: 'Help'
     user: 'User'
@@ -43,6 +54,12 @@ masthead:
     register: 'Register'
     login: 'Login'
     logout: 'Logout'
+    custom_builds: 'Custom Builds'
+    saved_histories: 'Saved Histories'
+
+    # Shared data
+    libraries: 'Data Libraries'
+    published_histories: 'Histories'
 
 history_panel:
   menu:
@@ -53,15 +70,28 @@ history_panel:
     selectors:
       _: '#${history_content_type}-${id}'
 
-      title: '${item_selector} .title'
-      hid: '${item_selector} .hid'
-      name: '${item_selector} .name'
-      titleButtonArea: '${item_selector} .primary-actions'
-      summary: '${item_selector} .summary'
-      blurb: '${item_selector} .blurb .value'
-      dbkey: '${item_selector} .dbkey .value'
-      info: '${item_selector} .info .value'
-      body: '${item_selector} .details'
+      title: '${_} .title'
+      hid: '${_} .hid'
+      name: '${_} .name'
+      details: '${_} .details'
+      title_button_area: '${_} .primary-actions'
+      primary_action_buttons: '${_} .actions .left'
+      secondary_action_buttons: '${_} .actions .right'
+      summary: '${_} .summary'
+      blurb: '${_} .blurb .value'
+      dbkey: '${_} .dbkey .value'
+      info: '${_} .info .value'
+      peek: '${_} .dataset-peek'
+
+      # Title buttons...
+      display_button: '${_} .icon-btn.display-btn'
+      edit_button: '${_} .icon-btn.edit-btn'
+      delete_button: '${_} .icon-btn.delete-btn'
+
+      # Action buttons...
+      download_button: '${_} .icon-btn.download-btn'
+      info_button: '${_} .icon-btn.params-btn'
+      rerun_button: '${_} .icon-btn.rerun-btn'
 
   multi_operations:
     selectors:
@@ -83,9 +113,10 @@ history_panel:
     contents: '#current-history-panel .list-items div.history-content'
     
     empty_message: '.empty-message'
-
+    size: '.history-size'
     tag_icon: '.actions .history-tag-btn'
     tag_area: '.controls .tags-display'
+    tag_area_input: '.controls .tags-display .tags-input input'
     annotation_icon: '.actions .history-annotate-btn'
     annotation_area: '.controls .annotation-display'
     annotation_editable_text: '.controls .annotation-display .annotation.editable-text'
@@ -98,6 +129,8 @@ history_panel:
 
   text:
     tooltip_name: 'Click to rename history'
+    new_name: 'Unnamed history'
+    new_size: '(empty)'
 
 collection_builders:
 
@@ -106,6 +139,15 @@ collection_builders:
     clear_filters: "a.clear-filters-link"
     forward_datasets: ".forward-column .column-datasets"
     reverse_datasets: ".reverse-column .column-datasets"
+
+histories:
+  sharing:
+    selectors:
+      user_n_menu: '#user-${n}-popup'
+      share_with_a_user_button: '#share_with_a_user'
+    labels:
+      unshare: 'Unshare'
+
 
 login:
   selectors:
@@ -125,6 +167,9 @@ workflows:
     import_button: '#import-workflow'
 
 libraries:
+
+  selectors:
+    _: .library_style_container
 
   folder:
     selectors:
