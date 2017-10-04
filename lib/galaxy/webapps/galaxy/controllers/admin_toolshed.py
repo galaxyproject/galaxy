@@ -91,9 +91,7 @@ class AdminToolshed(AdminGalaxy):
                                                                 action='check_for_updates',
                                                                 **kwd))
             if operation == "update tool shed status":
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='update_tool_shed_status_for_installed_repository',
-                                                                **kwd))
+                message, status = repository_util.check_for_updates(trans.app, trans.install_model, kwd.get('id'))
             if operation == "reset to install":
                 kwd['reset_repository'] = True
                 return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
@@ -1962,15 +1960,6 @@ class AdminToolshed(AdminGalaxy):
         return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                         action='manage_repository',
                                                         id=trans.security.encode_id(repository.id),
-                                                        message=message,
-                                                        status=status))
-
-    @web.expose
-    @web.require_admin
-    def update_tool_shed_status_for_installed_repository(self, trans, **kwd):
-        message, status = repository_util.check_for_updates(trans.app, trans.install_model, kwd.get('id', None))
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='browse_repositories',
                                                         message=message,
                                                         status=status))
 
