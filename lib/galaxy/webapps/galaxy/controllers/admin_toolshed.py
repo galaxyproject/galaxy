@@ -88,10 +88,9 @@ class AdminToolshed(AdminGalaxy):
                 message, status = repository_util.check_for_updates(trans.app, trans.install_model, kwd.get('id'))
         if message and status:
             kwd['message'] = util.sanitize_text(message)
-            kwd['status'] = 'success' if status in [ 'ok', 'done', 'success' ] else 'danger'
+            kwd['status'] = 'success' if status in [ 'ok', 'done', 'success' ] else 'error'
         kwd['dict_format'] = True
         return self.installed_repository_grid(trans, **kwd)
-
 
     @web.expose
     @web.require_admin
