@@ -2,7 +2,7 @@ FROM toolshed/requirements
 MAINTAINER John Chilton, jmchilton@gmail.com
 
 RUN apt-get -qq update && \
-    apt-get install --no-install-recommends -y postgresql-client python-pip && \
+    apt-get install --no-install-recommends -y postgresql-client python-pip libffi-dev python-cffi && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV GALAXY_ROOT=/galaxy \
