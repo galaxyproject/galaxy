@@ -367,7 +367,8 @@ function( Connector, Toastr ) {
             }
             // Layout each level
             var all_nodes = this.nodes;
-            var h_pad = 80; v_pad = 30;
+            var h_pad = 80;
+            var v_pad = 30;
             var left = h_pad;
             $.each( node_ids_by_level, function( i, ids ) {
                 // We keep nodes in the same order in a level to give the user
