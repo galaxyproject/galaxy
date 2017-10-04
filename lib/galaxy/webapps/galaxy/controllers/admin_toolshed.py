@@ -1980,8 +1980,8 @@ class AdminToolshed(AdminGalaxy):
     @web.require_admin
     def update_tool_shed_status_for_installed_repository(self, trans, **kwd):
         message, status = repository_util.check_for_updates(trans.app, trans.install_model, kwd.get('id', None))
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='browse_repositories',
+        return trans.response.send_redirect(web.url_for(controller='admin',
+                                                        action='repositories',
                                                         message=message,
                                                         status=status))
 
