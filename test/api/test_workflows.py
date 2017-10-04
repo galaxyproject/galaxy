@@ -768,7 +768,9 @@ steps:
             }
             invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
-            content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
+            collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=7)
+            assert collection_details["populated_state"] == "ok"
+            content = self.dataset_populator.get_history_dataset_content(history_id, hid=11)
             self.assertEqual(content.strip(), "samp1\t10.0\nsamp2\t20.0")
 
     @skip_without_tool("collection_split_on_column")
@@ -1621,7 +1623,7 @@ test_data:
     def wait_for_invocation_and_jobs(self, history_id, workflow_id, invocation_id, assert_ok=True):
         self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
         time.sleep(.5)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok)
+        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
         time.sleep(.5)
 
     def test_cannot_run_inaccessible_workflow(self):
@@ -1740,7 +1742,7 @@ test_data:
         value: 1.fastq
         type: File
 """, history_id=history_id)
-        content = self.dataset_populator.get_history_dataset_details(history_id, hid=3, wait=True, assert_ok=True)
+        content = self.dataset_populator.get_history_dataset_details(history_id, hid=4, wait=True, assert_ok=True)
         name = content["name"]
         assert name == "my new name", name
 

@@ -122,12 +122,16 @@ def dictify_dataset_collection_instance(dataset_collection_instance, parent, sec
 
 def dictify_element(element):
     dictified = element.to_dict(view="element")
-    object_detials = element.element_object.to_dict()
-    if element.child_collection:
-        # Recursively yield elements for each nested collection...
-        child_collection = element.child_collection
-        object_detials["elements"] = [dictify_element(_) for _ in child_collection.elements]
-        object_detials["populated"] = child_collection.populated
+    element_object = element.element_object
+    if element_object is not None:
+        object_detials = element.element_object.to_dict()
+        if element.child_collection:
+            # Recursively yield elements for each nested collection...
+            child_collection = element.child_collection
+            object_detials["elements"] = [dictify_element(_) for _ in child_collection.elements]
+            object_detials["populated"] = child_collection.populated
+    else:
+        object_detials = None
 
     dictified["object"] = object_detials
     return dictified

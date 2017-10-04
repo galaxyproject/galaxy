@@ -3219,6 +3219,15 @@ class DatasetCollection(object, Dictifiable, UsesAnnotations):
         self.populated_state = DatasetCollection.populated_states.FAILED
         self.populated_state_message = message
 
+    def finalize(self):
+        # All jobs have written out their elements - everything should be populated
+        # but might not be - check that second case! (TODO)
+        self.mark_as_populated()
+        if self.has_subcollections:
+            # THIS IS WRONG - SHOULD ONLY BE TO THE DEPTH OF THE MAP OVER.
+            for element in self.elements:
+                element.child_collection.finalize()
+
     @property
     def dataset_instances(self):
         instances = []
@@ -3486,6 +3495,8 @@ class DatasetCollectionElement(object, Dictifiable):
     dict_collection_visible_keys = ['id', 'element_type', 'element_index', 'element_identifier']
     dict_element_visible_keys = ['id', 'element_type', 'element_index', 'element_identifier']
 
+    UNINITIALIZED_ELEMENT = object()
+
     def __init__(
         self,
         id=None,
@@ -3500,7 +3511,7 @@ class DatasetCollectionElement(object, Dictifiable):
             self.ldda = element
         elif isinstance(element, DatasetCollection):
             self.child_collection = element
-        else:
+        elif element != self.UNINITIALIZED_ELEMENT:
             raise AttributeError('Unknown element type provided: %s' % type(element))
 
         self.id = id
@@ -3518,7 +3529,7 @@ class DatasetCollectionElement(object, Dictifiable):
             # TOOD: Rename element_type to element_type.
             return "dataset_collection"
         else:
-            raise Exception("Unknown element instance type")
+            return None
 
     @property
     def is_collection(self):
@@ -3533,7 +3544,7 @@ class DatasetCollectionElement(object, Dictifiable):
         elif self.child_collection:
             return self.child_collection
         else:
-            raise Exception("Unknown element instance type")
+            return None
 
     @property
     def dataset_instance(self):
@@ -4194,6 +4205,10 @@ class WorkflowInvocationStep(object, Dictifiable):
 
     def update(self):
         self.workflow_invocation.update()
+
+    @property
+    def is_new(self):
+        return self.state == self.states.NEW
 
     def add_output(self, output_name, output_object):
         if output_object.history_content_type == "dataset":

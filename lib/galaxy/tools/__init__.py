@@ -1313,13 +1313,20 @@ class Tool(object, Dictifiable):
                         output_collections=execution_tracker.output_collections,
                         implicit_collections=execution_tracker.implicit_collections)
 
-    def handle_single_execution(self, trans, rerun_remap_job_id, params, history, mapping_over_collection, execution_cache=None):
+    def handle_single_execution(self, trans, rerun_remap_job_id, execution_slice, history, execution_cache=None):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
         """
         try:
-            job, out_data = self.execute(trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection, execution_cache=execution_cache)
+            job, out_data = self.execute(
+                trans,
+                incoming=execution_slice.param_combination,
+                history=history,
+                rerun_remap_job_id=rerun_remap_job_id,
+                execution_cache=execution_cache,
+                dataset_collection_elements=execution_slice.dataset_collection_elements,
+            )
         except httpexceptions.HTTPFound as e:
             # if it's a paste redirect exception, pass it up the stack
             raise e
@@ -2262,7 +2269,7 @@ class DatabaseOperationTool(Tool):
     def check_inputs_ready(self, input_datasets, input_dataset_collections):
         def check_dataset_instance(input_dataset):
             if input_dataset.is_pending:
-                raise ToolInputsNotReadyException()
+                raise ToolInputsNotReadyException("An input dataset is pending.")
 
             if self.require_dataset_ok:
                 if input_dataset.state != input_dataset.dataset.states.OK:
@@ -2274,7 +2281,7 @@ class DatabaseOperationTool(Tool):
         for input_dataset_collection_pairs in input_dataset_collections.values():
             for input_dataset_collection, is_mapped in input_dataset_collection_pairs:
                 if not input_dataset_collection.collection.populated:
-                    raise ToolInputsNotReadyException()
+                    raise ToolInputsNotReadyException("An input collection is not populated.")
 
             map(check_dataset_instance, input_dataset_collection.dataset_instances)
 

@@ -163,6 +163,23 @@ class BaseDatasetPopulator(object):
             self._summarize_history(history_id)
             raise
 
+    def wait_for_history_jobs(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
+        query_params = {"history_id": history_id}
+
+        def has_active_jobs():
+            jobs_response = self._get("jobs", query_params)
+            assert jobs_response.status_code == 200
+            active_jobs = [j for j in jobs_response.json() if j["state"] in ["new", "upload", "waiting", "queued", "running"]]
+
+            if len(active_jobs) == 0:
+                return True
+            else:
+                return None
+
+        wait_on(has_active_jobs, "active jobs", timeout=timeout)
+        if assert_ok:
+            return self.wait_for_history(history_id, assert_ok=True, timeout=timeout)
+
     def wait_for_job(self, job_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
         return wait_on_state(lambda: self.get_job_details(job_id), assert_ok=assert_ok, timeout=timeout)
 

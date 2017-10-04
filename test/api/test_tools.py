@@ -1001,7 +1001,7 @@ class ToolsTestCase(api.ApiTestCase):
         self.assertEquals(len(jobs), 2)
         self.assertEquals(len(implicit_collections), 1)
         implicit_collection = implicit_collections[0]
-        assert implicit_collection["collection_type"] == "list:paired", implicit_collection
+        assert implicit_collection["collection_type"] == "list:paired", implicit_collection["collection_type"]
         outer_elements = implicit_collection["elements"]
         assert len(outer_elements) == 2
 
