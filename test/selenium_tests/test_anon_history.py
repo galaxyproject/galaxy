@@ -11,18 +11,18 @@ class AnonymousHistoriesTestCase(SeleniumTestCase):
         self.home()
         self.assert_initial_history_panel_state_correct()
 
-        tag_icon_selector = self.test_data["historyPanel"]["selectors"]["history"]["tagIcon"]
-        anno_icon_selector = self.test_data["historyPanel"]["selectors"]["history"]["annoIcon"]
-        self.assert_selector_absent(tag_icon_selector)
-        self.assert_selector_absent(anno_icon_selector)
+        tag_icon_selector = self.navigation.history_panel.selectors.tag_icon
+        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
+        self.assert_absent_or_hidden(tag_icon_selector)
+        self.assert_absent_or_hidden(annotation_icon_selector)
 
-        name_selector = self.test_data["historyPanel"]["selectors"]["history"]["name"]
-        name_element = self.wait_for_selector(name_selector)
-
-        # name should NOT be editable when clicked by anon-user
-        editable_text_class = self.test_data["selectors"]["editableText"]
-        assert editable_text_class not in name_element.get_attribute("class")
+        # History has a name but...
+        name_element = self.wait_for_present(self.navigation.history_panel.selectors.name)
         name_element.click()
+
+        # ... name should NOT be editable when clicked by anon-user
+        editable_text_class = self.navigation._.selectors.editable_text
+        assert editable_text_class.as_css_class not in name_element.get_attribute("class")
 
     @selenium_test
     def test_anon_history_upload(self):
@@ -35,8 +35,7 @@ class AnonymousHistoriesTestCase(SeleniumTestCase):
         assert 'state-ok' in element.get_attribute("class")
 
         # empty should be NO LONGER be displayed
-        empty_msg_selector = self.test_data["historyPanel"]["selectors"]["history"]["emptyMsg"]
-        self.assert_selector_absent_or_hidden(empty_msg_selector)
+        self.assert_absent_or_hidden(self.navigation.history_panel.selectors.empty_message)
 
     @selenium_test
     def test_anon_history_after_registration(self):

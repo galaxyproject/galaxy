@@ -298,11 +298,10 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
         elif input.type == 'section':
             populate_state(request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check)
         elif input.type == 'upload_dataset':
-            d_type = input.get_datatype(request_context, context=context)
-            writable_files = d_type.writable_files
-            while len(group_state) > len(writable_files):
+            file_count = input.get_file_count(request_context, context)
+            while len(group_state) > file_count:
                 del group_state[-1]
-            while len(writable_files) > len(group_state):
+            while file_count > len(group_state):
                 new_state = {'__index__' : len(group_state)}
                 for upload_item in input.inputs.values():
                     new_state[upload_item.name] = upload_item.get_initial_value(request_context, context)

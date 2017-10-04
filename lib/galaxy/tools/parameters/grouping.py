@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 class Group(object, Dictifiable):
 
-    dict_collection_visible_keys = ('name', 'type')
+    dict_collection_visible_keys = ['name', 'type']
 
     def __init__(self):
         self.name = None
@@ -65,7 +65,7 @@ class Group(object, Dictifiable):
 
 class Repeat(Group):
 
-    dict_collection_visible_keys = ('name', 'type', 'title', 'help', 'default', 'min', 'max')
+    dict_collection_visible_keys = ['name', 'type', 'title', 'help', 'default', 'min', 'max']
     type = "repeat"
 
     def __init__(self):
@@ -140,7 +140,7 @@ class Repeat(Group):
 
 class Section(Group):
 
-    dict_collection_visible_keys = ('name', 'type', 'title', 'help', 'expanded')
+    dict_collection_visible_keys = ['name', 'type', 'title', 'help', 'expanded']
     type = "section"
 
     def __init__(self):
@@ -219,17 +219,30 @@ class UploadDataset(Group):
         fd = context.get('files_metadata|base_name', 'Galaxy_Composite_file')
         return fd
 
-    def get_file_type(self, context):
-        return context.get(self.file_type_name, self.default_file_type)
+    def get_file_type(self, context, parent_context=None):
+        file_type = context.get(self.file_type_name, None)
+        if file_type == "":
+            if parent_context:
+                file_type = parent_context.get(self.file_type_name, self.default_file_type)
+            else:
+                file_type = self.default_file_type
+        return file_type
 
-    def get_datatype_ext(self, trans, context):
-        ext = self.get_file_type(context)
+    def get_dbkey(self, context, parent_context=None):
+        dbkey = context.get("dbkey", None)
+        if dbkey == "":
+            if parent_context:
+                dbkey = parent_context.get("dbkey", dbkey)
+        return dbkey
+
+    def get_datatype_ext(self, trans, context, parent_context=None):
+        ext = self.get_file_type(context, parent_context=parent_context)
         if ext in self.file_type_to_ext:
             ext = self.file_type_to_ext[ext]  # when using autodetect, we will use composite info from 'text', i.e. only the main file
         return ext
 
-    def get_datatype(self, trans, context):
-        ext = self.get_datatype_ext(trans, context)
+    def get_datatype(self, trans, context, parent_context=None):
+        ext = self.get_datatype_ext(trans, context, parent_context=parent_context)
         return trans.app.datatypes_registry.get_datatype_by_extension(ext)
 
     @property
@@ -249,6 +262,8 @@ class UploadDataset(Group):
                 if composite_file.optional:
                     rval = "%s [optional]" % rval
                 return rval
+        if index < self.get_file_count(trans, context):
+            return "Extra primary file"
         return None
 
     def value_to_basic(self, value, app):
@@ -279,10 +294,14 @@ class UploadDataset(Group):
             rval.append(rval_dict)
         return rval
 
+    def get_file_count(self, trans, context):
+        file_count = context.get("file_count", "auto")
+        return len(self.get_datatype(trans, context).writable_files) if file_count == "auto" else int(file_count)
+
     def get_initial_value(self, trans, context):
-        d_type = self.get_datatype(trans, context)
+        file_count = self.get_file_count(trans, context)
         rval = []
-        for i, (composite_name, composite_file) in enumerate(d_type.writable_files.items()):
+        for i in range(file_count):
             rval_dict = {}
             rval_dict['__index__'] = i  # create __index__
             for input in self.inputs.values():
@@ -356,6 +375,8 @@ class UploadDataset(Group):
             name = context.get('NAME', None)
             info = context.get('INFO', None)
             uuid = context.get('uuid', None) or None  # Turn '' to None
+            file_type = context.get('file_type', None)
+            dbkey = self.get_dbkey(context)
             warnings = []
             to_posix_lines = False
             if context.get('to_posix_lines', None) not in ["None", None, False]:
@@ -405,6 +426,10 @@ class UploadDataset(Group):
             file_bunch.auto_decompress = auto_decompress
             file_bunch.space_to_tab = space_to_tab
             file_bunch.uuid = uuid
+            if file_type is not None:
+                file_bunch.file_type = file_type
+            if dbkey is not None:
+                file_bunch.dbkey = dbkey
             return file_bunch, warnings
 
         def get_filenames(context):
@@ -414,6 +439,8 @@ class UploadDataset(Group):
             uuid = context.get('uuid', None) or None  # Turn '' to None
             name = context.get('NAME', None)
             info = context.get('INFO', None)
+            file_type = context.get('file_type', None)
+            dbkey = self.get_dbkey(context)
             to_posix_lines = False
             if context.get('to_posix_lines', None) not in ["None", None, False]:
                 to_posix_lines = True
@@ -429,6 +456,11 @@ class UploadDataset(Group):
                 file_bunch.to_posix_lines = to_posix_lines
                 file_bunch.auto_decompress = auto_decompress
                 file_bunch.space_to_tab = space_to_tab
+                if file_type is not None:
+                    file_bunch.file_type = file_type
+                if dbkey is not None:
+                    file_bunch.dbkey = dbkey
+
                 rval.append(file_bunch)
             for file_bunch in get_url_paste_urls_or_filename(context, override_name=name, override_info=info):
                 if file_bunch.path:
@@ -436,6 +468,11 @@ class UploadDataset(Group):
                     file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.auto_decompress = auto_decompress
                     file_bunch.space_to_tab = space_to_tab
+                    if file_type is not None:
+                        file_bunch.file_type = file_type
+                    if dbkey is not None:
+                        file_bunch.dbkey = dbkey
+
                     rval.append(file_bunch)
             # look for files uploaded via FTP
             valid_files = []
@@ -474,15 +511,20 @@ class UploadDataset(Group):
                     file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.auto_decompress = auto_decompress
                     file_bunch.space_to_tab = space_to_tab
+                    if file_type is not None:
+                        file_bunch.file_type = file_type
+                    if dbkey is not None:
+                        file_bunch.dbkey = dbkey
                     rval.append(file_bunch)
             return rval
         file_type = self.get_file_type(context)
+        file_count = self.get_file_count(trans, context)
         d_type = self.get_datatype(trans, context)
-        dbkey = context.get('dbkey', None)
+        dbkey = self.get_dbkey(context)
         tag_using_filenames = context.get('tag_using_filenames', False)
         writable_files = d_type.writable_files
         writable_files_offset = 0
-        groups_incoming = [None for _ in writable_files]
+        groups_incoming = [None for _ in range(file_count)]
         for group_incoming in context.get(self.name, []):
             i = int(group_incoming['__index__'])
             groups_incoming[i] = group_incoming
@@ -524,6 +566,10 @@ class UploadDataset(Group):
                 dataset.to_posix_lines = file_bunch.to_posix_lines
                 dataset.auto_decompress = file_bunch.auto_decompress
                 dataset.space_to_tab = file_bunch.space_to_tab
+                if file_bunch.file_type:
+                    dataset.file_type = file_type
+                if file_bunch.dbkey:
+                    dataset.dbkey = dbkey
                 dataset.warnings.extend(warnings)
             if dataset.primary_file is None:  # remove this before finish, this should create an empty dataset
                 raise Exception('No primary dataset file was available for composite upload')
@@ -544,15 +590,18 @@ class UploadDataset(Group):
                             dataset.warnings.append("A required composite file (%s) was not specified." % (key))
             return [dataset]
         else:
-            datasets = get_filenames(context[self.name][0])
             rval = []
-            for dataset in datasets:
-                dataset.file_type = file_type
-                dataset.datatype = d_type
-                dataset.ext = self.get_datatype_ext(trans, context)
-                dataset.dbkey = dbkey
-                dataset.tag_using_filenames = tag_using_filenames
-                rval.append(dataset)
+            for i, file_contexts in enumerate(context[self.name]):
+                datasets = get_filenames(file_contexts)
+                for dataset in datasets:
+                    override_file_type = self.get_file_type(context[self.name][i], parent_context=context)
+                    d_type = self.get_datatype(trans, context[self.name][i], parent_context=context)
+                    dataset.file_type = override_file_type
+                    dataset.datatype = d_type
+                    dataset.ext = self.get_datatype_ext(trans, context[self.name][i], parent_context=context)
+                    dataset.dbkey = self.get_dbkey(context[self.name][i], parent_context=context)
+                    dataset.tag_using_filenames = tag_using_filenames
+                    rval.append(dataset)
             return rval
 
 
@@ -634,7 +683,7 @@ class Conditional(Group):
 
 
 class ConditionalWhen(object, Dictifiable):
-    dict_collection_visible_keys = ('value', )
+    dict_collection_visible_keys = ['value']
 
     def __init__(self):
         self.value = None
