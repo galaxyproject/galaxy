@@ -52,6 +52,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_supplemental_group_id=dict(map=str),
             k8s_pull_policy=dict(map=str, default="Default"),
             k8s_fs_group_id=dict(map=int),
+            k8s_default_requests_cpu=dict(map=str, default=None),
+            k8s_default_requests_memory=dict(map=str, default=None),
+            k8s_default_limits_cpu=dict(map=str, default=None),
+            k8s_default_limits_memory=dict(map=str, default=None),
             k8s_pod_retrials=dict(map=int, valid=lambda x: int > 0, default=3))
 
         if 'runner_param_specs' not in kwargs:
@@ -220,6 +224,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             }]
         }
 
+        resources = self.__get_resources(job_wrapper)
+        if resources:
+            k8s_container['resources'] = resources
+
         if self._default_pull_policy:
             k8s_container["imagePullPolicy"] = self._default_pull_policy
         # if self.__requires_ports(job_wrapper):
@@ -231,6 +239,100 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     #    for k,v self.runner_params:
     #        if k.startswith("container_port_"):
+
+    def __get_resources(self, job_wrapper):
+        mem_request = self.__get_memory_request(job_wrapper)
+        cpu_request = self.__get_cpu_request(job_wrapper)
+
+        mem_limit = self.__get_memory_limit(job_wrapper)
+        cpu_limit = self.__get_cpu_limit(job_wrapper)
+
+        requests = {}
+        limits = {}
+
+        if mem_request:
+            requests['memory'] = mem_request
+        if cpu_request:
+            requests['cpu'] = cpu_request
+
+        if mem_limit:
+            limits['memory'] = mem_limit
+        if cpu_limit:
+            limits['cpu'] = cpu_limit
+
+        resources = {}
+        if requests:
+            resources['requests'] = requests
+        if limits:
+            resources['limits'] = limits
+
+        return resources
+
+
+    def __get_memory_request(self, job_wrapper):
+        """Obtains memory requests for job, checking if available on the destination, otherwise using the default"""
+        job_destinantion = job_wrapper.job_destination
+
+        if 'requests_memory' in job_destinantion.params:
+            return self.__transform_memory_value(job_destinantion.params['requests_memory'])
+        return self.runner_params['k8s_default_requests_memory']
+
+    def __get_memory_limit(self, job_wrapper):
+        """Obtains memory limits for job, checking if available on the destination, otherwise using the default"""
+        job_destinantion = job_wrapper.job_destination
+
+        if 'limits_memory' in job_destinantion.params:
+            return self.__transform_memory_value(job_destinantion.params['limits_memory'])
+        return self.runner_params['k8s_default_limits_memory']
+
+    def __get_cpu_request(self, job_wrapper):
+        """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
+        job_destinantion = job_wrapper.job_destination
+
+        if 'requests_cpu' in job_destinantion.params:
+            return self.__transform_cpu_value(job_destinantion.params['requests_cpu'])
+        return self.runner_params['k8s_default_requests_cpu']
+
+    def __get_cpu_limit(self, job_wrapper):
+        """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
+        job_destinantion = job_wrapper.job_destination
+
+        if 'limits_cpu' in job_destinantion.params:
+            return self.__transform_cpu_value(job_destinantion.params['limits_cpu'])
+        return self.runner_params['k8s_default_limits_cpu']
+
+    def __transform_cpu_value(self, cpu_value):
+        """Transforms cpu value
+
+           If the value is 0 and not a string, then None is returned.
+           If the value is a float, then it is multiplied by 1000 and expressed as mili cpus.
+           If the value is an integer, then it is and expressed as CPUs (no unit).
+           If it is an already formatted string, it is returned as it was.
+        """
+        if not isinstance(cpu_value, str) and float(cpu_value) == 0:
+            return None
+        if isinstance(cpu_value, float):
+            return str(int(cpu_value*1000))+"m"
+        elif isinstance(cpu_value, int):
+            return str(cpu_value)
+        return cpu_value
+
+    def __transform_memory_value(self, mem_value):
+        """Transforms memory value
+
+           If the value is 0 and not a string, then None is returned.
+           If the value has a decimal part, then it is multiplied by 1000 and expressed as Megabytes.
+           If the value is an integer, then it is truncated and expressed as Gigabytes.
+           If it is an already formatted string, it is returned as it was.
+        """
+        if not isinstance(mem_value, str) and float(mem_value) == 0:
+            return None
+        if isinstance(mem_value, float):
+            return str(int(mem_value*1000))+"M"
+        elif isinstance(mem_value, int):
+            return str(mem_value)+"G"
+        return mem_value
+
 
     def __assemble_k8s_container_image_name(self, job_wrapper):
         """Assembles the container image name as repo/owner/image:tag, where repo, owner and tag are optional"""
