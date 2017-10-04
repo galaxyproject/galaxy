@@ -131,7 +131,7 @@ class InstalledRepositoryGrid(grids.Grid):
                    key="name",
                    link=(lambda item: iff(item.status in [tool_shed_install.ToolShedRepository.installation_status.CLONING],
                                           None,
-                                          dict(operation="manage_repository", id=item.id))),
+                                          dict(controller="admin_toolshed", action="manage_repository", id=item.id))),
                    attach_popup=True),
         DescriptionColumn(label="Description"),
         OwnerColumn(label="Owner"),
@@ -158,10 +158,7 @@ class InstalledRepositoryGrid(grids.Grid):
     ]
     operations = [grids.GridOperation(label="Update tool shed status",
                                       condition=(lambda item: not item.deleted),
-                                      allow_multiple=False,
-                                      url_args=dict(controller='admin_toolshed',
-                                                    action='browse_repositories',
-                                                    operation='update tool shed status')),
+                                      allow_multiple=False)),
                   grids.GridOperation(label="Get updates",
                                       condition=(lambda item:
                                                  not item.deleted and
@@ -171,14 +168,12 @@ class InstalledRepositoryGrid(grids.Grid):
                                                      tool_shed_install.ToolShedRepository.installation_status.NEW]),
                                       allow_multiple=False,
                                       url_args=dict(controller='admin_toolshed',
-                                                    action='browse_repositories',
-                                                    operation='get updates')),
+                                                    action='check_for_updates')),
                   grids.GridOperation(label="Install latest revision",
                                       condition=(lambda item: item.upgrade_available),
                                       allow_multiple=False,
                                       url_args=dict(controller='admin_toolshed',
-                                                    action='browse_repositories',
-                                                    operation='install latest revision')),
+                                                    action='install_latest_repository_revision')),
                   grids.GridOperation(label="Install",
                                       condition=(lambda item:
                                                  not item.deleted and
@@ -193,29 +188,26 @@ class InstalledRepositoryGrid(grids.Grid):
                                                  item.status != tool_shed_install.ToolShedRepository.installation_status.NEW),
                                       allow_multiple=True,
                                       url_args=dict(controller='admin_toolshed',
-                                                    action='browse_repositories',
-                                                    operation='deactivate or uninstall')),
+                                                    action='deactivate_or_uninstall_repository')),
                   grids.GridOperation(label="Reset to install",
                                       condition=(lambda item:
                                                  (item.status == tool_shed_install.ToolShedRepository.installation_status.ERROR)),
                                       allow_multiple=False,
                                       url_args=dict(controller='admin_toolshed',
-                                                    action='browse_repositories',
-                                                    operation='reset to install')),
+                                                    action='reset_to_install',
+                                                    reset_repository=True)),
                   grids.GridOperation(label="Activate or reinstall",
                                       condition=(lambda item: item.deleted),
                                       allow_multiple=False,
                                       target=None,
                                       url_args=dict(controller='admin_toolshed',
-                                                    action='browse_repositories',
-                                                    operation='activate or reinstall')),
+                                                    action='restore_repository')),
                   grids.GridOperation(label="Purge",
                                       condition=(lambda item: item.is_new),
                                       allow_multiple=False,
                                       target=None,
                                       url_args=dict(controller='admin_toolshed',
-                                                    action='browse_repositories',
-                                                    operation='purge'))]
+                                                    action='purge_repository'))]
     standard_filters = []
     default_filter = dict(deleted="False")
     num_rows_per_page = 50

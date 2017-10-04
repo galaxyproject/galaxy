@@ -80,87 +80,66 @@ class AdminToolshed(AdminGalaxy):
     @web.expose_api
     @web.require_admin
     def browse_repositories(self, trans, **kwd):
+        message = kwd.get('message', '')
+        status = kwd.get('status', '')
         if 'operation' in kwd:
             operation = kwd.pop('operation').lower()
-            if operation == "manage_repository":
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='manage_repository',
-                                                                **kwd))
-            if operation == "get updates":
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='check_for_updates',
-                                                                **kwd))
             if operation == "update tool shed status":
                 message, status = repository_util.check_for_updates(trans.app, trans.install_model, kwd.get('id'))
-            if operation == "reset to install":
-                kwd['reset_repository'] = True
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='reset_to_install',
-                                                                **kwd))
-            if operation == "purge":
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='purge_repository',
-                                                                **kwd))
-            if operation == "activate or reinstall":
-                repository = repository_util.get_installed_tool_shed_repository(trans.app, kwd['id'])
-                if repository.uninstalled:
-                    # Since we're reinstalling the repository we need to find the latest changeset revision to which it can
-                    # be updated so that we can reset the metadata if necessary.  This will ensure that information about
-                    # repository dependencies and tool dependencies will be current.  Only allow selecting a different section
-                    # in the tool panel if the repository was uninstalled and it contained tools that should be displayed in
-                    # the tool panel.
-                    changeset_revision_dict = \
-                        trans.app.update_repository_manager.get_update_to_changeset_revision_and_ctx_rev(repository)
-                    current_changeset_revision = changeset_revision_dict.get('changeset_revision', None)
-                    current_ctx_rev = changeset_revision_dict.get('ctx_rev', None)
-                    if current_changeset_revision and current_ctx_rev:
-                        if current_ctx_rev == repository.ctx_rev:
-                            # The uninstalled repository is current.
-                            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                            action='reselect_tool_panel_section',
-                                                                            **kwd))
-                        else:
-                            # The uninstalled repository has updates available in the tool shed.
-                            updated_repo_info_dict = \
-                                self.get_updated_repository_information(trans=trans,
-                                                                        repository_id=trans.security.encode_id(repository.id),
-                                                                        repository_name=repository.name,
-                                                                        repository_owner=repository.owner,
-                                                                        changeset_revision=current_changeset_revision)
-                            json_repo_info_dict = json.dumps(updated_repo_info_dict)
-                            encoded_repo_info_dict = encoding_util.tool_shed_encode(json_repo_info_dict)
-                            kwd['latest_changeset_revision'] = current_changeset_revision
-                            kwd['latest_ctx_rev'] = current_ctx_rev
-                            kwd['updated_repo_info_dict'] = encoded_repo_info_dict
-                            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                            action='reselect_tool_panel_section',
-                                                                            **kwd))
-                    else:
-                        message = "Unable to get latest revision for repository <b>%s</b> from " % escape(str(repository.name))
-                        message += "the Tool Shed, so repository re-installation is not possible at this time."
-                        status = "error"
-                        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                        action='browse_repositories',
-                                                                        message=message,
-                                                                        status=status))
-                else:
-                    return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                    action='activate_repository',
-                                                                    **kwd))
-            if operation == "deactivate or uninstall":
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='deactivate_or_uninstall_repository',
-                                                                **kwd))
-            if operation == "install latest revision":
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='install_latest_repository_revision',
-                                                                **kwd))
-            if operation == 'install':
-                # The user is attempting to install a white ghost.
-                kwd['status'] = 'error'
-                kwd['message'] = 'It seems you are attempting to install a "white ghost", which should instead be purged.'
-        kwd[ 'dict_format' ] = True
+        if message and status:
+            kwd['message'] = util.sanitize_text(message)
+            kwd['status'] = 'success' if status == 'ok' else 'danger'
+        kwd['dict_format'] = True
         return self.installed_repository_grid(trans, **kwd)
+
+
+    @web.expose
+    @web.require_admin
+    def restore_repository (self, trans, **kwd):
+        repository = repository_util.get_installed_tool_shed_repository(trans.app, kwd['id'])
+        if repository.uninstalled:
+            # Since we're reinstalling the repository we need to find the latest changeset revision to which it can
+            # be updated so that we can reset the metadata if necessary.  This will ensure that information about
+            # repository dependencies and tool dependencies will be current.  Only allow selecting a different section
+            # in the tool panel if the repository was uninstalled and it contained tools that should be displayed in
+            # the tool panel.
+            changeset_revision_dict = trans.app.update_repository_manager.get_update_to_changeset_revision_and_ctx_rev(repository)
+            current_changeset_revision = changeset_revision_dict.get('changeset_revision', None)
+            current_ctx_rev = changeset_revision_dict.get('ctx_rev', None)
+            if current_changeset_revision and current_ctx_rev:
+                if current_ctx_rev == repository.ctx_rev:
+                    # The uninstalled repository is current.
+                    return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
+                                                                    action='reselect_tool_panel_section',
+                                                                    **kwd))
+                else:
+                    # The uninstalled repository has updates available in the tool shed.
+                    updated_repo_info_dict = \
+                        self.get_updated_repository_information(trans=trans,
+                                                                repository_id=trans.security.encode_id(repository.id),
+                                                                repository_name=repository.name,
+                                                                repository_owner=repository.owner,
+                                                                changeset_revision=current_changeset_revision)
+                    json_repo_info_dict = json.dumps(updated_repo_info_dict)
+                    encoded_repo_info_dict = encoding_util.tool_shed_encode(json_repo_info_dict)
+                    kwd['latest_changeset_revision'] = current_changeset_revision
+                    kwd['latest_ctx_rev'] = current_ctx_rev
+                    kwd['updated_repo_info_dict'] = encoded_repo_info_dict
+                    return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
+                                                                    action='reselect_tool_panel_section',
+                                                                    **kwd))
+            else:
+                message = "Unable to get latest revision for repository <b>%s</b> from " % escape(str(repository.name))
+                message += "the Tool Shed, so repository re-installation is not possible at this time."
+                status = "error"
+                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
+                                                                action='browse_repositories',
+                                                                message=message,
+                                                                status=status))
+        else:
+            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
+                                                            action='activate_repository',
+                                                            **kwd))
 
     @web.expose
     @web.require_admin
