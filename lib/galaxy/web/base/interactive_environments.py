@@ -319,7 +319,7 @@ class InteractiveEnvironmentRequest(object):
             if item.startswith('-e=') or item.startswith('--env='):
                 envsets.append(item.split('=', 1)[1])
             elif item == ('-e') or item == ('--env'):
-                envsets.append(command_inject[i+1])
+                envsets.append(command_inject[i + 1])
             elif item.startswith('-e'):
                 envsets.append(item[2:])
             elif item.startswith('--env'):
