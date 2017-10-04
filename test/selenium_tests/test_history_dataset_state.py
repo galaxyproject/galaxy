@@ -1,6 +1,6 @@
 from .framework import (
-    SeleniumTestCase,
     selenium_test,
+    SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
 

@@ -111,6 +111,21 @@
     %>
 </%def>
 
+<%def name="modern_route_for_controller( controller )">
+    <%
+        if controller == "history":
+            return "histories"
+        elif controller == "workflow":
+            return "workflows"
+        elif controller == "dataset":
+            return "datasets"
+        elif controller == "page":
+            return "pages"
+        else:
+            return controller
+    %>
+</%def>
+
 ## Returns item user/owner.
 <%def name="get_item_user( item )">
     <%

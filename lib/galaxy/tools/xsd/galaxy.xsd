@@ -1299,7 +1299,7 @@ provides a demonstration of using this tag.
     </xs:annotation>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Name of the metdata element to check.</xs:documentation>
+        <xs:documentation xml:lang="en">Name of the metadata element to check.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
@@ -2770,7 +2770,7 @@ dataset for the contained input of the type specified using the ``type`` tag.
     </xs:annotation>
     <xs:attribute name="name" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Name of cheetah variable to create for converted dataset.</xs:documentation>
+        <xs:documentation xml:lang="en">Name of Cheetah variable to create for converted dataset.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="type" type="xs:string">

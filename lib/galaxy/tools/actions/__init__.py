@@ -559,7 +559,11 @@ class DefaultToolAction(object):
                     reductions[name].append(dataset_collection)
 
                 # TODO: verify can have multiple with same name, don't want to lose traceability
-                job.add_input_dataset_collection(name, dataset_collection)
+                if isinstance(dataset_collection, model.HistoryDatasetCollectionAssociation):
+                    # FIXME: when recording inputs for special tools (e.g. ModelOperationToolAction),
+                    # dataset_collection is actually a DatasetCollectionElement, which can't be added
+                    # to a jobs' input_dataset_collection relation, which expects HDCA instances
+                    job.add_input_dataset_collection(name, dataset_collection)
 
         # If this an input collection is a reduction, we expanded it for dataset security, type
         # checking, and such, but the persisted input must be the original collection

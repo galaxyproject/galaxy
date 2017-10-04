@@ -779,6 +779,7 @@ nglims_config_file = tool-data/nglims.yaml
 
 # Verbosity of console log messages.  Acceptable values can be found here:
 # https://docs.python.org/2/library/logging.html#logging-levels
+# A custom debug level of "TRACE" is available for even more verbosity.
 #log_level = DEBUG
 
 # Print database operations to the server log (warning, quite verbose!).
@@ -978,7 +979,7 @@ use_interactive = True
 # Galaxy encodes various internal values when these values will be output in
 # some format (for example, in a URL or cookie).  You should set a key to be
 # used by the algorithm that encodes and decodes these values.  It can be any
-# string.
+# string up to 448 bits long.
 # One simple way to generate a value for this is with the shell command:
 #   python -c 'import time; print time.time()' | md5sum | cut -f 1 -d ' '
 #id_secret = USING THE DEFAULT IS NOT SECURE!

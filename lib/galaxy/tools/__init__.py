@@ -381,7 +381,7 @@ class Tool(object, Dictifiable):
     tool_type = 'default'
     requires_setting_metadata = True
     default_tool_action = DefaultToolAction
-    dict_collection_visible_keys = ('id', 'name', 'version', 'description', 'labels')
+    dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
 
     def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True):
         """Load a tool from the config named by `config_file`"""
@@ -720,6 +720,8 @@ class Tool(object, Dictifiable):
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible(tool_source)
         self.__parse_trackster_conf(tool_source)
+        # Record macro paths so we can reload a tool if any of its macro has changes
+        self._macro_paths = tool_source._macro_paths
 
     def __parse_legacy_features(self, tool_source):
         self.code_namespace = dict()
@@ -1233,14 +1235,7 @@ class Tool(object, Dictifiable):
         if self.check_values:
             visit_input_values(self.inputs, values, callback)
 
-    def handle_input(self, trans, incoming, history=None):
-        """
-        Process incoming parameters for this tool from the dict `incoming`,
-        update the tool state (or create if none existed), and either return
-        to the form or execute the tool (only if 'execute' was clicked and
-        there were no errors).
-        """
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history or trans.history)
+    def expand_incoming(self, trans, incoming, request_context):
         rerun_remap_job_id = None
         if 'rerun_remap_job_id' in incoming:
             try:
@@ -1258,7 +1253,8 @@ class Tool(object, Dictifiable):
         # Remapping a single job to many jobs doesn't make sense, so disable
         # remap if multi-runs of tools are being used.
         if rerun_remap_job_id and len(expanded_incomings) > 1:
-            raise exceptions.MessageException('Failure executing tool (cannot create multiple jobs when remapping existing job).')
+            raise exceptions.MessageException(
+                'Failure executing tool (cannot create multiple jobs when remapping existing job).')
 
         # Process incoming data
         validation_timer = ExecutionTimer()
@@ -1286,6 +1282,17 @@ class Tool(object, Dictifiable):
             all_errors.append(errors)
             all_params.append(params)
         log.debug('Validated and populated state for tool request %s' % validation_timer)
+        return all_params, all_errors, rerun_remap_job_id, collection_info
+
+    def handle_input(self, trans, incoming, history=None):
+        """
+        Process incoming parameters for this tool from the dict `incoming`,
+        update the tool state (or create if none existed), and either return
+        to the form or execute the tool (only if 'execute' was clicked and
+        there were no errors).
+        """
+        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history or trans.history)
+        all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(trans=trans, incoming=incoming, request_context=request_context)
         # If there were errors, we stay on the same page and display them
         if any(all_errors):
             err_data = {key: value for d in all_errors for (key, value) in d.items()}
@@ -1390,8 +1397,8 @@ class Tool(object, Dictifiable):
         """
         return self.tool_action.execute(self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs)
 
-    def params_to_strings(self, params, app):
-        return params_to_strings(self.inputs, params, app)
+    def params_to_strings(self, params, app, nested=False):
+        return params_to_strings(self.inputs, params, app, nested)
 
     def params_from_strings(self, params, app, ignore_errors=False):
         return params_from_strings(self.inputs, params, app, ignore_errors)

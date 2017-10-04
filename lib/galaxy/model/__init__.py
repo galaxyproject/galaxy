@@ -87,8 +87,8 @@ def set_datatypes_registry(d_registry):
 
 
 class HasTags(object):
-    dict_collection_visible_keys = ('tags')
-    dict_element_visible_keys = ('tags')
+    dict_collection_visible_keys = ['tags']
+    dict_element_visible_keys = ['tags']
 
     def to_dict(self, *args, **kwargs):
         rval = super(HasTags, self).to_dict(*args, **kwargs)
@@ -174,9 +174,9 @@ class User(object, Dictifiable):
     histories, credentials, and roles.
     """
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
-    dict_collection_visible_keys = ('id', 'email', 'username', 'deleted', 'active', 'last_password_change')
+    dict_collection_visible_keys = ['id', 'email', 'username', 'deleted', 'active', 'last_password_change']
     # attributes that will be accessed and returned when calling to_dict( view='element' )
-    dict_element_visible_keys = ('id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'deleted', 'active', 'last_password_change')
+    dict_element_visible_keys = ['id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'deleted', 'active', 'last_password_change']
 
     def __init__(self, email=None, password=None):
         self.email = email
@@ -1187,8 +1187,8 @@ class DeferredJob(object):
 
 
 class Group(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'name')
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'name']
 
     def __init__(self, name=None):
         self.name = name
@@ -1207,9 +1207,9 @@ def is_hda(d):
 
 class History(HasTags, Dictifiable, UsesAnnotations, HasName):
 
-    dict_collection_visible_keys = ('id', 'name', 'published', 'deleted')
-    dict_element_visible_keys = ('id', 'name', 'genome_build', 'deleted', 'purged', 'update_time',
-                                 'published', 'importable', 'slug', 'empty')
+    dict_collection_visible_keys = ['id', 'name', 'published', 'deleted']
+    dict_element_visible_keys = ['id', 'name', 'genome_build', 'deleted', 'purged', 'update_time',
+                                 'published', 'importable', 'slug', 'empty']
     default_name = 'Unnamed history'
 
     def __init__(self, id=None, name=None, user=None):
@@ -1441,7 +1441,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             HistoryDatasetAssociation.table.c.dataset_id == Dataset.table.c.id)
         distinct_datasets = (
             select([
-                # use labels here to better accrss from the query above
+                # use labels here to better access from the query above
                 HistoryDatasetAssociation.table.c.history_id.label('history_id'),
                 Dataset.total_size.label('dataset_size'),
                 Dataset.id.label('dataset_id')
@@ -1558,8 +1558,8 @@ class GroupRoleAssociation(object):
 
 
 class Role(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'name', 'description', 'type')
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'name', 'description', 'type']
     private_id = None
     types = Bunch(
         PRIVATE='private',
@@ -1577,7 +1577,7 @@ class Role(object, Dictifiable):
 
 
 class UserQuotaAssociation(object, Dictifiable):
-    dict_element_visible_keys = ('user', )
+    dict_element_visible_keys = ['user']
 
     def __init__(self, user, quota):
         self.user = user
@@ -1585,7 +1585,7 @@ class UserQuotaAssociation(object, Dictifiable):
 
 
 class GroupQuotaAssociation(object, Dictifiable):
-    dict_element_visible_keys = ('group', )
+    dict_element_visible_keys = ['group']
 
     def __init__(self, group, quota):
         self.group = group
@@ -1593,8 +1593,8 @@ class GroupQuotaAssociation(object, Dictifiable):
 
 
 class Quota(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups')
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups']
     valid_operations = ('+', '-', '=')
 
     def __init__(self, name="", description="", amount=0, operation="="):
@@ -1627,7 +1627,7 @@ class Quota(object, Dictifiable):
 
 
 class DefaultQuotaAssociation(Quota, Dictifiable):
-    dict_element_visible_keys = ('type', )
+    dict_element_visible_keys = ['type']
     types = Bunch(
         UNREGISTERED='unregistered',
         REGISTERED='registered'
@@ -2632,8 +2632,8 @@ class HistoryDatasetAssociationSubset(object):
 
 class Library(object, Dictifiable, HasName):
     permitted_actions = get_permitted_actions(filter='LIBRARY')
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id', 'create_time')
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id', 'create_time']
 
     def __init__(self, name=None, description=None, synopsis=None, root_folder=None):
         self.name = name or "Unnamed library"
@@ -2708,7 +2708,7 @@ class Library(object, Dictifiable, HasName):
 
 
 class LibraryFolder(object, Dictifiable, HasName):
-    dict_element_visible_keys = ('id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time', 'deleted')
+    dict_element_visible_keys = ['id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time', 'deleted']
 
     def __init__(self, name=None, description=None, item_count=0, order_id=None):
         self.name = name or "Unnamed folder"
@@ -3200,8 +3200,8 @@ DEFAULT_COLLECTION_NAME = "Unnamed Collection"
 class DatasetCollection(object, Dictifiable, UsesAnnotations):
     """
     """
-    dict_collection_visible_keys = ('id', 'collection_type')
-    dict_element_visible_keys = ('id', 'collection_type')
+    dict_collection_visible_keys = ['id', 'collection_type']
+    dict_element_visible_keys = ['id', 'collection_type']
     populated_states = Bunch(
         NEW='new',  # New dataset collection, unpopulated elements
         OK='ok',  # Collection elements populated (HDAs may or may not have errors)
@@ -3504,8 +3504,8 @@ class LibraryDatasetCollectionAssociation(DatasetCollectionInstance):
 class DatasetCollectionElement(object, Dictifiable):
     """ Associates a DatasetInstance (hda or ldda) with a DatasetCollection. """
     # actionable dataset id needs to be available via API...
-    dict_collection_visible_keys = ('id', 'element_type', 'element_index', 'element_identifier')
-    dict_element_visible_keys = ('id', 'element_type', 'element_index', 'element_identifier')
+    dict_collection_visible_keys = ['id', 'element_type', 'element_index', 'element_identifier']
+    dict_element_visible_keys = ['id', 'element_type', 'element_index', 'element_identifier']
 
     def __init__(
         self,
@@ -3672,8 +3672,8 @@ class UCI(object):
 
 class StoredWorkflow(HasTags, Dictifiable):
 
-    dict_collection_visible_keys = ('id', 'name', 'published', 'deleted')
-    dict_element_visible_keys = ('id', 'name', 'published', 'deleted')
+    dict_collection_visible_keys = ['id', 'name', 'published', 'deleted']
+    dict_element_visible_keys = ['id', 'name', 'published', 'deleted']
 
     def __init__(self):
         self.id = None
@@ -3698,8 +3698,8 @@ class StoredWorkflow(HasTags, Dictifiable):
 
 class Workflow(object, Dictifiable):
 
-    dict_collection_visible_keys = ('name', 'has_cycles', 'has_errors')
-    dict_element_visible_keys = ('name', 'has_cycles', 'has_errors')
+    dict_collection_visible_keys = ['name', 'has_cycles', 'has_errors']
+    dict_element_visible_keys = ['name', 'has_cycles', 'has_errors']
     input_step_types = ['data_input', 'data_collection_input', 'parameter_input']
 
     def __init__(self, uuid=None):
@@ -3985,8 +3985,8 @@ class StoredWorkflowMenuEntry(object):
 
 
 class WorkflowInvocation(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state')
-    dict_element_visible_keys = ('id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state')
+    dict_collection_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
+    dict_element_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
     states = Bunch(
         NEW='new',  # Brand new workflow invocation... maybe this should be same as READY
         READY='ready',  # Workflow ready for another iteration of scheduling.
@@ -4160,13 +4160,13 @@ class WorkflowInvocation(object, Dictifiable):
 
 
 class WorkflowInvocationToSubworkflowInvocationAssociation(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id')
-    dict_element_visible_keys = ('id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id')
+    dict_collection_visible_keys = ['id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id']
+    dict_element_visible_keys = ['id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id']
 
 
 class WorkflowInvocationStep(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'update_time', 'job_id', 'workflow_step_id', 'action')
-    dict_element_visible_keys = ('id', 'update_time', 'job_id', 'workflow_step_id', 'action')
+    dict_collection_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'action']
+    dict_element_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'action']
 
     def update(self):
         self.workflow_invocation.update()
@@ -4295,8 +4295,8 @@ class FormDefinition(object, Dictifiable):
                   RUN_DETAILS_TEMPLATE='Sample run details template',
                   LIBRARY_INFO_TEMPLATE='Library information template',
                   USER_INFO='User Information')
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout')
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout']
 
     def __init__(self, name=None, desc=None, fields=[], form_definition_current=None, form_type=None, layout=None):
         self.name = name
@@ -4439,7 +4439,7 @@ class Request(object, Dictifiable):
                    SUBMITTED='In Progress',
                    REJECTED='Rejected',
                    COMPLETE='Complete')
-    dict_collection_visible_keys = ('id', 'name', 'state')
+    dict_collection_visible_keys = ['id', 'name', 'state']
 
     def __init__(self, name=None, desc=None, request_type=None, user=None, form_values=None, notification=None):
         self.name = name
@@ -4650,8 +4650,8 @@ class ExternalService(object):
 
 
 class RequestType(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name', 'desc')
-    dict_element_visible_keys = ('id', 'name', 'desc', 'request_form_id', 'sample_form_id')
+    dict_collection_visible_keys = ['id', 'name', 'desc']
+    dict_element_visible_keys = ['id', 'name', 'desc', 'request_form_id', 'sample_form_id']
     rename_dataset_options = Bunch(NO='Do not rename',
                                    SAMPLE_NAME='Preprend sample name',
                                    EXPERIMENT_NAME='Prepend experiment name',
@@ -4752,7 +4752,7 @@ class Sample(object, Dictifiable):
     supported_field_types = [CheckboxField, SelectField, TextField, WorkflowField, WorkflowMappingField, HistoryField]
     bulk_operations = Bunch(CHANGE_STATE='Change state',
                             SELECT_LIBRARY='Select data library and folder')
-    dict_collection_visible_keys = ('id', 'name')
+    dict_collection_visible_keys = ['id', 'name']
 
     def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None, library=None, folder=None, workflow=None, history=None):
         self.name = name
@@ -5124,7 +5124,7 @@ class Tag (object):
 
 
 class ItemTagAssociation (object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'user_tname', 'user_value')
+    dict_collection_visible_keys = ['id', 'user_tname', 'user_value']
     dict_element_visible_keys = dict_collection_visible_keys
 
     def __init__(self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None):

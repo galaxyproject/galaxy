@@ -111,7 +111,7 @@ class InteractiveEnvironmentRequest(object):
                 raise Exception("[{0}] Could not find allowed_images.yml, or image tag in {0}.ini file for ".format(self.attr.viz_id))
 
         with open(fn, 'r') as handle:
-            self.allowed_images = [x['image'] for x in yaml.load(handle)]
+            self.allowed_images = [x['image'] for x in yaml.safe_load(handle)]
 
             if len(self.allowed_images) == 0:
                 raise Exception("No allowed images specified for " + self.attr.viz_id)
@@ -373,7 +373,7 @@ class InteractiveEnvironmentRequest(object):
         p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
-            log.error("%s\n%s" % (stdout, stderr))
+            log.error("Container Launch error\n\n%s\n%s" % (stdout, stderr))
             return None
         else:
             container_id = stdout.strip()
@@ -484,7 +484,7 @@ class InteractiveEnvironmentRequest(object):
         p = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
-            log.error("%s\n%s" % (stdout, stderr))
+            log.error("Container Launch error\n\n%s\n%s" % (stdout, stderr))
             return None
 
         inspect_data = json.loads(stdout)

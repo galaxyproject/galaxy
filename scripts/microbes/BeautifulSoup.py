@@ -45,12 +45,15 @@ from __future__ import generators
 
 import codecs
 import re
+import sgmllib
 import string
 import sys
 import types
-import sgmllib
 from htmlentitydefs import name2codepoint
-from sgmllib import SGMLParser, SGMLParseError
+from sgmllib import (
+    SGMLParseError,
+    SGMLParser
+)
 
 __author__ = "Leonard Richardson (crummy.com)"
 __contributors__ = ["Sam Ruby (intertwingly.net)",

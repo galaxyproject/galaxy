@@ -252,12 +252,8 @@ class Bam(Binary):
             message = 'Attempting to use functionality requiring samtools, but it cannot be located on Galaxy\'s PATH.'
             raise Exception(message)
 
-        # Get the version of samtools via --version-only, if available
-        p = subprocess.Popen(['samtools', '--version-only'],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        p = subprocess.Popen(['samtools', '--version-only'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, error = p.communicate()
-
         # --version-only is available
         # Format is <version x.y.z>+htslib-<a.b.c>
         if p.returncode == 0:
@@ -294,10 +290,8 @@ class Bam(Binary):
 
     def _is_coordinate_sorted(self, file_name):
         """See if the input BAM file is sorted from the header information."""
-        params = ["samtools", "view", "-H", file_name]
-        output = subprocess.Popen(params, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()[0]
-        # find returns -1 if string is not found
-        return output.find("SO:coordinate") != -1 or output.find("SO:sorted") != -1
+        output = subprocess.check_output(["samtools", "view", "-H", file_name])
+        return 'SO:coordinate' in output or 'SO:sorted' in output
 
     def dataset_content_needs_grooming(self, file_name):
         """See if file_name is a sorted BAM file"""
@@ -322,8 +316,7 @@ class Bam(Binary):
                 return False
             index_name = tempfile.NamedTemporaryFile(prefix="bam_index").name
             stderr_name = tempfile.NamedTemporaryFile(prefix="bam_index_stderr").name
-            command = 'samtools index %s %s' % (file_name, index_name)
-            proc = subprocess.Popen(args=command, shell=True, stderr=open(stderr_name, 'wb'))
+            proc = subprocess.Popen(['samtools', 'index', file_name, index_name], stderr=open(stderr_name, 'wb'))
             proc.wait()
             stderr = open(stderr_name).read().strip()
             if stderr:
@@ -366,8 +359,8 @@ class Bam(Binary):
         tmp_sorted_dataset_file_name_prefix = os.path.join(tmp_dir, 'sorted')
         stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_sort_stderr").name
         samtools_created_sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix  # samtools accepts a prefix, not a filename, it always adds .bam to the prefix
-        command = "samtools sort %s %s" % (file_name, tmp_sorted_dataset_file_name_prefix)
-        proc = subprocess.Popen(args=command, shell=True, cwd=tmp_dir, stderr=open(stderr_name, 'wb'))
+        proc = subprocess.Popen(['samtools', 'sort', file_name, tmp_sorted_dataset_file_name_prefix],
+                                cwd=tmp_dir, stderr=open(stderr_name, 'wb'))
         exit_code = proc.wait()
         # Did sort succeed?
         stderr = open(stderr_name).read().strip()
@@ -1309,11 +1302,8 @@ class ExcelXls(Binary):
     edam_format = "format_3468"
 
     def sniff(self, filename):
-        mime_type = subprocess.check_output("file --mime-type '{}'".format(filename), shell=True).rstrip()
-        if mime_type.find("application/vnd.ms-excel") != -1:
-            return True
-        else:
-            return False
+        mime_type = subprocess.check_output(['file', '--mime-type', filename])
+        return "application/vnd.ms-excel" in mime_type
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
@@ -1574,6 +1564,59 @@ class OxliGraphLabels(OxliBinary):
 
 Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
                                         OxliGraphLabels)
+
+
+class PostgresqlArchive(CompressedArchive):
+    """
+    Class describing a Postgresql database packed into a tar archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'postgresql_fake.tar.bz2' )
+    >>> PostgresqlArchive().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'test.fast5.tar' )
+    >>> PostgresqlArchive().sniff( fname )
+    False
+    """
+    MetadataElement(name="version", default=None, param=MetadataParameter, desc="PostgreSQL database version",
+                    readonly=True, visible=True, no_value=None)
+    file_ext = "postgresql"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(PostgresqlArchive, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            if dataset and tarfile.is_tarfile(dataset.file_name):
+                with tarfile.open(dataset.file_name, 'r') as temptar:
+                    pg_version_file = temptar.extractfile('postgresql/db/PG_VERSION')
+                    dataset.metadata.version = pg_version_file.read().strip()
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def sniff(self, filename):
+        if filename and tarfile.is_tarfile(filename):
+            try:
+                with tarfile.open(filename, 'r') as temptar:
+                    return 'postgresql/db/PG_VERSION' in temptar.getnames()
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "PostgreSQL Archive (%s)" % (nice_size(dataset.get_size()))
+            dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or 'unknown')
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "PostgreSQL Archive (%s)" % (nice_size(dataset.get_size()))
+
+
+Binary.register_sniffable_binary_format("postgresql_archiv", "postgresql", PostgresqlArchive)
 
 
 class Fast5Archive(CompressedArchive):

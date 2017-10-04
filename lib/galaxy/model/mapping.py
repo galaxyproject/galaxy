@@ -2137,6 +2137,7 @@ mapper(model.Job, model.Job.table, properties=dict(
     library_folder=relation(model.LibraryFolder, lazy=True),
     parameters=relation(model.JobParameter, lazy=True),
     input_datasets=relation(model.JobToInputDatasetAssociation),
+    input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, lazy=True),
     output_datasets=relation(model.JobToOutputDatasetAssociation, lazy=True),
     output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation, lazy=True),
     output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation, lazy=True),

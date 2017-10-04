@@ -1,8 +1,8 @@
 """Script to parse timings out of a Galaxy log and summarize."""
 from __future__ import print_function
 
-from argparse import ArgumentParser
 import re
+from argparse import ArgumentParser
 
 import numpy
 

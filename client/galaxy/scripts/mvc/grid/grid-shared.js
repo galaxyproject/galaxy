@@ -8,7 +8,7 @@ define( [ 'mvc/grid/grid-view' ], function( GridView ) {
             this.item = this.model.get( 'item' );
             this.title = this.model.get('plural');
             $.ajax({
-                url     : Galaxy.root + this.item + '/' + this.model.get( 'action_id' ),
+                url     : Galaxy.root + this.item + '/' + this.model.get( 'action_id' ) + '?' +  $.param( Galaxy.params ),
                 success : function( response ) {
                     response[ 'dict_format' ] = true;
                     self.model.set( response );

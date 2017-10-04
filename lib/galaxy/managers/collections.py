@@ -23,7 +23,7 @@ ERROR_NO_COLLECTION_TYPE = "Create called without specifing a collection type."
 
 class DatasetCollectionManager(object):
     """
-    Abstraction for interfacing with dataset collections instance - ideally abstarcts
+    Abstraction for interfacing with dataset collections instance - ideally abstracts
     out model and plugin details.
     """
     ELEMENTS_UNINITIALIZED = object()

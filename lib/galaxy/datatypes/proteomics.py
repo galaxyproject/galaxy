@@ -62,7 +62,7 @@ class PepXmlReport(Tabular):
 
     def __init__(self, **kwd):
         super(PepXmlReport, self).__init__(**kwd)
-        self.column_names = ['Protein', 'Peptide', 'Assumed Charge', 'Neutral Pep Mass (calculated)', 'Neutral Mass', 'Retention Time', 'Start Scan', 'End Scan', 'Search Engine', 'PeptideProphet Probability', 'Interprophet Probabaility']
+        self.column_names = ['Protein', 'Peptide', 'Assumed Charge', 'Neutral Pep Mass (calculated)', 'Neutral Mass', 'Retention Time', 'Start Scan', 'End Scan', 'Search Engine', 'PeptideProphet Probability', 'Interprophet Probability']
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
