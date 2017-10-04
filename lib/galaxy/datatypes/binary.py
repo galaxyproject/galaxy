@@ -1566,6 +1566,59 @@ Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
                                         OxliGraphLabels)
 
 
+class PostgresqlArchive(CompressedArchive):
+    """
+    Class describing a Postgresql database packed into a tar archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'postgresql_fake.tar.bz2' )
+    >>> PostgresqlArchive().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'test.fast5.tar' )
+    >>> PostgresqlArchive().sniff( fname )
+    False
+    """
+    MetadataElement(name="version", default=None, param=MetadataParameter, desc="PostgreSQL database version",
+                    readonly=True, visible=True, no_value=None)
+    file_ext = "postgresql"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(PostgresqlArchive, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            if dataset and tarfile.is_tarfile(dataset.file_name):
+                with tarfile.open(dataset.file_name, 'r') as temptar:
+                    pg_version_file = temptar.extractfile('postgresql/db/PG_VERSION')
+                    dataset.metadata.version = pg_version_file.read().strip()
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def sniff(self, filename):
+        if filename and tarfile.is_tarfile(filename):
+            try:
+                with tarfile.open(filename, 'r') as temptar:
+                    return 'postgresql/db/PG_VERSION' in temptar.getnames()
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "PostgreSQL Archive (%s)" % (nice_size(dataset.get_size()))
+            dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or 'unknown')
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "PostgreSQL Archive (%s)" % (nice_size(dataset.get_size()))
+
+
+Binary.register_sniffable_binary_format("postgresql_archiv", "postgresql", PostgresqlArchive)
+
+
 class Fast5Archive(CompressedArchive):
     """
     Class describing a FAST5 archive

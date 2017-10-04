@@ -87,8 +87,8 @@ def set_datatypes_registry(d_registry):
 
 
 class HasTags(object):
-    dict_collection_visible_keys = ('tags')
-    dict_element_visible_keys = ('tags')
+    dict_collection_visible_keys = ('tags',)
+    dict_element_visible_keys = ('tags',)
 
     def to_dict(self, *args, **kwargs):
         rval = super(HasTags, self).to_dict(*args, **kwargs)

@@ -1056,7 +1056,11 @@ class BaseGalaxyToolBox(AbstractToolBox):
 
     def __init__(self, config_filenames, tool_root_dir, app):
         super(BaseGalaxyToolBox, self).__init__(config_filenames, tool_root_dir, app)
-        self._init_dependency_manager()
+        old_toolbox = getattr(app, 'toolbox', None)
+        if old_toolbox:
+            self.dependency_manager = old_toolbox.dependency_manager
+        else:
+            self._init_dependency_manager()
 
     @property
     def sa_session(self):

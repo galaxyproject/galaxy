@@ -1,5 +1,3 @@
-import time
-
 from ._workflow_fixtures import (
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_WITH_INVALID_STATE,
@@ -27,7 +25,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
     def test_data_input(self):
         self.workflow_create_new()
         menu = self.wait_for_selector(".toolMenu")
-        time.sleep(1)
+        self.sleep_for(self.wait_types.UX_RENDER)
         inputs_section = menu.find_element_by_css_selector("#title___workflow__inputs__")
         inputs_link = inputs_section.find_element_by_css_selector("a span")
         inputs_link.click()
@@ -43,7 +41,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.workflow_index_open()
         self.workflow_index_click_option("Edit")
-        time.sleep(1)
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_editor_click_option("Save As")
 
     @selenium_test

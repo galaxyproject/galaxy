@@ -1,5 +1,3 @@
-import time
-
 from .framework import (
     retry_assertion_during_transitions,
     retry_during_transitions,
@@ -21,12 +19,11 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_saved_histories_page()
         self.click_popup_option(self.history2_name, 'Switch')
-        time.sleep(.5)
+        self.sleep_for(self.wait_types.UX_RENDER)
 
         @retry_assertion_during_transitions
         def assert_history_name_switched():
-            history_name = self.history_panel_name_element()
-            self.assertEqual(history_name.text, self.history2_name)
+            self.assertEqual(self.history_panel_name(), self.history2_name)
 
         assert_history_name_switched()
 
@@ -51,7 +48,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         self.histories_click_advanced_search()
         self.select_filter('sharing', 'published')
-        time.sleep(1)
+        self.sleep_for(self.wait_types.UX_RENDER)
 
         self.assert_histories_in_grid([self.history2_name])
 
@@ -85,7 +82,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         self.histories_click_advanced_search()
         self.select_filter('deleted', 'True')
-        time.sleep(1)
+        self.sleep_for(self.wait_types.UX_RENDER)
 
         # Restore the history
         self.click_popup_option(self.history2_name, 'Undelete')
@@ -130,7 +127,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         self.histories_click_advanced_search()
         self.select_filter('deleted', 'True')
-        time.sleep(1)
+        self.sleep_for(self.wait_types.UX_RENDER)
 
         # Restore multiple histories
         self.check_histories([self.history2_name, self.history3_name])
@@ -254,7 +251,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     @retry_during_transitions
     def get_histories(self):
-        time.sleep(.5)
+        self.sleep_for(self.wait_types.UX_RENDER)
         names = []
         grid = self.wait_for_selector('#grid-table-body')
         for row in grid.find_elements_by_tag_name('tr'):
@@ -273,13 +270,11 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         close_button_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
             (filter_key, filter_value)
         self.wait_for_and_click_selector(close_button_selector)
-        time.sleep(.5)
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     def navigate_to_saved_histories_page(self):
         self.home()
         self.click_masthead_user()  # Open masthead menu
-        label = self.navigation_data['labels']['masthead']['menus']['user']
-        self.click_label(label)
         self.wait_for_and_click_selector('a[href="/histories/list"]')
 
     def setup_shared_state(self):
@@ -300,8 +295,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     def create_history(self, name):
         self.home()
-        self.click_history_option('Create New')
-        self.history_panel_rename(name)
+        self.history_panel_create_new_with_name(name)
 
     def select_filter(self, filter_key, filter_value):
         filter_selector = 'a[filter_key="%s"][filter_val="%s"]' % \

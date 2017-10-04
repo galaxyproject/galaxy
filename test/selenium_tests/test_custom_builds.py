@@ -1,5 +1,3 @@
-import time
-
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -81,7 +79,7 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
         delete_button.click()
 
     def get_custom_builds(self):
-        time.sleep(1)
+        self.sleep_for(self.wait_types.UX_RENDER)
         builds = []
         grid = self.wait_for_selector('table.grid > tbody')
         for row in grid.find_elements_by_tag_name('tr'):
@@ -92,8 +90,6 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
     def navigate_to_custom_builds_page(self):
         self.home()
         self.click_masthead_user()  # Open masthead menu
-        label = self.navigation_data['labels']['masthead']['menus']['user']
-        self.click_label(label)
         self.wait_for_and_click_selector('a[href="/custom_builds"]')
 
     def setup_shared_state(self):
