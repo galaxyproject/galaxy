@@ -220,8 +220,9 @@ class WorkflowModule(object):
         Use the supplied workflow progress object to track outputs, find
         inputs, etc....
 
-        Return jobs created and a boolean indicating if there are additional
-        jobs to create on subsequent workflow scheduling tests.
+        Return a False if there is additional processing required to
+        on subsequent workflow scheduling runs, None or True means the workflow
+        step executed properly.
         """
         raise TypeError("Abstract method")
 
@@ -871,9 +872,7 @@ class ToolModule(WorkflowModule):
 
             param_combinations.append(execution_state.inputs)
 
-        # Will be set if only a subset of required jobs have been scheduled and the
-        # workflow should be delayed.
-        partial_jobs = None
+        complete = False
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
             execution_tracker = execute(
@@ -884,36 +883,29 @@ class ToolModule(WorkflowModule):
                 collection_info=collection_info,
                 workflow_invocation_uuid=invocation.uuid.hex,
                 invocation_step=invocation_step,
+                job_callback=lambda job: self._handle_post_job_actions(step, job, invocation.replacement_dict),
             )
-        except PartialJobExecution as p:
-            partial_jobs = p.jobs
+            complete = True
+        except PartialJobExecution:
+            pass
+
         except ToolInputsNotReadyException:
             delayed_why = "tool [%s] inputs are not ready, this special tool requires inputs to be ready" % tool.id
             raise DelayedWorkflowEvaluation(why=delayed_why)
 
-        if partial_jobs is None:
+        if invocation_step.is_new:
             if collection_info:
                 step_outputs = dict(execution_tracker.implicit_collections)
             else:
                 step_outputs = dict(execution_tracker.output_datasets)
                 step_outputs.update(execution_tracker.output_collections)
             progress.set_step_outputs(invocation_step, step_outputs)
-            jobs = execution_tracker.successful_jobs
-        else:
-            jobs = partial_jobs
-
-        for job in jobs:
-            self._handle_post_job_actions(step, job, invocation.replacement_dict)
 
         if execution_tracker.execution_errors:
-            failed_count = len(execution_tracker.execution_errors)
-            success_count = len(execution_tracker.successful_jobs)
-            all_count = failed_count + success_count
-            message = "Failed to create %d out of %s job(s) for workflow step." % (failed_count, all_count)
+            message = "Failed to create one or more job(s) for workflow step."
             raise Exception(message)
 
-        complete = partial_jobs is None
-        return jobs, complete
+        return complete
 
     def recover_mapping(self, invocation_step, progress):
         outputs = {}

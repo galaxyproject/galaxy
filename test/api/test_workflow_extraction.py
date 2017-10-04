@@ -467,7 +467,7 @@ test_data:
                     disconnected_inputs.append(value)
 
         if disconnected_inputs:
-            template = "%d step(s_ disconnected in extracted workflow - disconnectect steps are %s - workflow is %s"
+            template = "%d steps disconnected in extracted workflow - disconnectect steps are %s - workflow is %s"
             message = template % (len(disconnected_inputs), disconnected_inputs, workflow)
             raise AssertionError(message)
 

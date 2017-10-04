@@ -1,7 +1,7 @@
 import logging
 import uuid
 
-from galaxy import model, util
+from galaxy import model
 from galaxy.util import ExecutionTimer
 from galaxy.util.odict import odict
 from galaxy.workflow import modules
@@ -165,7 +165,6 @@ class WorkflowInvoker(object):
         for (step, workflow_invocation_step) in remaining_steps:
             step_delayed = False
             step_timer = ExecutionTimer()
-            jobs = None
             try:
                 self.__check_implicitly_dependent_steps(step)
 
@@ -174,29 +173,11 @@ class WorkflowInvoker(object):
                     workflow_invocation_step.workflow_invocation = workflow_invocation
                     workflow_invocation_step.workflow_step = step
                     workflow_invocation_step.state = 'new'
-                    previously_executed_jobs_count = 0
 
                     workflow_invocation.steps.append(workflow_invocation_step)
-                else:
-                    previously_executed_jobs_count = len(workflow_invocation_step.jobs)
 
-                jobs_or_none = self._invoke_step(workflow_invocation_step)
-                if jobs_or_none:
-                    jobs, complete = jobs_or_none
-                else:
-                    jobs, complete = [], True
-
-                for job in (util.listify(jobs) or []):
-                    job_assoc = model.WorkflowInvocationStepJobAssociation()
-                    job_assoc.index = previously_executed_jobs_count
-                    job_assoc.workflow_invocation_step = workflow_invocation_step
-                    # Job may not be generated in this thread if bursting is enabled
-                    # https://github.com/galaxyproject/galaxy/issues/2259
-                    job_assoc.job_id = job.id
-
-                    previously_executed_jobs_count += 1
-
-                if not complete:
+                incomplete_or_none = self._invoke_step(workflow_invocation_step)
+                if incomplete_or_none is False:
                     step_delayed = delayed_steps = True
                     workflow_invocation_step.state = 'ready'
                     self.progress.mark_step_outputs_delayed(step, why="Not all jobs scheduled for state.")
@@ -268,8 +249,8 @@ class WorkflowInvoker(object):
                 pass
 
     def _invoke_step(self, invocation_step):
-        jobs_or_none = invocation_step.workflow_step.module.execute(self.trans, self.progress, invocation_step)
-        return jobs_or_none
+        incomplete_or_none = invocation_step.workflow_step.module.execute(self.trans, self.progress, invocation_step)
+        return incomplete_or_none
 
 
 STEP_OUTPUT_DELAYED = object()
