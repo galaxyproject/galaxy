@@ -104,12 +104,14 @@ class BaseDatasetPopulator(object):
     Galaxy - implementations must implement _get and _post.
     """
 
-    def new_dataset(self, history_id, content='TestData123', wait=False, **kwds):
+    def new_dataset(self, history_id, content=None, wait=False, **kwds):
         run_response = self.new_dataset_request(history_id, content=content, wait=wait, **kwds)
         return run_response.json()["outputs"][0]
 
-    def new_dataset_request(self, history_id, content='TestData123', wait=False, **kwds):
-        payload = self.upload_payload(history_id, content, **kwds)
+    def new_dataset_request(self, history_id, content=None, wait=False, **kwds):
+        if content is None and "ftp_files" not in kwds:
+            content = "TestData123"
+        payload = self.upload_payload(history_id, content=content, **kwds)
         run_response = self.tools_post(payload)
         if wait:
             self.wait_for_tool_run(history_id, run_response)
@@ -157,7 +159,7 @@ class BaseDatasetPopulator(object):
         history_id = create_history_response.json()["id"]
         return history_id
 
-    def upload_payload(self, history_id, content, **kwds):
+    def upload_payload(self, history_id, content=None, **kwds):
         name = kwds.get("name", "Test Dataset")
         dbkey = kwds.get("dbkey", "?")
         file_type = kwds.get("file_type", 'txt')
@@ -166,7 +168,9 @@ class BaseDatasetPopulator(object):
             'dbkey': dbkey,
             'file_type': file_type,
         }
-        if hasattr(content, 'read'):
+        if content is None:
+            upload_params["files_0|ftp_files"] = kwds.get("ftp_files")
+        elif hasattr(content, 'read'):
             upload_params["files_0|file_data"] = content
         else:
             upload_params['files_0|url_paste'] = content
@@ -184,6 +188,9 @@ class BaseDatasetPopulator(object):
             history_id=history_id,
             upload_type='upload_dataset'
         )
+
+    def get_remote_files(self, target="ftp"):
+        return self._get("remote_files", data={"target": target}).json()
 
     def run_tool_payload(self, tool_id, inputs, history_id, **kwds):
         if "files_0|file_data" in inputs:

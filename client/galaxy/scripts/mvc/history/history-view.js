@@ -75,6 +75,9 @@ var HistoryView = _super.extend(
         // control contents/behavior based on where (and in what context) the panel is being used
         /** where should pages from links be displayed? (default to new tab/window) */
         this.linkTarget = attributes.linkTarget || '_blank';
+
+        /** timeout id for detailed fetch of collection counts, etc... */
+        this.detailedFetchTimeoutId = null;
     },
 
     /** create and return a collection for when none is initially passed */
@@ -89,7 +92,16 @@ var HistoryView = _super.extend(
         if( this.model ){
             this.model.clearUpdateTimeout();
         }
+        this._clearDetailedFetchTimeout();
         return this;
+    },
+
+    /** clear the timeout and the cached timeout id */
+    _clearDetailedFetchTimeout : function(){
+        if( this.detailedFetchTimeoutId ){
+            clearTimeout( this.detailedFetchTimeoutId );
+            this.detailedFetchTimeoutId = null;
+        }
     },
 
     /** create any event listeners for the panel
@@ -105,7 +117,8 @@ var HistoryView = _super.extend(
             'loading-done' : function(){
                 var self = this;
                 // after the initial load, decorate with more time consuming fields (like HDCA element_counts)
-                _.delay( function(){
+                self.detailedFetchTimeoutId = _.delay( function(){
+                    self.detailedFetchTimeoutId = null;
                     self.model.contents.fetchCollectionCounts();
                 }, self.FETCH_COLLECTION_COUNTS_DELAY );
             },

@@ -266,6 +266,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
         # See if a version of this tool is already loaded into the tool panel.
         # The value of panel_component will be a ToolSection (if the value of
         # section=True) or self._tool_panel (if section=False).
+        if tool.hidden:
+            log.debug("Skipping tool panel addition of hidden tool: %s, version: %s", tool.id, tool.version)
+            return
         tool_id = str(tool.id)
         tool = self._tools_by_id[tool_id]
         log_msg = ""
@@ -1053,7 +1056,11 @@ class BaseGalaxyToolBox(AbstractToolBox):
 
     def __init__(self, config_filenames, tool_root_dir, app):
         super(BaseGalaxyToolBox, self).__init__(config_filenames, tool_root_dir, app)
-        self._init_dependency_manager()
+        old_toolbox = getattr(app, 'toolbox', None)
+        if old_toolbox:
+            self.dependency_manager = old_toolbox.dependency_manager
+        else:
+            self._init_dependency_manager()
 
     @property
     def sa_session(self):

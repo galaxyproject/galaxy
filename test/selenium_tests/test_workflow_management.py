@@ -38,9 +38,8 @@ class WorkflowManagementTestCase(SeleniumTestCase):
 
         @retry_assertion_during_transitions
         def check_name():
-            row_element = self.workflow_index_table_row()
-            renamed_workflow_button = row_element.find_element_by_css_selector(".menubutton")
-            assert 'CoolNewName' in renamed_workflow_button.text, renamed_workflow_button.text
+            name = self.workflow_index_name()
+            assert 'CoolNewName' == name, name
 
         check_name()
 
