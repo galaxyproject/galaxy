@@ -28,6 +28,7 @@ export SELENIUM_PORT=`python -c 'import socket; s=socket.socket(); s.bind(("", 0
 
 export TARGET_ROOT=`pwd`
 export TARGET_PATH=/galaxy
+export MY_UID=$(id -u)
 
 cd $TEST_DIRECTORY
 
