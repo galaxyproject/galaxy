@@ -88,13 +88,13 @@ class AdminToolshed(AdminGalaxy):
                 message, status = repository_util.check_for_updates(trans.app, trans.install_model, kwd.get('id'))
         if message and status:
             kwd['message'] = util.sanitize_text(message)
-            kwd['status'] = 'success' if status in [ 'ok', 'done', 'success' ] else 'error'
+            kwd['status'] = 'success' if status in ['ok', 'done', 'success'] else 'error'
         kwd['dict_format'] = True
         return self.installed_repository_grid(trans, **kwd)
 
     @web.expose
     @web.require_admin
-    def restore_repository (self, trans, **kwd):
+    def restore_repository(self, trans, **kwd):
         repository = repository_util.get_installed_tool_shed_repository(trans.app, kwd['id'])
         if repository.uninstalled:
             # Since we're reinstalling the repository we need to find the latest changeset revision to which it can
