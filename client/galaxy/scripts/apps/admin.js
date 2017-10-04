@@ -22,8 +22,9 @@ window.app = function app( options, bootstrapped ){
             '(/)admin(/)groups' : 'show_groups',
             '(/)admin(/)tool_versions' : 'show_tool_versions',
             '(/)admin(/)quotas' : 'show_quotas',
-            '(/)admin(/)form(/)(:form_id)' : 'show_form',
-            '(/)admin(/)repositories' : 'show_repositories'
+            '(/)admin(/)repositories' : 'show_repositories',
+            '(/)admin(/)forms' : 'show_forms',
+            '(/)admin(/)form(/)(:form_id)' : 'show_form'
         },
 
         authenticate: function( args, name ) {
