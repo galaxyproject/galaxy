@@ -29,6 +29,7 @@ from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util import unicodify
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.logging import LOGLV_TRACE
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.web.stack import register_postfork_function
 from .version import VERSION_MAJOR
@@ -876,6 +877,7 @@ def configure_logging(config):
     or a simple dictionary of configuration variables.
     """
     # Get root logger
+    logging.addLevelName(LOGLV_TRACE, "TRACE")
     root = logging.getLogger()
     # PasteScript will have already configured the logger if the
     # 'loggers' section was found in the config file, otherwise we do
