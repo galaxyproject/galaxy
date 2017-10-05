@@ -21,8 +21,14 @@ from galaxy.util.bunch import Bunch
 
 
 IS_OS_X = _platform == "darwin"
-
 CONTAINER_NAME_PREFIX = 'gie_'
+ENV_OVERRIDE_CAPITALIZE = frozenset([
+    'notebook_username',
+    'notebook_password',
+    'dataset_hid',
+    'dataset_filename',
+    'additional_ids',
+])
 
 log = logging.getLogger(__name__)
 
@@ -253,7 +259,10 @@ class InteractiveEnvironmentRequest(object):
             env_override = {}
         conf = self.get_conf_dict()
         conf = dict([(key.upper(), item) for key, item in conf.items()])
-        conf.update(env_override)
+        for key, item in env_override.items():
+            if key in ENV_OVERRIDE_CAPITALIZE:
+                key = key.upper()
+            conf[key] = item
         return conf
 
     def _get_import_volume_for_run(self):
