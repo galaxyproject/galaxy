@@ -132,6 +132,7 @@ class InstalledRepositoryGrid(grids.Grid):
                    link=(lambda item: iff(item.status in [tool_shed_install.ToolShedRepository.installation_status.CLONING],
                                           None,
                                           dict(controller="admin_toolshed", action="manage_repository", id=item.id))),
+                   target="center",
                    attach_popup=True),
         DescriptionColumn(label="Description"),
         OwnerColumn(label="Owner"),
