@@ -168,6 +168,7 @@ class InstalledRepositoryGrid(grids.Grid):
                                                      tool_shed_install.ToolShedRepository.installation_status.ERROR,
                                                      tool_shed_install.ToolShedRepository.installation_status.NEW]),
                                       allow_multiple=False,
+                                      target="center",
                                       url_args=dict(controller='admin_toolshed',
                                                     action='check_for_updates')),
                   grids.GridOperation(label="Install latest revision",
@@ -188,7 +189,6 @@ class InstalledRepositoryGrid(grids.Grid):
                                                  not item.deleted and
                                                  item.status != tool_shed_install.ToolShedRepository.installation_status.NEW),
                                       allow_multiple=True,
-                                      target='top',
                                       url_args=dict(controller='admin_toolshed',
                                                     action='deactivate_or_uninstall_repository')),
                   grids.GridOperation(label="Reset to install",

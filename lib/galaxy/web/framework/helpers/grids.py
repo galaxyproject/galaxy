@@ -423,7 +423,8 @@ class Grid(object):
             for operation in self.operations:
                 item_dict['operation_config'][operation.label] = {
                     'allowed'   : operation.allowed(item),
-                    'url_args'  : url(**operation.get_url_args(item))
+                    'url_args'  : url(**operation.get_url_args(item)),
+                    'target'    : operation.target
                 }
             grid_config['items'].append(item_dict)
         trans.log_action(trans.get_user(), text_type("grid.view"), context, params)
