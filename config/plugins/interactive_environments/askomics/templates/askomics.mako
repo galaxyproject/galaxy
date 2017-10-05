@@ -5,8 +5,8 @@ import string
 # Sets ID and sets up a lot of other variables
 ie_request.load_deploy_config()
 
-# Get a random API key
-askomics_api_key = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(20)])
+# get an API key for AskOmics
+askomics_api_key = ie_request.notebook_pw
 
 # Get ids of selected datasets
 additional_ids = trans.request.params.get('additional_dataset_ids', None)
