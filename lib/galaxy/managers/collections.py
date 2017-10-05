@@ -105,37 +105,29 @@ class DatasetCollectionManager(object):
             message = "Internal logic error - create called with unknown parent type %s" % type(parent)
             log.exception(message)
             raise MessageException(message)
-        tags = tags or {}
-        if implicit_collection_info:
-            for _, v in implicit_collection_info.get('implicit_inputs', []):
-                for tag in [t for t in v.tags if t.user_tname == 'name']:
-                    tags[tag.value] = tag
-        for _, tag in tags.items():
-            dataset_collection_instance.tags.append(tag.copy(cls=model.HistoryDatasetCollectionTagAssociation))
 
+        implicit_inputs = []
+        if implicit_collection_info:
+            implicit_inputs = implicit_collection_info.get('implicit_inputs', [])
+        tags = self._append_tags(dataset_collection_instance, implicit_inputs, tags)
         return self.__persist(dataset_collection_instance)
 
     def create_dataset_collection(self, trans, collection_type, element_identifiers=None, elements=None,
                                   hide_source_items=None):
+        # Make sure at least one of these is None.
+        assert element_identifiers is None or elements is None
+
         if element_identifiers is None and elements is None:
             raise RequestParameterInvalidException(ERROR_INVALID_ELEMENTS_SPECIFICATION)
         if not collection_type:
             raise RequestParameterInvalidException(ERROR_NO_COLLECTION_TYPE)
+
         collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
+
         # If we have elements, this is an internal request, don't need to load
         # objects from identifiers.
         if elements is None:
-            if collection_type_description.has_subcollections():
-                # Nested collection - recursively create collections and update identifiers.
-                self.__recursively_create_collections(trans, element_identifiers)
-            new_collection = False
-            for element_identifier in element_identifiers:
-                if element_identifier.get("src") == "new_collection" and element_identifier.get('collection_type') == '':
-                    new_collection = True
-                    elements = self.__load_elements(trans, element_identifier['element_identifiers'])
-            if not new_collection:
-                elements = self.__load_elements(trans, element_identifiers)
-
+            elements = self._element_identifiers_to_elements(trans, collection_type_description, element_identifiers)
         # else if elements is set, it better be an ordered dict!
 
         if elements is not self.ELEMENTS_UNINITIALIZED:
@@ -149,6 +141,28 @@ class DatasetCollectionManager(object):
             dataset_collection = model.DatasetCollection(populated=False)
         dataset_collection.collection_type = collection_type
         return dataset_collection
+
+    def _element_identifiers_to_elements(self, trans, collection_type_description, element_identifiers):
+        if collection_type_description.has_subcollections():
+            # Nested collection - recursively create collections and update identifiers.
+            self.__recursively_create_collections(trans, element_identifiers)
+        new_collection = False
+        for element_identifier in element_identifiers:
+            if element_identifier.get("src") == "new_collection" and element_identifier.get('collection_type') == '':
+                new_collection = True
+                elements = self.__load_elements(trans, element_identifier['element_identifiers'])
+        if not new_collection:
+            elements = self.__load_elements(trans, element_identifiers)
+        return elements
+
+    def _append_tags(self, dataset_collection_instance, implicit_inputs=None, tags=None):
+        tags = tags or {}
+        implicit_inputs = implicit_inputs or []
+        for _, v in implicit_inputs:
+            for tag in [t for t in v.tags if t.user_tname == 'name']:
+                tags[tag.value] = tag
+        for _, tag in tags.items():
+            dataset_collection_instance.tags.append(tag.copy(cls=model.HistoryDatasetCollectionTagAssociation))
 
     def set_collection_elements(self, dataset_collection, dataset_instances):
         if dataset_collection.populated:
