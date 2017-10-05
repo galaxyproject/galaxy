@@ -6,8 +6,9 @@ define([
     "mvc/base-mvc",
     "utils/ajax-queue",
     "ui/mode-button",
-    "ui/search-input"
-], function( HISTORY_MODEL, HISTORY_VIEW_EDIT, historyCopyDialog, ERROR_MODAL, baseMVC, ajaxQueue ){
+    "ui/search-input",
+    "utils/localization"
+], function( HISTORY_MODEL, HISTORY_VIEW_EDIT, historyCopyDialog, ERROR_MODAL, baseMVC, ajaxQueue, _l){
 'use strict';
 
 var logNamespace = 'history';
