@@ -32,7 +32,10 @@ from base.constants import (
     ONE_TO_SIX_WITH_SPACES,
     ONE_TO_SIX_WITH_TABS,
 )
-from base.populators import DatasetPopulator
+from base.populators import (
+    DatasetPopulator,
+    skip_without_datatype,
+)
 
 
 SCRIPT_DIR = os.path.normpath(os.path.dirname(__file__))
@@ -55,9 +58,27 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
     def handle_galaxy_config_kwds(cls, config):
         config["allow_path_paste"] = True
 
-    def test(self):
+    def test_primary_file(self):
         payload = self.dataset_populator.upload_payload(
             self.history_id, 'file://%s/1.RData' % TEST_DATA_DIRECTORY, ext="binary"
+        )
+        create_response = self._post("tools", data=payload)
+        # Ideally this would be 403 but the tool API endpoint isn't using
+        # the newer API decorator that handles those details.
+        assert create_response.status_code >= 400
+
+    @skip_without_datatype("velvet")
+    def test_composite_datatype(self):
+        payload = self.dataset_populator.upload_payload(
+            self.history_id,
+            "sequences content",
+            file_type="velvet",
+            extra_inputs={
+                "files_1|url_paste": "roadmaps content",
+                "files_1|type": "upload_dataset",
+                "files_2|url_paste": "file://%s/1.txt" % TEST_DATA_DIRECTORY,
+                "files_2|type": "upload_dataset",
+            },
         )
         create_response = self._post("tools", data=payload)
         # Ideally this would be 403 but the tool API endpoint isn't using
@@ -149,9 +170,27 @@ class AutoDecompressTestCase(BaseUploadContentConfigurationTestCase):
 
 class LocalAddressWhitelisting(BaseUploadContentConfigurationTestCase):
 
-    def test_external_url(self):
+    def test_blocked_url_primary_file(self):
         payload = self.dataset_populator.upload_payload(
             self.history_id, 'http://localhost/', ext="txt"
+        )
+        create_response = self._post("tools", data=payload)
+        # Ideally this would be 403 but the tool API endpoint isn't using
+        # the newer API decorator that handles those details.
+        assert create_response.status_code >= 400
+
+    @skip_without_datatype("velvet")
+    def test_blocked_url_secondary_file(self):
+        payload = self.dataset_populator.upload_payload(
+            self.history_id,
+            "sequences content",
+            file_type="velvet",
+            extra_inputs={
+                "files_1|url_paste": "roadmaps content",
+                "files_1|type": "upload_dataset",
+                "files_2|url_paste": "http://localhost/",
+                "files_2|type": "upload_dataset",
+            },
         )
         create_response = self._post("tools", data=payload)
         # Ideally this would be 403 but the tool API endpoint isn't using
