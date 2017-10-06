@@ -157,7 +157,7 @@ model.HistoryDatasetAssociationHistory.table = Table(
     Column("version", Integer),
     Column("name", TrimmedString(255)),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType()),
+    Column("metadata", MetadataType(), key="_metadata"),
     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
 )
 

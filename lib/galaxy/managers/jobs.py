@@ -135,22 +135,22 @@ class JobSearch(object):
                         a.dataset_id == b.id,
                         c.dataset_id == b.dataset_id,
                         c.id == v,  # c is the requested job input HDA
-                        # We can only compare input dataset names and metadata for a job
-                        # if we know that the input dataset hasn't changed since the job was run.
-                        # This is relatively strict, we may be able to lift this requirement if we record the jobs'
-                        # relevant parameters as JobParameters in the database
+                        # We can compare input dataset names and metadata for a job
+                        # if we know that the input dataset hasn't changed since the job was run,
+                        # or if the job recorded a dataset_version and name and metadata of the current
+                        # job request matches those that were recorded for the job in question (introduced in release 18.01)
                         or_(and_(
                             b.update_time < model.Job.create_time,
                             b.name == c.name,
                             b.extension == c.extension,
-                            b._metadata == c._metadata,
+                            b.metadata == c.metadata,
                         ), and_(
                             b.id == e.history_dataset_association_id,
                             a.dataset_version == e.version,
                             e.name == c.name,
                             e.extension == c.extension,
-                            e.metadata == c._metadata,
-                    )),
+                            e._metadata == c._metadata,
+                        )),
                         or_(b.deleted == false(), c.deleted == false())
                     ))
                     if identifier:

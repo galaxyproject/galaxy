@@ -2675,7 +2675,12 @@ class HistoryDatasetAssociationHistory(object):
         self.version = version
         self.extension = extension
         self.extended_metadata_id = extended_metadata_id
-        self.metadata = metadata
+        if isinstance(metadata['dbkey'], list):
+            # The dbkey may or may not be stored in a list.
+            # To facilitate comparison we use the raw value
+            metadata = metadata.copy()
+            metadata['dbkey'] = metadata['dbkey'][0]
+        self._metadata = metadata
 
 
 class HistoryDatasetAssociationDisplayAtAuthorization(object):
