@@ -99,10 +99,10 @@ var CollectionCreatorMixin = {
 
     /** render the footer, completion controls, and cancel controls */
     _renderFooter : function( speed, callback ){
-        var instance = this;
+        var self = this;
         var $footer = this.$( '.footer' ).empty().html( this.templates.footer() );
         _.each( this.footerSettings, function( property, selector ) {
-            this.$( selector ).prop( 'checked', instance[ property ] );
+            self.$( selector ).prop( 'checked', self[ property ] );
         });
         if( typeof this.oncancel === 'function' ){
             this.$( '.cancel-create.btn' ).show();
