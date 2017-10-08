@@ -9,9 +9,8 @@
 .. image:: https://travis-ci.org/galaxyproject/galaxy-lib.png?branch=master
    :target: https://travis-ci.org/galaxyproject/galaxy-lib
 
-.. image:: https://coveralls.io/repos/galaxyproject/galaxy-lib/badge.svg?branch=master
-   :target: https://coveralls.io/r/galaxyproject/galaxy-lib?branch=master
-
+Overview
+--------
 
 A small subset of the Galaxy_ project for reuse outside the core. This subset has minimal dependencies and should be Python 3 compatible.
 
