@@ -1,51 +1,51 @@
-galaxy.tools.deps.mulled package
-================================
+galaxy\.tools\.deps\.mulled package
+===================================
 
 Submodules
 ----------
 
-galaxy.tools.deps.mulled.mulled_build module
---------------------------------------------
+galaxy\.tools\.deps\.mulled\.mulled\_build module
+-------------------------------------------------
 
 .. automodule:: galaxy.tools.deps.mulled.mulled_build
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.deps.mulled.mulled_build_channel module
-----------------------------------------------------
+galaxy\.tools\.deps\.mulled\.mulled\_build\_channel module
+----------------------------------------------------------
 
 .. automodule:: galaxy.tools.deps.mulled.mulled_build_channel
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.deps.mulled.mulled_build_files module
---------------------------------------------------
+galaxy\.tools\.deps\.mulled\.mulled\_build\_files module
+--------------------------------------------------------
 
 .. automodule:: galaxy.tools.deps.mulled.mulled_build_files
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.deps.mulled.mulled_build_tool module
--------------------------------------------------
+galaxy\.tools\.deps\.mulled\.mulled\_build\_tool module
+-------------------------------------------------------
 
 .. automodule:: galaxy.tools.deps.mulled.mulled_build_tool
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.deps.mulled.mulled_search module
----------------------------------------------
+galaxy\.tools\.deps\.mulled\.mulled\_search module
+--------------------------------------------------
 
 .. automodule:: galaxy.tools.deps.mulled.mulled_search
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.deps.mulled.util module
-------------------------------------
+galaxy\.tools\.deps\.mulled\.util module
+----------------------------------------
 
 .. automodule:: galaxy.tools.deps.mulled.util
     :members:

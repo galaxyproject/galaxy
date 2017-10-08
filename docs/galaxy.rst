@@ -11,6 +11,7 @@ Subpackages
     galaxy.objectstore
     galaxy.tools
     galaxy.util
+    galaxy.web
 
 Module contents
 ---------------

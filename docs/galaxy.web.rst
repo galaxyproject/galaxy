@@ -1,17 +1,17 @@
-galaxy\.jobs package
-====================
+galaxy\.web package
+===================
 
 Subpackages
 -----------
 
 .. toctree::
 
-    galaxy.jobs.metrics
+    galaxy.web.stack
 
 Module contents
 ---------------
 
-.. automodule:: galaxy.jobs
+.. automodule:: galaxy.web
     :members:
     :undoc-members:
     :show-inheritance:

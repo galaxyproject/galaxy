@@ -1,6 +1,7 @@
 
-.. image:: https://readthedocs.org/projects/pip/badge/?version=latest
-   :target: https://galaxy-lib.readthedocs.org
+.. image:: https://readthedocs.org/projects/galaxy-lib/badge/?version=latest
+   :target: http://galaxy-lib.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
 
 .. image:: https://badge.fury.io/py/galaxy-lib.svg
    :target: https://pypi.python.org/pypi/galaxy-lib/

@@ -1,5 +1,5 @@
-galaxy.tools.verify package
-===========================
+galaxy\.tools\.verify package
+=============================
 
 Subpackages
 -----------
@@ -11,8 +11,8 @@ Subpackages
 Submodules
 ----------
 
-galaxy.tools.verify.test_data module
-------------------------------------
+galaxy\.tools\.verify\.test\_data module
+----------------------------------------
 
 .. automodule:: galaxy.tools.verify.test_data
     :members:
