@@ -15,6 +15,7 @@ Contents:
    installation
    conduct
    contributing
+   topics/index
    developing
    history
 
