@@ -239,40 +239,23 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             ck_size = int(ck_size)
         return data.datatype.display_data(trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd)
 
-    @web.expose
-    @web.json
-    def get_edit(self, trans, dataset_id=None, filename=None, hid=None, **kwd):
-        """Allows user to modify parameters of an HDA."""
+    @web.expose_api
+    def get_edit(self, trans, dataset_id=None, **kwd):
+        """Produces the input definitions available to modify dataset attributes"""
         message = None
-        status = 'done'
-        error = False
-        if hid is not None:
-            history = trans.get_history()
-            # TODO: hid handling
-            data = history.datasets[int(hid) - 1]
-            id = None
-        elif dataset_id is not None:
+        status = None
+        if dataset_id is not None:
             id = self.decode_id(dataset_id)
             data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
         else:
             trans.log_event("dataset_id and hid are both None, cannot load a dataset to edit")
-            return {
-                status: 'error',
-                message: 'You must provide a history dataset id to edit.'
-            }
+            return self.message_exception(trans, 'You must provide a dataset id to edit attributes.')
         if data is None:
             trans.log_event("Problem retrieving dataset (encoded: %s, decoded: %s) with history id %s." % (str(dataset_id), str(id), str(hid)))
-            return {
-                status: 'error',
-                message: "History dataset id is invalid."
-            }
+            return self.message_exception(trans, 'The dataset id is invalid.')
         if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
             trans.log_event("User attempted to edit an HDA they do not own (encoded: %s, decoded: %s)." % (dataset_id, id))
-            # Do not reveal the dataset's existence
-            return {
-                status: 'error',
-                message: "History dataset id is invalid."
-            }
+            return self.message_exception(trans, 'The dataset id is invalid.')
         current_user_roles = trans.get_current_user_roles()
         if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
             # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
@@ -283,10 +266,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
         if self._can_access_dataset(trans, data):
             if data.state == trans.model.Dataset.states.UPLOAD:
-                return {
-                    status: 'error',
-                    message: "Please wait until this dataset finishes uploading before attempting to edit its metadata."
-                }
+                return self.message_exception(trans, 'Please wait until this dataset finishes uploading before attempting to edit its metadata.')
+
             # let's not overwrite the imported datatypes module with the variable datatypes?
             # the built-in 'id' is overwritten in lots of places as well
             ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change]
@@ -295,104 +276,97 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             data_metadata = [(name, spec) for name, spec in data.metadata.spec.items()]
             converters_collection = [(key, value.name) for key, value in data.get_converter_types().items()]
             can_manage_dataset = trans.app.security_agent.can_manage_dataset(current_user_roles, data.dataset)
-            if error:
-                status = 'error'
-            edit_attributes_inputs = list()
-            convert_inputs = list()
-            convert_datatype_inputs = list()
-            permission_inputs = list()
-            edit_attributes_inputs.append({
+
+            # attribute editing
+            edit_attributes_inputs = [{
                 'name' : 'name',
                 'type' : 'text',
                 'label': 'Name:',
                 'value': data.get_display_name()
-            })
-
-            edit_attributes_inputs.append({
+            }, {
                 'name' : 'info',
                 'type' : 'text',
                 'label': 'Info:',
                 'value': data.info
-            })
-
-            edit_attributes_inputs.append({
+            }, {
                 'name' : 'annotation',
                 'type' : 'text',
                 'label': 'Annotation',
                 'value': self.get_item_annotation_str(trans.sa_session, trans.user, data),
                 'help' : 'Add an annotation or notes to a dataset; annotations are available when a history is viewed.'
-            })
-
+            }]
             for name, spec in data_metadata:
                 if spec.visible:
                     attributes = data.metadata.get_metadata_parameter(name, trans=trans)
                     if type(attributes) is form_builder.SelectField:
                         edit_attributes_inputs.append({
-                            'type': 'select',
-                            'multiple': attributes.multiple,
-                            'optional': attributes.optional,
-                            'name': name,
-                            'label': spec.desc,
-                            'options': attributes.options,
-                            'value': attributes.value if attributes.multiple else [attributes.value]
+                            'type'      : 'select',
+                            'multiple'  : attributes.multiple,
+                            'optional'  : attributes.optional,
+                            'name'      : name,
+                            'label'     : spec.desc,
+                            'options'   : attributes.options,
+                            'value'     : attributes.value if attributes.multiple else [attributes.value]
                         })
                     elif type(attributes) is form_builder.TextField:
                         edit_attributes_inputs.append({
-                            'type': 'text',
-                            'name': name,
-                            'label': spec.desc,
-                            'value': attributes.value,
-                            'readonly': spec.get('readonly')
+                            'type'      : 'text',
+                            'name'      : name,
+                            'label'     : spec.desc,
+                            'value'     : attributes.value,
+                            'readonly'  : spec.get('readonly')
                         })
-
             if data.missing_meta():
                 edit_attributes_inputs.append({
-                    'name' : 'errormsg',
-                    'type' : 'text',
-                    'label': 'Error Message',
-                    'value': 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.',
-                    'class'  : 'errormessagesmall',
-                    'readonly' : True
+                    'name'      : 'errormsg',
+                    'type'      : 'text',
+                    'label'     : 'Error Message',
+                    'class'     : 'errormessagesmall',
+                    'readonly'  : True,
+                    'value'     : 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.'
                 })
 
-            convert_inputs.append({
-                'type': 'select',
-                'name': 'target_type',
-                'label': 'Name:',
-                'help': 'This will create a new dataset with the contents of this dataset converted to a new format.',
-                'options': [(convert_name, convert_id) for convert_id, convert_name in converters_collection]
-            })
+            # datatype conversion
+            convert_inputs = [{
+                'type'      : 'select',
+                'name'      : 'target_type',
+                'label'     : 'Name:',
+                'help'      : 'This will create a new dataset with the contents of this dataset converted to a new format.',
+                'options'   : [(convert_name, convert_id) for convert_id, convert_name in converters_collection]
+            }]
 
-            convert_datatype_inputs.append({
-                'type': 'select',
-                'name': 'datatype',
-                'label': 'New Type:',
-                'help': 'This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.',
-                'options': [(ext_name, ext_id) for ext_id, ext_name in ldatatypes],
-                'value': [ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext]
-            })
+            # datatype changeing
+            convert_datatype_inputs = [{
+                'type'      : 'select',
+                'name'      : 'datatype',
+                'label'     : 'New Type:',
+                'options'   : [(ext_name, ext_id) for ext_id, ext_name in ldatatypes],
+                'value'     : [ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext],
+                'help'      : 'This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.',
+            }]
 
+            # permissions
+            permission_inputs = list()
             if can_manage_dataset:
                 permitted_actions = trans.app.model.Dataset.permitted_actions.items()
                 saved_role_ids = {}
                 for action, roles in trans.app.security_agent.get_permissions(data.dataset).items():
                     for role in roles:
                         saved_role_ids[action.action] = role.id
-
                 for index, action in permitted_actions:
                     if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
                         help_text = action.description + '<br/>NOTE: Users must have every role associated with this dataset in order to access it.'
                     else:
                         help_text = action.description
                     permission_inputs.append({
-                        'type': 'select',
-                        'multiple': True,
-                        'optional': True,
-                        'name': index,
-                        'label': action.action,
-                        'help': help_text,
-                        'options': [(r.name, r.id) for r in all_roles],
-                        'value': saved_role_ids[action.action] if action.action in saved_role_ids else []
+                        'type'      : 'select',
+                        'multiple'  : True,
+                        'optional'  : True,
+                        'name'      : index,
+                        'label'     : action.action,
+                        'help'      : help_text,
+                        'options'   : [(r.name, r.id) for r in all_roles],
+                        'value'     : saved_role_ids[action.action] if action.action in saved_role_ids else []
                     })
             elif trans.user:
                 if data.dataset.actions:
@@ -401,29 +375,29 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             role_inputs = list()
                             for role in roles:
                                 role_inputs.append({
-                                    'name': role.name + action.action,
-                                    'type': 'text',
-                                    'label': action.description,
-                                    'value': role.name,
-                                    'readonly': True
+                                    'name'      : role.name + action.action,
+                                    'type'      : 'text',
+                                    'label'     : action.description,
+                                    'value'     : role.name,
+                                    'readonly'  : True
                                 })
                             view_permissions = {'name': action.action, 'label': action.action, 'type': 'section', 'inputs': role_inputs}
                             permission_inputs.append(view_permissions)
                 else:
                     permission_inputs.append({
-                        'name': 'access_public',
-                        'type': 'text',
-                        'label': 'Public access',
-                        'value': 'This dataset is accessible by everyone (it is public).',
-                        'readonly': True
+                        'name'      : 'access_public',
+                        'type'      : 'text',
+                        'label'     : 'Public access',
+                        'value'     : 'This dataset is accessible by everyone (it is public).',
+                        'readonly'  : True
                     })
             else:
                 permission_inputs.append({
-                    'name': 'no_access',
-                    'type': 'text',
-                    'label': 'No access',
-                    'value': 'Permissions not available (not logged in).',
-                    'readonly': True
+                    'name'      : 'no_access',
+                    'type'      : 'text',
+                    'label'     : 'No access',
+                    'value'     : 'Permissions not available (not logged in).',
+                    'readonly'  : True
                 })
 
             return {
@@ -438,10 +412,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 'permission_inputs': permission_inputs
             }
         else:
-            return {
-                status: 'error',
-                message: "You do not have permission to edit this dataset's ( id: %s ) information." % str(dataset_id)
-            }
+            return self.message_exception(trans, 'You do not have permission to edit this dataset\'s ( id: %s ) information.' % str(dataset_id))
 
     @web.expose
     @web.json
