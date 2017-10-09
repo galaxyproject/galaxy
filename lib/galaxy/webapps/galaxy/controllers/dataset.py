@@ -267,16 +267,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if self._can_access_dataset(trans, data):
             if data.state == trans.model.Dataset.states.UPLOAD:
                 return self.message_exception(trans, 'Please wait until this dataset finishes uploading before attempting to edit its metadata.')
-
             # let's not overwrite the imported datatypes module with the variable datatypes?
             # the built-in 'id' is overwritten in lots of places as well
-            ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change]
-            ldatatypes.sort()
+            ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change].sort()
             all_roles = trans.app.security_agent.get_legitimate_roles(trans, data.dataset, 'root')
             data_metadata = [(name, spec) for name, spec in data.metadata.spec.items()]
             converters_collection = [(key, value.name) for key, value in data.get_converter_types().items()]
             can_manage_dataset = trans.app.security_agent.can_manage_dataset(current_user_roles, data.dataset)
-
             # attribute editing
             attribute_inputs = [{
                 'name' : 'name',
@@ -325,7 +322,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     'readonly'  : True,
                     'value'     : 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.'
                 })
-
             # datatype conversion
             conversion_inputs = [{
                 'type'      : 'select',
@@ -334,7 +330,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 'help'      : 'This will create a new dataset with the contents of this dataset converted to a new format.',
                 'options'   : [(convert_name, convert_id) for convert_id, convert_name in converters_collection]
             }]
-
             # datatype changeing
             datatype_inputs = [{
                 'type'      : 'select',
@@ -344,7 +339,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 'value'     : [ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext],
                 'help'      : 'This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.',
             }]
-
             # permissions
             permission_inputs = list()
             if can_manage_dataset:
@@ -381,8 +375,12 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                     'value'     : role.name,
                                     'readonly'  : True
                                 })
-                            view_permissions = {'name': action.action, 'label': action.action, 'type': 'section', 'inputs': role_inputs}
-                            permission_inputs.append(view_permissions)
+                            permission_inputs.append( {
+                                'name'  : action.action,
+                                'label' : action.action,
+                                'type'  : 'section',
+                                'inputs': role_inputs
+                            })
                 else:
                     permission_inputs.append({
                         'name'      : 'access_public',
