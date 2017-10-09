@@ -278,7 +278,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             can_manage_dataset = trans.app.security_agent.can_manage_dataset(current_user_roles, data.dataset)
 
             # attribute editing
-            edit_attributes_inputs = [{
+            attribute_inputs = [{
                 'name' : 'name',
                 'type' : 'text',
                 'label': 'Name:',
@@ -299,7 +299,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 if spec.visible:
                     attributes = data.metadata.get_metadata_parameter(name, trans=trans)
                     if type(attributes) is form_builder.SelectField:
-                        edit_attributes_inputs.append({
+                        attribute_inputs.append({
                             'type'      : 'select',
                             'multiple'  : attributes.multiple,
                             'optional'  : attributes.optional,
@@ -309,7 +309,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             'value'     : attributes.value if attributes.multiple else [attributes.value]
                         })
                     elif type(attributes) is form_builder.TextField:
-                        edit_attributes_inputs.append({
+                        attribute_inputs.append({
                             'type'      : 'text',
                             'name'      : name,
                             'label'     : spec.desc,
@@ -317,7 +317,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             'readonly'  : spec.get('readonly')
                         })
             if data.missing_meta():
-                edit_attributes_inputs.append({
+                attribute_inputs.append({
                     'name'      : 'errormsg',
                     'type'      : 'text',
                     'label'     : 'Error Message',
@@ -327,7 +327,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 })
 
             # datatype conversion
-            convert_inputs = [{
+            conversion_inputs = [{
                 'type'      : 'select',
                 'name'      : 'target_type',
                 'label'     : 'Name:',
@@ -336,7 +336,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             }]
 
             # datatype changeing
-            convert_datatype_inputs = [{
+            datatype_inputs = [{
                 'type'      : 'select',
                 'name'      : 'datatype',
                 'label'     : 'New Type:',
@@ -401,15 +401,15 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 })
 
             return {
-                'display_name': data.get_display_name(),
-                'message': message,
-                'status': status,
-                'dataset_id': dataset_id,
+                'display_name'      : data.get_display_name(),
+                'message'           : message,
+                'status'            : status,
+                'dataset_id'        : dataset_id,
                 'can_manage_dataset': can_manage_dataset,
-                'edit_attributes_inputs': edit_attributes_inputs,
-                'convert_inputs': convert_inputs,
-                'convert_datatype_inputs': convert_datatype_inputs,
-                'permission_inputs': permission_inputs
+                'attribute_inputs'  : attribute_inputs,
+                'conversion_inputs' : conversion_inputs,
+                'datatype_inputs'   : datatype_inputs,
+                'permission_inputs' : permission_inputs
             }
         else:
             return self.message_exception(trans, 'You do not have permission to edit this dataset\'s ( id: %s ) information.' % str(dataset_id))

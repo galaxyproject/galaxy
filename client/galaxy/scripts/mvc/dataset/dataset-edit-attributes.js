@@ -126,7 +126,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             var self = this;
             var form = new Form({
                 title  : 'Edit attributes',
-                inputs : response.edit_attributes_inputs,
+                inputs : response.attribute_inputs,
                 operations: {
                     'submit_editattr' : new Ui.ButtonIcon({
                         tooltip       : 'Save attributes of the dataset.',
@@ -150,7 +150,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             var self = this;
             var form = new Form({
                 title  : 'Convert to new format',
-                inputs : response.convert_inputs,
+                inputs : response.datatype_inputs,
                 operations: {
                         'submit' : new Ui.ButtonIcon({
                         tooltip  : 'Convert the datatype to a new format.',
@@ -168,7 +168,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             var self = this;
             var form = new Form({
                 title  : 'Change datatype',
-                inputs : response.convert_datatype_inputs,
+                inputs : response.conversion_inputs,
                 operations: {
                         'submit' : new Ui.ButtonIcon({
                         tooltip  : 'Change the datatype to a new type.',
