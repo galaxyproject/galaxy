@@ -130,6 +130,14 @@ class HasDriver:
         )
         return element
 
+    def wait_for_absent(self, selector_template, **kwds):
+        element = self._wait_on(
+            lambda driver: len(driver.find_elements(*selector_template.element_locator)) == 0,
+            "%s to become absent" % selector_template.description,
+            **kwds
+        )
+        return element
+
     def wait_for_absent_or_hidden(self, selector_template, **kwds):
         element = self._wait_on(
             ec.invisibility_of_element_located(selector_template.element_locator),

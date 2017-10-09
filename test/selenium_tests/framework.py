@@ -272,31 +272,20 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
             base = self.url
         return urljoin(base, url)
 
-    @property
-    def test_data(self):
-        return self.navigation_data
-
     def assert_initial_history_panel_state_correct(self):
         # Move into a TestsHistoryPanel mixin
-        unnamed_name = self.test_data["historyPanel"]["text"]["history"]["newName"]
+        unnamed_name = self.components.history_panel.new_name.text
 
         name_element = self.history_panel_name_element()
         assert name_element.is_displayed()
         assert unnamed_name in name_element.text
 
-        size_selector = self.test_data["historyPanel"]["selectors"]["history"]["size"]
-        initial_size_str = self.test_data["historyPanel"]["text"]["history"]["newSize"]
+        initial_size_str = self.components.history_panel.new_size.text
+        size_selector = self.components.history_panel.size
+        size_text = size_selector.wait_for_text()
+        assert initial_size_str in size_text, "%s not in %s" % (initial_size_str, size_text)
 
-        size_element = self.wait_for_selector(size_selector)
-        assert size_element.is_displayed()
-        assert initial_size_str in size_element.text, "%s not in %s" % (initial_size_str, size_element.text)
-
-        empty_msg_selector = self.test_data["historyPanel"]["selectors"]["history"]["emptyMsg"]
-        empty_msg_str = self.test_data["historyPanel"]["text"]["history"]["emptyMsg"]
-
-        empty_msg_element = self.wait_for_selector(empty_msg_selector)
-        assert empty_msg_element.is_displayed()
-        assert empty_msg_str in empty_msg_element.text
+        self.components.history_panel.empty_message.wait_for_visible()
 
     def admin_login(self):
         self.home()
@@ -355,50 +344,35 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
 class UsesHistoryItemAssertions:
 
     def assert_item_peek_includes(self, hid, expected):
-        item_body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
-        peek_selector = item_body_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["peek"]
-        peek_selector = self.wait_for_selector_visible(peek_selector)
+        item_body = self.history_panel_item_component(hid=hid)
+        peek_text = item_body.peek.wait_for_text()
+        assert expected in peek_text
 
     def assert_item_info_includes(self, hid, expected):
-        item_body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
-        info_selector = item_body_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["info"]
-        info_element = self.wait_for_selector_visible(info_selector)
-        text = info_element.text
-        assert expected in text, "Failed to find expected info text [%s] in info [%s]" % (expected, text)
+        item_body = self.history_panel_item_component(hid=hid)
+        info_text = item_body.info.wait_for_text()
+        assert expected in info_text, "Failed to find expected info text [%s] in info [%s]" % (expected, info_text)
 
     def assert_item_dbkey_displayed_as(self, hid, dbkey):
-        item_body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
-        dbkey_selector = item_body_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["dbkey"]
-        dbkey_element = self.wait_for_selector_visible(dbkey_selector)
-        assert dbkey in dbkey_element.text
+        item_body = self.history_panel_item_component(hid=hid)
+        dbkey_text = item_body.dbkey.wait_for_text()
+        assert dbkey in dbkey_text
 
     def assert_item_summary_includes(self, hid, expected_text):
-        item_body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
-        summary_selector = "%s %s" % (item_body_selector, self.test_data["historyPanel"]["selectors"]["hda"]["summary"])
-        summary_element = self.wait_for_selector_visible(summary_selector)
-        text = summary_element.text
-        assert expected_text in text, "Expected summary [%s] not found in [%s]." % (expected_text, text)
+        item_body = self.history_panel_item_component(hid=hid)
+        summary_text = item_body.summary.wait_for_text()
+        assert expected_text in summary_text, "Expected summary [%s] not found in [%s]." % (expected_text, summary_text)
 
-    def assert_item_name(self, hid, name):
-        item_selector = self.history_panel_item_selector(hid, wait=True)
-        title_selector = item_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["name"]
-        title_element = self.wait_for_selector_visible(title_selector)
-        assert title_element.text == name, title_element.text
+    def assert_item_name(self, hid, expected_name):
+        item_body = self.history_panel_item_component(hid=hid)
+        name = item_body.name.wait_for_text()
+        assert name == expected_name, name
 
     def assert_item_hid_text(self, hid):
         # Check the text HID matches HID returned from API.
-        item_selector = self.history_panel_item_selector(hid, wait=True)
-        hid_selector = item_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["hid"]
-        hid_element = self.wait_for_selector_visible(hid_selector)
-        assert hid_element.text == str(hid), hid_element.text
-
-    def _assert_item_button(self, buttons_area, expected_button, button_def):
-        selector = button_def["selector"]
-        # Let old tooltip expire, etc...
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        button_item = self.wait_for_selector_visible("%s %s" % (buttons_area, selector))
-        expected_tooltip = button_def.get("tooltip")
-        self.assert_tooltip_text(button_item, expected_tooltip)
+        item_body = self.history_panel_item_component(hid=hid)
+        hid_text = item_body.hid.wait_for_text()
+        assert hid_text == str(hid), hid_text
 
 
 def default_web_host_for_selenium_tests():

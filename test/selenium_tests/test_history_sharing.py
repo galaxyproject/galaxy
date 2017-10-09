@@ -29,16 +29,14 @@ class HistorySharingTestCase(SeleniumTestCase):
         self.submit_login(user1_email, retries=VALID_LOGIN_RETRIES)
         self.navigate_to_history_share_page()
 
+        user_sharing_menu = self.components.histories.sharing.user_n_menu(n="0")
         with self.main_panel():
-            first_user_element = self.wait_for_selector("#user-0-popup")
-            first_user_element.click()
-
-            unshare_link = self.wait_for_selector('a[href^="/history/sharing?unshare_user"]')
-            unshare_link.click()
+            user_sharing_menu.wait_for_and_click()
+            self.components.histories.sharing.unshare.wait_for_and_click()
 
         self.navigate_to_history_share_page()
         with self.main_panel():
-            self.assert_selector_absent("#user-0-popup")
+            user_sharing_menu.assert_absent()
 
         self.logout_if_needed()
         self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
@@ -106,8 +104,7 @@ class HistorySharingTestCase(SeleniumTestCase):
     def navigate_to_history_user_share_page(self):
         self.navigate_to_history_share_page()
         with self.main_panel():
-            user_share_link_selector = 'a[href^="/history/share?"]'
-            self.wait_for_and_click_selector(user_share_link_selector)
+            self.components.histories.sharing.share_with_a_user_button.wait_for_and_click()
 
     def share_history_with_user(self, user_id=None, user_email=None, assert_valid=False):
         """Share the current history with a target user by ID or email.
