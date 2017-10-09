@@ -209,6 +209,5 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
     def navigate_to_published_histories_page(self):
         self.home()
-        self.click_masthead_libraries()
-        selector = 'a[href="/histories/list_published"]'
-        self.wait_for_and_click_selector(selector)
+        self.click_masthead_shared_data()
+        self.components.masthead.published_histories.wait_for_and_click()
