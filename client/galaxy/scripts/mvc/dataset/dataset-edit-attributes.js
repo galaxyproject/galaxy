@@ -1,4 +1,3 @@
-
 define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view' ], function( Utils, Tabs, Ui, Form ) {
 
     /** Dataset edit attributes view */
@@ -6,44 +5,38 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         initialize: function() {
             this.setElement( '<div/>' );
             this.model = new Backbone.Model( { 'dataset_id': Galaxy.params.dataset_id } );
+            this.message = new Ui.Message( { persistent: true } );
             this.render();
         },
 
-        // Fetch data for the selected dataset and 
-        // build tabs for editing its attributes
+        // fetch data for the selected dataset and build forms
         render: function() {
             var self = this;
-            var url = Galaxy.root + 'dataset/get_edit?dataset_id=' + self.model.get( 'dataset_id' );
-            window.console.log( url );
             $.ajax({
-                url     : url,
+                url     : Galaxy.root + 'dataset/get_edit?dataset_id=' + self.model.get( 'dataset_id' ),
                 success : function( response ) {
-                   self.render_attribute_page( self, response );
+                   self._renderPage( self, response );
                 },
                 error   : function( response ) {
-                    var error_response = {
-                        'status': 'error',
-                        'message': 'Error occured while loading the dataset.',
-                        'persistent': true,
-                        'cls': 'errormessage'
-                    };
-                    self.display_message( error_response, self.$( '.response-message' ) );
+                    var err_msg = response.responseJSON && response.responseJSON.err_msg;
+                    self.message.update({
+                        'status'    : 'danger',
+                        'message'   : err_msg || 'Error occured while loading the dataset.',
+                        'persistent': true
+                    });
                 }
             });
         },
 
         /** Render all the tabs view */
-        render_attribute_page: function( self, response ) {
-            var message = {
-                'message'     : response.message,
-                'status'      : response.status,
-                'persistent'  : true,
-                'cls'         : response.status + 'message'
-            };
-            self.$el.empty().append( self._templateHeader() );
-            self.display_message( message, self.$( '.response-message' ) );
-            // Create all tabs
-            self.create_tabs( response, self.$( '.edit-attr' ) );
+        _renderPage: function( self, response ) {
+            this.$el.empty()
+                    .append( this.message.$el )
+                    .append( this._getAttributesFormTemplate( response ) )
+                    .append( this._getConvertFormTemplate( response ) )
+                    .append( this._getChangeDataTypeFormTemplate( response ) )
+                    .append( this._getPermissionsFormTemplate( response ) );
+            this.message.update( response );
         },
 
         /** Perform AJAX post call */
@@ -54,7 +47,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 url: post_url,
                 data: data,
                 success: function( response ) {
-                    self.render_attribute_page( self, response );
                     self.reload_history();
                 },
                 error   : function( response ) {
@@ -76,16 +68,11 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
 
         /** Create tabs for different attributes of dataset*/
         create_tabs: function( response, $el_edit_attr ) {
-            var self = this;
-            self.tabs = new Tabs.View();
-            self.tabs.add({
-                id      : 'attributes',
-                title   : 'Attributes',
-                icon    : 'fa fa-bars',
-                tooltip : 'Edit dataset attributes',
-                $el     : self._getAttributesFormTemplate( response )
-            });
+            //var self = this;
+            //self.tabs = new Tabs.View();
+            this.$el.append( this._getAttributesFormTemplate( response ) );
 
+/*
             self.tabs.add({
                 id      : 'convert',
                 title   : 'Convert',
@@ -110,7 +97,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 $el     : self._getPermissionsFormTemplate( response )
             });
             $el_edit_attr.append( self.tabs.$el );
-            self.tabs.showTab( 'attributes' );
+            self.tabs.showTab( 'attributes' );*/
         },
 
         /** Main template */

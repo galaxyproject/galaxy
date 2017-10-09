@@ -248,13 +248,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             id = self.decode_id(dataset_id)
             data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
         else:
-            trans.log_event("dataset_id and hid are both None, cannot load a dataset to edit")
+            trans.log_event("dataset_id is None, cannot load a dataset to edit.")
             return self.message_exception(trans, 'You must provide a dataset id to edit attributes.')
         if data is None:
-            trans.log_event("Problem retrieving dataset (encoded: %s, decoded: %s) with history id %s." % (str(dataset_id), str(id), str(hid)))
+            trans.log_event("Problem retrieving dataset id (%s)." % dataset_id)
             return self.message_exception(trans, 'The dataset id is invalid.')
         if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
-            trans.log_event("User attempted to edit an HDA they do not own (encoded: %s, decoded: %s)." % (dataset_id, id))
+            trans.log_event("User attempted to edit a dataset they do not own (encoded: %s, decoded: %s)." % (dataset_id, id))
             return self.message_exception(trans, 'The dataset id is invalid.')
         if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
             # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
