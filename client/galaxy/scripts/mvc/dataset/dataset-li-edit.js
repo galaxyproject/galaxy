@@ -64,8 +64,10 @@ var DatasetListItemEdit = _super.extend(
                 faIcon      : 'fa-pencil',
                 classes     : 'edit-btn',
                 onclick     : function( ev ) {
-                    ev.preventDefault();
-                    Galaxy.router.push( 'datasets/edit', { dataset_id : self.model.attributes.id } );
+                    if ( Galaxy.router ) {
+                        ev.preventDefault();
+                        Galaxy.router.push( 'datasets/edit', { dataset_id : self.model.attributes.id } );
+                    }
                 }
             };
         // disable if purged or deleted and explain why in the tooltip
@@ -206,8 +208,10 @@ var DatasetListItemEdit = _super.extend(
             classes     : 'report-error-btn',
             faIcon      : 'fa-bug',
             onclick     : function( ev ) {
-                ev.preventDefault();
-                Galaxy.router.push( 'datasets/error', { dataset_id : self.model.attributes.id } );
+                if ( Galaxy.router ) {
+                    ev.preventDefault();
+                    Galaxy.router.push( 'datasets/error', { dataset_id : self.model.attributes.id } );
+                }
             }
         });
     },
@@ -223,8 +227,10 @@ var DatasetListItemEdit = _super.extend(
                 target      : this.linkTarget,
                 faIcon      : 'fa-refresh',
                 onclick     : function( ev ) {
-                    ev.preventDefault();
-                    Galaxy.router.push( '/', { job_id : creating_job } );
+                    if ( Galaxy.router ) {
+                        ev.preventDefault();
+                        Galaxy.router.push( '/', { job_id : creating_job } );
+                    }
                 }
             });
         }
