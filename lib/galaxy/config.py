@@ -1039,6 +1039,10 @@ class ConfiguresGalaxyMixin:
         combined_install_database = not(install_db_url and install_db_url != db_url)
         install_db_url = install_db_url or db_url
 
+        if getattr(self.config, "max_metadata_value_size", None):
+            from galaxy.model import custom_types
+            custom_types.MAX_METADATA_VALUE_SIZE = self.config.max_metadata_value_size
+
         if check_migrate_databases:
             # Initialize database / check for appropriate schema version.  # If this
             # is a new installation, we'll restrict the tool migration messaging.
