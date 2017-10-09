@@ -1010,7 +1010,7 @@ class JobToInputDatasetAssociation(object):
     def __init__(self, name, dataset):
         self.name = name
         self.dataset = dataset
-        self.dataset_version = dataset.version
+        self.dataset_version = dataset.version if dataset else None
 
 
 class JobToOutputDatasetAssociation(object):
