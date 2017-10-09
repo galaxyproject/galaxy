@@ -49,20 +49,24 @@ var DatasetListItemEdit = _super.extend(
 
     /** Render icon-button to edit the attributes (format, permissions, etc.) this dataset. */
     _renderEditButton : function(){
+        var self = this;
         // don't show edit while uploading, in-accessible
         // DO show if in error (ala previous history panel)
         if( ( this.model.get( 'state' ) === STATES.DISCARDED )
         ||  ( !this.model.get( 'accessible' ) ) ){
             return null;
         }
-
         var purged = this.model.get( 'purged' ),
             deleted = this.model.get( 'deleted' ),
             editBtnData = {
                 title       : _l( 'Edit attributes' ),
                 href        : Galaxy.root + 'datasets/edit?dataset_id=' + this.model.attributes.id,
                 faIcon      : 'fa-pencil',
-                classes     : 'edit-btn'
+                classes     : 'edit-btn',
+                onclick     : function( ev ) {
+                    ev.preventDefault();
+                    Galaxy.router.push( 'datasets/edit', { dataset_id : self.model.attributes.id } );
+                }
             };
         // disable if purged or deleted and explain why in the tooltip
         if( deleted || purged ){
