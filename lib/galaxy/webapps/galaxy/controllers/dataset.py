@@ -256,7 +256,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
             trans.log_event("User attempted to edit an HDA they do not own (encoded: %s, decoded: %s)." % (dataset_id, id))
             return self.message_exception(trans, 'The dataset id is invalid.')
-        current_user_roles = trans.get_current_user_roles()
         if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
             # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
             # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
@@ -269,11 +268,12 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 return self.message_exception(trans, 'Please wait until this dataset finishes uploading before attempting to edit its metadata.')
             # let's not overwrite the imported datatypes module with the variable datatypes?
             # the built-in 'id' is overwritten in lots of places as well
-            ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change].sort()
+            ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change]
+            ldatatypes.sort()
             all_roles = trans.app.security_agent.get_legitimate_roles(trans, data.dataset, 'root')
             data_metadata = [(name, spec) for name, spec in data.metadata.spec.items()]
             converters_collection = [(key, value.name) for key, value in data.get_converter_types().items()]
-            can_manage_dataset = trans.app.security_agent.can_manage_dataset(current_user_roles, data.dataset)
+            can_manage_dataset = trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset)
             # attribute editing
             attribute_inputs = [{
                 'name' : 'name',
@@ -536,7 +536,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     status: 'error',
                     message: "You must be logged in if you want to change permissions."
                 }
-            if trans.app.security_agent.can_manage_dataset(current_user_roles, data.dataset):
+            if trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset):
                 permitted_actions = trans.app.model.Dataset.permitted_actions.items()
                 payload_permissions = json.loads(params.permissions)
                 # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
