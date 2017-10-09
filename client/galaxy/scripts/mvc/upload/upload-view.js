@@ -1,5 +1,5 @@
 /** Upload app contains the upload progress button and upload modal, compiles model data for API request **/
-define([ 'utils/utils', 'mvc/ui/ui-modal', 'mvc/ui/ui-tabs', 'mvc/upload/upload-button', 'mvc/upload/default/default-view', 'mvc/upload/composite/composite-view', 'mvc/upload/collection/collection-view'],
+define([ 'utils/utils', 'mvc/ui/ui-modal', 'mvc/ui/ui-tabs', 'mvc/upload/upload-button', 'mvc/upload/default/default-view', 'mvc/upload/composite/composite-view', 'mvc/upload/collection/collection-view' ],
 function( Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposite, UploadViewCollection ) {
     return Backbone.View.extend({
         options : {
@@ -114,7 +114,7 @@ function( Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposi
                     id      : 'collection',
                     title   : 'Collection',
                     $el     : this.collection_view.$el
-                })
+                });
                 this.modal = new Modal.View({
                     title           : 'Download from web or upload from disk',
                     body            : this.tabs.$el,
@@ -154,9 +154,7 @@ function( Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposi
             }
             // add upload tools input data
             if ( items && items.length > 0 ) {
-                var inputs = {};
-                inputs[ 'dbkey' ] = items[0].get( 'genome', null );
-                inputs[ 'file_type' ] = items[0].get( 'extension', null );
+                var inputs = { 'file_count' : items.length };
                 for ( var index in items ) {
                     var it = items[ index ];
                     it.set( 'status', 'running' );
@@ -165,6 +163,8 @@ function( Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposi
                         inputs[ prefix + 'type' ] = 'upload_dataset';
                         inputs[ prefix + 'space_to_tab' ] = it.get( 'space_to_tab' ) && 'Yes' || null;
                         inputs[ prefix + 'to_posix_lines' ] = it.get( 'to_posix_lines' ) && 'Yes' || null;
+                        inputs[ prefix + 'dbkey' ] = it.get( 'genome', null );
+                        inputs[ prefix + 'file_type' ] = it.get( 'extension', null );
                         switch ( it.get( 'file_mode' ) ) {
                             case 'new':
                                 inputs[ prefix + 'url_paste' ] = it.get( 'url_paste' );

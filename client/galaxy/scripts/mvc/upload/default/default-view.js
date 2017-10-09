@@ -1,6 +1,7 @@
 /** Renders contents of the default uploader */
-define([ 'utils/utils', 'mvc/upload/upload-model', 'mvc/upload/default/default-row', 'mvc/upload/upload-ftp', 'mvc/ui/ui-popover', 'mvc/ui/ui-select', 'mvc/ui/ui-misc', 'utils/uploadbox'],
-function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui ) {
+define([ 'utils/utils', 'mvc/upload/upload-model', 'mvc/upload/default/default-row', 'mvc/upload/upload-ftp', 'mvc/upload/upload-extension', 'mvc/ui/ui-popover', 'mvc/ui/ui-select', 'mvc/ui/ui-misc', 'mvc/lazy/lazy-limited', 'utils/uploadbox'],
+function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Select, Ui, LazyLimited ) {
+
     return Backbone.View.extend({
         // current upload size in bytes
         upload_size: 0,
@@ -14,7 +15,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui ) {
             success     : 0,
             error       : 0,
             running     : 0,
-            reset : function() { this.announce = this.success = this.error = this.running = 0 }
+            reset       : function() { this.announce = this.success = this.error = this.running = 0 }
         },
 
         initialize : function( app ) {
@@ -25,7 +26,11 @@ function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui ) {
             this.list_genomes       = app.list_genomes;
             this.ui_button          = app.ui_button;
             this.ftp_upload_site    = app.currentFtp();
+
+            // build template
             this.setElement( this._template() );
+            this.$uploadbox         = this.$( '.upload-box' );
+            this.$uploadtable       = this.$( '.upload-table' );
 
             // append buttons to dom
             this.btnLocal    = new Ui.Button( { id: 'btn-local', title: 'Choose local file',   onclick: function() { self.uploadbox.select() }, icon: 'fa fa-laptop' } );
@@ -40,7 +45,7 @@ function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui ) {
             });
 
             // file upload
-            this.uploadbox = this.$( '.upload-box' ).uploadbox({
+            this.uploadbox = this.$uploadbox.uploadbox({
                 url             : this.app.options.nginx_upload_path,
                 announce        : function( index, file )       { self._eventAnnounce( index, file ) },
                 initialize      : function( index )             { return self.app.toData( [ self.collection.get( index ) ], self.history_id ) },
@@ -48,8 +53,8 @@ function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui ) {
                 success         : function( index, message )    { self._eventSuccess( index, message ) },
                 error           : function( index, message )    { self._eventError( index, message ) },
                 complete        : function()                    { self._eventComplete() },
-                ondragover      : function()                    { self.$( '.upload-box' ).addClass( 'highlight' ) },
-                ondragleave     : function()                    { self.$( '.upload-box' ).removeClass( 'highlight' ) }
+                ondragover      : function()                    { self.$uploadbox.addClass( 'highlight' ) },
+                ondragleave     : function()                    { self.$uploadbox.removeClass( 'highlight' ) }
             });
 
             // add ftp file viewer
@@ -61,15 +66,16 @@ function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui ) {
                 container   : this.$( '.upload-footer-extension' ),
                 data        : _.filter( this.list_extensions, function( ext ) { return !ext.composite_files } ),
                 value       : this.options.default_extension,
-                onchange    : function( extension ) { self.updateExtension( extension ) }
+                onchange    : function( extension ) { self._changeExtension( extension ) }
             });
 
             // handle extension info popover
             this.$( '.upload-footer-extension-info' ).on( 'click', function( e ) {
-                self.showExtensionInfo({
+                new UploadExtension({
                     $el         : $( e.target ),
                     title       : self.select_extension.text(),
                     extension   : self.select_extension.value(),
+                    list        : self.list_extensions,
                     placement   : 'top'
                 });
             }).on( 'mousedown', function( e ) { e.preventDefault() } );
@@ -80,198 +86,27 @@ function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui ) {
                 container   : this.$( '.upload-footer-genome' ),
                 data        : this.list_genomes,
                 value       : this.options.default_genome,
-                onchange    : function( genome ) { self.updateGenome(genome) }
+                onchange    : function( genome ) { self._changeGenome(genome) }
+            });
+
+            // Lazy load helper
+            this.loader = new LazyLimited({
+                $container  : this.$uploadbox,
+                collection  : this.collection,
+                new_content : function( model ) {
+                    var upload_row = new UploadRow( self, { model: model } )
+                    self.$uploadtable.find( '> tbody:first' ).append( upload_row.$el );
+                    upload_row.render();
+                    return upload_row;
+                }
             });
 
             // events
             this.collection.on( 'remove', function( model ) { self._eventRemove( model ) } );
-            this._updateScreen();
+            this.render();
         },
 
-        /** A new file has been dropped/selected through the uploadbox plugin */
-        _eventAnnounce: function( index, file ) {
-            this.counter.announce++;
-            var new_model = new UploadModel.Model({
-                id          : index,
-                file_name   : file.name,
-                file_size   : file.size,
-                file_mode   : file.mode || 'local',
-                file_path   : file.path,
-                file_data   : file
-            });
-            this.collection.add( new_model );
-            var upload_row = new UploadRow( this, { model: new_model } );
-            this.$( '.upload-table > tbody:first' ).append( upload_row.$el );
-            this._updateScreen();
-            upload_row.render();
-        },
-
-        /** Progress */
-        _eventProgress: function( index, percentage ) {
-            var it = this.collection.get( index );
-            it.set( 'percentage', percentage );
-            this.ui_button.model.set( 'percentage', this._uploadPercentage( percentage, it.get( 'file_size' ) ) );
-        },
-
-        /** Success */
-        _eventSuccess: function( index, message ) {
-            var it = this.collection.get( index );
-            it.set( { 'percentage': 100, 'status': 'success' } );
-            this.ui_button.model.set( 'percentage', this._uploadPercentage( 100, it.get( 'file_size' ) ) );
-            this.upload_completed += it.get( 'file_size' ) * 100;
-            this.counter.announce--;
-            this.counter.success++;
-            this._updateScreen();
-            Galaxy.currHistoryPanel.refreshContents();
-        },
-
-        /** Error */
-        _eventError: function( index, message ) {
-            var it = this.collection.get( index );
-            it.set( { 'percentage': 100, 'status': 'error', 'info': message } );
-            this.ui_button.model.set( { 'percentage': this._uploadPercentage( 100, it.get( 'file_size' ) ), 'status': 'danger' } );
-            this.upload_completed += it.get( 'file_size' ) * 100;
-            this.counter.announce--;
-            this.counter.error++;
-            this._updateScreen();
-        },
-
-        /** Queue is done */
-        _eventComplete: function() {
-            this.collection.each( function( model ) { model.get( 'status' ) == 'queued' && model.set( 'status', 'init' ) } );
-            this.counter.running = 0;
-            this._updateScreen();
-        },
-
-        /** Remove model from upload list */
-        _eventRemove: function( model ) {
-            var status = model.get( 'status' );
-            if ( status == 'success' ) {
-                this.counter.success--;
-            } else if ( status == 'error' ) {
-                this.counter.error--;
-            } else {
-                this.counter.announce--;
-            }
-            this.uploadbox.remove( model.id );
-            this._updateScreen();
-        },
-
-        //
-        // events triggered by this view
-        //
-
-        /** [public] display extension info popup */
-        showExtensionInfo: function( options ) {
-            var self = this;
-            var $el = options.$el;
-            var extension = options.extension;
-            var title = options.title;
-            var description = _.findWhere( self.list_extensions, { 'id': extension } );
-            this.extension_popup && this.extension_popup.remove();
-            this.extension_popup = new Popover.View({ placement: options.placement || 'bottom', container: $el } );
-            this.extension_popup.title( title );
-            this.extension_popup.empty();
-            this.extension_popup.append( this._templateDescription( description ) );
-            this.extension_popup.show();
-        },
-
-        /** Show/hide ftp popup */
-        _eventFtp: function() {
-            if ( !this.ftp.visible ) {
-                this.ftp.empty();
-                var self = this;
-                this.ftp.append( ( new UploadFtp({
-                    collection      : this.collection,
-                    ftp_upload_site : this.ftp_upload_site,
-                    onadd           : function( ftp_file ) {
-                        self.uploadbox.add([{
-                            mode: 'ftp',
-                            name: ftp_file.path,
-                            size: ftp_file.size,
-                            path: ftp_file.path
-                        }]);
-                    },
-                    onremove: function( model_index ) {
-                        self.collection.remove( model_index );
-                    }
-                } ) ).$el );
-                this.ftp.show();
-            } else {
-                this.ftp.hide();
-            }
-        },
-
-        /** Create a new file */
-        _eventCreate: function (){
-            this.uploadbox.add( [ { name: 'New File', size: 0, mode: 'new' } ] );
-        },
-
-        /** Start upload process */
-        _eventStart: function() {
-            if ( this.counter.announce == 0 || this.counter.running > 0 ) {
-                return;
-            }
-            var self = this;
-            this.upload_size = 0;
-            this.upload_completed = 0;
-            this.collection.each( function( model ) {
-                if( model.get( 'status' ) == 'init' ) {
-                    model.set( 'status', 'queued' );
-                    self.upload_size += model.get( 'file_size' );
-                }
-            });
-            this.ui_button.model.set( { 'percentage': 0, 'status': 'success' } );
-            this.counter.running = this.counter.announce;
-            this.history_id = this.app.currentHistory();
-            this.uploadbox.start();
-            this._updateScreen();
-        },
-
-        /** Pause upload process */
-        _eventStop: function() {
-            if ( this.counter.running > 0 ) {
-                this.ui_button.model.set( 'status', 'info' );
-                $( '.upload-top-info' ).html( 'Queue will pause after completing the current file...' );
-                this.uploadbox.stop();
-            }
-        },
-
-        /** Remove all */
-        _eventReset: function() {
-            if ( this.counter.running == 0 ){
-                this.collection.reset();
-                this.counter.reset();
-                this.uploadbox.reset();
-                this.select_extension.value( this.options.default_extension );
-                this.select_genome.value( this.options.default_genome );
-                this.ui_button.model.set( 'percentage', 0 );
-                this._updateScreen();
-            }
-        },
-
-        /** Update extension for all models */
-        updateExtension: function( extension, defaults_only ) {
-            var self = this;
-            this.collection.each( function( model ) {
-                if ( model.get( 'status' ) == 'init' && ( model.get( 'extension' ) == self.options.default_extension || !defaults_only ) ) {
-                    model.set( 'extension', extension );
-                }
-            });
-        },
-
-        /** Update genome for all models */
-        updateGenome: function( genome, defaults_only ) {
-            var self = this;
-            this.collection.each( function( model ) {
-                if ( model.get( 'status' ) == 'init' && ( model.get( 'genome' ) == self.options.default_genome || !defaults_only ) ) {
-                    model.set( 'genome', genome );
-                }
-            });
-        },
-
-        /** Set screen */
-        _updateScreen: function () {
+        render: function () {
             var message = '';
             if( this.counter.announce == 0 ) {
                 if (this.uploadbox.compatible()) {
@@ -303,22 +138,197 @@ function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui ) {
             this.$( '.upload-helper' )[ show_table ? 'hide' : 'show' ]();
         },
 
+        /** A new file has been dropped/selected through the uploadbox plugin */
+        _eventAnnounce: function( index, file ) {
+            this.counter.announce++;
+            var new_model = new UploadModel.Model({
+                id          : index,
+                file_name   : file.name,
+                file_size   : file.size,
+                file_mode   : file.mode || 'local',
+                file_path   : file.path,
+                file_data   : file
+            });
+            this.render();
+            this.collection.add( new_model );
+        },
+
+        /** Progress */
+        _eventProgress: function( index, percentage ) {
+            var it = this.collection.get( index );
+            it.set( 'percentage', percentage );
+            this.ui_button.model.set( 'percentage', this._uploadPercentage( percentage, it.get( 'file_size' ) ) );
+        },
+
+        /** Success */
+        _eventSuccess: function( index, message ) {
+            var it = this.collection.get( index );
+            it.set( { 'percentage': 100, 'status': 'success' } );
+            this.ui_button.model.set( 'percentage', this._uploadPercentage( 100, it.get( 'file_size' ) ) );
+            this.upload_completed += it.get( 'file_size' ) * 100;
+            this.counter.announce--;
+            this.counter.success++;
+            this.render();
+            Galaxy.currHistoryPanel.refreshContents();
+        },
+
+        /** Error */
+        _eventError: function( index, message ) {
+            var it = this.collection.get( index );
+            it.set( { 'percentage': 100, 'status': 'error', 'info': message } );
+            this.ui_button.model.set( { 'percentage': this._uploadPercentage( 100, it.get( 'file_size' ) ), 'status': 'danger' } );
+            this.upload_completed += it.get( 'file_size' ) * 100;
+            this.counter.announce--;
+            this.counter.error++;
+            this.render();
+        },
+
+        /** Queue is done */
+        _eventComplete: function() {
+            this.collection.each( function( model ) { model.get( 'status' ) == 'queued' && model.set( 'status', 'init' ) } );
+            this.counter.running = 0;
+            this.render();
+        },
+
+        /** Remove model from upload list */
+        _eventRemove: function( model ) {
+            var status = model.get( 'status' );
+            if ( status == 'success' ) {
+                this.counter.success--;
+            } else if ( status == 'error' ) {
+                this.counter.error--;
+            } else {
+                this.counter.announce--;
+            }
+            this.uploadbox.remove( model.id );
+            this.render();
+        },
+
+        //
+        // events triggered by this view
+        //
+
+        /** Show/hide ftp popup */
+        _eventFtp: function() {
+            if ( !this.ftp.visible ) {
+                this.ftp.empty();
+                var self = this;
+                this.ftp.append( ( new UploadFtp({
+                    collection      : this.collection,
+                    ftp_upload_site : this.ftp_upload_site,
+                    onadd           : function( ftp_file ) {
+                        return self.uploadbox.add([{
+                            mode: 'ftp',
+                            name: ftp_file.path,
+                            size: ftp_file.size,
+                            path: ftp_file.path
+                        }]);
+                    },
+                    onremove: function( model_index ) {
+                        self.collection.remove( model_index );
+                    }
+                } ) ).$el );
+                this.ftp.show();
+            } else {
+                this.ftp.hide();
+            }
+        },
+
+        /** Create a new file */
+        _eventCreate: function (){
+            this.uploadbox.add( [ { name: 'New File', size: 0, mode: 'new' } ] );
+        },
+
+        /** Start upload process */
+        _eventStart: function() {
+            if ( this.counter.announce != 0 && this.counter.running == 0 ) {
+                // prepare upload process
+                var self = this;
+                this.upload_size = 0;
+                this.upload_completed = 0;
+                this.collection.each( function( model ) {
+                    if( model.get( 'status' ) == 'init' ) {
+                        model.set( 'status', 'queued' );
+                        self.upload_size += model.get( 'file_size' );
+                    }
+                });
+                this.ui_button.model.set( { 'percentage': 0, 'status': 'success' } );
+                this.counter.running = this.counter.announce;
+                this.history_id = this.app.currentHistory();
+
+                // package ftp files separately, and remove them from queue
+                this._uploadFtp();
+
+                // queue remaining files
+                this.uploadbox.start();
+                this.render();
+            }
+        },
+
+        /** Pause upload process */
+        _eventStop: function() {
+            if ( this.counter.running > 0 ) {
+                this.ui_button.model.set( 'status', 'info' );
+                $( '.upload-top-info' ).html( 'Queue will pause after completing the current file...' );
+                this.uploadbox.stop();
+            }
+        },
+
+        /** Remove all */
+        _eventReset: function() {
+            if ( this.counter.running == 0 ){
+                var self = this;
+                this.collection.reset();
+                this.counter.reset();
+                this.uploadbox.reset();
+                this.select_extension.value( this.options.default_extension );
+                this.select_genome.value( this.options.default_genome );
+                this.ui_button.model.set( 'percentage', 0 );
+                this.render();
+            }
+        },
+
+        /** Update extension for all models */
+        _changeExtension: function( extension, defaults_only ) {
+            var self = this;
+            this.collection.each( function( model ) {
+                if ( model.get( 'status' ) == 'init' && ( model.get( 'extension' ) == self.options.default_extension || !defaults_only ) ) {
+                    model.set( 'extension', extension );
+                }
+            });
+        },
+
+        /** Update genome for all models */
+        _changeGenome: function( genome, defaults_only ) {
+            var self = this;
+            this.collection.each( function( model ) {
+                if ( model.get( 'status' ) == 'init' && ( model.get( 'genome' ) == self.options.default_genome || !defaults_only ) ) {
+                    model.set( 'genome', genome );
+                }
+            });
+        },
+
+        /** Package and upload ftp files in a single request */
+        _uploadFtp: function() {
+            var self = this;
+            var list = [];
+            this.collection.each( function( model ) {
+                if( model.get( 'status' ) == 'queued' && model.get( 'file_mode' ) == 'ftp' ) {
+                    self.uploadbox.remove( model.id );
+                    list.push( model );
+                }
+            });
+            $.uploadpost({
+                data     : this.app.toData( list ),
+                url      : this.app.options.nginx_upload_path,
+                success  : function( message ) { _.each( list, function( model ) { self._eventSuccess( model.id ) } ) },
+                error    : function( message ) { _.each( list, function( model ) { self._eventError( model.id, message ) } ) }
+            });
+        },
+
         /** Calculate percentage of all queued uploads */
         _uploadPercentage: function( percentage, size ) {
             return ( this.upload_completed + ( percentage * size ) ) / this.upload_size;
-        },
-
-        /** Template for extensions description */
-        _templateDescription: function( options ) {
-            if ( options.description ) {
-                var tmpl = options.description;
-                if ( options.description_url ) {
-                    tmpl += '&nbsp;(<a href="' + options.description_url + '" target="_blank">read more</a>)';
-                }
-                return tmpl;
-            } else {
-                return 'There is no description available for this file extension.';
-            }
         },
 
         /** Template */

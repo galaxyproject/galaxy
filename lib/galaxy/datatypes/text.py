@@ -351,8 +351,8 @@ class Arff(Text):
             5.1,3.5,1.4,0.2,Iris-setosa
             4.9,3.0,1.4,0.2,Iris-setosa
         """
+        comment_lines = column_count = 0
         if dataset.has_data():
-            comment_lines = 0
             first_real_line = False
             data_block = False
             with open(dataset.file_name) as handle:
