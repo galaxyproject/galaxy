@@ -207,8 +207,8 @@ var FolderToolbarView = Backbone.View.extend({
 
   // show bulk import modal
   modalBulkImport : function(){
-      var checkedValues = $('#folder_table').find(':checked');
-      if(checkedValues.length === 0){
+      var $checkedValues = this.findCheckedRows();
+      if($checkedValues.length === 0){
           mod_toastr.info('You must select some datasets first.');
       } else {
         var that = this;
@@ -268,7 +268,7 @@ var FolderToolbarView = Backbone.View.extend({
   processImportToHistory: function( history_id, history_name ){
     var dataset_ids = [];
     var folder_ids = [];
-    $('#folder_table').find(':checked').each(function(){
+    this.findCheckedRows().each(function(){
         var row_id = $(this).closest('tr').data('id');
         if (row_id.substring(0,1) == 'F'){
             folder_ids.push(row_id);
@@ -323,7 +323,7 @@ var FolderToolbarView = Backbone.View.extend({
   download : function( folder_id, format ){
     var dataset_ids = [];
     var folder_ids = [];
-        $( '#folder_table' ).find( ':checked' ).each( function(){
+        this.findCheckedRows().each( function(){
             var row_id = $(this).closest('tr').data('id');
             if (row_id.substring(0,1) == 'F'){
                 folder_ids.push(row_id);
@@ -997,7 +997,7 @@ var FolderToolbarView = Backbone.View.extend({
   deleteSelectedItems: function(){
     var dataset_ids = [];
     var folder_ids = [];
-    var $checkedValues = $('#folder_table').find(':checked');
+    var $checkedValues = this.findCheckedRows();
     if($checkedValues.length === 0){
         mod_toastr.info('You must select at least one item for deletion.');
     } else {
@@ -1114,6 +1114,10 @@ var FolderToolbarView = Backbone.View.extend({
         Galaxy.libraries.preferences.set( { 'folder_page_size': parseInt( folder_page_size ) } );
         Galaxy.libraries.folderListView.render( { id: this.options.id, show_page: 1 } );
     }
+  },
+
+  findCheckedRows: function(){
+    return $('#folder_list_body').find(':checked');
   },
 
   templateToolBar: function(){

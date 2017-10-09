@@ -3,14 +3,14 @@ Actions to be run at job completion (or output hda creation, as in the case of
 immediate_actions listed below.  Currently only used in workflows.
 """
 import datetime
-import logging
 import socket
 
 from markupsafe import escape
 
 from galaxy.util import send_mail
+from galaxy.util.logging import get_logger
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 
 class DefaultJobAction(object):
@@ -308,6 +308,7 @@ class DeleteIntermediatesAction(DefaultJobAction):
                     safe_to_delete = True
                     for job_to_check in [d_j.job for d_j in input_dataset.dependent_jobs]:
                         if job_to_check != job and job_to_check.state not in [job.states.OK, job.states.DELETED]:
+                            log.trace("Workflow Intermediates cleanup attempted, but non-terminal state '%s' detected for job %s" % (job_to_check.state, job_to_check.id))
                             safe_to_delete = False
                     if safe_to_delete:
                         # Support purging here too.
