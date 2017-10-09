@@ -241,25 +241,11 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
 
     @web.expose
     @web.json
-    def edit(self, trans, dataset_id=None, filename=None, hid=None, **kwd):
+    def get_edit(self, trans, dataset_id=None, filename=None, hid=None, **kwd):
         """Allows user to modify parameters of an HDA."""
         message = None
         status = 'done'
         error = False
-
-        def __ok_to_edit_metadata(dataset_id):
-            # prevent modifying metadata when dataset is queued or running as input/output
-            # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
-            for job_to_dataset_association in trans.sa_session.query(
-                    self.app.model.JobToInputDatasetAssociation) \
-                    .filter_by(dataset_id=dataset_id) \
-                    .all() \
-                    + trans.sa_session.query(self.app.model.JobToOutputDatasetAssociation) \
-                    .filter_by(dataset_id=dataset_id) \
-                    .all():
-                if job_to_dataset_association.job.state not in [job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED]:
-                    return False
-            return True
         if hid is not None:
             history = trans.get_history()
             # TODO: hid handling
@@ -301,140 +287,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     status: 'error',
                     message: "Please wait until this dataset finishes uploading before attempting to edit its metadata."
                 }
-            params = util.Params(kwd, sanitize=False)
-            if params.change:
-                # The user clicked the Save button on the 'Change data type' form
-                if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(params.datatype).allow_datatype_change:
-                    # prevent modifying datatype when dataset is queued or running as input/output
-                    if not __ok_to_edit_metadata(data.id):
-                        message = "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
-                        error = True
-                    else:
-                        trans.app.datatypes_registry.change_datatype(data, params.datatype)
-                        trans.sa_session.flush()
-                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data}, overwrite=False)  # overwrite is False as per existing behavior
-                        message = "Changed the type of dataset %s to %s." % (to_unicode(data.name), params.datatype)
-                else:
-                    message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % (data.extension, params.datatype)
-                    error = True
-            elif params.save:
-                # The user clicked the Save button on the 'Edit Attributes' form
-                data.name = params.name if params.name else ''
-                data.info = params.info if params.info else ''
-                message = ''
-                if __ok_to_edit_metadata(data.id):
-                    # The following for loop will save all metadata_spec items
-                    for name, spec in data.datatype.metadata_spec.items():
-                        if spec.get("readonly"):
-                            continue
-                        setattr(data.metadata, name, spec.unwrap(params.get(name, None)))
-                    data.datatype.after_setting_metadata(data)
-                    # Sanitize annotation before adding it.
-                    if params.annotation:
-                        annotation = sanitize_html(params.annotation, 'utf-8', 'text/html')
-                        self.add_item_annotation(trans.sa_session, trans.get_user(), data, annotation)
-                    # This block on controller code is inactive until the 'extended_metadata' edit box is added back into the UI
-                    # Add or delete extended metadata
-#                    if params.extended_metadata:
-#                        em_string = params.extended_metadata
-#                        if len(em_string):
-#                            em_payload = None
-#                            try:
-#                                em_payload = loads(em_string)
-#                            except Exception as e:
-#                                message = 'Invalid JSON input'
-#                                error = True
-#                            if em_payload is not None:
-#                                if data is not None:
-#                                    ex_obj = self.get_item_extended_metadata_obj(trans, data)
-#                                    if ex_obj is not None:
-#                                        self.unset_item_extended_metadata_obj(trans, data)
-#                                        self.delete_extended_metadata(trans, ex_obj)
-#                                    ex_obj = self.create_extended_metadata(trans, em_payload)
-#                                    self.set_item_extended_metadata_obj(trans, data, ex_obj)
-#                                    message = "Updated Extended metadata '%s'." % data.name
-#                                    status = 'done'
-#                                else:
-#                                    message = "data not found"
-#                                    error = True
-#                    else:
-#                        if data is not None:
-#                            ex_obj = self.get_item_extended_metadata_obj(trans, data)
-#                            if ex_obj is not None:
-#                                self.unset_item_extended_metadata_obj(trans, data)
-#                                self.delete_extended_metadata(trans, ex_obj)
-#                        message = "Deleted Extended metadata '%s'." % data.name
-#                        status = 'done'
-
-                    # If setting metadata previously failed and all required elements have now been set, clear the failed state.
-                    if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
-                        data._state = None
-                    trans.sa_session.flush()
-                    if message:
-                        message = "Attributes updated. %s" % message
-                    else:
-                        message = "Attributes updated."
-                else:
-                    trans.sa_session.flush()
-                    message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
-                    status = "warning"
-            elif params.detect:
-                # The user clicked the Auto-detect button on the 'Edit Attributes' form
-                # prevent modifying metadata when dataset is queued or running as input/output
-                if not __ok_to_edit_metadata(data.id):
-                    message = "This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them."
-                    error = True
-                else:
-                    for name, spec in data.metadata.spec.items():
-                        # We need to be careful about the attributes we are resetting
-                        if name not in ['name', 'info', 'dbkey', 'base_name']:
-                            if spec.get('default'):
-                                setattr(data.metadata, name, spec.unwrap(spec.get('default')))
-                    message = 'Attributes have been queued to be updated.'
-                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data})
-                    trans.sa_session.flush()
-            elif params.convert_data:
-                target_type = kwd.get("target_type", None)
-                if target_type:
-                    message = data.datatype.convert_dataset(trans, data, target_type)
-            elif params.update_roles_button:
-                if not trans.user:
-                    return {
-                        status: 'error',
-                        message: "You must be logged in if you want to change permissions."
-                    }
-                if trans.app.security_agent.can_manage_dataset(current_user_roles, data.dataset):
-                    permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-                    payload_permissions = json.loads(params.permissions)
-                    # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
-                    # need to ensure that they did not associate roles that would cause accessibility problems.
-                    permissions, in_roles, error, message = \
-                        trans.app.security_agent.derive_roles_from_access(trans, data.dataset.id, 'root', **payload_permissions)
-                    if error:
-                        # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
-                        access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
-                        permissions[access_action] = data.dataset.get_access_roles(trans)
-                        status = 'error'
-                    else:
-                        error = trans.app.security_agent.set_all_dataset_permissions(data.dataset, permissions)
-                        if error:
-                            message += error
-                            status = 'error'
-                        else:
-                            message = 'Your changes completed successfully.'
-                    trans.sa_session.refresh(data.dataset)
-                else:
-                    message = "You are not authorized to change this dataset's permissions."
-                    error = True
-            else:
-                if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
-                    # Copy dbkey into metadata, for backwards compatability
-                    # This looks like it does nothing, but getting the dbkey
-                    # returns the metadata dbkey unless it is None, in which
-                    # case it resorts to the old dbkey.  Setting the dbkey
-                    # sets it properly in the metadata
-                    # This is likely no longer required, since the dbkey exists entirely within metadata (the old_dbkey field is gone): REMOVE ME?
-                    data.metadata.dbkey = data.dbkey
             # let's not overwrite the imported datatypes module with the variable datatypes?
             # the built-in 'id' is overwritten in lots of places as well
             ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change]
@@ -449,7 +301,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             convert_inputs = list()
             convert_datatype_inputs = list()
             permission_inputs = list()
-
             edit_attributes_inputs.append({
                 'name' : 'name',
                 'type' : 'text',
@@ -591,6 +442,164 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 status: 'error',
                 message: "You do not have permission to edit this dataset's ( id: %s ) information." % str(dataset_id)
             }
+
+    @web.expose
+    @web.json
+    @web.require_login("see all available datasets")
+    def set_edit(self, trans, dataset_id=None, filename=None, hid=None, **kwd):
+        """Allows user to modify parameters of an HDA."""
+        def __ok_to_edit_metadata(dataset_id):
+            # prevent modifying metadata when dataset is queued or running as input/output
+            # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
+            for job_to_dataset_association in trans.sa_session.query(
+                    self.app.model.JobToInputDatasetAssociation) \
+                    .filter_by(dataset_id=dataset_id) \
+                    .all() \
+                    + trans.sa_session.query(self.app.model.JobToOutputDatasetAssociation) \
+                    .filter_by(dataset_id=dataset_id) \
+                    .all():
+                if job_to_dataset_association.job.state not in [job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED]:
+                    return False
+            return True
+
+        if dataset_id is not None:
+            id = self.decode_id(dataset_id)
+            data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
+        params = util.Params(kwd, sanitize=False)
+        if params.change:
+            # The user clicked the Save button on the 'Change data type' form
+            if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(params.datatype).allow_datatype_change:
+                # prevent modifying datatype when dataset is queued or running as input/output
+                if not __ok_to_edit_metadata(data.id):
+                    message = "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
+                    error = True
+                else:
+                    trans.app.datatypes_registry.change_datatype(data, params.datatype)
+                    trans.sa_session.flush()
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data}, overwrite=False)  # overwrite is False as per existing behavior
+                    message = "Changed the type of dataset %s to %s." % (to_unicode(data.name), params.datatype)
+            else:
+                message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % (data.extension, params.datatype)
+                error = True
+        elif params.save:
+            # The user clicked the Save button on the 'Edit Attributes' form
+            data.name = params.name if params.name else ''
+            data.info = params.info if params.info else ''
+            message = ''
+            if __ok_to_edit_metadata(data.id):
+                # The following for loop will save all metadata_spec items
+                for name, spec in data.datatype.metadata_spec.items():
+                    if spec.get("readonly"):
+                        continue
+                    setattr(data.metadata, name, spec.unwrap(params.get(name, None)))
+                data.datatype.after_setting_metadata(data)
+                # Sanitize annotation before adding it.
+                if params.annotation:
+                    annotation = sanitize_html(params.annotation, 'utf-8', 'text/html')
+                    self.add_item_annotation(trans.sa_session, trans.get_user(), data, annotation)
+                # This block on controller code is inactive until the 'extended_metadata' edit box is added back into the UI
+                # Add or delete extended metadata
+#                    if params.extended_metadata:
+#                        em_string = params.extended_metadata
+#                        if len(em_string):
+#                            em_payload = None
+#                            try:
+#                                em_payload = loads(em_string)
+#                            except Exception as e:
+#                                message = 'Invalid JSON input'
+#                                error = True
+#                            if em_payload is not None:
+#                                if data is not None:
+#                                    ex_obj = self.get_item_extended_metadata_obj(trans, data)
+#                                    if ex_obj is not None:
+#                                        self.unset_item_extended_metadata_obj(trans, data)
+#                                        self.delete_extended_metadata(trans, ex_obj)
+#                                    ex_obj = self.create_extended_metadata(trans, em_payload)
+#                                    self.set_item_extended_metadata_obj(trans, data, ex_obj)
+#                                    message = "Updated Extended metadata '%s'." % data.name
+#                                    status = 'done'
+#                                else:
+#                                    message = "data not found"
+#                                    error = True
+#                    else:
+#                        if data is not None:
+#                            ex_obj = self.get_item_extended_metadata_obj(trans, data)
+#                            if ex_obj is not None:
+#                                self.unset_item_extended_metadata_obj(trans, data)
+#                                self.delete_extended_metadata(trans, ex_obj)
+#                        message = "Deleted Extended metadata '%s'." % data.name
+#                        status = 'done'
+
+                # If setting metadata previously failed and all required elements have now been set, clear the failed state.
+                if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
+                    data._state = None
+                trans.sa_session.flush()
+                if message:
+                    message = "Attributes updated. %s" % message
+                else:
+                    message = "Attributes updated."
+            else:
+                trans.sa_session.flush()
+                message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
+                status = "warning"
+        elif params.detect:
+            # The user clicked the Auto-detect button on the 'Edit Attributes' form
+            # prevent modifying metadata when dataset is queued or running as input/output
+            if not __ok_to_edit_metadata(data.id):
+                message = "This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them."
+                error = True
+            else:
+                for name, spec in data.metadata.spec.items():
+                    # We need to be careful about the attributes we are resetting
+                    if name not in ['name', 'info', 'dbkey', 'base_name']:
+                        if spec.get('default'):
+                            setattr(data.metadata, name, spec.unwrap(spec.get('default')))
+                message = 'Attributes have been queued to be updated.'
+                trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data})
+                trans.sa_session.flush()
+        elif params.convert_data:
+            target_type = kwd.get("target_type", None)
+            if target_type:
+                message = data.datatype.convert_dataset(trans, data, target_type)
+        elif params.update_roles_button:
+            if not trans.user:
+                return {
+                    status: 'error',
+                    message: "You must be logged in if you want to change permissions."
+                }
+            if trans.app.security_agent.can_manage_dataset(current_user_roles, data.dataset):
+                permitted_actions = trans.app.model.Dataset.permitted_actions.items()
+                payload_permissions = json.loads(params.permissions)
+                # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
+                # need to ensure that they did not associate roles that would cause accessibility problems.
+                permissions, in_roles, error, message = \
+                    trans.app.security_agent.derive_roles_from_access(trans, data.dataset.id, 'root', **payload_permissions)
+                if error:
+                    # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
+                    access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
+                    permissions[access_action] = data.dataset.get_access_roles(trans)
+                    status = 'error'
+                else:
+                    error = trans.app.security_agent.set_all_dataset_permissions(data.dataset, permissions)
+                    if error:
+                        message += error
+                        status = 'error'
+                    else:
+                        message = 'Your changes completed successfully.'
+                trans.sa_session.refresh(data.dataset)
+            else:
+                message = "You are not authorized to change this dataset's permissions."
+                error = True
+        else:
+            if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
+                # Copy dbkey into metadata, for backwards compatability
+                # This looks like it does nothing, but getting the dbkey
+                # returns the metadata dbkey unless it is None, in which
+                # case it resorts to the old dbkey.  Setting the dbkey
+                # sets it properly in the metadata
+                # This is likely no longer required, since the dbkey exists entirely within metadata (the old_dbkey field is gone): REMOVE ME?
+                data.metadata.dbkey = data.dbkey
+        return { 'status': 'success', 'message': message }
 
     @web.expose
     @web.json

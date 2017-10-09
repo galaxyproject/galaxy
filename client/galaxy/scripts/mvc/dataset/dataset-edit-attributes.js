@@ -12,11 +12,11 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         // Fetch data for the selected dataset and 
         // build tabs for editing its attributes
         render: function() {
-            var url = Galaxy.root + 'dataset/edit',
-                self = this;
-            Utils.get({
+            var self = this;
+            var url = Galaxy.root + 'dataset/get_edit?dataset_id=' + self.model.get( 'dataset_id' );
+            window.console.log( url );
+            $.ajax({
                 url     : url,
-                data    : { 'dataset_id' : self.model.get( 'dataset_id' ) },
                 success : function( response ) {
                    self.render_attribute_page( self, response );
                 },
@@ -48,7 +48,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
 
         /** Perform AJAX post call */
         call_ajax: function( self, data, tab_name ) {
-            var post_url = Galaxy.root + 'dataset/edit';
+            var post_url = Galaxy.root + 'dataset/set_edit';
             $.ajax({
                 type: "PUT",
                 url: post_url,
