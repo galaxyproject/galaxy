@@ -58,7 +58,7 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
     def handle_galaxy_config_kwds(cls, config):
         config["allow_path_paste"] = True
 
-    def test_primary_file(self):
+    def test_disallowed_for_primary_file(self):
         payload = self.dataset_populator.upload_payload(
             self.history_id, 'file://%s/1.RData' % TEST_DATA_DIRECTORY, ext="binary"
         )
@@ -68,7 +68,7 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
         assert create_response.status_code >= 400
 
     @skip_without_datatype("velvet")
-    def test_composite_datatype(self):
+    def test_disallowed_for_composite_file(self):
         payload = self.dataset_populator.upload_payload(
             self.history_id,
             "sequences content",
@@ -94,7 +94,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         config["allow_path_paste"] = True
 
-    def test(self):
+    def test_admin_path_paste(self):
         payload = self.dataset_populator.upload_payload(
             self.history_id, 'file://%s/random-file' % TEST_DATA_DIRECTORY,
         )
@@ -170,7 +170,7 @@ class AutoDecompressTestCase(BaseUploadContentConfigurationTestCase):
 
 class LocalAddressWhitelisting(BaseUploadContentConfigurationTestCase):
 
-    def test_blocked_url_primary_file(self):
+    def test_blocked_url_for_primary_file(self):
         payload = self.dataset_populator.upload_payload(
             self.history_id, 'http://localhost/', ext="txt"
         )
@@ -180,7 +180,7 @@ class LocalAddressWhitelisting(BaseUploadContentConfigurationTestCase):
         assert create_response.status_code >= 400
 
     @skip_without_datatype("velvet")
-    def test_blocked_url_secondary_file(self):
+    def test_blocked_url_for_composite_file(self):
         payload = self.dataset_populator.upload_payload(
             self.history_id,
             "sequences content",
@@ -215,13 +215,13 @@ class BaseFtpUploadConfigurationTestCase(BaseUploadContentConfigurationTestCase)
     def ftp_dir(cls):
         return os.path.join(cls._test_driver.galaxy_test_tmp_dir, "ftp")
 
-    def check_content(self, dataset, content, ext="txt"):
+    def _check_content(self, dataset, content, ext="txt"):
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset)
         assert dataset["file_ext"] == ext, dataset
         content = self.dataset_populator.get_history_dataset_content(self.history_id, dataset=dataset)
         assert content == content, content
 
-    def write_ftp_file(self, dir_path, content, filename="test"):
+    def _write_ftp_file(self, dir_path, content, filename="test"):
         self._ensure_directory(dir_path)
         path = os.path.join(dir_path, filename)
         with open(path, "w") as f:
@@ -235,10 +235,10 @@ class BaseFtpUploadConfigurationTestCase(BaseUploadContentConfigurationTestCase)
 
 class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
 
-    def test_ftp_uploads(self):
+    def test_ftp_upload(self):
         content = "hello world\n"
-        dir_path = self.get_user_ftp_path()
-        ftp_path = self.write_ftp_file(dir_path, content)
+        dir_path = self._get_user_ftp_path()
+        ftp_path = self._write_ftp_file(dir_path, content)
         ftp_files = self.dataset_populator.get_remote_files()
         assert len(ftp_files) == 1, ftp_files
         assert ftp_files[0]["path"] == "test"
@@ -246,12 +246,12 @@ class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
         dataset = self.dataset_populator.new_dataset(
             self.history_id, ftp_files="test", file_type="txt", wait=True
         )
-        self.check_content(dataset, content)
+        self._check_content(dataset, content)
         # Purge is set by default so this should be gone.
         # ... but it isn't - is this a bug? Are only certain kinds of uploads purged?
         # assert not os.path.exists(ftp_path)
 
-    def get_user_ftp_path(self):
+    def _get_user_ftp_path(self):
         return os.path.join(self.ftp_dir(), TEST_USER)
 
 
@@ -268,7 +268,7 @@ class PerUsernameFtpUploadConfigurationTestCase(SimpleFtpUploadConfigurationTest
     def handle_extra_ftp_config(cls, config):
         config["ftp_upload_dir_identifier"] = "username"
 
-    def get_user_ftp_path(self):
+    def _get_user_ftp_path(self):
         username = re.sub('[^a-z-]', '--', TEST_USER.lower())
         return os.path.join(self.ftp_dir(), username)
 
@@ -279,7 +279,7 @@ class TemplatedFtpDirectoryUploadConfigurationTestCase(SimpleFtpUploadConfigurat
     def handle_extra_ftp_config(cls, config):
         config["ftp_upload_dir_template"] = "${ftp_upload_dir}/moo_${ftp_upload_dir_identifier}_cow"
 
-    def get_user_ftp_path(self):
+    def _get_user_ftp_path(self):
         return os.path.join(self.ftp_dir(), "moo_%s_cow" % TEST_USER)
 
 
@@ -289,10 +289,10 @@ class DisableFtpPurgeUploadConfigurationTestCase(BaseFtpUploadConfigurationTestC
     def handle_extra_ftp_config(cls, config):
         config["ftp_upload_purge"] = "False"
 
-    def test_ftp_uploads(self):
+    def test_ftp_uploads_not_purged(self):
         content = "hello world\n"
         dir_path = os.path.join(self.ftp_dir(), TEST_USER)
-        ftp_path = self.write_ftp_file(dir_path, content)
+        ftp_path = self._write_ftp_file(dir_path, content)
         ftp_files = self.dataset_populator.get_remote_files()
         assert len(ftp_files) == 1
         assert ftp_files[0]["path"] == "test"
@@ -300,17 +300,17 @@ class DisableFtpPurgeUploadConfigurationTestCase(BaseFtpUploadConfigurationTestC
         dataset = self.dataset_populator.new_dataset(
             self.history_id, ftp_files="test", file_type="txt", wait=True
         )
-        self.check_content(dataset, content)
+        self._check_content(dataset, content)
         # Purge is disabled, this better still be here.
         assert os.path.exists(ftp_path)
 
 
 class UploadOptionsFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
 
-    def test_upload_api_options_space_to_tab(self):
-        self.write_user_ftp_file("0.txt", ONE_TO_SIX_WITH_SPACES)
-        self.write_user_ftp_file("1.txt", ONE_TO_SIX_WITH_SPACES)
-        self.write_user_ftp_file("2.txt", ONE_TO_SIX_WITH_SPACES)
+    def test_upload_api_option_space_to_tab(self):
+        self._write_user_ftp_file("0.txt", ONE_TO_SIX_WITH_SPACES)
+        self._write_user_ftp_file("1.txt", ONE_TO_SIX_WITH_SPACES)
+        self._write_user_ftp_file("2.txt", ONE_TO_SIX_WITH_SPACES)
 
         payload = self.dataset_populator.upload_payload(self.history_id,
             ftp_files="0.txt",
@@ -343,10 +343,10 @@ class UploadOptionsFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTest
         content = self.dataset_populator.get_history_dataset_content(self.history_id, dataset=datasets[2])
         assert content == ONE_TO_SIX_WITH_TABS
 
-    def test_upload_api_options_posix_lines(self):
-        self.write_user_ftp_file("0.txt", ONE_TO_SIX_ON_WINDOWS)
-        self.write_user_ftp_file("1.txt", ONE_TO_SIX_ON_WINDOWS)
-        self.write_user_ftp_file("2.txt", ONE_TO_SIX_ON_WINDOWS)
+    def test_upload_api_option_to_posix_lines(self):
+        self._write_user_ftp_file("0.txt", ONE_TO_SIX_ON_WINDOWS)
+        self._write_user_ftp_file("1.txt", ONE_TO_SIX_ON_WINDOWS)
+        self._write_user_ftp_file("2.txt", ONE_TO_SIX_ON_WINDOWS)
 
         payload = self.dataset_populator.upload_payload(self.history_id,
             ftp_files="0.txt",
@@ -379,8 +379,8 @@ class UploadOptionsFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTest
         content = self.dataset_populator.get_history_dataset_content(self.history_id, dataset=datasets[2])
         assert content == ONE_TO_SIX_WITH_TABS
 
-    def test_auto_decompress_default(self):
-        self.copy_to_user_ftp_file("1.sam.gz")
+    def test_upload_option_auto_decompress_default(self):
+        self._copy_to_user_ftp_file("1.sam.gz")
         payload = self.dataset_populator.upload_payload(
             self.history_id,
             ftp_files="1.sam.gz",
@@ -392,8 +392,8 @@ class UploadOptionsFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTest
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=datasets[0])
         assert dataset["file_ext"] == "sam", dataset
 
-    def test_auto_decompress_off(self):
-        self.copy_to_user_ftp_file("1.sam.gz")
+    def test_upload_option_auto_decompress_off(self):
+        self._copy_to_user_ftp_file("1.sam.gz")
         payload = self.dataset_populator.upload_payload(
             self.history_id,
             ftp_files="1.sam.gz",
@@ -406,11 +406,11 @@ class UploadOptionsFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTest
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=datasets[0])
         assert dataset["file_ext"] != "sam", dataset
 
-    def copy_to_user_ftp_file(self, test_data_path):
+    def _copy_to_user_ftp_file(self, test_data_path):
         input_path = os.path.join(TEST_DATA_DIRECTORY, test_data_path)
         target_dir = os.path.join(self.ftp_dir(), TEST_USER)
         self._ensure_directory(target_dir)
         shutil.copyfile(input_path, os.path.join(target_dir, test_data_path))
 
-    def write_user_ftp_file(self, path, content):
-        return self.write_ftp_file(os.path.join(self.ftp_dir(), TEST_USER), content, filename=path)
+    def _write_user_ftp_file(self, path, content):
+        return self._write_ftp_file(os.path.join(self.ftp_dir(), TEST_USER), content, filename=path)
