@@ -199,11 +199,16 @@ var DatasetListItemEdit = _super.extend(
 
     /** Render icon-button to report an error on this dataset to the galaxy admin. */
     _renderErrButton : function(){
+        var self = this;
         return faIconButton({
             title       : _l( 'View or report this error' ),
             href        : Galaxy.root + 'datasets/error?dataset_id=' + this.model.attributes.id,
             classes     : 'report-error-btn',
-            faIcon      : 'fa-bug'
+            faIcon      : 'fa-bug',
+            onclick     : function( ev ) {
+                ev.preventDefault();
+                Galaxy.router.push( 'datasets/error', { dataset_id : self.model.attributes.id } );
+            }
         });
     },
 
