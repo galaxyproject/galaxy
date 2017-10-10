@@ -9,6 +9,7 @@ var jQuery = require( 'jquery' ),
     PAGE = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
     UserPreferences = require( 'mvc/user/user-preferences' );
+    CustomBuilds = require( 'mvc/user/user-custom-builds' );
     Tours = require( 'mvc/tours' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
@@ -68,14 +69,17 @@ window.app = function app( options, bootstrapped ){
     Galaxy.currHistoryPanel = historyPanel.historyView;
     Galaxy.currHistoryPanel.listenToGalaxy( Galaxy );
 
-    //HACK: move there
-    Galaxy.app = {
-        display : function( view, target ){
-            // TODO: Remove this line after select2 update
-            $( '.select2-hidden-accessible' ).remove();
-            centerPanel.display( view );
-        },
-    };
+    var routingMessage = Backbone.View.extend({
+        initialize: function(options) {
+            this.message = options.message || "Undefined Message";
+            this.msg_status = options.type || 'info';
+            this.render();
+		},
+        render: function(){
+            this.$el.html(_.escape(this.message)).addClass(this.msg_status + "message");
+        }
+    });
+
 
     // .................................................... routes
     /**  */
@@ -86,22 +90,51 @@ window.app = function app( options, bootstrapped ){
             this.options = options;
         },
 
+        /** helper to push a new navigation state */
+        push: function( url, data ) {
+            data = data || {};
+            data.__identifer = Math.random().toString( 36 ).substr( 2 );
+            if ( !$.isEmptyObject( data ) ) {
+                url += url.indexOf( '?' ) == -1 ? '?' : '&';
+                url += $.param( data , true );
+            }
+            this.navigate( url, { 'trigger': true } );
+        },
+
         /** override to parse query string into obj and send to each route */
         execute: function( callback, args, name ){
             Galaxy.debug( 'router execute:', callback, args, name );
             var queryObj = QUERY_STRING.parse( args.pop() );
             args.push( queryObj );
             if( callback ){
-                callback.apply( this, args );
+                if ( this.authenticate( args, name ) ) {
+                    callback.apply( this, args );
+                } else {
+                    this.loginRequired();
+                }
             }
         },
 
         routes : {
             '(/)' : 'home',
-            // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
             '(/)tours(/)(:tour_id)' : 'show_tours',
-            '(/)users(/)' : 'show_users',
+            '(/)user(/)' : 'show_user',
+            '(/)user(/)(:form_id)' : 'show_user_form',
+            '(/)custom_builds' : 'show_custom_builds'
+        },
+
+        require_login: [
+            'show_user',
+            'show_user_form'
+        ],
+
+        loginRequired: function() {
+            centerPanel.display( new routingMessage({type: 'error', message: "You must be logged in to make this request."}) );
+        },
+
+        authenticate: function( args, name ) {
+            return ( Galaxy.user && Galaxy.user.id ) || this.require_login.indexOf( name ) == -1;
         },
 
         show_tours : function( tour_id ){
@@ -112,8 +145,21 @@ window.app = function app( options, bootstrapped ){
             }
         },
 
-        show_users : function(){
+        show_user : function(){
             centerPanel.display( new UserPreferences.View() );
+        },
+
+        show_user_form : function( form_id ) {
+            centerPanel.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+        },
+
+        show_custom_builds : function() {
+            var self = this;
+            if ( !Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model || !Galaxy.currHistoryPanel.model.id ) {
+                window.setTimeout(function() { self.show_custom_builds() }, 500)
+                return;
+            }
+            centerPanel.display( new CustomBuilds.View() );
         },
 
         /**  */
@@ -144,7 +190,7 @@ window.app = function app( options, bootstrapped ){
         /** load the center panel with a tool form described by the given params obj */
         _loadToolForm : function( params ){
             //TODO: load tool form code async
-            params.id = params.tool_id;
+            params.id = unescape( params.tool_id );
             centerPanel.display( new ToolForm.View( params ) );
         },
 

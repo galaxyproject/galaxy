@@ -109,7 +109,7 @@
                 %>
                 <tr>
                     ${inputs_recursive_indent( text=label, depth=depth )}
-                    <td>${input.value_to_display_text( param_values[input.name], trans.app ) | h}</td>
+                    <td>${input.value_to_display_text( param_values[input.name] ) | h}</td>
                     <td>${ upgrade_messages.get( input.name, '' ) | h }</td>
                 </tr>
             %endif

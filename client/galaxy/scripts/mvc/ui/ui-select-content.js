@@ -34,7 +34,8 @@ var View = Backbone.View.extend({
         var self = this;
         this.model = options && options.model || new Backbone.Model({
             src_labels  : { 'hda' : 'dataset', 'hdca': 'dataset collection' },
-            pagelimit   : 100
+            pagelimit   : 100,
+            statustimer : 1000
         }).set( options );
         this.setElement( $( '<div/>' ).addClass( 'ui-select-content' ) );
         this.button_product = new Ui.RadioButton.View( {
@@ -53,6 +54,12 @@ var View = Backbone.View.extend({
                                                     .append( this.button_product.$el ) )
                                                     .append( $( '<div/>' ).css( 'clear', 'both' ) )
         };
+
+        // add drag-drop event handlers
+        this.$el.on( 'dragenter', function( e ) { this.lastenter = e.target; self.$el.addClass( 'ui-dragover' ); } )
+                .on( 'dragover',  function( e ) { e.preventDefault(); } )
+                .on( 'dragleave', function( e ) { this.lastenter === e.target && self.$el.removeClass( 'ui-dragover' ); } )
+                .on( 'drop',      function( e ) { self._handleDrop( e ); } );
 
         // track current history elements
         this.history = {};
@@ -221,7 +228,8 @@ var View = Backbone.View.extend({
                     hid  : item.hid,
                     keep : item.keep,
                     label: item.hid + ': ' + item.name,
-                    value: item.id
+                    value: item.id,
+                    tags : item.tags
                 });
                 self.history[ item.id + '_' + src ] = item;
             });
@@ -257,6 +265,50 @@ var View = Backbone.View.extend({
                 field.value( null );
             });
         }
+    },
+
+    /** Handles drop events e.g. from history panel */
+    _handleDrop: function( ev ) {
+        try {
+            var data      = this.model.get( 'data' );
+            var current   = this.model.get( 'current' );
+            var config    = this.config[ current ];
+            var field     = this.fields[ current ];
+            var drop_data = JSON.parse( ev.originalEvent.dataTransfer.getData( 'text' ) )[ 0 ];
+            var new_id    = drop_data.id;
+            var new_src   = drop_data.history_content_type == 'dataset' ? 'hda' : 'hdca';
+            var new_value = { id: new_id, src: new_src };
+            if ( data && _.findWhere( data[ new_src ], new_value ) ) {
+                if ( config.src == new_src ) {
+                    var current_value = field.value();
+                    if ( current_value && config.multiple ) {
+                        if ( current_value.indexOf( new_id ) == -1 ) {
+                            current_value.push( new_id );
+                        }
+                    } else {
+                        current_value = new_id;
+                    }
+                    field.value( current_value );
+                } else {
+                    this.model.set( 'value', { values: [ new_value ] } );
+                    this.model.trigger( 'change:value' );
+                }
+                this.trigger( 'change' );
+                this._handleDropStatus( 'success' );
+            } else {
+                this._handleDropStatus( 'danger' );
+            }
+        } catch( e ) {
+            this._handleDropStatus( 'danger' );
+        }
+        ev.preventDefault();
+    },
+
+    /** Highlight drag result */
+    _handleDropStatus: function( status ) {
+        var self = this;
+        this.$el.removeClass( 'ui-dragover' ).addClass( 'ui-dragover-' + status );
+        setTimeout( function() { self.$el.removeClass( 'ui-dragover-' + status ) }, this.model.get( 'statustimer' ) );
     },
 
     /** Assists in identifying the batch mode */

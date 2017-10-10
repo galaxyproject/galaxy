@@ -36,23 +36,15 @@ class DatasetCollectionManager( object ):
 
         self.hda_manager = hdas.HDAManager( app )
         self.history_manager = histories.HistoryManager( app )
-        self.tag_manager = tags.TagManager( app )
+        self.tag_manager = tags.GalaxyTagManager( app )
         self.ldda_manager = lddas.LDDAManager( app )
 
-    def create(
-        self,
-        trans,
-        parent,
-        # PRECONDITION: security checks on ability to add to parent
-        # occurred during load.
-        name,
-        collection_type,
-        element_identifiers=None,
-        elements=None,
-        implicit_collection_info=None,
-        trusted_identifiers=None,  # Trust preloaded element objects
-    ):
+    def create( self, trans, parent, name, collection_type, element_identifiers=None,
+                elements=None, implicit_collection_info=None, trusted_identifiers=None,
+                hide_source_items=False, tags=None):
         """
+        PRECONDITION: security checks on ability to add to parent
+        occurred during load.
         """
         # Trust embedded, newly created objects created by tool subsystem.
         if trusted_identifiers is None:
@@ -66,6 +58,7 @@ class DatasetCollectionManager( object ):
             collection_type=collection_type,
             element_identifiers=element_identifiers,
             elements=elements,
+            hide_source_items=hide_source_items,
         )
 
         if isinstance( parent, model.History ):
@@ -105,16 +98,18 @@ class DatasetCollectionManager( object ):
             message = "Internal logic error - create called with unknown parent type %s" % type( parent )
             log.exception( message )
             raise MessageException( message )
+        tags = tags or {}
+        if implicit_collection_info:
+            for k, v in implicit_collection_info.get('implicit_inputs', []):
+                for tag in [t for t in v.tags if t.user_tname == 'name']:
+                    tags[tag.value] = tag
+        for _, tag in tags.items():
+            dataset_collection_instance.tags.append(tag.copy())
 
         return self.__persist( dataset_collection_instance )
 
-    def create_dataset_collection(
-        self,
-        trans,
-        collection_type,
-        element_identifiers=None,
-        elements=None,
-    ):
+    def create_dataset_collection( self, trans, collection_type, element_identifiers=None, elements=None,
+                                   hide_source_items=None ):
         if element_identifiers is None and elements is None:
             raise RequestParameterInvalidException( ERROR_INVALID_ELEMENTS_SPECIFICATION )
         if not collection_type:
@@ -133,11 +128,16 @@ class DatasetCollectionManager( object ):
                     elements = self.__load_elements(trans, element_identifier['element_identifiers'])
             if not new_collection:
                 elements = self.__load_elements( trans, element_identifiers )
+
         # else if elements is set, it better be an ordered dict!
 
         if elements is not self.ELEMENTS_UNINITIALIZED:
             type_plugin = collection_type_description.rank_type_plugin()
             dataset_collection = builder.build_collection( type_plugin, elements )
+            if hide_source_items:
+                log.debug("Hiding source items during dataset collection creation")
+                for dataset in dataset_collection.dataset_instances:
+                    dataset.visible = False
         else:
             dataset_collection = model.DatasetCollection( populated=False )
         dataset_collection.collection_type = collection_type
@@ -180,15 +180,11 @@ class DatasetCollectionManager( object ):
         changed = self._set_from_dict( trans, dataset_collection_instance, payload )
         return changed
 
-    def copy(
-        self,
-        trans,
-        parent,
-        # PRECONDITION: security checks on ability to add to parent
-        # occurred during load.
-        source,
-        encoded_source_id,
-    ):
+    def copy( self, trans, parent, source, encoded_source_id ):
+        """
+        PRECONDITION: security checks on ability to add to parent occurred
+        during load.
+        """
         assert source == "hdca"  # for now
         source_hdca = self.__get_history_collection_instance( trans, encoded_source_id )
         new_hdca = source_hdca.copy()
@@ -205,6 +201,7 @@ class DatasetCollectionManager( object ):
             dataset_collection_instance.add_item_annotation( trans.sa_session, trans.get_user(), dataset_collection_instance, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
         if 'tags' in new_data.keys() and trans.get_user():
+            # set_tags_from_list will flush on its own, no need to add to 'changed' here and incur a second flush.
             self.tag_manager.set_tags_from_list( trans.get_user(), dataset_collection_instance, new_data[ 'tags' ] )
 
         if changed.keys():

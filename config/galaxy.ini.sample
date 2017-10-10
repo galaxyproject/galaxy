@@ -11,9 +11,10 @@
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
 #
-# Examples of many of these options are explained in more detail in the wiki:
+# Examples of many of these options are explained in more detail in the Galaxy
+# Community Hub.
 #
-#   https://wiki.galaxyproject.org/Admin/Config
+#   https://galaxyproject.org/admin/config
 #
 # Config hackers are encouraged to check there before asking for help.
 
@@ -119,8 +120,8 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Slow query logging.  Queries slower than the threshold indicated below will
 # be logged to debug.  A value of '0' is disabled.  For example, you would set
-# this to .005 to log all queries taking longer than 5 milliseconds
-# slow_query_log_threshold = 0
+# this to .005 to log all queries taking longer than 5 milliseconds.
+#slow_query_log_threshold = 0
 
 # By default, Galaxy will use the same database to track user data and
 # tool shed install data.  There are many situations in which it is
@@ -179,7 +180,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Path to the directory in which tool dependencies are placed.  This is used by
 # the Tool Shed to install dependencies and can also be used by administrators
 # to manually install or link to dependencies.  For details, see:
-#   https://wiki.galaxyproject.org/Admin/Config/ToolDependencies
+#   https://galaxyproject.org/admin/config/tool-dependencies
 # Set the string to None to explicitly disable tool dependency handling.
 # If this option is set to none or an invalid path, installing tools with dependencies
 # from the Tool Shed will fail.
@@ -208,8 +209,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Pass debug flag to conda commands.
 #conda_debug = False
 # conda channels to enable by default (http://conda.pydata.org/docs/custom-channels.html)
-# the recommended channel order is the one from BioConda (https://github.com/bioconda/bioconda-recipes/blob/master/config.yml#L8)
-#conda_ensure_channels = iuc,bioconda,r,defaults,conda-forge
+#conda_ensure_channels = iuc,bioconda,conda-forge,defaults,r
 # Set to True to instruct Galaxy to look for and install missing tool
 # dependencies before each job runs.
 #conda_auto_install = False
@@ -305,14 +305,25 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # applied to the ToolDataTableManager at server start up.
 #shed_tool_data_table_config = config/shed_tool_data_table_conf.xml
 
-# Directory where data used by tools is located, see the samples in that
-# directory and the wiki for help:
-#   https://wiki.galaxyproject.org/Admin/DataIntegration
+# Directory where data used by tools is located.  See the samples in that
+# directory and the Galaxy Community Hub for help:
+# https://galaxyproject.org/admin/data-integration
 #tool_data_path = tool-data
 
 # Directory where Tool Data Table related files will be placed
 # when installed from a ToolShed. Defaults to tool_data_path.
 #shed_tool_data_path = tool-data
+
+# Set to True to enable monitoring of the tool_data and shed_tool_data_path
+# directories. If changes in tool data table files are found, the tool data
+# tables for that data manager are automatically reloaded.
+# Watchdog ( https://pypi.python.org/pypi/watchdog ) must be installed and
+# available to Galaxy to use this option. Other options include 'auto'
+# which will attempt to use the watchdog library if it is available but won't
+# fail to load Galaxy if it is not and 'polling' which will use a less
+# efficient monitoring scheme that may work in wider range of scenarios
+# than the watchdog default.
+#watch_tool_data_dir = False
 
 # File containing old-style genome builds
 #builds_file_path = tool-data/shared/ucsc/builds.txt
@@ -344,6 +355,21 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # separated list.
 #interactive_environment_plugins_directory =
 
+# To run interactive environment containers in Docker Swarm mode (on an
+# existing swarm), set this option to True and set `docker_connect_port` in the
+# IE plugin config (ini) file(s) of any IE plugins you have enabled and ensure
+# that you are not using any `docker run`-specific options in your plugins'
+# `command_inject` options (swarm mode services run using `docker service
+# create`, which has a different and more limited set of options). This option
+# can be overridden on a per-plugin basis by using the `swarm_mode` option in
+# the plugin's ini config file.
+#interactive_environment_swarm_mode = False
+
+# Galaxy can run a "swarm manager" service that will monitor utilization of the
+# swarm and provision/deprovision worker nodes as necessary. The service has
+# its own configuration file.
+#swarm_manager_config_file = config/swarm_manager_conf.yml
+
 # Interactive tour directory: where to store interactive tour definition files.
 # Galaxy ships with several basic interface tours enabled, though a different
 # directory with custom tours can be specified here. The path is relative to the
@@ -354,8 +380,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Webhooks directory: where to store webhooks - plugins to extend the Galaxy UI.
 # By default none will be loaded.  Set to config/plugins/webhooks/demo to load Galaxy's
 # demo webhooks.  To use an absolute path begin the path with '/'.  This is a comma
-# separated list.
-# webhooks_dir = config/plugins/webhooks
+# separated list. Add test/functional/webhooks to this list to include the demo webhooks
+# used to test the webhook framework.
+#webhooks_dir = config/plugins/webhooks
 
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
@@ -414,7 +441,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #
 # Configuration file for the object store
 # If this is set and exists, it overrides any other objectstore settings.
-# object_store_config_file = config/object_store_conf.xml
+#object_store_config_file = config/object_store_conf.xml
 
 
 # -- Mail and notification
@@ -434,7 +461,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #smtp_password = None
 
 # If your SMTP server requires SSL from the beginning of the connection
-# smtp_ssl = False
+#smtp_ssl = False
 
 # On the user registration form, users may choose to join a mailing list. This
 # is the address used to subscribe to the list. Uncomment and leave empty if you
@@ -456,7 +483,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # URL of the support resource for the galaxy instance.  Used in activation
 # emails.
-#instance_resource_url = https://wiki.galaxyproject.org/
+#instance_resource_url = https://galaxyproject.org/
 
 # E-mail domains blacklist is used for filtering out users that are using
 # disposable email address during the registration.  If their address domain
@@ -517,7 +544,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # bypass security to display datasets.  Please be aware that there are security
 # implications if this is allowed.  More details (including required changes to
 # the proxy server config) are available in the Apache proxy documentation on
-# the wiki.
+# the Galaxy Community Hub.
 #
 # The list of servers in this sample config are for the UCSC Main, Test and
 # Archaea browsers, but the default if left commented is to not allow any
@@ -559,11 +586,16 @@ nglims_config_file = tool-data/nglims.yaml
 # - $locale (complete format string for the server locale),
 # - $iso8601 (complete format string as specified by ISO 8601 international
 #   standard).
-# pretty_datetime_format = $locale (UTC)
+#pretty_datetime_format = $locale (UTC)
 
 # URL (with schema http/https) of the Galaxy instance as accessible within your
 # local network - if specified used as a default by pulsar file staging and
 # Jupyter Docker container for communicating back with Galaxy via the API.
+#
+# If you are attempting to setup GIEs on Mac OS X with Docker for Mac - this
+# should likely be the IP address of your machine on the virtualbox network (vboxnet0)
+# setup for the Docker host VM. This can found by running ifconfig and using the
+# IP address of the network vboxnet0.
 #galaxy_infrastructure_url = http://localhost:8080
 
 # If the above URL cannot be determined ahead of time in dynamic environments
@@ -583,19 +615,19 @@ nglims_config_file = tool-data/nglims.yaml
 #logo_url = /
 
 # The URL linked by the "Wiki" link in the "Help" menu.
-#wiki_url = https://wiki.galaxyproject.org/
+#wiki_url = https://galaxyproject.org/
 
 # The URL linked by the "Support" link in the "Help" menu.
-#support_url = https://wiki.galaxyproject.org/Support
+#support_url = https://galaxyproject.org/support
 
 # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
-#citation_url = https://wiki.galaxyproject.org/CitingGalaxy
+#citation_url = https://galaxyproject.org/citing-galaxy
 
 # The URL linked by the "Search" link in the "Help" menu.
-#search_url = http://galaxyproject.org/search/usegalaxy/
+#search_url = https://galaxyproject.org/search/
 
 # The URL linked by the "Mailing Lists" link in the "Help" menu.
-#mailing_lists_url = https://wiki.galaxyproject.org/MailingLists
+#mailing_lists_url = https://galaxyproject.org/mailing-lists
 
 # The URL linked by the "Videos" link in the "Help" menu.
 #screencasts_url = https://vimeo.com/galaxyproject
@@ -848,10 +880,21 @@ use_interactive = True
 #statsd_port=8125
 #statsd_prefix=galaxy
 
+# Log to graphite
+# Graphite is an external statistics aggregator (https://github.com/graphite-project/carbon)
+# Enabling the following options will cause galaxy to log request timing and
+# other statistics to the configured graphite instance. The graphite_prefix is
+# useful if you are running multiple Galaxy instances and want to segment
+# statistics between them within the same aggregator.
+#graphite_host=
+#graphite_port=2003
+#graphite_prefix=galaxy
+
 # -- Data Libraries
 
-# These library upload options are described in much more detail in the wiki:
-#   https://wiki.galaxyproject.org/Admin/DataLibraries/UploadingLibraryFiles
+# These library upload options are described in much more detail in the Galaxy
+# Community Hub:
+# https://galaxyproject.org/data-libraries/
 
 # Add an option to the library upload form which allows administrators to
 # upload a directory of files.
@@ -903,16 +946,16 @@ use_interactive = True
 # The higher the boost, the more importance the scoring algorithm gives to the
 # given field.  Section refers to the tool group in the tool panel.  Rest of
 # the fields are tool's attributes.
-# tool_name_boost = 9
-# tool_section_boost = 3
-# tool_description_boost = 2
-# tool_label_boost = 1
-# tool_stub_boost = 5
-# tool_help_boost = 0.5
+#tool_name_boost = 9
+#tool_section_boost = 3
+#tool_description_boost = 2
+#tool_label_boost = 1
+#tool_stub_boost = 5
+#tool_help_boost = 0.5
 
 # Limits the number of results in toolbox search.  Can be used to tweak how many
 # results will appear.
-# tool_search_limit = 20
+#tool_search_limit = 20
 
 # Enable/ disable Ngram-search for tools. It makes tool
 # search results tolerant for spelling mistakes in the query
@@ -937,7 +980,7 @@ use_interactive = True
 # User authentication can be delegated to an upstream proxy server (usually
 # Apache).  The upstream proxy should set a REMOTE_USER header in the request.
 # Enabling remote user disables regular logins.  For more information, see:
-#   https://wiki.galaxyproject.org/Admin/Config/ApacheProxy
+#   https://galaxyproject.org/admin/config/apache-proxy
 #use_remote_user = False
 
 # If use_remote_user is enabled and your external authentication
@@ -980,7 +1023,7 @@ use_interactive = True
 # users (email addresses).  These users will have access to the Admin section
 # of the server, and will have access to create users, groups, roles,
 # libraries, and more.  For more information, see:
-#   https://wiki.galaxyproject.org/Admin/Interface
+#   https://galaxyproject.org/admin/
 #admin_users = None
 
 # Force everyone to log in (disable anonymous access).
@@ -1035,6 +1078,9 @@ use_interactive = True
 # via the API. Admin menu will list both if enabled.
 #enable_beta_ts_api_install = False
 
+# Enable the new container interface for Interactive Environments
+#enable_beta_containers_interface = False
+
 # Set the following to a number of threads greater than 1 to spawn
 # a Python task queue for dealing with large tool submissions (either
 # through the tool form or as part of an individual workflow step across
@@ -1062,7 +1108,7 @@ use_interactive = True
 # collections.
 #force_beta_workflow_scheduled_for_collections=False
 
-# If multiple job handlers are enabled allow Galaxy to schedule workflow invocations
+# If multiple job handlers are enabled, allow Galaxy to schedule workflow invocations
 # in multiple handlers simultaneously. This is discouraged because it results in a
 # less predictable order of workflow datasets within in histories.
 #parallelize_workflow_scheduling_within_histories = False
@@ -1168,7 +1214,7 @@ use_interactive = True
 # separate Galaxy into multiple processes.  There are more than one way to do
 # this, and they are explained in detail in the documentation:
 #
-#   https://wiki.galaxyproject.org/Admin/Config/Performance/Scaling
+#   https://galaxyproject.org/admin/config/performance/scaling
 
 # By default, Galaxy manages and executes jobs from within a single process and
 # notifies itself of new jobs via in-memory queues.  Jobs are run locally on
@@ -1188,7 +1234,7 @@ use_interactive = True
 # walltime limits but did fail quickly (either while queueing or running). The
 # commented out default below results in no default job resubmission condition,
 # failing jobs are just failed outright.
-#default_job_resubmission_condition = 
+#default_job_resubmission_condition =
 
 # In multiprocess configurations, notification between processes about new jobs
 # must be done via the database.  In single process configurations, this can be
@@ -1257,7 +1303,7 @@ use_interactive = True
 # actual user instead of as the user running the Galaxy server process.  For
 # details on these options, see the documentation at:
 #
-# https://wiki.galaxyproject.org/Admin/Config/Performance/Cluster
+# https://galaxyproject.org/admin/config/performance/cluster
 #
 #drmaa_external_runjob_script = scripts/drmaa_external_runner.py
 #drmaa_external_killjob_script = scripts/drmaa_external_killer.py
@@ -1298,7 +1344,7 @@ use_interactive = True
 # under user preferences and can be toggled on and off at
 # runtime.  Example shown below are not real defaults (no custom
 # filters are applied by default), but can be enabled by renaming the
-# example.py.sample in the filters directory to example.py.
+# examples.py.sample in the filters directory to examples.py.
 
 #tool_filters =
 #tool_label_filters =
@@ -1314,8 +1360,11 @@ use_interactive = True
 
 # -- Galaxy Application Internal Message Queue
 
-# Galaxy uses AMQP internally TODO more documentation on what for.
-# For examples, see http://ask.github.io/kombu/userguide/connections.html
+# Galaxy uses AMQP internally for communicating between processes.  For
+# example, when reloading the toolbox or locking job execution, the process
+# that handled that particular request will tell all others to also reload,
+# lock jobs, etc.
+# For connection examples, see http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html
 #
 # Without specifying anything here, galaxy will first attempt to use your
 # specified database_connection above.  If that's not specified either, Galaxy

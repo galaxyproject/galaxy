@@ -162,7 +162,11 @@ var FolderToolbarView = Backbone.View.extend({
       if (this.validate_new_folder(folderDetails)){
           var folder = new mod_library_model.FolderAsModel();
           url_items = Backbone.history.fragment.split('/');
-          current_folder_id = url_items[url_items.length-1];
+          if(url_items.indexOf('page') > -1){
+            current_folder_id = url_items[url_items.length-3];
+          }else {
+            current_folder_id = url_items[url_items.length-1];
+          }
           folder.url = folder.urlRoot + current_folder_id ;
 
           folder.save(folderDetails, {
@@ -729,27 +733,34 @@ var FolderToolbarView = Backbone.View.extend({
    */
   addAllDatasetsFromHistory : function (){
     var checked_hdas = this.modal.$el.find( '#selected_history_content' ).find( ':checked' );
-    var history_dataset_ids = [];
-    var hdas_to_add = [];
+    var history_item_ids = [];  // can be hda or hdca
+    var history_item_types = [];
+    var items_to_add = [];
     if ( checked_hdas.length < 1 ){
       mod_toastr.info( 'You must select some datasets first.' );
     } else {
       this.modal.disableButton( 'Add' );
       checked_hdas.each(function(){
         var hid = $( this.parentElement ).data( 'id' );
-          if ( hid ) {
-            history_dataset_ids.push( hid );
-          }
+        if ( hid ) {
+          var item_type = $( this.parentElement ).data( 'name' );
+          history_item_ids.push( hid );
+          history_item_types.push( item_type );
+        }
       });
-      for ( var i = history_dataset_ids.length - 1; i >= 0; i-- ) {
-        history_dataset_id = history_dataset_ids[i];
+      for ( var i = history_item_ids.length - 1; i >= 0; i-- ) {
+        history_item_id = history_item_ids[i];
         var folder_item = new mod_library_model.Item();
         folder_item.url = Galaxy.root + 'api/folders/' + this.options.id + '/contents';
-        folder_item.set( { 'from_hda_id':history_dataset_id } );
-        hdas_to_add.push( folder_item );
+        if (history_item_types[i] === 'collection') {
+          folder_item.set({'from_hdca_id': history_item_id});
+        } else {
+          folder_item.set({'from_hda_id': history_item_id});
+        }
+        items_to_add.push(folder_item);
       }
-      this.initChainCallControl( { length: hdas_to_add.length, action: 'adding_datasets' } );
-      this.chainCallAddingHdas( hdas_to_add );
+      this.initChainCallControl( { length: items_to_add.length, action: 'adding_datasets' } );
+      this.chainCallAddingHdas( items_to_add );
     }
   },
 
@@ -1144,7 +1155,7 @@ var FolderToolbarView = Backbone.View.extend({
               '&nbsp;Details',
             '</button>',
             '<span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki">',
-              '<a href="https://wiki.galaxyproject.org/DataLibraries/screen/FolderContents" target="_blank">',
+              '<a href="https://galaxyproject.org/data-libraries/screen/folder-contents/" target="_blank">',
                 '<button class="primary-button" type="button">',
                   '<span class="fa fa-question-circle"></span>',
                   '&nbsp;Help',
@@ -1387,9 +1398,26 @@ var FolderToolbarView = Backbone.View.extend({
     '<strong>Choose the datasets to import:</strong>',
     '<ul>',
       '<% _.each(history_contents, function(history_item) { %>',
-        '<li data-id="<%= _.escape(history_item.get("id")) %>">',
-          '<input style="margin: 0;" type="checkbox"> <%= _.escape(history_item.get("hid")) %>: <%= _.escape(history_item.get("name")) %>',
-        '</li>',
+        '<% if (history_item.get("deleted") != true ) { %>',
+          '<% if (history_item.get("type") === "collection") { %>',
+              '<% var collection_type = history_item.get("collection_type") %>',
+              '<% if (collection_type === "list") { %>',
+                '<li data-id="<%= _.escape(history_item.get("id")) %>" data-name="<%= _.escape(history_item.get("type")) %>">',
+                  '<input style="margin: 0;" type="checkbox"> <%= _.escape(history_item.get("hid")) %>: <%= _.escape(history_item.get("name")) %> (Dataset Collection)',
+                '</li>',
+               '<% } else { %>',
+                 '<li><input style="margin: 0;" type="checkbox" onclick="return false;" disabled="disabled">',
+                    '<span title="You can convert this collection into a collection of type list using the Collection Tools">',
+                      ' <%= _.escape(history_item.get("hid")) %>: <%= _.escape(history_item.get("name")) %> (Dataset Collection of type <%= _.escape(collection_type) %> not supported.)',
+                    '</span>',
+                  '</li>',
+                '<% } %>',
+          '<% } else if (history_item.get("visible") === true && history_item.get("state") === "ok") { %>',
+              '<li data-id="<%= _.escape(history_item.get("id")) %>" data-name="<%= _.escape(history_item.get("type")) %>">',
+                '<input style="margin: 0;" type="checkbox"> <%= _.escape(history_item.get("hid")) %>: <%= _.escape(history_item.get("name")) %>',
+              '</li>',
+          '<% } %>',
+        '<% } %>',
       '<% }); %>',
     '</ul>'
     ].join(''));

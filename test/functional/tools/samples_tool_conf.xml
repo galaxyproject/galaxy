@@ -48,11 +48,13 @@
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
+  <tool file="output_format_deprecated_when.xml" />
   <tool file="output_format_collection.xml" />
   <tool file="output_filter.xml" />
   <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
+  <tool file="create_2.xml" />
   <tool file="create_10.xml" />
   <tool file="disambiguate_repeats.xml" />
   <tool file="min_repeat.xml" />
@@ -63,6 +65,7 @@
   <tool file="multi_data_repeat.xml" />
   <tool file="multi_data_optional.xml" />
   <tool file="paths_as_file.xml" />
+  <tool file="param_text_option.xml" />
   <tool file="column_param.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="special_params.xml" />
@@ -143,5 +146,7 @@
   <tool file="${model_tools_path}/filter_failed_collection.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
   <tool file="${model_tools_path}/merge_collection.xml" />
+  <tool file="${model_tools_path}/relabel_from_file.xml" />
+  <tool file="${model_tools_path}/filter_from_file.xml" />
 
 </toolbox>

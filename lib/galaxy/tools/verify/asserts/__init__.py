@@ -20,7 +20,7 @@ for assertion_module_name in assertion_module_names:
         assertion_module = sys.modules[full_assertion_module_name]
         assertion_modules.append(assertion_module)
     except Exception as e:
-        log.exception('Failed to load assertion module: %s %s' % (assertion_module_name, str(e)))
+        log.exception('Failed to load assertion module: %s', assertion_module_name)
 
 
 def verify_assertions(data, assertion_description_list):

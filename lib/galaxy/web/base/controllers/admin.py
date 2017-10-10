@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
-from six import string_types
+import six
 from string import punctuation as PUNCTUATION
 
 from sqlalchemy import and_, false, func, or_
@@ -99,7 +99,7 @@ class Admin( object ):
         if params.get( 'reload_tool_button', False ):
             tool_id = kwd.get( 'tool_id', None )
             galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id} )
-            message, status = trans.app.toolbox.reload_tool_by_id( tool_id)
+            message, status = trans.app.toolbox.reload_tool_by_id( tool_id )
         return trans.fill_template( '/admin/reload_tool.mako',
                                     tool_id=tool_id,
                                     toolbox=toolbox,
@@ -931,10 +931,7 @@ class Admin( object ):
                     kwd[ 'message' ] = util.sanitize_text( "Invalid user id (%s) received" % str( user_id ) )
                     kwd[ 'status' ] = 'error'
                 else:
-                    return trans.response.send_redirect( web.url_for( controller='user',
-                                                                      action='manage_user_info',
-                                                                      cntrller='admin',
-                                                                      **kwd ) )
+                    return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
             elif operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user( trans, **kwd )
         if trans.app.config.allow_user_deletion:
@@ -1044,7 +1041,7 @@ class Admin( object ):
                 stop_msg += '.'
             for job_id in job_ids:
                 error_msg = "This job was stopped by an administrator: %s  <a href='%s' target='_blank'>Contact support</a> for additional help." \
-                    % ( stop_msg, self.app.config.get("support_url", "https://wiki.galaxyproject.org/Support" ) )
+                    % ( stop_msg, self.app.config.get("support_url", "https://galaxyproject.org/support/" ) )
                 if trans.app.config.track_jobs_in_database:
                     job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
                     job.stderr = error_msg
@@ -1125,12 +1122,48 @@ class Admin( object ):
 
     @web.expose
     @web.require_admin
+    def manage_tool_dependencies( self,
+                                  trans,
+                                  install_dependencies=False,
+                                  uninstall_dependencies=False,
+                                  remove_unused_dependencies=False,
+                                  selected_tool_ids=None,
+                                  selected_environments_to_uninstall=None,
+                                  viewkey='View tool-centric dependencies'):
+        if not selected_tool_ids:
+            selected_tool_ids = []
+        if not selected_environments_to_uninstall:
+            selected_environments_to_uninstall = []
+        tools_by_id = trans.app.toolbox.tools_by_id
+        view = six.next(six.itervalues(trans.app.toolbox.tools_by_id))._view
+        if selected_tool_ids:
+            # install the dependencies for the tools in the selected_tool_ids list
+            if not isinstance(selected_tool_ids, list):
+                selected_tool_ids = [selected_tool_ids]
+            requirements = set([tools_by_id[tid].tool_requirements for tid in selected_tool_ids])
+            if install_dependencies:
+                [view.install_dependencies(r) for r in requirements]
+            elif uninstall_dependencies:
+                [view.uninstall_dependencies(index=None, requirements=r) for r in requirements]
+        if selected_environments_to_uninstall and remove_unused_dependencies:
+            if not isinstance(selected_environments_to_uninstall, list):
+                selected_environments_to_uninstall = [selected_environments_to_uninstall]
+            view.remove_unused_dependency_paths(selected_environments_to_uninstall)
+        return trans.fill_template( '/webapps/galaxy/admin/manage_dependencies.mako',
+                                    tools=tools_by_id,
+                                    requirements_status=view.toolbox_requirements_status,
+                                    tool_ids_by_requirements=view.tool_ids_by_requirements,
+                                    unused_environments=view.unused_dependency_paths,
+                                    viewkey=viewkey )
+
+    @web.expose
+    @web.require_admin
     def sanitize_whitelist( self, trans, submit_whitelist=False, tools_to_whitelist=[]):
         if submit_whitelist:
             # write the configured sanitize_whitelist_file with new whitelist
             # and update in-memory list.
             with open(trans.app.config.sanitize_whitelist_file, 'wt') as f:
-                if isinstance(tools_to_whitelist, string_types):
+                if isinstance(tools_to_whitelist, six.string_types):
                     tools_to_whitelist = [tools_to_whitelist]
                 new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
                 f.write("\n".join(new_whitelist))

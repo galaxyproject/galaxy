@@ -214,6 +214,7 @@ class DefaultToolAction( object ):
         # format.
         input_ext = 'data' if tool.profile < 16.04 else "input"
         input_dbkey = incoming.get( "dbkey", "?" )
+        preserved_tags = {}
         for name, data in reversed(inp_data.items()):
             if not data:
                 data = NoneDataset( datatypes_registry=app.datatypes_registry )
@@ -233,6 +234,9 @@ class DefaultToolAction( object ):
             identifier = getattr( data, "element_identifier", None )
             if identifier is not None:
                 incoming[ "%s|__identifier__" % name ] = identifier
+
+            for tag in [t for t in data.tags if t.user_tname == 'name']:
+                preserved_tags[tag.value] = tag
 
         # Collect chromInfo dataset and add as parameters to incoming
         ( chrom_info, db_dataset ) = app.genome_builds.get_chrom_info( input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id != 'CONVERTER_fasta_to_len' )
@@ -302,6 +306,8 @@ class DefaultToolAction( object ):
                     data.visible = False
                 trans.sa_session.add( data )
                 trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions, new=True )
+            for _, tag in preserved_tags.items():
+                data.tags.append(tag.copy())
 
             # Must flush before setting object store id currently.
             # TODO: optimize this.
@@ -398,6 +404,7 @@ class DefaultToolAction( object ):
                     output_collections.create_collection(
                         output=output,
                         name=name,
+                        tags=preserved_tags,
                         **element_kwds
                     )
                 else:
@@ -671,7 +678,7 @@ class OutputCollections(object):
         self.out_collections = {}
         self.out_collection_instances = {}
 
-    def create_collection(self, output, name, **element_kwds):
+    def create_collection(self, output, name, tags=None, **element_kwds):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collections_service
         collection_type = output.structure.collection_type
@@ -685,6 +692,17 @@ class OutputCollections(object):
                 raise Exception("Could not find collection type source with name [%s]." % collection_type_source)
 
             collection_type = input_collections[collection_type_source].collection.collection_type
+
+        if "elements" in element_kwds:
+            elements = element_kwds["elements"]
+            if hasattr(elements, "items"):  # else it is ELEMENTS_UNINITIALIZED object.
+                for key, value in elements.items():
+                    # Either a HDA (if) or a DatasetCollection (the else)
+                    if getattr(value, "history_content_type", None) == "dataset":
+                        assert value.history is not None
+                    else:
+                        for dataset in value.dataset_instances:
+                            assert dataset.history is not None
 
         if self.mapping_over_collection:
             dc = collections_manager.create_dataset_collection(
@@ -711,6 +729,7 @@ class OutputCollections(object):
                 name=hdca_name,
                 collection_type=collection_type,
                 trusted_identifiers=True,
+                tags=tags,
                 **element_kwds
             )
             # name here is name of the output element - not name

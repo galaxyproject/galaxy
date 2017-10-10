@@ -1,6 +1,10 @@
+"""
+This script creates a request.folder_id column which is a foreign
+key to the library_folder table. This also adds a 'type' and 'layout' column
+to the form_definition table.
+"""
 from __future__ import print_function
 
-import datetime
 import logging
 import sys
 
@@ -11,7 +15,6 @@ from sqlalchemy.exc import NoSuchTableError
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import JSONType, TrimmedString
 
-now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -22,17 +25,9 @@ log.addHandler( handler )
 metadata = MetaData()
 
 
-def display_migration_details():
-    print("========================================")
-    print("""This script creates a request.folder_id column which is a foreign
-key to the library_folder table. This also adds a 'type' and 'layout' column
-to the form_definition table.""")
-    print("========================================")
-
-
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     # Load existing tables
     metadata.reflect()
     # Create the folder_id column
@@ -46,8 +41,8 @@ def upgrade(migrate_engine):
             col = Column( "folder_id", Integer, index=True )
             col.create( Request_table, index_name='ix_request_folder_id')
             assert col is Request_table.c.folder_id
-        except Exception as e:
-            log.debug( "Adding column 'folder_id' to request table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding column 'folder_id' to request table failed.")
         try:
             LibraryFolder_table = Table( "library_folder", metadata, autoload=True )
         except NoSuchTableError:
@@ -61,8 +56,8 @@ def upgrade(migrate_engine):
                                              name='request_folder_id_fk' )
                 # Create the constraint
                 cons.create()
-            except Exception as e:
-                log.debug( "Adding foreign key constraint 'request_folder_id_fk' to table 'library_folder' failed: %s" % ( str( e ) ) )
+            except Exception:
+                log.exception("Adding foreign key constraint 'request_folder_id_fk' to table 'library_folder' failed.")
     # Create the type column in form_definition
     try:
         FormDefinition_table = Table( "form_definition", metadata, autoload=True )
@@ -74,14 +69,14 @@ def upgrade(migrate_engine):
             col = Column( "type", TrimmedString( 255 ), index=True )
             col.create( FormDefinition_table, index_name='ix_form_definition_type')
             assert col is FormDefinition_table.c.type
-        except Exception as e:
-            log.debug( "Adding column 'type' to form_definition table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding column 'type' to form_definition table failed.")
         try:
             col = Column( "layout", JSONType())
             col.create( FormDefinition_table )
             assert col is FormDefinition_table.c.layout
-        except Exception as e:
-            log.debug( "Adding column 'layout' to form_definition table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding column 'layout' to form_definition table failed.")
 
 
 def downgrade(migrate_engine):

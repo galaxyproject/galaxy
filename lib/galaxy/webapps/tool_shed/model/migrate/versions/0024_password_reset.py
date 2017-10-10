@@ -24,7 +24,7 @@ def upgrade(migrate_engine):
         PasswordResetToken_table.create()
     except Exception as e:
         print str(e)
-        log.exception("Creating %s table failed: %s" % (PasswordResetToken_table.name, str( e ) ) )
+        log.exception("Creating %s table failed", PasswordResetToken_table.name )
 
 
 def downgrade(migrate_engine):
@@ -34,4 +34,4 @@ def downgrade(migrate_engine):
         PasswordResetToken_table.drop()
     except Exception as e:
         print str(e)
-        log.exception("Dropping %s table failed: %s" % (PasswordResetToken_table.name, str( e ) ) )
+        log.exception("Dropping %s table failed", PasswordResetToken_table.name )

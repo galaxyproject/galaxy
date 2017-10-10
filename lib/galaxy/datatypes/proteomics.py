@@ -152,6 +152,14 @@ class MzXML(ProteomicsXml):
     root = "mzXML"
 
 
+class MzData(ProteomicsXml):
+    """mzData data"""
+    edam_format = "format_3245"
+    file_ext = "mzdata"
+    blurb = "mzData Mass Spectrometry data"
+    root = "mzData"
+
+
 class MzIdentML(ProteomicsXml):
     edam_format = "format_3247"
     file_ext = "mzid"

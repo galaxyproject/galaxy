@@ -118,6 +118,20 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is( create_response, 200 )
 
+    def test_uninstall_through_tools_api(self):
+        tool_id = 'mulled_example_multi_1'
+        endpoint = "tools/%s/dependencies" % tool_id
+        data = {'id': tool_id}
+        create_response = self._post(endpoint, data=data, admin=True)
+        self._assert_status_code_is( create_response, 200 )
+        response = create_response.json()
+        assert any([True for d in response if d['dependency_type'] == 'conda'])
+        endpoint = "tools/%s/dependencies" % tool_id
+        create_response = self._delete(endpoint, data=data, admin=True)
+        self._assert_status_code_is(create_response, 200)
+        response = create_response.json()
+        assert not [True for d in response if d['dependency_type'] == 'conda']
+
     def test_conda_clean( self ):
         endpoint = 'dependency_resolvers/clean'
         create_response = self._post(endpoint, data={}, admin=True)

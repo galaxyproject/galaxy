@@ -23,9 +23,8 @@ def upgrade(migrate_engine):
         c = Column( "socket", Integer )
         c.create( TransferJob_table )
         assert c is TransferJob_table.c.socket
-    except Exception as e:
-        print("Adding columns to transfer_job table failed: %s" % str( e ))
-        log.debug( "Adding columns to transfer_job table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding columns to transfer_job table failed.")
 
 
 def downgrade(migrate_engine):
@@ -35,6 +34,5 @@ def downgrade(migrate_engine):
         TransferJob_table = Table( "transfer_job", metadata, autoload=True )
         TransferJob_table.c.pid.drop()
         TransferJob_table.c.socket.drop()
-    except Exception as e:
-        print("Dropping columns from transfer_job table failed: %s" % str( e ))
-        log.debug( "Dropping columns from transfer_job table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping columns from transfer_job table failed.")

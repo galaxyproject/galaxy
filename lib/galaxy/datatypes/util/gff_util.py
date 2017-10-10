@@ -3,8 +3,8 @@ Provides utilities for working with GFF files.
 """
 import copy
 
-from bx.intervals.io import GenomicInterval, MissingFieldError, NiceReaderWrapper, ParseError, GenomicIntervalReader
-from bx.tabular.io import Header, Comment
+from bx.intervals.io import GenomicInterval, GenomicIntervalReader, MissingFieldError, NiceReaderWrapper, ParseError
+from bx.tabular.io import Comment, Header
 
 from galaxy.util.odict import odict
 
@@ -344,6 +344,29 @@ def parse_gff_attributes( attr_str ):
         # Could not split attributes string, so entire string must be
         # 'group' attribute. This is the case for strictly GFF files.
         attributes['group'] = attr_str
+    return attributes
+
+
+def parse_gff3_attributes( attr_str ):
+    """
+    Parses a GFF3 attribute string and returns a dictionary of name-value
+    pairs. The general format for a GFF3 attributes string is
+
+        name1=value1;name2=value2
+    """
+    attributes_list = attr_str.split(";")
+    attributes = {}
+    for tag_value_pair in attributes_list:
+        pair = tag_value_pair.strip().split("=")
+        if len(pair) == 1:
+            raise Exception("Attribute '%s' does not contain a '='" % tag_value_pair)
+        if pair == '':
+            continue
+        tag = pair[0].strip()
+        if tag == '':
+            raise Exception("Empty tag in attribute '%s'" % tag_value_pair)
+        value = pair[1].strip()
+        attributes[tag] = value
     return attributes
 
 

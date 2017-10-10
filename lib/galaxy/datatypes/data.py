@@ -5,6 +5,7 @@ import logging
 import mimetypes
 import os
 import shutil
+import string
 import tempfile
 import zipfile
 from cgi import escape
@@ -15,6 +16,7 @@ import six
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
+from galaxy.util import compression_utils
 from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util import inflector
 from galaxy.util import unicodify
@@ -36,6 +38,9 @@ log = logging.getLogger(__name__)
 # Valid first column and strand column values vor bed, other formats
 col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
 valid_strand = ['+', '-', '.']
+
+DOWNLOAD_FILENAME_PATTERN_DATASET = "Galaxy${hid}-[${name}].${ext}"
+DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}__${element_identifier}].${ext}"
 
 
 class DataMeta( abc.ABCMeta ):
@@ -128,7 +133,7 @@ class Data( object ):
         try:
             return open(dataset.file_name, 'rb').read(-1)
         except OSError:
-            log.exception('%s reading a file that does not exist %s' % (self.__class__.__name__, dataset.file_name))
+            log.exception('%s reading a file that does not exist %s', self.__class__.__name__, dataset.file_name)
             return ''
 
     def dataset_content_needs_grooming( self, file_name ):
@@ -228,7 +233,7 @@ class Data( object ):
             archive.add(data_filename, archname)
         except IOError:
             error = True
-            log.exception("Unable to add composite parent %s to temporary library download archive" % data_filename)
+            log.exception("Unable to add composite parent %s to temporary library download archive", data_filename)
             msg = "Unable to create archive for download, please report this error"
             messagetype = "error"
         return error, msg, messagetype
@@ -283,7 +288,7 @@ class Data( object ):
                                 archive.add( fpath, rpath )
                             except IOError:
                                 error = True
-                                log.exception( "Unable to add %s to temporary library download archive" % rpath)
+                                log.exception( "Unable to add %s to temporary library download archive", rpath)
                                 msg = "Unable to create archive for download, please report this error"
                                 continue
                 if not error:
@@ -305,11 +310,11 @@ class Data( object ):
                         return archive.stream
         return trans.show_error_message( msg )
 
-    def _serve_raw(self, trans, dataset, to_ext):
+    def _serve_raw(self, trans, dataset, to_ext, **kwd):
         trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
-        fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
         trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
+        filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
         return open( dataset.file_name )
 
     def display_data(self, trans, data, preview=False, filename=None, to_ext=None, **kwd):
@@ -354,11 +359,9 @@ class Data( object ):
                 return self._archive_composite_dataset( trans, data, **kwd )
             else:
                 trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
-                if not to_ext:
-                    to_ext = data.extension
-                fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in data.name)[0:150]
+                filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
                 trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (data.hid, fname, to_ext)
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
                 return open( data.file_name )
         if not os.path.exists( data.file_name ):
             raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
@@ -389,6 +392,31 @@ class Data( object ):
             return sanitize_html(open(filename).read()).encode('utf-8')
 
         return open(filename)
+
+    def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None):
+        def escape(raw_identifier):
+            return ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in raw_identifier)[0:150]
+
+        if not to_ext:
+            to_ext = dataset.extension
+
+        template_values = {
+            "name": escape(dataset.name),
+            "ext": to_ext,
+            "hid": dataset.hid,
+        }
+
+        filename_pattern = DOWNLOAD_FILENAME_PATTERN_DATASET
+
+        if hdca is not None:
+            # Use collection context to build up filename.
+            template_values["element_identifier"] = element_identifier
+            template_values["hdca_name"] = escape(hdca.name)
+            template_values["hdca_hid"] = hdca.hid
+
+            filename_pattern = DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT
+
+        return string.Template(filename_pattern).substitute(**template_values)
 
     def display_name(self, dataset):
         """Returns formatted html of dataset name"""
@@ -444,7 +472,7 @@ class Data( object ):
         try:
             del self.supported_display_apps[app_id]
         except:
-            log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.' % ( type, self.__class__.__name__ ) )
+            log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.', type, self.__class__.__name__ )
 
     def clear_display_apps( self ):
         self.supported_display_apps = {}
@@ -482,7 +510,7 @@ class Data( object ):
             if type in self.get_display_types():
                 return getattr(self, self.supported_display_apps[type]['file_function'])(dataset, **kwd)
         except:
-            log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible' % (self.supported_display_apps[type]['file_function'], self.__class__.__name__, type) )
+            log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible', self.supported_display_apps[type]['file_function'], self.__class__.__name__, type )
         return "This display type (%s) is not implemented for this datatype (%s)." % ( type, dataset.ext)
 
     def get_display_links( self, dataset, type, app, base_url, target_frame='_blank', **kwd ):
@@ -496,8 +524,8 @@ class Data( object ):
             if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr( self, self.supported_display_apps[type]['links_function'] )( dataset, type, app, base_url, **kwd )
         except:
-            log.exception( 'Function %s is referred to in datatype %s for generating links for type %s, but is not accessible'
-                           % ( self.supported_display_apps[type]['links_function'], self.__class__.__name__, type ) )
+            log.exception( 'Function %s is referred to in datatype %s for generating links for type %s, but is not accessible',
+                           self.supported_display_apps[type]['links_function'], self.__class__.__name__, type )
         return target_frame, []
 
     def get_converter_types(self, original_dataset, datatypes_registry):
@@ -599,8 +627,8 @@ class Data( object ):
             files[ substitute_composite_key( key, value ) ] = value
         return files
 
-    def generate_auto_primary_file( self, dataset=None ):
-        raise Exception( "generate_auto_primary_file is not implemented for this datatype." )
+    def generate_primary_file( self, dataset=None ):
+        raise Exception( "generate_primary_file is not implemented for this datatype." )
 
     @property
     def has_resolution(self):
@@ -982,39 +1010,38 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     count = 0
     file_type = None
     data_checked = False
-    temp = open( file_name, "U" )
-    while count < LINE_COUNT:
-        line = temp.readline( WIDTH )
-        if line and not is_multi_byte and not data_checked:
-            # See if we have a compressed or binary file
-            if line[0:2] == util.gzip_magic:
-                file_type = 'gzipped'
-            else:
+    temp = compression_utils.get_fileobj( file_name, "U" )
+    try:
+        while count < LINE_COUNT:
+            line = temp.readline( WIDTH )
+            if line and not is_multi_byte and not data_checked:
+                # See if we have a compressed or binary file
                 for char in line:
                     if ord( char ) > 128:
                         file_type = 'binary'
                         break
-            data_checked = True
-            if file_type in [ 'gzipped', 'binary' ]:
-                break
-        if not line_wrap:
-            if line.endswith('\n'):
-                line = line[:-1]
-            else:
-                while True:
-                    i = temp.read(1)
-                    if not i or i == '\n':
-                        break
-        skip_line = False
-        for skipchar in skipchars:
-            if line.startswith( skipchar ):
-                skip_line = True
-                break
-        if not skip_line:
-            lines.append( line )
-            count += 1
-    temp.close()
-    if file_type in [ 'gzipped', 'binary' ]:
+                data_checked = True
+                if file_type == 'binary':
+                    break
+            if not line_wrap:
+                if line.endswith('\n'):
+                    line = line[:-1]
+                else:
+                    while True:
+                        i = temp.read(1)
+                        if not i or i == '\n':
+                            break
+            skip_line = False
+            for skipchar in skipchars:
+                if line.startswith( skipchar ):
+                    skip_line = True
+                    break
+            if not skip_line:
+                lines.append( line )
+                count += 1
+    finally:
+        temp.close()
+    if file_type == 'binary':
         text = "%s file" % file_type
     else:
         try:

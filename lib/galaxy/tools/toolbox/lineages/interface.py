@@ -1,11 +1,15 @@
-from abc import ABCMeta
-from abc import abstractmethod
+from abc import (
+    ABCMeta,
+    abstractmethod
+)
+
+import six
 
 
+@six.add_metaclass(ABCMeta)
 class ToolLineage(object):
     """
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def get_versions( self, reverse=False ):

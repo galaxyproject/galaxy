@@ -9,6 +9,12 @@ guidelines for longer term planning for various Galaxy related projects.
 Some inspiration taken from the way the
 `Docker <https://github.com/docker/docker>`__ project labels issues.
 
+Issue Reporting
+===============
+
+Issues (bugs, feature requests, etc.) should be reported at `GitHub issues`_, and
+handling of issues follows the procedures described in the `issues document`_.
+
 Milestones
 ==========
 
@@ -232,3 +238,5 @@ For now, we will rely on a few simple automation rules:
    ``triage`` to indicate that they require attention prior to merge.
 
 .. _ORGANIZATION: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/organization.rst
+.. _issues document: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/issues.rst
+.. _Github issues: https://github.com/galaxyproject/galaxy/issues/

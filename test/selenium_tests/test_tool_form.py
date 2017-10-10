@@ -4,6 +4,8 @@ from .framework import (
     UsesHistoryItemAssertions,
 )
 
+from galaxy_selenium.navigates_galaxy import retry_call_during_transitions
+
 
 class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
@@ -65,11 +67,16 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_ok(1)
         self.hda_click_primary_action_button(1, "rerun")
 
-        inttest_div_element = self.tool_parameter_div("inttest")
-        inttest_input_element = inttest_div_element.find_element_by_css_selector("input")
-        recorded_val = inttest_input_element.get_attribute("value")
-        # Assert form re-rendered with correct value in textbox.
-        assert recorded_val == "42", recorded_val
+        def check_recorded_val():
+            inttest_div_element = self.tool_parameter_div("inttest")
+            inttest_input_element = inttest_div_element.find_element_by_css_selector("input")
+            recorded_val = inttest_input_element.get_attribute("value")
+            # Assert form re-rendered with correct value in textbox.
+            assert recorded_val == "42", recorded_val
+
+        # These form entries seem to be replaced/updated occasionally
+        # causing stale elements.
+        retry_call_during_transitions(check_recorded_val)
         self.tool_execute()
 
         self.history_panel_wait_for_hid_ok(2)

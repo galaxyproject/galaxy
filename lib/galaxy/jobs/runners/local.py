@@ -120,7 +120,7 @@ class LocalJobRunner( BaseJobRunner ):
             stderr_file.close()
             log.debug('execution finished: %s' % command_line)
         except Exception:
-            log.exception("failure running job %d" % job_wrapper.job_id)
+            log.exception("failure running job %d", job_wrapper.job_id)
             self._fail_job_local(job_wrapper, "failure running job")
             return
 

@@ -39,18 +39,19 @@ class DeferredJob( object ):
         self.params = params
 
 
+DeferredJob.table = Table( "deferred_job", metadata,
+                           Column( "id", Integer, primary_key=True ),
+                           Column( "create_time", DateTime, default=now ),
+                           Column( "update_time", DateTime, default=now, onupdate=now ),
+                           Column( "state", String( 64 ), index=True ),
+                           Column( "plugin", String( 128 ), index=True ),
+                           Column( "params", JSONType ) )
+
+mapper( DeferredJob, DeferredJob.table, properties={} )
+
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-
-    DeferredJob.table = Table( "deferred_job", metadata,
-                               Column( "id", Integer, primary_key=True ),
-                               Column( "create_time", DateTime, default=now ),
-                               Column( "update_time", DateTime, default=now, onupdate=now ),
-                               Column( "state", String( 64 ), index=True ),
-                               Column( "plugin", String( 128 ), index=True ),
-                               Column( "params", JSONType ) )
-
-    mapper( DeferredJob, DeferredJob.table, properties={} )
 
     liftoverjobs = dict()
 

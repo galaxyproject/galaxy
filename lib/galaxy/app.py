@@ -3,7 +3,6 @@ import logging
 import signal
 import sys
 import time
-import os
 
 from galaxy import config, jobs
 import galaxy.model
@@ -17,15 +16,23 @@ from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.tools.special_tools import load_lib_tools
 from galaxy.tours import ToursRegistry
+from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
+from galaxy.tools.toolbox.cache import (
+    ToolCache,
+    ToolShedRepositoryCache
+)
 from galaxy.jobs import metrics as job_metrics
 from galaxy.web.proxy import ProxyManager
+from galaxy.web.stack import application_stack_instance
 from galaxy.queue_worker import GalaxyQueueWorker
-from galaxy.util import heartbeat
-from galaxy.util.postfork import register_postfork_function
+from galaxy.util import (
+    ExecutionTimer,
+    heartbeat
+)
 from tool_shed.galaxy_install import update_repository_manager
 
 
@@ -43,7 +50,9 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             logging.basicConfig(level=logging.DEBUG)
         log.debug( "python path is: %s", ", ".join( sys.path ) )
         self.name = 'galaxy'
+        self.startup_timer = ExecutionTimer()
         self.new_installation = False
+        self.application_stack = application_stack_instance()
         # Read config file and check for errors
         self.config = config.Configuration( **kwargs )
         self.config.check()
@@ -95,6 +104,11 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Initialize the job management configuration
         self.job_config = jobs.JobConfiguration(self)
 
+        # Setup a Tool Cache
+        self.tool_cache = ToolCache()
+        self.tool_shed_repository_cache = ToolShedRepositoryCache(self)
+        # Watch various config files for immediate reload
+        self.watchers = ConfigWatchers(self)
         self._configure_toolbox()
 
         # Load Data Manager
@@ -151,7 +165,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
                     fname=self.config.heartbeat_log
                 )
                 self.heartbeat.daemon = True
-                register_postfork_function(self.heartbeat.start)
+                self.application_stack.register_postfork_function(self.heartbeat.start)
         self.sentry_client = None
         if self.config.sentry_dsn:
 
@@ -159,7 +173,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
                 import raven
                 self.sentry_client = raven.Client(self.config.sentry_dsn)
 
-            register_postfork_function(postfork_sentry_client)
+            self.application_stack.register_postfork_function(postfork_sentry_client)
 
         # Transfer manager client
         if self.config.get_bool( 'enable_beta_job_managers', False ):
@@ -190,6 +204,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
 
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting
+        log.info("Galaxy app startup finished %s" % self.startup_timer)
 
     def shutdown( self ):
         self.workflow_scheduling_manager.shutdown()
@@ -202,13 +217,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             self.control_worker.shutdown()
         except AttributeError:
             # There is no control_worker
-            pass
-        try:
-            # If the datatypes registry was persisted, attempt to
-            # remove the temporary file in which it was written.
-            if self.datatypes_registry.integrated_datatypes_configs is not None:
-                os.unlink( self.datatypes_registry.integrated_datatypes_configs )
-        except:
             pass
 
     def configure_fluent_log( self ):

@@ -2,8 +2,6 @@
 Sequence classes
 """
 
-import bz2
-import gzip
 import json
 import logging
 import os
@@ -19,7 +17,10 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
-from galaxy.util import nice_size
+from galaxy.util import (
+    compression_utils,
+    nice_size
+)
 from galaxy.util.checkers import (
     is_bz2,
     is_gzip
@@ -142,22 +143,13 @@ class Sequence( data.Text ):
         if input_datasets[0].metadata is not None and input_datasets[0].metadata.sequences is not None:
             total_sequences = input_datasets[0].metadata.sequences
         else:
-            input_file = input_datasets[0].file_name
-            compress = is_gzip(input_file)
-            if compress:
-                # gzip is really slow before python 2.7!
-                in_file = gzip.GzipFile(input_file, 'r')
-            else:
-                # TODO
-                # if a file is not compressed, seek locations can be calculated and stored
-                # ideally, this would be done in metadata
-                # TODO
-                # Add BufferedReader if python 2.7?
-                in_file = open(input_file, 'rt')
-            total_sequences = long(0)
-            for i, line in enumerate(in_file):
-                total_sequences += 1
-            in_file.close()
+            in_file = compression_utils.get_fileobj(input_datasets[0].file_name)
+            try:
+                total_sequences = long(0)
+                for i, line in enumerate(in_file):
+                    total_sequences += 1
+            finally:
+                in_file.close()
             total_sequences /= 4
 
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
@@ -578,15 +570,8 @@ class BaseFastq ( Sequence ):
         data_lines = 0
         sequences = 0
         seq_counter = 0     # blocks should be 4 lines long
-        compressed_gzip = is_gzip(dataset.file_name)
-        compressed_bzip2 = is_bz2(dataset.file_name)
+        in_file = compression_utils.get_fileobj(dataset.file_name)
         try:
-            if compressed_gzip:
-                in_file = gzip.GzipFile(dataset.file_name)
-            elif compressed_bzip2:
-                in_file = bz2.BZ2File(dataset.file_name)
-            else:
-                in_file = open(dataset.file_name)
             for line in in_file:
                 line = line.strip()
                 if line and line.startswith( '#' ) and not data_lines:
@@ -639,6 +624,20 @@ class BaseFastq ( Sequence ):
             return False
         except:
             return False
+
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+        if preview:
+            fh = compression_utils.get_fileobj(dataset.file_name)
+            max_peek_size = 1000000  # 1 MB
+            if os.stat( dataset.file_name ).st_size < max_peek_size:
+                mime = "text/plain"
+                self._clean_and_set_mime_type( trans, mime )
+                return fh.read()
+            return trans.stream_template_mako( "/dataset/large_file.mako",
+                                           truncated_data=fh.read(max_peek_size),
+                                           data=dataset)
+        else:
+            return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 
     def split( cls, input_datasets, subdir_generator_function, split_params):
         """

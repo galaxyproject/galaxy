@@ -68,6 +68,26 @@
 	font-weight: bold;
 }
 
+.ui-tags {
+    word-wrap: break-word;
+    padding-right: 25px;
+}
+
+.ui-column {
+    .ui-column-left {
+        width: 49%;
+        float: left;
+        .ui-message {
+            margin-top: 5px;
+        }
+    }
+    .ui-column-right {
+        width: 49%;
+        float: right;
+        margin-top: 5px;
+    }
+}
+
 .ui-message {
     padding: 2px 10px 2px 10px;
     margin-top: @ui-margin-vertical-large;
@@ -750,15 +770,15 @@
         margin-right: 5px;
     }
     .ui-color-picker-label {
-        float: left;
         line-height: 1.2em;
+        margin-bottom: 5px;
     }
     .ui-color-picker-view {
         height: 100%;
         overflow: auto;
         display: none;
         float: left;
-        margin-top: 5px;
+        margin-bottom: 5px;
         .ui-color-picker-panel {
             width: 210px;
             .ui-color-picker-content {
@@ -784,6 +804,14 @@
                     }
                 }
             }
+            .ui-color-picker-content:first-child {
+                padding-top: 5px;
+                padding-bottom: 10px;
+            }
+            .ui-color-picker-content:last-child {
+                padding-top: 85px;
+                padding-bottom: 5px;
+            }
         }
     }
 }
@@ -791,7 +819,7 @@
 .ui-list {
     .ui-list-select {
         float: left;
-        width: ~'calc(100% - 27px)';
+        width: ~'calc(100% - 29px)';
     }
     .ui-list-button {
         .ui-button-icon {
@@ -878,6 +906,25 @@
         float: left;
         padding-top: 2px;
     }
+}
+
+.ui-dragover {
+    border-radius: 3px;
+    border: 2px solid @table-border-color;
+    background: lighten(@table-border-color, 30%);
+    padding: 2px;
+}
+
+.ui-dragover-danger {
+    &:extend(.ui-dragover);
+    border: 2px solid @state-danger-bg;
+    background: lighten(@state-danger-bg, 10%) !important;
+}
+
+.ui-dragover-success {
+    &:extend(.ui-dragover);
+    border: 2px solid @state-success-bg;
+    background: lighten(@state-success-bg, 10%) !important;
 }
 
 // global select2 adjustments

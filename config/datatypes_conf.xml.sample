@@ -61,6 +61,7 @@
     <datatype extension="bowtie_base_index" type="galaxy.datatypes.ngsindex:BowtieBaseIndex" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="csfasta" type="galaxy.datatypes.sequence:csFasta" display_in_upload="true"/>
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
+    <datatype extension="d3_hierarchy" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="data_manager_json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="dbn" type="galaxy.datatypes.sequence:DotBracket" display_in_upload="true" description="Dot-Bracket format is a text-based format for storing both an RNA sequence and its corresponding 2D structure." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Dbn"/>
     <datatype extension="fai" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true" description="A Fasta Index File is a text file consisting of lines each with five TAB-delimited columns : Name, Length, offset, linebases, Linewidth" description_url="http://www.htslib.org/doc/faidx.html" />
@@ -217,6 +218,7 @@
     <datatype extension="mgf" type="galaxy.datatypes.proteomics:Mgf" display_in_upload="true" />
     <datatype extension="wiff" type="galaxy.datatypes.proteomics:Wiff" display_in_upload="true" />
     <datatype extension="mzxml" type="galaxy.datatypes.proteomics:MzXML" mimetype="application/xml" display_in_upload="true" />
+    <datatype extension="mzdata" type="galaxy.datatypes.proteomics:MzData" mimetype="application/xml" display_in_upload="true" />
     <datatype extension="ms2" type="galaxy.datatypes.proteomics:Ms2" display_in_upload="true" />
     <datatype extension="mzq" type="galaxy.datatypes.proteomics:MzQuantML" mimetype="application/xml" display_in_upload="true" />
     <datatype extension="mz.sqlite" type="galaxy.datatypes.binary:MzSQlite" mimetype="application/octet-stream" display_in_upload="true" />
@@ -234,6 +236,10 @@
     <datatype extension="ct" type="galaxy.datatypes.tabular:ConnectivityTable" display_in_upload="true"/>
     <datatype extension="searchgui_archive" type="galaxy.datatypes.binary:SearchGuiArchive" display_in_upload="true"/>
     <datatype extension="peptideshaker_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
+    <datatype extension="percin" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <datatype extension="percout" type="galaxy.datatypes.xml:GenericXml" subclass="true" />
+    <datatype extension="hardklor" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <datatype extension="kronik" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
     <!-- End Proteomics Datatypes -->
     <datatype extension="netcdf" type="galaxy.datatypes.binary:NetCDF" mimetype="application/octet-stream" display_in_upload="true" description="Format used by netCDF software library for writing and reading chromatography-MS data files." />
     <datatype extension="eps" type="galaxy.datatypes.images:Eps" mimetype="image/eps"/>
@@ -600,6 +606,10 @@
     <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="true" display_in_upload="true" />
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true" />
     <!-- PlantTribes datatypes -->
+    <datatype extension="ptalign" type="galaxy.datatypes.text:PlantTribesMultipleSequenceAlignment" />
+    <datatype extension="ptortho" type="galaxy.datatypes.text:PlantTribesOrtho" />
+    <datatype extension="ptorthocs" type="galaxy.datatypes.text:PlantTribesOrthoCodingSequence" />
+    <datatype extension="pttree" type="galaxy.datatypes.text:PlantTribesPhylogeneticTree" />
     <datatype extension="smat" type="galaxy.datatypes.text:Smat" display_in_upload="true" />
   </registration>
   <sniffers>
@@ -652,6 +662,7 @@
     <sniffer type="galaxy.datatypes.proteomics:Mgf"/>
     <sniffer type="galaxy.datatypes.proteomics:ProtXML"/>
     <sniffer type="galaxy.datatypes.proteomics:MzXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzData"/>
     <sniffer type="galaxy.datatypes.proteomics:TraML"/>
     <sniffer type="galaxy.datatypes.proteomics:MzIdentML"/>
     <sniffer type="galaxy.datatypes.proteomics:MzQuantML"/>
@@ -740,22 +751,4 @@
     <sniffer type="galaxy.datatypes.binary:OxliSubset"/>
     <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
   </sniffers>
-  <build_sites>
-      <!--
-      Build sites define the builds (dbkeys) available at sites used by display
-      applications and the URL to those sites.
-
-      The `display` attributes on the `ucsc` and `gbrowse` sites replace the
-      `ucsc_display_sites` and `gbrowse_display_sites` options in galaxy.ini.
-      Because these are used by "old-style" display applications, their types
-      cannot change if you want the old-style display links for these sites to
-      work.
-      -->
-      <site type="ucsc" file="tool-data/shared/ucsc/ucsc_build_sites.txt" display="main,test,archaea,ucla"/>
-      <site type="gbrowse" file="tool-data/shared/gbrowse/gbrowse_build_sites.txt" display="modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225"/>
-      <site type="ensembl" file="tool-data/shared/ensembl/ensembl_sites.txt"/>
-      <site type="ensembl_data_url" file="tool-data/shared/ensembl/ensembl_sites_data_URL.txt"/>
-      <site type="igv" file="tool-data/shared/igv/igv_build_sites.txt"/>
-      <site type="rviewer" file="tool-data/shared/rviewer/rviewer_build_sites.txt"/>
-  </build_sites>
 </datatypes>

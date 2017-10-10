@@ -177,19 +177,23 @@ class BaseDatasetPopulator( object ):
         # kwds should contain a 'dataset' object response, a 'dataset_id' or
         # the last dataset in the history will be fetched.
         if "dataset_id" in kwds:
-            dataset_id = kwds[ "dataset_id" ]
+            history_content_id = kwds[ "dataset_id" ]
         elif "dataset" in kwds:
-            dataset_id = kwds[ "dataset" ][ "id" ]
+            history_content_id = kwds[ "dataset" ][ "id" ]
         else:
             hid = kwds.get( "hid", None )  # If not hid, just grab last dataset
+            history_contents = self.__get_contents_request( history_id ).json()
             if hid:
-                index = hid - 1
+                history_content_id = None
+                for history_item in history_contents:
+                    if history_item["hid"] == hid:
+                        history_content_id = history_item["id"]
+                if history_content_id is None:
+                    raise Exception("Could not find content with HID [%s] in [%s]" % (hid, history_contents))
             else:
                 # No hid specified - just grab most recent element.
-                index = -1
-            dataset_contents = self.__get_contents_request( history_id ).json()
-            dataset_id = dataset_contents[ index ][ "id" ]
-        return dataset_id
+                history_content_id = history_contents[-1]["id"]
+        return history_content_id
 
     def __get_contents_request( self, history_id, suffix=""):
         url = "histories/%s/contents" % history_id
@@ -485,17 +489,17 @@ class DatasetCollectionPopulator( BaseDatasetCollectionPopulator ):
         return create_response
 
 
-def wait_on_state( state_func, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
+def wait_on_state( state_func, skip_states=["running", "queued", "new", "ready"], assert_ok=False, timeout=DEFAULT_TIMEOUT ):
     def get_state( ):
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting."
         state = response.json()[ "state" ]
-        if state not in [ "running", "queued", "new", "ready" ]:
+        if state in skip_states:
+            return None
+        else:
             if assert_ok:
                 assert state == "ok", "Final state - %s - not okay." % state
             return state
-        else:
-            return None
     return wait_on( get_state, desc="state", timeout=timeout)
 
 

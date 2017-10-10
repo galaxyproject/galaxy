@@ -38,17 +38,19 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.parms = [];
             _.each( this.model.get( 'steps' ), function( step, i ) {
                 Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Preparing workflow step.' );
-                var icon = WorkflowIcons[step.step_type];
-                var description = step.description;
+                var icon = WorkflowIcons[ step.step_type ];
+                var title = parseInt( i + 1 ) + ': ' + ( step.step_label || step.step_name );
                 if ( step.annotation ) {
-                    description = ' - ' + step.annotation;
+                    title += ' - ' + step.annotation;
+                }
+                if ( step.step_version ) {
+                    title += ' (Galaxy Version ' + step.step_version + ')';
                 }
                 step = Utils.merge( {
                     index                   : i,
-                    name                    : _.escape( step.name ),
+                    title                   : _.escape( title ),
                     icon                    : icon || '',
                     help                    : null,
-                    description             : _.escape( description || '' ),
                     citations               : null,
                     collapsible             : true,
                     collapsed               : i > 0 && !self._isDataStep( step ),
@@ -149,15 +151,16 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 if ( step.step_type == 'tool' ) {
                     var data_resolved = true;
                     FormData.visitInputs( step.inputs, function ( input, name, context ) {
+                        var is_runtime_value = input.value && input.value.__class__ == 'RuntimeValue';
                         var is_data_input = ([ 'data', 'data_collection' ]).indexOf( input.type ) != -1;
                         var data_ref = context[ input.data_ref ];
                         input.step_linked && !self._isDataStep( input.step_linked ) && ( data_resolved = false );
                         input.options && ( ( input.options.length == 0 && !data_resolved ) || input.wp_linked ) && ( input.is_workflow = true );
                         data_ref && ( input.is_workflow = ( data_ref.step_linked && !self._isDataStep( data_ref.step_linked ) ) || input.wp_linked );
                         ( is_data_input || ( input.value && input.value.__class__ == 'RuntimeValue' && !input.step_linked ) ) && ( step.collapsed = false );
-                        input.value && input.value.__class__ == 'RuntimeValue' && ( input.value = null );
+                        is_runtime_value && ( input.value = input.default_value );
                         input.flavor = 'workflow';
-                        if ( !is_data_input && input.type !== 'hidden' && !input.wp_linked ) {
+                        if ( !is_runtime_value && !is_data_input && input.type !== 'hidden' && !input.wp_linked ) {
                             if ( input.optional || ( !Utils.isEmpty( input.value ) && input.value !== '' ) ) {
                                 input.collapsible_value = input.value;
                                 input.collapsible_preview = true;
@@ -265,6 +268,31 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.deferred.execute( function( promise ) {
                 self.$steps.addClass( 'ui-steps' );
                 if ( step.step_type == 'tool' ) {
+                    step.postchange = function( process, form ) {
+                        var self = this;
+                        var current_state = {
+                            tool_id         : step.id,
+                            tool_version    : step.version,
+                            inputs          : $.extend( true, {}, form.data.create() )
+                        }
+                        form.wait( true );
+                        Galaxy.emit.debug( 'tool-form-composite::postchange()', 'Sending current state.', current_state );
+                        Utils.request({
+                            type    : 'POST',
+                            url     : Galaxy.root + 'api/tools/' + step.id + '/build',
+                            data    : current_state,
+                            success : function( data ) {
+                                form.update( data );
+                                form.wait( false );
+                                Galaxy.emit.debug( 'tool-form-composite::postchange()', 'Received new model.', data );
+                                process.resolve();
+                            },
+                            error   : function( response ) {
+                                Galaxy.emit.debug( 'tool-form-composite::postchange()', 'Refresh request failed.', response );
+                                process.reject();
+                            }
+                        });
+                    };
                     form = new ToolFormBase( step );
                     if ( step.post_job_actions && step.post_job_actions.length ) {
                         form.portlet.append( $( '<div/>' ).addClass( 'ui-form-element-disabled' )
@@ -279,7 +307,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     var is_simple_input = ([ 'data_input', 'data_collection_input' ]).indexOf( step.step_type ) != -1;
                     _.each( step.inputs, function( input ) { input.flavor = 'module'; input.hide_label = is_simple_input; } );
                     form = new Form( Utils.merge({
-                        title    : '<b>' + step.name + '</b>' + step.description,
+                        title    : step.title,
                         onchange : function() { _.each( self.links[ step.index ], function( link ) { self._refreshStep( link ) } ) },
                         inputs   : step.inputs && step.inputs.length > 0 ? step.inputs : [ { type: 'hidden', name: 'No options available.', ignore: null } ]
                     }, step ) );
@@ -324,7 +352,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                     var wp_field = self.wp_form.field_list[ self.wp_form.data.match( match[ 1 ] ) ];
                                     var wp_value = wp_field && wp_field.value();
                                     if ( wp_value ) {
-                                        new_value = new_value.replace( new RegExp( '\\' + match[ 0 ], 'g' ), wp_value );
+                                        new_value = new_value.split( match[ 0 ] ).join( wp_value );
                                     }
                                 }
                             }
@@ -424,7 +452,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
                         self.$el.children().hide();
                         self.$el.append( self._templateSuccess( response ) );
-                        
+
                         // Show Webhook if job is running
                         if ($.isArray( response ) && response.length > 0) {
                             self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );
@@ -441,7 +469,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         if ( response && response.err_data ) {
                             for ( var i in self.forms ) {
                                 var form = self.forms[ i ];
-                                var step_related_errors = response.err_data[ form.options.step_index ];
+                                var step_related_errors = response.err_data[ form.model.get( 'step_index' ) ];
                                 if ( step_related_errors ) {
                                     var error_messages = form.data.matchResponse( step_related_errors );
                                     for ( var input_id in error_messages ) {

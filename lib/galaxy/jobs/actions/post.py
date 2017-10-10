@@ -5,7 +5,6 @@ immediate_actions listed below.  Currently only used in workflows.
 import datetime
 import logging
 import socket
-from json import dumps
 
 from markupsafe import escape
 
@@ -331,11 +330,11 @@ class TagDatasetAction(DefaultJobAction):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         if action.action_arguments:
-            tags = [t.strip() for t in action.action_arguments.get('tags', '').split(',')]
+            tags = [t.replace('#', 'name:') if t.startswith('#') else t for t in [t.strip() for t in action.action_arguments.get('tags', '').split(',') if t.strip()]]
             if tags:
                 for dataset_assoc in job.output_datasets:
                     if action.output_name == '' or dataset_assoc.name == action.output_name:
-                        app.tag_handler.set_tags_from_list( job.user, dataset_assoc.dataset, tags)
+                        app.tag_handler.add_tags_from_list( job.user, dataset_assoc.dataset, tags)
             sa_session.flush()
 
     @classmethod
@@ -390,7 +389,7 @@ class ActionBox(object):
             else:
                 # Not pja stuff.
                 pass
-        return dumps(npd)
+        return npd
 
     @classmethod
     def execute(cls, app, sa_session, pja, job, replacement_dict=None):

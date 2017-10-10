@@ -37,10 +37,15 @@ class TagManager( object ):
         # Initialize with known classes - add to this in subclasses.
         self.item_tag_assoc_info = {}
 
+    def add_tags_from_list( self, user, item, new_tags_list ):
+        new_tags_set = set( new_tags_list )
+        if item.tags:
+            new_tags_set.update( self.get_tags_str( item.tags ).split( ',' ) )
+        return self.set_tags_from_list( user, item, new_tags_set )
+
     def set_tags_from_list( self, user, item, new_tags_list ):
         # precondition: item is already security checked against user
         # precondition: incoming tags is a list of sanitized/formatted strings
-
         self.delete_item_tags( user, item )
         new_tags_str = ','.join( new_tags_list )
         self.apply_item_tags( user, item, unicodify( new_tags_str, 'utf-8' ) )
@@ -131,7 +136,9 @@ class TagManager( object ):
         lc_name = name.lower()
         # Get or create item-tag association.
         item_tag_assoc = self._get_item_tag_assoc( user, item, lc_name )
-        if not item_tag_assoc:
+        # If the association does not exist, or if it has a different value, add another.
+        # We do allow multiple associations with different values.
+        if not item_tag_assoc or (item_tag_assoc and item_tag_assoc.value != value):
             # Create item-tag association.
             # Create tag; if None, skip the tag (and log error).
             tag = self._get_or_create_tag( lc_name )
@@ -159,7 +166,7 @@ class TagManager( object ):
         # Parse tags.
         parsed_tags = self.parse_tags( tags_str )
         # Apply each tag.
-        for name, value in parsed_tags.items():
+        for name, value in parsed_tags:
             self.apply_item_tag( user, item, name, value )
 
     def get_tags_str( self, tags ):
@@ -231,7 +238,7 @@ class TagManager( object ):
     def parse_tags( self, tag_str ):
         """
         Returns a list of raw (tag-name, value) pairs derived from a string; method scrubs tag names and values as well.
-        Return value is a dictionary where tag-names are keys.
+        Return value is a list of (tag_name, tag_value) tuples.
         """
         # Gracefully handle None.
         if not tag_str:
@@ -240,12 +247,13 @@ class TagManager( object ):
         reg_exp = re.compile( '[' + self.tag_separators + ']' )
         raw_tags = reg_exp.split( tag_str )
         # Extract name-value pairs.
-        name_value_pairs = dict()
+        name_value_pairs = []
         for raw_tag in raw_tags:
             nv_pair = self._get_name_value_pair( raw_tag )
             scrubbed_name = self._scrub_tag_name( nv_pair[0] )
             scrubbed_value = self._scrub_tag_value( nv_pair[1] )
-            name_value_pairs[scrubbed_name] = scrubbed_value
+            # Append tag_name, tag_value tuple -- TODO use NamedTuple
+            name_value_pairs.append(( scrubbed_name, scrubbed_value ))
         return name_value_pairs
 
     def _scrub_tag_value( self, value ):
@@ -303,6 +311,10 @@ class GalaxyTagManager( TagManager ):
             ItemTagAssocInfo( model.HistoryDatasetAssociation,
                               model.HistoryDatasetAssociationTagAssociation,
                               model.HistoryDatasetAssociationTagAssociation.table.c.history_dataset_association_id )
+        self.item_tag_assoc_info["HistoryDatasetCollectionAssociation"] = \
+            ItemTagAssocInfo( model.HistoryDatasetCollectionAssociation,
+                              model.HistoryDatasetCollectionTagAssociation,
+                              model.HistoryDatasetCollectionTagAssociation.table.c.history_dataset_collection_id )
         self.item_tag_assoc_info["Page"] = ItemTagAssocInfo( model.Page,
                                                              model.PageTagAssociation,
                                                              model.PageTagAssociation.table.c.page_id )

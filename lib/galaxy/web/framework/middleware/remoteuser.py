@@ -149,7 +149,7 @@ class RemoteUser( object ):
                     return self.error( start_response, title, message )
             user_accessible_paths = (
                 '/users',
-                '/user/api_keys',
+                '/user/api_key',
                 '/user/edit_username',
                 '/user/dbkeys',
                 '/user/logout',

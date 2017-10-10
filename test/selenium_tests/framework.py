@@ -6,6 +6,7 @@ import datetime
 import json
 import os
 import time
+import traceback
 
 from functools import wraps
 
@@ -49,6 +50,8 @@ GALAXY_TEST_SELENIUM_REMOTE_PORT = os.environ.get("GALAXY_TEST_SELENIUM_REMOTE_P
 GALAXY_TEST_SELENIUM_REMOTE_HOST = os.environ.get("GALAXY_TEST_SELENIUM_REMOTE_HOST", DEFAULT_SELENIUM_REMOTE_HOST)
 GALAXY_TEST_SELENIUM_HEADLESS = os.environ.get("GALAXY_TEST_SELENIUM_HEADLESS", DEFAULT_SELENIUM_HEADLESS)
 GALAXY_TEST_EXTERNAL_FROM_SELENIUM = os.environ.get("GALAXY_TEST_EXTERNAL_FROM_SELENIUM", None)
+# Auto-retry selenium tests this many times.
+GALAXY_TEST_SELENIUM_RETRIES = int(os.environ.get("GALAXY_TEST_SELENIUM_RETRIES", "0"))
 
 # Test case data
 DEFAULT_PASSWORD = '123456'
@@ -66,32 +69,38 @@ def selenium_test(f):
 
     @wraps(f)
     def func_wrapper(self, *args, **kwds):
-        try:
-            return f(self, *args, **kwds)
-        except Exception:
-            if GALAXY_TEST_ERRORS_DIRECTORY and GALAXY_TEST_ERRORS_DIRECTORY != "0":
-                if not os.path.exists(GALAXY_TEST_ERRORS_DIRECTORY):
-                    os.makedirs(GALAXY_TEST_ERRORS_DIRECTORY)
-                result_name = f.__name__ + datetime.datetime.now().strftime("%Y%m%d%H%M%s")
-                target_directory = os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, result_name)
+        retry_attempts = 0
+        while True:
+            try:
+                return f(self, *args, **kwds)
+            except Exception:
+                if GALAXY_TEST_ERRORS_DIRECTORY and GALAXY_TEST_ERRORS_DIRECTORY != "0":
+                    if not os.path.exists(GALAXY_TEST_ERRORS_DIRECTORY):
+                        os.makedirs(GALAXY_TEST_ERRORS_DIRECTORY)
+                    result_name = f.__name__ + datetime.datetime.now().strftime("%Y%m%d%H%M%s")
+                    target_directory = os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, result_name)
 
-                def write_file(name, content):
-                    with open(os.path.join(target_directory, name), "wb") as buf:
-                        buf.write(content.encode("utf-8"))
+                    def write_file(name, content):
+                        with open(os.path.join(target_directory, name), "wb") as buf:
+                            buf.write(content.encode("utf-8"))
 
-                os.makedirs(target_directory)
-                self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
-                write_file("page_source.txt", self.driver.page_source)
-                write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
-                iframes = self.driver.find_elements_by_css_selector("iframe")
-                for iframe in iframes:
-                    pass
-                    # TODO: Dump content out for debugging in the future.
-                    # iframe_id = iframe.get_attribute("id")
-                    # if iframe_id:
-                    #     write_file("iframe_%s" % iframe_id, "My content")
+                    os.makedirs(target_directory)
+                    self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
+                    write_file("page_source.txt", self.driver.page_source)
+                    write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
+                    write_file("stacktrace.txt", traceback.format_exc())
+                    iframes = self.driver.find_elements_by_css_selector("iframe")
+                    for iframe in iframes:
+                        pass
+                        # TODO: Dump content out for debugging in the future.
+                        # iframe_id = iframe.get_attribute("id")
+                        # if iframe_id:
+                        #     write_file("iframe_%s" % iframe_id, "My content")
 
-            raise
+                if retry_attempts < GALAXY_TEST_SELENIUM_RETRIES:
+                    retry_attempts += 1
+                else:
+                    raise
 
     return func_wrapper
 

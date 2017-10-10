@@ -28,6 +28,7 @@ import galaxy.model.orm.now
 import galaxy.security.passwords
 import galaxy.util
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.util import pgcalc
 from galaxy.security import get_permitted_actions
 from galaxy.util import (directory_hash_id, Params, ready_name_for_url,
                          restore_text, send_mail, unicodify, unique_id)
@@ -274,6 +275,31 @@ class User( object, Dictifiable ):
                     dataset_ids.append( hda.dataset.id )
                     total += hda.dataset.get_total_size()
         return total
+
+    def calculate_and_set_disk_usage( self ):
+        """
+        Calculates and sets user disk usage.
+        """
+        new = None
+        db_session = object_session(self)
+        current = self.get_disk_usage()
+        if db_session.get_bind().dialect.name not in ( 'postgres', 'postgresql' ):
+            done = False
+            while not done:
+                new = self.calculate_disk_usage()
+                db_session.refresh( self )
+                # make sure usage didn't change while calculating
+                # set done if it has not, otherwise reset current and iterate again.
+                if self.get_disk_usage() == current:
+                    done = True
+                else:
+                    current = self.get_disk_usage()
+        else:
+            new = pgcalc(db_session, self.id)
+        if new not in (current, None):
+            self.set_disk_usage( new )
+            db_session.add( self )
+            db_session.flush()
 
     @staticmethod
     def user_template_environment( user ):
@@ -1416,6 +1442,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
                       .options( joinedload("dataset"),
                                 joinedload("dataset.actions"),
                                 joinedload("dataset.actions.role"),
+                                joinedload("tags"),
                                 ))
             self._active_datasets_and_roles = query.all()
         return self._active_datasets_and_roles
@@ -2361,8 +2388,8 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
     def copy_attributes( self, new_dataset ):
         new_dataset.hid = self.hid
 
-    def to_library_dataset_dataset_association( self, trans, target_folder,
-                                                replace_dataset=None, parent_id=None, user=None, roles=None, ldda_message='' ):
+    def to_library_dataset_dataset_association( self, trans, target_folder, replace_dataset=None,
+                                                parent_id=None, user=None, roles=None, ldda_message='', element_identifier=None ):
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
@@ -2380,7 +2407,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
         if not user:
             # This should never happen since users must be authenticated to upload to a data library
             user = self.history.user
-        ldda = LibraryDatasetDatasetAssociation( name=self.name,
+        ldda = LibraryDatasetDatasetAssociation( name=element_identifier or self.name,
                                                  info=self.info,
                                                  blurb=self.blurb,
                                                  peek=self.peek,

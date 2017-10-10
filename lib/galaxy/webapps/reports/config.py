@@ -45,7 +45,7 @@ class Configuration( object ):
         self.message_box_visible = string_as_bool( kwargs.get( 'message_box_visible', False ) )
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
-        self.wiki_url = kwargs.get( 'wiki_url', 'https://wiki.galaxyproject.org/' )
+        self.wiki_url = kwargs.get( 'wiki_url', 'https://galaxyproject.org/' )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.log_events = False

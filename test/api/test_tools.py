@@ -166,6 +166,9 @@ class ToolsTestCase( api.ApiTestCase ):
         response = self._run( "__ZIP_COLLECTION__", history_id, inputs, assert_ok=True )
         output_collections = response[ "output_collections" ]
         self.assertEquals( len(output_collections), 1 )
+        self.dataset_populator.wait_for_job( response["jobs"][0]["id"], assert_ok=True )
+        zipped_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=output_collections[0]["hid"])
+        assert zipped_hdca["collection_type"] == "paired"
 
     def test_zip_list_inputs( self ):
         history_id = self.dataset_populator.new_history()
@@ -179,6 +182,9 @@ class ToolsTestCase( api.ApiTestCase ):
         response = self._run( "__ZIP_COLLECTION__", history_id, inputs, assert_ok=True )
         implicit_collections = response[ "implicit_collections" ]
         self.assertEquals( len(implicit_collections), 1 )
+        self.dataset_populator.wait_for_job( response["jobs"][0]["id"], assert_ok=True )
+        zipped_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=implicit_collections[0]["hid"])
+        assert zipped_hdca["collection_type"] == "list:paired"
 
     def test_filter_failed( self ):
         history_id = self.dataset_populator.new_history()
