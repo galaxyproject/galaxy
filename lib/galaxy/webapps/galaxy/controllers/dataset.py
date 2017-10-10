@@ -468,7 +468,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     message = 'Changed the type of dataset %s to %s.' % (to_unicode(data.name), datatype)
             else:
                 return self.message_exception(trans, 'You are unable to change datatypes in this manner. Changing %s to %s is not allowed.' % (data.extension, datatype))
-        elif operation == 'detect':
+        elif operation == 'autodetect':
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
             # prevent modifying metadata when dataset is queued or running as input/output
             if not __ok_to_edit_metadata(data.id):
