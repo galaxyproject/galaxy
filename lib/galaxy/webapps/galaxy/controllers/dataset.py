@@ -449,13 +449,12 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 # if setting metadata previously failed and all required elements have now been set, clear the failed state.
                 if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
                     data._state = None
-                trans.sa_session.flush()
                 message = 'Attributes updated. %s' % message if message else 'Attributes updated.'
                 status = 'success'
             else:
-                trans.sa_session.flush()
                 message = 'Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.'
                 status = 'warning'
+            trans.sa_session.flush()
         elif operation == 'datatype':
             # The user clicked the Save button on the 'Change data type' form
             if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(params.datatype).allow_datatype_change:
