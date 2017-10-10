@@ -318,12 +318,14 @@ function( Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Se
                     list.push( model );
                 }
             });
-            $.uploadpost({
-                data     : this.app.toData( list ),
-                url      : this.app.options.nginx_upload_path,
-                success  : function( message ) { _.each( list, function( model ) { self._eventSuccess( model.id ) } ) },
-                error    : function( message ) { _.each( list, function( model ) { self._eventError( model.id, message ) } ) }
-            });
+            if(list.length > 0) {
+                $.uploadpost({
+                    data     : this.app.toData( list ),
+                    url      : this.app.options.nginx_upload_path,
+                    success  : function( message ) { _.each( list, function( model ) { self._eventSuccess( model.id ) } ) },
+                    error    : function( message ) { _.each( list, function( model ) { self._eventError( model.id, message ) } ) }
+                });
+            }
         },
 
         /** Calculate percentage of all queued uploads */
