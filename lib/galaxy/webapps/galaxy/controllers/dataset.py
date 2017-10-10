@@ -450,11 +450,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
                     data._state = None
                 trans.sa_session.flush()
+                message = 'Attributes updated. %s' % message if message else 'Attributes updated.'
                 status = 'success'
-                if message:
-                    message = 'Attributes updated. %s' % message
-                else:
-                    message = 'Attributes updated.'
             else:
                 trans.sa_session.flush()
                 message = 'Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.'
