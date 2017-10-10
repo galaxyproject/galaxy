@@ -606,7 +606,7 @@ class Frequency(Tabular):
         >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.freq' )
         >>> Frequency().sniff( fname )
         False
-        
+
         # Expression count matrix (EdgeR wrapper)
         >>> fname = get_test_fname( 'mothur_datatypetest_false_2.mothur.freq' )
         >>> Frequency().sniff( fname )
@@ -634,7 +634,7 @@ class Frequency(Tabular):
                     except Exception:
                         return False
                 count += 1
-            
+
             if count > self.max_snif_lines:
                 return True
 
