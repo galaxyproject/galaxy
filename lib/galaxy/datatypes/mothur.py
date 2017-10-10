@@ -605,6 +605,11 @@ class Frequency(Tabular):
         >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.freq' )
         >>> Frequency().sniff( fname )
         False
+        
+        # Expression count matrix (EdgeR wrapper)
+        >>> fname = get_test_fname( 'mothur_datatypetest_false_2.mothur.freq' )
+        >>> Frequency().sniff( fname )
+        False
         """
         headers = iter_headers(filename, sep='\t')
         count = 0
