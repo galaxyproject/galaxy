@@ -4,7 +4,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         initialize: function() {
             this.setElement( '<div/>' );
             this.model = new Backbone.Model( { 'dataset_id': Galaxy.params.dataset_id } );
-            this.message = new Ui.Message();
+            this.message = new Ui.Message( { 'persistent': true } );
+            this.tabs = this._createTabs();
+            this.$el.append( $( '<h4/>' ).append( 'Edit dataset attributes' ) )
+                    .append( this.message.$el )
+                    .append( '<p/>' )
+                    .append( this.tabs.$el );
             this.render();
         },
 
@@ -20,8 +25,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     var err_msg = response.responseJSON && response.responseJSON.err_msg;
                     self.message.update({
                         'status'    : 'danger',
-                        'message'   : err_msg || 'Error occured while loading the dataset.',
-                        'persistent': true
+                        'message'   : err_msg || 'Error occured while loading the dataset.'
                     });
                 }
             });
@@ -29,48 +33,18 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
 
         /** render page */
         _render: function( response ) {
-            this.$el.empty()
-                    .append( $( '<h4/>' ).append( 'Edit dataset attributes' ) )
-                    .append( this.message.$el )
-                    .append( this._createTabs( response ) );
+            this.message.update( response );
+            this.attribute_form.model.set( 'inputs', response.attribute_inputs );
+            this.conversion_form.model.set( 'inputs', response.conversion_inputs );
+            this.datatype_form.model.set( 'inputs', response.datatype_inputs );
+            this.permission_form.model.set( 'inputs', response.permission_inputs );
+            this.attribute_form.render();
+            this.conversion_form.render();
+            this.datatype_form.render();
+            this.permission_form.render();
         },
 
-        /** create tabs for different attributes of dataset*/
-        _createTabs: function( response ) {
-            var self = this;
-            var tabs = new Tabs.View();
-            tabs.add({
-                id      : 'attributes',
-                title   : 'Attributes',
-                icon    : 'fa fa-bars',
-                tooltip : 'Edit dataset attributes',
-                $el     : self._getAttributes( response )
-            });
-            tabs.add({
-                id      : 'convert',
-                title   : 'Convert',
-                icon    : 'fa-gear',
-                tooltip : 'Convert to new format',
-                $el     :  self._getConversion( response )
-            });
-            tabs.add({
-                id      : 'datatype',
-                title   : 'Datatypes',
-                icon    : 'fa-database',
-                tooltip : 'Change data type',
-                $el     : self._getDatatype( response )
-            });
-            tabs.add({
-                id      : 'permissions',
-                title   : 'Permissions',
-                icon    : 'fa-user',
-                tooltip : 'Permissions',
-                $el     : self._getPermission( response )
-            });
-            return tabs.$el;
-        },
-
-        /** perform AJAX post call */
+        /** submit data to backend to update attributes */
         _submit: function( operation, form ) {
             var self = this;
             var data = form.data.create();
@@ -81,12 +55,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 url     : Galaxy.root + 'dataset/set_edit',
                 data    : data,
                 success : function( response ) {
+                    self.render();
                     self._reloadHistory();
-                    form.message.update( response );
                 },
                 error   : function( response ) {
                     var err_msg = response.responseJSON && response.responseJSON.err_msg;
-                    form.message.update({
+                    self.message.update({
                         'status'    : 'danger',
                         'message'   : err_msg || 'Error occured while editing the dataset attributes.'
                     });
@@ -94,12 +68,50 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             });
         },
 
-        /** attributes tab template */
-        _getAttributes: function( response ) {
+        /** create tabs for different dataset attribute categories*/
+        _createTabs: function() {
+            var self = this;
+            var tabs = new Tabs.View();
+            this.attribute_form = this._getAttributeForm();
+            this.conversion_form = this._getConversion();
+            this.datatype_form = this._getDatatype();
+            this.permission_form = this._getPermission();
+            tabs.add({
+                id      : 'attributes',
+                title   : 'Attributes',
+                icon    : 'fa fa-bars',
+                tooltip : 'Edit dataset attributes',
+                $el     : this.attribute_form.$el
+            });
+            tabs.add({
+                id      : 'convert',
+                title   : 'Convert',
+                icon    : 'fa-gear',
+                tooltip : 'Convert to new format',
+                $el     :  this.conversion_form.$el
+            });
+            tabs.add({
+                id      : 'datatype',
+                title   : 'Datatypes',
+                icon    : 'fa-database',
+                tooltip : 'Change data type',
+                $el     : this.datatype_form.$el
+            });
+            tabs.add({
+                id      : 'permissions',
+                title   : 'Permissions',
+                icon    : 'fa-user',
+                tooltip : 'Permissions',
+                $el     : this.permission_form.$el
+            });
+            return tabs;
+        },
+
+        /** edit main attributes form */
+        _getAttributeForm: function() {
             var self = this;
             var form = new Form({
                 title  : 'Edit attributes',
-                inputs : response.attribute_inputs,
                 buttons: {
                     'submit_editattr' : new Ui.ButtonIcon({
                         cls      : 'btn btn-primary',
@@ -117,15 +129,14 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     })
                 }
             });
-            return form.$el;
+            return form;
         },
 
-        /** convert tab template */
-        _getConversion: function( response ) {
+        /** datatype conversion form */
+        _getConversion: function() {
             var self = this;
             var form = new Form({
                 title  : 'Convert to new format',
-                inputs : response.conversion_inputs,
                 buttons: {
                     'submit' : new Ui.ButtonIcon({
                         cls      : 'btn btn-primary',
@@ -136,15 +147,14 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     })
                 }
             });
-            return form.$el;
+            return form;
         },
 
-        /** change datatype template */
-        _getDatatype: function( response ) {
+        /** change datatype form */
+        _getDatatype: function() {
             var self = this;
             var form = new Form({
                 title  : 'Change datatype',
-                inputs : response.datatype_inputs,
                 buttons: {
                     'submit' : new Ui.ButtonIcon({
                         cls      : 'btn btn-primary',
@@ -155,34 +165,25 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     })
                 }
             });
-            return form.$el;
+            return form;
         },
 
-        /** permissions template */
-        _getPermission: function( response ) {
+        /** dataset permissions form */
+        _getPermission: function() {
             var self = this;
-            if( response.can_manage_dataset ) {
-                var form = new Form({
-                    title  : 'Manage dataset permissions',
-                    inputs : response.permission_inputs,
-                    buttons: {
-                        'submit': new Ui.ButtonIcon({
-                            cls      : 'btn btn-primary',
-                            tooltip  : 'Save permissions.',
-                            title    : 'Save permissions',
-                            icon     : 'fa-floppy-o ',
-                            onclick  : function() { self._submit( 'permission', form ) }
-                        })
-                    }
-                });
-                return form.$el;
-            } else {
-                var form = new Form({
-                    title  : 'View permissions',
-                    inputs : response.permission_inputs
-                });
-                return form.$el;
-            }
+            var form = new Form({
+                title  : 'Manage dataset permissions',
+                buttons: {
+                    'submit': new Ui.ButtonIcon({
+                        cls      : 'btn btn-primary',
+                        tooltip  : 'Save permissions.',
+                        title    : 'Save permissions',
+                        icon     : 'fa-floppy-o ',
+                        onclick  : function() { self._submit( 'permission', form ) }
+                    })
+                }
+            });
+            return form;
         },
 
         /** reload Galaxy's history after updating dataset's attributes */

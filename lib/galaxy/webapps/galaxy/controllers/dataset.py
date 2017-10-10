@@ -315,15 +315,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             'value'     : attributes.value,
                             'readonly'  : spec.get('readonly')
                         })
-            if data.missing_meta():
-                attribute_inputs.append({
-                    'name'      : 'errormsg',
-                    'type'      : 'text',
-                    'label'     : 'Error Message',
-                    'class'     : 'errormessagesmall',
-                    'readonly'  : True,
-                    'value'     : 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.'
-                })
+            #if data.missing_meta():
+            message = 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.'
+            status = 'warning'
             # datatype conversion
             conversion_inputs = [{
                 'type'      : 'select',
