@@ -460,22 +460,19 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(datatype).allow_datatype_change:
                 # prevent modifying datatype when dataset is queued or running as input/output
                 if not __ok_to_edit_metadata(data.id):
-                    message = 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.'
-                    status = 'danger'
+                    return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.')
                 else:
                     trans.app.datatypes_registry.change_datatype(data, datatype)
                     trans.sa_session.flush()
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data}, overwrite=False)  # overwrite is False as per existing behavior
                     message = 'Changed the type of dataset %s to %s.' % (to_unicode(data.name), datatype)
             else:
-                message = 'You are unable to change datatypes in this manner. Changing %s to %s is not allowed.' % (data.extension, datatype)
-                status = 'danger'
+                return self.message_exception(trans, 'You are unable to change datatypes in this manner. Changing %s to %s is not allowed.' % (data.extension, datatype))
         elif operation == 'detect':
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
             # prevent modifying metadata when dataset is queued or running as input/output
             if not __ok_to_edit_metadata(data.id):
-                message = 'This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them.'
-                status = 'danger'
+                return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them.')
             else:
                 for name, spec in data.metadata.spec.items():
                     # We need to be careful about the attributes we are resetting
@@ -503,27 +500,18 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
                     access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
                     permissions[access_action] = data.dataset.get_access_roles(trans)
-                    status = 'error'
+                    return self.message_exception(trans, message)
                 else:
                     error = trans.app.security_agent.set_all_dataset_permissions(data.dataset, permissions)
                     if error:
-                        message = error
-                        status = 'error'
+                        return self.message_exception(trans, error)
                     else:
                         message = 'Your changes completed successfully.'
                 trans.sa_session.refresh(data.dataset)
             else:
-                message = 'You are not authorized to change this dataset\'s permissions.'
-                status = 'error'
+                return self.message_exception(trans, 'You are not authorized to change this dataset\'s permissions.')
         else:
-            if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
-                # Copy dbkey into metadata, for backwards compatability
-                # This looks like it does nothing, but getting the dbkey
-                # returns the metadata dbkey unless it is None, in which
-                # case it resorts to the old dbkey.  Setting the dbkey
-                # sets it properly in the metadata
-                # This is likely no longer required, since the dbkey exists entirely within metadata (the old_dbkey field is gone): REMOVE ME?
-                data.metadata.dbkey = data.dbkey
+            return self.message_exception(trans, 'Invalid operation identifier (%s).' % operation)
         return { 'status': status, 'message': message }
 
     @web.expose
