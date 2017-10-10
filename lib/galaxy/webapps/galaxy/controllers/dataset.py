@@ -483,35 +483,36 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
                     data._state = None
                 trans.sa_session.flush()
+                status = 'success'
                 if message:
-                    message = "Attributes updated. %s" % message
+                    message = 'Attributes updated. %s' % message
                 else:
-                    message = "Attributes updated."
+                    message = 'Attributes updated.'
             else:
                 trans.sa_session.flush()
-                message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
-                status = "warning"
-        elif params.change:
+                message = 'Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.'
+                status = 'warning'
+        elif operation == 'datatype':
             # The user clicked the Save button on the 'Change data type' form
             if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(params.datatype).allow_datatype_change:
                 # prevent modifying datatype when dataset is queued or running as input/output
                 if not __ok_to_edit_metadata(data.id):
-                    message = "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
-                    error = True
+                    message = 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.'
+                    status = 'danger'
                 else:
                     trans.app.datatypes_registry.change_datatype(data, params.datatype)
                     trans.sa_session.flush()
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data}, overwrite=False)  # overwrite is False as per existing behavior
-                    message = "Changed the type of dataset %s to %s." % (to_unicode(data.name), params.datatype)
+                    message = 'Changed the type of dataset %s to %s.' % (to_unicode(data.name), params.datatype)
             else:
-                message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % (data.extension, params.datatype)
-                error = True
-        elif params.detect:
+                message = 'You are unable to change datatypes in this manner. Changing %s to %s is not allowed.' % (data.extension, params.datatype)
+                status = 'danger'
+        elif operation == 'detect':
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
             # prevent modifying metadata when dataset is queued or running as input/output
             if not __ok_to_edit_metadata(data.id):
-                message = "This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them."
-                error = True
+                message = 'This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them.'
+                status = 'danger'
             else:
                 for name, spec in data.metadata.spec.items():
                     # We need to be careful about the attributes we are resetting
@@ -521,11 +522,11 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 message = 'Attributes have been queued to be updated.'
                 trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data})
                 trans.sa_session.flush()
-        elif params.convert_data:
+        elif operation == 'conversion':
             target_type = kwd.get("target_type", None)
             if target_type:
                 message = data.datatype.convert_dataset(trans, data, target_type)
-        elif params.update_roles_button:
+        elif operation == 'permission':
             if not trans.user:
                 return {
                     status: 'error',

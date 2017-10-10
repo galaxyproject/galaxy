@@ -1,6 +1,5 @@
+/** Dataset edit attributes view */
 define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view' ], function( Utils, Tabs, Ui, Form ) {
-
-    /** Dataset edit attributes view */
     var View = Backbone.View.extend({
         initialize: function() {
             this.setElement( '<div/>' );
@@ -9,7 +8,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             this.render();
         },
 
-        // fetch data for the selected dataset and build forms
+        /** fetch data for the selected dataset and build forms */
         render: function() {
             var self = this;
             $.ajax({
@@ -87,7 +86,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                         tooltip  : 'This will inspect the dataset and attempt to correct the values of fields if they are not accurate.',
                         icon     : 'fa-undo ',
                         title    : 'Auto-detect',
-                        onclick  : function() { self._submit( self, form, response, "auto-detect" ) }
+                        onclick  : function() { self._submit( 'autodetect', form ) }
                     })
                 }
             });
@@ -99,14 +98,14 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             var self = this;
             var form = new Form({
                 title  : 'Convert to new format',
-                inputs : response.datatype_inputs,
+                inputs : response.conversion_inputs,
                 buttons: {
                     'submit' : new Ui.ButtonIcon({
                         cls      : 'btn btn-primary',
                         tooltip  : 'Convert the datatype to a new format.',
                         title    : 'Convert datatype',
                         icon     : 'fa-exchange ',
-                        onclick  : function() { self._submit( self, form, response, "convert" ) }
+                        onclick  : function() { self._submit( 'conversion', form ) }
                     })
                 }
             });
@@ -118,14 +117,14 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             var self = this;
             var form = new Form({
                 title  : 'Change datatype',
-                inputs : response.conversion_inputs,
+                inputs : response.datatype_inputs,
                 buttons: {
                     'submit' : new Ui.ButtonIcon({
                         cls      : 'btn btn-primary',
                         tooltip  : 'Change the datatype to a new type.',
                         title    : 'Change datatype',
                         icon     : 'fa-exchange ',
-                        onclick  : function() { self._submit( self, form, response, "change" ) }
+                        onclick  : function() { self._submit( 'datatype', form ) }
                     })
                 }
             });
@@ -134,8 +133,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
 
         /** permissions template */
         _getPermission: function( response ) {
-            var template = "",
-                self = this;
+            var self = this;
             if( response.can_manage_dataset ) {
                 var form = new Form({
                     title  : 'Manage dataset permissions',
@@ -146,13 +144,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                             tooltip  : 'Save permissions.',
                             title    : 'Save permissions',
                             icon     : 'fa-floppy-o ',
-                            onclick  : function() { self._submit( self, form, response, "permissions" ) }
+                            onclick  : function() { self._submit( 'permission', form ) }
                         })
                     }
                 });
                 return form.$el;
-            }
-            else {
+            } else {
                 var form = new Form({
                     title  : 'View permissions',
                     inputs : response.permission_inputs
