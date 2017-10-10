@@ -337,46 +337,29 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             }]
             # permissions
             permission_inputs = list()
-            if can_manage_dataset:
-                permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-                saved_role_ids = {}
-                for action, roles in trans.app.security_agent.get_permissions(data.dataset).items():
-                    for role in roles:
-                        saved_role_ids[action.action] = trans.security.encode_id(role.id)
-                for index, action in permitted_actions:
-                    if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
-                        help_text = action.description + '<br/>NOTE: Users must have every role associated with this dataset in order to access it.'
-                    else:
-                        help_text = action.description
-                    permission_inputs.append({
-                        'type'      : 'select',
-                        'multiple'  : True,
-                        'optional'  : True,
-                        'name'      : index,
-                        'label'     : action.action,
-                        'help'      : help_text,
-                        'options'   : all_roles,
-                        'value'     : saved_role_ids[action.action] if action.action in saved_role_ids else []
-                    })
-            elif trans.user:
+            if trans.user:
                 if data.dataset.actions:
+                    permitted_actions = trans.app.model.Dataset.permitted_actions.items()
+                    saved_role_ids = {}
                     for action, roles in trans.app.security_agent.get_permissions(data.dataset).items():
-                        if roles:
-                            role_inputs = list()
-                            for role in roles:
-                                role_inputs.append({
-                                    'name'      : role.name + action.action,
-                                    'type'      : 'text',
-                                    'label'     : action.description,
-                                    'value'     : role.name,
-                                    'readonly'  : True
-                                })
-                            permission_inputs.append( {
-                                'name'  : action.action,
-                                'label' : action.action,
-                                'type'  : 'section',
-                                'inputs': role_inputs
-                            })
+                        for role in roles:
+                            saved_role_ids[action.action] = trans.security.encode_id(role.id)
+                    for index, action in permitted_actions:
+                        if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
+                            help_text = action.description + '<br/>NOTE: Users must have every role associated with this dataset in order to access it.'
+                        else:
+                            help_text = action.description
+                        permission_inputs.append({
+                            'type'      : 'select',
+                            'multiple'  : True,
+                            'optional'  : True,
+                            'name'      : index,
+                            'label'     : action.action,
+                            'help'      : help_text,
+                            'options'   : all_roles,
+                            'value'     : saved_role_ids[action.action] if action.action in saved_role_ids else [],
+                            'readonly'  : can_manage_dataset
+                        })
                 else:
                     permission_inputs.append({
                         'name'      : 'access_public',
@@ -399,7 +382,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 'message'           : message,
                 'status'            : status,
                 'dataset_id'        : dataset_id,
-                'can_manage_dataset': can_manage_dataset,
                 'attribute_inputs'  : attribute_inputs,
                 'conversion_inputs' : conversion_inputs,
                 'datatype_inputs'   : datatype_inputs,
