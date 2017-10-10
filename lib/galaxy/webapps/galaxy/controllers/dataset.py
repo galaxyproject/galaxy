@@ -358,22 +358,20 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             'help'      : help_text,
                             'options'   : all_roles,
                             'value'     : saved_role_ids[action.action] if action.action in saved_role_ids else [],
-                            'readonly'  : can_manage_dataset
+                            'readonly'  : not can_manage_dataset
                         })
                 else:
                     permission_inputs.append({
                         'name'      : 'access_public',
-                        'type'      : 'text',
-                        'label'     : 'Public access',
-                        'value'     : 'This dataset is accessible by everyone (it is public).',
+                        'type'      : 'hidden',
+                        'label'     : 'This dataset is accessible by everyone (it is public).',
                         'readonly'  : True
                     })
             else:
                 permission_inputs.append({
                     'name'      : 'no_access',
-                    'type'      : 'text',
-                    'label'     : 'No access',
-                    'value'     : 'Permissions not available (not logged in).',
+                    'type'      : 'hidden',
+                    'label'     : 'Permissions not available (not logged in).',
                     'readonly'  : True
                 })
 
