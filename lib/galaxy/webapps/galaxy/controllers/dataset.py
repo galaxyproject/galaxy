@@ -439,9 +439,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             if __ok_to_edit_metadata(data.id):
                 # The following for loop will save all metadata_spec items
                 for name, spec in data.datatype.metadata_spec.items():
-                    if spec.get('readonly'):
-                        continue
-                    setattr(data.metadata, name, spec.unwrap(data.name))
+                    if not spec.get('readonly'):
+                        setattr(data.metadata, name, spec.unwrap(data.name))
                 data.datatype.after_setting_metadata(data)
                 # Sanitize annotation before adding it.
                 if payload.get('annotation'):
@@ -523,15 +522,12 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data})
                 trans.sa_session.flush()
         elif operation == 'conversion':
-            target_type = kwd.get("target_type", None)
+            target_type = payload.get('target_type')
             if target_type:
                 message = data.datatype.convert_dataset(trans, data, target_type)
         elif operation == 'permission':
             if not trans.user:
-                return {
-                    status: 'error',
-                    message: "You must be logged in if you want to change permissions."
-                }
+                return self.message_exception(trans, 'You must be logged in if you want to change permissions.')
             if trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset):
                 permitted_actions = trans.app.model.Dataset.permitted_actions.items()
                 payload_permissions = json.loads(params.permissions)
@@ -554,7 +550,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 trans.sa_session.refresh(data.dataset)
             else:
                 message = "You are not authorized to change this dataset's permissions."
-                error = True
+                status = 'error'
         else:
             if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
                 # Copy dbkey into metadata, for backwards compatability
