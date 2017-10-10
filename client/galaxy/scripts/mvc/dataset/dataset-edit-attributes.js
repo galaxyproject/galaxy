@@ -5,7 +5,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         initialize: function() {
             this.setElement( '<div/>' );
             this.model = new Backbone.Model( { 'dataset_id': Galaxy.params.dataset_id } );
-            this.message = new Ui.Message( { persistent: true } );
+            this.message = new Ui.Message();
             this.render();
         },
 
@@ -15,131 +15,94 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             $.ajax({
                 url     : Galaxy.root + 'dataset/get_edit?dataset_id=' + self.model.get( 'dataset_id' ),
                 success : function( response ) {
-                   self._renderPage( self, response );
+                    self._render( self, response );
                 },
                 error   : function( response ) {
-                    var err_msg = response.responseJSON && response.responseJSON.err_msg;
-                    self.message.update({
-                        'status'    : 'danger',
-                        'message'   : err_msg || 'Error occured while loading the dataset.',
-                        'persistent': true
-                    });
+                    self._error( response );
                 }
             });
         },
 
-        /** Render all the tabs view */
-        _renderPage: function( self, response ) {
+        /** render page */
+        _render: function( self, response ) {
             this.$el.empty()
+                    .append( $( '<h4/>' ).append( 'Edit attributes of \'' + response.display_name + '\'' ) )
                     .append( this.message.$el )
-                    .append( this._getAttributesFormTemplate( response ) )
-                    .append( this._getConvertFormTemplate( response ) )
-                    .append( this._getChangeDataTypeFormTemplate( response ) )
-                    .append( this._getPermissionsFormTemplate( response ) );
+                    .append( this._getAttributes( response ) )
+                    .append( '<p/>' )
+                    .append( this._getConversion( response ) )
+                    .append( '<p/>' )
+                    .append( this._getDatatype( response ) )
+                    .append( '<p/>' )
+                    .append( this._getPermission( response ) );
             this.message.update( response );
         },
 
-        /** Perform AJAX post call */
-        call_ajax: function( self, data, tab_name ) {
-            var post_url = Galaxy.root + 'dataset/set_edit';
+        /** perform AJAX post call */
+        _submit: function( operation, form ) {
+            var self = this;
+            var data = form.data.create();
+            data.dataset_id = this.model.get( 'dataset_id' );
+            data.operation  = operation;
             $.ajax({
-                type: "PUT",
-                url: post_url,
-                data: data,
-                success: function( response ) {
-                    self.reload_history();
+                type    : 'PUT',
+                url     : Galaxy.root + 'dataset/set_edit',
+                data    : data,
+                success : function( response ) {
+                    form.message.update( { message: response.message, status: 'success', persistent: false } );
+                    self._reloadHistory();
                 },
                 error   : function( response ) {
-                    var error_response = {
-                        'status': 'error',
-                        'message': 'Error occured while saving. Please fill all the required fields and try again.',
-                        'persistent': true,
-                        'cls': 'errormessage'
-                    };
-                    self.display_message( error_response, self.$( '.response-message' ) );
+                    form.message.update( response );
                 }
             });
         },
 
-        /** Display actions messages */
-        display_message: function( response, $el ) {
-            $el.empty().html( new Ui.Message( response ).$el );
+        /** error message helper */
+        _error: function( response ) {
+            var err_msg = response.responseJSON && response.responseJSON.err_msg;
+            this.message.update({
+                'status'    : 'danger',
+                'message'   : err_msg || 'Error occured while loading the dataset.',
+                'persistent': true
+            });
         },
 
-        /** Create tabs for different attributes of dataset*/
-        create_tabs: function( response, $el_edit_attr ) {
-            //var self = this;
-            //self.tabs = new Tabs.View();
-            this.$el.append( this._getAttributesFormTemplate( response ) );
-
-/*
-            self.tabs.add({
-                id      : 'convert',
-                title   : 'Convert',
-                icon    : 'fa-gear',
-                tooltip : 'Convert to new format',
-                $el     :  self._getConvertFormTemplate( response )
-            });
-
-            self.tabs.add({
-                id      : 'datatype',
-                title   : 'Datatypes',
-                icon    : 'fa-database',
-                tooltip : 'Change data type',
-                $el     : self._getChangeDataTypeFormTemplate( response )
-            });
-
-            self.tabs.add({
-                id      : 'permissions',
-                title   : 'Permissions',
-                icon    : 'fa-user',
-                tooltip : 'Permissions',
-                $el     : self._getPermissionsFormTemplate( response )
-            });
-            $el_edit_attr.append( self.tabs.$el );
-            self.tabs.showTab( 'attributes' );*/
-        },
-
-        /** Main template */
-        _templateHeader: function() {
-            return '<div class="page-container edit-attr">' +
-                       '<div class="response-message"></div>' +
-                       '<h3>Edit Dataset Attributes</h3>' +
-                   '</div>';
-        },
-
-        /** Attributes tab template */
-        _getAttributesFormTemplate: function( response ) {
+        /** attributes tab template */
+        _getAttributes: function( response ) {
             var self = this;
             var form = new Form({
                 title  : 'Edit attributes',
                 inputs : response.attribute_inputs,
-                operations: {
+                buttons: {
                     'submit_editattr' : new Ui.ButtonIcon({
-                        tooltip       : 'Save attributes of the dataset.',
-                        icon          : 'fa-floppy-o ',
-                        title         : 'Save attributes',
-                        onclick       : function() { self._submit( self, form, response, "edit_attributes" ) }
+                        cls      : 'btn btn-primary',
+                        tooltip  : 'Save attributes of the dataset.',
+                        icon     : 'fa-floppy-o ',
+                        title    : 'Save',
+                        onclick  : function() { self._submit( 'attributes', form ) }
                     }),
                     'submit_autocorrect' : new Ui.ButtonIcon({
-                        tooltip          : 'This will inspect the dataset and attempt to correct the values of fields if they are not accurate.',
-                        icon             : 'fa-undo ',
-                        title            : 'Auto-detect',
-                        onclick          : function() { self._submit( self, form, response, "auto-detect" ) }
+                        cls      : 'btn btn-primary',
+                        tooltip  : 'This will inspect the dataset and attempt to correct the values of fields if they are not accurate.',
+                        icon     : 'fa-undo ',
+                        title    : 'Auto-detect',
+                        onclick  : function() { self._submit( self, form, response, "auto-detect" ) }
                     })
                 }
             });
             return form.$el;
         },
 
-        /** Convert tab template */
-        _getConvertFormTemplate: function( response ) {
+        /** convert tab template */
+        _getConversion: function( response ) {
             var self = this;
             var form = new Form({
                 title  : 'Convert to new format',
                 inputs : response.datatype_inputs,
-                operations: {
-                        'submit' : new Ui.ButtonIcon({
+                buttons: {
+                    'submit' : new Ui.ButtonIcon({
+                        cls      : 'btn btn-primary',
                         tooltip  : 'Convert the datatype to a new format.',
                         title    : 'Convert datatype',
                         icon     : 'fa-exchange ',
@@ -150,14 +113,15 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             return form.$el;
         },
 
-        /** Change datatype template */
-        _getChangeDataTypeFormTemplate: function( response ) {
+        /** change datatype template */
+        _getDatatype: function( response ) {
             var self = this;
             var form = new Form({
                 title  : 'Change datatype',
                 inputs : response.conversion_inputs,
-                operations: {
-                        'submit' : new Ui.ButtonIcon({
+                buttons: {
+                    'submit' : new Ui.ButtonIcon({
+                        cls      : 'btn btn-primary',
                         tooltip  : 'Change the datatype to a new type.',
                         title    : 'Change datatype',
                         icon     : 'fa-exchange ',
@@ -168,16 +132,17 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             return form.$el;
         },
 
-        /** Permissions template */
-        _getPermissionsFormTemplate: function( response ) {
+        /** permissions template */
+        _getPermission: function( response ) {
             var template = "",
                 self = this;
             if( response.can_manage_dataset ) {
                 var form = new Form({
-                    title  : 'Manage dataset permissions on ' + response.display_name,
+                    title  : 'Manage dataset permissions',
                     inputs : response.permission_inputs,
-                    operations: {
+                    buttons: {
                         'submit': new Ui.ButtonIcon({
+                            cls      : 'btn btn-primary',
                             tooltip  : 'Save permissions.',
                             title    : 'Save permissions',
                             icon     : 'fa-floppy-o ',
@@ -196,43 +161,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             }
         },
 
-        /** Submit action */
-        _submit: function( self, form, response, type ) {
-            var form_data = form.data.create();
-            form_data.dataset_id = response.dataset_id;
-            switch( type ) {
-                case "edit_attributes":
-                    form_data.save = 'Save';
-                    break;
-
-                case "auto-detect":
-                    form_data.detect = 'Auto-detect';
-                    break;
-          
-                case "convert":
-                    if ( form_data.target_type !== null && form_data.target_type ) {
-                        form_data.dataset_id = response.dataset_id;
-                        form_data.convert_data = 'Convert';
-                    }
-                    break;
-
-                case "change":
-                    form_data.change = 'Save';
-                    break;
-
-                case "permissions":
-                    var post_data = {};
-                    post_data.permissions = JSON.stringify( form_data );
-                    post_data.update_roles_button = "Save";
-                    post_data.dataset_id = response.dataset_id;
-                    form_data = post_data;
-                    break; 
-            }
-            self.call_ajax( self, form_data );
-        },
-
-        /** Reload Galaxy's history after updating dataset's attributes */
-        reload_history: function() {
+        /** reload Galaxy's history after updating dataset's attributes */
+        _reloadHistory: function() {
             if ( window.Galaxy ) {
                 window.Galaxy.currHistoryPanel.loadCurrentHistory();
             }
