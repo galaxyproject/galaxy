@@ -426,7 +426,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     return False
             return True
         message = None
-        status = None
+        status = 'success'
         dataset_id = payload.get('dataset_id')
         operation = payload.get('operation')
         if dataset_id is not None:
@@ -444,31 +444,31 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 data.datatype.after_setting_metadata(data)
                 # Sanitize annotation before adding it.
                 if payload.get('annotation'):
-                    annotation = sanitize_html(params.annotation, 'utf-8', 'text/html')
+                    annotation = sanitize_html(payload.get('annotation'), 'utf-8', 'text/html')
                     self.add_item_annotation(trans.sa_session, trans.get_user(), data, annotation)
                 # if setting metadata previously failed and all required elements have now been set, clear the failed state.
                 if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
                     data._state = None
                 message = 'Attributes updated. %s' % message if message else 'Attributes updated.'
-                status = 'success'
             else:
                 message = 'Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.'
                 status = 'warning'
             trans.sa_session.flush()
         elif operation == 'datatype':
             # The user clicked the Save button on the 'Change data type' form
-            if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(params.datatype).allow_datatype_change:
+            datatype = payload.get('datatype')
+            if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(datatype).allow_datatype_change:
                 # prevent modifying datatype when dataset is queued or running as input/output
                 if not __ok_to_edit_metadata(data.id):
                     message = 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.'
                     status = 'danger'
                 else:
-                    trans.app.datatypes_registry.change_datatype(data, params.datatype)
+                    trans.app.datatypes_registry.change_datatype(data, datatype)
                     trans.sa_session.flush()
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data}, overwrite=False)  # overwrite is False as per existing behavior
-                    message = 'Changed the type of dataset %s to %s.' % (to_unicode(data.name), params.datatype)
+                    message = 'Changed the type of dataset %s to %s.' % (to_unicode(data.name), datatype)
             else:
-                message = 'You are unable to change datatypes in this manner. Changing %s to %s is not allowed.' % (data.extension, params.datatype)
+                message = 'You are unable to change datatypes in this manner. Changing %s to %s is not allowed.' % (data.extension, datatype)
                 status = 'danger'
         elif operation == 'detect':
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
@@ -494,7 +494,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 return self.message_exception(trans, 'You must be logged in if you want to change permissions.')
             if trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset):
                 permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-                payload_permissions = json.loads(params.permissions)
+                payload_permissions = payload.get('permissions')
                 # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
                 # need to ensure that they did not associate roles that would cause accessibility problems.
                 permissions, in_roles, error, message = \
@@ -507,13 +507,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 else:
                     error = trans.app.security_agent.set_all_dataset_permissions(data.dataset, permissions)
                     if error:
-                        message += error
+                        message = error
                         status = 'error'
                     else:
                         message = 'Your changes completed successfully.'
                 trans.sa_session.refresh(data.dataset)
             else:
-                message = "You are not authorized to change this dataset's permissions."
+                message = 'You are not authorized to change this dataset\'s permissions.'
                 status = 'error'
         else:
             if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
