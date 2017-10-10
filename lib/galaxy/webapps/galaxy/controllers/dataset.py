@@ -278,12 +278,12 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             attribute_inputs = [{
                 'name' : 'name',
                 'type' : 'text',
-                'label': 'Name:',
+                'label': 'Name',
                 'value': data.get_display_name()
             }, {
                 'name' : 'info',
                 'type' : 'text',
-                'label': 'Info:',
+                'label': 'Info',
                 'value': data.info
             }, {
                 'name' : 'annotation',
@@ -326,7 +326,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             conversion_inputs = [{
                 'type'      : 'select',
                 'name'      : 'target_type',
-                'label'     : 'Name:',
+                'label'     : 'Name',
                 'help'      : 'This will create a new dataset with the contents of this dataset converted to a new format.',
                 'options'   : [(convert_name, convert_id) for convert_id, convert_name in converters_collection]
             }]
@@ -334,7 +334,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             datatype_inputs = [{
                 'type'      : 'select',
                 'name'      : 'datatype',
-                'label'     : 'New Type:',
+                'label'     : 'New Type',
                 'options'   : [(ext_name, ext_id) for ext_id, ext_name in ldatatypes],
                 'value'     : [ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext],
                 'help'      : 'This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.',

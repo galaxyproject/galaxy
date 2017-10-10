@@ -48,8 +48,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 url     : Galaxy.root + 'dataset/set_edit',
                 data    : data,
                 success : function( response ) {
-                    form.message.update( { message: response.message, status: 'success', persistent: false } );
                     self._reloadHistory();
+                    form.message.update( response );
                 },
                 error   : function( response ) {
                     form.message.update( response );
