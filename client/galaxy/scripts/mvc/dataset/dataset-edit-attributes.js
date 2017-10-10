@@ -105,17 +105,15 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         _getAttributeForm: function() {
             var self = this;
             var form = new Form({
-                title  : 'Edit attributes',
-                buttons: {
+                title       : 'Edit attributes',
+                operations  : {
                     'submit_editattr' : new Ui.ButtonIcon({
-                        cls      : 'btn btn-primary',
                         tooltip  : 'Save attributes of the dataset.',
                         icon     : 'fa-floppy-o ',
                         title    : 'Save',
                         onclick  : function() { self._submit( 'attributes', form ) }
                     }),
                     'submit_autocorrect' : new Ui.ButtonIcon({
-                        cls      : 'btn btn-primary',
                         tooltip  : 'This will inspect the dataset and attempt to correct the values of fields if they are not accurate.',
                         icon     : 'fa-undo ',
                         title    : 'Auto-detect',
@@ -130,10 +128,9 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         _getConversion: function() {
             var self = this;
             var form = new Form({
-                title  : 'Convert to new format',
-                buttons: {
+                title       : 'Convert to new format',
+                operations  : {
                     'submit' : new Ui.ButtonIcon({
-                        cls      : 'btn btn-primary',
                         tooltip  : 'Convert the datatype to a new format.',
                         title    : 'Convert datatype',
                         icon     : 'fa-exchange ',
@@ -148,10 +145,9 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         _getDatatype: function() {
             var self = this;
             var form = new Form({
-                title  : 'Change datatype',
-                buttons: {
+                title       : 'Change datatype',
+                operations  : {
                     'submit' : new Ui.ButtonIcon({
-                        cls      : 'btn btn-primary',
                         tooltip  : 'Change the datatype to a new type.',
                         title    : 'Change datatype',
                         icon     : 'fa-exchange ',
@@ -166,10 +162,9 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         _getPermission: function() {
             var self = this;
             var form = new Form({
-                title  : 'Manage dataset permissions',
-                buttons: {
+                title       : 'Manage dataset permissions',
+                operations  : {
                     'submit': new Ui.ButtonIcon({
-                        cls      : 'btn btn-primary',
                         tooltip  : 'Save permissions.',
                         title    : 'Save permissions',
                         icon     : 'fa-floppy-o ',
