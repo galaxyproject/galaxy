@@ -3350,12 +3350,12 @@ var CompositeTrack = function(view, container, obj_dict) {
 extend(CompositeTrack.prototype, TiledTrack.prototype, {
     display_modes: CONTINUOUS_DATA_MODES,
 
-    config_params: _.union( Drawable.prototype.config_params, [
+    build_config_params: function(){ return _.union( Drawable.prototype.config_params, [
         { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
         { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
-        { key: 'mode', type: 'string', default_value: 'Auto', hidden: true },
+        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         { key: 'height', type: 'int', default_value: 30, hidden: true }
-    ] ),
+    ] ) },
 
     action_icons_def:
     [
@@ -3551,9 +3551,9 @@ var ReferenceTrack = function (view) {
     this.hide_contents();
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
-    config_params: _.union( Drawable.prototype.config_params, [
+    build_config_params: function() { return _.union( Drawable.prototype.config_params, [
         { key: 'height', type: 'int', default_value: 13, hidden: true }
-    ] ),
+    ] ) },
 
     init: function() {
         this.data_manager.clear();
@@ -3646,13 +3646,13 @@ var LineTrack = function (view, container, obj_dict) {
 extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: CONTINUOUS_DATA_MODES,
 
-    config_params: _.union( Drawable.prototype.config_params, [
+    build_config_params: function() { return _.union( Drawable.prototype.config_params, [
         { key: 'color', label: 'Color', type: 'color' },
         { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
         { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
-        { key: 'mode', type: 'string', default_value: 'Auto', hidden: true },
+        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         { key: 'height', type: 'int', default_value: 30, hidden: true }
-    ] ),
+    ] ) },
 
     config_onchange: function() {
         this.set_name(this.config.get_value('name'));
@@ -3700,14 +3700,14 @@ var DiagonalHeatmapTrack = function (view, container, obj_dict) {
 extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: ["Heatmap"],
 
-    config_params: _.union( Drawable.prototype.config_params, [
+    build_config_params: function(){ return _.union( Drawable.prototype.config_params, [
         { key: 'pos_color', label: 'Positive Color', type: 'color', default_value: "#FF8C00" },
         { key: 'neg_color', label: 'Negative Color', type: 'color', default_value: "#4169E1" },
         { key: 'min_value', label: 'Min Value', type: 'int', default_value: undefined },
         { key: 'max_value', label: 'Max Value', type: 'int', default_value: undefined },
-        { key: 'mode', type: 'string', default_value: 'Auto', hidden: true },
+        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         { key: 'height', type: 'int', default_value: 500, hidden: true }
-    ] ),
+    ] )},
 
     config_onchange: function() {
         this.set_name(this.config.get_value('name'));
@@ -3756,7 +3756,7 @@ var FeatureTrack = function(view, container, obj_dict) {
 extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
 
-    config_params: _.union( Drawable.prototype.config_params, [
+    build_config_params: function(){ return _.union( Drawable.prototype.config_params, [
         { key: 'block_color', label: 'Block color', type: 'color' },
         { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color' },
         { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
@@ -3766,9 +3766,9 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
         { key: 'connector_style', label: 'Connector style', type: 'select', default_value: 'fishbones',
             options: [ { label: 'Line with arrows', value: 'fishbone' }, { label: 'Arcs', value: 'arcs' } ] },
-        { key: 'mode', type: 'string', default_value: 'Auto', hidden: true },
+        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         { key: 'height', type: 'int', default_value: 0, hidden: true}
-    ] ),
+    ] )},
 
     config_onchange: function() {
         this.set_name(this.config.get_value('name'));
@@ -4105,14 +4105,14 @@ var VariantTrack = function(view, container, obj_dict) {
 extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
 
-    config_params: _.union( Drawable.prototype.config_params, [
+    build_config_params: function(){ return _.union( Drawable.prototype.config_params, [
         { key: 'color', label: 'Histogram color', type: 'color' },
         { key: 'show_sample_data', label: 'Show sample data', type: 'bool', default_value: true },
         { key: 'show_labels', label: 'Show summary and sample labels', type: 'bool', default_value: true },
         { key: 'summary_height', label: 'Locus summary height', type: 'float', default_value: 20 },
-        { key: 'mode', type: 'string', default_value: 'Auto', hidden: true },
+        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         { key: 'height', type: 'int', default_value: 0, hidden: true }
-    ] ),
+    ] ) },
 
     config_onchange: function() {
         this.set_name(this.config.get_value('name'));
@@ -4248,7 +4248,7 @@ var ReadTrack = function (view, container, obj_dict) {
 };
 
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
-    config_params: _.union( Drawable.prototype.config_params, [
+    build_config_params: function() { return _.union( Drawable.prototype.config_params, [
         { key: 'block_color', label: 'Histogram color', type: 'color' },
         { key: 'detail_block_color', label: 'Sense strand block color', type: 'color', 'default_value': '#AAAAAA' },
         { key: 'reverse_strand_color', label: 'Antisense strand block color', type: 'color', 'default_value': '#DDDDDD' },
@@ -4256,11 +4256,11 @@ extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTra
         { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
         { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
         { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
-        { key: 'mode', type: 'string', default_value: 'Auto', hidden: true },
+        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
         { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
         { key: 'height', type: 'int', default_value: 0, hidden: true}
-    ] ),
+    ] ) },
 
     config_onchange: function() {
         this.set_name(this.config.get_value('name'));
