@@ -20,7 +20,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             $.ajax({
                 url     : Galaxy.root + 'dataset/get_edit?dataset_id=' + self.model.get( 'dataset_id' ),
                 success : function( response ) {
-                    self.message.update( response );
+                    !self.initial_message && self.message.update( response );
+                    self.initial_message = true;
                     _.each( self.forms, function( form, key ) {
                         form.model.set( 'inputs', response[ key + '_inputs' ] );
                         form.render();
@@ -48,6 +49,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 url     : Galaxy.root + 'dataset/set_edit',
                 data    : data,
                 success : function( response ) {
+                    self.message.update( response );
                     self.render();
                     self._reloadHistory();
                 },
