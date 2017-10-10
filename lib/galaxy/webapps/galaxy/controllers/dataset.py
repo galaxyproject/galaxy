@@ -442,7 +442,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 # The following for loop will save all metadata_spec items
                 for name, spec in data.datatype.metadata_spec.items():
                     if not spec.get('readonly'):
-                        setattr(data.metadata, name, spec.unwrap(data.name))
+                        setattr(data.metadata, name, spec.unwrap(payload.get(name)))
                 data.datatype.after_setting_metadata(data)
                 # Sanitize annotation before adding it.
                 if payload.get('annotation'):
