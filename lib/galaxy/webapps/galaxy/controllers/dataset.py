@@ -270,7 +270,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # the built-in 'id' is overwritten in lots of places as well
             ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change]
             ldatatypes.sort()
-            all_roles = trans.app.security_agent.get_legitimate_roles(trans, data.dataset, 'root')
+            all_roles = [(r.name, trans.security.encode_id(r.id)) for r in trans.app.security_agent.get_legitimate_roles(trans, data.dataset, 'root')]
             data_metadata = [(name, spec) for name, spec in data.metadata.spec.items()]
             converters_collection = [(key, value.name) for key, value in data.get_converter_types().items()]
             can_manage_dataset = trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset)
@@ -342,7 +342,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 saved_role_ids = {}
                 for action, roles in trans.app.security_agent.get_permissions(data.dataset).items():
                     for role in roles:
-                        saved_role_ids[action.action] = role.id
+                        saved_role_ids[action.action] = trans.security.encode_id(role.id)
                 for index, action in permitted_actions:
                     if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
                         help_text = action.description + '<br/>NOTE: Users must have every role associated with this dataset in order to access it.'
@@ -355,7 +355,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         'name'      : index,
                         'label'     : action.action,
                         'help'      : help_text,
-                        'options'   : [(r.name, r.id) for r in all_roles],
+                        'options'   : all_roles,
                         'value'     : saved_role_ids[action.action] if action.action in saved_role_ids else []
                     })
             elif trans.user:
@@ -487,7 +487,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 return self.message_exception(trans, 'You must be logged in if you want to change permissions.')
             if trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset):
                 permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-                payload_permissions = payload.get('permissions')
+                payload_permissions = {}
+                for action, key in permitted_actions:
+                    payload_permissions[action] = [trans.security.decode_id(id) for id in util.listify(payload.get(action))]
                 # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
                 # need to ensure that they did not associate roles that would cause accessibility problems.
                 permissions, in_roles, error, message = \
