@@ -467,7 +467,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     trans.app.datatypes_registry.change_datatype(data, datatype)
                     trans.sa_session.flush()
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data}, overwrite=False)  # overwrite is False as per existing behavior
-                    message = 'Changed the type of dataset %s to %s.' % (to_unicode(data.name), datatype)
+                    message = 'Changed the type to %s.' % datatype
             else:
                 return self.message_exception(trans, 'You are unable to change datatypes in this manner. Changing %s to %s is not allowed.' % (data.extension, datatype))
         elif operation == 'autodetect':

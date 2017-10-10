@@ -17,7 +17,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     self._render( response );
                 },
                 error   : function( response ) {
-                    self._error( response );
+                    var err_msg = response.responseJSON && response.responseJSON.err_msg;
+                    self.message.update({
+                        'status'    : 'danger',
+                        'message'   : err_msg || 'Error occured while loading the dataset.',
+                        'persistent': true
+                    });
                 }
             });
         },
@@ -28,7 +33,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     .append( $( '<h4/>' ).append( 'Edit dataset attributes' ) )
                     .append( this.message.$el )
                     .append( this._createTabs( response ) );
-            this.message.update( response );
         },
 
         /** create tabs for different attributes of dataset*/
@@ -81,18 +85,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     form.message.update( response );
                 },
                 error   : function( response ) {
-                    form.message.update( response );
+                    var err_msg = response.responseJSON && response.responseJSON.err_msg;
+                    form.message.update({
+                        'status'    : 'danger',
+                        'message'   : err_msg || 'Error occured while editing the dataset attributes.'
+                    });
                 }
-            });
-        },
-
-        /** error message helper */
-        _error: function( response ) {
-            var err_msg = response.responseJSON && response.responseJSON.err_msg;
-            this.message.update({
-                'status'    : 'danger',
-                'message'   : err_msg || 'Error occured while loading the dataset.',
-                'persistent': true
             });
         },
 
