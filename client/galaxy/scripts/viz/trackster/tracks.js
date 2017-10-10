@@ -3353,7 +3353,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     config_params: _.union( Drawable.prototype.config_params, [
         { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
         { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
-        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        { key: 'mode', type: 'string', default_value: 'Auto', hidden: true },
         { key: 'height', type: 'int', default_value: 30, hidden: true }
     ] ),
 
@@ -3650,7 +3650,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         { key: 'color', label: 'Color', type: 'color' },
         { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
         { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
-        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        { key: 'mode', type: 'string', default_value: 'Auto', hidden: true },
         { key: 'height', type: 'int', default_value: 30, hidden: true }
     ] ),
 
@@ -3705,7 +3705,7 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
         { key: 'neg_color', label: 'Negative Color', type: 'color', default_value: "#4169E1" },
         { key: 'min_value', label: 'Min Value', type: 'int', default_value: undefined },
         { key: 'max_value', label: 'Max Value', type: 'int', default_value: undefined },
-        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        { key: 'mode', type: 'string', default_value: 'Auto', hidden: true },
         { key: 'height', type: 'int', default_value: 500, hidden: true }
     ] ),
 
@@ -3766,7 +3766,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
         { key: 'connector_style', label: 'Connector style', type: 'select', default_value: 'fishbones',
             options: [ { label: 'Line with arrows', value: 'fishbone' }, { label: 'Arcs', value: 'arcs' } ] },
-        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        { key: 'mode', type: 'string', default_value: 'Auto', hidden: true },
         { key: 'height', type: 'int', default_value: 0, hidden: true}
     ] ),
 
@@ -4110,7 +4110,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         { key: 'show_sample_data', label: 'Show sample data', type: 'bool', default_value: true },
         { key: 'show_labels', label: 'Show summary and sample labels', type: 'bool', default_value: true },
         { key: 'summary_height', label: 'Locus summary height', type: 'float', default_value: 20 },
-        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        { key: 'mode', type: 'string', default_value: 'Auto', hidden: true },
         { key: 'height', type: 'int', default_value: 0, hidden: true }
     ] ),
 
@@ -4256,7 +4256,7 @@ extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTra
         { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
         { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
         { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
-        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        { key: 'mode', type: 'string', default_value: 'Auto', hidden: true },
         { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
         { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
         { key: 'height', type: 'int', default_value: 0, hidden: true}
