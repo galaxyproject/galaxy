@@ -9,7 +9,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             this.$el.append( $( '<h4/>' ).append( 'Edit dataset attributes' ) )
                     .append( this.message.$el )
                     .append( '<p/>' )
-                    .append( this.tabs.$el );
+                    .append( this.tabs.$el )
+                    .hide();
             this.render();
         },
 
@@ -19,7 +20,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             $.ajax({
                 url     : Galaxy.root + 'dataset/get_edit?dataset_id=' + self.model.get( 'dataset_id' ),
                 success : function( response ) {
-                    self._render( response );
+                    self.message.update( response );
+                    _.each( self.forms, function( form, key ) {
+                        form.model.set( 'inputs', response[ key + '_inputs' ] );
+                        form.render();
+                    });
+                    self.$el.show();
                 },
                 error   : function( response ) {
                     var err_msg = response.responseJSON && response.responseJSON.err_msg;
@@ -29,19 +35,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     });
                 }
             });
-        },
-
-        /** render page */
-        _render: function( response ) {
-            this.message.update( response );
-            this.attribute_form.model.set( 'inputs', response.attribute_inputs );
-            this.conversion_form.model.set( 'inputs', response.conversion_inputs );
-            this.datatype_form.model.set( 'inputs', response.datatype_inputs );
-            this.permission_form.model.set( 'inputs', response.permission_inputs );
-            this.attribute_form.render();
-            this.conversion_form.render();
-            this.datatype_form.render();
-            this.permission_form.render();
         },
 
         /** submit data to backend to update attributes */
@@ -70,39 +63,40 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
 
         /** create tabs for different dataset attribute categories*/
         _createTabs: function() {
-            var self = this;
+            this.forms = {
+                attribute   : this._getAttributeForm(),
+                conversion  : this._getConversion(),
+                datatype    : this._getDatatype(),
+                permission  : this._getPermission()
+            }
             var tabs = new Tabs.View();
-            this.attribute_form = this._getAttributeForm();
-            this.conversion_form = this._getConversion();
-            this.datatype_form = this._getDatatype();
-            this.permission_form = this._getPermission();
             tabs.add({
-                id      : 'attributes',
+                id      : 'attribute',
                 title   : 'Attributes',
                 icon    : 'fa fa-bars',
                 tooltip : 'Edit dataset attributes',
-                $el     : this.attribute_form.$el
+                $el     : this.forms.attribute.$el
             });
             tabs.add({
                 id      : 'convert',
                 title   : 'Convert',
                 icon    : 'fa-gear',
                 tooltip : 'Convert to new format',
-                $el     :  this.conversion_form.$el
+                $el     :  this.forms.conversion.$el
             });
             tabs.add({
                 id      : 'datatype',
                 title   : 'Datatypes',
                 icon    : 'fa-database',
                 tooltip : 'Change data type',
-                $el     : this.datatype_form.$el
+                $el     : this.forms.datatype.$el
             });
             tabs.add({
                 id      : 'permissions',
                 title   : 'Permissions',
                 icon    : 'fa-user',
                 tooltip : 'Permissions',
-                $el     : this.permission_form.$el
+                $el     : this.forms.permission.$el
             });
             return tabs;
         },
