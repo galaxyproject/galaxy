@@ -283,11 +283,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             }, {
                 'name' : 'info',
                 'type' : 'text',
+                'area' : True,
                 'label': 'Info',
                 'value': data.info
             }, {
                 'name' : 'annotation',
                 'type' : 'text',
+                'area' : True,
                 'label': 'Annotation',
                 'value': self.get_item_annotation_str(trans.sa_session, trans.user, data),
                 'help' : 'Add an annotation or notes to a dataset; annotations are available when a history is viewed.'

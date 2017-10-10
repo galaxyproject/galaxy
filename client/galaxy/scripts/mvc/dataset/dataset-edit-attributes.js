@@ -14,7 +14,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             $.ajax({
                 url     : Galaxy.root + 'dataset/get_edit?dataset_id=' + self.model.get( 'dataset_id' ),
                 success : function( response ) {
-                    self._render( self, response );
+                    self._render( response );
                 },
                 error   : function( response ) {
                     self._error( response );
@@ -23,18 +23,47 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         },
 
         /** render page */
-        _render: function( self, response ) {
+        _render: function( response ) {
             this.$el.empty()
-                    .append( $( '<h4/>' ).append( 'Edit attributes of \'' + response.display_name + '\'' ) )
+                    .append( $( '<h4/>' ).append( 'Edit dataset attributes' ) )
                     .append( this.message.$el )
-                    .append( this._getAttributes( response ) )
-                    .append( '<p/>' )
-                    .append( this._getConversion( response ) )
-                    .append( '<p/>' )
-                    .append( this._getDatatype( response ) )
-                    .append( '<p/>' )
-                    .append( this._getPermission( response ) );
+                    .append( this._createTabs( response ) );
             this.message.update( response );
+        },
+
+        /** create tabs for different attributes of dataset*/
+        _createTabs: function( response ) {
+            var self = this;
+            var tabs = new Tabs.View();
+            tabs.add({
+                id      : 'attributes',
+                title   : 'Attributes',
+                icon    : 'fa fa-bars',
+                tooltip : 'Edit dataset attributes',
+                $el     : self._getAttributes( response )
+            });
+            tabs.add({
+                id      : 'convert',
+                title   : 'Convert',
+                icon    : 'fa-gear',
+                tooltip : 'Convert to new format',
+                $el     :  self._getConversion( response )
+            });
+            tabs.add({
+                id      : 'datatype',
+                title   : 'Datatypes',
+                icon    : 'fa-database',
+                tooltip : 'Change data type',
+                $el     : self._getDatatype( response )
+            });
+            tabs.add({
+                id      : 'permissions',
+                title   : 'Permissions',
+                icon    : 'fa-user',
+                tooltip : 'Permissions',
+                $el     : self._getPermission( response )
+            });
+            return tabs.$el;
         },
 
         /** perform AJAX post call */
