@@ -168,6 +168,8 @@ class BaseDatasetPopulator(object):
             'dbkey': dbkey,
             'file_type': file_type,
         }
+        if dbkey is None:
+            del upload_params["dbkey"]
         if content is None:
             upload_params["files_0|ftp_files"] = kwds.get("ftp_files")
         elif hasattr(content, 'read'):
