@@ -582,7 +582,6 @@ class Oligos(Text):
 
 class Frequency(Tabular):
     file_ext = 'mothur.freq'
-    max_snif_lines = 25
 
     def __init__(self, **kwd):
         """A list of names"""
@@ -634,9 +633,6 @@ class Frequency(Tabular):
                     except Exception:
                         return False
                 count += 1
-
-            if count > self.max_snif_lines:
-                return True
 
         if count > 1:
             return True
