@@ -28,6 +28,7 @@ var paths = {
         'raven-js': ['dist/raven.js', 'raven.js'],
         'requirejs': [ 'require.js', 'require.js' ],
         'underscore': [ 'underscore.js', 'underscore.js' ],
+        'jquery-mousewheel': [ 'jquery.mousewheel.js', 'jquery/jquery.mousewheel.js' ]
     },
     libs: ['galaxy/scripts/libs/**/*.js']
 };

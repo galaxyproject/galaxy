@@ -18,7 +18,6 @@
     "jStorage": "~0.4.12",
     "jquery.cookie": "~1.4.1",
     "dynatree": "~1.2.5",
-    "jquery-mousewheel": "~3.1.12",
     "wymeditor": "~1.0.0-rc.1",
     "jstree": "~3.0.9",
     "jquery-ui": "git://github.com/jquery/jquery-ui.git#~1.11.2",

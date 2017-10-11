@@ -21,7 +21,6 @@ module.exports = function( grunt ){
             //'jStorage': [ 'jstorage.js', 'jquery/jstorage.js' ],
             //'jquery.cookie': [ '', 'jquery/jquery.cookie.js' ],
             //'dynatree': [ 'dist/jquery.dynatree.js', 'jquery/jquery.dynatree.js' ],
-            //'jquery-mousewheel': [ 'jquery.mousewheel.js', 'jquery/jquery.mousewheel.js' ],
             //'jquery.event.drag-drop': [
             //  [ 'event.drag/jquery.event.drag.js', 'jquery/jquery.event.drag.js' ],
             //  [ 'event.drag/jquery.event.drop.js', 'jquery/jquery.event.drop.js' ]
