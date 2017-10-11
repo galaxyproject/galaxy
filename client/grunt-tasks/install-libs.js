@@ -19,7 +19,6 @@ module.exports = function( grunt ){
             //'jquery-autocomplete': [ 'src/jquery.autocomplete.js', 'jquery/jquery.autocomplete.js' ],
             //'select2': [ 'select2.js', 'jquery/select2.js' ],
             //'jStorage': [ 'jstorage.js', 'jquery/jstorage.js' ],
-            //'jquery.cookie': [ '', 'jquery/jquery.cookie.js' ],
             //'dynatree': [ 'dist/jquery.dynatree.js', 'jquery/jquery.dynatree.js' ],
             //'jquery.event.drag-drop': [
             //  [ 'event.drag/jquery.event.drag.js', 'jquery/jquery.event.drag.js' ],

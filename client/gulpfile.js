@@ -24,11 +24,12 @@ var paths = {
         'd3': [ 'd3.js', 'd3.js' ],
         'bib2json': [ 'Parser.js', 'bibtex.js' ],
         'jquery': ['dist/jquery.js', 'jquery/jquery.js'],
+        'jquery.cookie': [ 'jquery.cookie.js', 'jquery/jquery.cookie.js' ],
         'jquery-migrate': [ 'dist/jquery-migrate.js', 'jquery/jquery.migrate.js' ],
+        'jquery-mousewheel': [ 'jquery.mousewheel.js', 'jquery/jquery.mousewheel.js' ],
         'raven-js': ['dist/raven.js', 'raven.js'],
         'requirejs': [ 'require.js', 'require.js' ],
         'underscore': [ 'underscore.js', 'underscore.js' ],
-        'jquery-mousewheel': [ 'jquery.mousewheel.js', 'jquery/jquery.mousewheel.js' ]
     },
     libs: ['galaxy/scripts/libs/**/*.js']
 };
