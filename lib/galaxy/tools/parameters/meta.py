@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import copy
 import itertools
 import logging
@@ -15,20 +17,20 @@ log = logging.getLogger(__name__)
 def expand_workflow_inputs(inputs):
     """
     Expands incoming encoded multiple payloads, into the set of all individual payload combinations
-    >>> params, param_keys = expand_workflow_inputs( {'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}} )
-    >>> print [ "%s" % ( p[ '1' ][ 'input' ][ 'hid' ] ) for p in params ]
+    >>> params, param_keys = expand_workflow_inputs({'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}})
+    >>> print(["%s" % (p['1']['input']['hid']) for p in params])
     ['1', '2']
-    >>> params, param_keys = expand_workflow_inputs( {'1': {'input': {'batch': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}} )
-    >>> print [ "%s" % ( p[ '1' ][ 'input' ][ 'hid' ] ) for p in params ]
+    >>> params, param_keys = expand_workflow_inputs({'1': {'input': {'batch': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}})
+    >>> print(["%s" % (p['1']['input']['hid']) for p in params])
     ['1', '2']
-    >>> params, param_keys = expand_workflow_inputs( {'1': {'input': {'batch': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'values': [{'hid': '3'}, {'hid': '4'}] }}} )
-    >>> print [ "%s%s" % ( p[ '1' ][ 'input' ][ 'hid' ], p[ '2' ][ 'input' ][ 'hid' ] ) for p in params ]
+    >>> params, param_keys = expand_workflow_inputs({'1': {'input': {'batch': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'values': [{'hid': '3'}, {'hid': '4'}] }}})
+    >>> print(["%s%s" % (p['1']['input']['hid'], p['2']['input']['hid']) for p in params])
     ['13', '24']
-    >>> params, param_keys = expand_workflow_inputs( {'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'values': [{'hid': '3'}, {'hid': '4'}, {'hid': '5'}] }}} )
-    >>> print [ "%s%s" % ( p[ '1' ][ 'input' ][ 'hid' ], p[ '2' ][ 'input' ][ 'hid' ] ) for p in params ]
+    >>> params, param_keys = expand_workflow_inputs({'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'values': [{'hid': '3'}, {'hid': '4'}, {'hid': '5'}] }}})
+    >>> print(["%s%s" % (p['1']['input']['hid'], p['2']['input']['hid']) for p in params])
     ['13', '23', '14', '24', '15', '25']
-    >>> params, param_keys = expand_workflow_inputs( {'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'product': True, 'values': [{'hid': '3'}, {'hid': '4'}, {'hid': '5'}] }}, '3': {'input': {'batch': True, 'product': True, 'values': [{'hid': '6'}, {'hid': '7'}, {'hid': '8'}] }}} )
-    >>> print [ "%s%s%s" % ( p[ '1' ][ 'input' ][ 'hid' ], p[ '2' ][ 'input' ][ 'hid' ], p[ '3' ][ 'input' ][ 'hid' ] ) for p in params ]
+    >>> params, param_keys = expand_workflow_inputs({'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'product': True, 'values': [{'hid': '3'}, {'hid': '4'}, {'hid': '5'}] }}, '3': {'input': {'batch': True, 'product': True, 'values': [{'hid': '6'}, {'hid': '7'}, {'hid': '8'}] }}})
+    >>> print(["%s%s%s" % (p['1']['input']['hid'], p['2']['input']['hid'], p['3']['input']['hid']) for p in params])
     ['136', '137', '138', '146', '147', '148', '156', '157', '158', '236', '237', '238', '246', '247', '248', '256', '257', '258']
     """
     linked_n = None
