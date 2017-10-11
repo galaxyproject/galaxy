@@ -1,7 +1,6 @@
 import logging
 import os
 import urllib
-import json
 
 from markupsafe import escape
 import paste.httpexceptions
@@ -315,9 +314,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             'value'     : attributes.value,
                             'readonly'  : spec.get('readonly')
                         })
-            #if data.missing_meta():
-            message = 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.'
-            status = 'warning'
+            if data.missing_meta():
+                message = 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.'
+                status = 'warning'
             # datatype conversion
             conversion_options = [(convert_name, convert_id) for convert_id, convert_name in converters_collection]
             conversion_disable = len(conversion_options) == 0
@@ -501,7 +500,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 return self.message_exception(trans, 'You are not authorized to change this dataset\'s permissions.')
         else:
             return self.message_exception(trans, 'Invalid operation identifier (%s).' % operation)
-        return { 'status': status, 'message': util.sanitize_text(message) }
+        return {'status': status, 'message': sanitize_text(message)}
 
     @web.expose
     @web.json
