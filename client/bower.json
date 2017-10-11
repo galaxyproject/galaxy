@@ -23,8 +23,7 @@
     "jstree": "~3.0.9",
     "jquery-ui": "git://github.com/jquery/jquery-ui.git#~1.11.2",
     "jquery.complexify": "git://github.com/danpalmer/jquery.complexify.js.git#~0.5.1",
-     "threedubmedia.jquery.event": "*",
-    "jquery-migrate": "~1.4"
+     "threedubmedia.jquery.event": "*"
   },
   "resolutions": {
     "jquery": "~1.12"
