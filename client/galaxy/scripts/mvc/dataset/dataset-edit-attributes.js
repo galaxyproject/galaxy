@@ -67,7 +67,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         /** create tabs for different dataset attribute categories*/
         _createTabs: function() {
             this.forms = {
-                attribute   : this._getAttributeForm(),
+                attribute   : this._getAttribute(),
                 conversion  : this._getConversion(),
                 datatype    : this._getDatatype(),
                 permission  : this._getPermission()
@@ -105,20 +105,20 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         },
 
         /** edit main attributes form */
-        _getAttributeForm: function() {
+        _getAttribute: function() {
             var self = this;
             var form = new Form({
                 title       : 'Edit attributes',
                 operations  : {
-                    'submit_editattr' : new Ui.ButtonIcon({
+                    'submit_attributes' : new Ui.ButtonIcon({
                         tooltip  : 'Save attributes of the dataset.',
-                        icon     : 'fa-floppy-o ',
+                        icon     : 'fa-floppy-o',
                         title    : 'Save',
                         onclick  : function() { self._submit( 'attributes', form ) }
                     }),
-                    'submit_autocorrect' : new Ui.ButtonIcon({
+                    'submit_autodetect' : new Ui.ButtonIcon({
                         tooltip  : 'This will inspect the dataset and attempt to correct the values of fields if they are not accurate.',
-                        icon     : 'fa-undo ',
+                        icon     : 'fa-undo',
                         title    : 'Auto-detect',
                         onclick  : function() { self._submit( 'autodetect', form ) }
                     })
@@ -133,10 +133,10 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             var form = new Form({
                 title       : 'Convert to new format',
                 operations  : {
-                    'submit' : new Ui.ButtonIcon({
+                    'submit_conversion' : new Ui.ButtonIcon({
                         tooltip  : 'Convert the datatype to a new format.',
                         title    : 'Convert datatype',
-                        icon     : 'fa-exchange ',
+                        icon     : 'fa-exchange',
                         onclick  : function() { self._submit( 'conversion', form ) }
                     })
                 }
@@ -150,10 +150,10 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             var form = new Form({
                 title       : 'Change datatype',
                 operations  : {
-                    'submit' : new Ui.ButtonIcon({
+                    'submit_datatype' : new Ui.ButtonIcon({
                         tooltip  : 'Change the datatype to a new type.',
                         title    : 'Change datatype',
-                        icon     : 'fa-exchange ',
+                        icon     : 'fa-exchange',
                         onclick  : function() { self._submit( 'datatype', form ) }
                     })
                 }
@@ -167,7 +167,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             var form = new Form({
                 title       : 'Manage dataset permissions',
                 operations  : {
-                    'submit': new Ui.ButtonIcon({
+                    'submit_permission': new Ui.ButtonIcon({
                         tooltip  : 'Save permissions.',
                         title    : 'Save permissions',
                         icon     : 'fa-floppy-o ',
