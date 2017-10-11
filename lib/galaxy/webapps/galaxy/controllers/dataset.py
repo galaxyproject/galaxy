@@ -345,10 +345,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             if trans.user:
                 if data.dataset.actions:
                     permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-                    saved_role_ids = {}
+                    in_roles = {}
                     for action, roles in trans.app.security_agent.get_permissions(data.dataset).items():
-                        for role in roles:
-                            saved_role_ids[action.action] = trans.security.encode_id(role.id)
+                        in_roles[action.action] = [trans.security.encode_id(role.id) for role in roles]
                     for index, action in permitted_actions:
                         if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
                             help_text = action.description + '<br/>NOTE: Users must have every role associated with this dataset in order to access it.'
@@ -362,7 +361,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             'label'     : action.action,
                             'help'      : help_text,
                             'options'   : all_roles,
-                            'value'     : saved_role_ids[action.action] if action.action in saved_role_ids else [],
+                            'value'     : in_roles.get(action.action),
                             'readonly'  : not can_manage_dataset
                         })
                     permission_disable = not can_manage_dataset
