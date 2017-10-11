@@ -489,14 +489,15 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
                     access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
                     permissions[access_action] = data.dataset.get_access_roles(trans)
+                    trans.sa_session.refresh(data.dataset)
                     return self.message_exception(trans, message)
                 else:
                     error = trans.app.security_agent.set_all_dataset_permissions(data.dataset, permissions)
+                    trans.sa_session.refresh(data.dataset)
                     if error:
                         return self.message_exception(trans, error)
                     else:
                         message = 'Your changes completed successfully.'
-                trans.sa_session.refresh(data.dataset)
             else:
                 return self.message_exception(trans, 'You are not authorized to change this dataset\'s permissions.')
         else:
