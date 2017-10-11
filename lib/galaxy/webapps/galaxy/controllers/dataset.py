@@ -365,7 +365,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             'value'     : saved_role_ids[action.action] if action.action in saved_role_ids else [],
                             'readonly'  : not can_manage_dataset
                         })
-                    permission_disable = False
+                    permission_disable = not can_manage_dataset
                 else:
                     permission_inputs.append({
                         'name'      : 'access_public',

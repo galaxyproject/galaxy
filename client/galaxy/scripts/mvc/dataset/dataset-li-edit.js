@@ -307,7 +307,7 @@ var DatasetListItemEdit = _super.extend(
         &&  !this.model.isDeletedOrPurged() ){
             var editableDbkey = $( '<a class="value">?</a>' )
                 .attr( 'href', this.model.urls.edit )
-                .attr( 'target', this.linkTarget );
+                .attr( 'target', 'top' );
             $details.find( '.dbkey .value' ).replaceWith( editableDbkey );
         }
     },
@@ -359,7 +359,7 @@ DatasetListItemEdit.prototype.templates = (function(){
             '<% if( dataset.state === "failed_metadata" ){ %>',
                 '<div class="failed_metadata-warning warningmessagesmall">',
                     _l( 'An error occurred setting the metadata for this dataset' ),
-                    '<br /><a href="<%- dataset.urls.edit %>" target="<%- view.linkTarget %>">',
+                    '<br /><a href="<%- dataset.urls.edit %>" target="top">',
                         _l( 'Set it manually or retry auto-detection' ),
                     '</a>',
                 '</div>',
