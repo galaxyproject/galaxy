@@ -18,6 +18,7 @@
     "jquery": "2",
     "jquery-migrate": "~1.4",
     "jquery-mousewheel": "^3.1.13",
+    "jquery.complexify": "^0.5.2",
     "jquery.cookie": "^1.4.1",
     "raven-js": "^3.17.0",
     "requirejs": "2",

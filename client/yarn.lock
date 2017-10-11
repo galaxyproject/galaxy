@@ -2756,6 +2756,10 @@ jquery-mousewheel@^3.1.13:
   version "3.1.13"
   resolved "https://registry.yarnpkg.com/jquery-mousewheel/-/jquery-mousewheel-3.1.13.tgz#06f0335f16e353a695e7206bf50503cb523a6ee5"
 
+jquery.complexify@^0.5.2:
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/jquery.complexify/-/jquery.complexify-0.5.2.tgz#8c8834ca08cee9476f1d975128d49526adcc4ae9"
+
 jquery.cookie@^1.4.1:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/jquery.cookie/-/jquery.cookie-1.4.1.tgz#d63dce209eab691fe63316db08ca9e47e0f9385b"
