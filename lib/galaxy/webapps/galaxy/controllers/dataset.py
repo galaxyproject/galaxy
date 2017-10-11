@@ -13,7 +13,7 @@ from galaxy import managers
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
-from galaxy.util import inflector, smart_str
+from galaxy.util import inflector, smart_str, sanitize_text
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
@@ -501,7 +501,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 return self.message_exception(trans, 'You are not authorized to change this dataset\'s permissions.')
         else:
             return self.message_exception(trans, 'Invalid operation identifier (%s).' % operation)
-        return { 'status': status, 'message': message }
+        return { 'status': status, 'message': util.sanitize_text(message) }
 
     @web.expose
     @web.json
