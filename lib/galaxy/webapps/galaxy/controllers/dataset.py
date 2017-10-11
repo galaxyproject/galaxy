@@ -16,7 +16,7 @@ from galaxy.util import inflector, smart_str, sanitize_text
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
-from galaxy.web.framework.helpers import grids, iff, time_ago, to_unicode
+from galaxy.web.framework.helpers import grids, iff, time_ago
 
 log = logging.getLogger(__name__)
 
@@ -478,7 +478,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 permitted_actions = trans.app.model.Dataset.permitted_actions.items()
                 payload_permissions = {}
                 for action, key in permitted_actions:
-                    payload_permissions[action] = [trans.security.decode_id(id) for id in util.listify(payload.get(action))]
+                    payload_permissions[action] = [trans.security.decode_id(role_id) for role_id in util.listify(payload.get(action))]
                 # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
                 # need to ensure that they did not associate roles that would cause accessibility problems.
                 permissions, in_roles, error, message = \
