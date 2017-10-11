@@ -36,7 +36,8 @@
     "gulp": "gulp",
     "build-toolshed": "grunt --app=toolshed",
     "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js",
-    "build-charts": "webpack -p --config ../config/plugins/visualizations/charts/webpack.config.js"
+    "build-charts": "webpack -p --config ../config/plugins/visualizations/charts/webpack.config.js",
+    "prettier": "prettier --write --format flow galaxy/scripts/**/*.js"
   },
   "devDependencies": {
     "babel-core": "^6.24.0",
