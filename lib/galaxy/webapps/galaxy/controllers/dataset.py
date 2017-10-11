@@ -319,23 +319,28 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             message = 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.'
             status = 'warning'
             # datatype conversion
+            conversion_options = [(convert_name, convert_id) for convert_id, convert_name in converters_collection]
+            conversion_disable = len(conversion_options) == 0
             conversion_inputs = [{
                 'type'      : 'select',
                 'name'      : 'target_type',
                 'label'     : 'Name',
                 'help'      : 'This will create a new dataset with the contents of this dataset converted to a new format.',
-                'options'   : [(convert_name, convert_id) for convert_id, convert_name in converters_collection]
+                'options'   : conversion_options
             }]
             # datatype changeing
+            datatype_options = [ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext]
+            datatype_disable = len(datatype_options) == 0
             datatype_inputs = [{
                 'type'      : 'select',
                 'name'      : 'datatype',
                 'label'     : 'New Type',
                 'options'   : [(ext_name, ext_id) for ext_id, ext_name in ldatatypes],
-                'value'     : [ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext],
+                'value'     : datatype_options,
                 'help'      : 'This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.',
             }]
             # permissions
+            permission_disable = True
             permission_inputs = list()
             if trans.user:
                 if data.dataset.actions:
@@ -360,6 +365,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             'value'     : saved_role_ids[action.action] if action.action in saved_role_ids else [],
                             'readonly'  : not can_manage_dataset
                         })
+                    permission_disable = False
                 else:
                     permission_inputs.append({
                         'name'      : 'access_public',
@@ -374,7 +380,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     'label'     : 'Permissions not available (not logged in).',
                     'readonly'  : True
                 })
-
             return {
                 'display_name'      : data.get_display_name(),
                 'message'           : message,
@@ -382,8 +387,11 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 'dataset_id'        : dataset_id,
                 'attribute_inputs'  : attribute_inputs,
                 'conversion_inputs' : conversion_inputs,
+                'conversion_disable': conversion_disable,
                 'datatype_inputs'   : datatype_inputs,
-                'permission_inputs' : permission_inputs
+                'datatype_disable'  : datatype_disable,
+                'permission_inputs' : permission_inputs,
+                'permission_disable': permission_disable
             }
         else:
             return self.message_exception(trans, 'You do not have permission to edit this dataset\'s ( id: %s ) information.' % str(dataset_id))
@@ -461,7 +469,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         elif operation == 'conversion':
             target_type = payload.get('target_type')
             if target_type:
-                message = data.datatype.convert_dataset(trans, data, target_type)
+                try:
+                    message = data.datatype.convert_dataset(trans, data, target_type)
+                except Exception as e:
+                    return self.message_exception(trans, str(e))
         elif operation == 'permission':
             if not trans.user:
                 return self.message_exception(trans, 'You must be logged in if you want to change permissions.')

@@ -24,6 +24,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     self.initial_message = true;
                     _.each( self.forms, function( form, key ) {
                         form.model.set( 'inputs', response[ key + '_inputs' ] );
+                        form.model.set( 'hide_operations', response[ key + '_disable' ] );
                         form.render();
                     });
                     self.$el.show();
