@@ -4981,8 +4981,8 @@ webpack@^1.14.0:
     webpack-core "~0.6.9"
 
 webpack@^3.6.0:
-  version "3.6.0"
-  resolved "https://registry.yarnpkg.com/webpack/-/webpack-3.6.0.tgz#a89a929fbee205d35a4fa2cc487be9cbec8898bc"
+  version "3.7.0"
+  resolved "https://registry.yarnpkg.com/webpack/-/webpack-3.7.0.tgz#9081d0b1ba4950e34ddc54195721eba4bf205e83"
   dependencies:
     acorn "^5.0.0"
     acorn-dynamic-import "^2.0.0"
