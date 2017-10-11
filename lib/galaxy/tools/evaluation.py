@@ -91,7 +91,6 @@ class ToolEvaluator(object):
                     self.dataset = dataset
                     self.file_name = dataset.file_name
                     self.metadata = dict()
-                    self.children = []
 
             special = get_special()
             if special:
@@ -303,9 +302,6 @@ class ToolEvaluator(object):
                         dataset_path = input_dataset_paths[real_path]
                         wrapper_kwds['dataset_path'] = dataset_path
                 param_dict[name] = DatasetFilenameWrapper(data, **wrapper_kwds)
-            if data:
-                for child in data.children:
-                    param_dict["_CHILD___%s___%s" % (name, child.designation)] = DatasetFilenameWrapper(child)
 
     def __populate_output_collection_wrappers(self, param_dict, output_collections, output_paths, job_working_directory):
         output_dataset_paths = dataset_path_rewrites(output_paths)
@@ -355,8 +351,6 @@ class ToolEvaluator(object):
             # Provide access to a path to store additional files
             # TODO: path munging for cluster/dataset server relocatability
             param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, "dataset_%s_files" % (hda.dataset.id)))
-            for child in hda.children:
-                param_dict["_CHILD___%s___%s" % (name, child.designation)] = DatasetFilenameWrapper(child)
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
                 # Assume the reason we lack this output is because a filter
