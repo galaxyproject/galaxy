@@ -46,7 +46,7 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-    ## Send errors to Sntry server if configured
+    ## Send errors to Sentry server if configured
     %if app.config.sentry_dsn:
         ${h.js( "libs/raven" )}
         <script>
