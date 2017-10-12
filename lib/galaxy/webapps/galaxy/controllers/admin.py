@@ -121,6 +121,10 @@ class UserListGrid(grids.Grid):
         grids.GridAction("Create new user", url_args=dict(webapp="galaxy", action="create_new_user"))
     ]
     operations = [
+        grids.GridOperation("Manage Information",
+                            condition=(lambda item: not item.deleted),
+                            allow_multiple=False,
+                            url_args=dict(controller="user", action="information", webapp="galaxy")),
         grids.GridOperation("Manage Roles and Groups",
                             condition=(lambda item: not item.deleted),
                             allow_multiple=False,
