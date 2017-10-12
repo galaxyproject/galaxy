@@ -156,8 +156,8 @@ function( Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposi
             if ( items && items.length > 0 ) {
                 var inputs = {
                     'file_count' : items.length,
-                    'dbkey'      : items[ 0 ].get( 'genome', null ),
-                    'file_type'  : items[ 0 ].get( 'extension', null )
+                    'dbkey'      : items[ 0 ].get( 'genome', '?' ),
+                    'file_type'  : items[ 0 ].get( 'extension', 'auto' )
                 };
                 for ( var index in items ) {
                     var it = items[ index ];
