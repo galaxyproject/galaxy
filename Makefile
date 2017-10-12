@@ -12,8 +12,6 @@ VENV?=.venv
 IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/webapps/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
-GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
-GRUNT_EXEC?=node_modules/grunt-cli/bin/grunt
 WEBPACK_EXEC?=node_modules/webpack/bin/webpack.js
 GXY_NODE_MODULES=client/node_modules
 DOCS_DIR=doc
@@ -123,9 +121,6 @@ node-deps: ## Install NodeJS dependencies.
 webpack: node-deps ## Run webpack, build production bundles.
 	cd client && yarn run webpack
 
-gulp: node-deps ## Calls out to Gulp to build client
-	cd client && yarn run gulp
-
 style: node-deps ## Calls the style task of Grunt
 	cd client && yarn run build-style
 
@@ -135,26 +130,11 @@ client: node-deps ## Rebuild all client-side artifacts
 charts: node-deps ## Rebuild charts
 	NODE_PATH=$(GXY_NODE_MODULES) client/$(WEBPACK_EXEC) -p --config config/plugins/visualizations/charts/webpack.config.js
 
-grunt-docker-image: ## Build docker image for running grunt
-	docker build -t ${GRUNT_DOCKER_NAME} client
-
-grunt-docker: grunt-docker-image ## Run grunt inside docker
-	docker run -it -v `pwd`:/data ${GRUNT_DOCKER_NAME}
-
-clean-grunt-docker-image: ## Remove grunt docker image
-	docker rmi ${GRUNT_DOCKER_NAME}
-
-grunt-watch-style: node-deps ## Execute watching style builder for dev purposes
-	cd client && $(GRUNT_EXEC) watch-style
-
-grunt-watch-develop: node-deps ## Execute watching grunt builder for dev purposes (unpacked, allows debugger statements)
-	cd client && $(GRUNT_EXEC) watch --develop
-
 webpack-watch: node-deps ## Execute watching webpack for dev purposes
 	cd client && yarn run webpack-dev-watch
 
-client-develop: grunt-watch-style grunt-watch-develop webpack-watch  ## A useful target for parallel development building.
-	@echo "Remember to rerun `make client` before committing!"
+client-develop: ## A useful target for parallel development building.
+	@echo "Target disabled (temporarily), please use 'make client'"
 
 
 # Release Targets
