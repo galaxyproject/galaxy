@@ -62,9 +62,6 @@ function bridge_phantomjs( QUnit ) {
     }());
 }
 
-window.webkitRequestAnimationFrame = null;
-window.mozRequestAnimationFrame = null;
-window.oRequestAnimationFrame = null;
 
 // Configure require.js for unit testing.
 require.config({
