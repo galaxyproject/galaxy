@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import json
 import os
 import sys
@@ -62,15 +64,15 @@ def delete(api_key, url, data, return_formatted=True):
         response = json.loads(delete_request.read())
     except urllib2.HTTPError as e:
         if return_formatted:
-            print e
-            print e.read(1024)
+            print(e)
+            print(e.read(1024))
             sys.exit(1)
         else:
             return dict(status='error', message=str(e.read(1024)))
     if return_formatted:
-        print 'Response'
-        print '--------'
-        print response
+        print('Response')
+        print('--------')
+        print(response)
     else:
         return response
 
@@ -80,40 +82,40 @@ def display(url, api_key=None, return_formatted=True):
     try:
         r = get(url, api_key=api_key)
     except urllib2.HTTPError as e:
-        print e
+        print(e)
         # Only return the first 1K of errors.
-        print e.read(1024)
+        print(e.read(1024))
         sys.exit(1)
     if type(r) == unicode:
-        print 'error: %s' % r
+        print('error: %s' % r)
         return None
     if not return_formatted:
         return r
     elif type(r) == list:
         # Response is a collection as defined in the REST style.
-        print 'Collection Members'
-        print '------------------'
+        print('Collection Members')
+        print('------------------')
         for n, i in enumerate(r):
             # All collection members should have a name in the response.
             # url is optional
             if 'url' in i:
-                print '#%d: %s' % (n + 1, i.pop('url'))
+                print('#%d: %s' % (n + 1, i.pop('url')))
             if 'name' in i:
-                print '  name: %s' % i.pop('name')
+                print('  name: %s' % i.pop('name'))
             for k, v in i.items():
-                print '  %s: %s' % (k, v)
-        print ''
-        print '%d element(s) in collection' % len(r)
+                print('  %s: %s' % (k, v))
+        print()
+        print('%d element(s) in collection' % len(r))
     elif type(r) == dict:
         # Response is an element as defined in the REST style.
-        print 'Member Information'
-        print '------------------'
+        print('Member Information')
+        print('------------------')
         for k, v in r.items():
-            print '%s: %s' % (k, v)
+            print('%s: %s' % (k, v))
     elif type(r) == str:
-        print r
+        print(r)
     else:
-        print 'response is unknown type: %s' % type(r)
+        print('response is unknown type: %s' % type(r))
 
 
 def get(url, api_key=None):
@@ -195,7 +197,7 @@ def json_from_url(url):
         parsed_json = json.loads(url_contents)
     except Exception as e:
         error_message = str(url_contents)
-        print 'Error parsing JSON data in json_from_url(): ', str(e)
+        print('Error parsing JSON data in json_from_url():', e)
         return None, error_message
     return parsed_json, error_message
 
@@ -242,32 +244,32 @@ def submit(url, data, api_key=None, return_formatted=True):
         response = post(url, data, api_key=api_key)
     except urllib2.HTTPError as e:
         if return_formatted:
-            print e
-            print e.read(1024)
+            print(e)
+            print(e.read(1024))
             sys.exit(1)
         else:
             return dict(status='error', message=str(e.read(1024)))
     if not return_formatted:
         return response
-    print 'Response'
-    print '--------'
+    print('Response')
+    print('--------')
     if type(response) == list:
         # Currently the only implemented responses are lists of dicts, because submission creates
         # some number of collection elements.
         for i in response:
             if type(i) == dict:
                 if 'url' in i:
-                    print i.pop('url')
+                    print(i.pop('url'))
                 else:
-                    print '----'
+                    print('----')
                 if 'name' in i:
-                    print '  name: %s' % i.pop('name')
+                    print('  name: %s' % i.pop('name'))
                 for k, v in i.items():
-                    print '  %s: %s' % (k, v)
+                    print('  %s: %s' % (k, v))
             else:
-                print i
+                print(i)
     else:
-        print response
+        print(response)
 
 
 def update(api_key, url, data, return_formatted=True):
@@ -279,14 +281,14 @@ def update(api_key, url, data, return_formatted=True):
         response = put(url, data, api_key=api_key)
     except urllib2.HTTPError as e:
         if return_formatted:
-            print e
-            print e.read(1024)
+            print(e)
+            print(e.read(1024))
             sys.exit(1)
         else:
             return dict(status='error', message=str(e.read(1024)))
     if return_formatted:
-        print 'Response'
-        print '--------'
-        print response
+        print('Response')
+        print('--------')
+        print(response)
     else:
         return response

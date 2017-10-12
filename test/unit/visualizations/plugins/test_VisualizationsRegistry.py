@@ -258,7 +258,6 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         trans = galaxy_mock.MockTrans()
         script_entry._set_up_template_plugin(mock_app_dir.root_path, [addtional_templates_dir])
         response = script_entry._render({}, trans=trans, embedded=True)
-        # print response
         self.assertTrue('src="bler"' in response)
         self.assertTrue('type="text/javascript"' in response)
         self.assertTrue('data-main="one"' in response)

@@ -1,6 +1,8 @@
 """
 Migration script for the password reset table
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -18,12 +20,11 @@ PasswordResetToken_table = Table("password_reset_token", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         PasswordResetToken_table.create()
-    except Exception as e:
-        print str(e)
+    except Exception:
         log.exception("Creating %s table failed", PasswordResetToken_table.name)
 
 
@@ -32,6 +33,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         PasswordResetToken_table.drop()
-    except Exception as e:
-        print str(e)
+    except Exception:
         log.exception("Dropping %s table failed", PasswordResetToken_table.name)

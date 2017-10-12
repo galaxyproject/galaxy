@@ -260,8 +260,6 @@ class LimitedOffsetDataProvider(FilteredDataProvider):
         parent_gen = super(LimitedOffsetDataProvider, self).__iter__()
         for datum in parent_gen:
             self.num_data_returned -= 1
-            # print 'self.num_data_returned:', self.num_data_returned
-            # print 'self.num_valid_data_read:', self.num_valid_data_read
 
             if self.num_valid_data_read > self.offset:
                 self.num_data_returned += 1

@@ -4242,7 +4242,6 @@ class MetadataFile(StorableObject):
             return path
         except AttributeError:
             # In case we're not working with the history_dataset
-            # print "Caught AttributeError"
             path = os.path.join(Dataset.file_path, '_metadata_files', *directory_hash_id(self.id))
             # Create directory if it does not exist
             try:

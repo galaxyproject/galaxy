@@ -70,6 +70,7 @@ scripts/communication/
 scripts/data_libraries/build_whoosh_index.py
 scripts/db_shell.py
 scripts/drmaa_external_runner.py
+scripts/metagenomics/
 scripts/secret_decoder_ring.py
 test/
 tool_list.py

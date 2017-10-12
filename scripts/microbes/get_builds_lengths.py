@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # Dan Blankenberg
+from __future__ import print_function
+
 import os
 import sys
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def __main__():
@@ -12,7 +14,6 @@ def __main__():
         base_dir = sys.argv[1]
     except:
         pass
-        # print "using default base_dir:", base_dir
 
     organisms = {}
     for result in os.walk(base_dir):
@@ -53,7 +54,7 @@ def __main__():
         for chrom in org['chrs']:
             chrom = org['chrs'][chrom]
             chrs.append("%s=%s" % (chrom['chromosome'], chrom['length']))
-        print "%s\t%s\t%s" % (build, org['name'], ",".join(chrs))
+        print("%s\t%s\t%s" % (build, org['name'], ",".join(chrs)))
 
 
 if __name__ == "__main__":
