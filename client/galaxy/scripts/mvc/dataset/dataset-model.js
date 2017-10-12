@@ -63,7 +63,7 @@ var DatasetAssociation = Backbone.Model
         var urls = {
             'purge'         : 'datasets/' + id + '/purge_async',
             'display'       : 'datasets/' + id + '/display/?preview=True',
-            'edit'          : 'datasets/' + id + '/edit',
+            'edit'          : 'datasets/edit?dataset_id=' + id,
             'download'      : 'datasets/' + id + '/display' + this._downloadQueryParameters(),
             'report_error'  : 'dataset/errors?id=' + id,
             'rerun'         : 'tool_runner/rerun?id=' + id,

@@ -1388,7 +1388,6 @@ class JobWrapper(object, HasResourceParameters):
             # Maybe this is a legacy job, use the job working directory instead
             tool_working_directory = self.working_directory
         collected_datasets = {
-            'children': self.tool.collect_child_datasets(out_data, tool_working_directory),
             'primary': self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
         }
         self.tool.collect_dynamic_collections(

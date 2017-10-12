@@ -51,3 +51,15 @@
 #   influxdb_port: 8086
 #   influxdb_database: galaxy
 #   influxdb_timeout: 2
+
+# Github error reporting backend. You will need to `pip install pygithub` in
+# the galaxy virtualenv. This will create a new issue if none exists, and
+# comment on existing, open issues. The issues are labelled based on tool ID /
+# version and include all of the information the normal emailed bug reports
+# include. If you use a private Github Enterprise deployment, you can set
+# github_base_url='https://...'
+# - type: github
+#   user_submission: true
+#   github_oauth_token: 00000000000
+#   github_repo_owner: galaxyproject
+#   github_repo_name: galaxy

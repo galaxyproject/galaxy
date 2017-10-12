@@ -1605,18 +1605,6 @@ simple_mapping(model.HistoryDatasetAssociation,
     implicitly_converted_parent_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_id ==
                      model.HistoryDatasetAssociation.table.c.id)),
-    children=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.parent_id ==
-                      model.HistoryDatasetAssociation.table.c.id),
-        backref=backref("parent",
-            primaryjoin=(model.HistoryDatasetAssociation.table.c.parent_id ==
-                         model.HistoryDatasetAssociation.table.c.id),
-            remote_side=[model.HistoryDatasetAssociation.table.c.id], uselist=False)),
-    visible_children=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(
-            (model.HistoryDatasetAssociation.table.c.parent_id == model.HistoryDatasetAssociation.table.c.id) &
-            (model.HistoryDatasetAssociation.table.c.visible == true())),
-        remote_side=[model.HistoryDatasetAssociation.table.c.id]),
     tags=relation(model.HistoryDatasetAssociationTagAssociation,
         order_by=model.HistoryDatasetAssociationTagAssociation.table.c.id,
         backref='history_tag_associations'),
@@ -1987,19 +1975,6 @@ mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoci
     implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id ==
                      model.LibraryDatasetDatasetAssociation.table.c.id)),
-    children=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.parent_id ==
-                      model.LibraryDatasetDatasetAssociation.table.c.id),
-        backref=backref("parent",
-            primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.parent_id ==
-                         model.LibraryDatasetDatasetAssociation.table.c.id),
-            remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id])),
-    visible_children=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(
-            (model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id) &
-            (model.LibraryDatasetDatasetAssociation.table.c.visible == true())
-        ),
-        remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id]),
     tags=relation(model.LibraryDatasetDatasetAssociationTagAssociation,
                   order_by=model.LibraryDatasetDatasetAssociationTagAssociation.table.c.id,
                   backref='history_tag_associations'),

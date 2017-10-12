@@ -362,7 +362,7 @@ class InputModule(WorkflowModule):
             for input_dataset_hda in list(step_outputs.values()):
                 content_type = input_dataset_hda.history_content_type
                 if content_type == "dataset":
-                    new_hda = input_dataset_hda.copy(copy_children=True)
+                    new_hda = input_dataset_hda.copy()
                     invocation.history.add_dataset(new_hda)
                     step_outputs['input_ds_copy'] = new_hda
                 elif content_type == "dataset_collection":

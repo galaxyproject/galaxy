@@ -6,7 +6,7 @@ import shutil
 import tempfile
 from json import dumps, loads
 
-from sqlalchemy.orm import eagerload, eagerload_all
+from sqlalchemy.orm import eagerload_all
 from sqlalchemy.sql import expression
 
 from galaxy import model
@@ -322,7 +322,6 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
         """
         query = (trans.sa_session.query(trans.model.HistoryDatasetAssociation)
                  .filter(trans.model.HistoryDatasetAssociation.history == history)
-                 .options(eagerload("children"))
                  .join("dataset")
                  .options(eagerload_all("dataset.actions"))
                  .order_by(trans.model.HistoryDatasetAssociation.hid)

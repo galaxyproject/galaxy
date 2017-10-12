@@ -28,6 +28,7 @@ export SELENIUM_PORT=`python -c 'import socket; s=socket.socket(); s.bind(("", 0
 
 export TARGET_ROOT=`pwd`
 export TARGET_PATH=/galaxy
+export MY_UID=$(id -u)
 
 cd $TEST_DIRECTORY
 
@@ -107,7 +108,11 @@ export GALAXY_TEST_SELENIUM_RETRIES=1
 export GALAXY_TEST_PORT="${GALAXY_PORT}"
 
 # Have Selenium access Galaxy at this URL
-export GALAXY_TEST_EXTERNAL_FROM_SELENIUM="http://galaxy:8080"
+export GALAXY_TEST_EXTERNAL_FROM_SELENIUM="http://galaxy:8080/galaxypf"
+export GALAXY_TEST_EXTERNAL="http://localhost:${GALAXY_TEST_PORT}/galaxypf"
+
+# Point tests at the Master API Key configured in the Dockerfile.
+export GALAXY_CONFIG_MASTER_API_KEY=94a548bea347a35e457a804bf75bec53
 
 cd ../../..
 
