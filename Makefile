@@ -121,20 +121,15 @@ node-deps: ## Install NodeJS dependencies.
 webpack: node-deps ## Run webpack, build production bundles.
 	cd client && yarn run webpack
 
-style: node-deps ## Calls the style task of Grunt
-	cd client && yarn run build-style
-
 client: node-deps ## Rebuild all client-side artifacts
 	cd client && yarn run build
 
 charts: node-deps ## Rebuild charts
 	NODE_PATH=$(GXY_NODE_MODULES) client/$(WEBPACK_EXEC) -p --config config/plugins/visualizations/charts/webpack.config.js
 
-webpack-watch: node-deps ## Execute watching webpack for dev purposes
-	cd client && yarn run webpack-dev-watch
-
-client-develop: ## A useful target for parallel development building.
-	@echo "Target disabled (temporarily), please use 'make client'"
+client-watch: ## A useful target for parallel development building.
+	cd client && yarn run watch
+	@echo "Remember to 'make client' when finished developing!"
 
 
 # Release Targets
