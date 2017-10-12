@@ -129,9 +129,6 @@ gulp: node-deps ## Calls out to Gulp to build client
 style: node-deps ## Calls the style task of Grunt
 	cd client && yarn run build-style
 
-client-install-libs: node-deps ## Fetch updated client dependencies using bower.
-	cd client && $(GRUNT_EXEC) install-libs
-
 client: node-deps ## Rebuild all client-side artifacts
 	cd client && yarn run build
 
