@@ -276,7 +276,7 @@ class GroupListGrid(grids.Grid):
     # Grid definition
     title = "Groups"
     model_class = model.Group
-    default_sort_key = "name"
+    default_sort_key = "-update_time"
     columns = [
         NameColumn("Name",
                    key="name",
@@ -288,7 +288,8 @@ class GroupListGrid(grids.Grid):
         RolesColumn("Roles", attach_popup=False),
         StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
+        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
+        grids.GridColumn("Last Updated", key="update_time", format=time_ago)
     ]
     columns.append(grids.MulticolFilterColumn("Search",
                                               cols_to_filter=[columns[0]],
@@ -298,10 +299,14 @@ class GroupListGrid(grids.Grid):
     global_actions = [
         grids.GridAction("Add new group", url_args=dict(action="form/create_group"))
     ]
-    operations = [grids.GridOperation("Rename",
+    operations = [grids.GridOperation("Edit Name",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=False,
                                       url_args=dict(action="form/rename_group")),
+                  grids.GridOperation("Edit Permissions",
+                                      condition=(lambda item: not item.deleted),
+                                      allow_multiple=False,
+                                      url_args=dict(action="form/manage_users_and_roles_for_group", webapp="galaxy")),
                   grids.GridOperation("Delete",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=True),
