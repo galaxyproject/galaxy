@@ -185,7 +185,7 @@ class RoleListGrid(grids.Grid):
     # Grid definition
     title = "Roles"
     model_class = model.Role
-    default_sort_key = "name"
+    default_sort_key = "-update_time"
     columns = [
         NameColumn("Name",
                    key="name",
@@ -208,7 +208,8 @@ class RoleListGrid(grids.Grid):
         UsersColumn("Users", attach_popup=False),
         StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
+        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
+        grids.GridColumn("Last Updated", key="update_time", format=time_ago)
     ]
     columns.append(grids.MulticolFilterColumn("Search",
                                               cols_to_filter=[columns[0], columns[1], columns[2]],
