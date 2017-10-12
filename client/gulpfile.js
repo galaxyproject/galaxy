@@ -53,7 +53,7 @@ gulp.task('stage-libs', function(callback){
             del.sync(p2);
             fs.createReadStream(p1).pipe(fs.createWriteStream(p2));
         } else {
-            callback(p1 + " does not exist, yet it is a required library.  This is an error.");
+            callback(p1 + " does not exist, yet it is a required library.  This is an error.  Check that the package in question exists in node_modules.");
         }
     });
 });
