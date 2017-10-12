@@ -25,7 +25,9 @@ var View = Backbone.View.extend({
         this.options = _.defaults( options || {}, this.optionsDefault );
         $( this.options.container ).prepend( this.el );
         // optional render
-        options && this.render();
+        if (options){
+            this.render();
+        }
     },
 
     /**
@@ -41,8 +43,8 @@ var View = Backbone.View.extend({
             this.$el.fadeIn( 'fast' );
             if ( this.options.closing_events ) {
                 var self = this;
-                $( document ).on( 'keyup.ui-modal', function( e ) { e.keyCode == 27 && self.hide( true ) });
-                this.$backdrop.on( 'click', function() { self.hide( true ) } );
+                $( document ).on( 'keyup.ui-modal', function( e ) { if (e.keyCode == 27){ self.hide( true ); }});
+                this.$backdrop.on( 'click', function() { self.hide( true ); } );
             }
         }
     },
@@ -53,7 +55,9 @@ var View = Backbone.View.extend({
     hide: function( canceled ) {
         this.visible = false;
         this.$el.fadeOut( 'fast' );
-        this.options.closing_callback && this.options.closing_callback( canceled );
+        if (this.options.closing_callback){
+            this.options.closing_callback( canceled );
+        }
         $( document ).off( 'keyup.ui-modal' );
         this.$backdrop.off( 'click' );
     },
@@ -184,6 +188,6 @@ var View = Backbone.View.extend({
 
 return {
     View : View
-}
+};
 
 });
