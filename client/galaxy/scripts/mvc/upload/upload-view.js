@@ -154,7 +154,11 @@ function( Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposi
             }
             // add upload tools input data
             if ( items && items.length > 0 ) {
-                var inputs = { 'file_count' : items.length };
+                var inputs = {
+                    'file_count' : items.length,
+                    'dbkey'      : items[ 0 ].get( 'genome', '?' ),
+                    'file_type'  : items[ 0 ].get( 'extension', 'auto' )
+                };
                 for ( var index in items ) {
                     var it = items[ index ];
                     it.set( 'status', 'running' );
