@@ -1,7 +1,6 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
-import glob
 import json
 import logging
 import os
@@ -1559,73 +1558,6 @@ class Tool(object, Dictifiable):
         Called when a job has failed
         """
         pass
-
-    def collect_child_datasets(self, output, job_working_directory):
-        """
-        Look for child dataset files, create HDA and attach to parent.
-        """
-        children = {}
-        # Loop through output file names, looking for generated children in
-        # form of 'child_parentId_designation_visibility_extension'
-        for name, outdata in output.items():
-            filenames = []
-            if 'new_file_path' in self.app.config.collect_outputs_from:
-                filenames.extend(glob.glob(os.path.join(self.app.config.new_file_path, "child_%i_*" % outdata.id)))
-            if 'job_working_directory' in self.app.config.collect_outputs_from:
-                filenames.extend(glob.glob(os.path.join(job_working_directory, "child_%i_*" % outdata.id)))
-            for filename in filenames:
-                if name not in children:
-                    children[name] = {}
-                fields = os.path.basename(filename).split("_")
-                designation = fields[2]
-                visible = fields[3].lower()
-                if visible == "visible":
-                    visible = True
-                else:
-                    visible = False
-                ext = fields[4].lower()
-                child_dataset = self.app.model.HistoryDatasetAssociation(extension=ext,
-                                                                         parent_id=outdata.id,
-                                                                         designation=designation,
-                                                                         visible=visible,
-                                                                         dbkey=outdata.dbkey,
-                                                                         create_dataset=True,
-                                                                         sa_session=self.sa_session)
-                self.app.security_agent.copy_dataset_permissions(outdata.dataset, child_dataset.dataset)
-                # Move data from temp location to dataset location
-                self.app.object_store.update_from_file(child_dataset.dataset, file_name=filename, create=True)
-                self.sa_session.add(child_dataset)
-                self.sa_session.flush()
-                child_dataset.set_size()
-                child_dataset.name = "Secondary Dataset (%s)" % (designation)
-                child_dataset.init_meta()
-                child_dataset.set_meta()
-                child_dataset.set_peek()
-                # Associate new dataset with job
-                job = None
-                for assoc in outdata.creating_job_associations:
-                    job = assoc.job
-                    break
-                if job:
-                    assoc = self.app.model.JobToOutputDatasetAssociation('__new_child_file_%s|%s__' % (name, designation), child_dataset)
-                    assoc.job = job
-                    self.sa_session.add(assoc)
-                    self.sa_session.flush()
-                child_dataset.state = outdata.state
-                self.sa_session.add(child_dataset)
-                self.sa_session.flush()
-                # Add child to return dict
-                children[name][designation] = child_dataset
-                # Need to update all associated output hdas, i.e. history was
-                # shared with job running
-                for dataset in outdata.dataset.history_associations:
-                    if outdata == dataset:
-                        continue
-                    # Create new child dataset
-                    child_data = child_dataset.copy(parent_id=dataset.id)
-                    self.sa_session.add(child_data)
-                    self.sa_session.flush()
-        return children
 
     def collect_primary_datasets(self, output, tool_provided_metadata, job_working_directory, input_ext, input_dbkey="?"):
         """

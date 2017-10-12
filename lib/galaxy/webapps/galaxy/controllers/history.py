@@ -495,7 +495,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         trans.sa_session.expunge(trans.history)
         history = trans.sa_session.query(model.History).options(
             eagerload_all('active_datasets.creating_job_associations.job.workflow_invocation_step.workflow_invocation.workflow'),
-            eagerload_all('active_datasets.children')
         ).get(id)
         assert history
         # TODO: formalize to trans.show_error

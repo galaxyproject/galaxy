@@ -222,25 +222,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             return "No dataset with id '%s'" % str(id)
 
     @web.expose
-    def display_child(self, trans, parent_id=None, designation=None, tofile=None, toext=".txt"):
-        """Returns child data directly into the browser, based upon parent_id and designation.
-        """
-        # TODO: unencoded id
-        try:
-            data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(parent_id)
-            if data:
-                child = data.get_child_by_designation(designation)
-                if child:
-                    current_user_roles = trans.get_current_user_roles()
-                    if trans.app.security_agent.can_access_dataset(current_user_roles, child):
-                        return self.display(trans, id=child.id, tofile=tofile, toext=toext)
-                    else:
-                        return "You are not privileged to access this dataset."
-        except Exception:
-            pass
-        return "A child named %s could not be found for data %s" % (designation, parent_id)
-
-    @web.expose
     def display_as(self, trans, id=None, display_app=None, **kwd):
         """Returns a file in a format that can successfully be displayed in display_app.
         """
