@@ -45,16 +45,15 @@ gulp.task('scripts', function() {
     .pipe(gulp.dest('../static/scripts/'));
 });
 
-gulp.task('stage-libs', function(){
+gulp.task('stage-libs', function(callback){
     _.each(_.keys(paths.lib_locs), function(lib){
         var p1 = path.resolve(path.join(paths.node_modules, lib, paths.lib_locs[lib][0]));
         var p2 = path.resolve(path.join('galaxy', 'scripts', 'libs', paths.lib_locs[lib][1]));
         if (fs.existsSync(p1)) {
-            console.log(p1 + " -> " + p2);
             del.sync(p2);
             fs.createReadStream(p1).pipe(fs.createWriteStream(p2));
         } else {
-            console.log(p1 + " does not exist, this is an error.");
+            callback(p1 + " does not exist, yet it is a required library.  This is an error.");
         }
     });
 });
