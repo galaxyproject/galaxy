@@ -11,6 +11,7 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
                 icon            : null,
                 always_refresh  : true,
                 status          : 'warning',
+                hide_operations : false,
                 onchange        : function(){}
             }).set( options );
             this.setElement( '<div/>' );
@@ -132,7 +133,7 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
                 icon            : options.icon,
                 title           : options.title,
                 cls             : options.cls,
-                operations      : options.operations,
+                operations      : !options.hide_operations && options.operations,
                 buttons         : options.buttons,
                 collapsible     : options.collapsible,
                 collapsed       : options.collapsed,

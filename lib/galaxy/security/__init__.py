@@ -885,7 +885,7 @@ class GalaxyRBACAgent(RBACAgent):
                 has_dataset_manage_permissions = True
                 break
         if not has_dataset_manage_permissions:
-            return "At least 1 role must be associated with the <b>manage permissions</b> permission on this dataset."
+            return "At least 1 role must be associated with manage permissions on this dataset."
         flush_needed = False
         # Delete all of the current permissions on the dataset
         if not new:
