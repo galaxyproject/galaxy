@@ -218,11 +218,11 @@ class RoleListGrid(grids.Grid):
     global_actions = [
         grids.GridAction("Add new role", url_args=dict(action="form/create_role"))
     ]
-    operations = [grids.GridOperation("Edit",
+    operations = [grids.GridOperation("Edit Name/Description",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=False,
                                       url_args=dict(action="form/rename_role")),
-                  grids.GridOperation("Manage Permissions",
+                  grids.GridOperation("Edit Permissions",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=False,
                                       url_args=dict(action="form/manage_users_and_groups_for_role", webapp="galaxy")),
