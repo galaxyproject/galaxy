@@ -189,7 +189,7 @@ class RoleListGrid(grids.Grid):
     # Grid definition
     title = "Roles"
     model_class = model.Role
-    default_sort_key = "-update_time"
+    default_sort_key = "name"
     columns = [
         NameColumn("Name",
                    key="name",
@@ -280,7 +280,7 @@ class GroupListGrid(grids.Grid):
     # Grid definition
     title = "Groups"
     model_class = model.Group
-    default_sort_key = "-update_time"
+    default_sort_key = "name"
     columns = [
         NameColumn("Name",
                    key="name",
