@@ -127,7 +127,7 @@ client: node-deps ## Rebuild all client-side artifacts
 charts: node-deps ## Rebuild charts
 	NODE_PATH=$(GXY_NODE_MODULES) client/$(WEBPACK_EXEC) -p --config config/plugins/visualizations/charts/webpack.config.js
 
-client-watch: ## A useful target for parallel development building.
+client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
 	@echo "Remember to 'make client' when finished developing!"
 
