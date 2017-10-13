@@ -2,7 +2,6 @@ import os
 import subprocess
 from platform import system
 from time import sleep
-from subprocess import Popen
 
 try:
     from psutil import Process, NoSuchProcess
