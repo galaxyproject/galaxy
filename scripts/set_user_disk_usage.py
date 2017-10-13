@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import os
 import sys
 from ConfigParser import ConfigParser
@@ -50,25 +52,25 @@ def init():
 def quotacheck(sa_session, users, engine):
     sa_session.refresh(user)
     current = user.get_disk_usage()
-    print user.username, '<' + user.email + '>:',
+    print(user.username, '<' + user.email + '>:', end=' ')
     if engine not in ('postgres', 'postgresql'):
         new = user.calculate_disk_usage()
         sa_session.refresh(user)
         # usage changed while calculating, do it again
         if user.get_disk_usage() != current:
-            print 'usage changed while calculating, trying again...'
+            print('usage changed while calculating, trying again...')
             return quotacheck(sa_session, user, engine)
     else:
         new = pgcalc(sa_session, user.id, dryrun=options.dryrun)
     # yes, still a small race condition between here and the flush
-    print 'old usage:', nice_size(current), 'change:',
+    print('old usage:', nice_size(current), 'change:', end=' ')
     if new in (current, None):
-        print 'none'
+        print('none')
     else:
         if new > current:
-            print '+%s' % (nice_size(new - current))
+            print('+%s' % (nice_size(new - current)))
         else:
-            print '-%s' % (nice_size(current - new))
+            print('-%s' % (nice_size(current - new)))
         if not options.dryrun and engine not in ('postgres', 'postgresql'):
             user.set_disk_usage(new)
             sa_session.add(user)
@@ -76,17 +78,17 @@ def quotacheck(sa_session, users, engine):
 
 
 if __name__ == '__main__':
-    print 'Loading Galaxy model...'
+    print('Loading Galaxy model...')
     model, object_store, engine = init()
     sa_session = model.context.current
 
     if not options.username and not options.email:
         user_count = sa_session.query(model.User).count()
-        print 'Processing %i users...' % user_count
+        print('Processing %i users...' % user_count)
         for i, user in enumerate(sa_session.query(model.User).enable_eagerloads(False).yield_per(1000)):
-            print '%3i%%' % int(float(i) / user_count * 100),
+            print('%3i%%' % int(float(i) / user_count * 100), end=' ')
             quotacheck(sa_session, user, engine)
-        print '100% complete'
+        print('100% complete')
         object_store.shutdown()
         sys.exit(0)
     elif options.username:
@@ -94,7 +96,7 @@ if __name__ == '__main__':
     elif options.email:
         user = sa_session.query(model.User).enable_eagerloads(False).filter_by(email=options.email).first()
     if not user:
-        print 'User not found'
+        print('User not found')
         sys.exit(1)
     object_store.shutdown()
     quotacheck(sa_session, user, engine)

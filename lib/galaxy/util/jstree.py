@@ -1,7 +1,10 @@
-import os
+from __future__ import print_function
+
 import copy
-import dictobj
+import os
 from collections import namedtuple
+
+import dictobj
 
 Path = namedtuple('Path', ('path', 'id', 'options'))
 
@@ -46,23 +49,23 @@ class Node(dictobj.DictionaryObject):
     Example:
       >>> import jstree
       >>> node = jstree.Node('a', None)
-      >>> print node
+      >>> print(node)
       Node({'text': 'a', 'children': MutableDictionaryObject({})})
-      >>> print node.jsonData()
+      >>> print(node.jsonData())
       {'text': 'a'}
 
       >>> import jstree
       >>> node = jstree.Node('a', 1)
-      >>> print node
+      >>> print(node)
       Node({'text': 'a', 'children': MutableDictionaryObject({}), 'li_attr': DictionaryObject({'id': 1}), 'id': 1})
-      >>> print node.jsonData()
+      >>> print(node.jsonData())
       {'text': 'a', 'id': 1, 'li_attr': {'id': 1}}
 
       >>> import jstree
       >>> node = jstree.Node('a', 5, icon="folder", state = {'opened': True})
-      >>> print node
+      >>> print(node)
       Node({'text': 'a', 'id': 5, 'state': DictionaryObject({'opened': True}), 'children': MutableDictionaryObject({}), 'li_attr': DictionaryObject({'id': 5}), 'icon': 'folder'})
-      >>> print node.jsonData()
+      >>> print(node.jsonData())
       {'text': 'a', 'state': {'opened': True}, 'id': 5, 'li_attr': {'id': 5}, 'icon': 'folder'}
     """
     super(Node, self).__init__()

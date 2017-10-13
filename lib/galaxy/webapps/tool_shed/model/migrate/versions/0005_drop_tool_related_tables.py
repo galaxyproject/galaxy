@@ -3,6 +3,8 @@ Drops the tool, tool_category_association, event, tool_event_association, tool_r
 tool_tag_association and tool_annotation_association tables since they are no longer used in the
 next-gen tool shed.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -26,7 +28,7 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     # Load existing tables
     metadata.bind = migrate_engine
     metadata.reflect()
@@ -37,8 +39,8 @@ def upgrade(migrate_engine):
         log.debug("Failed loading table tool_category_association")
     try:
         ToolCategoryAssociation_table.drop()
-    except Exception as e:
-        log.debug("Dropping tool_category_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping tool_category_association table failed.")
     # Load and then drop the tool_event_association table
     try:
         ToolEventAssociation_table = Table("tool_event_association", metadata, autoload=True)
@@ -46,8 +48,8 @@ def upgrade(migrate_engine):
         log.debug("Failed loading table tool_event_association")
     try:
         ToolEventAssociation_table.drop()
-    except Exception as e:
-        log.debug("Dropping tool_event_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping tool_event_association table failed.")
     # Load and then drop the tool_rating_association table
     try:
         ToolRatingAssociation_table = Table("tool_rating_association", metadata, autoload=True)
@@ -55,8 +57,8 @@ def upgrade(migrate_engine):
         log.debug("Failed loading table tool_rating_association")
     try:
         ToolRatingAssociation_table.drop()
-    except Exception as e:
-        log.debug("Dropping tool_rating_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping tool_rating_association table failed.")
     # Load and then drop the tool_tag_association table
     try:
         ToolTagAssociation_table = Table("tool_tag_association", metadata, autoload=True)
@@ -64,8 +66,8 @@ def upgrade(migrate_engine):
         log.debug("Failed loading table tool_tag_association")
     try:
         ToolTagAssociation_table.drop()
-    except Exception as e:
-        log.debug("Dropping tool_tag_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping tool_tag_association table failed.")
     # Load and then drop the tool_annotation_association table
     try:
         ToolAnnotationAssociation_table = Table("tool_annotation_association", metadata, autoload=True)
@@ -73,8 +75,8 @@ def upgrade(migrate_engine):
         log.debug("Failed loading table tool_annotation_association")
     try:
         ToolAnnotationAssociation_table.drop()
-    except Exception as e:
-        log.debug("Dropping tool_annotation_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping tool_annotation_association table failed.")
     # Load and then drop the event table
     try:
         Event_table = Table("event", metadata, autoload=True)
@@ -82,8 +84,8 @@ def upgrade(migrate_engine):
         log.debug("Failed loading table event")
     try:
         Event_table.drop()
-    except Exception as e:
-        log.debug("Dropping event table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping event table failed.")
     # Load and then drop the tool table
     try:
         Tool_table = Table("tool", metadata, autoload=True)
@@ -91,8 +93,8 @@ def upgrade(migrate_engine):
         log.debug("Failed loading table tool")
     try:
         Tool_table.drop()
-    except Exception as e:
-        log.debug("Dropping tool table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping tool table failed.")
 
 
 def downgrade(migrate_engine):
@@ -161,35 +163,35 @@ def downgrade(migrate_engine):
     # Create the event table
     try:
         Event_table.create()
-    except Exception as e:
-        log.debug("Creating event table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating event table failed.")
     # Create the tool table
     try:
         Tool_table.create()
-    except Exception as e:
-        log.debug("Creating tool table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating tool table failed.")
     # Create the tool_category_association table
     try:
         ToolCategoryAssociation_table.create()
-    except Exception as e:
-        log.debug("Creating tool_category_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating tool_category_association table failed.")
     # Create the tool_event_association table
     try:
         ToolEventAssociation_table.create()
-    except Exception as e:
-        log.debug("Creating tool_event_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating tool_event_association table failed.")
     # Create the tool_rating_association table
     try:
         ToolRatingAssociation_table.create()
-    except Exception as e:
-        log.debug("Creating tool_rating_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating tool_rating_association table failed.")
     # Create the tool_tag_association table
     try:
         ToolTagAssociation_table.create()
-    except Exception as e:
-        log.debug("Creating tool_tag_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating tool_tag_association table failed.")
     # Create the tool_annotation_association table
     try:
         ToolAnnotationAssociation_table.create()
-    except Exception as e:
-        log.debug("Creating tool_annotation_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating tool_annotation_association table failed.")

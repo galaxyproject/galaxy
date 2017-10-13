@@ -42,6 +42,7 @@ documentation:
 http://www.crummy.com/software/BeautifulSoup/documentation.html
 """
 from __future__ import generators
+from __future__ import print_function
 
 import codecs
 import re
@@ -1807,4 +1808,4 @@ class UnicodeDammit:
 # By default, act as an HTML pretty-printer.
 if __name__ == '__main__':
     soup = BeautifulSoup(sys.stdin.read())
-    print soup.prettify()
+    print(soup.prettify())

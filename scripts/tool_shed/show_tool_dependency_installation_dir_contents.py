@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import argparse
 import os
 import sys
@@ -28,17 +30,17 @@ class CleanUpDependencyApplication(object):
 
 def main(args, app):
     if not os.path.exists(args.basepath):
-        print 'Tool dependency base path %s does not exist.' % str(args.basepath)
+        print('Tool dependency base path "%s" does not exist.' % args.basepath)
         return
-    print 'Checking tool dependency path %s' % args.basepath
+    print('Checking tool dependency path %s' % args.basepath)
     tool_dependency_dirs = get_tool_dependency_dirs(app)
     for tool_dependency_dir in tool_dependency_dirs:
         path = os.path.join(args.basepath, tool_dependency_dir)
         if os.path.exists(path):
             path_contents = os.listdir(path)
             if len(path_contents) > 0:
-                print 'Found non-empty tool dependency installation directory %s.' % path
-                print 'Directory has the following contents: \n   %s' % '\n   '.join(path_contents)
+                print('Found non-empty tool dependency installation directory %s.' % path)
+                print('Directory has the following contents: \n   %s' % '\n   '.join(path_contents))
 
 
 def get_tool_dependency_dirs(app):

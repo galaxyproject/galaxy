@@ -713,8 +713,6 @@ class HistoryFiltersTestCase(BaseTestCase):
             ('name', 'like', 'history%'),
         ])
         histories = self.history_manager.list(filters=filters)
-        # for h in histories:
-        #    print h.name
         self.assertEqual(histories, [history1, history2, history3])
 
         filters = self.filter_parser.parse_filters([('name', 'like', '%2'), ])

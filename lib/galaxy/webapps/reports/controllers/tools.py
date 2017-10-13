@@ -1,15 +1,15 @@
-
 import collections
 import logging
-import galaxy.model
-import sqlalchemy as sa
+from datetime import timedelta
 
+import sqlalchemy as sa
+from markupsafe import escape
+from sqlalchemy import and_
+
+import galaxy.model
 from galaxy import util
 from galaxy.web.base.controller import BaseUIController, web
 
-from sqlalchemy import and_
-from datetime import timedelta
-from markupsafe import escape
 
 log = logging.getLogger(__name__)
 
@@ -344,7 +344,6 @@ class Tools(BaseUIController):
                     if word in to_replace:
                         continue
                     if words.count(word) > 1:
-                        print word
                         to_replace.append(word)
                 for word in to_replace:
                     sentence = ("</br>" + word) * 2
@@ -352,7 +351,6 @@ class Tools(BaseUIController):
                     while sentence + "</br>" + word in new_key:
                         sentence += "</br>" + word
                         count += 1
-                    print sentence, count
                     if sentence in new_key:
                         new_key = new_key.replace(sentence, '</br>' + word + " [this line in %d times]" % (count))
             data[new_key] = counter[key]

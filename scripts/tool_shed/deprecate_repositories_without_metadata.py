@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import ConfigParser
 import logging
@@ -26,7 +27,7 @@ from galaxy.util import (
 log = logging.getLogger()
 log.setLevel(10)
 log.addHandler(logging.StreamHandler(sys.stdout))
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def build_citable_url(host, repository):
@@ -56,11 +57,11 @@ def main():
     app = DeprecateRepositoriesApplication(config)
     cutoff_time = datetime.utcnow() - timedelta(days=options.days)
     now = strftime("%Y-%m-%d %H:%M:%S")
-    print "\n####################################################################################"
-    print "# %s - Handling stuff older than %i days" % (now, options.days)
+    print("\n####################################################################################")
+    print("# %s - Handling stuff older than %i days" % (now, options.days))
 
     if options.info_only:
-        print "# Displaying info only ( --info_only )"
+        print("# Displaying info only ( --info_only )")
 
     deprecate_repositories(app, cutoff_time, days=options.days, info_only=options.info_only, verbose=options.verbose)
 
@@ -75,10 +76,10 @@ def send_mail_to_owner(app, name, owner, email, repositories_deprecated, days=14
     # an environment variable named TOOL_SHED_CANONICAL_URL be set, pointing to the tool shed that is being checked.
     url = os.environ.get('TOOL_SHED_CANONICAL_URL', None)
     if None in [smtp_server, from_address]:
-        print '# Mail not configured, not sending email to repository owner.'
+        print('# Mail not configured, not sending email to repository owner.')
         return
     elif url is None:
-        print '# Environment variable TOOL_SHED_CANONICAL_URL not set, not sending email to repository owner.'
+        print('# Environment variable TOOL_SHED_CANONICAL_URL not set, not sending email to repository owner.')
         return
     subject = "Regarding your tool shed repositories at %s" % url
     message_body_template = 'The tool shed automated repository checker has discovered that one or more of your repositories hosted ' + \
@@ -91,10 +92,10 @@ def send_mail_to_owner(app, name, owner, email, repositories_deprecated, days=14
     body += '\n'.join([build_citable_url(url, repository) for repository in repositories_deprecated])
     try:
         galaxy_send_mail(from_address, repository.user.email, subject, body, app.config)
-        print "# An email has been sent to %s, the owner of %s." % (repository.user.username, ', '.join([repository.name for repository in repositories_deprecated]))
+        print("# An email has been sent to %s, the owner of %s." % (repository.user.username, ', '.join([repository.name for repository in repositories_deprecated])))
         return True
     except Exception as e:
-        print "# An error occurred attempting to send email: %s" % str(e)
+        print("# An error occurred attempting to send email: %s" % e)
         return False
 
 
@@ -129,10 +130,10 @@ def deprecate_repositories(app, cutoff_time, days=14, info_only=False, verbose=F
             .filter(app.model.Repository.table.c.id == repository_id).one()
         owner = repository.user
         if info_only:
-            print '# Repository %s owned by %s would have been deprecated, but info_only was set.' % (repository.name, repository.user.username)
+            print('# Repository %s owned by %s would have been deprecated, but info_only was set.' % (repository.name, repository.user.username))
         else:
             if verbose:
-                print '# Deprecating repository %s owned by %s.' % (repository.name, owner.username)
+                print('# Deprecating repository %s owned by %s.' % (repository.name, owner.username))
             if owner.username not in repositories_by_owner:
                 repositories_by_owner[owner.username] = dict(owner=owner, repositories=[])
             repositories_by_owner[owner.username]['repositories'].append(repository)
@@ -146,9 +147,9 @@ def deprecate_repositories(app, cutoff_time, days=14, info_only=False, verbose=F
         owner = repositories_by_owner[repository_owner]['owner']
         send_mail_to_owner(app, repository.name, owner.username, owner.email, repositories_by_owner[repository_owner]['repositories'], days)
     stop = time.time()
-    print '# Deprecated %d repositories.' % len(repositories)
-    print "# Elapsed time: ", stop - start
-    print "####################################################################################"
+    print('# Deprecated %d repositories.' % len(repositories))
+    print("# Elapsed time: ", stop - start)
+    print("####################################################################################")
 
 
 class DeprecateRepositoriesApplication(object):
