@@ -28,6 +28,7 @@ var commonLibs = [
     // mvc
     "libs/underscore",
     "libs/backbone",
+    "libs/toastr",
     // all pages get these
     "ui/autocom_tagging",
     "layout/modal",
