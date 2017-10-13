@@ -1,39 +1,39 @@
-var webpack = require("webpack"),
-    // paths
-    path = require("path"),
-    scriptsBase = path.join(__dirname, "galaxy/scripts"),
-    libsBase = path.join(scriptsBase, "libs"),
-    // libraries used on almost every page
-    // TODO: reduce
-    commonLibs = [
-        "polyfills",
-        // jquery et al
-        "jquery",
-        "libs/jquery/jquery.migrate",
-        // jquery plugins
-        "libs/jquery/jquery.autocomplete",
-        "libs/jquery/jquery.event.hover",
-        "libs/jquery/jquery.event.drag",
-        "libs/jquery/jquery.mousewheel",
-        "libs/jquery/jquery.form",
-        "libs/jquery/jquery.rating",
-        "libs/jquery/select2",
-        "libs/jquery.sparklines",
-        "libs/jquery/jquery-ui",
-        "libs/jquery/jstorage",
-        "libs/jquery/jquery.complexify",
-        "libs/farbtastic",
-        "libs/bootstrap",
-        "libs/bootstrap-tour",
-        // mvc
-        "libs/underscore",
-        "libs/backbone",
-        // all pages get these
-        "ui/autocom_tagging",
-        "layout/modal",
-        "layout/panel",
-        "onload"
-    ];
+var webpack = require("webpack");
+
+var path = require("path");
+var scriptsBase = path.join(__dirname, "galaxy/scripts");
+var libsBase = path.join(scriptsBase, "libs");
+
+// libraries used on almost every page
+var commonLibs = [
+    "polyfills",
+    // jquery et al
+    "jquery",
+    "libs/jquery/jquery.migrate",
+    // jquery plugins
+    "libs/jquery/jquery.autocomplete",
+    "libs/jquery/jquery.event.hover",
+    "libs/jquery/jquery.event.drag",
+    "libs/jquery/jquery.mousewheel",
+    "libs/jquery/jquery.form",
+    "libs/jquery/jquery.rating",
+    "libs/jquery/select2",
+    "libs/jquery.sparklines",
+    "libs/jquery/jquery-ui",
+    "libs/jquery/jstorage",
+    "libs/jquery/jquery.complexify",
+    "libs/farbtastic",
+    "libs/bootstrap",
+    "libs/bootstrap-tour",
+    // mvc
+    "libs/underscore",
+    "libs/backbone",
+    // all pages get these
+    "ui/autocom_tagging",
+    "layout/modal",
+    "layout/panel",
+    "onload"
+];
 
 module.exports = {
     devtool: "source-map",
