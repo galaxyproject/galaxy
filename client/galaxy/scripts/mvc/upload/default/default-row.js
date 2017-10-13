@@ -89,11 +89,27 @@ function( Utils, UploadModel, UploadSettings, Popover, Select ) {
             this.listenTo( this.model, 'change:genome',      function() { self._refreshGenome() } );
             this.listenTo( this.model, 'change:extension',   function() { self._refreshExtension() } );
             this.listenTo( this.model, 'change:file_size',   function() { self._refreshFileSize() } );
-            this.listenTo( this.model, 'remove',             function() { self.remove() } );
-            this.app.collection.on('reset', function() { self.remove() } );
         },
 
         render: function() {
+            this._refreshType();
+            this._refreshPercentage();
+            this._refreshStatus();
+            this._refreshInfo()
+            this._refreshGenome();
+            this._refreshExtension();
+            this._refreshFileSize()
+        },
+
+        /** Remove view */
+        remove: function() {
+            this.select_genome.remove();
+            this.select_extension.remove();
+            Backbone.View.prototype.remove.apply( this );
+        },
+
+        /** Render type */
+        _refreshType: function() {
             var options = this.model.attributes;
             this.$title.html( _.escape( options.file_name ) );
             this.$size.html( Utils.bytesToString ( options.file_size ) );
@@ -107,13 +123,6 @@ function( Utils, UploadModel, UploadSettings, Popover, Select ) {
             } else if ( options.file_mode == 'ftp' ) {
                 this.$mode.addClass( 'fa fa-folder-open-o' );
             }
-        },
-
-        /** Remove view */
-        remove: function() {
-            this.select_genome.remove();
-            this.select_extension.remove();
-            Backbone.View.prototype.remove.apply( this );
         },
 
         /** Update extension */

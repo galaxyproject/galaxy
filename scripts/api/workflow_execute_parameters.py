@@ -49,7 +49,7 @@ def main():
     except IndexError:
         print('usage: %s key url workflow_id history step=src=dataset_id' % os.path.basename(sys.argv[0]))
         sys.exit(1)
-    submit( sys.argv[1], sys.argv[2], data )
+    submit(sys.argv[1], sys.argv[2], data)
 
 
 if __name__ == '__main__':

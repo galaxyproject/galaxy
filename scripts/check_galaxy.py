@@ -23,8 +23,8 @@ if "DEBUG" in os.environ:
     debug = os.environ["DEBUG"]
 else:
     debug = False
-scripts_dir = os.path.abspath( os.path.dirname( sys.argv[0] ) )
-test_data_dir = os.path.join( scripts_dir, os.pardir, "test-data" )
+scripts_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
+test_data_dir = os.path.join(scripts_dir, os.pardir, "test-data")
 # what tools to run - not so pretty
 tools = {
     "gops_intersect_1":
@@ -32,11 +32,11 @@ tools = {
         {
             "inputs":
             (
-                os.path.join( test_data_dir, "1.bed" ),
-                os.path.join( test_data_dir, "2.bed" )
+                os.path.join(test_data_dir, "1.bed"),
+                os.path.join(test_data_dir, "2.bed")
             )
         },
-        { "check_file": os.path.join( test_data_dir, "gops_intersect_out.bed" ) },
+        {"check_file": os.path.join(test_data_dir, "gops_intersect_out.bed")},
         {
             "tool_run_options":
             {
@@ -56,11 +56,11 @@ def usage():
 
 
 try:
-    opts, args = getopt.getopt( sys.argv[1:], 'n' )
+    opts, args = getopt.getopt(sys.argv[1:], 'n')
 except getopt.GetoptError as e:
     print(str(e))
     usage()
-if len( args ) < 1:
+if len(args) < 1:
     usage()
 server = args[0]
 if server.endswith(".g2.bx.psu.edu"):
@@ -79,14 +79,14 @@ for o, a in opts:
         usage()
 
 # state information
-var_dir = os.path.join( os.path.expanduser('~'), ".check_galaxy", server )
-if not os.access( var_dir, os.F_OK ):
-    os.makedirs( var_dir, 0o700 )
+var_dir = os.path.join(os.path.expanduser('~'), ".check_galaxy", server)
+if not os.access(var_dir, os.F_OK):
+    os.makedirs(var_dir, 0o700)
 
 # get user/pass
-login_file = os.path.join( var_dir, "login" )
+login_file = os.path.join(var_dir, "login")
 try:
-    f = open( login_file, 'r' )
+    f = open(login_file, 'r')
 except:
     message = """Please create the file:
 %s
@@ -97,7 +97,7 @@ check_galaxy@example.com password
 
 If the user does not exist, check_galaxy will create it for you.""" % login_file
     sys.exit(message)
-( username, password ) = f.readline().split()
+(username, password) = f.readline().split()
 
 # default timeout for twill browser is never
 socket.setdefaulttimeout(300)
@@ -118,7 +118,7 @@ class Browser:
         self.status = None
         self.check_file = None
         self.hid = None
-        self.cookie_jar = os.path.join( var_dir, "cookie_jar" )
+        self.cookie_jar = os.path.join(var_dir, "cookie_jar")
         dprint("cookie jar path: %s" % self.cookie_jar)
         if not os.access(self.cookie_jar, os.R_OK):
             dprint("no cookie jar at above path, creating")
@@ -140,7 +140,7 @@ class Browser:
         p = didParser()
         p.feed(tc.browser.get_html())
         if len(p.dids) > 0:
-            print("Remaining datasets ids:", " ".join( p.dids ))
+            print("Remaining datasets ids:", " ".join(p.dids))
             raise Exception("History still contains datasets after attempting to delete them")
         if new_history:
             self.get("/history/delete_current")
@@ -152,16 +152,16 @@ class Browser:
             tc.go(url)
             tc.code(302)
             tc.get_browser()._browser.set_handle_redirect(True)
-            dprint( "%s is returning redirect (302)" % url )
+            dprint("%s is returning redirect (302)" % url)
             return(True)
         except twill.errors.TwillAssertionError as e:
             tc.get_browser()._browser.set_handle_redirect(True)
-            dprint( "%s is not returning redirect (302): %s" % (url, e) )
+            dprint("%s is not returning redirect (302): %s" % (url, e))
             code = tc.browser.get_code()
             if code == 502:
                 is_maint = self.check_maint()
                 if is_maint:
-                    dprint( "Galaxy is down, but a maint file was found, so not sending alert" )
+                    dprint("Galaxy is down, but a maint file was found, so not sending alert")
                     sys.exit(0)
                 else:
                     sys.exit("Galaxy is down (code 502)")
@@ -232,8 +232,8 @@ class Browser:
             count += 1
             self.get("/root/history")
             page = tc.browser.get_html()
-            if page.find( '<!-- running: do not change this comment, used by TwillTestCase.wait -->' ) > -1:
-                time.sleep( sleep_amount )
+            if page.find('<!-- running: do not change this comment, used by TwillTestCase.wait -->') > -1:
+                time.sleep(sleep_amount)
                 sleep_amount += 1
             else:
                 break
@@ -340,7 +340,7 @@ class didParser(htmllib.HTMLParser):
     def start_div(self, attrs):
         for i in attrs:
             if i[0] == "id" and i[1].startswith("historyItemContainer-"):
-                self.dids.append( i[1].rsplit("historyItemContainer-", 1)[1] )
+                self.dids.append(i[1].rsplit("historyItemContainer-", 1)[1])
                 dprint("got a dataset id: %s" % self.dids[-1])
 
 
@@ -360,7 +360,7 @@ class loggedinParser(htmllib.HTMLParser):
         if self.in_p:
             if data == "You are currently not logged in.":
                 self.logged_in = False
-            elif data.startswith( "You are currently logged in as " ):
+            elif data.startswith("You are currently logged in as "):
                 self.logged_in = True
 
 

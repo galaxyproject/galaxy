@@ -7,44 +7,45 @@ from galaxy.web.base.controller import BaseAPIController
 from paste.httpexceptions import HTTPNotImplemented, HTTPBadRequest
 from galaxy import managers
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
-class BaseProvenanceController( BaseAPIController ):
+class BaseProvenanceController(BaseAPIController):
     """
     """
-    def __init__( self, app ):
-        super( BaseProvenanceController, self ).__init__( app )
-        self.hda_manager = managers.hdas.HDAManager( app )
+
+    def __init__(self, app):
+        super(BaseProvenanceController, self).__init__(app)
+        self.hda_manager = managers.hdas.HDAManager(app)
 
     @web.expose_api
-    def index( self, trans, **kwd ):
+    def index(self, trans, **kwd):
         follow = kwd.get('follow', False)
-        value = self._get_provenance( trans, self.provenance_item_class, kwd[self.provenance_item_id], follow )
+        value = self._get_provenance(trans, self.provenance_item_class, kwd[self.provenance_item_id], follow)
         return value
 
     @web.expose_api
-    def show( self, trans, elem_name, **kwd ):
+    def show(self, trans, elem_name, **kwd):
         follow = kwd.get('follow', False)
-        value = self._get_provenance( trans, self.provenance_item_class, kwd[self.provenance_item_id], follow )
+        value = self._get_provenance(trans, self.provenance_item_class, kwd[self.provenance_item_id], follow)
         return value
 
     @web.expose_api
-    def create( self, trans, tag_name, payload=None, **kwd ):
+    def create(self, trans, tag_name, payload=None, **kwd):
         payload = payload or {}
         raise HTTPNotImplemented()
 
     @web.expose_api
-    def delete( self, trans, tag_name, **kwd ):
+    def delete(self, trans, tag_name, **kwd):
         raise HTTPBadRequest("Cannot Delete Provenance")
 
-    def _get_provenance( self, trans, item_class_name, item_id, follow=True ):
-        provenance_item = self.get_object( trans, item_id, item_class_name, check_ownership=False, check_accessible=False)
+    def _get_provenance(self, trans, item_class_name, item_id, follow=True):
+        provenance_item = self.get_object(trans, item_id, item_class_name, check_ownership=False, check_accessible=False)
         if item_class_name == "HistoryDatasetAssociation":
-            self.hda_manager.error_unless_accessible( provenance_item, trans.user )
+            self.hda_manager.error_unless_accessible(provenance_item, trans.user)
         else:
-            self.security_check( trans, provenance_item, check_accessible=True )
-        out = self._get_record( trans, provenance_item, follow )
+            self.security_check(trans, provenance_item, check_accessible=True)
+        out = self._get_record(trans, provenance_item, follow)
         return out
 
     def _get_record(self, trans, item, follow):
@@ -55,8 +56,8 @@ class BaseProvenanceController( BaseAPIController ):
             if job is not None:
                 return {
                     "id": trans.security.encode_id(item.id),
-                    "uuid": ( lambda uuid: str( uuid ) if uuid else None )( item.dataset.uuid),
-                    "job_id": trans.security.encode_id( job.id ),
+                    "uuid": (lambda uuid: str(uuid) if uuid else None)(item.dataset.uuid),
+                    "job_id": trans.security.encode_id(job.id),
                     "tool_id": job.tool_id,
                     "parameters": self._get_job_record(trans, job, follow),
                     "stderr": job.stderr,
@@ -65,7 +66,7 @@ class BaseProvenanceController( BaseAPIController ):
             else:
                 return {
                     "id": trans.security.encode_id(item.id),
-                    "uuid": ( lambda uuid: str( uuid ) if uuid else None )( item.dataset.uuid)
+                    "uuid": (lambda uuid: str(uuid) if uuid else None)(item.dataset.uuid)
                 }
         return None
 
@@ -81,18 +82,18 @@ class BaseProvenanceController( BaseAPIController ):
             else:
                 out[in_d.name] = {
                     "id": trans.security.encode_id(in_d.dataset.id),
-                    "uuid": ( lambda uuid: str( uuid ) if uuid else None )( in_d.dataset.dataset.uuid ),
+                    "uuid": (lambda uuid: str(uuid) if uuid else None)(in_d.dataset.dataset.uuid),
                 }
         return out
 
 
-class HDAProvenanceController( BaseProvenanceController ):
+class HDAProvenanceController(BaseProvenanceController):
     controller_name = "history_content_provenance"
     provenance_item_class = "HistoryDatasetAssociation"
     provenance_item_id = "history_content_id"
 
 
-class LDDAProvenanceController( BaseProvenanceController ):
+class LDDAProvenanceController(BaseProvenanceController):
     controller_name = "ldda_provenance"
     provenance_item_class = "LibraryDatasetDatasetAssociation"
     provenance_item_id = "library_content_id"

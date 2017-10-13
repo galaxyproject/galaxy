@@ -1,7 +1,7 @@
 import yaml
 
 
-def main(trans, webhook):
+def main(trans, webhook, params):
     data = {}
     data['tools'] = []
     unique_tools = []

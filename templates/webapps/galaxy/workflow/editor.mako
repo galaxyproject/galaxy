@@ -1,5 +1,9 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 
+<%def name="title()">
+    Workflow Editor
+</%def>
+
 <%def name="init()">
 <%
     self.active_view="workflow"

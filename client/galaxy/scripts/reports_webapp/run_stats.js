@@ -117,7 +117,7 @@ function create_chart( inp_data, name, time, title ) {
         .enter().append("g")
             .attr("transform", function(d, i) {
                 // Place the bar in the correct place
-                curr_margin = +margin.left;
+                var curr_margin = +margin.left;
                 curr_margin += +(i * barWidth);
                 return "translate(" + curr_margin + "," + margin.top + ")";
             })
@@ -503,8 +503,8 @@ function create_histogram( inp_data, name, title ) {
 
     // Formatter for x axis times (converting minutes to HH:MM).
     var formatMinutes = function(d) {
-            hours = Math.floor( d / 60 )
-            minutes = Math.floor(d - (hours * 60))
+            var hours = Math.floor( d / 60 ),
+                minutes = Math.floor(d - (hours * 60))
 
             if(hours < 10) {
                 hours = "0" + hours
@@ -542,8 +542,8 @@ function create_histogram( inp_data, name, title ) {
             return "translate(" + (+x(d.x) + +margin.left) + "," + (+y(d.y) + +margin.top) + ")"; })
         .on("mouseenter", function(d) {
             // Show tool tip
-            i = 0;
-            size = d.length;
+            var i = 0,
+                size = d.length;
 
             while( size >= 1) {
                 size = size / 10;

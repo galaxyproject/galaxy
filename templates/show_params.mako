@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<% from galaxy.util import listify, nice_size, unicodify %>
+<% from galaxy.util import nice_size, unicodify %>
 
 <style>
     .inherit {
@@ -18,16 +18,11 @@
         width: 25%;
     }
 
-    .code {
-        white-space: pre-wrap;
-        background: #1d1f21;
-        color: white;
-        padding: 1em;
-    }
 </style>
 
 <%def name="inputs_recursive( input_params, param_values, depth=1, upgrade_messages=None )">
     <%
+        from galaxy.util import listify
         if upgrade_messages is None:
             upgrade_messages = {}
     %>
@@ -188,7 +183,9 @@
         <tr><td>UUID:</td><td>${hda.dataset.uuid}</td></tr>
         %endif
         %if trans.user_is_admin() or trans.app.config.expose_dataset_path:
-            <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
+            %if not hda.purged:
+                <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
+            %endif
         %endif
     </tbody>
 </table>

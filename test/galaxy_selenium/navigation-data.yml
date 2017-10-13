@@ -1,3 +1,4 @@
+# Deprecated navigation constants - prefer navigation.yml.
 selectors:
     tooltipBalloon: '.tooltip'
     editableText: '.editable-text'
@@ -15,12 +16,12 @@ selectors:
         main: 'galaxy_main'
     masthead: 
         id: '#masthead'
-        adminLink: '#masthead a[href="/admin/index"]'
         userMenu: 
             userEmail_xpath: '//a[contains(text(), "Logged in as")]'
 
         user: '//ul[@id="user"]'
         workflow: '//ul[@id="workflow"]'
+        shared_data: '//ul[@id="shared"]'
 
     toolMenu: 
         container: '.toolMenuContainer'
@@ -55,7 +56,7 @@ labels:
         menus: 
             analyze: 'Analyze Data'
             workflow: 'Workflow'
-            libraries: 'Shared Data'
+            shared_data: 'Shared Data'
             visualization: 'Visualization'
             help: 'Help'
             user: 'User'
@@ -64,6 +65,9 @@ labels:
             register: 'Register'
             login: 'Login'
             logout: 'Logout'
+
+        sharedMenu:
+            libraries: 'Data Libraries'
     
     tools: 
         upload: 

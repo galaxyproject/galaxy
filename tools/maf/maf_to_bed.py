@@ -25,9 +25,9 @@ def __main__():
     if "None" in species:
         species = set()
         try:
-            for i, m in enumerate( maf.Reader( open( input_filename, 'r' ) ) ):
+            for i, m in enumerate(maf.Reader(open(input_filename, 'r'))):
                 for c in m.components:
-                    spec, chrom = maf.src_split( c.src )
+                    spec, chrom = maf.src_split(c.src)
                     if not spec or not chrom:
                         spec = chrom = c.src
                     species.add(spec)
@@ -39,45 +39,45 @@ def __main__():
         print("Invalid dbkey specified", file=sys.stderr)
         return
 
-    for i, spec in enumerate( species ):
+    for i, spec in enumerate(species):
         if i == 0:
-            out_files[spec] = open( output_filename, 'w' )
+            out_files[spec] = open(output_filename, 'w')
             primary_spec = spec
         else:
-            out_files[ spec ] = open( os.path.join( database_tmp_dir, 'primary_%s_%s_visible_bed_%s' % ( output_id, spec, spec ) ), 'wb+' )
-    num_species = len( species )
+            out_files[spec] = open(os.path.join(database_tmp_dir, 'primary_%s_%s_visible_bed_%s' % (output_id, spec, spec)), 'wb+')
+    num_species = len(species)
 
-    print("Restricted to species:", ",".join( species ))
+    print("Restricted to species:", ",".join(species))
 
-    file_in = open( input_filename, 'r' )
-    maf_reader = maf.Reader( file_in )
+    file_in = open(input_filename, 'r')
+    maf_reader = maf.Reader(file_in)
 
     block_num = -1
 
-    for i, m in enumerate( maf_reader ):
+    for i, m in enumerate(maf_reader):
         block_num += 1
         if "None" not in species:
-            m = m.limit_to_species( species )
+            m = m.limit_to_species(species)
         l = m.components
         if len(l) < num_species and partial == "partial_disallowed":
             continue
         for c in l:
-            spec, chrom = maf.src_split( c.src )
+            spec, chrom = maf.src_split(c.src)
             if not spec or not chrom:
                     spec = chrom = c.src
             if spec not in out_files.keys():
-                out_files[ spec ] = open( os.path.join( database_tmp_dir, 'primary_%s_%s_visible_bed_%s' % ( output_id, spec, spec ) ), 'wb+' )
+                out_files[spec] = open(os.path.join(database_tmp_dir, 'primary_%s_%s_visible_bed_%s' % (output_id, spec, spec)), 'wb+')
 
             if c.strand == "-":
-                out_files[spec].write( chrom + "\t" + str( c.src_size - c.end ) + "\t" + str( c.src_size - c.start ) + "\t" + spec + "_" + str( block_num ) + "\t" + "0\t" + c.strand + "\n" )
+                out_files[spec].write(chrom + "\t" + str(c.src_size - c.end) + "\t" + str(c.src_size - c.start) + "\t" + spec + "_" + str(block_num) + "\t" + "0\t" + c.strand + "\n")
             else:
-                out_files[spec].write( chrom + "\t" + str( c.start ) + "\t" + str( c.end ) + "\t" + spec + "_" + str( block_num ) + "\t" + "0\t" + c.strand + "\n" )
+                out_files[spec].write(chrom + "\t" + str(c.start) + "\t" + str(c.end) + "\t" + spec + "_" + str(block_num) + "\t" + "0\t" + c.strand + "\n")
 
     file_in.close()
     for file_out in out_files.keys():
         out_files[file_out].close()
 
-    print("#FILE1_DBKEY\t%s" % ( primary_spec ))
+    print("#FILE1_DBKEY\t%s" % (primary_spec))
 
 
 if __name__ == "__main__":

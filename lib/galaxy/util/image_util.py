@@ -1,4 +1,6 @@
 """Provides utilities for working with image files."""
+from __future__ import absolute_import
+
 import imghdr
 import logging
 
@@ -13,11 +15,11 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 
-def image_type( filename ):
+def image_type(filename):
     fmt = None
     if PIL is not None:
         try:
-            im = PIL.open( filename )
+            im = PIL.open(filename)
             fmt = im.format
             im.close()
         except:
@@ -25,24 +27,24 @@ def image_type( filename ):
             # exception we expect to happen frequently, so we're not logging
             pass
     if not fmt:
-        fmt = imghdr.what( filename )
+        fmt = imghdr.what(filename)
     if fmt:
         return fmt.upper()
     else:
         return False
 
 
-def check_image_type( filename, types ):
-    fmt = image_type( filename )
+def check_image_type(filename, types):
+    fmt = image_type(filename)
     if fmt in types:
         return True
     return False
 
 
-def get_image_ext( file_path ):
+def get_image_ext(file_path):
     # determine ext
-    fmt = image_type( file_path )
-    if fmt in [ 'JPG', 'JPEG' ]:
+    fmt = image_type(file_path)
+    if fmt in ['JPG', 'JPEG']:
         return 'jpg'
     if fmt == 'PNG':
         return 'png'

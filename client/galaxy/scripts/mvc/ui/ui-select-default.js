@@ -18,9 +18,10 @@ var View = Backbone.View.extend({
             searchable  : true,
             optional    : false,
             disabled    : false,
+            readonly    : false,
             onchange    : function(){},
             value       : null,
-            selectall   : true,
+            individual  : false,
             pagesize    : 20
         }).set( options );
         this.on( 'change', function() { self.model.get( 'onchange' ) && self.model.get( 'onchange' )( self.value() ) } );
@@ -94,7 +95,7 @@ var View = Backbone.View.extend({
             });
         }
         this.all_button = null;
-        if ( this.model.get( 'multiple' ) && this.model.get( 'selectall' ) ) {
+        if ( this.model.get( 'multiple' ) && !this.model.get( 'individual' ) && !this.model.get( 'readonly' ) ) {
             this.all_button = new Buttons.ButtonCheck({
                 onclick: function() {
                     var new_value = [];
@@ -177,7 +178,7 @@ var View = Backbone.View.extend({
                 self.$select.append( $( '<option/>' ).attr( 'value', option.value ).html( _.escape( option.label ) ) );
             });
         }
-        this.model.set( 'disabled', this.length() == 0 );
+        this.model.set( 'disabled', this.model.get( 'readonly' ) || this.length() == 0 );
         this._changeValue();
     },
 
@@ -315,7 +316,7 @@ var View = Backbone.View.extend({
         }
         if ( this.model.get( 'searchable' ) ) {
             if ( $.isArray( new_value ) ) {
-                val = [];
+                var val = [];
                 _.each( new_value, function( v ) {
                     var d = _.findWhere( self.data2, { id: v } );
                     d && val.push( d );

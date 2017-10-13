@@ -1,10 +1,10 @@
+from galaxy_selenium.navigates_galaxy import retry_call_during_transitions
+
 from .framework import (
-    SeleniumTestCase,
     selenium_test,
+    SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
-
-from galaxy_selenium.navigates_galaxy import retry_call_during_transitions
 
 
 class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
@@ -31,22 +31,23 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         hda = self.latest_history_item()
         self._check_dataset_details_for_inttest_value(1)
 
-        dataset_details_key_value_pairs = self._table_to_key_value_elements("table#dataset-details")
-        number_found = name_found = format_found = False
-        for key, value in dataset_details_key_value_pairs:
-            if "Number:" in key.text:
-                assert str(hda["hid"]) in value.text
-                number_found = True
-            if "Name:" in key.text:
-                assert hda["name"] in value.text
-                name_found = True
-            if "Format:" in key.text:
-                assert hda["extension"] in value.text
-                format_found = True
+        with self.main_panel():
+            dataset_details_key_value_pairs = self._table_to_key_value_elements("table#dataset-details")
+            number_found = name_found = format_found = False
+            for key, value in dataset_details_key_value_pairs:
+                if "Number:" in key.text:
+                    assert str(hda["hid"]) in value.text
+                    number_found = True
+                if "Name:" in key.text:
+                    assert hda["name"] in value.text
+                    name_found = True
+                if "Format:" in key.text:
+                    assert hda["extension"] in value.text
+                    format_found = True
 
-        assert number_found
-        assert name_found
-        assert format_found
+            assert number_found
+            assert name_found
+            assert format_found
 
     def _table_to_key_value_elements(self, table_selector):
         tool_parameters_table = self.wait_for_selector_visible(table_selector)

@@ -1,17 +1,21 @@
 # -*- coding: utf-8 -*-
-
-from galaxy.datatypes import data
 import logging
-from galaxy.datatypes.sniff import get_headers
-from galaxy.datatypes.data import get_file_peek
-from galaxy.datatypes.tabular import Tabular
-from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.xml import GenericXml
-import subprocess
 import os
+import subprocess
 
+from galaxy.datatypes import (
+    data,
+    metadata
+)
+from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes import metadata
+from galaxy.datatypes.sniff import (
+    get_headers,
+    iter_headers
+)
+from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.xml import GenericXml
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +55,7 @@ def count_lines(filename, non_empty=False):
 
 class GenericMolFile(data.Text):
     """
-        abstract class for most of the molecule files
+    Abstract class for most of the molecule files.
     """
     MetadataElement(name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
 
@@ -88,26 +92,53 @@ class SDF(GenericMolFile):
         """
         Try to guess if the file is a SDF2 file.
 
+        An SDfile (structure-data file) can contain multiple compounds.
+
+        Each compound starts with a block in V2000 or V3000 molfile format,
+        which ends with a line equal to 'M  END'.
+        This is followed by a non-structural data block, which ends with a line
+        equal to '$$$$'.
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('drugbank_drugs.sdf')
         >>> SDF().sniff(fname)
         True
 
-        >>> fname = get_test_fname('drugbank_drugs.cml')
+        >>> fname = get_test_fname('github88.v3k.sdf')
+        >>> SDF().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('chebi_57262.v3k.mol')
         >>> SDF().sniff(fname)
         False
         """
-        counter = count_special_lines("^M\s*END", filename) + count_special_lines("^\$\$\$\$", filename)
-        if counter > 0 and counter % 2 == 0:
-            return True
-        else:
-            return False
+        m_end_found = False
+        limit = 10000
+        idx = 0
+        with open(filename) as in_file:
+            for line in in_file:
+                idx += 1
+                line = line.rstrip('\n\r')
+                if idx < 4:
+                    continue
+                elif idx == 4:
+                    if len(line) != 39 or not(line.endswith(' V2000') or
+                            line.endswith(' V3000')):
+                        return False
+                elif not m_end_found:
+                    if line == 'M  END':
+                        m_end_found = True
+                elif line == '$$$$':
+                    return True
+                if idx == limit:
+                    break
+        return False
 
     def set_meta(self, dataset, **kwd):
         """
         Set the number of molecules in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines("^\$\$\$\$", dataset.file_name)
+        dataset.metadata.number_of_molecules = count_special_lines("^\$\$\$\$$", dataset.file_name)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
@@ -176,10 +207,17 @@ class MOL2(GenericMolFile):
         >>> MOL2().sniff(fname)
         False
         """
-        if count_special_lines("@<TRIPOS>MOLECULE", filename) > 0:
-            return True
-        else:
-            return False
+        limit = 60
+        idx = 0
+        with open(filename) as in_file:
+            for line in in_file:
+                line = line.rstrip('\n\r')
+                if line == '@<TRIPOS>MOLECULE':
+                    return True
+                idx += 1
+                if idx == limit:
+                    break
+        return False
 
     def set_meta(self, dataset, **kwd):
         """
@@ -460,7 +498,7 @@ class PDB(GenericMolFile):
         >>> PDB().sniff(fname)
         False
         """
-        headers = get_headers(filename, sep=' ', count=300)
+        headers = iter_headers(filename, sep=' ', count=300)
         h = t = c = s = k = e = False
         for line in headers:
             section_name = line[0].strip()
@@ -513,7 +551,7 @@ class PDBQT(GenericMolFile):
         >>> PDBQT().sniff(fname)
         False
         """
-        headers = get_headers(filename, sep=' ', count=300)
+        headers = iter_headers(filename, sep=' ', count=300)
         h = t = c = s = k = False
         for line in headers:
             section_name = line[0].strip()
@@ -606,7 +644,7 @@ class InChI(Tabular):
         >>> InChI().sniff(fname)
         False
         """
-        inchi_lines = get_headers(filename, sep=' ', count=10)
+        inchi_lines = iter_headers(filename, sep=' ', count=10)
         for inchi in inchi_lines:
             if not inchi[0].startswith('InChI='):
                 return False
@@ -712,16 +750,13 @@ class CML(GenericXml):
         >>> CML().sniff(fname)
         True
         """
-        handle = open(filename)
-        line = handle.readline()
-        if line.strip() != '<?xml version="1.0"?>':
-            handle.close()
-            return False
-        line = handle.readline()
-        if line.strip().find('http://www.xml-cml.org/schema') == -1:
-            handle.close()
-            return False
-        handle.close()
+        with open(filename) as handle:
+            line = handle.readline()
+            if line.strip() != '<?xml version="1.0"?>':
+                return False
+            line = handle.readline()
+            if line.strip().find('http://www.xml-cml.org/schema') == -1:
+                return False
         return True
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
@@ -750,7 +785,7 @@ class CML(GenericXml):
                     if line.lstrip().startswith('<?xml version="1.0"?>') or \
                        line.lstrip().startswith('<cml xmlns="http://www.xml-cml.org/schema') or \
                        line.lstrip().startswith('</cml>'):
-                            continue
+                        continue
                     lines.append(line)
                     if line.lstrip().startswith('</molecule>'):
                         yield lines

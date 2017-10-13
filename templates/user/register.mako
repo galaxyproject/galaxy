@@ -128,6 +128,7 @@ def inherit(context):
 
     <div id="registrationForm" class="toolForm">
         <form name="registration" id="registration" action="${form_action}" method="post" >
+            <input type="hidden" name="session_csrf_token" value="${trans.session_csrf_token}" />
             <div class="toolFormTitle">Create account</div>
             <div class="form-row">
                 <label>Email address:</label>

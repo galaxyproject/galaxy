@@ -72,9 +72,9 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath, plink):
     if not missval:
         print('### lped_to_pbed_converter.py cannot identify missing value in %s' % pedf)
         missval = '0'
-    cl = '%s --noweb --file %s --make-bed --out %s --missing-genotype %s' % (plink, inpedfilepath, outroot, missval)
-    p = subprocess.Popen(cl, shell=True, cwd=outfilepath)
-    p.wait()  # run plink
+    subprocess.check_call([plink, '--noweb', '--file', inpedfilepath,
+                           '--make-bed', '--out', outroot,
+                           '--missing-genotype', missval], cwd=outfilepath)
 
 
 def main():
@@ -104,7 +104,7 @@ def main():
         s = '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow())  # becomes info
         print(s)
         f.write('<div>%s\n<ol>' % (s))
-        for i, data in enumerate( flist ):
+        for i, data in enumerate(flist):
             f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
         f.write("</ol></div></div></body></html>")
 

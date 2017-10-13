@@ -15,9 +15,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             $( 'body' ).append( this.$el );
             this._configure();
             this.render();
-            this._refresh();
-            this.$el.on( 'click', function() { self._refresh() } );
-            this.$steps.scroll( function() { self._refresh() } );
             $( window ).resize( function() { self._refresh() } );
         },
 
@@ -25,7 +22,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         _refresh: function( step_index ) {
             var margin = _.reduce( this.$el.children(), function( memo, child ) {
                 return memo + $( child ).outerHeight();
-            }, 0 ) - this.$steps.height() + 25;
+            }, 0 ) - this.$steps.height() + 90;
             this.$steps.css( 'height', $( window ).height() - margin );
         },
 
@@ -48,7 +45,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 }
                 step = Utils.merge( {
                     index                   : i,
-                    title                   : _.escape( title ),
+                    fixed_title             : _.escape( title ),
                     icon                    : icon || '',
                     help                    : null,
                     citations               : null,
@@ -115,7 +112,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             var wp_count = 0;
             this.wp_inputs = {};
             function _handleWorkflowParameter( value, callback ) {
-                var re = /\$\{(.+?)\}/g;
+                var re = /\$\{(.+?)\}/g, match;
                 while ( match = re.exec( String( value ) ) ) {
                     var wp_name = match[ 1 ];
                     callback( self.wp_inputs[ wp_name ] = self.wp_inputs[ wp_name ] || {
@@ -307,13 +304,14 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     var is_simple_input = ([ 'data_input', 'data_collection_input' ]).indexOf( step.step_type ) != -1;
                     _.each( step.inputs, function( input ) { input.flavor = 'module'; input.hide_label = is_simple_input; } );
                     form = new Form( Utils.merge({
-                        title    : step.title,
+                        title    : step.fixed_title,
                         onchange : function() { _.each( self.links[ step.index ], function( link ) { self._refreshStep( link ) } ) },
                         inputs   : step.inputs && step.inputs.length > 0 ? step.inputs : [ { type: 'hidden', name: 'No options available.', ignore: null } ]
                     }, step ) );
                 }
                 self.forms[ step.index ] = form;
                 self._append( self.$steps, form.$el );
+                self._refresh();
                 step.needs_refresh && self._refreshStep( step );
                 form.portlet[ !self.show_progress ? 'enable' : 'disable' ]();
                 self.show_progress && self.execute_btn.model.set( { wait        : true,
@@ -338,7 +336,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                 new_value = { values: [] };
                                 _.each( input.step_linked, function( source_step ) {
                                     if ( self._isDataStep( source_step ) ) {
-                                        value = self.forms[ source_step.index ].data.create().input;
+                                        var value = self.forms[ source_step.index ].data.create().input;
                                         value && _.each( value.values, function( v ) { new_value.values.push( v ) } );
                                     }
                                 });
@@ -347,7 +345,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                 }
                             } else if ( input.wp_linked ) {
                                 new_value = input.value;
-                                var re = /\$\{(.+?)\}/g;
+                                var re = /\$\{(.+?)\}/g, match;
                                 while ( match = re.exec( input.value ) ) {
                                     var wp_field = self.wp_form.field_list[ self.wp_form.data.match( match[ 1 ] ) ];
                                     var wp_value = wp_field && wp_field.value();
@@ -457,7 +455,9 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         if ($.isArray( response ) && response.length > 0) {
                             self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );
                             var WebhookApp = new Webhooks.WebhookView({
-                                urlRoot: Galaxy.root + 'api/webhooks/workflow'
+                                urlRoot: Galaxy.root + 'api/webhooks/workflow',
+                                toolId: job_def.tool_id,
+                                toolVersion: job_def.tool_version,
                             });
                         }
 
@@ -514,7 +514,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Is data input module/step */
         _isDataStep: function( steps ) {
-            lst = $.isArray( steps ) ? steps : [ steps ] ;
+            var lst = $.isArray( steps ) ? steps : [ steps ] ;
             for ( var i = 0; i < lst.length; i++ ) {
                 var step = lst[ i ];
                 if ( !step || !step.step_type || !step.step_type.startsWith( 'data' ) ) {

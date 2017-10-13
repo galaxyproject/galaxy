@@ -77,6 +77,7 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
         });
     };
     var ToursView = Backbone.View.extend({
+        title: "Tours",
         // initialize
         initialize: function() {
             var self = this;

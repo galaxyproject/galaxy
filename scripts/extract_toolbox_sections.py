@@ -14,33 +14,33 @@ def main():
 
     # index range 1-1000, current sections/tools divided between 250-750
     sectionindex = 250
-    sectionfactor = int( 500 / len( root.getchildren() ) )
+    sectionfactor = int(500 / len(root.getchildren()))
 
     for rootchild in root.getchildren():
         currentsectionlabel = ""
-        if ( rootchild.tag == "section" ):
+        if (rootchild.tag == "section"):
             sectionname = rootchild.attrib['name']
             # per section tool index range 1-1000, current labels/tools
             # divided between 20 and 750
             toolindex = 250
-            toolfactor = int( 500 / len( rootchild.getchildren() ) )
+            toolfactor = int(500 / len(rootchild.getchildren()))
             currentlabel = ""
             for sectionchild in rootchild.getchildren():
-                if ( sectionchild.tag == "tool" ):
+                if (sectionchild.tag == "tool"):
                     addToToolDict(sectionchild, sectionname, sectionindex, toolindex, currentlabel)
                     toolindex += toolfactor
-                elif ( sectionchild.tag == "label" ):
+                elif (sectionchild.tag == "label"):
                     currentlabel = sectionchild.attrib["text"]
             sectionindex += sectionfactor
-        elif ( rootchild.tag == "tool" ):
+        elif (rootchild.tag == "tool"):
             addToToolDict(rootchild, "", sectionindex, None, currentsectionlabel)
             sectionindex += sectionfactor
-        elif ( rootchild.tag == "label" ):
+        elif (rootchild.tag == "label"):
             currentsectionlabel = rootchild.attrib["text"]
             sectionindex += sectionfactor
 
     # scan galaxy root tools dir for tool-specific xmls
-    toolconffilelist = getfnl( os.path.join(os.getcwd(), "tools" ) )
+    toolconffilelist = getfnl(os.path.join(os.getcwd(), "tools"))
 
     # foreach tool xml:
     #   check if the tags element exists in the tool xml (as child of <tool>)
@@ -61,39 +61,39 @@ def main():
             hastags = True
         # check if toolboxposition element already exists in this tooconfig file
         toolboxposelement = tooldocroot.find("toolboxposition")
-        if ( toolboxposelement ):
+        if (toolboxposelement):
             hastoolboxpos = True
 
-        if ( not ( hastags and hastoolboxpos ) ):
-            original = open( toolconffile, 'r' )
+        if (not (hastags and hastoolboxpos)):
+            original = open(toolconffile, 'r')
             contents = original.readlines()
             original.close()
 
             # the new elements will be added directly below the root tool element
             addelementsatposition = 1
             # but what's on the first line? Root or not?
-            if ( contents[0].startswith("<?") ):
+            if (contents[0].startswith("<?")):
                 addelementsatposition = 2
             newelements = []
-            if ( not hastoolboxpos ):
-                if ( toolconffile in tooldict ):
+            if (not hastoolboxpos):
+                if (toolconffile in tooldict):
                     for attributes in tooldict[toolconffile]:
                         # create toolboxposition element
                         sectionelement = ET.Element("toolboxposition")
                         sectionelement.attrib = attributes
                         sectionelement.tail = "\n  "
-                        newelements.append( ET.tostring(sectionelement, 'utf-8') )
+                        newelements.append(ET.tostring(sectionelement, 'utf-8'))
 
-            if ( not hastags ):
+            if (not hastags):
                 # create empty tags element
-                newelements.append( "<tags/>\n  " )
+                newelements.append("<tags/>\n  ")
 
-            contents = ( contents[ 0:addelementsatposition ] + newelements +
-                         contents[ addelementsatposition: ] )
+            contents = (contents[0:addelementsatposition] + newelements +
+                        contents[addelementsatposition:])
 
             # add .new for testing/safety purposes :P
-            newtoolconffile = open( toolconffile, 'w' )
-            newtoolconffile.writelines( contents )
+            newtoolconffile = open(toolconffile, 'w')
+            newtoolconffile.writelines(contents)
             newtoolconffile.close()
 
 
@@ -103,15 +103,15 @@ def addToToolDict(tool, sectionname, sectionindex, toolindex, currentlabel):
 
     # define attributes for the toolboxposition xml-tag
     attribdict = {}
-    if ( sectionname ):
-        attribdict[ "section" ] = sectionname
-    if ( currentlabel ):
-        attribdict[ "label" ] = currentlabel
-    if ( sectionindex ):
-        attribdict[ "sectionorder" ] = str(sectionindex)
-    if ( toolindex ):
-        attribdict[ "order" ] = str(toolindex)
-    tooldict[ realtoolfile ].append(attribdict)
+    if (sectionname):
+        attribdict["section"] = sectionname
+    if (currentlabel):
+        attribdict["label"] = currentlabel
+    if (sectionindex):
+        attribdict["sectionorder"] = str(sectionindex)
+    if (toolindex):
+        attribdict["order"] = str(toolindex)
+    tooldict[realtoolfile].append(attribdict)
 
 
 # Build a list of all toolconf xml files in the tools directory
@@ -123,9 +123,8 @@ def getfnl(startdir):
             if fn.endswith('.xml'):
                 try:
                     doc = ET.parse(fullfn)
-                except:
-                    print "Oops, bad xml in: ", fullfn
-                    raise
+                except Exception as e:
+                    raise Exception("Oops, bad XML in '%s': %s" % (fullfn, e))
                 rootelement = doc.getroot()
                 # here we check if this xml file actually is a tool conf xml!
                 if rootelement.tag == 'tool':

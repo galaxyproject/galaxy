@@ -1,15 +1,9 @@
 define([
-    "layout/masthead",
-    "mvc/base-mvc",
-    "utils/utils",
     "libs/toastr",
     "mvc/library/library-model",
     "mvc/library/library-libraryrow-view",
     "libs/underscore"
 ], function(
-    mod_masthead,
-    mod_baseMVC,
-    mod_utils,
     mod_toastr,
     mod_library_model,
     mod_library_libraryrow_view,
@@ -49,7 +43,7 @@ var LibraryListView = Backbone.View.extend({
               if ( typeof response.responseJSON !== "undefined" ){
                 mod_toastr.error( response.responseJSON.err_msg );
               } else {
-                mod_toastr.error( 'An error ocurred.' );
+                mod_toastr.error( 'An error occurred.' );
               }
           }
         });
@@ -66,6 +60,7 @@ var LibraryListView = Backbone.View.extend({
         var template = this.templateLibraryList();
         var libraries_to_render = null;
         var models = null;
+        var is_public = function(model){ return model.get('public') === true; }
         $( ".tooltip" ).hide();
         if ( typeof options !== 'undefined' ){
             models = typeof options.models !== 'undefined' ? options.models : null;
@@ -77,12 +72,18 @@ var LibraryListView = Backbone.View.extend({
             } else {
               libraries_to_render = this.collection.where( { deleted: false } );
             }
+            if ( Galaxy.libraries.preferences.get( 'without_restricted' ) ){
+              libraries_to_render = _.filter( libraries_to_render, is_public );
+            }
         } else if ( models !== null ){
             if ( Galaxy.libraries.preferences.get( 'with_deleted' ) ){
                 libraries_to_render = models;
             } else {
                 var is_deleted = function(model){ return model.get('deleted') === false; }
-                libraries_to_render = _.filter(models, is_deleted );
+                libraries_to_render = _.filter( models, is_deleted );
+            }
+            if ( Galaxy.libraries.preferences.get( 'without_restricted' ) ) {
+              libraries_to_render = _.filter( libraries_to_render, is_public );
             }
         } else {
             libraries_to_render = [];
@@ -137,7 +138,7 @@ var LibraryListView = Backbone.View.extend({
               if ( typeof response.responseJSON !== "undefined" ){
                 mod_toastr.error( response.responseJSON.err_msg );
               } else {
-                mod_toastr.error( 'An error ocurred.' );
+                mod_toastr.error( 'An error occurred.' );
               }
           }
         });
@@ -192,13 +193,6 @@ var LibraryListView = Backbone.View.extend({
         }
     },
 
-    redirectToHome: function(){
-        window.location = '../';
-    },
-    redirectToLogin: function(){
-        window.location = '/user/login';
-    },
-
     /**
      * In case the search_term is not empty perform the search and render
      * the result. Render all visible libraries otherwise.
@@ -210,7 +204,7 @@ var LibraryListView = Backbone.View.extend({
         var results = null
         results = this.collection.search( search_term );
         this.options.searching = true;
-        this.render({'models': results});
+        this.render({models: results, show_page: 1});
       } else {
         this.options.searching = false;
         this.render();

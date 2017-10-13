@@ -16,8 +16,10 @@ var LibraryDatasetView = Backbone.View.extend({
 
   model: null,
 
-  options: {
+  options: {},
 
+  defaults: {
+    edit_mode: false
   },
 
   events: {
@@ -25,13 +27,11 @@ var LibraryDatasetView = Backbone.View.extend({
     "click .toolbtn_cancel_modifications" :   "render",
     "click .toolbtn-download-dataset"     :   "downloadDataset",
     "click .toolbtn-import-dataset"       :   "importIntoHistory",
-    "click .toolbtn-share-dataset"        :   "shareDataset",
-    "click .btn-copy-link-to-clipboard"   :   "copyToClipboard",
-    "click .btn-make-private"             :   "makeDatasetPrivate",
-    "click .btn-remove-restrictions"      :   "removeDatasetRestrictions",
+    "click .copy-link-to-clipboard"       :   "copyToClipboard",
+    "click .make-private"                 :   "makeDatasetPrivate",
+    "click .remove-restrictions"          :   "removeDatasetRestrictions",
     "click .toolbtn_save_permissions"     :   "savePermissions",
-    "click .toolbtn_save_modifications"   :   "comingSoon",
-
+    "click .toolbtn_save_modifications"   :   "saveModifications"
   },
 
   // genome select
@@ -84,7 +84,7 @@ var LibraryDatasetView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg + ' Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         } else {
-          mod_toastr.error('An error ocurred. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
+          mod_toastr.error('An error occurred. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         }
       }
     });
@@ -116,7 +116,7 @@ var LibraryDatasetView = Backbone.View.extend({
           if (typeof response.responseJSON !== "undefined"){
             mod_toastr.error(response.responseJSON.err_msg);
           } else {
-            mod_toastr.error('An error ocurred.');
+            mod_toastr.error('An error occurred.');
           }
         }
       });
@@ -134,7 +134,10 @@ var LibraryDatasetView = Backbone.View.extend({
     $(".tooltip").remove();
     var template = this.templateModifyDataset();
     this.$el.html(template({item: this.model}));
-    this.renderSelectBoxes({genome_build: this.model.get('genome_build'), file_ext: this.model.get('file_ext') });
+    this.renderSelectBoxes({
+      genome_build: this.model.get('genome_build'),
+      file_ext: this.model.get('file_ext')
+    });
     $(".peek").html(this.model.get("peek"));
     $("#center [data-toggle]").tooltip();
   },
@@ -195,7 +198,7 @@ var LibraryDatasetView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg);
         } else {
-          mod_toastr.error('An error ocurred.');
+          mod_toastr.error('An error occurred.');
         }
       }
     });
@@ -211,7 +214,7 @@ var LibraryDatasetView = Backbone.View.extend({
           that.processImportToHistory(new_history.id);
         })
         .fail(function( xhr, status, error ) {
-          mod_toastr.error('An error ocurred.');
+          mod_toastr.error('An error occurred.');
         })
         .always(function() {
           that.modal.enableButton('Import');
@@ -245,15 +248,9 @@ var LibraryDatasetView = Backbone.View.extend({
       });
   },
 
-  shareDataset: function(){
-    mod_toastr.info('Feature coming soon.');
-  },
-
-  goBack: function(){
-    Galaxy.libraries.library_router.back();
-  },
-
   showPermissions: function(options){
+    var template = this.templateDatasetPermissions();
+    var self = this;
     this.options = _.extend(this.options, options);
     $(".tooltip").remove();
     if (this.options.fetched_permissions !== undefined){
@@ -263,19 +260,14 @@ var LibraryDatasetView = Backbone.View.extend({
         this.model.set({is_unrestricted:false});
       }
     }
-    // Select works different for admins, details in this.prepareSelectBoxes
-    var is_admin = false;
-    if (Galaxy.user){
-      is_admin = Galaxy.user.isAdmin();
-    }
-    var template = this.templateDatasetPermissions();
-    this.$el.html(template({item: this.model, is_admin: is_admin}));
-    var self = this;
-    $.get( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
-      self.prepareSelectBoxes({fetched_permissions: fetched_permissions, is_admin: is_admin});
-    }).fail(function(){
+    this.$el.html(template({item: this.model, is_admin: Galaxy.config.is_admin_user}));
+    $.get(Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=current")
+      .done(function(fetched_permissions){
+        self.prepareSelectBoxes({fetched_permissions: fetched_permissions, is_admin: Galaxy.config.is_admin_user});
+      })
+      .fail(function(){
         mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
-    });
+      });
     $("#center [data-toggle]").tooltip();
     $("#center").css('overflow','auto');
   },
@@ -283,182 +275,135 @@ var LibraryDatasetView = Backbone.View.extend({
   _serializeRoles : function(role_list){
     var selected_roles = [];
     for (var i = 0; i < role_list.length; i++) {
-      selected_roles.push(role_list[i][1] + ':' + role_list[i][0]);
+      // Replace the : and , in role's name since these are select2 separators for initialData
+      selected_roles.push(role_list[i][1] + ':' + role_list[i][0].replace(':', ' ').replace(',', ' &'));
     }
     return selected_roles;
   },
 
   prepareSelectBoxes: function(options){
     this.options = _.extend(this.options, options);
-    var fetched_permissions = this.options.fetched_permissions;
-    var is_admin = this.options.is_admin
-    var self = this;
-    var selected_access_dataset_roles = [];
-    var selected_modify_item_roles = [];
-    var selected_manage_dataset_roles = [];
-    selected_access_dataset_roles = this._serializeRoles(fetched_permissions.access_dataset_roles);
-    selected_modify_item_roles = this._serializeRoles(fetched_permissions.modify_item_roles);
-    selected_manage_dataset_roles = this._serializeRoles(fetched_permissions.manage_dataset_roles);
-
-    if (is_admin){ // Admin has a special select that allows AJAX searching
-        var access_select_options = {
-          minimumInputLength: 0,
-          css: 'access_perm',
-          multiple:true,
-          placeholder: 'Click to select a role',
-          container: self.$el.find('#access_perm'),
-          ajax: {
-              url: Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
-              dataType: 'json',
-              quietMillis: 100,
-              data: function (term, page) { // page is the one-based page number tracked by Select2
-                  return {
-                      q: term, //search term
-                      page_limit: 10, // page size
-                      page: page // page number
-                  };
-              },
-              results: function (data, page) {
-                  var more = (page * 10) < data.total; // whether or not there are more results available
-                  // notice we return the value of more so Select2 knows if more results can be loaded
-                  return {results: data.roles, more: more};
-              }
-          },
-          formatResult : function roleFormatResult(role) {
-              return role.name + ' type: ' + role.type;
-          },
-
-          formatSelection: function roleFormatSelection(role) {
-              return role.name;
-          },
-          initSelection: function(element, callback) {
-          // the input tag has a value attribute preloaded that points to a preselected role's id
-          // this function resolves that id attribute to an object that select2 can render
-          // using its formatResult renderer - that way the role name is shown preselected
-              var data = [];
-              $(element.val().split(",")).each(function() {
-                  var item = this.split(':');
-                  data.push({
-                      id: item[0],
-                      name: item[1]
-                  });
-              });
-              callback(data);
-          },
-          initialData: selected_access_dataset_roles.join(','),
-          dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
-        };
-        var modify_select_options = {
-          minimumInputLength: 0,
-          css: 'modify_perm',
-          multiple:true,
-          placeholder: 'Click to select a role',
-          container: self.$el.find('#modify_perm'),
-          ajax: {
-              url: Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
-              dataType: 'json',
-              quietMillis: 100,
-              data: function (term, page) { // page is the one-based page number tracked by Select2
-                  return {
-                      q: term, //search term
-                      page_limit: 10, // page size
-                      page: page // page number
-                  };
-              },
-              results: function (data, page) {
-                  var more = (page * 10) < data.total; // whether or not there are more results available
-                  // notice we return the value of more so Select2 knows if more results can be loaded
-                  return {results: data.roles, more: more};
-              }
-          },
-          formatResult : function roleFormatResult(role) {
-              return role.name + ' type: ' + role.type;
-          },
-
-          formatSelection: function roleFormatSelection(role) {
-              return role.name;
-          },
-          initSelection: function(element, callback) {
-          // the input tag has a value attribute preloaded that points to a preselected role's id
-          // this function resolves that id attribute to an object that select2 can render
-          // using its formatResult renderer - that way the role name is shown preselected
-              var data = [];
-              $(element.val().split(",")).each(function() {
-                  var item = this.split(':');
-                  data.push({
-                      id: item[0],
-                      name: item[1]
-                  });
-              });
-              callback(data);
-          },
-          initialData: selected_modify_item_roles.join(','),
-          dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
-        };
-        var manage_select_options = {
-          minimumInputLength: 0,
-          css: 'manage_perm',
-          multiple:true,
-          placeholder: 'Click to select a role',
-          container: self.$el.find('#manage_perm'),
-          ajax: {
-              url: Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
-              dataType: 'json',
-              quietMillis: 100,
-              data: function (term, page) { // page is the one-based page number tracked by Select2
-                  return {
-                      q: term, //search term
-                      page_limit: 10, // page size
-                      page: page // page number
-                  };
-              },
-              results: function (data, page) {
-                  var more = (page * 10) < data.total; // whether or not there are more results available
-                  // notice we return the value of more so Select2 knows if more results can be loaded
-                  return {results: data.roles, more: more};
-              }
-          },
-          formatResult : function roleFormatResult(role) {
-              return role.name + ' type: ' + role.type;
-          },
-
-          formatSelection: function roleFormatSelection(role) {
-              return role.name;
-          },
-          initSelection: function(element, callback) {
-          // the input tag has a value attribute preloaded that points to a preselected role's id
-          // this function resolves that id attribute to an object that select2 can render
-          // using its formatResult renderer - that way the role name is shown preselected
-              var data = [];
-              $(element.val().split(",")).each(function() {
-                  var item = this.split(':');
-                  data.push({
-                      id: item[0],
-                      name: item[1]
-                  });
-              });
-              callback(data);
-          },
-          initialData: selected_manage_dataset_roles.join(','),
-          dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
-        };
-
-        self.accessSelectObject = new mod_select.View(access_select_options);
-        self.modifySelectObject = new mod_select.View(modify_select_options);
-        self.manageSelectObject = new mod_select.View(manage_select_options);
-    } else { // Non-admins have select with pre-loaded options
-        var template = self.templateAccessSelect();
-        $.get( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available", function( data ) {
-            $('.access_perm').html(template({options: data.roles}));
-            self.accessSelectObject = $('#access_select').select2();
-        }).fail(function() {
-            mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
-        });
-    }
+    this.accessSelectObject = new mod_select.View(
+      this._generate_select_options({
+        selector: 'access_perm',
+        initialData: this._serializeRoles(this.options.fetched_permissions.access_dataset_roles)
+      })
+    );
+    this.modifySelectObject = new mod_select.View(
+      this._generate_select_options({
+        selector: 'modify_perm',
+        initialData: this._serializeRoles(this.options.fetched_permissions.modify_item_roles)
+      })
+    );
+    this.manageSelectObject = new mod_select.View(
+      this._generate_select_options({
+        selector: 'manage_perm',
+        initialData: this._serializeRoles(this.options.fetched_permissions.manage_dataset_roles)
+      })
+    );
   },
 
-  comingSoon: function(){
-    mod_toastr.warning('Feature coming soon.');
+  _generate_select_options: function(options){
+    var select_options = {
+      minimumInputLength: 0,
+      multiple: true,
+      placeholder: 'Click to select a role',
+      formatResult : function roleFormatResult(role) {
+          return role.name + ' type: ' + role.type;
+      },
+      formatSelection: function roleFormatSelection(role) {
+          return role.name;
+      },
+      initSelection: function(element, callback) {
+      // the input tag has a value attribute preloaded that points to a preselected role's id
+      // this function resolves that id attribute to an object that select2 can render
+      // using its formatResult renderer - that way the role name is shown preselected
+          var data = [];
+          $(element.val().split(",")).each(function() {
+              var item = this.split(':');
+              data.push({
+                  id: item[0],
+                  name: item[1]
+              });
+          });
+          callback(data);
+      },
+      dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
+    }
+    select_options.container = this.$el.find('#' + options.selector);
+    select_options.css = options.selector;
+    select_options.initialData = options.initialData.join(',');
+    select_options.ajax = {
+      url: Galaxy.root + "api/libraries/datasets/" + this.id + "/permissions?scope=available",
+        dataType: 'json',
+        quietMillis: 100,
+        data: function (term, page) { // page is the one-based page number tracked by Select2
+            return {
+                q: term, //search term
+                page_limit: 10, // page size, should be same as used in 'more' variable below
+                page: page // page number
+            };
+        },
+        results: function (data, page) {
+            var more = (page * 10) < data.total; // whether or not there are more results available
+            // notice we return the value of more so Select2 knows if more results can be loaded
+            return {results: data.roles, more: more};
+        }
+    }
+    return select_options;
+  },
+
+  /**
+   * Save the changes made to the library dataset.
+   */
+  saveModifications: function(options){
+    var is_changed = false;
+    var ld = this.model;
+    var new_name = this.$el.find('.input_dataset_name').val();
+    if (typeof new_name !== 'undefined' && new_name !== ld.get('name') ){
+      if (new_name.length > 0){
+        ld.set("name", new_name);
+        is_changed = true;
+      } else{
+        mod_toastr.warning('Library dataset name has to be at least 1 character long.');
+        return;
+      }
+    }
+    var new_info = this.$el.find('.input_dataset_misc_info').val();
+    if (typeof new_info !== 'undefined' && new_info !== ld.get('misc_info') ){
+        ld.set("misc_info", new_info);
+        is_changed = true;
+    }
+    var new_genome_build = this.select_genome.$el.select2('data').id;
+    if (typeof new_genome_build !== 'undefined' && new_genome_build !== ld.get('genome_build') ){
+        ld.set("genome_build", new_genome_build);
+        is_changed = true;
+    }
+    var new_ext = this.select_extension.$el.select2('data').id;
+    if (typeof new_ext !== 'undefined' && new_ext !== ld.get('file_ext') ){
+        ld.set("file_ext", new_ext);
+        is_changed = true;
+    }
+    var dataset_view = this;
+    if (is_changed){
+      ld.save(null, {
+        patch: true,
+        success: function(ld) {
+          dataset_view.render()
+          mod_toastr.success('Changes to library dataset saved.');
+        },
+        error: function(model, response){
+          if (typeof response.responseJSON !== "undefined"){
+            mod_toastr.error(response.responseJSON.err_msg);
+          } else {
+            mod_toastr.error('An error occured while attempting to update the library dataset.');
+          }
+        }
+      });
+    } else {
+      dataset_view.render()
+      mod_toastr.info('Nothing has changed.');
+    }
   },
 
   copyToClipboard: function(){
@@ -497,7 +442,7 @@ var LibraryDatasetView = Backbone.View.extend({
    * Extract the role ids from Select2 elements's 'data'
    */
   _extractIds: function(roles_list){
-    ids_list = [];
+    var ids_list = [];
     for (var i = roles_list.length - 1; i >= 0; i--) {
       ids_list.push(roles_list[i].id);
     };
@@ -523,42 +468,46 @@ var LibraryDatasetView = Backbone.View.extend({
   },
 
   /**
-   * Request all extensions and genomes from Galaxy
-   * and save them sorted in arrays.
+   * If needed request all extensions and/or genomes from Galaxy
+   * and save them in sorted arrays.
    */
   fetchExtAndGenomes: function(){
     var that = this;
-    mod_utils.get({
-        url      :  Galaxy.root + "api/datatypes?extension_only=False",
-        success  :  function( datatypes ) {
-                        for (key in datatypes) {
-                            that.list_extensions.push({
-                                id              : datatypes[key].extension,
-                                text            : datatypes[key].extension,
-                                description     : datatypes[key].description,
-                                description_url : datatypes[key].description_url
-                            });
-                        }
-                        that.list_extensions.sort(function(a, b) {
-                            return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
-                        });
-                        that.list_extensions.unshift(that.auto);
-                    }
+    if (this.list_genomes.length == 0){
+      mod_utils.get({
+        url      : Galaxy.root + "api/datatypes?extension_only=False",
+        success  : function( datatypes ) {
+          for (var key in datatypes) {
+              that.list_extensions.push({
+                  id              : datatypes[key].extension,
+                  text            : datatypes[key].extension,
+                  description     : datatypes[key].description,
+                  description_url : datatypes[key].description_url
+              });
+          }
+          that.list_extensions.sort(function(a, b) {
+              return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
+          });
+          that.list_extensions.unshift(that.auto);
+        }
       });
-    mod_utils.get({
-        url     :    Galaxy.root + "api/genomes",
+    }
+    if (this.list_extensions.length == 0){
+      mod_utils.get({
+        url     : Galaxy.root + "api/genomes",
         success : function( genomes ) {
-                    for ( key in genomes ) {
-                        that.list_genomes.push({
-                            id      : genomes[key][1],
-                            text    : genomes[key][0]
-                        });
-                    }
-                    that.list_genomes.sort(function(a, b) {
-                        return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
-                    });
-                }
-    });
+          for (var key in genomes ) {
+              that.list_genomes.push({
+                  id      : genomes[key][1],
+                  text    : genomes[key][0]
+              });
+          }
+          that.list_genomes.sort(function(a, b) {
+              return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
+          });
+        }
+      });
+    }
   },
 
   renderSelectBoxes: function(options){
@@ -566,6 +515,7 @@ var LibraryDatasetView = Backbone.View.extend({
     // See this.fetchExtAndGenomes()
     // TODO switch to common resources:
     // https://trello.com/c/dIUE9YPl/1933-ui-common-resources-and-data-into-galaxy-object
+    var that = this;
     var current_genome = '?';
     var current_ext = 'auto';
     if (typeof options !== 'undefined'){
@@ -576,17 +526,16 @@ var LibraryDatasetView = Backbone.View.extend({
         current_ext = options.file_ext;
       }
     }
-    var that = this;
     this.select_genome = new mod_select.View( {
         css: 'dataset-genome-select',
         data: that.list_genomes,
-        container: that.$el.find( '#dataset_genome_select' ),
+        container: that.$el.find('#dataset_genome_select'),
         value: current_genome
     } );
     this.select_extension = new mod_select.View({
       css: 'dataset-extension-select',
       data: that.list_extensions,
-      container: that.$el.find( '#dataset_extension_select' ),
+      container: that.$el.find('#dataset_extension_select'),
       value: current_ext
     });
   },
@@ -633,12 +582,8 @@ var LibraryDatasetView = Backbone.View.extend({
     '</ol>',
 
     '<% if (item.get("is_unrestricted")) { %>',
-      '<div class="alert alert-info">',
-        'This dataset is unrestricted so everybody can access it. Just share the URL of this page. ',
-        '<button data-toggle="tooltip" data-placement="top" title="Copy to clipboard" class="btn btn-default btn-copy-link-to-clipboard primary-button" type="button">',
-          '<span class="fa fa-clipboard"></span>',
-          '&nbsp;To Clipboard',
-        '</button> ',
+      '<div>',
+        'This dataset is unrestricted so everybody with the link can access it. Just share <span class="copy-link-to-clipboard"><a>this page</a></span>.',
       '</div>',
     '<% } %>',
 
@@ -711,14 +656,20 @@ var LibraryDatasetView = Backbone.View.extend({
         '<% } %>',
         '<% if (item.get("misc_blurb")) { %>',
           '<tr>',
-            '<th scope="row">Miscellaneous blurb</th>',
+            '<th scope="row">Misc. blurb</th>',
             '<td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>',
           '</tr>',
         '<% } %>',
         '<% if (item.get("misc_info")) { %>',
           '<tr>',
-            '<th scope="row">Miscellaneous information</th>',
+            '<th scope="row">Misc. info</th>',
             '<td scope="row"><%= _.escape(item.get("misc_info")) %></td>',
+          '</tr>',
+        '<% } %>',
+        '<% if (item.get("tags")) { %>',
+          '<tr>',
+            '<th scope="row">Tags</th>',
+            '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
           '</tr>',
         '<% } %>',
       '</table>',
@@ -850,6 +801,12 @@ var LibraryDatasetView = Backbone.View.extend({
               '<td scope="row"><%= _.escape(ldda.get("misc_info")) %></td>',
             '</tr>',
           '<% } %>',
+          '<% if (item.get("tags")) { %>',
+            '<tr>',
+              '<th scope="row">Tags</th>',
+              '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
+            '</tr>',
+          '<% } %>',
         '</table>',
         '<div>',
           '<pre class="peek">',
@@ -890,7 +847,6 @@ var LibraryDatasetView = Backbone.View.extend({
       '</ol>',
 
       '<div class="dataset_table">',
-        '<p>For full editing options please import the dataset to history and use "Edit attributes" on it.</p>',
         '<table class="grid table table-striped table-condensed">',
           '<tr>',
             '<th class="dataset-first-column" scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
@@ -944,13 +900,20 @@ var LibraryDatasetView = Backbone.View.extend({
             '<td scope="row"><%= _.escape(item.get("message")) %></td>',
           '</tr>',
           '<tr>',
-            '<th scope="row">Miscellaneous information</th>',
-            '<td scope="row"><%= _.escape(item.get("misc_info")) %></td>',
-          '</tr>',
-          '<tr>',
-            '<th scope="row">Miscellaneous blurb</th>',
+            '<th scope="row">Misc. blurb</th>',
             '<td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>',
           '</tr>',
+          '<tr>',
+            '<th scope="row">Misc. information</th>',
+            '<td><input class="input_dataset_misc_info form-control" type="text" placeholder="info" value="<%= _.escape(item.get("misc_info")) %>"></td>',
+          '</tr>',
+          //TODO: add functionality to modify tags here
+          '<% if (item.get("tags")) { %>',
+            '<tr>',
+              '<th scope="row">Tags</th>',
+              '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
+            '</tr>',
+          '<% } %>',
         '</table>',
         '<div>',
           '<pre class="peek">',
@@ -967,12 +930,6 @@ var LibraryDatasetView = Backbone.View.extend({
     // CONTAINER START
     '<div class="library_style_container">',
       '<div id="library_toolbar">',
-        '<a href="#folders/<%- item.get("folder_id") %>">',
-          '<button data-toggle="tooltip" data-placement="top" title="Go back to containing folder" class="btn btn-default primary-button toolbar-item" type="button">',
-            '<span class="fa fa-folder-open-o"></span>',
-            '&nbsp;Containing Folder',
-          '</button>',
-        '</a>',
         '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">',
           '<button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-default primary-button toolbar-item" type="button">',
             '<span class="fa fa-file-o"></span>',
@@ -1010,24 +967,9 @@ var LibraryDatasetView = Backbone.View.extend({
         '<h2>Dataset-related permissions</h2>',
         '<div class="alert alert-warning">Changes made below will affect <strong>every</strong> library item that was created from this dataset and also every history this dataset is part of.</div>',
         '<% if (!item.get("is_unrestricted")) { %>',
-          '<p>You can remove all access restrictions on this dataset. ',
-            '<button data-toggle="tooltip" data-placement="top" title="Everybody will be able to access the dataset." class="btn btn-default btn-remove-restrictions primary-button" type="button">',
-              '<span class="fa fa-globe"></span>',
-              '&nbsp;Remove restrictions',
-            '</button>',
-          '</p>',
+          '<p>You can <span class="remove-restrictions"><a>remove all access restrictions</a></span> on this dataset.</p>',
         '<% } else { %>',
-          'This dataset is unrestricted so everybody can access it. Just share the URL of this page.',
-          '<button data-toggle="tooltip" data-placement="top" title="Copy to clipboard" class="btn btn-default btn-copy-link-to-clipboard primary-button" type="button">',
-            '<span class="fa fa-clipboard"></span>',
-            '&nbsp;To Clipboard',
-            '</button>',
-          '<p>You can make this dataset private to you. ',
-            '<button data-toggle="tooltip" data-placement="top" title="Only you will be able to access the dataset." class="btn btn-default btn-make-private primary-button" type="button">',
-              '<span class="fa fa-key"></span>',
-              '&nbsp;Make Private',
-            '</button>',
-          '</p>',
+          '<p>You can <span class="make-private"><a>make this dataset private</a></span> to you.</p>',
         '<% } %>',
         '<h4>Roles that can access the dataset</h4>',
         '<div id="access_perm" class="access_perm roles-selection"></div>',
@@ -1039,7 +981,7 @@ var LibraryDatasetView = Backbone.View.extend({
         '<h4>Roles that can manage permissions on the dataset</h4>',
         '<div id="manage_perm" class="manage_perm roles-selection"></div>',
         '<div class="alert alert-info roles-selection">',
-          'User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will loose the ability manage this dataset unless you are an admin.',
+          'User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will lose the ability manage this dataset unless you are an admin.',
         '</div>',
         '<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-default toolbtn_save_permissions primary-button" type="button">',
           '<span class="fa fa-floppy-o"></span>',
@@ -1069,19 +1011,7 @@ var LibraryDatasetView = Backbone.View.extend({
       '</div>',
     '</div>'
     ].join(''));
-  },
-
-
-  templateAccessSelect: function(){
-    return _.template([
-    '<select id="access_select" multiple>',
-      '<% _.each(options, function(option) { %>',
-        '<option value="<%- option.name %>"><%- option.name %></option>',
-      '<% }); %>',
-    '</select>'
-    ].join(''));
   }
-
 });
 
 return {

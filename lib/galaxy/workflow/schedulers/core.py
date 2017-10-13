@@ -8,22 +8,22 @@ from galaxy.workflow import run, run_request
 
 from ..schedulers import ActiveWorkflowSchedulingPlugin
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
-class CoreWorkflowSchedulingPlugin( ActiveWorkflowSchedulingPlugin ):
+class CoreWorkflowSchedulingPlugin(ActiveWorkflowSchedulingPlugin):
     plugin_type = "core"
 
-    def __init__( self, **kwds ):
+    def __init__(self, **kwds):
         pass
 
-    def startup( self, app ):
+    def startup(self, app):
         self.app = app
 
-    def shutdown( self ):
+    def shutdown(self):
         pass
 
-    def schedule( self, workflow_invocation ):
+    def schedule(self, workflow_invocation):
         workflow = workflow_invocation.workflow
         history = workflow_invocation.history
         request_context = context.WorkRequestContext(
@@ -43,4 +43,4 @@ class CoreWorkflowSchedulingPlugin( ActiveWorkflowSchedulingPlugin ):
         )
 
 
-__all__ = ( 'CoreWorkflowSchedulingPlugin', )
+__all__ = ('CoreWorkflowSchedulingPlugin', )

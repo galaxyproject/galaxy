@@ -32,6 +32,7 @@
       </options>
     </param>
     <param name="async_datasets" type="hidden" value="None"/>
+    <param name="file_count" type="hidden" value="auto" />
     <upload_dataset name="files" title="Specify Files for Dataset" file_type_name="file_type" metadata_ref="files_metadata">
         <param name="file_data" type="file" size="30" label="File" ajax-upload="true" help="TIP: Due to browser limitations, uploading files larger than 2GB is guaranteed to fail.  To upload large files, use the URL method (below) or FTP (if enabled by the site administrator).">
       </param>
@@ -42,6 +43,11 @@
            Pull Request 171 for more information. -->
       <param name="uuid" type="hidden" required="False" />
       <param name="to_posix_lines" type="hidden" value="Yes" />
+      <param name="auto_decompress" type="hidden" value="Yes" />
+      <!-- allow per-file override of dbkey -->
+      <param name="file_type" type="hidden" value="" />
+      <param name="dbkey" type="hidden" value="" />
+
       <!--
       <param name="to_posix_lines" type="select" display="checkboxes" multiple="True" label="Convert universal line endings to Posix line endings" help="Turn this option off if you upload a gzip, bz2 or zip archive which contains a binary file." value="Yes"> 
         <option value="Yes" selected="true">Yes</option>

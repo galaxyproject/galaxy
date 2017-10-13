@@ -154,6 +154,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             }
             this.name = data.name;
             this.config_form = data.config_form;
+            this.tool_version = this.config_form && this.config_form.version;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
             this.tooltip = data.tooltip ? data.tooltip : "";
@@ -183,8 +184,55 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
         update_field_data : function( data ) {
             var node = this;
             var nodeView = node.nodeView;
+            // remove unused output views and remove pre-existing output views from data.data_outputs,
+            // so that these are not added twice.
+            var unused_outputs = [];
+            // nodeView.outputViews contains pre-existing outputs,
+            // while data.data_output contains what should be displayed.
+            // Now we gather the unused outputs
+            $.each(nodeView.outputViews, function(i, output_view) {
+                var cur_name = output_view.output.name;
+                var data_names = data.data_outputs;
+                var cur_name_in_data_outputs = false;
+                _.each(data_names, function(data_name) {
+                    if (data_name.name == cur_name) {
+                        cur_name_in_data_outputs = true;
+                    }
+                });
+                if (cur_name_in_data_outputs === false) {
+                    unused_outputs.push(cur_name)
+                }
+            });
+
+            // Remove the unused outputs
+            _.each(unused_outputs, function(unused_output) {
+                _.each(nodeView.outputViews[unused_output].terminalElement.terminal.connectors, function(x) {
+                    if (x) {
+                            x.destroy();  // Removes the noodle connectors
+                        }
+                });
+                nodeView.outputViews[unused_output].remove();  // removes the rendered output
+                delete nodeView.outputViews[unused_output];  // removes the reference to the output
+                delete node.output_terminals[unused_output];  // removes the output terminal
+            });
+            $.each( node.workflow_outputs, function(i, wf_output){
+                if (wf_output && !node.output_terminals[wf_output.output_name]) {
+                    node.workflow_outputs.splice(i, 1);  // removes output from list of workflow outputs
+                }
+            });
+            $.each( data.data_outputs, function( i, output ) {
+                if (!nodeView.outputViews[output.name]) {
+                    nodeView.addDataOutput(output);  // add data output if it does not yet exist
+                } else {
+                    // the output already exists, but the output formats may have changed.
+                    // Therefore we update the datatypes and destroy invalid connections.
+                    node.output_terminals[ output.name ].datatypes = output.extensions;
+                    node.output_terminals[ output.name ].destroyInvalidConnections();
+                }
+            });
             this.tool_state = data.tool_state;
             this.config_form = data.config_form;
+            this.tool_version = this.config_form && this.config_form.version;
             this.errors = data.errors;
             this.annotation = data['annotation'];
             this.label = data.label;

@@ -16,13 +16,15 @@ var menu = [
     },
     {
         html    : _l( 'Saved Histories' ),
-        href    : 'history/list',
+        href    : 'histories/list',
+        target  : '_top'
+
     },
     {
         html    : _l( 'Histories Shared with Me' ),
-        href    : 'history/list_shared'
+        href    : 'histories/list_shared',
+        target  : '_top'
     },
-
     {
         html    : _l( 'Current History' ),
         header  : true,
@@ -63,7 +65,7 @@ var menu = [
         anon    : true,
         func    : function() {
             if( Galaxy && Galaxy.currHistoryPanel && confirm( _l( 'Really delete the current history?' ) ) ){
-                galaxy_main.window.location.href = 'history/delete?id=' + Galaxy.currHistoryPanel.model.id;
+                Galaxy.currHistoryPanel.model._delete().done(function(){Galaxy.currHistoryPanel.loadCurrentHistory();});
             }
         },
     },
@@ -74,7 +76,7 @@ var menu = [
         func    : function() {
             if( Galaxy && Galaxy.currHistoryPanel
             &&  confirm( _l( 'Really delete the current history permanently? This cannot be undone.' ) ) ){
-                galaxy_main.window.location.href = 'history/delete?purge=True&id=' + Galaxy.currHistoryPanel.model.id;
+                Galaxy.currHistoryPanel.model.purge().done(function(){Galaxy.currHistoryPanel.loadCurrentHistory();});
             }
         },
     },
@@ -91,7 +93,11 @@ var menu = [
     },
     {
         html    : _l( 'Dataset Security' ),
-        href    : 'root/history_set_default_permissions',
+        func    : function() {
+            if ( Galaxy && Galaxy.currHistoryPanel && Galaxy.router ) {
+                Galaxy.router.push( '/histories/permissions?id=' + Galaxy.currHistoryPanel.model.id );
+            }
+        }
     },
     {
         html    : _l( 'Resume Paused Jobs' ),
@@ -104,7 +110,7 @@ var menu = [
             if( Galaxy && Galaxy.currHistoryPanel ){
                 Galaxy.currHistoryPanel.collapseAll();
             }
-        },
+        }
     },
     {
         html    : _l( 'Unhide Hidden Datasets' ),
@@ -205,7 +211,7 @@ function buildMenu( isAnon, purgeAllowed, urlRoot ){
         //TODO:?? hard-coded galaxy_main
         if( menuOption.href ){
             menuOption.href = urlRoot + menuOption.href;
-            menuOption.target = 'galaxy_main';
+            menuOption.target = menuOption.target || 'galaxy_main';
         }
 
         if( menuOption.confirm ){

@@ -26,6 +26,7 @@ class QuaySearch():
     """
     Tool to search within a quay organization for a given software name.
     """
+
     def __init__(self, organization):
         self.index = None
         self.organization = organization
@@ -112,8 +113,8 @@ class QuaySearch():
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Searches in a given quay organization for a repository')
-    parser.add_argument('-o', '--organization', dest='organization_string', default="mulled",
-                        help='Change organization. Default is mulled.')
+    parser.add_argument('-o', '--organization', dest='organization_string', default="biocontainers",
+                        help='Change organization. Default is biocontainers.')
     parser.add_argument('--non-strict', dest='non_strict', action="store_true",
                         help='Autocorrection of typos activated. Lists more results but can be confusing.\
                         For too many queries quay.io blocks the request and the results can be incomplete.')

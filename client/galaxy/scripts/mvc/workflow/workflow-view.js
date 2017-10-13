@@ -64,7 +64,7 @@ define([
             var close_editor = function() {
                 self.workflow.check_changes_in_active_form();
                 if ( workflow && self.workflow.has_changes ) {
-                    do_close = function() {
+                    var do_close = function() {
                         window.onbeforeunload = undefined;
                         window.document.location = self.urls.workflow_index;
                     };
@@ -227,7 +227,7 @@ define([
                      self.scroll_to_nodes();
                      self.canvas_manager.draw_overview();
                      // Determine if any parameters were 'upgraded' and provide message
-                     upgrade_message = "";
+                     var upgrade_message = "";
                      _.each( data.steps, function( step, step_id ) {
                         var details = "";
                         if ( step.errors ) {
@@ -256,7 +256,7 @@ define([
                 "Save" : save_current_workflow,
                 "Save As": workflow_save_as,
                 "Run": function() {
-                    window.location = self.urls.run_workflow;
+                    window.location = Galaxy.root + "workflow/run?id=" + self.options.id;
                 },
                 "Edit Attributes" : function() { self.workflow.clear_active_node() },
                 "Auto Re-layout": layout_editor,
@@ -335,7 +335,7 @@ define([
             }
 
             // On load, set the size to the pref stored in local storage if it exists
-            overview_size = $.jStorage.get("overview-size");
+            var overview_size = $.jStorage.get("overview-size");
             if (overview_size !== undefined) {
                 $("#overview-border").css( {
                     width: overview_size,
@@ -468,7 +468,7 @@ define([
                 success: function( data ) {
                     self.workflow.from_simple( data, false );
                     // Determine if any parameters were 'upgraded' and provide message
-                    upgrade_message = "";
+                    var upgrade_message = "";
                     $.each( data.upgrade_messages, function( k, v ) {
                        upgrade_message += ( "<li>Step " + ( parseInt(k, 10) + 1 ) + ": " + self.workflow.nodes[k].name + "<ul>");
                        $.each( v, function( i, vv ) {
@@ -538,18 +538,18 @@ define([
 
         // Add a new step to the workflow by tool id
         add_node_for_tool: function ( id, title ) {
-            node = this.workflow.create_node( 'tool', title, id );
+            var node = this.workflow.create_node( 'tool', title, id );
             this._moduleInitAjax(node, { type: "tool", tool_id: id, "_": "true" });
         },
 
         // Add a new step to the workflow by tool id
         add_node_for_subworkflow: function ( id, title ) {
-            node = this.workflow.create_node( 'subworkflow', title, id );
+            var node = this.workflow.create_node( 'subworkflow', title, id );
             this._moduleInitAjax(node, { type: "subworkflow", content_id: id, "_": "true" });
         },
 
         add_node_for_module: function ( type, title ) {
-            node = this.workflow.create_node( type, title );
+            var node = this.workflow.create_node( type, title );
             this._moduleInitAjax(node, { type: type, "_": "true" });
         },
 
@@ -559,7 +559,7 @@ define([
             var self = this;
             $("#pja_container").append( get_pja_form(pja, node) );
             $("#pja_container>.toolForm:last>.toolFormTitle>.buttons").click(function (){
-                action_to_rem = $(this).closest(".toolForm", ".action_tag").children(".action_tag:first").text();
+                var action_to_rem = $(this).closest(".toolForm", ".action_tag").children(".action_tag:first").text();
                 $(this).closest(".toolForm").remove();
                 delete self.workflow.active_node.post_job_actions[action_to_rem];
                 self.workflow.active_form_has_changes = true;
@@ -571,7 +571,7 @@ define([
         },
 
         display_file_list: function (node){
-            addlist = "<select id='node_data_list' name='node_data_list'>";
+            var addlist = "<select id='node_data_list' name='node_data_list'>";
             for (var out_terminal in node.output_terminals){
                 addlist += "<option value='" + out_terminal + "'>"+ out_terminal +"</option>";
             }
@@ -660,65 +660,18 @@ define([
             var $container = $( '#' + cls );
             if ( content && $container.find( '#' + id ).length == 0 ) {
                 var $el = $( '<div id="' + id + '" class="' + cls + '"/>' );
-                var form_wrapper = null;
                 content.node = node;
                 content.workflow = this.workflow;
                 content.datatypes = this.datatypes;
                 content.icon = WorkflowIcons[ node.type ];
                 content.cls = 'ui-portlet-narrow';
-                content.inputs.unshift({
-                    type    : 'text',
-                    name    : '__annotation',
-                    label   : 'Annotation',
-                    fixed   : true,
-                    value   : node.annotation,
-                    area    : true,
-                    help    : 'Add an annotation or notes to this step. Annotations are available when a workflow is viewed.'
-                });
-                content.inputs.unshift({
-                    type    : 'text',
-                    name    : '__label',
-                    label   : 'Label',
-                    value   : node.label,
-                    help    : 'Add a step label.',
-                    fixed   : true,
-                    onchange: function( new_label ) {
-                        var duplicate = false;
-                        for ( var i in self.workflow.nodes ) {
-                            var n = self.workflow.nodes[ i ];
-                            if ( n.label && n.label == new_label && n.id != node.id ) {
-                                duplicate = true;
-                                break;
-                            }
-                        }
-                        var input_id = form_wrapper.form.data.match( '__label' );
-                        var input_element = form_wrapper.form.element_list[ input_id ];
-                        input_element.model.set( 'error_text', duplicate && 'Duplicate label. Please fix this before saving the workflow.' );
-                        form_wrapper.form.trigger( 'change' );
-                    }
-                });
-                content.onchange = function() {
-                    Utils.request({
-                        type    : 'POST',
-                        url     :  Galaxy.root + 'api/workflows/build_module',
-                        data    : {
-                            id          : node.id,
-                            type        : node.type,
-                            content_id  : node.content_id,
-                            inputs      : form_wrapper.form.data.create()
-                        },
-                        success : function( data ) {
-                            node.update_field_data( data );
-                        }
-                    });
-                };
-                if ( node.type == 'tool' ) {
-                    form_wrapper = new FormWrappers.Tool( content );
+                if ( node ) {
+                    var form_type = ( node.type == 'tool' ? 'Tool' : 'Default' );
+                    $el.append( ( new FormWrappers[ form_type ]( content ) ).form.$el );
+                    $container.append( $el );
                 } else {
-                    form_wrapper = new FormWrappers.Default( content );
+                    Galaxy.emit.debug('workflow-view::initialize()', 'Node not found in workflow.');
                 }
-                $el.append( form_wrapper.form.$el );
-                $container.append( $el );
             }
             $( '.' + cls ).hide();
             $container.find( '#' + id ).show();

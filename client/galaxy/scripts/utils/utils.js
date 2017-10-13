@@ -2,7 +2,7 @@
  * Galaxy utilities comprises small functions, which at this point
  * do not require their own classes/files
 */
-define( [], function() {
+define( ['utils/localization'], function(_l) {
 
     /** Builds a basic iframe */
     function iframe( src ) {
@@ -53,7 +53,7 @@ define( [], function() {
         return /^[\],:{}\s]*$/.test(text.replace(/\\["\\\/bfnrtu]/g, '@').
             replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
             replace(/(?:^|:|,)(?:\s*\[)+/g, ''));
-    };
+    }
 
     /**
      * Sanitize/escape a string
@@ -61,7 +61,7 @@ define( [], function() {
      */
     function sanitize(content) {
         return $('<div/>').text(content).html();
-    };
+    }
 
     /**
      * Checks if a value or list of values is `empty`
@@ -81,7 +81,7 @@ define( [], function() {
             }
         }
         return false;
-    };
+    }
 
     /**
      * Convert list to pretty string
@@ -97,7 +97,7 @@ define( [], function() {
             return lst;
         }
         return '';
-    };
+    }
 
     /**
      * Request handler for GET
@@ -125,7 +125,7 @@ define( [], function() {
                 }
             });
         }
-    };
+    }
 
     /**
      * Request handler
@@ -142,7 +142,7 @@ define( [], function() {
             type        : options.type || 'GET',
             data        : options.data || {},
             url         : options.url
-        }
+        };
         // encode data into url
         if ( ajaxConfig.type == 'GET' || ajaxConfig.type == 'DELETE' ) {
             if ( !$.isEmptyObject(ajaxConfig.data) ) {
@@ -178,7 +178,7 @@ define( [], function() {
         }).always(function() {
             options.complete && options.complete();
         });
-    };
+    }
 
     /**
      * Read a property value from CSS
@@ -191,7 +191,7 @@ define( [], function() {
         var value = el.css(name);
         el.remove();
         return value;
-    };
+    }
 
     /**
      * Load a CSS file
@@ -201,7 +201,7 @@ define( [], function() {
         if (!$('link[href^="' + url + '"]').length) {
             $('<link href="' + Galaxy.root + url + '" rel="stylesheet">').appendTo('head');
         }
-    };
+    }
 
     /**
      * Safely merge to dictionaries
@@ -214,7 +214,7 @@ define( [], function() {
         } else {
             return optionsDefault;
         }
-    };
+    }
 
 
     /**
@@ -257,13 +257,13 @@ define( [], function() {
         } else {
             return '<strong>' + rounded + '</strong> ' + unit;
         }
-    };
+    }
 
     /** Create a unique id */
     function uid(){
         top.__utils__uid__ = top.__utils__uid__ || 0;
         return 'uid-' + top.__utils__uid__++;
-    };
+    }
 
     /** Create a time stamp */
     function time() {
@@ -275,7 +275,32 @@ define( [], function() {
                     + d.getFullYear() + ", "
                     + hours + ":"
                     + minutes;
-    };
+    }
+
+    /** Append script and style tags to Galaxy main application */
+    function appendScriptStyle( data ) {
+        // create a script tag inside head tag
+        if( data.script && data.script !== "" ) {
+            $(  '<script/>', { type: 'text/javascript' } ).text( data.script ).appendTo( 'head' );
+        }
+        // create a style tag inside head tag
+        if( data.styles && data.styles !== "" ) {
+            $( '<style/>', { type: 'text/css' } ).text( data.styles ).appendTo( 'head' );
+        }
+    }
+
+    /** Get querystrings from url */
+    function getQueryString( key ) {
+        return decodeURIComponent( window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent( key ).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1") );
+    }
+
+    function setWindowTitle(title){
+        if (title) {
+            window.document.title = "Galaxy " + (window.Galaxy.config.brand ? " | " + window.Galaxy.config.brand : '') + " | " + _l(title);
+        } else {
+            window.document.title = "Galaxy " + (window.Galaxy.config.brand ? " | " + window.Galaxy.config.brand : '');
+        }
+    }
 
     return {
         cssLoadFile: cssLoadFile,
@@ -293,6 +318,9 @@ define( [], function() {
         deepeach: deepeach,
         isJSON: isJSON,
         clone: clone,
-        linkify: linkify
+        linkify: linkify,
+        appendScriptStyle: appendScriptStyle,
+        getQueryString: getQueryString,
+        setWindowTitle: setWindowTitle
     };
 });

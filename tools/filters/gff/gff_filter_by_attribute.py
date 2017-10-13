@@ -20,18 +20,18 @@ AST_NODE_TYPE_WHITELIST = [
 
 
 BUILTIN_AND_MATH_FUNCTIONS = 'abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor'.split('|')
-STRING_AND_LIST_METHODS = [ name for name in dir('') + dir([]) if not name.startswith('_') ]
+STRING_AND_LIST_METHODS = [name for name in dir('') + dir([]) if not name.startswith('_')]
 VALID_FUNCTIONS = BUILTIN_AND_MATH_FUNCTIONS + STRING_AND_LIST_METHODS
 # Name blacklist isn't strictly needed - but provides extra peace of mind.
 NAME_BLACKLIST = ["exec", "eval", "globals", "locals", "__import__", "__builtins__"]
 
 
-def __check_name( ast_node ):
+def __check_name(ast_node):
     name = ast_node.id
     return name not in NAME_BLACKLIST
 
 
-def check_simple_name( text ):
+def check_simple_name(text):
     """
 
     >>> check_simple_name("col_name")
@@ -68,20 +68,20 @@ def check_simple_name( text ):
     False
     """
     try:
-        module = parse( text )
+        module = parse(text)
     except SyntaxError:
         return False
 
     if not isinstance(module, Module):
         return False
     statements = module.body
-    if not len( statements ) == 1:
+    if not len(statements) == 1:
         return False
     expression = statements[0]
     if expression.__class__.__name__ != 'Expr':
         return False
 
-    for ast_node in walk( expression ):
+    for ast_node in walk(expression):
         ast_node_class = ast_node.__class__.__name__
         if ast_node_class not in ["Expr", "Name", "Load"]:
             return False
@@ -92,7 +92,7 @@ def check_simple_name( text ):
     return True
 
 
-def check_expression( text ):
+def check_expression(text):
     """
 
     >>> check_expression("c1=='chr1' and c3-c2>=2000 and c6=='+'")
@@ -127,20 +127,20 @@ def check_expression( text ):
     False
     """
     try:
-        module = parse( text )
+        module = parse(text)
     except SyntaxError:
         return False
 
     if not isinstance(module, Module):
         return False
     statements = module.body
-    if not len( statements ) == 1:
+    if not len(statements) == 1:
         return False
     expression = statements[0]
     if expression.__class__.__name__ != 'Expr':
         return False
 
-    for ast_node in walk( expression ):
+    for ast_node in walk(expression):
         ast_node_class = ast_node.__class__.__name__
 
         # Toss out everything that is not a "simple" expression,
@@ -157,31 +157,31 @@ def check_expression( text ):
 #
 # Helper functions.
 #
-def get_operands( filter_condition ):
+def get_operands(filter_condition):
     # Note that the order of all_operators is important
     items_to_strip = ['+', '-', '**', '*', '//', '/', '%', '<<', '>>', '&', '|', '^', '~', '<=', '<', '>=', '>', '==', '!=', '<>', ' and ', ' or ', ' not ', ' is ', ' is not ', ' in ', ' not in ']
     for item in items_to_strip:
-        if filter_condition.find( item ) >= 0:
-            filter_condition = filter_condition.replace( item, ' ' )
-    operands = set( filter_condition.split( ' ' ) )
+        if filter_condition.find(item) >= 0:
+            filter_condition = filter_condition.replace(item, ' ')
+    operands = set(filter_condition.split(' '))
     return operands
 
 
-def stop_err( msg ):
-    sys.stderr.write( msg )
+def stop_err(msg):
+    sys.stderr.write(msg)
     sys.exit()
 
 
-def check_for_executable( text, description='' ):
+def check_for_executable(text, description=''):
     # Attempt to determine if the condition includes executable stuff and, if so, exit.
     secured = dir()
-    operands = get_operands( text )
+    operands = get_operands(text)
     for operand in operands:
         try:
-            int( operand )
+            int(operand)
         except:
             if operand in secured:
-                stop_err( "Illegal value '%s' in %s '%s'" % ( operand, description, text ) )
+                stop_err("Illegal value '%s' in %s '%s'" % (operand, description, text))
 
 
 #
@@ -190,14 +190,24 @@ def check_for_executable( text, description='' ):
 in_fname = sys.argv[1]
 out_fname = sys.argv[2]
 cond_text = sys.argv[3]
-attribute_types = loads( sys.argv[4] )
+attribute_types = loads(sys.argv[4])
 
 # Convert types from str to type objects.
 for name, a_type in attribute_types.items():
     check_for_executable(a_type)
-    if not check_simple_name( a_type ):
+    if not check_simple_name(a_type):
         stop_err("Problem with attribute type [%s]" % a_type)
-    attribute_types[ name ] = eval( a_type )
+    attribute_types[name] = eval(a_type)
+
+# Possible (eg workflows) that user's filter contains standard
+# GFF attributes which are not present in the actual file -
+# and thus not in the metadata passed in by Galaxy.
+# To avoid a nasty error here, add the official terms from
+# the GFF3 specification (if not already defined).
+# (These all start with a capital letter, which is important):
+for name in ["ID", "Name", "Alias", "Parent", "Target", "Gap", "Derives_from",
+             "Note", "Dbxref", "Ontology_term", "Is_circular"]:
+    attribute_types[name] = str
 
 # Unescape if input has been escaped
 mapped_str = {
@@ -211,25 +221,25 @@ mapped_str = {
     '__dq__': '"',
 }
 for key, value in mapped_str.items():
-    cond_text = cond_text.replace( key, value )
+    cond_text = cond_text.replace(key, value)
 
 # Attempt to determine if the condition includes executable stuff and, if so, exit.
-check_for_executable( cond_text, 'condition')
+check_for_executable(cond_text, 'condition')
 
 if not check_expression(cond_text):
-    stop_err( "Illegal/invalid in condition '%s'" % ( cond_text ) )
+    stop_err("Illegal/invalid in condition '%s'" % (cond_text))
 
 # Prepare the column variable names and wrappers for column data types. Only
 # prepare columns up to largest column in condition.
 attrs, type_casts = [], []
 for name, attr_type in attribute_types.items():
-    attrs.append( name )
-    type_cast = "get_value('%(name)s', attribute_types['%(name)s'], attribute_values)" % ( {'name': name} )
-    type_casts.append( type_cast )
+    attrs.append(name)
+    type_cast = "get_value('%(name)s', attribute_types['%(name)s'], attribute_values)" % ({'name': name})
+    type_casts.append(type_cast)
 
-attr_str = ', '.join( attrs )    # 'c1, c2, c3, c4'
-type_cast_str = ', '.join( type_casts )  # 'str(c1), int(c2), int(c3), str(c4)'
-wrap = "%s = %s" % ( attr_str, type_cast_str )
+attr_str = ', '.join(attrs)    # 'c1, c2, c3, c4'
+type_cast_str = ', '.join(type_casts)  # 'str(c1), int(c2), int(c3), str(c4)'
+wrap = "%s = %s" % (attr_str, type_cast_str)
 
 # Stats
 skipped_lines = 0
@@ -237,13 +247,13 @@ first_invalid_line = 0
 invalid_line = None
 lines_kept = 0
 total_lines = 0
-out = open( out_fname, 'wt' )
+out = open(out_fname, 'wt')
 
 
 # Helper function to safely get and type cast a value in a dict.
 def get_value(name, a_type, values_dict):
     if name in values_dict:
-        return (a_type)(values_dict[ name ])
+        return (a_type)(values_dict[name])
     else:
         return None
 
@@ -254,10 +264,7 @@ for i, line in enumerate( open( in_fname ) ):
     total_lines += 1
     line = line.rstrip( '\\r\\n' )
     if not line or line.startswith( '#' ):
-        skipped_lines += 1
-        if not invalid_line:
-            first_invalid_line = i + 1
-            invalid_line = line
+        # Ignore blank lines or comments
         continue
     try:
         # Place attribute values into variables with attribute
@@ -265,14 +272,16 @@ for i, line in enumerate( open( in_fname ) ):
         elems = line.split( '\t' )
         attribute_values = {}
         for name_value_pair in elems[8].split(";"):
-            pair = name_value_pair.strip().split(" ")
-            if pair == '':
+            # Split on first equals (GFF3) or space (legacy)
+            name_value_pair = name_value_pair.strip()
+            i = name_value_pair.replace(" ", "=").find("=")
+            if i == -1:
                 continue
-            name = pair[0].strip()
+            name = name_value_pair[:i].strip()
             if name == '':
                 continue
             # Need to strip double quote from value and typecast.
-            attribute_values[name] = pair[1].strip(" \\"")
+            attribute_values[name] = name_value_pair[i+1:].strip(" \\"")
         %s
         if %s:
             lines_kept += 1
@@ -283,26 +292,26 @@ for i, line in enumerate( open( in_fname ) ):
         if not invalid_line:
             first_invalid_line = i + 1
             invalid_line = line
-''' % ( wrap, cond_text )
+''' % (wrap, cond_text)
 
 valid_filter = True
 try:
     exec(code)
 except Exception as e:
     out.close()
-    if str( e ).startswith( 'invalid syntax' ):
+    if str(e).startswith('invalid syntax'):
         valid_filter = False
-        stop_err( 'Filter condition "%s" likely invalid. See tool tips, syntax and examples.' % cond_text )
+        stop_err('Filter condition "%s" likely invalid. See tool tips, syntax and examples.' % cond_text)
     else:
-        stop_err( str( e ) )
+        stop_err(str(e))
 
 if valid_filter:
     out.close()
     valid_lines = total_lines - skipped_lines
-    print('Filtering with %s, ' % ( cond_text ))
+    print('Filtering with %s, ' % (cond_text))
     if valid_lines > 0:
-        print('kept %4.2f%% of %d lines.' % ( 100.0 * lines_kept / valid_lines, total_lines ))
+        print('kept %4.2f%% of %d lines.' % (100.0 * lines_kept / valid_lines, total_lines))
     else:
         print('Possible invalid filter condition "%s" or non-existent column referenced. See tool tips, syntax and examples.' % cond_text)
     if skipped_lines > 0:
-        print('Skipped %d invalid lines starting at line #%d: "%s"' % ( skipped_lines, first_invalid_line, invalid_line ))
+        print('Skipped %d invalid lines starting at line #%d: "%s"' % (skipped_lines, first_invalid_line, invalid_line))

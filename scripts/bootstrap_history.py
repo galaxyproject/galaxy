@@ -39,9 +39,8 @@ RELEASE_DELTA_MONTHS = 4  # Number of months between releases.
 DEVTEAM = [
     "afgane", "dannon", "blankenberg",
     "davebx", "martenson", "jmchilton",
-    "tnabtaf", "natefoo", "carlfeberhard",
-    "jgoecks", "guerler", "jennaj",
-    "nekrut", "jxtx", "nitesh1989"
+    "tnabtaf", "natefoo", "jgoecks",
+    "guerler", "jennaj", "nekrut", "jxtx"
 ]
 
 TEMPLATE = """
@@ -115,7 +114,7 @@ To update an existing Galaxy repository run:
 
       $$ git checkout release_${release} && git pull --ff-only origin release_${release}
 
-See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
+See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
 Release Notes
 ===========================================================
@@ -223,7 +222,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
     - [ ] Verify release included in https://docs.galaxyproject.org/en/master/releases/index.html
     - [ ] Review announcement in https://github.com/galaxyproject/galaxy/blob/dev/doc/source/releases/${version}_announce.rst
     - [ ] Stage annoucement content (Wiki, Biostars, Bit.ly link) on annouce date to capture date tags. Note: all final content does not need to be completed to do this.
-    - [ ] Create wiki *highlights* and post to http://galaxyproject.org News (w/ RSS) and NewsBriefs. [An Example](https://wiki.galaxyproject.org/News/2016_04_GalaxyRelease).
+    - [ ] Create wiki *highlights* and post to http://galaxyproject.org News (w/ RSS) and NewsBriefs. [An Example](https://galaxyproject.org/news/2016-04-galaxy-release).
     - [ ] Tweet docs news *highlights* via bit.ly link to https://twitter.com/galaxyproject/ (As user ``galaxyproject``, password in Galaxy password store under ``twitter.com / galaxyproject`` ). [An Example](https://twitter.com/galaxyproject/status/733029921316986881).
     - [ ] Post *highlights* type News to Galaxy Biostars https://biostar.usegalaxy.org. [An Example](https://biostar.usegalaxy.org/p/17712/).
     - [ ] Email *highlights* to [galaxy-dev](http://dev.list.galaxyproject.org/) and [galaxy-announce](http://announce.list.galaxyproject.org/) @lists.galaxyproject.org. [An Example](http://dev.list.galaxyproject.org/The-Galaxy-release-16-04-is-out-tp4669419.html)
@@ -298,7 +297,7 @@ def do_release(argv):
     open(next_release_file, "w").write(next_announce.encode("utf-8"))
     releases_index = _release_file("index.rst")
     releases_index_contents = open(releases_index, "r").read()
-    releases_index_contents = releases_index_contents.replace(".. annoucements\n", ".. annoucements\n   " + next_version + "_announce\n" )
+    releases_index_contents = releases_index_contents.replace(".. annoucements\n", ".. annoucements\n   " + next_version + "_announce\n")
     with open(releases_index, "w") as f:
         f.write(releases_index_contents)
 
@@ -447,7 +446,7 @@ def main(argv):
 
     def extend(from_str, line, source=history):
         from_str += "\n"
-        return source.replace(from_str, from_str + line + "\n" )
+        return source.replace(from_str, from_str + line + "\n")
 
     ident = argv[1]
 
@@ -546,7 +545,7 @@ def _text_target(github, pull_request):
 
     is_some_kind_of_enhancement = is_enhancement or is_feature or is_small_enhancement
 
-    if not( is_bug or is_some_kind_of_enhancement or is_minor or is_merge ):
+    if not(is_bug or is_some_kind_of_enhancement or is_minor or is_merge):
         print("No kind/ or minor or merge label found for %s" % _pr_to_str(pull_request))
         text_target = None
 

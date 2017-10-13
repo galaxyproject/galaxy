@@ -182,15 +182,16 @@ function( Connector, Toastr ) {
                     id : node.id,
                     type : node.type,
                     content_id : node.content_id,
+                    tool_version : node.config_form.version,
                     tool_state : node.tool_state,
                     errors : node.errors,
                     input_connections : input_connections,
                     position : $(node.element).position(),
-                    annotation: node.annotation,
-                    post_job_actions: node.post_job_actions,
-                    uuid: node.uuid,
-                    label: node.label,
-                    workflow_outputs: node.workflow_outputs
+                    annotation : node.annotation,
+                    post_job_actions : node.post_job_actions,
+                    uuid : node.uuid,
+                    label : node.label,
+                    workflow_outputs : node.workflow_outputs
                 };
                 nodes[ node.id ] = node_data;
             });
@@ -198,7 +199,7 @@ function( Connector, Toastr ) {
         },
         from_simple : function ( data, initialImport_ ) {
             var initialImport = (initialImport_ === undefined) ? true : initialImport_;
-            wf = this;
+            var wf = this;
             var offset = 0;
             if( initialImport ) {
                 wf.name = data.name;
@@ -263,7 +264,7 @@ function( Connector, Toastr ) {
                     $.each(node.output_terminals, function(ot_id, ot){
                         if(node.post_job_actions['HideDatasetAction'+ot.name] === undefined){
                             node.addWorkflowOutput(ot.name);
-                            callout = $(node.element).find('.callout.'+ot.name);
+                            var callout = $(node.element).find('.callout.'+ot.name);
                             callout.find('img').attr('src', Galaxy.root + 'static/images/fugue/asterisk-small.png');
                             wf.has_changes = true;
                         }
@@ -337,10 +338,10 @@ function( Connector, Toastr ) {
                 });
             });
             // Assemble order, tracking levels
-            node_ids_by_level = [];
+            var node_ids_by_level = [];
             while ( true ) {
                 // Everything without a predecessor
-                level_parents = [];
+                var level_parents = [];
                 for ( var pred_k in n_pred ) {
                     if ( n_pred[ pred_k ] == 0 ) {
                         level_parents.push( pred_k );
@@ -394,7 +395,7 @@ function( Connector, Toastr ) {
                 ymin = Infinity, ymax = -Infinity,
                 p;
             $.each( this.nodes, function( id, node ) {
-                e = $(node.element);
+                var e = $(node.element);
                 p = e.position();
                 xmin = Math.min( xmin, p.left );
                 xmax = Math.max( xmax, p.left + e.width() );
@@ -410,7 +411,7 @@ function( Connector, Toastr ) {
             }
             function fix_delta( x, n ) {
                 if ( x < n|| x > 3*n ) {
-                    new_pos = ( Math.ceil( ( ( x % n ) ) / n ) + 1 ) * n;
+                    var new_pos = ( Math.ceil( ( ( x % n ) ) / n ) + 1 ) * n;
                     return ( - ( x - new_pos ) );
                 }
                 return 0;

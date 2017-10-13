@@ -2,9 +2,10 @@
 Providers that provide lists of lists generally where each line of a source
 is further subdivided into multiple data (e.g. columns from a line).
 """
+import logging
+import re
 
 from six.moves.urllib.parse import unquote_plus
-import re
 
 from . import line
 
@@ -15,12 +16,11 @@ TransposedColumnarDataProvider: provides each column as a single array
     - see existing visualizations/dataprovider/basic.ColumnDataProvider
 """
 
-import logging
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 # ----------------------------------------------------------------------------- base classes
-class ColumnarDataProvider( line.RegexLineDataProvider ):
+class ColumnarDataProvider(line.RegexLineDataProvider):
     """
     Data provider that provide a list of columns from the lines of its source.
 
@@ -41,9 +41,9 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         'filters'       : 'list:str'
     }
 
-    def __init__( self, source, indeces=None,
-                  column_count=None, column_types=None, parsers=None, parse_columns=True,
-                  deliminator='\t', filters=None, **kwargs ):
+    def __init__(self, source, indeces=None,
+                 column_count=None, column_types=None, parsers=None, parse_columns=True,
+                 deliminator='\t', filters=None, **kwargs):
         """
         :param indeces: a list of indeces of columns to gather from each row
             Optional: will default to `None`.
@@ -82,7 +82,7 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
             params (limit, offset, etc.) are also applicable here.
         """
         # TODO: other columnar formats: csv, etc.
-        super( ColumnarDataProvider, self ).__init__( source, **kwargs )
+        super(ColumnarDataProvider, self).__init__(source, **kwargs)
 
         # IMPLICIT: if no indeces, column_count, or column_types passed: return all columns
         self.selected_column_indeces = indeces
@@ -91,12 +91,12 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         # if no column count given, try to infer from indeces or column_types
         if not self.column_count:
             if self.selected_column_indeces:
-                self.column_count = len( self.selected_column_indeces )
+                self.column_count = len(self.selected_column_indeces)
             elif self.column_types:
-                self.column_count = len( self.column_types )
+                self.column_count = len(self.column_types)
         # if no indeces given, infer from column_count
         if not self.selected_column_indeces and self.column_count:
-            self.selected_column_indeces = list( range( self.column_count ) )
+            self.selected_column_indeces = list(range(self.column_count))
 
         self.deliminator = deliminator
 
@@ -105,35 +105,35 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         if parse_columns:
             self.parsers = self.get_default_parsers()
             # overwrite with user desired parsers
-            self.parsers.update( parsers or {} )
+            self.parsers.update(parsers or {})
 
         filters = filters or []
         self.column_filters = []
         for filter_ in filters:
-            parsed = self.parse_filter( filter_ )
+            parsed = self.parse_filter(filter_)
             # TODO: might be better to error on bad filter/None here
-            if callable( parsed ):
-                self.column_filters.append( parsed )
+            if callable(parsed):
+                self.column_filters.append(parsed)
 
-    def parse_filter( self, filter_param_str ):
-        split = filter_param_str.split( '-', 2 )
-        if not len( split ) >= 3:
+    def parse_filter(self, filter_param_str):
+        split = filter_param_str.split('-', 2)
+        if not len(split) >= 3:
             return None
         column, op, val = split
 
         # better checking v. len and indeces
-        column = int( column )
-        if column > len( self.column_types ):
+        column = int(column)
+        if column > len(self.column_types):
             return None
-        if self.column_types[ column ] in ( 'float', 'int' ):
-            return self.create_numeric_filter( column, op, val )
-        if self.column_types[ column ] in ( 'str' ):
-            return self.create_string_filter( column, op, val )
-        if self.column_types[ column ] in ( 'list' ):
-            return self.create_list_filter( column, op, val )
+        if self.column_types[column] in ('float', 'int'):
+            return self.create_numeric_filter(column, op, val)
+        if self.column_types[column] in ('str'):
+            return self.create_string_filter(column, op, val)
+        if self.column_types[column] in ('list'):
+            return self.create_list_filter(column, op, val)
         return None
 
-    def create_numeric_filter( self, column, op, val ):
+    def create_numeric_filter(self, column, op, val):
         """
         Return an anonymous filter function that will be passed the array
         of parsed columns. Return None if no filter function can be
@@ -152,7 +152,7 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         `val` is cast as float here and will return None if there's a parsing error.
         """
         try:
-            val = float( val )
+            val = float(val)
         except ValueError:
             return None
         if 'lt' == op:
@@ -169,7 +169,7 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
             return lambda d: d[column] > val
         return None
 
-    def create_string_filter( self, column, op, val ):
+    def create_string_filter(self, column, op, val):
         """
         Return an anonymous filter function that will be passed the array
         of parsed columns. Return None if no filter function can be
@@ -187,12 +187,12 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         elif 'has' == op:
             return lambda d: val in d[column]
         elif 're' == op:
-            val = unquote_plus( val )
-            val = re.compile( val )
-            return lambda d: val.match( d[column] ) is not None
+            val = unquote_plus(val)
+            val = re.compile(val)
+            return lambda d: val.match(d[column]) is not None
         return None
 
-    def create_list_filter( self, column, op, val ):
+    def create_list_filter(self, column, op, val):
         """
         Return an anonymous filter function that will be passed the array
         of parsed columns. Return None if no filter function can be
@@ -205,13 +205,13 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         - has: the list in the column contains the sublist `val`
         """
         if 'eq' == op:
-            val = self.parse_value( val, 'list' )
+            val = self.parse_value(val, 'list')
             return lambda d: d[column] == val
         elif 'has' == op:
             return lambda d: val in d[column]
         return None
 
-    def get_default_parsers( self ):
+    def get_default_parsers(self):
         """
         Return parser dictionary keyed for each columnar type
         (as defined in datatypes).
@@ -249,40 +249,40 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
             # 'gffstrand': # -, +, ?, or '.' for None, etc.
         }
 
-    def filter( self, line ):
-        line = super( ColumnarDataProvider, self ).filter( line )
+    def filter(self, line):
+        line = super(ColumnarDataProvider, self).filter(line)
         if line is None:
             return line
-        columns = self.parse_columns_from_line( line )
-        return self.filter_by_columns( columns )
+        columns = self.parse_columns_from_line(line)
+        return self.filter_by_columns(columns)
 
-    def parse_columns_from_line( self, line ):
+    def parse_columns_from_line(self, line):
         """
         Returns a list of the desired, parsed columns.
         :param line: the line to parse
         :type line: str
         """
         # TODO: too much going on in this loop - the above should all be precomputed AMAP...
-        all_columns = line.split( self.deliminator )
+        all_columns = line.split(self.deliminator)
         # if no indeces were passed to init, return all columns
-        selected_indeces = self.selected_column_indeces or list( range( len( all_columns ) ) )
+        selected_indeces = self.selected_column_indeces or list(range(len(all_columns)))
         parsed_columns = []
-        for parser_index, column_index in enumerate( selected_indeces ):
-            parsed_columns.append( self.parse_column_at_index( all_columns, parser_index, column_index ) )
+        for parser_index, column_index in enumerate(selected_indeces):
+            parsed_columns.append(self.parse_column_at_index(all_columns, parser_index, column_index))
         return parsed_columns
 
-    def parse_column_at_index( self, columns, parser_index, index ):
+    def parse_column_at_index(self, columns, parser_index, index):
         """
         Get the column type for the parser from `self.column_types` or `None`
         if the type is unavailable.
         """
         try:
-            return self.parse_value( columns[ index ], self.get_column_type( parser_index ) )
+            return self.parse_value(columns[index], self.get_column_type(parser_index))
         # if a selected index is not within columns, return None
         except IndexError:
             return None
 
-    def parse_value( self, val, type ):
+    def parse_value(self, val, type):
         """
         Attempt to parse and return the given value based on the given type.
 
@@ -295,7 +295,7 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         if type == 'str' or type is None:
             return val
         try:
-            return self.parsers[ type ]( val )
+            return self.parsers[type](val)
         except KeyError:
             # no parser - return as string
             pass
@@ -304,7 +304,7 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
             return None
         return val
 
-    def get_column_type( self, index ):
+    def get_column_type(self, index):
         """
         Get the column type for the parser from `self.column_types` or `None`
         if the type is unavailable.
@@ -312,18 +312,18 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         :returns: string name of type (e.g. 'float', 'int', etc.)
         """
         try:
-            return self.column_types[ index ]
+            return self.column_types[index]
         except IndexError:
             return None
 
-    def filter_by_columns( self, columns ):
+    def filter_by_columns(self, columns):
         for filter_fn in self.column_filters:
-            if not filter_fn( columns ):
+            if not filter_fn(columns):
                 return None
         return columns
 
 
-class DictDataProvider( ColumnarDataProvider ):
+class DictDataProvider(ColumnarDataProvider):
     """
     Data provider that zips column_names and columns from the source's contents
     into a dictionary.
@@ -338,7 +338,7 @@ class DictDataProvider( ColumnarDataProvider ):
         'column_names'  : 'list:str',
     }
 
-    def __init__( self, source, column_names=None, **kwargs ):
+    def __init__(self, source, column_names=None, **kwargs):
         """
         :param column_names: an ordered list of strings that will be used as the keys
             for each column in the returned dictionaries.
@@ -347,11 +347,11 @@ class DictDataProvider( ColumnarDataProvider ):
         :type column_names:
         """
         # TODO: allow passing in a map instead of name->index { 'name1': index1, ... }
-        super( DictDataProvider, self ).__init__( source, **kwargs )
+        super(DictDataProvider, self).__init__(source, **kwargs)
         self.column_names = column_names or []
 
-    def __iter__( self ):
-        parent_gen = super( DictDataProvider, self ).__iter__()
+    def __iter__(self):
+        parent_gen = super(DictDataProvider, self).__iter__()
         for column_values in parent_gen:
-            map = dict( zip( self.column_names, column_values ) )
+            map = dict(zip(self.column_names, column_values))
             yield map

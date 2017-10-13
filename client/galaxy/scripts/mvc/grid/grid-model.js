@@ -36,22 +36,22 @@ return Backbone.Model.extend({
                 new_val;
             if (cur_val === null || cur_val === undefined) {
                 new_val = value;
-            } 
-            else if (typeof(cur_val) == 'string') {
-                if (cur_val == 'All') {
+            } else if (typeof(cur_val) == 'string') {
+                if (cur_val == 'All' || cur_val == value) {
                     new_val = value;
                 } else {
                     // Replace string with array.
                     var values = [];
                     values[0] = cur_val;
                     values[1] = value;
-                    new_val = values;   
+                    new_val = values;
                 }
-            } 
-            else {
+            } else {
                 // Current value is an array.
                 new_val = cur_val;
-                new_val.push(value);
+                if ( new_val.indexOf( value ) === -1 ) {
+                    new_val.push(value);
+                }
             }
             this.attributes.filters[key] = new_val;
         } 
@@ -107,13 +107,12 @@ return Backbone.Model.extend({
         _.each(_.pairs(self.attributes.filters), function(k) {
             url_data['f-' + k[0]] = k[1];
         });
-
         return url_data;
     },
     
     // Return URL for obtaining a new grid
     get_url: function (args) {
-        return this.get('url_base') + "?" + $.param(this.get_url_data()) + '&' + $.param(args);
+        return this.get('url_base') + '?' + $.param(this.get_url_data()) + '&' + $.param(args);
     }
     
 });

@@ -125,7 +125,7 @@ def check_requirements(rec, tool=True):
 
 
 @six.add_metaclass(ABCMeta)
-class ToolProxy( object ):
+class ToolProxy(object):
 
     def __init__(self, tool, tool_path):
         self._tool = tool
