@@ -68,8 +68,10 @@ def __main__():
     # convert to SAM
     unsorted_bam_filename = os.path.join( tmp_dir, 'unsorted.bam' )
     unsorted_stderr_filename = os.path.join( tmp_dir, 'unsorted.stderr' )
-    cmd = "samtools view -bS '%s' > '%s'" % ( input_filename, unsorted_bam_filename )
-    proc = subprocess.Popen( args=cmd, stderr=open( unsorted_stderr_filename, 'wb' ), shell=True, cwd=tmp_dir )
+    proc = subprocess.Popen(['samtools', 'view', '-bS', input_filename],
+                            stdout=open(unsorted_bam_filename, 'wb'),
+                            stderr=open(unsorted_stderr_filename, 'wb'),
+                            cwd=tmp_dir)
     return_code = proc.wait()
     if return_code:
         stderr_target = sys.stderr
@@ -90,10 +92,13 @@ def __main__():
     # samtools changed sort command arguments (starting from version 1.3)
     samtools_version = LooseVersion(_get_samtools_version())
     if samtools_version < LooseVersion('1.0'):
-        cmd = "samtools sort -o '%s' '%s' > '%s'" % ( unsorted_bam_filename, sorting_prefix, output_filename )
+        sort_args = ['-o', unsorted_bam_filename, sorting_prefix]
     else:
-        cmd = "samtools sort -T '%s' '%s' > '%s'" % ( sorting_prefix, unsorted_bam_filename, output_filename )
-    proc = subprocess.Popen( args=cmd, stderr=open( sorted_stderr_filename, 'wb' ), shell=True, cwd=tmp_dir )
+        sort_args = ['-T', sorting_prefix, unsorted_bam_filename]
+    proc = subprocess.Popen(['samtools', 'sort'] + sort_args,
+                            stdout=open(output_filename, 'wb'),
+                            stderr=open(sorted_stderr_filename, 'wb'),
+                            cwd=tmp_dir)
     return_code = proc.wait()
 
     if return_code:
