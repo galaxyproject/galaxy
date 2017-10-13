@@ -8,6 +8,7 @@ from distutils.version import LooseVersion
 import errno
 import logging
 import os
+import subprocess
 from time import sleep
 
 from pulsar.client import build_client_manager
@@ -210,7 +211,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         else:
             log.info("Loading Pulsar app configuration from %s" % pulsar_conf_path)
             with open(pulsar_conf_path, "r") as f:
-                conf.update(yaml.load(f) or {})
+                conf.update(yaml.safe_load(f) or {})
         if "job_metrics_config_file" not in conf:
             conf["job_metrics"] = self.app.job_metrics
         if "staging_directory" not in conf:
@@ -375,8 +376,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         prepare_input_files_cmds = getattr(job_wrapper, 'prepare_input_files_cmds', None)
         if prepare_input_files_cmds is not None:
             for cmd in prepare_input_files_cmds:  # run the commands to stage the input files
-                if 0 != os.system(cmd):
-                    raise Exception('Error running file staging command: %s' % cmd)
+                subprocess.check_call(cmd, shell=True)
             job_wrapper.prepare_input_files_cmds = None  # prevent them from being used in-line
 
     def _populate_parameter_defaults( self, job_destination ):

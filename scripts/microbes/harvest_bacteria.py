@@ -8,9 +8,9 @@ import os
 import sys
 import time
 from ftplib import FTP
-from urllib2 import urlopen
 from urllib import urlretrieve
 
+import requests
 from BeautifulSoup import BeautifulSoup
 from util import get_bed_from_genbank, get_bed_from_glimmer3, get_bed_from_GeneMarkHMM, get_bed_from_GeneMark
 
@@ -26,7 +26,7 @@ desired_ftp_files = {'GeneMark': {'ext': 'GeneMark-2.5f', 'parser': 'process_Gen
 
 # number, name, chroms, kingdom, group, genbank, refseq, info_url, ftp_url
 def iter_genome_projects( url="http://www.ncbi.nlm.nih.gov/genomes/lproks.cgi?view=1", info_url_base="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=genomeprj&cmd=Retrieve&dopt=Overview&list_uids=" ):
-    for row in BeautifulSoup( urlopen( url ) ).findAll( name='tr', bgcolor=["#EEFFDD", "#E8E8DD"] ):
+    for row in BeautifulSoup(requests.get(url).text).findAll(name='tr', bgcolor=["#EEFFDD", "#E8E8DD"]):
         row = str( row ).replace( "\n", "" ).replace( "\r", "" )
 
         fields = row.split( "</td>" )
@@ -65,7 +65,7 @@ def get_chroms_by_project_id( org_num, base_url="http://www.ncbi.nlm.nih.gov/ent
         html_count += 1
         url = "%s%s" % ( base_url, org_num )
         try:
-            html = urlopen( url )
+            html = requests.get(url).text
         except:
             print "GENOME PROJECT FAILED:", html_count, "org:", org_num, url
             html = None

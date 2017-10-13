@@ -2,12 +2,13 @@
 Module for managing jobs in Pacific Bioscience's SMRT Portal and automatically transferring files
 produced by SMRT Portal.
 """
-import json
 import logging
-import urllib2
 from string import Template
 
+import requests
+
 from data_transfer import DataTransfer
+
 
 log = logging.getLogger( __name__ )
 
@@ -87,8 +88,8 @@ class SMRTPortalPlugin( DataTransfer ):
             if self._missing_params( job.params, [ 'smrt_host', 'smrt_job_id' ] ):
                 return self.job_states.INVALID
             url = 'http://' + job.params[ 'smrt_host' ] + self.api_path + '/Jobs/' + job.params[ 'smrt_job_id' ] + '/Status'
-            r = urllib2.urlopen( url )
-            status = json.loads( r.read() )
+            r = requests.get(url)
+            status = r.json()
             # TODO: error handling: unexpected json or bad response, bad url, etc.
             if status[ 'Code' ] == 'Completed':
                 log.debug( "SMRT Portal job '%s' is Completed.  Initiating transfer." % job.params[ 'smrt_job_id' ] )

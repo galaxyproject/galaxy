@@ -3,7 +3,8 @@ import os
 import shutil
 import tarfile
 import tempfile
-import urllib
+
+import requests
 
 from galaxy import util
 from galaxy import web
@@ -74,7 +75,7 @@ class UploadController( BaseUIController ):
             elif url:
                 valid_url = True
                 try:
-                    stream = urllib.urlopen( url )
+                    stream = requests.get(url, stream=True)
                 except Exception as e:
                     valid_url = False
                     message = 'Error uploading file via http: %s' % str( e )
@@ -83,11 +84,9 @@ class UploadController( BaseUIController ):
                 if valid_url:
                     fd, uploaded_file_name = tempfile.mkstemp()
                     uploaded_file = open( uploaded_file_name, 'wb' )
-                    while 1:
-                        chunk = stream.read( util.CHUNK_SIZE )
-                        if not chunk:
-                            break
-                        uploaded_file.write( chunk )
+                    for chunk in stream.iter_content(chunk_size=util.CHUNK_SIZE):
+                        if chunk:
+                            uploaded_file.write(chunk)
                     uploaded_file.flush()
                     uploaded_file_filename = url.split( '/' )[ -1 ]
                     isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
