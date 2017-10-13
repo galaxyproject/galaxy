@@ -254,6 +254,6 @@ class RestGolangProxyIpc(object):
                 excp = "Could not contact proxy after %s seconds" % sum(range(sleep + 1))
                 raise Exception(excp)
             time.sleep(sleep)
-            self.handle_requests(authentication, proxy_requests, route_name, container_ids, container_interface, sleep=sleep + 1)
+            self.handle_requests(authentication, proxy_requests, route_name, container_ids, sleep=sleep + 1)
 
 # TODO: MQ diven proxy?

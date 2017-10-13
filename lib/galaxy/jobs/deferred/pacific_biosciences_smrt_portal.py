@@ -3,7 +3,6 @@ Module for managing jobs in Pacific Bioscience's SMRT Portal and automatically t
 produced by SMRT Portal.
 """
 import logging
-import urllib2
 from string import Template
 
 import requests

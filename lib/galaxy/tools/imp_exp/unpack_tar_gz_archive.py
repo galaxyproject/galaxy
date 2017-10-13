@@ -11,7 +11,6 @@ import sys
 import optparse
 import tarfile
 import tempfile
-import urllib2
 import math
 from base64 import b64decode
 

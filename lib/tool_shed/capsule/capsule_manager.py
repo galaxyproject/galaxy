@@ -5,7 +5,6 @@ import shutil
 import tarfile
 import tempfile
 import threading
-import urllib
 from time import gmtime
 from time import strftime
 
