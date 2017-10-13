@@ -189,6 +189,34 @@ class ToolsUploadTestCase(api.ApiTestCase):
             assert datasets[1]["file_ext"] == "txt"
             assert datasets[1]["genome_build"] == "hg18", datasets
 
+    def test_upload_multiple_files_no_dbkey(self):
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+                file_type="tabular",
+                dbkey=None,
+                extra_inputs={
+                    "files_0|file_type": "txt",
+                    "files_1|url_paste": "SecondOutputContent",
+                    "files_1|NAME": "SecondOutputName",
+                    "files_1|file_type": "txt",
+                    "file_count": "2",
+                }
+            )
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response)
+            datasets = run_response.json()["outputs"]
+
+            assert len(datasets) == 2, datasets
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=datasets[0])
+            assert content.strip() == "Test123"
+            assert datasets[0]["file_ext"] == "txt", datasets
+            assert datasets[0]["genome_build"] == "?", datasets
+
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=datasets[1])
+            assert content.strip() == "SecondOutputContent"
+            assert datasets[1]["file_ext"] == "txt"
+            assert datasets[1]["genome_build"] == "?", datasets
+
     def test_upload_multiple_files_space_to_tab(self):
         with self.dataset_populator.test_history() as history_id:
             payload = self.dataset_populator.upload_payload(history_id,

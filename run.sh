@@ -16,8 +16,6 @@ then
     . $GALAXY_LOCAL_ENV_FILE
 fi
 
-./scripts/common_startup.sh $common_startup_args || exit 1
-
 parse_common_args $@
 
 run_common_start_up

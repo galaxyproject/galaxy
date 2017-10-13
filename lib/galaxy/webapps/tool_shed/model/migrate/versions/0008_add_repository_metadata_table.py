@@ -1,6 +1,8 @@
 """
 Migration script to add the repository_metadata table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -31,15 +33,14 @@ RepositoryMetadata_table = Table("repository_metadata", metadata,
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     # Create repository_metadata table.
     try:
         RepositoryMetadata_table.create()
-    except Exception as e:
-        print str(e)
-        log.debug("Creating repository_metadata table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating repository_metadata table failed.")
 
 
 def downgrade(migrate_engine):
@@ -48,6 +49,5 @@ def downgrade(migrate_engine):
     # Drop repository_metadata table.
     try:
         RepositoryMetadata_table.drop()
-    except Exception as e:
-        print str(e)
-        log.debug("Dropping repository_metadata table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping repository_metadata table failed.")

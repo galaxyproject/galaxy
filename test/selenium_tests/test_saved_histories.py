@@ -275,7 +275,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     def navigate_to_saved_histories_page(self):
         self.home()
         self.click_masthead_user()  # Open masthead menu
-        self.wait_for_and_click_selector('a[href="/histories/list"]')
+        self.components.masthead.saved_histories.wait_for_and_click()
 
     def setup_shared_state(self):
         SavedHistoriesTestCase.user_email = self._get_random_email()

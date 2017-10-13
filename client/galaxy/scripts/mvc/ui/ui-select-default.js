@@ -18,6 +18,7 @@ var View = Backbone.View.extend({
             searchable  : true,
             optional    : false,
             disabled    : false,
+            readonly    : false,
             onchange    : function(){},
             value       : null,
             individual  : false,
@@ -94,7 +95,7 @@ var View = Backbone.View.extend({
             });
         }
         this.all_button = null;
-        if ( this.model.get( 'multiple' ) && !this.model.get( 'individual' ) ) {
+        if ( this.model.get( 'multiple' ) && !this.model.get( 'individual' ) && !this.model.get( 'readonly' ) ) {
             this.all_button = new Buttons.ButtonCheck({
                 onclick: function() {
                     var new_value = [];
@@ -177,7 +178,7 @@ var View = Backbone.View.extend({
                 self.$select.append( $( '<option/>' ).attr( 'value', option.value ).html( _.escape( option.label ) ) );
             });
         }
-        this.model.set( 'disabled', this.length() == 0 );
+        this.model.set( 'disabled', this.model.get( 'readonly' ) || this.length() == 0 );
         this._changeValue();
     },
 

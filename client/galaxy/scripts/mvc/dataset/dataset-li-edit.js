@@ -49,20 +49,26 @@ var DatasetListItemEdit = _super.extend(
 
     /** Render icon-button to edit the attributes (format, permissions, etc.) this dataset. */
     _renderEditButton : function(){
+        var self = this;
         // don't show edit while uploading, in-accessible
         // DO show if in error (ala previous history panel)
         if( ( this.model.get( 'state' ) === STATES.DISCARDED )
         ||  ( !this.model.get( 'accessible' ) ) ){
             return null;
         }
-
         var purged = this.model.get( 'purged' ),
             deleted = this.model.get( 'deleted' ),
             editBtnData = {
                 title       : _l( 'Edit attributes' ),
                 href        : Galaxy.root + 'datasets/edit?dataset_id=' + this.model.attributes.id,
                 faIcon      : 'fa-pencil',
-                classes     : 'edit-btn'
+                classes     : 'edit-btn',
+                onclick     : function( ev ) {
+                    if ( Galaxy.router ) {
+                        ev.preventDefault();
+                        Galaxy.router.push( 'datasets/edit', { dataset_id : self.model.attributes.id } );
+                    }
+                }
             };
         // disable if purged or deleted and explain why in the tooltip
         if( deleted || purged ){
@@ -195,11 +201,18 @@ var DatasetListItemEdit = _super.extend(
 
     /** Render icon-button to report an error on this dataset to the galaxy admin. */
     _renderErrButton : function(){
+        var self = this;
         return faIconButton({
             title       : _l( 'View or report this error' ),
             href        : Galaxy.root + 'datasets/error?dataset_id=' + this.model.attributes.id,
             classes     : 'report-error-btn',
-            faIcon      : 'fa-bug'
+            faIcon      : 'fa-bug',
+            onclick     : function( ev ) {
+                if ( Galaxy.router ) {
+                    ev.preventDefault();
+                    Galaxy.router.push( 'datasets/error', { dataset_id : self.model.attributes.id } );
+                }
+            }
         });
     },
 
@@ -214,8 +227,10 @@ var DatasetListItemEdit = _super.extend(
                 target      : this.linkTarget,
                 faIcon      : 'fa-refresh',
                 onclick     : function( ev ) {
-                    ev.preventDefault();
-                    Galaxy.router.push( '/', { job_id : creating_job } );
+                    if ( Galaxy.router ) {
+                        ev.preventDefault();
+                        Galaxy.router.push( '/', { job_id : creating_job } );
+                    }
                 }
             });
         }
@@ -307,7 +322,7 @@ var DatasetListItemEdit = _super.extend(
         &&  !this.model.isDeletedOrPurged() ){
             var editableDbkey = $( '<a class="value">?</a>' )
                 .attr( 'href', this.model.urls.edit )
-                .attr( 'target', this.linkTarget );
+                .attr( 'target', 'top' );
             $details.find( '.dbkey .value' ).replaceWith( editableDbkey );
         }
     },
@@ -359,7 +374,7 @@ DatasetListItemEdit.prototype.templates = (function(){
             '<% if( dataset.state === "failed_metadata" ){ %>',
                 '<div class="failed_metadata-warning warningmessagesmall">',
                     _l( 'An error occurred setting the metadata for this dataset' ),
-                    '<br /><a href="<%- dataset.urls.edit %>" target="<%- view.linkTarget %>">',
+                    '<br /><a href="<%- dataset.urls.edit %>" target="top">',
                         _l( 'Set it manually or retry auto-detection' ),
                     '</a>',
                 '</div>',

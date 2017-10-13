@@ -1,7 +1,6 @@
 """
 Object Store plugin for the Amazon Simple Storage Service (S3)
 """
-
 import logging
 import multiprocessing
 import os
@@ -9,8 +8,16 @@ import shutil
 import subprocess
 import threading
 import time
-
 from datetime import datetime
+
+try:
+    # Imports are done this way to allow objectstore code to be used outside of Galaxy.
+    import boto
+    from boto.exception import S3ResponseError
+    from boto.s3.connection import S3Connection
+    from boto.s3.key import Key
+except ImportError:
+    boto = None
 
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
@@ -24,16 +31,6 @@ from galaxy.util.sleeper import Sleeper
 
 from .s3_multipart_upload import multipart_upload
 from ..objectstore import convert_bytes, ObjectStore
-
-try:
-    # Imports are done this way to allow objectstore code to be used outside of Galaxy.
-    import boto
-
-    from boto.exception import S3ResponseError
-    from boto.s3.key import Key
-    from boto.s3.connection import S3Connection
-except ImportError:
-    boto = None
 
 NO_BOTO_ERROR_MESSAGE = ("S3/Swift object store configured, but no boto dependency available."
                          "Please install and properly configure boto or modify object store configuration.")
@@ -296,21 +293,21 @@ class S3ObjectStore(ObjectStore):
         # creates, this check sould be implemented- in the mean time, it's not
         # looking likely to be implementable reliably.
         # if os.path.exists(cache_path):
-        #     # print "***1 %s exists" % cache_path
+        #     # print("***1 %s exists" % cache_path)
         #     if self._key_exists(rel_path):
-        #         # print "***2 %s exists in S3" % rel_path
+        #         # print("***2 %s exists in S3" % rel_path)
         #         # Make sure the size in cache is available in its entirety
-        #         # print "File '%s' cache size: %s, S3 size: %s" % (cache_path, os.path.getsize(cache_path), self._get_size_in_s3(rel_path))
+        #         # print("File '%s' cache size: %s, S3 size: %s" % (cache_path, os.path.getsize(cache_path), self._get_size_in_s3(rel_path)))
         #         if os.path.getsize(cache_path) == self._get_size_in_s3(rel_path):
-        #             # print "***2.1 %s exists in S3 and the size is the same as in cache (in_cache=True)" % rel_path
+        #             # print("***2.1 %s exists in S3 and the size is the same as in cache (in_cache=True)" % rel_path)
         #             exists = True
         #         else:
-        #             # print "***2.2 %s exists but differs in size from cache (in_cache=False)" % cache_path
+        #             # print("***2.2 %s exists but differs in size from cache (in_cache=False)" % cache_path)
         #             exists = False
         #     else:
         #         # Although not perfect decision making, this most likely means
         #         # that the file is currently being uploaded
-        #         # print "***3 %s found in cache but not in S3 (in_cache=True)" % cache_path
+        #         # print("***3 %s found in cache but not in S3 (in_cache=True)" % cache_path)
         #         exists = True
         # else:
         #     return False

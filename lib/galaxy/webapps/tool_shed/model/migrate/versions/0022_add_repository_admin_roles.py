@@ -3,6 +3,8 @@ Migration script to create the repository_role_association table, insert name-sp
 repository administrative roles into the role table and associate each repository and
 owner with the appropriate name-spaced role.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -59,15 +61,14 @@ def boolean_false(migrate_engine):
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     # Create the new repository_role_association table.
     try:
         RepositoryRoleAssociation_table.create()
-    except Exception as e:
-        print str(e)
-        log.debug("Creating repository_role_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating repository_role_association table failed.")
     # Select the list of repositories and associated public user names for their owners.
     user_ids = []
     repository_ids = []
@@ -159,5 +160,5 @@ def downgrade(migrate_engine):
         log.debug("Failed loading table repository_role_association")
     try:
         RepositoryRoleAssociation_table.drop()
-    except Exception as e:
-        log.debug("Dropping repository_role_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping repository_role_association table failed.")

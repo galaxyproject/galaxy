@@ -10,6 +10,8 @@ Make sure you adjusted your config to:
 
 This script expects the Tool Shed's runtime virtualenv to be active.
 """
+from __future__ import print_function
+
 import ConfigParser
 import logging
 import os
@@ -97,7 +99,6 @@ def build_index(sa_session, whoosh_index_dir, path_to_repositories):
                              full_last_updated=repo.get('full_last_updated'))
         #  Tools get their own index
         for tool in repo.get('tools_list'):
-            # print tool
             tool_index_writer.add_document(id=to_unicode(tool.get('id')),
                                            name=to_unicode(tool.get('name')),
                                            version=to_unicode(tool.get('version')),
@@ -107,16 +108,16 @@ def build_index(sa_session, whoosh_index_dir, path_to_repositories):
                                            repo_name=to_unicode(repo.get('name')),
                                            repo_id=repo.get('id'))
             tools_indexed += 1
-            print tools_indexed, 'tools (', tool.get('id'), ')'
+            print(tools_indexed, 'tools (', tool.get('id'), ')')
 
         repos_indexed += 1
-        print repos_indexed, 'repos (', repo.get('id'), ')'
+        print(repos_indexed, 'repos (', repo.get('id'), ')')
 
     tool_index_writer.commit()
     repo_index_writer.commit()
 
-    print "TOTAL repos indexed: ", repos_indexed
-    print "TOTAL tools indexed: ", tools_indexed
+    print("TOTAL repos indexed: ", repos_indexed)
+    print("TOTAL tools indexed: ", tools_indexed)
 
 
 def get_repos(sa_session, path_to_repositories):

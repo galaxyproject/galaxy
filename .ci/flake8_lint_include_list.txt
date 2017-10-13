@@ -57,6 +57,7 @@ lib/galaxy/managers/taggable.py
 lib/galaxy/model/
 lib/galaxy/objectstore/pulsar.py
 lib/galaxy/objectstore/s3_multipart_upload.py
+lib/galaxy/objectstore/s3.py
 lib/galaxy/openid/__init__.py
 lib/galaxy/quota/
 lib/galaxy/sample_tracking/data_transfer.py
@@ -81,6 +82,7 @@ lib/galaxy/visualization/tracks/
 lib/galaxy/web/base/
 lib/galaxy/web/buildapp.py
 lib/galaxy/web/formatting.py
+lib/galaxy/web/form_builder.py
 lib/galaxy/web/framework/base.py
 lib/galaxy/web/framework/decorators.py
 lib/galaxy/web/framework/helpers/grids.py
@@ -126,6 +128,7 @@ lib/galaxy/webapps/__init__.py
 lib/galaxy/webapps/reports/config.py
 lib/galaxy/webapps/reports/controllers/__init__.py
 lib/galaxy/webapps/reports/controllers/query.py
+lib/galaxy/webapps/reports/controllers/tools.py
 lib/galaxy/webapps/reports/__init__.py
 lib/galaxy/webapps/tool_shed/api/__init__.py
 lib/galaxy/webapps/tool_shed/controllers/groups.py
