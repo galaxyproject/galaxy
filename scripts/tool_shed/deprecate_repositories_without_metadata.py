@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
-import ConfigParser
 import logging
 import os
 import string
@@ -13,6 +12,7 @@ from optparse import OptionParser
 from time import strftime
 
 import sqlalchemy as sa
+from six.moves import configparser
 from sqlalchemy import and_, distinct, false, not_
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib'))
@@ -47,7 +47,7 @@ def main():
         ini_file = args[0]
     except IndexError:
         sys.exit("Usage: python %s <tool shed .ini file> [options]" % sys.argv[0])
-    config_parser = ConfigParser.ConfigParser({'here': os.getcwd()})
+    config_parser = configparser.ConfigParser({'here': os.getcwd()})
     config_parser.read(ini_file)
     config_dict = {}
     for key, value in config_parser.items("app:main"):
@@ -66,7 +66,7 @@ def main():
     deprecate_repositories(app, cutoff_time, days=options.days, info_only=options.info_only, verbose=options.verbose)
 
 
-def send_mail_to_owner(app, name, owner, email, repositories_deprecated, days=14):
+def send_mail_to_owner(app, owner, email, repositories_deprecated, days=14):
     '''
     Sends an email to the owner of the provided repository.
     '''
@@ -89,10 +89,10 @@ def send_mail_to_owner(app, name, owner, email, repositories_deprecated, days=14
     body = '\n'.join(textwrap.wrap(message_template.safe_substitute(days=days, url=url), width=95))
     body += '\n\n'
     body += 'Repositories that were deprecated:\n'
-    body += '\n'.join([build_citable_url(url, repository) for repository in repositories_deprecated])
+    body += '\n'.join(build_citable_url(url, repository) for repository in repositories_deprecated)
     try:
-        galaxy_send_mail(from_address, repository.user.email, subject, body, app.config)
-        print("# An email has been sent to %s, the owner of %s." % (repository.user.username, ', '.join([repository.name for repository in repositories_deprecated])))
+        galaxy_send_mail(from_address, email, subject, body, app.config)
+        print("# An email has been sent to %s, the owner of %s." % (owner, ', '.join(repository.name for repository in repositories_deprecated)))
         return True
     except Exception as e:
         print("# An error occurred attempting to send email: %s" % e)
@@ -145,7 +145,7 @@ def deprecate_repositories(app, cutoff_time, days=14, info_only=False, verbose=F
             app.sa_session.add(repository)
             app.sa_session.flush()
         owner = repositories_by_owner[repository_owner]['owner']
-        send_mail_to_owner(app, repository.name, owner.username, owner.email, repositories_by_owner[repository_owner]['repositories'], days)
+        send_mail_to_owner(app, owner.username, owner.email, repositories_by_owner[repository_owner]['repositories'], days)
     stop = time.time()
     print('# Deprecated %d repositories.' % len(repositories))
     print("# Elapsed time: ", stop - start)

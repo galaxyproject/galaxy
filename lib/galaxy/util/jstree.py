@@ -71,7 +71,7 @@ class Node(dictobj.DictionaryObject):
     super(Node, self).__init__()
 
     children = kwargs.get('children', {})
-    if len(filter(lambda key: not isinstance(children[key], Node), children)):
+    if len([key for key in children if not isinstance(children[key], Node)]):
       raise TypeError(
         "One or more children were not instances of '%s'" % Node.__name__)
     if 'children' in kwargs:
@@ -117,7 +117,7 @@ class JSTree(dictobj.DictionaryObject):
     in the JSON.
 
     """
-    if len(filter(lambda p: not isinstance(p, Path), paths)):
+    if len([p for p in paths if not isinstance(p, Path)]):
       raise TypeError(
         "All paths must be instances of '%s'" % Path.__name__)
 

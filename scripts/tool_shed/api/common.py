@@ -3,8 +3,16 @@ from __future__ import print_function
 import json
 import os
 import sys
-import urllib
-import urllib2
+
+import six
+from six.moves.urllib.error import HTTPError
+from six.moves.urllib.request import (
+    build_opener,
+    HTTPRedirectHandler,
+    install_opener,
+    Request,
+    urlopen
+)
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, 'lib'))
 
@@ -12,7 +20,7 @@ from galaxy import util
 from tool_shed.util import hg_util
 
 
-class HTTPRedirectWithDataHandler(urllib2.HTTPRedirectHandler):
+class HTTPRedirectWithDataHandler(HTTPRedirectHandler):
 
     def __init__(self, method):
         '''
@@ -27,26 +35,26 @@ class HTTPRedirectWithDataHandler(urllib2.HTTPRedirectHandler):
         request_method = request.get_method()
         if str(code) in self.redirect_codes and request_method in self.valid_methods:
             new_url = new_url.replace(' ', '%20')
-            request = urllib2.Request(new_url,
-                                      data=request.data,
-                                      headers=request.headers,
-                                      origin_req_host=request.get_origin_req_host(),
-                                      unverifiable=True)
+            request = Request(new_url,
+                              data=request.data,
+                              headers=request.headers,
+                              origin_req_host=request.get_origin_req_host(),
+                              unverifiable=True)
             if self.method in self.valid_methods:
                 if request.get_method() != self.method:
                     request.get_method = lambda: self.method
             return request
         else:
-            urllib2.HTTPRedirectHandler.redirect_request(request, fp, code, msg, headers, new_url)
+            HTTPRedirectHandler.redirect_request(request, fp, code, msg, headers, new_url)
 
 
 def build_request_with_data(url, data, api_key, method):
     """Build a request with the received method."""
     http_redirect_with_data_handler = HTTPRedirectWithDataHandler(method=method)
-    opener = urllib2.build_opener(http_redirect_with_data_handler)
-    urllib2.install_opener(opener)
+    opener = build_opener(http_redirect_with_data_handler)
+    install_opener(opener)
     url = make_url(url, api_key=api_key, args=None)
-    request = urllib2.Request(url, headers={'Content-Type': 'application/json'}, data=json.dumps(data))
+    request = Request(url, headers={'Content-Type': 'application/json'}, data=json.dumps(data))
     request_method = request.get_method()
     if request_method != method:
         request.get_method = lambda: method
@@ -62,7 +70,7 @@ def delete(api_key, url, data, return_formatted=True):
         opener, request = build_request_with_data(url, data, api_key, 'DELETE')
         delete_request = opener.open(request)
         response = json.loads(delete_request.read())
-    except urllib2.HTTPError as e:
+    except HTTPError as e:
         if return_formatted:
             print(e)
             print(e.read(1024))
@@ -81,17 +89,17 @@ def display(url, api_key=None, return_formatted=True):
     """Sends an API GET request and acts as a generic formatter for the JSON response."""
     try:
         r = get(url, api_key=api_key)
-    except urllib2.HTTPError as e:
+    except HTTPError as e:
         print(e)
         # Only return the first 1K of errors.
         print(e.read(1024))
         sys.exit(1)
-    if type(r) == unicode:
+    if isinstance(r, six.text_type):
         print('error: %s' % r)
         return None
     if not return_formatted:
         return r
-    elif type(r) == list:
+    elif isinstance(r, list):
         # Response is a collection as defined in the REST style.
         print('Collection Members')
         print('------------------')
@@ -106,14 +114,12 @@ def display(url, api_key=None, return_formatted=True):
                 print('  %s: %s' % (k, v))
         print()
         print('%d element(s) in collection' % len(r))
-    elif type(r) == dict:
+    elif isinstance(r, dict):
         # Response is an element as defined in the REST style.
         print('Member Information')
         print('------------------')
         for k, v in r.items():
             print('%s: %s' % (k, v))
-    elif type(r) == str:
-        print(r)
     else:
         print('response is unknown type: %s' % type(r))
 
@@ -122,7 +128,7 @@ def get(url, api_key=None):
     """Do the GET."""
     url = make_url(url, api_key=api_key, args=None)
     try:
-        return json.loads(urllib2.urlopen(url).read())
+        return json.loads(urlopen(url).read())
     except ValueError:
         sys.exit("URL did not return JSON data")
 
@@ -191,7 +197,7 @@ def get_repository_dict(url, repository_dict):
 def json_from_url(url):
     """Send a request to the Tool Shed via the Tool Shed API and handle the response."""
     error_message = ''
-    url_handle = urllib.urlopen(url)
+    url_handle = urlopen(url)
     url_contents = url_handle.read()
     try:
         parsed_json = json.loads(url_contents)
@@ -221,7 +227,7 @@ def post(url, data, api_key=None):
         opener, request = build_request_with_data(url, data, api_key, 'POST')
         post_request = opener.open(request)
         return json.loads(post_request.read())
-    except urllib2.HTTPError as e:
+    except HTTPError as e:
         return dict(status='error', message=str(e.read(1024)))
 
 
@@ -231,7 +237,7 @@ def put(url, data, api_key=None):
         opener, request = build_request_with_data(url, data, api_key, 'PUT')
         put_request = opener.open(request)
         return json.loads(put_request.read())
-    except urllib2.HTTPError as e:
+    except HTTPError as e:
         return dict(status='error', message=str(e.read(1024)))
 
 
@@ -242,7 +248,7 @@ def submit(url, data, api_key=None, return_formatted=True):
     """
     try:
         response = post(url, data, api_key=api_key)
-    except urllib2.HTTPError as e:
+    except HTTPError as e:
         if return_formatted:
             print(e)
             print(e.read(1024))
@@ -253,11 +259,11 @@ def submit(url, data, api_key=None, return_formatted=True):
         return response
     print('Response')
     print('--------')
-    if type(response) == list:
+    if isinstance(response, list):
         # Currently the only implemented responses are lists of dicts, because submission creates
         # some number of collection elements.
         for i in response:
-            if type(i) == dict:
+            if isinstance(i, dict):
                 if 'url' in i:
                     print(i.pop('url'))
                 else:
@@ -279,7 +285,7 @@ def update(api_key, url, data, return_formatted=True):
     """
     try:
         response = put(url, data, api_key=api_key)
-    except urllib2.HTTPError as e:
+    except HTTPError as e:
         if return_formatted:
             print(e)
             print(e.read(1024))
