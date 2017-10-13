@@ -1,5 +1,5 @@
 """
-Migration script for workflow request tables.
+Migration script for collections and workflows connections.
 """
 from __future__ import print_function
 
@@ -79,6 +79,26 @@ def get_new_tables():
         Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=False),
     )
 
+    implicit_collection_jobs_table = Table(
+        "implicit_collection_jobs", metadata,
+        Column("id", Integer, primary_key=True),
+        Column("populated_state", TrimmedString(64), default='new', nullable=False),
+    )
+
+    # implicit_collection_jobs_history_dataset_collection_association_table = Table(
+    #    "implicit_collection_jobs_dataset_collection_association", metadata,
+    #    Column("id", Integer, primary_key=True),
+    #    Column("history_dataset_collection_association_id", Integer, ForeignKey("history_dataset_collection_association_id.id"), index=True, nullable=False),
+    # )
+
+    implicit_collection_jobs_job_association_table = Table(
+        "implicit_collection_jobs_job_association", metadata,
+        Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True),
+        Column("id", Integer, primary_key=True),
+        Column("job_id", Integer, ForeignKey("job.id"), index=True),  # Consider making this nullable...
+        Column("order_index", Integer, nullable=False),
+    )
+
     tables = OrderedDict()
     tables["workflow_invocation_step"] = workflow_invocation_step_table
     tables["workflow_invocation_output_dataset_association"] = workflow_invocation_output_dataset_association_table
@@ -86,6 +106,9 @@ def get_new_tables():
     tables["workflow_invocation_step_output_dataset_association"] = workflow_invocation_step_output_dataset_association_table
     tables["workflow_invocation_step_output_dataset_collection_association"] = workflow_invocation_step_output_dataset_collection_association_table
     tables["workflow_invocation_step_job_association"] = workflow_invocation_step_job_association_table
+    tables["implicit_collection_jobs"] = implicit_collection_jobs_table
+    # tables["implicit_collection_jobs_history_dataset_collection_association"] = implicit_collection_jobs_history_dataset_collection_association_table
+    tables["implicit_collection_jobs_job_association"] = implicit_collection_jobs_job_association_table
 
     return tables
 
@@ -156,6 +179,24 @@ def upgrade(migrate_engine):
         ") " + \
         "WHERE job_id is not NULL "
     migrate_engine.execute(cmd)
+
+    if migrate_engine.name in ['postgres', 'postgresql']:
+        implicit_collection_jobs_id_column = Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), nullable=True)
+        job_id_column = Column("job_id", Integer, ForeignKey("job.id"), nullable=True)
+    else:
+        implicit_collection_jobs_id_column = Column("implicit_collection_jobs_id", Integer, nullable=True)
+        job_id_column = Column("job_id", Integer, nullable=True)
+    __add_column(implicit_collection_jobs_id_column, "history_dataset_collection_association", metadata)
+    __add_column(job_id_column, "history_dataset_collection_association", metadata)
+    # TODO: matching drop... steal from 0131
+
+
+def __add_column(column, table_name, metadata, **kwds):
+    try:
+        table = Table(table_name, metadata, autoload=True)
+        column.create(table, **kwds)
+    except Exception:
+        log.exception("Adding column %s failed.", column)
 
 
 def downgrade(migrate_engine):

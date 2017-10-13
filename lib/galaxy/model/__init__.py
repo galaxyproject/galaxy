@@ -1055,6 +1055,29 @@ class ImplicitlyCreatedDatasetCollectionInput(object):
         self.input_dataset_collection = input_dataset_collection
 
 
+class ImplicitCollectionJobs(object):
+
+    populated_states = Bunch(
+        NEW='new',  # New implicit jobs object, unpopulated job associations
+        OK='ok',  # Job associations are set and fixed.
+        FAILED='failed',  # There were issues populating job associations, object is in error.
+    )
+
+    def __init__(
+        self,
+        id=None,
+        populated_state=None,
+    ):
+        self.id = id
+        self.populated_state = populated_state or ImplicitCollectionJobs.populated_states.NEW
+
+
+class ImplicitCollectionJobsJobAssociation(object):
+
+    def __init__(self):
+        pass
+
+
 class PostJobAction(object):
     def __init__(self, action_type, workflow_step, output_name=None, action_arguments=None):
         self.action_type = action_type
@@ -3403,6 +3426,19 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         return ((type_coerce(cls.content_type, types.Unicode) + u'-' +
                  type_coerce(cls.id, types.Unicode)).label('type_id'))
 
+    @property
+    def job_source_type(self):
+        if self.implicit_collection_jobs_id:
+            return "ImplicitCollectionJobs"
+        elif self.job_id:
+            return "Job"
+        else:
+            return None
+
+    @property
+    def job_source_id(self):
+        return self.implicit_collection_jobs_id or self.job_id
+
     def to_hda_representative(self, multiple=False):
         rval = []
         for dataset in self.collection.dataset_elements:
@@ -3420,6 +3456,8 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
             history_content_type=self.history_content_type,
             visible=self.visible,
             deleted=self.deleted,
+            job_source_id=self.job_source_id,
+            job_source_type=self.job_source_type,
             **self._base_to_dict(view=view)
         )
 

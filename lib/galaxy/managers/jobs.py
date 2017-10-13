@@ -3,8 +3,9 @@ import logging
 
 from boltons.iterutils import remap
 from six import string_types
-from sqlalchemy import and_, false, or_
+from sqlalchemy import and_, false, func, or_
 from sqlalchemy.orm import aliased
+from sqlalchemy.sql import select
 
 from galaxy import model
 from galaxy.managers.collections import DatasetCollectionManager
@@ -243,3 +244,50 @@ class JobSearch(object):
                 log.info("Searching jobs finished %s", search_timer)
                 return job
         return None
+
+
+def summarize_jobs_to_dict(sa_session, jobs_source):
+    """Proudce a summary of jobs for job summary endpoints.
+
+    :type   jobs_source: a Job or ImplicitCollectionJobs or None
+    :param  jobs_source: the object to summarize
+
+    :rtype:     dict
+    :returns:   dictionary containing job summary information
+    """
+    rval = None
+    if jobs_source is None:
+        pass
+    elif isinstance(jobs_source, model.Job):
+        rval = {
+            "populated_state": "ok",
+            "states": {jobs_source.state: 1},
+            "model": "Job",
+            "id": jobs_source.id,
+        }
+    else:
+        populated_state = jobs_source.populated_state
+        rval = {
+            "id": jobs_source.id,
+            "populated_state": populated_state,
+            "model": "ImplicitCollectionJobs",
+        }
+        if populated_state == "ok":
+            # produce state summary...
+            states = {}
+            join = model.ImplicitCollectionJobs.table.join(
+                model.ImplicitCollectionJobsJobAssociation.table.join(model.Job)
+            )
+            statement = select(
+                [model.Job.state, func.count("*")]
+            ).select_from(
+                join
+            ).where(
+                model.ImplicitCollectionJobs.id == jobs_source.id
+            ).group_by(
+                model.Job.state
+            )
+            for row in sa_session.execute(statement):
+                states[row[0]] = row[1]
+            rval["states"] = states
+    return rval

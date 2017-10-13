@@ -288,6 +288,13 @@ class BaseDatasetPopulator(object):
         assert details_response.status_code == 200, details_response.content
         return details_response.json()
 
+    def run_collection_creates_list(self, history_id, hdca_id):
+        inputs = {
+            "input1": {"src": "hdca", "id": hdca_id},
+        }
+        self.wait_for_history(history_id, assert_ok=True)
+        return self.run_tool("collection_creates_list", inputs, history_id)
+
     def __history_content_id(self, history_id, wait=True, **kwds):
         if wait:
             assert_ok = kwds.get("assert_ok", True)

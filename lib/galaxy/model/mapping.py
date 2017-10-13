@@ -557,6 +557,26 @@ model.ImplicitlyCreatedDatasetCollectionInput.table = Table(
         ForeignKey("history_dataset_collection_association.id"), index=True),
     Column("name", Unicode(255)))
 
+model.ImplicitCollectionJobs.table = Table(
+    "implicit_collection_jobs", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("populated_state", TrimmedString(64), default='new', nullable=False),
+)
+
+# model.ImplicitCollectionJobsHistoryDatasetCollectionAssociation.table = Table(
+#     "implicit_collection_jobs_dataset_collection_association", metadata,
+#     Column("id", Integer, primary_key=True),
+#     Column("history_dataset_collection_association_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True, nullable=False),
+# )
+
+model.ImplicitCollectionJobsJobAssociation.table = Table(
+    "implicit_collection_jobs_job_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True),
+    Column("job_id", Integer, ForeignKey("job.id"), index=True),  # Consider making this nullable...
+    Column("order_index", Integer, nullable=False),
+)
+
 model.JobExternalOutputMetadata.table = Table(
     "job_external_output_metadata", metadata,
     Column("id", Integer, primary_key=True),
@@ -716,7 +736,10 @@ model.HistoryDatasetCollectionAssociation.table = Table(
     Column("deleted", Boolean, default=False),
     Column("copied_from_history_dataset_collection_association_id", Integer,
         ForeignKey("history_dataset_collection_association.id"), nullable=True),
-    Column("implicit_output_name", Unicode(255), nullable=True))
+    Column("implicit_output_name", Unicode(255), nullable=True),
+    Column("job_id", ForeignKey("job.id"), index=True, nullable=True),
+    Column("implicit_collection_jobs_id", ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
+)
 
 model.LibraryDatasetCollectionAssociation.table = Table(
     "library_dataset_collection_association", metadata,
@@ -2111,6 +2134,31 @@ simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
     ),
 )
 
+simple_mapping(model.ImplicitCollectionJobs)
+
+# simple_mapping(
+#     model.ImplicitCollectionJobsHistoryDatasetCollectionAssociation,
+#     history_dataset_collection_associations=relation(
+#         model.HistoryDatasetCollectionAssociation,
+#         backref=backref("implicit_collection_jobs_association", uselist=False),
+#         uselist=True,
+#     ),
+# )
+
+simple_mapping(
+    model.ImplicitCollectionJobsJobAssociation,
+    implicit_collection_jobs=relation(
+        model.ImplicitCollectionJobs,
+        backref=backref("jobs", uselist=True),
+        uselist=False,
+    ),
+    job=relation(
+        model.Job,
+        backref=backref("implicit_collection_jobs_association", uselist=False),
+        uselist=False,
+    ),
+)
+
 mapper(model.JobParameter, model.JobParameter.table)
 
 mapper(model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table, properties=dict(
@@ -2201,6 +2249,16 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         primaryjoin=((model.HistoryDatasetCollectionAssociation.table.c.id ==
                       model.ImplicitlyCreatedDatasetCollectionInput.table.c.dataset_collection_id)),
         backref="dataset_collection",
+    ),
+    implicit_collection_jobs=relation(
+        model.ImplicitCollectionJobs,
+        backref=backref("history_dataset_collection_associations", uselist=True),
+        uselist=False,
+    ),
+    job=relation(
+        model.Job,
+        backref=backref("history_dataset_collection_associations", uselist=True),
+        uselist=False,
     ),
     tags=relation(model.HistoryDatasetCollectionTagAssociation,
         order_by=model.HistoryDatasetCollectionTagAssociation.table.c.id,
