@@ -68,7 +68,7 @@ class ToursRegistry(object):
         tour_id = os.path.splitext(filename)[0]
         try:
             with open(tour_path) as handle:
-                conf = yaml.load(handle)
+                conf = yaml.safe_load(handle)
                 tour = tour_loader(conf)
                 self.tours[tour_id] = tour_loader(conf)
                 log.info("Loaded tour '%s'" % tour_id)

@@ -2,13 +2,13 @@
 
 import collections
 import logging
+import subprocess
 
 from ..container_resolvers import (
     ContainerResolver,
 )
 from ..docker_util import build_docker_images_command
 from ..mulled.mulled_build import (
-    check_output,
     DEFAULT_CHANNELS,
     ensure_installed,
     InvolucroContext,
@@ -33,9 +33,9 @@ CachedMulledImageMultiTarget.multi_target = True
 
 
 def list_cached_mulled_images(namespace=None):
-    command = build_docker_images_command(truncate=True, sudo_docker=False)
-    command = "%s | tail -n +2 | tr -s ' ' | cut -d' ' -f1,2" % command
-    images_and_versions = check_output(command)
+    command = build_docker_images_command(truncate=True, sudo=False)
+    images_and_versions = subprocess.check_output(command).strip().split('\n')
+    images_and_versions = [line.split()[0:2] for line in images_and_versions[1:]]
     name_filter = get_filter(namespace)
 
     def output_line_to_image(line):

@@ -1,6 +1,6 @@
 # Contains actions that are used in External Services
 import logging
-from urllib import urlopen
+import requests
 from galaxy.web import url_for
 from galaxy.util.template import fill_template
 from result_handlers.basic import ExternalServiceActionResultHandler
@@ -104,7 +104,7 @@ class ExternalServiceWebAPIActionResult( ExternalServiceResult ):
     @property
     def content( self ):
         if self._content is None:
-            self._content = urlopen( self.url ).read()
+            self._content = requests.get(self.url).text
         return self._content
 
 

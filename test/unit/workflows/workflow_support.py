@@ -74,7 +74,7 @@ class TestToolbox( object ):
 
 def yaml_to_model(has_dict, id_offset=100):
     if isinstance(has_dict, str):
-        has_dict = yaml.load(has_dict)
+        has_dict = yaml.safe_load(has_dict)
 
     workflow = model.Workflow()
     workflow.steps = []
