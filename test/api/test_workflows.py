@@ -734,8 +734,8 @@ steps:
     def test_workflow_run_dynamic_output_collections_2(self):
         # A more advanced output collection workflow, testing regression of
         # https://github.com/galaxyproject/galaxy/issues/776
-        history_id = self.dataset_populator.new_history()
-        workflow_id = self._upload_yaml_workflow("""
+        with self.dataset_populator.test_history() as history_id:
+            workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
   - label: test_input_1
@@ -759,19 +759,19 @@ steps:
         - input2:
             $link: split_up#split_output
 """)
-        hda1 = self.dataset_populator.new_dataset(history_id, content="samp1\t10.0\nsamp2\t20.0\n")
-        hda2 = self.dataset_populator.new_dataset(history_id, content="samp1\t20.0\nsamp2\t40.0\n")
-        hda3 = self.dataset_populator.new_dataset(history_id, content="samp1\t30.0\nsamp2\t60.0\n")
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        inputs = {
-            '0': self._ds_entry(hda1),
-            '1': self._ds_entry(hda2),
-            '2': self._ds_entry(hda3),
-        }
-        invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
-        self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
-        content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
-        self.assertEqual(content.strip(), "samp1\t10.0\nsamp2\t20.0")
+            hda1 = self.dataset_populator.new_dataset(history_id, content="samp1\t10.0\nsamp2\t20.0\n")
+            hda2 = self.dataset_populator.new_dataset(history_id, content="samp1\t20.0\nsamp2\t40.0\n")
+            hda3 = self.dataset_populator.new_dataset(history_id, content="samp1\t30.0\nsamp2\t60.0\n")
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            inputs = {
+                '0': self._ds_entry(hda1),
+                '1': self._ds_entry(hda2),
+                '2': self._ds_entry(hda3),
+            }
+            invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
+            self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+            content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
+            self.assertEqual(content.strip(), "samp1\t10.0\nsamp2\t20.0")
 
     @skip_without_tool("collection_split_on_column")
     def test_workflow_run_dynamic_output_collections_3(self):
