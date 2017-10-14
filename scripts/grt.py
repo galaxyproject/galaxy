@@ -111,10 +111,10 @@ def main(argv):
     print('Loading GRT ini...')
     try:
         with open(args.config) as f:
-            config_dict = yaml.load(f)
+            config_dict = yaml.safe_load(f)
     except Exception:
         with open(sample_config) as f:
-            config_dict = yaml.load(f)
+            config_dict = yaml.safe_load(f)
 
     # set to 0 by default
     if 'last_job_id_sent' not in config_dict:
