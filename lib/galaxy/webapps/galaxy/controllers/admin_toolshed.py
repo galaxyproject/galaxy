@@ -446,8 +446,7 @@ class AdminToolshed(AdminGalaxy):
                 url = util.build_url(tool_shed_url, pathspec=pathspec, params=params)
                 latest_downloadable_revision = json.loads(raw_text)
                 if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
-                    message = 'Error retrieving the latest downloadable revision for this repository via the url <b>%s</b>.' % url
-                    status = 'error'
+                    return trans.show_error_message('Error retrieving the latest downloadable revision for this repository via the url <b>%s</b>.' % url)
                 else:
                     # Make sure the latest changeset_revision of the repository has not already been installed.
                     # Updates to installed repository revisions may have occurred, so make sure to locate the
@@ -464,7 +463,7 @@ class AdminToolshed(AdminGalaxy):
                             (latest_downloadable_revision, name, owner)
                         if current_changeset_revision != latest_downloadable_revision:
                             message += '  The current changeset revision is <b>%s</b>.' % current_changeset_revision
-                        status = 'error'
+                        return trans.show_error_message(message)
                     else:
                         # Install the latest downloadable revision of the repository.
                         params = dict(name=name,
