@@ -116,7 +116,7 @@ release-bootstrap-history: ## bootstrap history for a new release
 	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
 
 node-deps: ## Install NodeJS dependencies.
-	cd client && yarn
+	cd client && yarn install --check-files
 
 webpack: node-deps ## Run webpack, build production bundles.
 	cd client && yarn run webpack
