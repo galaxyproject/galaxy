@@ -182,6 +182,7 @@ class InstalledRepositoryGrid(grids.Grid):
                                                  not item.deleted and
                                                  item.status == tool_shed_install.ToolShedRepository.installation_status.NEW),
                                       allow_multiple=False,
+                                      target='center',
                                       url_args=dict(controller='admin_toolshed',
                                                     action='manage_repository',
                                                     operation='install')),
@@ -197,6 +198,7 @@ class InstalledRepositoryGrid(grids.Grid):
                                       condition=(lambda item:
                                                  (item.status == tool_shed_install.ToolShedRepository.installation_status.ERROR)),
                                       allow_multiple=False,
+                                      target='center',
                                       url_args=dict(controller='admin_toolshed',
                                                     action='reset_to_install',
                                                     reset_repository=True)),
@@ -209,7 +211,7 @@ class InstalledRepositoryGrid(grids.Grid):
                   grids.GridOperation(label="Purge",
                                       condition=(lambda item: item.is_new),
                                       allow_multiple=False,
-                                      target=None,
+                                      target='center',
                                       url_args=dict(controller='admin_toolshed',
                                                     action='purge_repository'))]
     standard_filters = []
