@@ -48,21 +48,17 @@ class AdminToolshed(AdminGalaxy):
         repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
         try:
             trans.app.installed_repository_manager.activate_repository(repository)
+            message = 'The <b>%s</b> repository has been activated.' % escape(repository.name)
+            status = 'done'
         except Exception as e:
             error_message = "Error activating repository %s: %s" % (escape(repository.name), str(e))
             log.exception(error_message)
             message = '%s.<br/>You may be able to resolve this by uninstalling and then reinstalling the repository.  Click <a href="%s">here</a> to uninstall the repository.' \
                 % (error_message, web.url_for(controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id(repository.id)))
             status = 'error'
-            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                            action='manage_repository',
-                                                            id=repository_id,
-                                                            message=message,
-                                                            status=status))
-        message = 'The <b>%s</b> repository has been activated.' % escape(repository.name)
-        status = 'done'
-        return trans.response.send_redirect(web.url_for(controller='admin',
-                                                        action='repositories',
+        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
+                                                        action='manage_repository',
+                                                        id=repository_id,
                                                         message=message,
                                                         status=status))
 
@@ -95,7 +91,8 @@ class AdminToolshed(AdminGalaxy):
     @web.expose
     @web.require_admin
     def restore_repository(self, trans, **kwd):
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, kwd['id'])
+        repository_id = kwd['id']
+        repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
         if repository.uninstalled:
             # Since we're reinstalling the repository we need to find the latest changeset revision to which it can
             # be updated so that we can reset the metadata if necessary.  This will ensure that information about
@@ -131,8 +128,9 @@ class AdminToolshed(AdminGalaxy):
                 message = "Unable to get latest revision for repository <b>%s</b> from " % escape(str(repository.name))
                 message += "the Tool Shed, so repository re-installation is not possible at this time."
                 status = "error"
-                return trans.response.send_redirect(web.url_for(controller='admin',
-                                                                action='repositories',
+                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
+                                                                action='manage_repository',
+                                                                id=repository_id,
                                                                 message=message,
                                                                 status=status))
         else:
@@ -1639,7 +1637,8 @@ class AdminToolshed(AdminGalaxy):
     @web.require_admin
     def reset_to_install(self, trans, **kwd):
         """An error occurred while cloning the repository, so reset everything necessary to enable another attempt."""
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, kwd['id'])
+        repository_id = kwd['id']
+        repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
         if kwd.get('reset_repository', False):
             repository_util.set_repository_attributes(trans.app,
                                                       repository,
@@ -1651,12 +1650,9 @@ class AdminToolshed(AdminGalaxy):
             new_kwd = {}
             new_kwd['message'] = "You can now attempt to install the repository named <b>%s</b> again." % escape(str(repository.name))
             new_kwd['status'] = "done"
-            return trans.response.send_redirect(web.url_for(controller='admin',
-                                                            action='repositories',
-                                                            **new_kwd))
         return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                         action='manage_repository',
-                                                        **kwd))
+                                                        id=repository_id))
 
     @web.expose
     @web.require_admin
