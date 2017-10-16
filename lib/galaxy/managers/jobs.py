@@ -118,6 +118,7 @@ class JobSearch(object):
                     or_(*o)
                 )
 
+        conditions = []
         for k, input_list in input_data.items():
             for type_values in input_list:
                 t = type_values['src']
@@ -129,7 +130,7 @@ class JobSearch(object):
                     c = aliased(model.HistoryDatasetAssociation)
                     d = aliased(model.JobParameter)
                     e = aliased(model.HistoryDatasetAssociationHistory)
-                    query = query.filter(and_(
+                    conditions.append(and_(
                         model.Job.id == a.job_id,
                         a.name == k,
                         a.dataset_id == b.id,
@@ -154,12 +155,12 @@ class JobSearch(object):
                         or_(b.deleted == false(), c.deleted == false())
                     ))
                     if identifier:
-                        query = query.filter(model.Job.id == d.job_id,
+                        conditions.append(and_(model.Job.id == d.job_id,
                                              d.name == "%s|__identifier__" % k,
-                                             d.value == json.dumps(identifier))
+                                             d.value == json.dumps(identifier)))
                 elif t == 'ldda':
                         a = aliased(model.JobToInputLibraryDatasetAssociation)
-                        query = query.filter(and_(
+                        conditions.append(and_(
                             model.Job.id == a.job_id,
                             a.name == k,
                             a.ldda_id == v
@@ -168,7 +169,7 @@ class JobSearch(object):
                     a = aliased(model.JobToInputDatasetCollectionAssociation)
                     b = aliased(model.HistoryDatasetCollectionAssociation)
                     c = aliased(model.HistoryDatasetCollectionAssociation)
-                    query = query.filter(and_(
+                    conditions.append(and_(
                         model.Job.id == a.job_id,
                         a.name == k,
                         b.id == a.dataset_collection_id,
@@ -187,11 +188,13 @@ class JobSearch(object):
         for k, v in wildcard_param_dump.items():
             test = json.dumps(v).replace('"id": "__id_wildcard__"', '"id": %')
             a = aliased(model.JobParameter)
-            query = query.filter(and_(
+            conditions.append(and_(
                 model.Job.id == a.job_id,
                 a.name == k,
                 a.value.like(test)
             ))
+
+        query = query.filter(and_(*conditions))
 
         for job in query.all():
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
