@@ -2,34 +2,42 @@ import json
 import logging
 import os
 
-from admin import AdminGalaxy
 from six import string_types
 from sqlalchemy import or_
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import util, web
 from galaxy.tools.deps import views
+from galaxy.util import unicodify
 from galaxy.web.form_builder import CheckboxField
-from tool_shed.galaxy_install import dependency_display
-from tool_shed.galaxy_install import install_manager
+from tool_shed.galaxy_install import (
+    dependency_display,
+    install_manager
+)
 from tool_shed.galaxy_install.grids import admin_toolshed_grids
 from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
-from tool_shed.galaxy_install.tools import data_manager
-from tool_shed.galaxy_install.tools import tool_panel_manager
+from tool_shed.galaxy_install.tools import (
+    data_manager,
+    tool_panel_manager
+)
 from tool_shed.tools import tool_version_manager
-from tool_shed.util import common_util
-from tool_shed.util import encoding_util
-from tool_shed.util import hg_util
-from tool_shed.util import readme_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_dependency_util
-from tool_shed.util import tool_util
-from tool_shed.util import workflow_util
+from tool_shed.util import (
+    common_util,
+    encoding_util,
+    hg_util,
+    readme_util,
+    repository_util,
+    shed_util_common as suc,
+    tool_dependency_util,
+    tool_util,
+    workflow_util
+)
 from tool_shed.util.web_util import escape
+
+from .admin import AdminGalaxy
 
 log = logging.getLogger(__name__)
 
@@ -441,7 +449,7 @@ class AdminToolshed(AdminGalaxy):
                                                                                from_tool_migration_manager=False)
         for installed_tool_dependency in installed_tool_dependencies:
             if installed_tool_dependency.status == trans.app.install_model.ToolDependency.installation_status.ERROR:
-                text = util.unicodify(installed_tool_dependency.error_message)
+                text = unicodify(installed_tool_dependency.error_message)
                 if text is not None:
                     err_msg += '  %s' % text
         if err_msg:
@@ -1433,9 +1441,9 @@ class AdminToolshed(AdminGalaxy):
                 if repository.status != status:
                     rval.append(dict(id=id,
                                      status=repository.status,
-                                     html_status=unicode(trans.fill_template("admin/tool_shed_repository/repository_installation_status.mako",
-                                                                             repository=repository),
-                                                         'utf-8')))
+                                     html_status=unicodify(trans.fill_template("admin/tool_shed_repository/repository_installation_status.mako",
+                                                                               repository=repository),
+                                                           'utf-8')))
         return rval
 
     @web.expose
@@ -1529,7 +1537,7 @@ class AdminToolshed(AdminGalaxy):
                 if tool_panel_dict:
                     if tool_util.panel_entry_per_tool(tool_panel_dict):
                         # The following forces everything to be loaded into 1 section (or no section) in the tool panel.
-                        tool_section_dicts = tool_panel_dict[tool_panel_dict.keys()[0]]
+                        tool_section_dicts = tool_panel_dict[next(iter(tool_panel_dict.keys()))]
                         tool_section_dict = tool_section_dicts[0]
                         original_section_name = tool_section_dict['name']
                     else:
@@ -1741,9 +1749,9 @@ class AdminToolshed(AdminGalaxy):
                 if tool_dependency.status != status:
                     rval.append(dict(id=id,
                                      status=tool_dependency.status,
-                                     html_status=unicode(trans.fill_template("admin/tool_shed_repository/tool_dependency_installation_status.mako",
-                                                                             tool_dependency=tool_dependency),
-                                                         'utf-8')))
+                                     html_status=unicodify(trans.fill_template("admin/tool_shed_repository/tool_dependency_installation_status.mako",
+                                                                               tool_dependency=tool_dependency),
+                                                           'utf-8')))
         return rval
 
     @web.expose

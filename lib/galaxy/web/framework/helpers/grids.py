@@ -413,7 +413,7 @@ class Grid(object):
                     target = column.target
                     value = column.get_value(trans, self, item)
                     if isinstance(value, str):
-                        value = unicode(value, 'utf-8')
+                        value = text_type(value, 'utf-8')
                         value = value.replace('/', '//')
                     item_dict['column_config'][column.label] = {
                         'link'      : link,
@@ -438,7 +438,7 @@ class Grid(object):
                 id = id.split(",")
             # Ensure ids are integers
             try:
-                id = map(int, id)
+                id = list(map(int, id))
             except:
                 decorators.error("Invalid id")
         return id

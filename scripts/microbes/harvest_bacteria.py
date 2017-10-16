@@ -10,10 +10,11 @@ import os
 import sys
 import time
 from ftplib import FTP
-from urllib import urlretrieve
 
 import requests
 from BeautifulSoup import BeautifulSoup
+from six.moves.urllib.request import urlretrieve
+
 from util import (
     get_bed_from_genbank,
     get_bed_from_GeneMark,
@@ -167,9 +168,9 @@ def process_FASTA(filename, org_num, refseq):
 def process_Genbank(filename, org_num, refseq):
     # extracts 'CDS', 'tRNA', 'rRNA' features from genbank file
     features = get_bed_from_genbank(filename, refseq, ['CDS', 'tRNA', 'rRNA'])
-    for feature in features.keys():
+    for feature, values in features.items():
         feature_file = open(os.path.join(os.path.split(filename)[0], "%s.%s.bed" % (refseq, feature)), 'wb+')
-        feature_file.write('\n'.join(features[feature]))
+        feature_file.write('\n'.join(values))
         feature_file.close()
     print("Genbank extraction finished for chrom:", refseq, "file:", filename)
 
