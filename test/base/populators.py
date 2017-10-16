@@ -92,6 +92,18 @@ def skip_without_datatype(extension):
     return method_wrapper
 
 
+def summarize_instance_history_on_error(method):
+    @wraps(method)
+    def wrapped_method(api_test_case, *args, **kwds):
+        try:
+            method(api_test_case, *args, **kwds)
+        except Exception:
+            api_test_case.dataset_populator._summarize_history(api_test_case.history_id)
+            raise
+
+    return wrapped_method
+
+
 def _raise_skip_if(check):
     if check:
         from nose.plugins.skip import SkipTest
