@@ -29,24 +29,13 @@ Enhancements
 * Add entry for empty_extra_files_path validator
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 3994`_
-* Add possibility for downloading entire collections
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4098`_
-* Implement Singularity Support
-  `Pull Request 4175`_
 * Async update: support to collections
   (thanks to `@fabio-cumbo <https://github.com/fabio-cumbo>`__).
   `Pull Request 4198`_
 * Add API repository uninstall endpoint
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4248`_
-* Vcf gz datatype
-  (thanks to `@ffinfo <https://github.com/ffinfo>`__).
-  `Pull Request 4254`_
-* Add ptkscmp datatype
-  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
-  `Pull Request 4259`_
-* Library tags
+* Data Library tags support
   (thanks to `@bwlang <https://github.com/bwlang>`__).
   `Pull Request 4262`_
 * Display preview feature for Bam datatype
@@ -61,54 +50,62 @@ Enhancements
 * Paramiko based shell runner
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4358`_
-* Add imzML datatype
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 4370`_
-* Allow switching tool versions in workflow editor
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4373`_
 * Stop loading tools that require a newer galaxy
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4382`_
+* Vcf gz datatype
+  (thanks to `@ffinfo <https://github.com/ffinfo>`__).
+  `Pull Request 4254`_
+* Add ptkscmp datatype
+  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
+  `Pull Request 4259`_
+* Add imzML datatype
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 4370`_
 * Add deepTools datatypes to Galaxy
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4392`_
 * Add support for the MEME psp format
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 4430`_
-* Nicer tool click targets for base + "plain" theme
-  (thanks to `@erasche <https://github.com/erasche>`__).
-  `Pull Request 4470`_
-* A round of data libraries improvements.
-  `Pull Request 4512`_
 * add biom2 datatype
   (thanks to `@shiltemann <https://github.com/shiltemann>`__).
   `Pull Request 4519`_
-* respect expose_user_email configuration in datalibraries permissions list
-  `Pull Request 4611`_
-* Explicitly include PyPI as an --extra-index-url to pip
-  `Pull Request 4674`_
+* Add Excel97 Datatype
+  `Pull Request 4410`_
+* add mz5 datatype
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 4466`_
 
 .. enhancement
 
+* Configuration & Server Overhaul - Tool Shed and Reports
+  `Pull Request 3179`_
+* Speed up and optimize the process of identifying public libraries.
+  `Pull Request 4640`_
+* A round of data libraries improvements.
+  `Pull Request 4512`_
 * Install tools and workflow
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 3064`_
 * GFF3 support in filter by attribute
   (thanks to `@peterjc <https://github.com/peterjc>`__).
   `Pull Request 3076`_
-* Configuration & Server Overhaul - Tool Shed and Reports
-  `Pull Request 3179`_
 * Add extension point for user preferences
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3383`_
+* respect expose_user_email configuration in datalibraries permissions list
+  `Pull Request 4611`_
+* Explicitly include PyPI as an --extra-index-url to pip
+  `Pull Request 4674`_
 * Kubernetes runner: Non-privileged filesystem access, updated k8s Job version
   (thanks to `@phnmnl <https://github.com/phnmnl>`__).
   `Pull Request 3972`_
+* Nicer tool click targets for base + "plain" theme
+  (thanks to `@erasche <https://github.com/erasche>`__).
+  `Pull Request 4470`_
 * Setup framework for retrying failed Selenium tests.
   `Pull Request 3993`_
-* add dev requirement
-  `Pull Request 4008`_
 * Tool-Describing-Tours
   (thanks to `@anatskiy <https://github.com/anatskiy>`__).
   `Pull Request 4019`_
@@ -179,6 +176,8 @@ Enhancements
   `Pull Request 4200`_
 * Remove makos for published list grids
   `Pull Request 4201`_
+* add dev requirement
+  `Pull Request 4008`_
 * Improve search plugin
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4213`_
@@ -310,8 +309,6 @@ Enhancements
 * Update conda channel order to sync with Bioconda
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4409`_
-* Add Excel97 Datatype
-  `Pull Request 4410`_
 * replace mako templates for tool lineage and quotas grids
   `Pull Request 4411`_
 * Fixes and enhancements for the upload API
@@ -347,9 +344,6 @@ Enhancements
 * Fix checking WorkflowInvocation for published workflows
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4465`_
-* add mz5 datatype
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 4466`_
 * More items per page in saved history and directly show tags
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4467`_
@@ -566,8 +560,6 @@ Enhancements
   `Pull Request 4630`_
 * disable MacOS CI on travis
   `Pull Request 4631`_
-* optimize the process of identifying public libraries
-  `Pull Request 4640`_
 * Custom Builds tests
   (thanks to `@anatskiy <https://github.com/anatskiy>`__).
   `Pull Request 4641`_
@@ -806,7 +798,7 @@ Fixes
   `Pull Request 4742`_
 * Fix joiner tool to inherit datatype from the input format
   `Pull Request 4745`_
-* Fix auth with ldaps://
+* Fix auth with ``ldaps://``
   (thanks to `@abretaud <https://github.com/abretaud>`__).
   `Pull Request 4748`_
 * Force onload webhooks to wait for Galaxy object (and root) resolution.

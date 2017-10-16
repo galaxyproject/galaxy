@@ -8,14 +8,16 @@ September 2017 Galaxy Release (v 17.09)
 Highlights
 ===========================================================
 
-**Feature1**
-  Feature description.
+**Singularity**
+  <awesome_description_placeholder> `Pull Request 4175`_
 
-**Feature2**
-  Feature description.
+**Download entire collection**
+  Downloading whole colections is now possible from the history interface. `Pull Request 4098`_
+  Thanks to `@mvdbeek <https://github.com/mvdbeek>`__.
 
-**Feature3**
-  Feature description.
+**Switch tool versions in workflows**
+  You can now select exactly what version of tool you want to use when building workflows. `Pull Request 4373`_
+  Thanks to `@mvdbeek <https://github.com/mvdbeek>`__.
 
 Get Galaxy
 ==========
