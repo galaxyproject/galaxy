@@ -920,11 +920,7 @@ class AdminToolshed(AdminGalaxy):
                     message += 'include newly defined repository or tool dependency definitions, and attempting '
                     message += 'to update the repository resulted in the following error.  Contact the Tool Shed '
                     message += 'administrator if necessary.<br/>%s' % str(e)
-                    status = 'error'
-                    return trans.response.send_redirect(web.url_for(controller='admin',
-                                                                    action='repositories',
-                                                                    message=message,
-                                                                    status=status))
+                    return trans.show_error_message(message)
                 changeset_revisions = updating_to_changeset_revision
             else:
                 changeset_revisions = kwd.get('changeset_revisions', None)
@@ -1166,9 +1162,7 @@ class AdminToolshed(AdminGalaxy):
         else:
             new_kwd['status'] = 'error'
             new_kwd['message'] = 'Invalid repository id value "None" received for repository to be purged.'
-        return trans.response.send_redirect(web.url_for(controller='admin',
-                                                        action='repositories',
-                                                        **new_kwd))
+        return trans.show_error_message(new_kwd['message'])
 
     @web.expose
     @web.require_admin
@@ -1332,11 +1326,7 @@ class AdminToolshed(AdminGalaxy):
         repository_id = kwd.get('id', None)
         if not repository_id:
             message = 'Invalid installed tool shed repository id %s received.' % str(repository_id)
-            status = 'error'
-            return trans.response.send_redirect(web.url_for(controller='admin',
-                                                            action='repositories',
-                                                            message=message,
-                                                            status=status))
+            return trans.show_error_message(message)
         tool_shed_repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
         rrm = RepairRepositoryManager(trans.app)
         if kwd.get('repair_repository_button', False):
