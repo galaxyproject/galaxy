@@ -203,7 +203,7 @@ class InstalledRepositoryGrid(grids.Grid):
                   grids.GridOperation(label="Activate or reinstall",
                                       condition=(lambda item: item.deleted),
                                       allow_multiple=False,
-                                      target=None,
+                                      target='center',
                                       url_args=dict(controller='admin_toolshed',
                                                     action='restore_repository')),
                   grids.GridOperation(label="Purge",
