@@ -90,15 +90,14 @@ class JobSearch(object):
 
     def __search(self, tool_id, tool_version, user, input_data, input_ids=None, job_state=None, param_dump=None, wildcard_param_dump=None):
         search_timer = ExecutionTimer()
-        query = self.sa_session.query(model.Job).filter(
-            model.Job.tool_id == tool_id,
-            model.Job.user == user
-        )
+        conditions = [and_(model.Job.tool_id == tool_id,
+                           model.Job.user == user)]
+
         if tool_version:
-            query = query.filter(model.Job.tool_version == str(tool_version))
+            conditions.append(model.Job.tool_version == str(tool_version))
 
         if job_state is None:
-            query = query.filter(
+            conditions.append(
                 or_(
                     model.Job.state == 'running',
                     model.Job.state == 'queued',
@@ -109,16 +108,16 @@ class JobSearch(object):
             )
         else:
             if isinstance(job_state, string_types):
-                query = query.filter(model.Job.state == job_state)
+                conditions.append(model.Job.state == job_state)
             elif isinstance(job_state, list):
                 o = []
                 for s in job_state:
                     o.append(model.Job.state == s)
-                query = query.filter(
+                conditions.append(
                     or_(*o)
                 )
 
-        conditions = []
+
         for k, input_list in input_data.items():
             for type_values in input_list:
                 t = type_values['src']
@@ -194,7 +193,7 @@ class JobSearch(object):
                 a.value.like(test)
             ))
 
-        query = query.filter(and_(*conditions))
+        query = self.sa_session.query(model.Job).filter(and_(*conditions))
 
         for job in query.all():
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
