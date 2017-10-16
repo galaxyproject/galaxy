@@ -1143,11 +1143,6 @@ class AdminToolshed(AdminGalaxy):
                         purge_status, purge_message = irm.purge_repository(repository)
                         if purge_status == 'ok':
                             new_kwd['status'] = 'done'
-                            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                            action='manage_repository',
-                                                                            message=message,
-                                                                            status=status,
-                                                                            id=repository_id))
                         else:
                             new_kwd['status'] = 'error'
                         new_kwd['message'] = purge_message
@@ -1163,7 +1158,7 @@ class AdminToolshed(AdminGalaxy):
         else:
             new_kwd['status'] = 'error'
             new_kwd['message'] = 'Invalid repository id value "None" received for repository to be purged.'
-        return trans.show_error_message(new_kwd['message'])
+        return trans.fill_template('message.mako', **new_kwd)
 
     @web.expose
     @web.require_admin
