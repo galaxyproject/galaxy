@@ -428,7 +428,6 @@ class AdminToolshed(AdminGalaxy):
     @web.require_admin
     def install_latest_repository_revision(self, trans, **kwd):
         """Install the latest installable revision of a repository that has been previously installed."""
-        message = escape(kwd.get('message', ''))
         repository_id = kwd.get('id', None)
         if repository_id is not None:
             repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
