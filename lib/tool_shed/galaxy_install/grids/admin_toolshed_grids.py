@@ -174,6 +174,7 @@ class InstalledRepositoryGrid(grids.Grid):
                   grids.GridOperation(label="Install latest revision",
                                       condition=(lambda item: item.upgrade_available),
                                       allow_multiple=False,
+                                      target="center",
                                       url_args=dict(controller='admin_toolshed',
                                                     action='install_latest_repository_revision')),
                   grids.GridOperation(label="Install",

@@ -475,15 +475,9 @@ class AdminToolshed(AdminGalaxy):
                         url = util.build_url(tool_shed_url, pathspec=pathspec, params=params)
                         return trans.response.send_redirect(url)
             else:
-                message = 'Cannot locate installed tool shed repository with encoded id <b>%s</b>.' % str(repository_id)
-                status = 'error'
+                return trans.show_error_message('Cannot locate installed tool shed repository with encoded id <b>%s</b>.' % str(repository_id))
         else:
-            message = 'The request parameters did not include the required encoded <b>id</b> of installed repository.'
-            status = 'error'
-        return trans.response.send_redirect(web.url_for(controller='admin',
-                                                        action='repositories',
-                                                        message=message,
-                                                        status=status))
+            return trans.show_error_message('The request parameters did not include the required encoded <b>id</b> of installed repository.')
 
     @web.expose
     @web.require_admin
