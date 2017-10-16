@@ -211,8 +211,10 @@ class JobSearch(object):
             # but to be able to verify that the parameters match we need to modify all instances of
             # dataset_ids (HDA, LDDA, HDCA) in the incoming param_dump to point to those used by the
             # possibly equivalent job, which may have been run on copies of the original input data.
-            job, current_jobs_data_ids = job[0], job[1:]
             job_input_ids = {}
+            current_jobs_data_ids = []
+            if isinstance(job, tuple):
+                job, current_jobs_data_ids = job[0], job[1:]
             for src, requested_id, used_id in zip(data_types, requested_ids, current_jobs_data_ids):
                 if src not in job_input_ids:
                     job_input_ids[src] = {requested_id: used_id}
