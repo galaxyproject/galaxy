@@ -90,6 +90,18 @@ class JobSearch(object):
 
     def __search(self, tool_id, tool_version, user, input_data, input_ids=None, job_state=None, param_dump=None, wildcard_param_dump=None):
         search_timer = ExecutionTimer()
+
+        def replace_dataset_ids(path, key, value):
+            """Exchanges dataset_ids (HDA, LDA, HDCA, not Dataset) in param_dump with dataset ids used in job."""
+            if key == 'id':
+                current_case = param_dump
+                for p in path:
+                    current_case = current_case[p]
+                src = current_case['src']
+                value = job_input_ids[src][value]
+                return key, value
+            return key, value
+
         conditions = [and_(model.Job.tool_id == tool_id,
                            model.Job.user == user)]
 
@@ -205,7 +217,6 @@ class JobSearch(object):
             ))
 
         query = self.sa_session.query(model.Job, *used_ids).filter(and_(*conditions))
-
         for job in query.all():
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
             # but to be able to verify that the parameters match we need to modify all instances of
@@ -214,38 +225,27 @@ class JobSearch(object):
             job_input_ids = {}
             current_jobs_data_ids = []
             if isinstance(job, tuple):
+                # If there are any input datasets job will be a tuple
                 job, current_jobs_data_ids = job[0], job[1:]
-            for src, requested_id, used_id in zip(data_types, requested_ids, current_jobs_data_ids):
-                if src not in job_input_ids:
-                    job_input_ids[src] = {requested_id: used_id}
-                else:
-                    job_input_ids[src][requested_id] = used_id
-
-            def replace_dataset_ids(path, key, value):
-                """Exchanges dataset_ids (HDA, LDA, HDCA, not Dataset) in param_dump with dataset ids used in job."""
-                if key == 'id':
-                    current_case = param_dump
-                    for p in path:
-                        current_case = current_case[p]
-                    src = current_case['src']
-                    value = job_input_ids[src][value]
-                    return key, value
-                return key, value
-
-            new_param_dump = remap(param_dump, visit=replace_dataset_ids)
-            # new_param_dump has its dataset ids remapped to those used by the job.
-            # We now ask if the remapped job parameters match the current job.
-            job_parameter_conditions = [model.Job.id == job.id]
-            for k, v in new_param_dump.items():
-                a = aliased(model.JobParameter)
-                job_parameter_conditions.append(and_(
-                    a.job_id == job.id,
-                    a.name == k,
-                    a.value == json.dumps(v)
-                ))
-            query = self.sa_session.query(model.Job).filter(*job_parameter_conditions)
-            if query.first() is None:
-                continue
+                for src, requested_id, used_id in zip(data_types, requested_ids, current_jobs_data_ids):
+                    if src not in job_input_ids:
+                        job_input_ids[src] = {requested_id: used_id}
+                    else:
+                        job_input_ids[src][requested_id] = used_id
+                new_param_dump = remap(param_dump, visit=replace_dataset_ids)
+                # new_param_dump has its dataset ids remapped to those used by the job.
+                # We now ask if the remapped job parameters match the current job.
+                job_parameter_conditions = [model.Job.id == job.id]
+                for k, v in new_param_dump.items():
+                    a = aliased(model.JobParameter)
+                    job_parameter_conditions.append(and_(
+                        a.job_id == job.id,
+                        a.name == k,
+                        a.value == json.dumps(v)
+                    ))
+                query = self.sa_session.query(model.Job).filter(*job_parameter_conditions)
+                if query.first() is None:
+                    continue
             n_parameters = 0
             # Verify that equivalent jobs had the same number of job parameters
             # We skip chrominfo, dbkey, __workflow_invocation_uuid__ and identifer
@@ -256,13 +256,13 @@ class JobSearch(object):
                 if parameter.name in {'__workflow_invocation_uuid__', 'chromInfo', 'dbkey'} or parameter.name.endswith('|__identifier__'):
                     continue
                 n_parameters += 1
-            if not n_parameters == len(new_param_dump):
+            if not n_parameters == len(param_dump):
                 continue
             # check to make sure none of the output datasets or collections have been deleted
             # TODO: refactors this into the initial job query
             outputs_deleted = False
-            for hda in job.output_datasets:
-                if hda.dataset.deleted:
+            for job_to_output_dataset_association in job.output_datasets:
+                if job_to_output_dataset_association.dataset.deleted:
                     outputs_deleted = True
                     break
             if not outputs_deleted:
@@ -273,6 +273,7 @@ class JobSearch(object):
             if not outputs_deleted:
                 log.info("Searching jobs finished %s", search_timer)
                 return job
+        log.info("Searching jobs finished %s", search_timer)
         return None
 
 
