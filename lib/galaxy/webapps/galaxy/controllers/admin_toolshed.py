@@ -15,7 +15,6 @@ from tool_shed.galaxy_install import install_manager
 from tool_shed.galaxy_install.grids import admin_toolshed_grids
 from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
-from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from tool_shed.galaxy_install.tools import data_manager
 from tool_shed.galaxy_install.tools import tool_panel_manager
@@ -1317,63 +1316,6 @@ class AdminToolshed(AdminGalaxy):
                                    tool_shed_repositories=tool_shed_repositories,
                                    initiate_repository_installation_ids=encoded_repository_ids,
                                    reinstalling=True)
-
-    @web.expose
-    @web.require_admin
-    def repair_repository(self, trans, **kwd):
-        """
-        Inspect the repository dependency hierarchy for a specified repository and attempt to make sure they are all properly installed as well as
-        each repository's tool dependencies.
-        """
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        repository_id = kwd.get('id', None)
-        if not repository_id:
-            message = 'Invalid installed tool shed repository id %s received.' % str(repository_id)
-            return trans.show_error_message(message)
-        tool_shed_repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
-        rrm = RepairRepositoryManager(trans.app)
-        if kwd.get('repair_repository_button', False):
-            encoded_repair_dict = kwd.get('repair_dict', None)
-            if encoded_repair_dict:
-                repair_dict = encoding_util.tool_shed_decode(encoded_repair_dict)
-            else:
-                repair_dict = None
-            if not repair_dict:
-                repair_dict = rrm.get_repair_dict(tool_shed_repository)
-            ordered_tsr_ids = repair_dict.get('ordered_tsr_ids', [])
-            ordered_repo_info_dicts = repair_dict.get('ordered_repo_info_dicts', [])
-            if ordered_tsr_ids and ordered_repo_info_dicts:
-                repositories_for_repair = []
-                for tsr_id in ordered_tsr_ids:
-                    repository = trans.install_model.context.query(trans.install_model.ToolShedRepository).get(trans.security.decode_id(tsr_id))
-                    repositories_for_repair.append(repository)
-                return self.repair_tool_shed_repositories(trans, rrm, repositories_for_repair, ordered_repo_info_dicts)
-        tool_shed_repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
-        repair_dict = rrm.get_repair_dict(tool_shed_repository)
-        encoded_repair_dict = encoding_util.tool_shed_encode(repair_dict)
-        ordered_tsr_ids = repair_dict.get('ordered_tsr_ids', [])
-        ordered_repo_info_dicts = repair_dict.get('ordered_repo_info_dicts', [])
-        return trans.fill_template('admin/tool_shed_repository/repair_repository.mako',
-                                   repository=tool_shed_repository,
-                                   encoded_repair_dict=encoded_repair_dict,
-                                   repair_dict=repair_dict,
-                                   message=message,
-                                   status=status)
-
-    @web.expose
-    @web.require_admin
-    def repair_tool_shed_repositories(self, trans, repair_repository_manager, tool_shed_repositories, repo_info_dicts, **kwd):
-        """Repair specified tool shed repositories."""
-        # The received lists of tool_shed_repositories and repo_info_dicts are ordered.
-        for index, tool_shed_repository in enumerate(tool_shed_repositories):
-            repo_info_dict = repo_info_dicts[index]
-            repair_repository_manager.repair_tool_shed_repository(tool_shed_repository,
-                                                                  encoding_util.tool_shed_encode(repo_info_dict))
-        tsr_ids_for_monitoring = [trans.security.encode_id(tsr.id) for tsr in tool_shed_repositories]
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='monitor_repository_installation',
-                                                        tool_shed_repository_ids=tsr_ids_for_monitoring))
 
     @web.json
     def repository_installation_status_updates(self, trans, ids=None, status_list=None):
