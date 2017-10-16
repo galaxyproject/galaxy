@@ -34,6 +34,16 @@ To update an existing Galaxy repository run:
 
 See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
+
+Deprecation Notices
+===================
+
+* The Galaxy Sample Tracking and External Services functionality is now considered deprecated. In future releases we will strip down the related
+  user interface and introduce configuration option to keep relevant controllers active if desired. `Related PR <https://github.com/galaxyproject/galaxy/pull/4526>`__.
+* The deprecated admin-only interface for Galaxy Data Libraries is staged to be removed in the next release.
+*
+
+
 Release Notes
 ===========================================================
 
