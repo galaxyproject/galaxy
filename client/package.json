@@ -33,7 +33,8 @@
     "webpack-dev-watch": "webpack -d --watch",
     "build-style": "grunt style",
     "gulp": "gulp",
-    "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js"
+    "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js",
+    "build-charts": "webpack -p --config ../config/plugins/visualizations/charts/webpack.config.js"
   },
   "devDependencies": {
     "babel-core": "^6.24.0",

@@ -13,7 +13,6 @@ IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/webapps/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 WEBPACK_EXEC?=node_modules/webpack/bin/webpack.js
-GXY_NODE_MODULES=client/node_modules
 DOCS_DIR=doc
 DOC_SOURCE_DIR=$(DOCS_DIR)/source
 SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
@@ -125,7 +124,7 @@ client: node-deps ## Rebuild all client-side artifacts
 	cd client && yarn run build
 
 charts: node-deps ## Rebuild charts
-	NODE_PATH=$(GXY_NODE_MODULES) client/$(WEBPACK_EXEC) -p --config config/plugins/visualizations/charts/webpack.config.js
+	cd client && yarn run build-charts
 
 client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
