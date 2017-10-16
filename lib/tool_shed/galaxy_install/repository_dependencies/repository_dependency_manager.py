@@ -5,8 +5,9 @@ into Galaxy from the Tool Shed.
 import json
 import logging
 import os
-import urllib
-import urllib2
+
+from six.moves.urllib.parse import urlencode, urlparse
+from six.moves.urllib.request import Request, urlopen
 
 from galaxy.util import asbool, url_get, build_url
 
@@ -380,10 +381,9 @@ class RepositoryDependencyInstallManager( object ):
                         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_shed_url )
                     pathspec = [ 'repository', 'get_required_repo_info_dict' ]
                     url = build_url( tool_shed_url, pathspec=pathspec )
-                    # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the urllib2.Request has data provided
-                    url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
-                    request = urllib2.Request( url, data=urllib.urlencode( dict( encoded_str=encoded_required_repository_str ) ) )
-                    response = urllib2.urlopen( request ).read()
+                    # Fix for handling 307 redirect not being handled nicely by urlopen() when the Request() has data provided
+                    url = _urlopen(url).geturl()
+                    response = _urlopen(url, urlencode(dict(encoded_str=encoded_required_repository_str))).read()
                     if response:
                         try:
                             required_repo_info_dict = json.loads( response )
@@ -470,3 +470,9 @@ class RepositoryDependencyInstallManager( object ):
         repository.error_message = None
         self.app.install_model.context.add( repository )
         self.app.install_model.context.flush()
+
+
+def _urlopen(url, data=None):
+    scheme = urlparse(url).scheme
+    assert scheme in ('http', 'https', 'ftp'), 'Invalid URL scheme: %s' % scheme
+    return urlopen(Request(url, data))
