@@ -15,29 +15,33 @@ Enhancements
 .. feature
 
 * Galaxy Workflow support for GenomeSpace
-  (thanks to `@gvlproject <https://github.com/gvlproject>`__).
+  (thanks to `@nuwang <https://github.com/nuwang>`__ and
+  `@gvlproject <https://github.com/gvlproject>`__).
   `Pull Request 1814`_
+* Support tags (including new "name" tags) in data libraries.
+  (thanks to `@bwlang <https://github.com/bwlang>`__).
+  `Pull Request 4262`_
 * HiCBrowser as Galaxy IE
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3330`_
 * Synnefo/Pithos+ object store backend
   (thanks to `@saxtouri <https://github.com/saxtouri>`__).
   `Pull Request 3611`_
-* Add job runner for Chronos
+* Add job runner for `Chronos <https://mesos.github.io/chronos/>`__
   (thanks to `@theosotr <https://github.com/theosotr>`__).
   `Pull Request 3946`_
-* Add entry for empty_extra_files_path validator
+* Paramiko based shell job runner
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 4358`_
+* Add entry for ``empty_extra_files_path`` validator
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 3994`_
-* Async update: support to collections
+* Extend async data sources to support dataset collections
   (thanks to `@fabio-cumbo <https://github.com/fabio-cumbo>`__).
   `Pull Request 4198`_
-* Add API repository uninstall endpoint
+* Add a repository uninstall endpoint to the tool dependency API
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4248`_
-* Data Library tags support
-  (thanks to `@bwlang <https://github.com/bwlang>`__).
-  `Pull Request 4262`_
 * Display preview feature for Bam datatype
   (thanks to `@ashvark <https://github.com/ashvark>`__).
   `Pull Request 4279`_
@@ -47,13 +51,10 @@ Enhancements
 * Created alphabetic and numerical sort tool for collection operations
   (thanks to `@glormph <https://github.com/glormph>`__).
   `Pull Request 4329`_
-* Paramiko based shell runner
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4358`_
-* Stop loading tools that require a newer galaxy
+* Prevent loading tools that require a newer galaxy
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4382`_
-* Vcf gz datatype
+* Add explicit support for gzipped VCF files
   (thanks to `@ffinfo <https://github.com/ffinfo>`__).
   `Pull Request 4254`_
 * Add ptkscmp datatype
@@ -68,25 +69,26 @@ Enhancements
 * Add support for the MEME psp format
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 4430`_
-* add biom2 datatype
+* Add biom2 datatype
   (thanks to `@shiltemann <https://github.com/shiltemann>`__).
   `Pull Request 4519`_
 * Add Excel97 Datatype
   `Pull Request 4410`_
-* add mz5 datatype
+* Add mz5 datatype
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4466`_
 
 .. enhancement
 
-* Configuration & Server Overhaul - Tool Shed and Reports
+* Revamp configuration and default server for tool shed and Galaxy reports application
+  (these now use a uwsgi server by default configured with a YAML configuration file).
   `Pull Request 3179`_
 * Speed up and optimize the process of identifying public libraries.
   `Pull Request 4640`_
-* A round of data libraries improvements.
+* Various data libraries improvements.
   `Pull Request 4512`_
-* Install tools and workflow
-  (thanks to `@manabuishii <https://github.com/manabuishii>`__).
+* Enhance workflow import API endpoint to allow admins to install repositories corresponding to a supplied
+  workflow (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 3064`_
 * GFF3 support in filter by attribute
   (thanks to `@peterjc <https://github.com/peterjc>`__).
@@ -94,18 +96,28 @@ Enhancements
 * Add extension point for user preferences
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3383`_
-* respect expose_user_email configuration in datalibraries permissions list
+* Respect ``expose_user_email`` configuration in data libraries permissions list.
   `Pull Request 4611`_
-* Explicitly include PyPI as an --extra-index-url to pip
+* Explicitly include PyPI as an ``--extra-index-url`` to pip.
   `Pull Request 4674`_
-* Kubernetes runner: Non-privileged filesystem access, updated k8s Job version
+* Improved Kubernetes support (non-privileged filesystem access, updated k8s Job API target)
   (thanks to `@phnmnl <https://github.com/phnmnl>`__).
   `Pull Request 3972`_
-* Nicer tool click targets for base + "plain" theme
+* Nicer tool click targets for toolbox
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4470`_
-* Setup framework for retrying failed Selenium tests.
-  `Pull Request 3993`_
+* Implement a "plain" bootstrap theme for the UX
+  (thanks to `@erasche <https://github.com/erasche>`__).
+  `Pull Request 4470`_
+* Add Selenium tests for the "saved histories" and "published histories"
+  (thanks to `@anatskiy <https://github.com/anatskiy>`__).
+  `Pull Request 4587`_, `Pull Request 4502`_
+* Dozens of Selenium functional test enhancements and fixes
+  `Pull Request 3993`_, `Pull Request 4523`_, `Pull Request 4524`_, `Pull Request 4549`_,
+  `Pull Request 4588`_, `Pull Request 4589`_, `Pull Request 4647`_,
+  `Pull Request 3992`_, `Pull Request 4003`_, `Pull Request 4053`_,
+  `Pull Request 4576`_, `Pull Request 4561`_, `Pull Request 4531`_, `Pull Request 4564`_,
+  `Pull Request 4582`_, `Pull Request 4586`_, `Pull Request 4592`_
 * Tool-Describing-Tours
   (thanks to `@anatskiy <https://github.com/anatskiy>`__).
   `Pull Request 4019`_
@@ -375,10 +387,6 @@ Enhancements
   `Pull Request 4514`_
 * Display d3 hierarchy datatype in upload interface
   `Pull Request 4522`_
-* Selenium test fixes and improvements.
-  `Pull Request 4523`_
-* Fix workflow run Selenium test and make it more robust.
-  `Pull Request 4524`_
 * Implement influxdb error reporter
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4533`_
@@ -389,8 +397,6 @@ Enhancements
   `Pull Request 4542`_
 * allow linking, posix and spaces conversions in datalib imports
   `Pull Request 4547`_
-* Assorted Selenium test fixes
-  `Pull Request 4549`_
 * Allow exporting workflows when tool is uninstalled
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4553`_
@@ -404,10 +410,6 @@ Enhancements
 * Add show/hide deleted/hidden links when history is filtered...
   (thanks to `@chambm <https://github.com/chambm>`__).
   `Pull Request 4581`_
-* Make history sharing Selenium tests more robust and informative.
-  `Pull Request 4588`_
-* Improve error reporting in Selenium tests when ``wait_for_logged_in`` fails.
-  `Pull Request 4589`_
 * Python 3 fixes for set_metadata.py
   `Pull Request 4607`_
 * Allow adding new data tables without restart
@@ -416,8 +418,6 @@ Enhancements
 * remove .git and .hg from recursive file search
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4636`_
-* Improved state handling for @anatskiy-style Selenium tests.
-  `Pull Request 4647`_
 * Better handling of long id secrets when generating per-kind encryption keys.
   `Pull Request 4713`_
 
@@ -428,17 +428,11 @@ Enhancements
 * Add test case clarifying datasets do get "renamed" by rename PJA in
   collections.
   `Pull Request 3983`_
-* Fixes for Selenium workflow run test case.
-  `Pull Request 3992`_
-* Fix handling main_panel switching in various Selenium tests.
-  `Pull Request 4003`_
 * One more fix for main_panel fix in `#3992
   <https://github.com/galaxyproject/galaxy/issues/3992>`__.
   `Pull Request 4042`_
 * Add some test tools for collection job failures.
   `Pull Request 4044`_
-* Reset Selenium test connection between test retries.
-  `Pull Request 4053`_
 * Add admin app
   `Pull Request 4067`_
 * Preparation for grids mako removal
@@ -497,15 +491,10 @@ Enhancements
 * Workflow loading speedup
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4500`_
-* Published History Grid tests
-  (thanks to `@anatskiy <https://github.com/anatskiy>`__).
-  `Pull Request 4502`_
 * Prevent transient job state test failures from failing the build.
   `Pull Request 4510`_
 * More robust workflow invocation testing.
   `Pull Request 4530`_
-* Another fix for Selenium worklow tests.
-  `Pull Request 4531`_
 * Refactor history import/export tests to allow collection testing.
   `Pull Request 4534`_
 * Refactor test modules toward cleaner dependencies
@@ -520,27 +509,10 @@ Enhancements
 * Check user roles only once if user has no roles
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4546`_
-* Revert "Remove Selenium test that is broken because Galaxy is broken."
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4561`_
-* Increase the robustness of Selenium workflow management tests.
-  `Pull Request 4564`_
 * Fix datalib collection import
   `Pull Request 4568`_
-* Make submitting logins for Selenium tests a bit more robust.
-  `Pull Request 4576`_
 * Delegate displaying of page titles to Layout.display()
   `Pull Request 4578`_
-* Retry failed clicks more aggressively for Selenium tests.
-  `Pull Request 4582`_
-* Fix another issue with sorting by owner for published histories Selenium
-  test.
-  `Pull Request 4586`_
-* Add Selenium tests for the Saved Histories
-  (thanks to `@anatskiy <https://github.com/anatskiy>`__).
-  `Pull Request 4587`_
-* Small improvements to workflow editor Selenium tests.
-  `Pull Request 4592`_
 * Datalibs various fixes
   `Pull Request 4595`_
 * Remove bam to bai converter

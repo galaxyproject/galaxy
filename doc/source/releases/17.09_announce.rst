@@ -9,7 +9,12 @@ Highlights
 ===========================================================
 
 **Singularity**
-  <awesome_description_placeholder> `Pull Request 4175`_
+  Tool execution using the HPC-friendly container technology `Singularity <http://singularity.lbl.gov/>`__
+  is now supported. Custom containers can be specified by the Galaxy admin on a per job destination basis
+  or standardized containers can be built or downloaded corresponding to Conda requirements automatically
+  using the mulled toolkit built into Galaxy (just like is possible for Docker). For more information
+  checkout `this presentation <http://bit.ly/gcc-biocontainers>`__ from the 2017 Galaxy Community Conference.
+  `Pull Request 4175`_
 
 **Download entire collection**
   Downloading whole colections is now possible from the history interface. `Pull Request 4098`_
