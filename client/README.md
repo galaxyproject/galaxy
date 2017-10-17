@@ -15,7 +15,7 @@ Complete Client Build
 ================================================
 
 There are many moving parts to the client build system, but the entrypoint for
-most people is the 'client' rule in the makefile at the root of the Galaxy
+most people is the 'client' rule in the Makefile at the root of the Galaxy
 repository.  Execute the following to perform a complete build including
 dependency staging, style building, script processing and bundling.
 
