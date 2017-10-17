@@ -875,6 +875,7 @@ class ToolModule(WorkflowModule):
         complete = False
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
+            max_num_jobs = progress.maximum_jobs_to_schedule_or_none
             execution_tracker = execute(
                 trans=self.trans,
                 tool=tool,
@@ -883,23 +884,24 @@ class ToolModule(WorkflowModule):
                 collection_info=collection_info,
                 workflow_invocation_uuid=invocation.uuid.hex,
                 invocation_step=invocation_step,
+                max_num_jobs=max_num_jobs,
                 job_callback=lambda job: self._handle_post_job_actions(step, job, invocation.replacement_dict),
             )
             complete = True
-        except PartialJobExecution:
-            pass
+        except PartialJobExecution as pje:
+            execution_tracker = pje.execution_tracker
 
         except ToolInputsNotReadyException:
             delayed_why = "tool [%s] inputs are not ready, this special tool requires inputs to be ready" % tool.id
             raise DelayedWorkflowEvaluation(why=delayed_why)
 
-        if invocation_step.is_new:
-            if collection_info:
-                step_outputs = dict(execution_tracker.implicit_collections)
-            else:
-                step_outputs = dict(execution_tracker.output_datasets)
-                step_outputs.update(execution_tracker.output_collections)
-            progress.set_step_outputs(invocation_step, step_outputs)
+        progress.record_executed_job_count(len(execution_tracker.successful_jobs))
+        if collection_info:
+            step_outputs = dict(execution_tracker.implicit_collections)
+        else:
+            step_outputs = dict(execution_tracker.output_datasets)
+            step_outputs.update(execution_tracker.output_collections)
+        progress.set_step_outputs(invocation_step, step_outputs, already_persisted=not invocation_step.is_new)
 
         if execution_tracker.execution_errors:
             message = "Failed to create one or more job(s) for workflow step."

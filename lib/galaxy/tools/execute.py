@@ -23,8 +23,8 @@ EXECUTION_SUCCESS_MESSAGE = "Tool [%s] created job [%s] %s"
 
 class PartialJobExecution(Exception):
 
-    def __init__(self):
-        pass
+    def __init__(self, execution_tracker):
+        self.execution_tracker = execution_tracker
 
 
 MappingParameters = collections.namedtuple("MappingParameters", ["param_template", "param_combinations"])
@@ -121,7 +121,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
         q.join()
 
     if has_remaining_jobs:
-        raise PartialJobExecution()
+        raise PartialJobExecution(execution_tracker)
     else:
         execution_tracker.finalize_dataset_collections(trans)
 

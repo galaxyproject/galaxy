@@ -140,12 +140,18 @@ class WorkflowInvoker(object):
 
         module_injector = modules.WorkflowModuleInjector(trans)
         if progress is None:
-            progress = WorkflowProgress(self.workflow_invocation, workflow_run_config.inputs, module_injector)
+            progress = WorkflowProgress(
+                self.workflow_invocation,
+                workflow_run_config.inputs,
+                module_injector,
+                jobs_per_scheduling_iteration=getattr(trans.app.config, "maximum_workflow_jobs_per_scheduling_iteration", -1),
+            )
         self.progress = progress
 
     def invoke(self):
         workflow_invocation = self.workflow_invocation
-        maximum_duration = getattr(self.trans.app.config, "maximum_workflow_invocation_duration", -1)
+        config = self.trans.app.config
+        maximum_duration = getattr(config, "maximum_workflow_invocation_duration", -1)
         if maximum_duration > 0 and workflow_invocation.seconds_since_created > maximum_duration:
             log.debug("Workflow invocation [%s] exceeded maximum number of seconds allowed for scheduling [%s], failing." % (workflow_invocation.id, maximum_duration))
             workflow_invocation.state = model.WorkflowInvocation.states.FAILED
@@ -258,16 +264,23 @@ STEP_OUTPUT_DELAYED = object()
 
 class WorkflowProgress(object):
 
-    def __init__(self, workflow_invocation, inputs_by_step_id, module_injector):
+    def __init__(self, workflow_invocation, inputs_by_step_id, module_injector, jobs_per_scheduling_iteration=-1):
         self.outputs = odict()
         self.module_injector = module_injector
         self.workflow_invocation = workflow_invocation
         self.inputs_by_step_id = inputs_by_step_id
-        self.jobs_per_scheduling_iteration = 1
+        self.jobs_per_scheduling_iteration = jobs_per_scheduling_iteration
+        self.jobs_scheduled_this_iteration = 0
 
     @property
-    def maximum_jobs_to_schedule(self):
-        return 1
+    def maximum_jobs_to_schedule_or_none(self):
+        if self.jobs_per_scheduling_iteration > 0:
+            return self.jobs_per_scheduling_iteration - self.jobs_scheduled_this_iteration
+        else:
+            return None
+
+    def record_executed_job_count(self, job_count):
+        self.jobs_scheduled_this_iteration += job_count
 
     def remaining_steps(self):
         # Previously computed and persisted step states.
