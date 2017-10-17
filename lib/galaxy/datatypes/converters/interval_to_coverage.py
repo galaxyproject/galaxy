@@ -133,8 +133,9 @@ if __name__ == "__main__":
     # Sort through a tempfile first
     temp_file = tempfile.NamedTemporaryFile(mode="r")
     environ['LC_ALL'] = 'POSIX'
-    commandline = "sort -f -n -k %d -k %d -k %d -o %s %s" % (chr_col_1 + 1, start_col_1 + 1, end_col_1 + 1, temp_file.name, in_fname)
-    subprocess.check_call(commandline, shell=True)
+    subprocess.check_call([
+        'sort', '-f', '-n', '-k', chr_col_1 + 1, '-k', start_col_1 + 1, '-k', end_col_1 + 1, '-o', temp_file.name, in_fname
+    ])
 
     coverage = CoverageWriter( out_stream=open(out_fname, "a"),
                                chromCol=chr_col_2, positionCol=position_col_2,

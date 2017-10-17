@@ -1,5 +1,6 @@
 import logging
 import os
+import subprocess
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -148,12 +149,11 @@ class System( BaseUIController ):
                                     message=message )
 
     def get_disk_usage( self, file_path ):
-        df_cmd = 'df -h ' + file_path
         is_sym_link = os.path.islink( file_path )
         file_system = disk_size = disk_used = disk_avail = disk_cap_pct = mount = None
-        df_file = os.popen( df_cmd )
-        while True:
-            df_line = df_file.readline()
+        df_output = subprocess.check_output(['df', '-h', file_path])
+
+        for df_line in df_output:
             df_line = df_line.strip()
             if df_line:
                 df_line = df_line.lower()
@@ -176,7 +176,6 @@ class System( BaseUIController ):
                         pass
             else:
                 break  # EOF
-        df_file.close()
         return ( file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount  )
 
     @web.expose
