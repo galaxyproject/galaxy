@@ -1,6 +1,8 @@
 """
 Classes encapsulating Galaxy tool parameters.
 """
+from __future__ import print_function
+
 import re
 from json import dumps
 
@@ -49,7 +51,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     >>> f.cases = [Bunch(value='true', inputs= { 'h': h }), Bunch(value='false', inputs= { 'i': i })]
     >>>
     >>> def visitor(input, value, prefix, prefixed_name, **kwargs):
-    ...     print 'name=%s, prefix=%s, prefixed_name=%s, value=%s' % (input.name, prefix, prefixed_name, value)
+    ...     print('name=%s, prefix=%s, prefixed_name=%s, value=%s' % (input.name, prefix, prefixed_name, value))
     >>> inputs = odict([('a',a),('b',b)])
     >>> nested = odict([('a', 1), ('b', [odict([('c', 3), ('d', [odict([('e', 5), ('f', odict([('g', True), ('h', 7)]))])])])])])
     >>> visit_input_values(inputs, nested, visitor)
@@ -249,13 +251,13 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
     >>> flat = odict([('a', 1), ('b_0|c', 2), ('b_0|d_0|e', 3), ('b_0|d_0|f|h', 4), ('b_0|d_0|f|g', True)])
     >>> state = odict()
     >>> populate_state(trans, inputs, flat, state, check=False)
-    >>> print state['a']
+    >>> print(state['a'])
     1
-    >>> print state['b'][0]['c']
+    >>> print(state['b'][0]['c'])
     2
-    >>> print state['b'][0]['d'][0]['e']
+    >>> print(state['b'][0]['d'][0]['e'])
     3
-    >>> print state['b'][0]['d'][0]['f']['h']
+    >>> print(state['b'][0]['d'][0]['f']['h'])
     4
     """
     context = ExpressionContext(state, context)

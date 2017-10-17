@@ -10,17 +10,25 @@ from json import dumps
 
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 
-from galaxy import exceptions
-from galaxy import util
-from galaxy import web
+from galaxy import (
+    exceptions,
+    util,
+    web
+)
 from galaxy.exceptions import ObjectNotFound
-from galaxy.managers import base as managers_base
-from galaxy.managers import folders, library_datasets, roles
+from galaxy.managers import (
+    base as managers_base,
+    folders,
+    library_datasets,
+    roles
+)
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.streamball import StreamBall
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous as expose_api_anonymous
+)
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
 
 log = logging.getLogger(__name__)
@@ -440,7 +448,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         populate_state(trans, tool.inputs, kwd, state.inputs)
         tool_params = state.inputs
         dataset_upload_inputs = []
-        for input in tool.inputs.itervalues():
+        for input in tool.inputs.values():
             if input.type == "upload_dataset":
                 dataset_upload_inputs.append(input)
         library_bunch = upload_common.handle_library_params(trans, {}, trans.security.encode_id(folder.id))
@@ -571,7 +579,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
                 if format == 'zip':
                     # Can't use mkstemp - the file must not exist first
                     tmpd = tempfile.mkdtemp()
-                    util.umask_fix_perms(tmpd, trans.app.config.umask, 0777, self.app.config.gid)
+                    util.umask_fix_perms(tmpd, trans.app.config.umask, 0o777, self.app.config.gid)
                     tmpf = os.path.join(tmpd, 'library_download.' + format)
                     if trans.app.config.upstream_gzip:
                         archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_STORED, True)

@@ -41,7 +41,7 @@ sa_session = init('/tmp/', db_url).context
 # http://stackoverflow.com/questions/5631078/sqlalchemy-print-the-actual-query
 def printquery(statement, bind=None):
     """
-    print a query, with values filled in
+    Print a query, with values filled in
     for debugging purposes *only*
     for security, you should always separate queries from their values
     please also note that this function is quite slow

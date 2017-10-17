@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # Dan Blankenberg
+from __future__ import print_function
+
 import os
 import sys
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def __main__():
@@ -12,7 +14,6 @@ def __main__():
         base_dir = sys.argv[1]
     except:
         pass
-        # print "using default base_dir:", base_dir
 
     organisms = {}
     for result in os.walk(base_dir):
@@ -55,7 +56,7 @@ def __main__():
         if swap_test is False:
             break
 
-    print "||'''Organism'''||'''Kingdom'''||'''Group'''||'''Links to UCSC Archaea Browser'''||"
+    print("||'''Organism'''||'''Kingdom'''||'''Group'''||'''Links to UCSC Archaea Browser'''||")
 
     for org in orgs:
         org = organisms[org]
@@ -72,7 +73,7 @@ def __main__():
         if at_ucsc:
             out_str = out_str + "Yes"
         out_str = out_str + "||"
-        print out_str
+        print(out_str)
 
 
 if __name__ == "__main__":

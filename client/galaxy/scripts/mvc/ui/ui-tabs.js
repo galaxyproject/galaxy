@@ -1,57 +1,66 @@
 /**
  *  Renders tabs e.g. used in the charts editor, behaves similar to repeat and section rendering
  */
-define( [ 'utils/utils' ], function( Utils ) {
+define(["utils/utils"], function(Utils) {
     var View = Backbone.View.extend({
-        initialize : function( options ) {
+        initialize: function(options) {
             var self = this;
             this.collection = new Backbone.Collection();
-            this.model = options && options.model || new Backbone.Model( {
-                onchange    : null,
-                visible     : true
-            }).set( options );
-            this.setElement( $( this._template() ) );
-            this.$nav       = this.$( '.tab-navigation' );
-            this.$content   = this.$( '.tab-content' );
-            this.$el.on( 'click', function() { $( '.tooltip' ).hide() } );
+            this.model =
+                (options && options.model) ||
+                new Backbone.Model({
+                    onchange: null,
+                    visible: true
+                }).set(options);
+            this.setElement($(this._template()));
+            this.$nav = this.$(".tab-navigation");
+            this.$content = this.$(".tab-content");
+            this.$el.on("click", function() {
+                $(".tooltip").hide();
+            });
             this.render();
-            this.listenTo( this.model, 'change', this.render, this );
-            this.listenTo( this.collection, 'add', this._add, this );
-            this.listenTo( this.collection, 'remove', this._remove, this );
-            this.listenTo( this.collection, 'change', this._change, this );
-            this.listenTo( this.collection, 'reset', this._reset, this );
-            this.listenTo( this.collection, 'add remove reset', this.render, this );
+            this.listenTo(this.model, "change", this.render, this);
+            this.listenTo(this.collection, "add", this._add, this);
+            this.listenTo(this.collection, "remove", this._remove, this);
+            this.listenTo(this.collection, "change", this._change, this);
+            this.listenTo(this.collection, "reset", this._reset, this);
+            this.listenTo(
+                this.collection,
+                "add remove reset",
+                this.render,
+                this
+            );
         },
 
         render: function() {
-            var id = this.model.get( 'current' );
-            id = this.$( '#' + id ).length > 0 ? id : this.first();
-            if ( id ) {
-                this.$nav.children().removeClass('active' );
-                this.$content.children().removeClass('active' );
-                this.$( '#tab-' + id ).addClass( 'active' );
-                this.$( '#' + id ).addClass( 'active' );
+            var id = this.model.get("current");
+            id = this.$("#" + id).length > 0 ? id : this.first();
+            if (id) {
+                this.$nav.children().removeClass("active");
+                this.$content.children().removeClass("active");
+                this.$("#tab-" + id).addClass("active");
+                this.$("#" + id).addClass("active");
             }
-            this.$el[ this.model.get( 'visible' ) ? 'fadeIn' : 'fadeOut' ]( 'fast' );
-            this.$nav[ this.size() > 1 ? 'show' : 'hide' ]();
+            this.$el[this.model.get("visible") ? "fadeIn" : "fadeOut"]("fast");
+            this.$nav[this.size() > 1 ? "show" : "hide"]();
         },
 
         /** Returns tab id for currently shown tab */
         current: function() {
-            return this.model.get( 'current' );
+            return this.model.get("current");
         },
 
         /** Show tab view and highlight a tab by id */
-        show: function( id ) {
-            if ( id ) {
-                this.model.set( { 'current': id, 'visible': true } );
-                this.model.get( 'onchange' ) && this.model.get( 'onchange' )( id );
+        show: function(id) {
+            if (id) {
+                this.model.set({ current: id, visible: true });
+                this.model.get("onchange") && this.model.get("onchange")(id);
             }
         },
 
         /** Hide tab view */
-        hide: function(){
-            this.model.set( 'visible', false );
+        hide: function() {
+            this.model.set("visible", false);
         },
 
         /** Returns first tab */
@@ -66,13 +75,13 @@ define( [ 'utils/utils' ], function( Utils ) {
         },
 
         /** Adds a new tab */
-        add: function( options ) {
-            this.collection.add( options );
+        add: function(options) {
+            this.collection.add(options);
         },
 
         /** Delete tab */
-        del: function( id ) {
-            this.collection.remove( id );
+        del: function(id) {
+            this.collection.remove(id);
         },
 
         /** Delete all tabs */
@@ -81,36 +90,47 @@ define( [ 'utils/utils' ], function( Utils ) {
         },
 
         /** Show tab */
-        showTab: function( id ) {
-            this.collection.get( id ).set( 'hidden', false );
+        showTab: function(id) {
+            this.collection.get(id).set("hidden", false);
         },
 
         /** Hide tab */
-        hideTab: function( id ) {
-            this.collection.get( id ).set( 'hidden', true );
+        hideTab: function(id) {
+            this.collection.get(id).set("hidden", true);
         },
 
         /** Adds a new tab */
-        _add: function( tab_model ) {
+        _add: function(tab_model) {
             var self = this;
             var options = tab_model.attributes;
-            this.$content.append( $( '<div/>' ).attr( 'id', options.id ).addClass( 'tab-pane' ).append( options.$el ) );
-            this.$nav.append( $( this._template_tab( options ) )
-                .show()
-                .tooltip( { title: options.tooltip, placement: 'bottom', container: self.$el } )
-                .on( 'click', function( e ) {
-                    e.preventDefault();
-                    self.show( options.id );
-                }));
-            if ( this.size() == 1 ) {
-                this.show( options.id );
+            this.$content.append(
+                $("<div/>")
+                    .attr("id", options.id)
+                    .addClass("tab-pane")
+                    .append(options.$el)
+            );
+            this.$nav.append(
+                $(this._template_tab(options))
+                    .show()
+                    .tooltip({
+                        title: options.tooltip,
+                        placement: "bottom",
+                        container: self.$el
+                    })
+                    .on("click", function(e) {
+                        e.preventDefault();
+                        self.show(options.id);
+                    })
+            );
+            if (this.size() == 1) {
+                this.show(options.id);
             }
         },
 
         /** Delete tab */
-        _remove: function( tab_model ) {
-            this.$( '#tab-' + tab_model.id ).remove();
-            this.$( '#' + tab_model.id ).remove();
+        _remove: function(tab_model) {
+            this.$("#tab-" + tab_model.id).remove();
+            this.$("#" + tab_model.id).remove();
         },
 
         /** Reset collection */
@@ -120,30 +140,42 @@ define( [ 'utils/utils' ], function( Utils ) {
         },
 
         /** Change tab */
-        _change: function( tab_model ) {
-            this.$( '#tab-' + tab_model.id )[ tab_model.get( 'hidden' ) ? 'hide' : 'show' ]();
+        _change: function(tab_model) {
+            this.$("#tab-" + tab_model.id)[
+                tab_model.get("hidden") ? "hide" : "show"
+            ]();
         },
 
         /** Main template */
         _template: function() {
-            return  $( '<div/>' ).addClass( 'ui-tabs tabbable tabs-left' )
-                                 .append( $( '<ul/>' ).addClass( 'tab-navigation nav nav-tabs' ) )
-                                 .append( $( '<div/>' ).addClass( 'tab-content' ) );
+            return $("<div/>")
+                .addClass("ui-tabs tabbable tabs-left")
+                .append($("<ul/>").addClass("tab-navigation nav nav-tabs"))
+                .append($("<div/>").addClass("tab-content"));
         },
 
         /** Tab template */
-        _template_tab: function( options ) {
-            var $tmpl = $( '<li/>' ).addClass( 'tab-element' )
-                                    .attr( 'id', 'tab-' + options.id )
-                                    .append( $( '<a/>' ).attr( 'id', 'tab-title-link-' + options.id ) );
-            var $href = $tmpl.find( 'a' );
-            options.icon && $href.append( $( '<i/>' ).addClass( 'tab-icon fa' ).addClass( options.icon ) );
-            $href.append( $( '<span/>' ).attr( 'id', 'tab-title-text-' + options.id )
-                                        .addClass( 'tab-title-text' )
-                                        .append( options.title ) );
+        _template_tab: function(options) {
+            var $tmpl = $("<li/>")
+                .addClass("tab-element")
+                .attr("id", "tab-" + options.id)
+                .append($("<a/>").attr("id", "tab-title-link-" + options.id));
+            var $href = $tmpl.find("a");
+            options.icon &&
+                $href.append(
+                    $("<i/>")
+                        .addClass("tab-icon fa")
+                        .addClass(options.icon)
+                );
+            $href.append(
+                $("<span/>")
+                    .attr("id", "tab-title-text-" + options.id)
+                    .addClass("tab-title-text")
+                    .append(options.title)
+            );
             return $tmpl;
         }
     });
 
-    return { View : View }
+    return { View: View };
 });

@@ -1,9 +1,9 @@
 import logging
 import sets
-import urllib
 
 from markupsafe import escape
 from six import string_types
+from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import and_, false, func, null, true
 from sqlalchemy.orm import eagerload, eagerload_all
 
@@ -12,17 +12,24 @@ from galaxy import exceptions
 from galaxy import managers
 from galaxy import model
 from galaxy import web
-from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.model.item_attrs import UsesItemRatings
+from galaxy.model.item_attrs import (
+    UsesAnnotations,
+    UsesItemRatings
+)
 from galaxy.util import listify, nice_size, Params, parse_int, sanitize_text
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
-from galaxy.web.base.controller import BaseUIController
-from galaxy.web.base.controller import ERROR, INFO, SUCCESS, WARNING
-from galaxy.web.base.controller import ExportsHistoryMixin
-from galaxy.web.base.controller import ImportsHistoryMixin
-from galaxy.web.base.controller import SharableMixin
+from galaxy.web.base.controller import (
+    BaseUIController,
+    ERROR,
+    ExportsHistoryMixin,
+    ImportsHistoryMixin,
+    INFO,
+    SharableMixin,
+    SUCCESS,
+    WARNING,
+)
 from galaxy.web.framework.helpers import grids, iff, time_ago
 
 
@@ -347,7 +354,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                                 hda.dataset.full_delete()
                                 trans.log_event("Dataset id %s has been purged upon the the purge of HDA id %s" % (hda.dataset.id, hda.id))
                                 trans.sa_session.add(hda.dataset)
-                            except:
+                            except Exception:
                                 log.exception('Unable to purge dataset (%s) on purge of hda (%s):' % (hda.dataset.id, hda.id))
                     history.purged = True
                     self.sa_session.add(history)
@@ -413,7 +420,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             association = trans.sa_session.query(trans.app.model.GalaxySessionToHistoryAssociation) \
                                           .filter_by(session_id=galaxy_session.id, history_id=new_history.id) \
                                           .first()
-        except:
+        except Exception:
             association = None
         new_history.add_galaxy_session(galaxy_session, association=association)
         trans.sa_session.add(new_history)
@@ -532,7 +539,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     jobs[job] = [(hda, None)]
         # Second, go through the jobs and connect to workflows
         wf_invocations = odict()
-        for job, hdas in jobs.iteritems():
+        for job, hdas in jobs.items():
             # Job is attached to a workflow step, follow it to the
             # workflow_invocation and group
             if job.workflow_invocation_step:
@@ -570,11 +577,11 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         jobs = (trans.sa_session.query(trans.app.model.Job)
             .filter(trans.app.model.Job.user == history_to_view.user)
             .filter(trans.app.model.Job.history_id == unencoded_history_id)).all()
-        jobs = map(lambda j: self.encode_all_ids(trans, j.to_dict('element'), True), jobs)
+        jobs = [self.encode_all_ids(trans, j.to_dict('element'), True) for j in jobs]
 
         tools = {}
-        for tool_id in set(map(lambda j: j['tool_id'], jobs)):
-            unquoted_id = urllib.unquote_plus(tool_id)
+        for tool_id in set(j['tool_id'] for j in jobs):
+            unquoted_id = unquote_plus(tool_id)
             tool = self.app.toolbox.get_tool(unquoted_id)
             if not tool:
                 raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % tool_id)
@@ -749,8 +756,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             inputs = []
             all_roles = trans.user.all_roles()
             current_actions = history.default_permissions
-            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-            for action_key, action in permitted_actions:
+            for action_key, action in trans.app.model.Dataset.permitted_actions.items():
                 in_roles = sets.Set()
                 for a in current_actions:
                     if a.action == action.action:
@@ -1123,7 +1129,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                         hda.dataset.full_delete()
                         trans.log_event("Dataset id %s has been purged upon the the purge of HDA id %s" % (hda.dataset.id, hda.id))
                         trans.sa_session.add(hda.dataset)
-                    except:
+                    except Exception:
                         log.exception('Unable to purge dataset (%s) on purge of hda (%s):' % (hda.dataset.id, hda.id))
                 count += 1
         return trans.show_ok_message("%d datasets have been deleted permanently" % count, refresh_frames=['history'])
@@ -1352,7 +1358,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             history = self.history_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
             trans.set_history(history)
             return self.history_data(trans, history)
-        except exceptions.MessageException, msg_exc:
+        except exceptions.MessageException as msg_exc:
             trans.response.status = msg_exc.err_code.code
             return {'err_msg': msg_exc.err_msg, 'err_code': msg_exc.err_code.code}
 

@@ -1,6 +1,8 @@
 """
 Migration script to add the tool_versions column to the repository_metadata table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -23,7 +25,7 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     RepositoryMetadata_table = Table("repository_metadata", metadata, autoload=True)
@@ -32,8 +34,8 @@ def upgrade(migrate_engine):
         # Create
         c.create(RepositoryMetadata_table)
         assert c is RepositoryMetadata_table.c.tool_versions
-    except Exception as e:
-        print "Adding tool_versions column to the repository_metadata table failed: %s" % str(e)
+    except Exception:
+        log.exception("Adding tool_versions column to the repository_metadata table failed.")
 
 
 def downgrade(migrate_engine):
@@ -43,5 +45,5 @@ def downgrade(migrate_engine):
     RepositoryMetadata_table = Table("repository_metadata", metadata, autoload=True)
     try:
         RepositoryMetadata_table.c.tool_versions.drop()
-    except Exception as e:
-        print "Dropping column tool_versions from the repository_metadata table failed: %s" % str(e)
+    except Exception:
+        log.exception("Dropping column tool_versions from the repository_metadata table failed.")

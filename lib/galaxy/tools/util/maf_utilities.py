@@ -19,7 +19,7 @@ import bx.interval_index_file
 import bx.intervals
 from six.moves import xrange
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 log = logging.getLogger(__name__)
 

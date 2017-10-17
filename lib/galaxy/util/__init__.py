@@ -889,8 +889,25 @@ def roundify(amount, sfs=2):
 
 
 def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
-    """
+    u"""
     Returns a unicode string or None.
+
+    >>> unicodify(None) is None
+    True
+    >>> unicodify('simple string') == u'simple string'
+    True
+    >>> unicodify(3) == u'3'
+    True
+    >>> unicodify(Exception('message')) == u'message'
+    True
+    >>> unicodify('cómplǐcḁtëd strĩñg') == u'cómplǐcḁtëd strĩñg'
+    True
+    >>> s = u'lâtín strìñg'; unicodify(s.encode('latin-1'), 'latin-1') == s
+    True
+    >>> s = u'lâtín strìñg'; unicodify(s.encode('latin-1')) == u'l\ufffdt\ufffdn str\ufffd\ufffdg'
+    True
+    >>> s = u'lâtín strìñg'; unicodify(s.encode('latin-1'), error='ignore') == u'ltn strg'
+    True
     """
     if value is None:
         return None

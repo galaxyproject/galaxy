@@ -34,8 +34,8 @@
  * locale pieces into each other, then finally sets the context.defined value
  * for the nls/fr-fr/colors bundle to be that mixed in locale.
  */
-(function () {
-    'use strict';
+(function() {
+    "use strict";
 
     //regexp for reconstructing the master bundle name from parts of the regexp match
     //nlsRegExp.exec("foo/bar/baz/nls/en-ca/foo") gives:
@@ -52,14 +52,14 @@
         if (master[locale]) {
             needed.push(locale);
             if (master[locale] === true || master[locale] === 1) {
-                toLoad.push(prefix + locale + '/' + suffix);
+                toLoad.push(prefix + locale + "/" + suffix);
             }
         }
     }
 
     function addIfExists(req, locale, toLoad, prefix, suffix) {
-        var fullName = prefix + locale + '/' + suffix;
-        if (require._fileExists(req.toUrl(fullName + '.js'))) {
+        var fullName = prefix + locale + "/" + suffix;
+        if (require._fileExists(req.toUrl(fullName + ".js"))) {
             toLoad.push(fullName);
         }
     }
@@ -74,9 +74,12 @@
     function mixin(target, source, force) {
         var prop;
         for (prop in source) {
-            if (source.hasOwnProperty(prop) && (!target.hasOwnProperty(prop) || force)) {
+            if (
+                source.hasOwnProperty(prop) &&
+                (!target.hasOwnProperty(prop) || force)
+            ) {
                 target[prop] = source[prop];
-            } else if (typeof source[prop] === 'object') {
+            } else if (typeof source[prop] === "object") {
                 if (!target[prop] && source[prop]) {
                     target[prop] = {};
                 }
@@ -85,15 +88,15 @@
         }
     }
 
-    define(['module'], function (module) {
+    define(["module"], function(module) {
         var masterConfig = module.config ? module.config() : {};
 
         return {
-            version: '2.0.4',
+            version: "2.0.4",
             /**
              * Called when a dependency needs to be loaded.
              */
-            load: function (name, req, onLoad, config) {
+            load: function(name, req, onLoad, config) {
                 config = config || {};
 
                 if (config.locale) {
@@ -108,7 +111,9 @@
                     parts = locale.split("-"),
                     toLoad = [],
                     value = {},
-                    i, part, current = "";
+                    i,
+                    part,
+                    current = "";
 
                 //If match[5] is blank, it means this is the top bundle definition,
                 //so it does not have to be handled. Locale-specific requests
@@ -124,9 +129,12 @@
                     locale = masterConfig.locale;
                     if (!locale) {
                         locale = masterConfig.locale =
-                            typeof navigator === "undefined" ? "root" :
-                            (navigator.language ||
-                             navigator.userLanguage || "root").toLowerCase();
+                            typeof navigator === "undefined"
+                                ? "root"
+                                : (navigator.language ||
+                                      navigator.userLanguage ||
+                                      "root"
+                                  ).toLowerCase();
                     }
                     parts = locale.split("-");
                 }
@@ -142,12 +150,12 @@
                         addIfExists(req, current, toLoad, prefix, suffix);
                     }
 
-                    req(toLoad, function () {
+                    req(toLoad, function() {
                         onLoad();
                     });
                 } else {
                     //First, fetch the master bundle, it knows what locales are available.
-                    req([masterName], function (master) {
+                    req([masterName], function(master) {
                         //Figure out the best fit
                         var needed = [],
                             part;
@@ -157,17 +165,30 @@
                         for (i = 0; i < parts.length; i++) {
                             part = parts[i];
                             current += (current ? "-" : "") + part;
-                            addPart(current, master, needed, toLoad, prefix, suffix);
+                            addPart(
+                                current,
+                                master,
+                                needed,
+                                toLoad,
+                                prefix,
+                                suffix
+                            );
                         }
 
                         //Load all the parts missing.
-                        req(toLoad, function () {
+                        req(toLoad, function() {
                             var i, partBundle, part;
-                            for (i = needed.length - 1; i > -1 && needed[i]; i--) {
+                            for (
+                                i = needed.length - 1;
+                                i > -1 && needed[i];
+                                i--
+                            ) {
                                 part = needed[i];
                                 partBundle = master[part];
                                 if (partBundle === true || partBundle === 1) {
-                                    partBundle = req(prefix + part + '/' + suffix);
+                                    partBundle = req(
+                                        prefix + part + "/" + suffix
+                                    );
                                 }
                                 mixin(value, partBundle);
                             }
@@ -180,4 +201,4 @@
             }
         };
     });
-}());
+})();

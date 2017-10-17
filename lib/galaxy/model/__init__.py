@@ -2638,7 +2638,7 @@ class Library(object, Dictifiable, HasName):
             # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
             # only to provide stable sorting, but mainly to eliminate comparison of objects
             # (which can be expensive or prohibited) in case of equal attribute values.
-            intermed = map(None, (getattr(_, attr) for _ in seq), range(len(seq)), seq)
+            intermed = [(getattr(v, attr), i, v) for i, v in enumerate(seq)]
             intermed.sort()
             return [_[-1] for _ in intermed]
         if folders is None:
@@ -4242,7 +4242,6 @@ class MetadataFile(StorableObject):
             return path
         except AttributeError:
             # In case we're not working with the history_dataset
-            # print "Caught AttributeError"
             path = os.path.join(Dataset.file_path, '_metadata_files', *directory_hash_id(self.id))
             # Create directory if it does not exist
             try:

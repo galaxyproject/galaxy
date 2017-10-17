@@ -1,6 +1,8 @@
 """
 Migration script to add the deprecated column to the repository table.
 """
+from __future__ import print_function
+
 import logging
 import sys
 
@@ -18,7 +20,7 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     # Create and initialize imported column in job table.
@@ -34,9 +36,8 @@ def upgrade(migrate_engine):
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_false = "false"
         migrate_engine.execute("UPDATE repository SET deprecated=%s" % default_false)
-    except Exception as e:
-        print "Adding deprecated column to the repository table failed: %s" % str(e)
-        log.debug("Adding deprecated column to the repository table failed: %s" % str(e))
+    except Exception:
+        log.exception("Adding deprecated column to the repository table failed.")
 
 
 def downgrade(migrate_engine):
@@ -46,6 +47,5 @@ def downgrade(migrate_engine):
     Repository_table = Table("repository", metadata, autoload=True)
     try:
         Repository_table.c.deprecated.drop()
-    except Exception as e:
-        print "Dropping column deprecated from the repository table failed: %s" % str(e)
-        log.debug("Dropping column deprecated from the repository table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping column deprecated from the repository table failed.")
