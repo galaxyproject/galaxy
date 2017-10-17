@@ -45,7 +45,6 @@ class AdminToolshed(AdminGalaxy):
 
     installed_repository_grid = admin_toolshed_grids.InstalledRepositoryGrid()
     repository_installation_grid = admin_toolshed_grids.RepositoryInstallationGrid()
-    tool_dependency_grid = admin_toolshed_grids.ToolDependencyGrid()
 
     @web.expose
     @web.require_admin
@@ -792,7 +791,6 @@ class AdminToolshed(AdminGalaxy):
             # The user must be on the manage_repository_tool_dependencies page and clicked the button to either install or uninstall a
             # tool dependency, but they didn't check any of the available tool dependencies on which to perform the action.
             tool_shed_repository = repository_util.get_tool_shed_repository_by_id(trans.app, repository_id)
-        self.tool_dependency_grid.title = "Tool shed repository '%s' tool dependencies" % escape(tool_shed_repository.name)
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if not tool_dependency_ids:
@@ -828,9 +826,6 @@ class AdminToolshed(AdminGalaxy):
                     message += ' and restart your Galaxy server to install tool dependencies.'
                     kwd['message'] = message
                     kwd['status'] = 'error'
-        # Redirect if no tool dependencies are in the process of being installed.
-        if tool_shed_repository.tool_dependencies_being_installed:
-            return self.tool_dependency_grid(trans, **kwd)
         return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                         action='manage_repository_tool_dependencies',
                                                         tool_dependency_ids=tool_dependency_ids,
