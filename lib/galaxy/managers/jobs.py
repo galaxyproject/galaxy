@@ -16,7 +16,6 @@ from galaxy.util import (
     defaultdict,
     ExecutionTimer
 )
-from profilehooks import profile
 
 log = logging.getLogger(__name__)
 
@@ -89,7 +88,6 @@ class JobSearch(object):
                              wildcard_param_dump=wildcard_param_dump,
                              input_ids=input_ids)
 
-    @profile
     def __search(self, tool_id, tool_version, user, input_data, input_ids=None, job_state=None, param_dump=None, wildcard_param_dump=None):
         search_timer = ExecutionTimer()
 
@@ -223,16 +221,17 @@ class JobSearch(object):
             model.Job.any_output_dataset_deleted == false()
         ))
 
-        query = self.sa_session.query(model.Job, *used_ids).filter(and_(*conditions))
+        query = self.sa_session.query(model.Job.id, *used_ids).filter(and_(*conditions))
         for job in query.all():
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
             # but to be able to verify that the parameters match we need to modify all instances of
             # dataset_ids (HDA, LDDA, HDCA) in the incoming param_dump to point to those used by the
             # possibly equivalent job, which may have been run on copies of the original input data.
             job_input_ids = {}
-            if isinstance(job, tuple):
-                # If there are any input datasets, job will be a tuple
-                job, current_jobs_data_ids = job[0], job[1:]
+            if len(job) > 1:
+                # We do have datasets to check
+                job_id, current_jobs_data_ids = job[0], job[1:]
+                job_parameter_conditions = [model.Job.id == job_id]
                 for src, requested_id, used_id in zip(data_types, requested_ids, current_jobs_data_ids):
                     if src not in job_input_ids:
                         job_input_ids[src] = {requested_id: used_id}
@@ -241,17 +240,18 @@ class JobSearch(object):
                 new_param_dump = remap(param_dump, visit=replace_dataset_ids)
                 # new_param_dump has its dataset ids remapped to those used by the job.
                 # We now ask if the remapped job parameters match the current job.
-                job_parameter_conditions = [model.Job.id == job.id]
                 for k, v in new_param_dump.items():
                     a = aliased(model.JobParameter)
                     job_parameter_conditions.append(and_(
-                        a.job_id == job.id,
                         a.name == k,
                         a.value == json.dumps(v)
                     ))
-                query = self.sa_session.query(model.Job).filter(*job_parameter_conditions)
-                if query.first() is None:
-                    continue
+            else:
+                job_parameter_conditions = [model.Job.id == job]
+            query = self.sa_session.query(model.Job).filter(*job_parameter_conditions)
+            job = query.first()
+            if job is None:
+                continue
             n_parameters = 0
             # Verify that equivalent jobs had the same number of job parameters
             # We skip chrominfo, dbkey, __workflow_invocation_uuid__ and identifer
