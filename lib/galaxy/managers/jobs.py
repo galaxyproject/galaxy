@@ -16,6 +16,7 @@ from galaxy.util import (
     defaultdict,
     ExecutionTimer
 )
+from profilehooks import profile
 
 log = logging.getLogger(__name__)
 
@@ -88,6 +89,7 @@ class JobSearch(object):
                              wildcard_param_dump=wildcard_param_dump,
                              input_ids=input_ids)
 
+    @profile
     def __search(self, tool_id, tool_version, user, input_data, input_ids=None, job_state=None, param_dump=None, wildcard_param_dump=None):
         search_timer = ExecutionTimer()
 
@@ -229,7 +231,7 @@ class JobSearch(object):
             # possibly equivalent job, which may have been run on copies of the original input data.
             job_input_ids = {}
             if isinstance(job, tuple):
-                # If there are any input datasets job will be a tuple
+                # If there are any input datasets, job will be a tuple
                 job, current_jobs_data_ids = job[0], job[1:]
                 for src, requested_id, used_id in zip(data_types, requested_ids, current_jobs_data_ids):
                     if src not in job_input_ids:
@@ -254,8 +256,7 @@ class JobSearch(object):
             # Verify that equivalent jobs had the same number of job parameters
             # We skip chrominfo, dbkey, __workflow_invocation_uuid__ and identifer
             # parameter as these are not passed along when expanding tool parameters
-            # and they can differ without affecting the resulting dataset (when referencing identifier
-            # in the tool xml this may not be entirely true).
+            # and they can differ without affecting the resulting dataset.
             for parameter in job.parameters:
                 if parameter.name in {'__workflow_invocation_uuid__', 'chromInfo', 'dbkey'} or parameter.name.endswith('|__identifier__'):
                     continue
