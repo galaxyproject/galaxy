@@ -216,6 +216,11 @@ class JobSearch(object):
                 a.value.like(wildcard_value)
             ))
 
+        conditions.append(and_(
+            model.Job.any_output_dataset_collection_instances_deleted == false(),
+            model.Job.any_output_dataset_deleted == false()
+        ))
+
         query = self.sa_session.query(model.Job, *used_ids).filter(and_(*conditions))
         for job in query.all():
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
@@ -258,21 +263,8 @@ class JobSearch(object):
                 n_parameters += 1
             if not n_parameters == len(param_dump):
                 continue
-            # check to make sure none of the output datasets or collections have been deleted
-            # TODO: refactors this into the initial job query
-            outputs_deleted = False
-            for job_to_output_dataset_association in job.output_datasets:
-                if job_to_output_dataset_association.dataset.deleted:
-                    outputs_deleted = True
-                    break
-            if not outputs_deleted:
-                for collection_instance in job.output_dataset_collection_instances:
-                    if collection_instance.dataset_collection_instance.deleted:
-                        outputs_deleted = True
-                        break
-            if not outputs_deleted:
-                log.info("Searching jobs finished %s", search_timer)
-                return job
+            log.info("Searching jobs finished %s", search_timer)
+            return job
         log.info("Searching jobs finished %s", search_timer)
         return None
 

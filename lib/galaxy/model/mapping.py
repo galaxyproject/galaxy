@@ -29,8 +29,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
-from sqlalchemy.orm import backref, class_mapper, deferred, mapper, object_session, relation
+from sqlalchemy.orm import backref, class_mapper, deferred, mapper, object_session, relation, column_property
 from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.sql import exists
 from sqlalchemy.types import BigInteger
 
 from galaxy import model
@@ -1984,6 +1985,20 @@ mapper(model.Job, model.Job.table, properties=dict(
     input_datasets=relation(model.JobToInputDatasetAssociation),
     input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, lazy=True),
     output_datasets=relation(model.JobToOutputDatasetAssociation, lazy=True),
+    any_output_dataset_deleted=column_property(
+        exists([model.HistoryDatasetAssociation],
+               and_(model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,
+                    model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.table.c.dataset_id,
+                    model.HistoryDatasetAssociation.table.c.deleted == true())
+               )
+    ),
+    any_output_dataset_collection_instances_deleted=column_property(
+        exists([model.HistoryDatasetCollectionAssociation.table.c.id],
+               and_(model.Job.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.job_id,
+                    model.HistoryDatasetCollectionAssociation.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.dataset_collection_id,
+                    model.HistoryDatasetCollectionAssociation.table.c.deleted == true())
+               )
+    ),
     output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation, lazy=True),
     output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation, lazy=True),
     post_job_actions=relation(model.PostJobActionAssociation, lazy=False),
