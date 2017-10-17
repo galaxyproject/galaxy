@@ -118,6 +118,19 @@ class HasName:
         return name
 
 
+class UsesCreateAndUpdateTime:
+
+    @property
+    def seconds_since_updated(self):
+        update_time = self.update_time or galaxy.model.orm.now.now()  # In case not yet flushed
+        return (galaxy.model.orm.now.now() - update_time).total_seconds()
+
+    @property
+    def seconds_since_created(self):
+        create_time = self.create_time or galaxy.model.orm.now.now()  # In case not yet flushed
+        return (galaxy.model.orm.now.now() - create_time).total_seconds()
+
+
 class JobLike:
 
     def _init_metrics(self):
@@ -425,7 +438,7 @@ class TaskMetricNumeric(BaseJobMetric):
     pass
 
 
-class Job(object, JobLike, Dictifiable):
+class Job(object, JobLike, UsesCreateAndUpdateTime, Dictifiable):
     dict_collection_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time']
     dict_element_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time']
 
@@ -805,10 +818,6 @@ class Job(object, JobLike, Dictifiable):
         if config_value is param_unspecified:
             config_value = default
         return config_value
-
-    @property
-    def seconds_since_update(self):
-        return (galaxy.model.orm.now.now() - self.update_time).total_seconds()
 
 
 class Task(object, JobLike):
@@ -3953,7 +3962,7 @@ class StoredWorkflowMenuEntry(object):
         self.order_index = None
 
 
-class WorkflowInvocation(object, Dictifiable):
+class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
     dict_collection_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
     dict_element_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
     states = Bunch(
@@ -4121,11 +4130,6 @@ class WorkflowInvocation(object, Dictifiable):
             if content.workflow_step_id == step_id:
                 return True
         return False
-
-    @property
-    def seconds_since_created(self):
-        create_time = self.create_time or galaxy.model.orm.now.now()  # In case not flushed yet
-        return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
 class WorkflowInvocationToSubworkflowInvocationAssociation(object, Dictifiable):
