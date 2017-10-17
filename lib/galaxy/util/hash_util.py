@@ -2,6 +2,8 @@
 Utility functions for bi-directional Python version compatibility.  Python 2.5
 introduced hashlib which replaced sha in Python 2.4 and previous versions.
 """
+from __future__ import absolute_import
+
 import hashlib
 import hmac
 import logging
