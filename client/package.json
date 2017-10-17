@@ -36,7 +36,8 @@
     "gulp": "gulp",
     "build-toolshed": "grunt --app=toolshed",
     "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js",
-    "build-charts": "webpack -p --config ../config/plugins/visualizations/charts/webpack.config.js"
+    "build-charts": "webpack -p --config ../config/plugins/visualizations/charts/webpack.config.js",
+    "prettier": "prettier --write --tab-width 4 \"galaxy/scripts/{,!(libs)/**/}/*.js\""
   },
   "devDependencies": {
     "babel-core": "^6.24.0",
@@ -62,6 +63,7 @@
     "gulp-uglify": "^3.0.0",
     "gulp-watch": "^4.3.11",
     "jshint": "^2.9.4",
+    "prettier": "^1.7.4",
     "webpack": "^3.6.0"
   }
 }
