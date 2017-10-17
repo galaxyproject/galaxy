@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 
 class SnapHmm(Text):
     file_ext = "snaphmm"
+    edam_data = "data_1364"
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -39,6 +40,7 @@ class Augustus(CompressedArchive):
         Class describing an Augustus prediction model
     """
     file_ext = "augustus"
+    edam_data = "data_0950"
     compressed = True
 
     def set_peek(self, dataset, is_multi_byte=False):
