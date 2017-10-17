@@ -1,5 +1,5 @@
 var Ui = require( 'mvc/ui/ui-misc' ),
-    historyOptionsMenu = require( 'mvc/history/options-menu' );
+    historyOptionsMenu = require( 'mvc/history/options-menu' ),
     CurrentHistoryView = require( 'mvc/history/history-view-edit-current' ).CurrentHistoryView,
     _l = require( 'utils/localization' );
 
@@ -84,7 +84,7 @@ var HistoryPanel = Backbone.View.extend({
         ].join('');
     },
 
-    toString : function() { return 'historyPanel' }
+    toString : function() { return 'historyPanel'; }
 });
 
 module.exports = HistoryPanel;

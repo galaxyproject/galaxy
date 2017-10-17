@@ -32,13 +32,6 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js(
-        "libs/jquery/jstorage",
-        "libs/jquery/jquery.event.drag",
-        "libs/jquery/jquery.mousewheel",
-        "libs/farbtastic",
-        "libs/jquery/jquery.autocomplete",
-    )}
     ${community_tag_js( get_controller_name( item ) )}
 </%def>
 

@@ -47,7 +47,7 @@ define([
         }
     }
 
-    add_node_icon = function($to_el, nodeType) {
+    function add_node_icon($to_el, nodeType) {
         var iconStyle = WorkflowIcons[nodeType];
         if(iconStyle) {
             var $icon = $('<i class="icon fa">&nbsp;</i>').addClass(iconStyle);

@@ -5,13 +5,29 @@ define(['libs/underscore', 'viz/trackster/util', 'utils/config'], function(_, ut
  */
 var ConfigSetting = Backbone.Model.extend({
 
+
     initialize: function(options) {
         // Use key as id for now.
         var key = this.get('key');
         this.set('id', key);
 
         // Set defaults based on key.
-        var defaults = _.find(ConfigSetting.known_settings_defaults, function(s) { return s.key === key; });
+        var defaults = _.find([
+                { key: 'name', label: 'Name', type: 'text', default_value: '' },
+                { key: 'color', label: 'Color', type: 'color', default_value: null },
+                { key: 'min_value', label: 'Min Value', type: 'float', default_value: null },
+                { key: 'max_value', label: 'Max Value', type: 'float', default_value: null },
+                { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+                { key: 'height', type: 'int', default_value: 32, hidden: true },
+                { key: 'pos_color', label: 'Positive Color', type: 'color', default_value: "#FF8C00" },
+                { key: 'neg_color', label: 'Negative Color', type: 'color', default_value: "#4169E1" },
+                { key: 'block_color', label: 'Block color', type: 'color', default_value: null },
+                { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
+                { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
+                { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
+                { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: null },
+                { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true }
+            ], function(s) { return s.key === key; });
         if (defaults) {
             this.set(_.extend({}, defaults, options));
         }
@@ -45,26 +61,6 @@ var ConfigSetting = Backbone.Model.extend({
 
         this.set({value: value}, options);
     }
-}, {
-    // This is a master list of default settings for known settings.
-    known_settings_defaults: [
-        { key: 'name', label: 'Name', type: 'text', default_value: '' },
-        { key: 'color', label: 'Color', type: 'color', default_value: null },
-        { key: 'min_value', label: 'Min Value', type: 'float', default_value: null },
-        { key: 'max_value', label: 'Max Value', type: 'float', default_value: null },
-        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
-        { key: 'height', type: 'int', default_value: 32, hidden: true },
-        { key: 'pos_color', label: 'Positive Color', type: 'color', default_value: "#FF8C00" },
-        { key: 'neg_color', label: 'Negative Color', type: 'color', default_value: "#4169E1" },
-        { key: 'block_color', label: 'Block color', type: 'color', default_value: null },
-        { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
-        { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
-        { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
-        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
-        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: null },
-        { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
-        { key: 'mode', type: 'string', default_value: this.mode, hidden: true }
-    ]
 });
 
 /**
