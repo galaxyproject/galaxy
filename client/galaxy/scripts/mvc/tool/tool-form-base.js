@@ -107,6 +107,7 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
 
             // button for options e.g. search, help
             var menu_button = new Ui.ButtonMenu({
+                id      : 'options',
                 icon    : 'fa-caret-down',
                 title   : ( !options.narrow && 'Options' ) || null,
                 tooltip : 'View available options'
