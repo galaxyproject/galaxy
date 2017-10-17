@@ -33,6 +33,7 @@
     "webpack-dev-watch": "webpack -d --watch",
     "build-style": "grunt style",
     "gulp": "gulp",
+    "build-toolshed": "grunt --app=toolshed",
     "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js",
     "build-charts": "webpack -p --config ../config/plugins/visualizations/charts/webpack.config.js"
   },
