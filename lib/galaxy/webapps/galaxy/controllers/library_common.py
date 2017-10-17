@@ -3,18 +3,17 @@ from __future__ import absolute_import
 import glob
 import json
 import logging
-import operator
 import os
 import os.path
 import string
 import sys
 import tarfile
 import tempfile
-import urllib
 import zipfile
 
 import requests
 from markupsafe import escape
+from six.moves.urllib.parse import quote_plus, urlencode
 from sqlalchemy import and_, false
 from sqlalchemy.orm import eagerload_all
 
@@ -22,10 +21,24 @@ from galaxy import util, web
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
-from galaxy.util import inflector, unicodify, FILENAME_VALID_CHARS
+from galaxy.util import (
+    FILENAME_VALID_CHARS,
+    inflector,
+    unicodify
+)
 from galaxy.util.streamball import StreamBall
-from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
+from galaxy.web.base.controller import (
+    BaseUIController,
+    UsesExtendedMetadataMixin,
+    UsesFormDefinitionsMixin,
+    UsesLibraryMixinItems
+)
+from galaxy.web.form_builder import (
+    AddressField,
+    build_select_field,
+    CheckboxField,
+    SelectField,
+)
 
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
 try:
@@ -470,7 +483,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         dbkey = kwd.get('dbkey', '?')
         if isinstance(dbkey, list):
             dbkey = dbkey[0]
-        file_formats = [dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change]
+        file_formats = [dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.items() if dtype_value.allow_datatype_change]
         file_formats.sort()
 
         def __ok_to_edit_metadata(ldda_id):
@@ -675,7 +688,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             lddas.append(ldda)
             libraries.append(library)
         library = libraries[0]
-        if filter(lambda x: x != library, libraries):
+        if any(x != library for x in libraries):
             message = "Library datasets specified span multiple libraries."
             return trans.response.send_redirect(web.url_for(controller='library_common',
                                                             action='browse_library',
@@ -933,7 +946,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                             return created_outputs_dict[0], created_outputs_dict[1]
                         return 200, created_outputs_dict
                     total_added = len(created_outputs_dict.keys())
-                    ldda_id_list = [str(v.id) for k, v in created_outputs_dict.items()]
+                    ldda_id_list = [str(v.id) for v in created_outputs_dict.values()]
                     created_ldda_ids = ",".join(ldda_id_list)
                     if replace_dataset:
                         message = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % (total_added, escape(replace_dataset_name), escape(folder.name))
@@ -1050,7 +1063,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         populate_state(trans, tool.inputs, kwd, state.inputs)
         tool_params = state.inputs
         dataset_upload_inputs = []
-        for input_name, input in tool.inputs.iteritems():
+        for input_name, input in tool.inputs.items():
             if input.type == "upload_dataset":
                 dataset_upload_inputs.append(input)
         # Library-specific params
@@ -1708,7 +1721,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 for fname, relpath in self.files.items():
                     crc = '-'
                     size = os.stat(fname).st_size
-                    quoted_fname = urllib.quote_plus(fname, '/')
+                    quoted_fname = quote_plus(fname, '/')
                     rval += '%s %i %s%s %s\r\n' % (crc, size, self.url_base, quoted_fname, relpath)
                 return rval
         # Perform an action on a list of library datasets.
@@ -1840,7 +1853,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                     if action == 'zip':
                         # Can't use mkstemp - the file must not exist first
                         tmpd = tempfile.mkdtemp()
-                        util.umask_fix_perms(tmpd, trans.app.config.umask, 0777, self.app.config.gid)
+                        util.umask_fix_perms(tmpd, trans.app.config.umask, 0o777, self.app.config.gid)
                         tmpf = os.path.join(tmpd, 'library_download.' + action)
                         if trans.app.config.upstream_gzip:
                             archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_STORED, True)
@@ -2005,7 +2018,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             folder = None
         ldda_ids = util.listify(ldda_ids)
         if ldda_ids:
-            ldda_ids = map(trans.security.decode_id, ldda_ids)
+            ldda_ids = list(map(trans.security.decode_id, ldda_ids))
         if target_history_ids:
             target_history_ids = util.listify(target_history_ids)
             target_history_ids = set(
@@ -2199,7 +2212,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             # We've been called from a menu option for a library dataset search result set
             move_ldda_ids = util.listify(item_id)
             if move_ldda_ids:
-                move_ldda_ids = map(trans.security.decode_id, move_ldda_ids)
+                move_ldda_ids = list(map(trans.security.decode_id, move_ldda_ids))
         elif item_type == 'folder':
             move_folder_id = item_id
             move_folder = trans.sa_session.query(trans.model.LibraryFolder).get(trans.security.decode_id(move_folder_id))
@@ -2754,16 +2767,16 @@ def sort_by_attr(seq, attr):
     # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
     # only to provide stable sorting, but mainly to eliminate comparison of objects
     # (which can be expensive or prohibited) in case of equal attribute values.
-    intermed = map(None, map(getattr, seq, (attr, ) * len(seq)), xrange(len(seq)), seq)
+    intermed = [(getattr(v, attr), i, v) for i, v in enumerate(seq)]
     intermed.sort()
-    return map(operator.getitem, intermed, (-1, ) * len(intermed))
+    return [_[-1] for _ in intermed]
 
 
 def lucene_search(trans, cntrller, search_term, search_url, **kwd):
     """Return display of results from a full-text lucene search of data libraries."""
     message = escape(kwd.get('message', ''))
     status = kwd.get('status', 'done')
-    full_url = "%s/find?%s" % (search_url, urllib.urlencode({"kwd" : search_term}))
+    full_url = "%s/find?%s" % (search_url, urlencode({"kwd" : search_term}))
     ldda_ids = requests.get(full_url).json()['ids']
     lddas = [trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(ldda_id) for ldda_id in ldda_ids]
     return status, message, get_sorted_accessible_library_items(trans, cntrller, lddas, 'name')

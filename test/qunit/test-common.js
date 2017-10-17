@@ -72,7 +72,7 @@ require.config({
         "backbone": "libs/backbone",
         // Custom paths for qunit testing dependencies...
         "QUnit": qunit_absolute_directory + "test-libs/qunit-1.23.1", // .. because baseUrl is scripts to match Galaxy.
-        "sinon": qunit_absolute_directory + "test-libs/sinon-1.17.3",
+        "sinon": qunit_absolute_directory + "test-libs/sinon-1.17.7",
         "sinon-qunit": qunit_absolute_directory + "test-libs/sinon-qunit-1.0.0",
         // (optional) test data
         "test-data" : qunit_absolute_directory + "test-data/",
@@ -112,6 +112,7 @@ var Galaxy = {
 };
 
 require( [ "jquery", "QUnit" ], function( $, QUnit ) {
+    $.fx.off = true;
     QUnit.config.autostart = false;
     bridge_phantomjs( QUnit );
     // Bootstrap HTML for displaying Qunit results.

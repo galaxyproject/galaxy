@@ -1,36 +1,32 @@
 """
 Provides factory methods to assemble the Galaxy web application
 """
+import atexit
+import logging
 import os
 import sys
 import threading
-import atexit
+import traceback
 
-try:
-    import configparser
-except:
-    import ConfigParser as configparser
-
+from paste import httpexceptions
+from six.moves import configparser
 
 import galaxy.app
+import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping
-import galaxy.datatypes.registry
 import galaxy.web.framework
 import galaxy.web.framework.webapp
-from galaxy.webapps.util import (
-    MiddlewareWrapUnsupported,
-    build_template_error_formatters,
-    wrap_if_allowed,
-    wrap_if_allowed_or_fail
-)
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
+from galaxy.webapps.util import (
+    build_template_error_formatters,
+    MiddlewareWrapUnsupported,
+    wrap_if_allowed,
+    wrap_if_allowed_or_fail
+)
 
-from paste import httpexceptions
-
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -58,7 +54,6 @@ def paste_app_factory(global_conf, **kwargs):
             app = galaxy.app.UniverseApplication(global_conf=global_conf, **kwargs)
             galaxy.app.app = app
         except:
-            import traceback
             traceback.print_exc()
             sys.exit(1)
     # Call app's shutdown method when the interpeter exits, this cleanly stops
@@ -425,7 +420,7 @@ def populate_api_routes(webapp, app):
         "invocations": "",
         "usage": "_deprecated",
     }
-    for noun, suffix in invoke_names.iteritems():
+    for noun, suffix in invoke_names.items():
         name = "%s%s" % (noun, suffix)
         webapp.mapper.connect(
             'list_workflow_%s' % name,

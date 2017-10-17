@@ -8,6 +8,12 @@ define([
 // webpack will load via commonjs and plain requirejs will load as global. Check both
 parseBibtex = parseBibtex || window.BibtexParser;
 
+_.extend(parseBibtex.ENTRY_TYPES_, {
+    'online'           : 998, // Galaxy MOD: Handle @online entries for preprints.
+    'data'             : 999 // Galaxy MOD: Handle @data citations coming from figshare.
+});
+
+
 var logNamespace = 'citation';
 //==============================================================================
 /** @class model for tool citations.

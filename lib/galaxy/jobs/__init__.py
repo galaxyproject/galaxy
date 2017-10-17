@@ -43,6 +43,7 @@ log = logging.getLogger(__name__)
 # that import Galaxy internals - but it shouldn't be used in Galaxy's code
 # itself.
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
+TOOL_PROVIDED_JOB_METADATA_KEYS = ['name', 'info', 'dbkey']
 
 # Override with config.default_job_shell.
 DEFAULT_JOB_SHELL = '/bin/bash'
@@ -1320,14 +1321,17 @@ class JobWrapper(object, HasResourceParameters):
                             dataset.set_peek(is_multi_byte=True)
                         else:
                             dataset.set_peek()
-                    for context_key in ['name', 'info', 'dbkey']:
-                        if context_key in context:
-                            context_value = context[context_key]
-                            setattr(dataset, context_key, context_value)
                 else:
+                    # Handle an empty dataset.
                     dataset.blurb = "empty"
                     if dataset.ext == 'auto':
-                        dataset.extension = 'txt'
+                        dataset.extension = context.get('ext', 'txt')
+
+                for context_key in TOOL_PROVIDED_JOB_METADATA_KEYS:
+                    if context_key in context:
+                        context_value = context[context_key]
+                        setattr(dataset, context_key, context_value)
+
                 self.sa_session.add(dataset)
             if job.states.ERROR == final_job_state:
                 log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
