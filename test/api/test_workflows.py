@@ -2017,19 +2017,8 @@ steps:
         self._assert_status_code_is(hda_info_response, 200)
         self.assertEqual(hda_info_response.json()["metadata_data_lines"], lines)
 
-    def __invoke_workflow(self, history_id, workflow_id, inputs={}, request={}, assert_ok=True):
-        request["history"] = "hist_id=%s" % history_id,
-        if inputs:
-            request["inputs"] = dumps(inputs)
-            request["inputs_by"] = 'step_index'
-        url = "workflows/%s/usage" % (workflow_id)
-        invocation_response = self._post(url, data=request)
-        if assert_ok:
-            self._assert_status_code_is(invocation_response, 200)
-            invocation_id = invocation_response.json()["id"]
-            return invocation_id
-        else:
-            return invocation_response
+    def __invoke_workflow(self, *args, **kwds):
+        return self.workflow_populator.invoke_workflow(*args, **kwds)
 
     def __import_workflow(self, workflow_id, deprecated_route=False):
         if deprecated_route:
