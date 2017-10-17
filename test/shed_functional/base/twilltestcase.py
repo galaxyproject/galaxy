@@ -1094,8 +1094,6 @@ class ShedTwillTestCase(TwillTestCase):
         params = dict(id=self.security.encode_id(installed_repository.id))
         url = '/admin_toolshed/restore_repository'
         self.visit_galaxy_url(url, params)
-        strings_displayed = [installed_repository.name, 'repository has been activated']
-        self.check_for_strings(strings_displayed, [])
 
     def reinstall_repository(self,
                              installed_repository,
