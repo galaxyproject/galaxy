@@ -36,7 +36,7 @@ class Filter(object):
         self.elem = elem
 
     def get_dependency_name(self):
-        """Returns the name of any depedencies, otherwise None"""
+        """Returns the name of any dependencies, otherwise None"""
         return None
 
     def filter_options(self, options, trans, other_values):
