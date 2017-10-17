@@ -377,7 +377,21 @@ class BaseWorkflowPopulator(object):
         """ Wait for a workflow invocation to completely schedule and then history
         to be complete. """
         self.wait_for_invocation(workflow_id, invocation_id, timeout=timeout)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok, timeout=timeout)
+        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok, timeout=timeout)
+
+    def invoke_workflow(self, history_id, workflow_id, inputs={}, request={}, assert_ok=True):
+        request["history"] = "hist_id=%s" % history_id,
+        if inputs:
+            request["inputs"] = json.dumps(inputs)
+            request["inputs_by"] = 'step_index'
+        url = "workflows/%s/usage" % (workflow_id)
+        invocation_response = self._post(url, data=request)
+        if assert_ok:
+            api_asserts.assert_status_code_is(invocation_response, 200)
+            invocation_id = invocation_response.json()["id"]
+            return invocation_id
+        else:
+            return invocation_response
 
 
 class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
