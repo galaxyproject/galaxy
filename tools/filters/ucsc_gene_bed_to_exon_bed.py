@@ -18,7 +18,7 @@ from __future__ import print_function
 import optparse
 import sys
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def main():
@@ -49,12 +49,6 @@ def main():
         sys.exit(0)
 
     print("Region:", options.region + ";")
-    """print "Only overlap with Exons:",
-    if options.exons:
-        print "Yes"
-    else:
-        print "No"
-    """
 
     # Read table and handle each gene
     for line in in_file:

@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import sys
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def __main__():

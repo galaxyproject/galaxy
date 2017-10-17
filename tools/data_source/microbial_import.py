@@ -8,7 +8,7 @@ from __future__ import print_function
 import sys
 from shutil import copyfile
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 BUFFER = 1048576
 

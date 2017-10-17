@@ -5,6 +5,7 @@ Remove appropriate entries from the Tool Shed's repository registry for a specif
 Here is a working example of how to use this script.
 python ./remove_repository_registry_entry.py -a <api key> -u <tool shed url> -n <repository name> -o <repository owner>
 """
+from __future__ import print_function
 
 import argparse
 
@@ -22,11 +23,11 @@ def main(options):
             data['owner'] = options.owner
             url = '%s%s' % (base_tool_shed_url, '/api/repositories/remove_repository_registry_entry')
             response_dict = submit(url, data, api_key=api_key, return_formatted=False)
-            print response_dict
+            print(response_dict)
         else:
-            print "Invalid tool_shed: ", base_tool_shed_url, " name: ", options.name, " or owner: ", options.owner, "."
+            print("Invalid tool_shed: ", base_tool_shed_url, " name: ", options.name, " or owner: ", options.owner, ".")
     else:
-        print "An API key for an admin user in the Tool Shed is required to remove entries from the Tool Shed's repository registry."
+        print("An API key for an admin user in the Tool Shed is required to remove entries from the Tool Shed's repository registry.")
 
 
 if __name__ == '__main__':

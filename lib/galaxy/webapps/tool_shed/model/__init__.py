@@ -1,19 +1,24 @@
 import logging
-import operator
 import os
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta
+)
+
+from mercurial import (
+    hg,
+    ui
+)
+
+import tool_shed.repository_types.util as rt_util
 from galaxy import util
 from galaxy.model.orm.now import now
 from galaxy.util import unique_id
 from galaxy.util.bunch import Bunch
-from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.dictifiable import Dictifiable
-import tool_shed.repository_types.util as rt_util
+from galaxy.util.hash_util import new_secure_hash
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.util import metadata_util
-
-from mercurial import hg
-from mercurial import ui
 
 log = logging.getLogger(__name__)
 
@@ -506,6 +511,6 @@ def sort_by_attr(seq, attr):
     # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
     # only to provide stable sorting, but mainly to eliminate comparison of objects
     # (which can be expensive or prohibited) in case of equal attribute values.
-    intermed = map(None, map(getattr, seq, (attr, ) * len(seq)), xrange(len(seq)), seq)
+    intermed = [(getattr(v, attr), i, v) for i, v in enumerate(seq)]
     intermed.sort()
-    return map(operator.getitem, intermed, (-1, ) * len(intermed))
+    return [_[-1] for _ in intermed]

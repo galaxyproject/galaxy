@@ -8,7 +8,7 @@ import sys
 
 from six.moves.urllib.request import urlopen
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 BUFFER = 1048576
 
