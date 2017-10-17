@@ -354,12 +354,10 @@ define(
             render: function() {
                 var self = this;
                 $(".tooltip").remove();
-                this.$el
-                    .attr("id", this.model.id)
-                    .css({
-                        visibility:
-                            (this.model.get("visible") && "visible") || "hidden"
-                    });
+                this.$el.attr("id", this.model.id).css({
+                    visibility:
+                        (this.model.get("visible") && "visible") || "hidden"
+                });
                 this.model.set("url", this._formatUrl(this.model.get("url")));
                 this.$note
                     .html(this.model.get("note") || "")

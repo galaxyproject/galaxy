@@ -1282,32 +1282,30 @@ define(
                     );
 
                 // Add Circster-specific config options.
-                vis
-                    .get("config")
-                    .add([
-                        {
-                            key: "arc_dataset_height",
-                            label: "Arc Dataset Height",
-                            type: "int",
-                            value: 25,
-                            view: "circster"
-                        },
-                        {
-                            key: "track_gap",
-                            label: "Gap Between Tracks",
-                            type: "int",
-                            value: 5,
-                            view: "circster"
-                        },
-                        {
-                            key: "total_gap",
-                            label: "Gap [0-1]",
-                            type: "float",
-                            value: 0.4,
-                            view: "circster",
-                            hidden: true
-                        }
-                    ]);
+                vis.get("config").add([
+                    {
+                        key: "arc_dataset_height",
+                        label: "Arc Dataset Height",
+                        type: "int",
+                        value: 25,
+                        view: "circster"
+                    },
+                    {
+                        key: "track_gap",
+                        label: "Gap Between Tracks",
+                        type: "int",
+                        value: 5,
+                        view: "circster"
+                    },
+                    {
+                        key: "total_gap",
+                        label: "Gap [0-1]",
+                        type: "float",
+                        value: 0.4,
+                        view: "circster",
+                        hidden: true
+                    }
+                ]);
 
                 var viz_view = new CircsterView({
                     // view pane
