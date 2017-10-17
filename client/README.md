@@ -49,7 +49,7 @@ static/style/blue.
 As mentioned above, 'make client' will also rebuild styles.  If you *only* want
 to run the style task, use the following command from the `client` directory:
 
-    yarn run build-style
+    yarn run style
 
 
 The Toolshed Client Build
