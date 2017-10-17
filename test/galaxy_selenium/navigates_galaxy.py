@@ -610,7 +610,7 @@ class NavigatesGalaxy(HasDriver):
         self.home()
 
         with open(path, "r") as f:
-            tour_dict = yaml.load(f)
+            tour_dict = yaml.safe_load(f)
         steps = tour_dict["steps"]
         for i, step in enumerate(steps):
             title = step.get("title", None)

@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import string
+import subprocess
 import sys
 from cgi import escape
 
@@ -682,8 +683,7 @@ class BaseFastq ( Sequence ):
         else:
             commands = Sequence.get_split_commands_sequential(is_gzip(input_name), input_name, output_name, start_sequence, sequence_count)
         for cmd in commands:
-            if 0 != os.system(cmd):
-                raise Exception("Executing '%s' failed" % cmd)
+            subprocess.check_call(cmd, shell=True)
         return True
     process_split_file = staticmethod(process_split_file)
 

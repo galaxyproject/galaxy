@@ -7,7 +7,7 @@ import tempfile
 import threading
 from time import gmtime, strftime
 
-from six.moves.urllib.request import urlopen
+import requests
 from sqlalchemy import and_, false
 
 import tool_shed.repository_types.util as rt_util
@@ -809,24 +809,20 @@ class ImportRepositoryManager( object ):
                             uploaded_file=None,
                             capsule_file_name=None )
         if url:
-            valid_url = True
             try:
-                stream = urlopen( url )
+                stream = requests.get(url, stream=True)
             except Exception as e:
-                valid_url = False
                 return_dict['error_message'] = 'Error importing file via http: %s' % str( e )
                 return_dict['status'] = 'error'
                 return return_dict
-            if valid_url:
-                fd, uploaded_file_name = tempfile.mkstemp()
-                uploaded_file = open( uploaded_file_name, 'wb' )
-                while 1:
-                    chunk = stream.read( CHUNK_SIZE )
-                    if not chunk:
-                        break
-                    uploaded_file.write( chunk )
-                uploaded_file.flush()
-                uploaded_file_filename = url.split( '/' )[ -1 ]
+
+            fd, uploaded_file_name = tempfile.mkstemp()
+            uploaded_file = open( uploaded_file_name, 'wb' )
+            for chunk in stream.iter_content(chunk_size=CHUNK_SIZE):
+                if chunk:
+                    uploaded_file.write(chunk)
+            uploaded_file.flush()
+            uploaded_file_filename = url.split( '/' )[ -1 ]
         elif file_data not in ( '', None ):
             uploaded_file = file_data.file
             uploaded_file_name = uploaded_file.name

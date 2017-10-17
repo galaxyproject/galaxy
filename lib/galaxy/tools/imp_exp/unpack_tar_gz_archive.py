@@ -15,7 +15,7 @@ import tarfile
 import tempfile
 from base64 import b64decode
 
-from six.moves.urllib.request import urlopen
+import requests
 
 # Set max size of archive/file that will be handled to be 100 GB. This is
 # arbitrary and should be adjusted as needed.
@@ -27,18 +27,16 @@ def url_to_file( url, dest_file ):
     Transfer a file from a remote URL to a temporary file.
     """
     try:
-        url_reader = urlopen( url )
+        url_reader = requests.get(url, stream=True)
         CHUNK = 10 * 1024  # 10k
         total = 0
         fp = open( dest_file, 'wb')
-        while True:
-            chunk = url_reader.read( CHUNK )
-            if not chunk:
-                break
-            fp.write( chunk )
-            total += CHUNK
-            if total > MAX_SIZE:
-                break
+        for chunk in url_reader.iter_content(chunk_size=CHUNK):
+            if chunk:
+                fp.write(chunk)
+                total += CHUNK
+                if total > MAX_SIZE:
+                    break
         fp.close()
         return dest_file
     except Exception as e:
