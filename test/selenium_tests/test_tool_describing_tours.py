@@ -27,6 +27,10 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
         self.wait_for_and_click_selector('#options .dropdown-toggle')
         self.click_label('Generate Tour')
 
+        tour_popup_selector = '#step-0.popover.tour-tour'
+        self.wait_for_selector_visible(tour_popup_selector)
+        self.assert_selector(tour_popup_selector)
+
     def _ensure_tdt_available(self):
         """ Skip a test if the webhook TDT doesn't appear. """
         response = self.api_get('webhooks/tool-menu/all', raw=True)
