@@ -228,7 +228,6 @@ class JobSearch(object):
             # dataset_ids (HDA, LDDA, HDCA) in the incoming param_dump to point to those used by the
             # possibly equivalent job, which may have been run on copies of the original input data.
             job_input_ids = {}
-            current_jobs_data_ids = []
             if isinstance(job, tuple):
                 # If there are any input datasets job will be a tuple
                 job, current_jobs_data_ids = job[0], job[1:]
