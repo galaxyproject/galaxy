@@ -46,15 +46,17 @@ Galaxy uses LESS, a superset of CSS that compiles to CSS, for its styling. LESS
 files are kept in client/galaxy/style/less. Compiled CSS is in
 static/style/blue.
 
-Use grunt to recompile the LESS in into CSS (from the `client` directory):
+As mentioned above, 'make client' will also rebuild styles.  If you *only* want
+to run the style task, use the following command from the `client` directory:
 
-    grunt style
+    yarn run build-style
 
 
 The Toolshed Client Build
 =========================
 
-The toolshed client is not integrated with the rest of the build system.  To
-build the toolshed client, execute the following command from the client directory.
+The toolshed client is not tightly integrated with the rest of the build
+system.  To build the toolshed client, execute the following command from the
+`client` directory.
 
 	yarn run build-toolshed
