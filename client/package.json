@@ -25,7 +25,7 @@
     "underscore": "^1.8.3"
   },
   "scripts": {
-    "watch": "gulp stage-libs && concurrently \"yarn run webpack-watch\" \"yarn run gulp watch\"",
+    "watch": "gulp stage-libs && concurrently \"yarn run webpack-watch\" \"yarn run gulp watch\" \"yarn run style-watch\"",
     "build": "gulp stage-libs && concurrently \"yarn run style\" \"yarn run webpack\" \"yarn run gulp clean && yarn run gulp\"",
     "webpack": "webpack -p",
     "webpack-watch": "webpack -p --watch",
