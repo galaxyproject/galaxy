@@ -116,9 +116,6 @@ release-bootstrap-history: ## bootstrap history for a new release
 node-deps: ## Install NodeJS dependencies.
 	cd client && yarn install --check-files
 
-webpack: node-deps ## Run webpack, build production bundles.
-	cd client && yarn run webpack
-
 client: node-deps ## Rebuild all client-side artifacts
 	cd client && yarn run build
 
