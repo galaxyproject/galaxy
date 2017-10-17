@@ -4,7 +4,7 @@ import logging
 from boltons.iterutils import remap
 from six import string_types
 from sqlalchemy import and_, false, func, or_
-from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
 
 from galaxy import model
@@ -221,7 +221,7 @@ class JobSearch(object):
             model.Job.any_output_dataset_deleted == false()
         ))
 
-        query = self.sa_session.query(model.Job, *used_ids).filter(and_(*conditions)).options(joinedload("parameters"))
+        query = self.sa_session.query(model.Job, *used_ids).filter(and_(*conditions))
         for job in query.all():
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
             # but to be able to verify that the parameters match we need to modify all instances of
