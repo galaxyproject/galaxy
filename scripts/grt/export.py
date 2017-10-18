@@ -191,11 +191,11 @@ def main(argv):
     annotate('init_start', 'Loading GRT configuration...')
     try:
         with open(args.config) as handle:
-            config = yaml.load(handle)
+            config = yaml.safe_load(handle)
     except Exception:
         logging.info('Using default GRT configuration')
         with open(sample_config) as handle:
-            config = yaml.load(handle)
+            config = yaml.safe_load(handle)
     annotate('init_end')
 
     REPORT_DIR = args.report_directory

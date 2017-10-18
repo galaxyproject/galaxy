@@ -9,18 +9,17 @@ from __future__ import print_function
 import sys
 import xml.etree.ElementTree as ElementTree
 
-from six.moves.urllib.request import urlopen
+import requests
 
 
 def getbuilds(url):
     try:
-        page = urlopen(url)
+        text = requests.get(url).text
     except:
         print("#Unable to open " + url)
         print("?\tunspecified (?)")
         sys.exit(1)
 
-    text = page.read()
     try:
         tree = ElementTree.fromstring(text)
     except:
