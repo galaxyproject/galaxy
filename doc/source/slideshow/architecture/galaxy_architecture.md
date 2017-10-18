@@ -565,7 +565,7 @@ All in `config/plugins/visualizations`:
 
 - `csg` - Chemical structure viewer
 - `graphviz` - Visualize graph data using [cytoscape.js](http://www.cytoscape.org/)
-- `charts` - A more elaborate builds on more Galaxy abstractions.
+- `charts` - Classic charts as well as some integrated BioJS visualizations
 - `trackster` - Genome browser, deeply tied to Galaxy internals.
 
 ---
