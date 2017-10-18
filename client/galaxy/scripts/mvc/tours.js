@@ -9,16 +9,25 @@ define(["libs/bootstrap-tour"], function(BootstrapTour) {
     var tourpage_template = `<h2>Galaxy Tours</h2>
 <p>This page presents a list of interactive tours available on this Galaxy server.
 Select any tour to get started (and remember, you can click 'End Tour' at any time).</p>
+
 <ul>
-<% _.each(tours, function(tour) { %>
+<% _.each(tourgroups, function(tourgroupdata) { %>
     <li>
-        <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
-            <%- tour.attributes.name || tour.id %>
-        </a>
-         - <%- tour.attributes.description || "No description given." %>
+        <span>
+            <%- tourgroupdata.attributes.name %>
+        </span>
+        <ul>
+        <% _.each(tourgroupdata.attributes.tours, function(tour) { %>
+            <li>
+                <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
+                    <%- tour.name || tour.id %>
+                </a>
+                 - <%- tour.description || \"No description given.\" %>
+            </li>
+        <% }); %>
+        </ul>
     </li>
-<% }); %>
-</ul>`;
+<% }); %>`;
 
     var tour_opts = {
         storage: window.sessionStorage,
@@ -112,7 +121,7 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
         render: function() {
             var tpl = _.template(tourpage_template);
             this.$el
-                .html(tpl({ tours: this.model.models }))
+                .html(tpl({ tourgroups: this.model.models }))
                 .on("click", ".tourItem", function(e) {
                     e.preventDefault();
                     giveTour($(this).data("tour.id"));
