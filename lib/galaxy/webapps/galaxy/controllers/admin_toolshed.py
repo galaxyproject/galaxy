@@ -783,14 +783,6 @@ class AdminToolshed(AdminGalaxy):
         status = kwd.get('status', 'done')
         tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids(as_string=False, **kwd)
         repository_id = kwd.get('repository_id', None)
-        if tool_dependency_ids:
-            # We need a tool_shed_repository, so get it from one of the tool_dependencies.
-            tool_dependency = tool_dependency_util.get_tool_dependency(trans.app, tool_dependency_ids[0])
-            tool_shed_repository = tool_dependency.tool_shed_repository
-        else:
-            # The user must be on the manage_repository_tool_dependencies page and clicked the button to either install or uninstall a
-            # tool dependency, but they didn't check any of the available tool dependencies on which to perform the action.
-            tool_shed_repository = repository_util.get_tool_shed_repository_by_id(trans.app, repository_id)
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if not tool_dependency_ids:
