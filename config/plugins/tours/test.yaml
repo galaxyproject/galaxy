@@ -1,8 +1,0 @@
-name: Test Tour
-description: Test Tour for no reason
-title_default: "Test Tour"
-group: test_tours
-group_name: "Test Tours"
-
-steps:
-    - content: "Test tour."
