@@ -81,7 +81,8 @@ define(
                     error: function(model, response) {
                         if (typeof response.responseJSON !== "undefined") {
                             mod_toastr.error(
-                                `${response.responseJSON.err_msg} Click this to go back.`,
+                                `${response.responseJSON
+                                    .err_msg} Click this to go back.`,
                                 "",
                                 {
                                     onclick: function() {
@@ -125,9 +126,8 @@ define(
                     this.ldda = new mod_library_model.Ldda({
                         id: this.options.ldda_id
                     });
-                    this.ldda.url =
-                        `${this.ldda.urlRoot +
-this.model.id}/versions/${this.ldda.id}`;
+                    this.ldda.url = `${this.ldda.urlRoot +
+                        this.model.id}/versions/${this.ldda.id}`;
                     this.ldda.fetch({
                         success: function() {
                             that.renderVersion();
@@ -163,8 +163,7 @@ this.model.id}/versions/${this.ldda.id}`;
             },
 
             downloadDataset: function() {
-                var url =
-                    `${Galaxy.root}api/libraries/datasets/download/uncompressed`;
+                var url = `${Galaxy.root}api/libraries/datasets/download/uncompressed`;
                 var data = { ld_ids: this.id };
                 this.processDownload(url, data);
             },
@@ -178,12 +177,12 @@ this.model.id}/versions/${this.ldda.id}`;
                     var inputs = "";
                     $.each(data.split("&"), function() {
                         var pair = this.split("=");
-                        inputs +=
-                            `<input type="hidden" name="${pair[0]}" value="${pair[1]}" />`;
+                        inputs += `<input type="hidden" name="${pair[0]}" value="${pair[1]}" />`;
                     });
                     //send request
                     $(
-                        `<form action="${url}" method="${method || "post"}">${inputs}</form>`
+                        `<form action="${url}" method="${method ||
+                            "post"}">${inputs}</form>`
                     )
                         .appendTo("body")
                         .submit()
@@ -274,8 +273,8 @@ this.model.id}/versions/${this.ldda.id}`;
 
             processImportToHistory: function(history_id) {
                 var historyItem = new mod_library_model.HistoryItem();
-                historyItem.url =
-                    `${historyItem.urlRoot + history_id}/contents`;
+                historyItem.url = `${historyItem.urlRoot +
+                    history_id}/contents`;
                 // set the used history as current so user will see the last one
                 // that he imported into in the history panel on the 'analysis' page
                 jQuery.getJSON(
@@ -300,7 +299,8 @@ this.model.id}/versions/${this.ldda.id}`;
                         error: function(model, response) {
                             if (typeof response.responseJSON !== "undefined") {
                                 mod_toastr.error(
-                                    `Dataset not imported. ${response.responseJSON.err_msg}`
+                                    `Dataset not imported. ${response
+                                        .responseJSON.err_msg}`
                                 );
                             } else {
                                 mod_toastr.error(
@@ -356,7 +356,9 @@ this.model.id}/versions/${this.ldda.id}`;
                 for (var i = 0; i < role_list.length; i++) {
                     // Replace the : and , in role's name since these are select2 separators for initialData
                     selected_roles.push(
-                        `${role_list[i][1]}:${role_list[i][0].replace(":", " ").replace(",", " &")}`
+                        `${role_list[i][1]}:${role_list[i][0]
+                            .replace(":", " ")
+                            .replace(",", " &")}`
                     );
                 }
                 return selected_roles;
@@ -425,8 +427,8 @@ this.model.id}/versions/${this.ldda.id}`;
                 select_options.css = options.selector;
                 select_options.initialData = options.initialData.join(",");
                 select_options.ajax = {
-                    url:
-                        `${Galaxy.root}api/libraries/datasets/${this.id}/permissions?scope=available`,
+                    url: `${Galaxy.root}api/libraries/datasets/${this
+                        .id}/permissions?scope=available`,
                     dataType: "json",
                     quietMillis: 100,
                     data: function(term, page) {

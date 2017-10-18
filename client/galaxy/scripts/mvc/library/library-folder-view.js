@@ -34,7 +34,8 @@ define(
                     error: function(model, response) {
                         if (typeof response.responseJSON !== "undefined") {
                             mod_toastr.error(
-                                `${response.responseJSON.err_msg} Click this to go back.`,
+                                `${response.responseJSON
+                                    .err_msg} Click this to go back.`,
                                 "",
                                 {
                                     onclick: function() {
@@ -149,8 +150,7 @@ define(
                     placeholder: "Click to select a role",
                     container: self.$el.find(`#${id}`),
                     ajax: {
-                        url:
-                            `${Galaxy.root}api/folders/${self.id}/permissions?scope=available`,
+                        url: `${Galaxy.root}api/folders/${self.id}/permissions?scope=available`,
                         dataType: "json",
                         quietMillis: 100,
                         data: function(term, page) {

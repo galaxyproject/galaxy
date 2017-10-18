@@ -75,13 +75,12 @@ define(
                 this.folderContainer = new mod_library_model.FolderContainer({
                     id: this.options.id
                 });
-                this.folderContainer.url =
-                    `${this.folderContainer.attributes.urlRoot +
-this.options.id}/contents`;
+                this.folderContainer.url = `${this.folderContainer.attributes
+                    .urlRoot + this.options.id}/contents`;
 
                 if (this.options.include_deleted) {
-                    this.folderContainer.url =
-                        `${this.folderContainer.url}?include_deleted=true`;
+                    this.folderContainer.url = `${this.folderContainer
+                        .url}?include_deleted=true`;
                 }
                 this.folderContainer.fetch({
                     success: function(folder_container) {
@@ -91,7 +90,8 @@ this.options.id}/contents`;
                     error: function(model, response) {
                         if (typeof response.responseJSON !== "undefined") {
                             mod_toastr.error(
-                                `${response.responseJSON.err_msg} Click this to go back.`,
+                                `${response.responseJSON
+                                    .err_msg} Click this to go back.`,
                                 "",
                                 {
                                     onclick: function() {

@@ -316,8 +316,8 @@ define(
                 for (var i = dataset_ids.length - 1; i >= 0; i--) {
                     var library_dataset_id = dataset_ids[i];
                     var historyItem = new mod_library_model.HistoryItem();
-                    historyItem.url =
-                        `${historyItem.urlRoot + history_id}/contents`;
+                    historyItem.url = `${historyItem.urlRoot +
+                        history_id}/contents`;
                     historyItem.content = library_dataset_id;
                     historyItem.source = "library";
                     datasets_to_import.push(historyItem);
@@ -328,8 +328,8 @@ define(
                 for (var i = folder_ids.length - 1; i >= 0; i--) {
                     var library_folder_id = folder_ids[i];
                     var historyItem = new mod_library_model.HistoryItem();
-                    historyItem.url =
-                        `${historyItem.urlRoot + history_id}/contents`;
+                    historyItem.url = `${historyItem.urlRoot +
+                        history_id}/contents`;
                     historyItem.content = library_folder_id;
                     historyItem.source = "library_folder";
                     datasets_to_import.push(historyItem);
@@ -359,8 +359,9 @@ define(
                 $(".progress-bar-import").width(
                     `${Math.round(this.progress)}%`
                 );
-                var txt_representation =
-                    `${Math.round(this.progress)}% Complete`;
+                var txt_representation = `${Math.round(
+                    this.progress
+                )}% Complete`;
                 $(".completion_span").text(txt_representation);
             },
 
@@ -382,8 +383,7 @@ define(
                         dataset_ids.push(row_id);
                     }
                 });
-                var url =
-                    `${Galaxy.root}api/libraries/datasets/download/${format}`;
+                var url = `${Galaxy.root}api/libraries/datasets/download/${format}`;
                 var data = { ld_ids: dataset_ids, folder_ids: folder_ids };
                 this.processDownload(url, data, "get");
             },
@@ -403,12 +403,12 @@ define(
                     var inputs = "";
                     $.each(data.split("&"), function() {
                         var pair = this.split("=");
-                        inputs +=
-                            `<input type="hidden" name="${pair[0]}" value="${pair[1]}" />`;
+                        inputs += `<input type="hidden" name="${pair[0]}" value="${pair[1]}" />`;
                     });
                     // send request
                     $(
-                        `<form action="${url}" method="${method || "post"}">${inputs}</form>`
+                        `<form action="${url}" method="${method ||
+                            "post"}">${inputs}</form>`
                     )
                         .appendTo("body")
                         .submit()
@@ -632,8 +632,8 @@ define(
                 var disabled_jstree_element = this.options
                     .disabled_jstree_element;
                 this.jstree = new mod_library_model.Jstree();
-                this.jstree.url =
-                    `${this.jstree.urlRoot}?target=${target}&format=jstree&disable=${disabled_jstree_element}`;
+                this.jstree.url = `${this.jstree
+                    .urlRoot}?target=${target}&format=jstree&disable=${disabled_jstree_element}`;
                 this.jstree.fetch({
                     success: function(model, response) {
                         // This is to prevent double jquery load. I think. Carl is magician.
@@ -925,8 +925,8 @@ define(
                     for (var i = history_item_ids.length - 1; i >= 0; i--) {
                         var history_item_id = history_item_ids[i];
                         var folder_item = new mod_library_model.Item();
-                        folder_item.url =
-                            `${Galaxy.root}api/folders/${this.options.id}/contents`;
+                        folder_item.url = `${Galaxy.root}api/folders/${this
+                            .options.id}/contents`;
                         if (history_item_types[i] === "collection") {
                             folder_item.set({ from_hdca_id: history_item_id });
                         } else {
