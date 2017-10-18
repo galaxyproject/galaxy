@@ -432,7 +432,7 @@ define(
                     ) {
                         var editableDbkey = $('<a class="value">?</a>')
                             .attr("href", this.model.urls.edit)
-                            .attr("target", "top");
+                            .attr("target", "_top");
                         $details
                             .find(".dbkey .value")
                             .replaceWith(editableDbkey);
@@ -508,7 +508,7 @@ define(
                         _l(
                             "An error occurred setting the metadata for this dataset"
                         ),
-                        '<br /><a href="<%- dataset.urls.edit %>" target="top">',
+                        '<br /><a href="<%- dataset.urls.edit %>" target="_top">',
                         _l("Set it manually or retry auto-detection"),
                         "</a>",
                         "</div>",
