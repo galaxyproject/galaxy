@@ -35,7 +35,7 @@ define(
                 // collection of {Item}s
                 this.collection = new mod_library_model.Libraries();
                 this.collection.url =
-                    this.collection.urlRoot + "?deleted=false";
+                    `${this.collection.urlRoot}?deleted=false`;
                 this.collection.fetch({
                     success: function() {
                         that.render();
@@ -188,7 +188,7 @@ define(
                 } else {
                     var that = this;
                     this.collection.url =
-                        this.collection.urlRoot + "?deleted=true";
+                        `${this.collection.urlRoot}?deleted=true`;
                     this.collection.fetch({
                         remove: false,
                         success: function() {

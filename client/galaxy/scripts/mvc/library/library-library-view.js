@@ -34,8 +34,7 @@ define(
                     error: function(model, response) {
                         if (typeof response.responseJSON !== "undefined") {
                             mod_toastr.error(
-                                response.responseJSON.err_msg +
-                                    " Click this to go back.",
+                                `${response.responseJSON.err_msg} Click this to go back.`,
                                 "",
                                 {
                                     onclick: function() {
@@ -83,10 +82,7 @@ define(
 
                 var self = this;
                 $.get(
-                    Galaxy.root +
-                        "api/libraries/" +
-                        self.id +
-                        "/permissions?scope=current"
+                    `${Galaxy.root}api/libraries/${self.id}/permissions?scope=current`
                 )
                     .done(function(fetched_permissions) {
                         self.prepareSelectBoxes({
@@ -108,7 +104,7 @@ define(
                 var selected_roles = [];
                 for (var i = 0; i < role_list.length; i++) {
                     selected_roles.push(
-                        role_list[i][1] + ":" + role_list[i][0]
+                        `${role_list[i][1]}:${role_list[i][0]}`
                     );
                 }
                 return selected_roles;
@@ -179,14 +175,10 @@ define(
                     css: id,
                     multiple: true,
                     placeholder: "Click to select a role",
-                    container: self.$el.find("#" + id),
+                    container: self.$el.find(`#${id}`),
                     ajax: {
                         url:
-                            Galaxy.root +
-                            "api/libraries/" +
-                            self.id +
-                            "/permissions?scope=available&is_library_access=" +
-                            is_library_access,
+                            `${Galaxy.root}api/libraries/${self.id}/permissions?scope=available&is_library_access=${is_library_access}`,
                         dataType: "json",
                         quietMillis: 100,
                         data: function(term, page) {
@@ -204,7 +196,7 @@ define(
                         }
                     },
                     formatResult: function roleFormatResult(role) {
-                        return role.name + " type: " + role.type;
+                        return `${role.name} type: ${role.type}`;
                     },
 
                     formatSelection: function roleFormatSelection(role) {
@@ -235,10 +227,7 @@ define(
             makeDatasetPrivate: function() {
                 var self = this;
                 $.post(
-                    Galaxy.root +
-                        "api/libraries/datasets/" +
-                        self.id +
-                        "/permissions?action=make_private"
+                    `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=make_private`
                 )
                     .done(function(fetched_permissions) {
                         self.model.set({ is_unrestricted: false });
@@ -259,10 +248,7 @@ define(
             removeDatasetRestrictions: function() {
                 var self = this;
                 $.post(
-                    Galaxy.root +
-                        "api/libraries/datasets/" +
-                        self.id +
-                        "/permissions?action=remove_restrictions"
+                    `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`
                 )
                     .done(function(fetched_permissions) {
                         self.model.set({ is_unrestricted: true });
@@ -304,10 +290,7 @@ define(
                 );
 
                 $.post(
-                    Galaxy.root +
-                        "api/libraries/" +
-                        self.id +
-                        "/permissions?action=set_permissions",
+                    `${Galaxy.root}api/libraries/${self.id}/permissions?action=set_permissions`,
                     {
                         "access_ids[]": access_ids,
                         "add_ids[]": add_ids,

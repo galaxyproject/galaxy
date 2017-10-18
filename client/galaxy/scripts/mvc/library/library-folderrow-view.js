@@ -124,7 +124,7 @@ define(
                 var dataset = Galaxy.libraries.folderListView.collection.get(
                     dataset_id
                 );
-                dataset.url = dataset.urlRoot + dataset.id + "?undelete=true";
+                dataset.url = `${dataset.urlRoot + dataset.id}?undelete=true`;
                 dataset.destroy({
                     success: function(model, response) {
                         Galaxy.libraries.folderListView.collection.remove(
@@ -144,11 +144,7 @@ define(
                                 onclick: function() {
                                     var folder_id = that.model.get("folder_id");
                                     window.location =
-                                        Galaxy.root +
-                                        "library/list#folders/" +
-                                        folder_id +
-                                        "/datasets/" +
-                                        that.id;
+                                        `${Galaxy.root}library/list#folders/${folder_id}/datasets/${that.id}`;
                                 }
                             }
                         );
@@ -156,8 +152,7 @@ define(
                     error: function(model, response) {
                         if (typeof response.responseJSON !== "undefined") {
                             mod_toastr.error(
-                                "Dataset was not undeleted. " +
-                                    response.responseJSON.err_msg
+                                `Dataset was not undeleted. ${response.responseJSON.err_msg}`
                             );
                         } else {
                             mod_toastr.error(
@@ -178,7 +173,7 @@ define(
                 var folder = Galaxy.libraries.folderListView.collection.get(
                     folder_id
                 );
-                folder.url = folder.urlRoot + folder.id + "?undelete=true";
+                folder.url = `${folder.urlRoot + folder.id}?undelete=true`;
                 folder.destroy({
                     success: function(model, response) {
                         Galaxy.libraries.folderListView.collection.remove(
@@ -196,8 +191,7 @@ define(
                     error: function(model, response) {
                         if (typeof response.responseJSON !== "undefined") {
                             mod_toastr.error(
-                                "Folder was not undeleted. " +
-                                    response.responseJSON.err_msg
+                                `Folder was not undeleted. ${response.responseJSON.err_msg}`
                             );
                         } else {
                             mod_toastr.error(

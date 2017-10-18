@@ -81,8 +81,7 @@ define(
                     error: function(model, response) {
                         if (typeof response.responseJSON !== "undefined") {
                             mod_toastr.error(
-                                response.responseJSON.err_msg +
-                                    " Click this to go back.",
+                                `${response.responseJSON.err_msg} Click this to go back.`,
                                 "",
                                 {
                                     onclick: function() {
@@ -127,10 +126,8 @@ define(
                         id: this.options.ldda_id
                     });
                     this.ldda.url =
-                        this.ldda.urlRoot +
-                        this.model.id +
-                        "/versions/" +
-                        this.ldda.id;
+                        `${this.ldda.urlRoot +
+this.model.id}/versions/${this.ldda.id}`;
                     this.ldda.fetch({
                         success: function() {
                             that.renderVersion();
@@ -167,8 +164,7 @@ define(
 
             downloadDataset: function() {
                 var url =
-                    Galaxy.root +
-                    "api/libraries/datasets/download/uncompressed";
+                    `${Galaxy.root}api/libraries/datasets/download/uncompressed`;
                 var data = { ld_ids: this.id };
                 this.processDownload(url, data);
             },
@@ -183,21 +179,11 @@ define(
                     $.each(data.split("&"), function() {
                         var pair = this.split("=");
                         inputs +=
-                            '<input type="hidden" name="' +
-                            pair[0] +
-                            '" value="' +
-                            pair[1] +
-                            '" />';
+                            `<input type="hidden" name="${pair[0]}" value="${pair[1]}" />`;
                     });
                     //send request
                     $(
-                        '<form action="' +
-                            url +
-                            '" method="' +
-                            (method || "post") +
-                            '">' +
-                            inputs +
-                            "</form>"
+                        `<form action="${url}" method="${method || "post"}">${inputs}</form>`
                     )
                         .appendTo("body")
                         .submit()
@@ -263,7 +249,7 @@ define(
                     .val();
                 var that = this;
                 if (new_history_name !== "") {
-                    $.post(Galaxy.root + "api/histories", {
+                    $.post(`${Galaxy.root}api/histories`, {
                         name: new_history_name
                     })
                         .done(function(new_history) {
@@ -289,11 +275,11 @@ define(
             processImportToHistory: function(history_id) {
                 var historyItem = new mod_library_model.HistoryItem();
                 historyItem.url =
-                    historyItem.urlRoot + history_id + "/contents";
+                    `${historyItem.urlRoot + history_id}/contents`;
                 // set the used history as current so user will see the last one
                 // that he imported into in the history panel on the 'analysis' page
                 jQuery.getJSON(
-                    Galaxy.root + "history/set_as_current?id=" + history_id
+                    `${Galaxy.root}history/set_as_current?id=${history_id}`
                 );
                 // save the dataset into selected history
                 historyItem.save(
@@ -314,8 +300,7 @@ define(
                         error: function(model, response) {
                             if (typeof response.responseJSON !== "undefined") {
                                 mod_toastr.error(
-                                    "Dataset not imported. " +
-                                        response.responseJSON.err_msg
+                                    `Dataset not imported. ${response.responseJSON.err_msg}`
                                 );
                             } else {
                                 mod_toastr.error(
@@ -349,10 +334,7 @@ define(
                     })
                 );
                 $.get(
-                    Galaxy.root +
-                        "api/libraries/datasets/" +
-                        self.id +
-                        "/permissions?scope=current"
+                    `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?scope=current`
                 )
                     .done(function(fetched_permissions) {
                         self.prepareSelectBoxes({
@@ -374,9 +356,7 @@ define(
                 for (var i = 0; i < role_list.length; i++) {
                     // Replace the : and , in role's name since these are select2 separators for initialData
                     selected_roles.push(
-                        role_list[i][1] +
-                            ":" +
-                            role_list[i][0].replace(":", " ").replace(",", " &")
+                        `${role_list[i][1]}:${role_list[i][0].replace(":", " ").replace(",", " &")}`
                     );
                 }
                 return selected_roles;
@@ -418,7 +398,7 @@ define(
                     multiple: true,
                     placeholder: "Click to select a role",
                     formatResult: function roleFormatResult(role) {
-                        return role.name + " type: " + role.type;
+                        return `${role.name} type: ${role.type}`;
                     },
                     formatSelection: function roleFormatSelection(role) {
                         return role.name;
@@ -440,16 +420,13 @@ define(
                     dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
                 };
                 select_options.container = this.$el.find(
-                    "#" + options.selector
+                    `#${options.selector}`
                 );
                 select_options.css = options.selector;
                 select_options.initialData = options.initialData.join(",");
                 select_options.ajax = {
                     url:
-                        Galaxy.root +
-                        "api/libraries/datasets/" +
-                        this.id +
-                        "/permissions?scope=available",
+                        `${Galaxy.root}api/libraries/datasets/${this.id}/permissions?scope=available`,
                     dataType: "json",
                     quietMillis: 100,
                     data: function(term, page) {
@@ -552,10 +529,7 @@ define(
             makeDatasetPrivate: function() {
                 var self = this;
                 $.post(
-                    Galaxy.root +
-                        "api/libraries/datasets/" +
-                        self.id +
-                        "/permissions?action=make_private"
+                    `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=make_private`
                 )
                     .done(function(fetched_permissions) {
                         self.model.set({ is_unrestricted: false });
@@ -576,10 +550,7 @@ define(
             removeDatasetRestrictions: function() {
                 var self = this;
                 $.post(
-                    Galaxy.root +
-                        "api/libraries/datasets/" +
-                        self.id +
-                        "/permissions?action=remove_restrictions"
+                    `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`
                 )
                     .done(function(fetched_permissions) {
                         self.model.set({ is_unrestricted: true });
@@ -623,10 +594,7 @@ define(
                     this.modifySelectObject.$el.select2("data")
                 );
                 $.post(
-                    Galaxy.root +
-                        "api/libraries/datasets/" +
-                        self.id +
-                        "/permissions?action=set_permissions",
+                    `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=set_permissions`,
                     {
                         "access_ids[]": access_ids,
                         "manage_ids[]": manage_ids,
@@ -654,7 +622,7 @@ define(
                 var that = this;
                 if (this.list_genomes.length == 0) {
                     mod_utils.get({
-                        url: Galaxy.root + "api/datatypes?extension_only=False",
+                        url: `${Galaxy.root}api/datatypes?extension_only=False`,
                         success: function(datatypes) {
                             for (var key in datatypes) {
                                 that.list_extensions.push({
@@ -674,7 +642,7 @@ define(
                 }
                 if (this.list_extensions.length == 0) {
                     mod_utils.get({
-                        url: Galaxy.root + "api/genomes",
+                        url: `${Galaxy.root}api/genomes`,
                         success: function(genomes) {
                             for (var key in genomes) {
                                 that.list_genomes.push({
