@@ -260,9 +260,5 @@ define(
                 });
             }
         });
-
-        return {
-            View: View
-        };
     }
 );
