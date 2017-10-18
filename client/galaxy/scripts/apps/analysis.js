@@ -1,6 +1,6 @@
 import jQuery from "jquery";
 var $ = jQuery;
-import {GalaxyApp} from "galaxy";
+import { GalaxyApp } from "galaxy";
 import Router from "layout/router";
 import ToolPanel from "./panels/tool-panel";
 import HistoryPanel from "./panels/history-panel";

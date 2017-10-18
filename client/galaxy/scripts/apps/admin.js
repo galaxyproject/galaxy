@@ -1,6 +1,6 @@
 import jQuery from "jquery";
 var $ = jQuery;
-import {GalaxyApp} from "galaxy";
+import { GalaxyApp } from "galaxy";
 import AdminPanel from "./panels/admin-panel";
 import FormWrapper from "mvc/form/form-wrapper";
 import GridView from "mvc/grid/grid-view";

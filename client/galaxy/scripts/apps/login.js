@@ -1,6 +1,6 @@
 import jQuery from "jquery";
 var $ = jQuery;
-import {GalaxyApp} from "galaxy";
+import { GalaxyApp } from "galaxy";
 import _l from "utils/localization";
 import Page from "layout/page";
 

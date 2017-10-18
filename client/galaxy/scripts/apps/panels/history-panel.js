@@ -1,6 +1,6 @@
 import Ui from "mvc/ui/ui-misc";
 import historyOptionsMenu from "mvc/history/options-menu";
-import {CurrentHistoryView} from "mvc/history/history-view-edit-current";
+import { CurrentHistoryView } from "mvc/history/history-view-edit-current";
 import _l from "utils/localization";
 
 /** the right hand panel in the analysis page that shows the current history */
