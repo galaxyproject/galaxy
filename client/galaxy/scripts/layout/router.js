@@ -1,7 +1,7 @@
-var jQuery = require("jquery"),
-    $ = jQuery,
-    QUERY_STRING = require("utils/query-string-parsing"),
-    Ui = require("mvc/ui/ui-misc");
+import jQuery from "jquery";
+var $ = jQuery;
+import QUERY_STRING from "utils/query-string-parsing";
+import Ui from "mvc/ui/ui-misc";
 
 var Router = Backbone.Router.extend({
     // TODO: not many client routes at this point - fill and remove from server.
@@ -55,4 +55,4 @@ var Router = Backbone.Router.extend({
     }
 });
 
-module.exports = Router;
+export default Router;

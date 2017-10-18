@@ -1,14 +1,14 @@
-var jQuery = require("jquery"),
-    $ = jQuery,
-    GalaxyApp = require("galaxy").GalaxyApp,
-    AdminPanel = require("./panels/admin-panel"),
-    FormWrapper = require("mvc/form/form-wrapper"),
-    GridView = require("mvc/grid/grid-view"),
-    Ui = require("mvc/ui/ui-misc"),
-    QueryStringParsing = require("utils/query-string-parsing"),
-    Router = require("layout/router"),
-    Utils = require("utils/utils"),
-    Page = require("layout/page");
+import jQuery from "jquery";
+var $ = jQuery;
+import {GalaxyApp} from "galaxy";
+import AdminPanel from "./panels/admin-panel";
+import FormWrapper from "mvc/form/form-wrapper";
+import GridView from "mvc/grid/grid-view";
+import Ui from "mvc/ui/ui-misc";
+import QueryStringParsing from "utils/query-string-parsing";
+import Router from "layout/router";
+import Utils from "utils/utils";
+import Page from "layout/page";
 
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp(options, bootstrapped);

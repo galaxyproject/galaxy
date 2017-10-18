@@ -1,7 +1,7 @@
-var Tools = require("mvc/tool/tools"),
-    Upload = require("mvc/upload/upload-view"),
-    _l = require("utils/localization"),
-    ToolForm = require("mvc/tool/tool-form-composite");
+import Tools from "mvc/tool/tools";
+import Upload from "mvc/upload/upload-view";
+import _l from "utils/localization";
+import ToolForm from "mvc/tool/tool-form-composite";
 
 var ToolPanel = Backbone.View.extend({
     initialize: function(page, options) {
@@ -148,4 +148,4 @@ var ToolPanel = Backbone.View.extend({
     }
 });
 
-module.exports = ToolPanel;
+export default ToolPanel;

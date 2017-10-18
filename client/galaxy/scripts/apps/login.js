@@ -1,8 +1,8 @@
-var jQuery = require("jquery"),
-    $ = jQuery,
-    GalaxyApp = require("galaxy").GalaxyApp,
-    _l = require("utils/localization"),
-    Page = require("layout/page");
+import jQuery from "jquery";
+var $ = jQuery;
+import {GalaxyApp} from "galaxy";
+import _l from "utils/localization";
+import Page from "layout/page";
 
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp(options, bootstrapped);

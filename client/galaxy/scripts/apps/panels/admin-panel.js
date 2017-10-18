@@ -1,4 +1,4 @@
-var _l = require("utils/localization");
+import _l from "utils/localization";
 
 var AdminPanel = Backbone.View.extend({
     initialize: function(page, options) {
@@ -247,4 +247,4 @@ var AdminPanel = Backbone.View.extend({
     }
 });
 
-module.exports = AdminPanel;
+export default AdminPanel;

@@ -15,12 +15,12 @@ window.panels = require("layout/panel");
 // using extend bc there are multiple fns/objs to decorate the window with
 _.extend(window, require("layout/modal"));
 window.async_save_text = require("utils/async-save-text");
-var POPUPMENU = require("ui/popupmenu");
+import POPUPMENU from "ui/popupmenu";
 window.make_popupmenu = POPUPMENU.make_popupmenu;
 window.make_popup_menus = POPUPMENU.make_popup_menus;
 window.init_tag_click_function = require("ui/autocom_tagging");
-var TOURS = require("mvc/tours");
-var QUERY_STRING = require("utils/query-string-parsing");
+import TOURS from "mvc/tours";
+import QUERY_STRING from "utils/query-string-parsing";
 // console.debug( 'galaxy globals loaded' );
 
 // ============================================================================

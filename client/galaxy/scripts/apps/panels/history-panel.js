@@ -1,8 +1,7 @@
-var Ui = require("mvc/ui/ui-misc"),
-    historyOptionsMenu = require("mvc/history/options-menu"),
-    CurrentHistoryView = require("mvc/history/history-view-edit-current")
-        .CurrentHistoryView,
-    _l = require("utils/localization");
+import Ui from "mvc/ui/ui-misc";
+import historyOptionsMenu from "mvc/history/options-menu";
+import {CurrentHistoryView} from "mvc/history/history-view-edit-current";
+import _l from "utils/localization";
 
 /** the right hand panel in the analysis page that shows the current history */
 var HistoryPanel = Backbone.View.extend({
@@ -95,4 +94,4 @@ var HistoryPanel = Backbone.View.extend({
     }
 });
 
-module.exports = HistoryPanel;
+export default HistoryPanel;
