@@ -558,7 +558,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def manage_repositories(self, trans, **kwd):
+    def install_repositories(self, trans, **kwd):
         api_installation = util.asbool(kwd.get('api', 'false'))
         if api_installation:
             tsr_ids = json.loads(kwd.get('tool_shed_repository_ids', '[]'))
@@ -566,30 +566,27 @@ class AdminToolshed(AdminGalaxy):
             tsridslist = common_util.get_tool_shed_repository_ids(**kwd)
         else:
             tsridslist = common_util.get_tool_shed_repository_ids(**kwd)
-        if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if not tsridslist:
-                return self.message_exception(trans, 'Select at least 1 tool shed repository to %s.' % operation)
-            if operation == 'install':
-                irm = install_manager.InstallRepositoryManager(trans.app)
-                reinstalling = util.string_as_bool(kwd.get('reinstalling', False))
-                encoded_kwd = kwd['encoded_kwd']
-                decoded_kwd = encoding_util.tool_shed_decode(encoded_kwd)
-                install_resolver_dependencies = CheckboxField.is_checked(decoded_kwd.get('install_resolver_dependencies', ''))
-                install_tool_dependencies = CheckboxField.is_checked(decoded_kwd.get('install_tool_dependencies', ''))
-                tsr_ids = decoded_kwd['tool_shed_repository_ids']
-                decoded_kwd['install_resolver_dependencies'] = install_resolver_dependencies
-                decoded_kwd['install_tool_dependencies'] = install_tool_dependencies
-                try:
-                    tool_shed_repositories = irm.install_repositories(
-                        tsr_ids=tsr_ids,
-                        decoded_kwd=decoded_kwd,
-                        reinstalling=reinstalling,
-                    )
-                    tsr_ids_for_monitoring = [trans.security.encode_id(tsr.id) for tsr in tool_shed_repositories]
-                    return json.dumps(tsr_ids_for_monitoring)
-                except install_manager.RepositoriesInstalledException as e:
-                    return self.message_exception(trans, e.message)
+        if not tsridslist:
+            return self.message_exception(trans, 'Select at least 1 tool shed repository to %s.' % operation)
+        irm = install_manager.InstallRepositoryManager(trans.app)
+        reinstalling = util.string_as_bool(kwd.get('reinstalling', False))
+        encoded_kwd = kwd['encoded_kwd']
+        decoded_kwd = encoding_util.tool_shed_decode(encoded_kwd)
+        install_resolver_dependencies = CheckboxField.is_checked(decoded_kwd.get('install_resolver_dependencies', ''))
+        install_tool_dependencies = CheckboxField.is_checked(decoded_kwd.get('install_tool_dependencies', ''))
+        tsr_ids = decoded_kwd['tool_shed_repository_ids']
+        decoded_kwd['install_resolver_dependencies'] = install_resolver_dependencies
+        decoded_kwd['install_tool_dependencies'] = install_tool_dependencies
+        try:
+            tool_shed_repositories = irm.install_repositories(
+                tsr_ids=tsr_ids,
+                decoded_kwd=decoded_kwd,
+                reinstalling=reinstalling,
+            )
+            tsr_ids_for_monitoring = [trans.security.encode_id(tsr.id) for tsr in tool_shed_repositories]
+            return json.dumps(tsr_ids_for_monitoring)
+        except install_manager.RepositoriesInstalledException as e:
+            return self.message_exception(trans, e.message)
 
     @web.expose
     @web.require_admin
