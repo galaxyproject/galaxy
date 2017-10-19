@@ -44,7 +44,6 @@ log = logging.getLogger(__name__)
 class AdminToolshed(AdminGalaxy):
 
     installed_repository_grid = admin_toolshed_grids.InstalledRepositoryGrid()
-    repository_installation_grid = admin_toolshed_grids.RepositoryInstallationGrid()
 
     @web.expose
     @web.require_admin
