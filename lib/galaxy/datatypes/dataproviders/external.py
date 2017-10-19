@@ -8,8 +8,9 @@ import gzip
 import line
 import subprocess
 import tempfile
-import urllib
-import urllib2
+
+from six.moves.urllib.parse import urlencode, urlparse
+from six.moves.urllib.request import urlopen
 
 _TODO = """
 YAGNI: ftp, image, cryptos, sockets
@@ -105,13 +106,16 @@ class URLDataProvider( base.DataProvider ):
         self.method = method
 
         self.data = data or {}
-        encoded_data = urllib.urlencode( self.data )
+        encoded_data = urlencode( self.data )
+
+        scheme = urlparse(url).scheme
+        assert scheme in ('http', 'https', 'ftp'), 'Invalid URL scheme: %s' % scheme
 
         if method == 'GET':
             self.url += '?%s' % ( encoded_data )
-            opened = urllib2.urlopen( url )
+            opened = urlopen( url )
         elif method == 'POST':
-            opened = urllib2.urlopen( url, encoded_data )
+            opened = urlopen( url, encoded_data )
         else:
             raise ValueError( 'Not a valid method: %s' % ( method ) )
 
