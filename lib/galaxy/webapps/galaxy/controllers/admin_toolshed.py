@@ -797,7 +797,7 @@ class AdminToolshed(AdminGalaxy):
         return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
                                    tool_shed_repositories=tool_shed_repositories,
                                    query=query,
-                                   message=escape(kwd.get('message')),
+                                   message=escape(kwd.get('message', '')),
                                    status=kwd.get('status'))
 
     @web.json
@@ -954,7 +954,7 @@ class AdminToolshed(AdminGalaxy):
                                            initiate_repository_installation_ids=encoded_repository_ids,
                                            reinstalling=False)
             else:
-                kwd['message'] = message
+                kwd['message'] = message if message else 'Repository has already been installed.'
                 kwd['status'] = status
                 return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                                 action='monitor_repository_installation',
