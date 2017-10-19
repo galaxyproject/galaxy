@@ -30,7 +30,7 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
             <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
                 <%- tour.name || tour.id %>
             </a>
-             - <%- tour.description || \"No description given.\" %>
+             - <%- tour.attributes.description || \"No description given.\" %>
              <% _.each(tour.attributes.tags, function(tag) { %>
                 <span class="label label-primary">
                     <%- tag %>
