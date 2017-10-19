@@ -75,4 +75,6 @@
             <br clear="left"/>
         </div>
     </div>
+%else:
+    ${render_msg("There is no repository is being installed.", "info")}
 %endif

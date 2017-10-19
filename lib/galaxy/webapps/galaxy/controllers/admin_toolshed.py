@@ -786,9 +786,10 @@ class AdminToolshed(AdminGalaxy):
         tsr_ids = common_util.get_tool_shed_repository_ids(**kwd)
         if not tsr_ids:
             tsr_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=False)
+        tsr_ids = [trans.security.decode_id(tsr_id) for tsr_id in tsr_ids]
         tool_shed_repositories = []
         for tsr_id in tsr_ids:
-            tsr = trans.install_model.context.query(trans.install_model.ToolShedRepository).get(trans.security.decode_id(tsr_id))
+            tsr = trans.install_model.context.query(trans.install_model.ToolShedRepository).get(tsr_id)
             tool_shed_repositories.append(tsr)
         clause_list = []
         for tsr_id in tsr_ids:
