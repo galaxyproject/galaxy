@@ -17,7 +17,7 @@
             // Make ajax call
             $.ajax( {
                 type: "POST",
-                url: "${h.url_for( controller='admin_toolshed', action='manage_repositories' )}",
+                url: "${h.url_for( controller='admin_toolshed', action='install_repositories' )}",
                 dataType: "html",
                 data: { operation: "install", tool_shed_repository_ids: iri_ids, encoded_kwd: encoded_kwd, reinstalling: reinstalling },
                 success : function ( data ) {
