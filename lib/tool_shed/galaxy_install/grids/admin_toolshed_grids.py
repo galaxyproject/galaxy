@@ -1,7 +1,5 @@
 import logging
 
-from sqlalchemy import false, or_
-
 from galaxy import util
 from galaxy.model import tool_shed_install
 from galaxy.web import url_for
