@@ -794,7 +794,7 @@ class AdminToolshed(AdminGalaxy):
         for tsr_id in tsr_ids:
             clause_list.append(trans.install_model.ToolShedRepository.table.c.id == tsr_id)
         query = trans.install_model.context.current.query(trans.install_model.ToolShedRepository).filter(or_(*clause_list))
-        return trans.fill_template('admin/tool_shed_repository/initiate_repository_installation.mako',
+        return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
                                         tool_shed_repositories=tool_shed_repositories,
                                         query=query)
 
@@ -946,7 +946,7 @@ class AdminToolshed(AdminGalaxy):
 
                 encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
                     install_repository_manager.initiate_repository_installation(installation_dict)
-                return trans.fill_template('admin/tool_shed_repository/initiate_repository_installation.mako',
+                return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
                                            encoded_kwd=encoded_kwd,
                                            query=query,
                                            tool_shed_repositories=tool_shed_repositories,
@@ -1262,7 +1262,7 @@ class AdminToolshed(AdminGalaxy):
             clause_list.append(trans.install_model.ToolShedRepository.table.c.id == tsr_id)
         query = trans.install_model.context.current.query(trans.install_model.ToolShedRepository) \
                                            .filter(or_(*clause_list))
-        return trans.fill_template('admin/tool_shed_repository/initiate_repository_installation.mako',
+        return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
                                    encoded_kwd=encoded_kwd,
                                    query=query,
                                    tool_shed_repositories=tool_shed_repositories,

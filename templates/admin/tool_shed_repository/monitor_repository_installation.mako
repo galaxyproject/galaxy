@@ -1,4 +1,5 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="*" />
 
 <%def name="javascripts()">
@@ -10,7 +11,7 @@
 
 <%def name="repository_installation_javascripts()">
     <script type="text/javascript">
-        %if context.get(initiate_repository_installation_ids):
+        %if hasattr(self, "initiate_repository_installation_ids"):
             $(document).ready(function( ){
                 initiate_repository_installation( "${initiate_repository_installation_ids}", "${encoded_kwd}", "${reinstalling}" );
             });
@@ -29,6 +30,10 @@
         };
     </script>
 </%def>
+
+%if hasattr(self, "message"):
+    ${render_msg( message, error )}
+%endif
 
 %if tool_shed_repositories:
     <div class="toolForm">
