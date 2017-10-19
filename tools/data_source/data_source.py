@@ -6,7 +6,7 @@ import socket
 import sys
 from json import dumps, loads
 
-from six.moves.urllib.parse import urlencode
+from six.moves.urllib.parse import urlencode, urlparse
 from six.moves.urllib.request import urlopen
 
 from galaxy.datatypes import sniff
@@ -80,7 +80,7 @@ def __main__():
     for data_dict in job_params[ 'output_data' ]:
         cur_filename = data_dict.get( 'file_name', filename )
         cur_URL = params.get( '%s|%s|URL' % ( GALAXY_PARAM_PREFIX, data_dict[ 'out_data_name' ] ), URL )
-        if not cur_URL:
+        if not cur_URL or urlparse(cur_URL).scheme not in ('http', 'https', 'ftp'):
             open( cur_filename, 'w' ).write( "" )
             stop_err( 'The remote data source application has not sent back a URL parameter in the request.' )
 
