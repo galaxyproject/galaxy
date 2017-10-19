@@ -783,13 +783,32 @@ class AdminToolshed(AdminGalaxy):
     @web.expose
     @web.require_admin
     def monitor_repository_installation(self, trans, **kwd):
-        tsridslist = common_util.get_tool_shed_repository_ids(**kwd)
-        if not tsridslist:
-            tsridslist = repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=False)
-        kwd['tool_shed_repository_ids'] = tsridslist
+        tsr_ids = common_util.get_tool_shed_repository_ids(**kwd)
+        if not tsr_ids:
+            tsr_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=False)
+        tool_shed_repositories = []
+        for tsr_id in tsr_ids:
+            tsr = trans.install_model.context.query(trans.install_model.ToolShedRepository).get(tsr_id)
+            tool_shed_repositories.append(tsr)
+        clause_list = []
+        for tsr_id in tsr_ids:
+            clause_list.append(trans.install_model.ToolShedRepository.table.c.id == tsr_id)
 
+        query = trans.install_model.context.current.query(trans.install_model.ToolShedRepository) \
+                                           .filter(or_(*clause_list))
 
-        return trans.fill_template('admin/tool_shed_repository/initiate_repository_installation.mako', tool_shed_repositories=tool_shed_repositories)
+        trans.install_model.context.query(self.model_class) \
+                                          .order_by(self.model_class.table.c.tool_shed,
+                                                    self.model_class.table.c.name,
+                                                    self.model_class.table.c.owner,
+                                                    self.model_class.table.c.ctx_rev)
+        print query
+        return trans.fill_template('admin/tool_shed_repository/initiate_repository_installation.mako',
+                                        tool_shed_repositories=tool_shed_repositories,
+                                        query=query,
+                                        initiate_repository_installation_ids=None,
+                                        reinstalling=False,
+                                        encoded_kwd=None)
 
     @web.json
     @web.require_admin
