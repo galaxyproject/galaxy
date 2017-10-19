@@ -10,12 +10,14 @@
 
 <%def name="repository_installation_javascripts()">
     <script type="text/javascript">
-        $(document).ready(function( ){
-            initiate_repository_installation( "${initiate_repository_installation_ids}", "${encoded_kwd}", "${reinstalling}" );
-        });
+        %if context.get(initiate_repository_installation_ids):
+            $(document).ready(function( ){
+                initiate_repository_installation( "${initiate_repository_installation_ids}", "${encoded_kwd}", "${reinstalling}" );
+            });
+        %endif
         var initiate_repository_installation = function ( iri_ids, encoded_kwd, reinstalling ) {
             // Make ajax call
-            iri_ids && $.ajax( {
+            $.ajax( {
                 type: "POST",
                 url: "${h.url_for( controller='admin_toolshed', action='install_repositories' )}",
                 dataType: "html",

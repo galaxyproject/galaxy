@@ -561,7 +561,7 @@ class AdminToolshed(AdminGalaxy):
     def install_repositories(self, trans, **kwd):
         reinstalling = util.string_as_bool(kwd.get('reinstalling', False))
         encoded_kwd = kwd.get('encoded_kwd')
-        decoded_kwd = encoding_util.tool_shed_decode(encoded_kwd)
+        decoded_kwd = encoding_util.tool_shed_decode(encoded_kwd) if encoded_kwd else {}
         install_resolver_dependencies = CheckboxField.is_checked(decoded_kwd.get('install_resolver_dependencies', ''))
         install_tool_dependencies = CheckboxField.is_checked(decoded_kwd.get('install_tool_dependencies', ''))
         decoded_kwd['install_resolver_dependencies'] = install_resolver_dependencies
@@ -788,27 +788,15 @@ class AdminToolshed(AdminGalaxy):
             tsr_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=False)
         tool_shed_repositories = []
         for tsr_id in tsr_ids:
-            tsr = trans.install_model.context.query(trans.install_model.ToolShedRepository).get(tsr_id)
+            tsr = trans.install_model.context.query(trans.install_model.ToolShedRepository).get(trans.security.decode_id(tsr_id))
             tool_shed_repositories.append(tsr)
         clause_list = []
         for tsr_id in tsr_ids:
             clause_list.append(trans.install_model.ToolShedRepository.table.c.id == tsr_id)
-
-        query = trans.install_model.context.current.query(trans.install_model.ToolShedRepository) \
-                                           .filter(or_(*clause_list))
-
-        trans.install_model.context.query(self.model_class) \
-                                          .order_by(self.model_class.table.c.tool_shed,
-                                                    self.model_class.table.c.name,
-                                                    self.model_class.table.c.owner,
-                                                    self.model_class.table.c.ctx_rev)
-        print query
+        query = trans.install_model.context.current.query(trans.install_model.ToolShedRepository).filter(or_(*clause_list))
         return trans.fill_template('admin/tool_shed_repository/initiate_repository_installation.mako',
                                         tool_shed_repositories=tool_shed_repositories,
-                                        query=query,
-                                        initiate_repository_installation_ids=None,
-                                        reinstalling=False,
-                                        encoded_kwd=None)
+                                        query=query)
 
     @web.json
     @web.require_admin
@@ -968,7 +956,7 @@ class AdminToolshed(AdminGalaxy):
                 kwd['message'] = message
                 kwd['status'] = status
                 return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='manage_repositories',
+                                                                action='monitor_repository_installation',
                                                                 **kwd))
         shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field(trans.app)
         tool_path = suc.get_tool_path_by_shed_tool_conf_filename(trans.app, shed_tool_conf)

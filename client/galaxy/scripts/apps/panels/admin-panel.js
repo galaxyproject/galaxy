@@ -51,10 +51,7 @@ var AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: "Monitor installing repositories",
-                        url:
-                            "admin_toolshed/monitor_repository_installation?installing_repository_ids=" +
-                            self.settings.installing_repository_ids,
-                        enabled: self.settings.installing_repository_ids
+                        url: "admin_toolshed/monitor_repository_installation"
                     },
                     {
                         title: "Manage installed tools",
