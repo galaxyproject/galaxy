@@ -10,24 +10,36 @@ define(["libs/bootstrap-tour"], function(BootstrapTour) {
 <p>This page presents a list of interactive tours available on this Galaxy server.
 Select any tour to get started (and remember, you can click 'End Tour' at any time).</p>
 
-<ul>
+<div class="col-12 btn-group" role="group" aria-label="Tag selector">
+    <% _.each(tourtagorder, function(tag) { %>
+    <button class="btn btn-primary tag-selector-button" tag-selector-button="<%- tag %>">
+        <%- tag %>
+    </button>
+    <% }); %>
+</div>
+
 <% _.each(tourtagorder, function(tourtagkey) { %>
+<div tag="<%- tourtagkey %>" style="display: block;">
     <% var tourtag = tourtags[tourtagkey]; %>
-    <li>
-        <span>
-            <%- tourtag.name %>
-        </span>
-        <ul>
-        <% _.each(tourtag.tours, function(tour) { %>
-            <li>
-                <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
-                    <%- tour.name || tour.id %>
-                </a>
-                 - <%- tour.description || \"No description given.\" %>
-            </li>
-        <% }); %>
-        </ul>
-    </li>
+    <h4>
+        <%- tourtag.name %>
+    </h4>
+    <ul class="list-group">
+    <% _.each(tourtag.tours, function(tour) { %>
+        <li class="list-group-item">
+            <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
+                <%- tour.name || tour.id %>
+            </a>
+             - <%- tour.description || \"No description given.\" %>
+             <% _.each(tour.attributes.tags, function(tag) { %>
+                <span class="label label-primary">
+                    <%- tag %>
+                </span>
+             <% }); %>
+        </li>
+    <% }); %>
+    </ul>
+</div>
 <% }); %>`;
 
     var tour_opts = {
@@ -138,7 +150,6 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
                     });
                 }
             });
-
             var tourtagorder = Object.keys(tourtags).sort();
 
             this.$el
@@ -146,6 +157,19 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
                 .on("click", ".tourItem", function(e) {
                     e.preventDefault();
                     giveTour($(this).data("tour.id"));
+                })
+                .on("click", ".tag-selector-button", function(e) {
+                    var elem = $(e.target);
+                    var display = "block";
+                    var tag = elem.attr("tag-selector-button");
+
+                    elem.toggleClass("btn-primary");
+                    elem.toggleClass("btn-secondary");
+
+                    if(elem.hasClass("btn-secondary")) {
+                        display = "none";
+                    }
+                    $("div[tag='"+tag+"']").css({display: display});
                 });
         }
     });
