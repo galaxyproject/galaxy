@@ -893,7 +893,7 @@ class ToolModule(WorkflowModule):
 
         query = trans.sa_session.query(trans.app.model.WorkflowRequestInputParameter.job_options).join(
             trans.app.model.WorkflowInvocation).filter(
-            trans.app.model.WorkflowInvocation.uuid==workflow_invocation_uuid).one_or_none()
+            trans.app.model.WorkflowInvocation.uuid == workflow_invocation_uuid).one_or_none()
 
         if query is not None:
             workflow_options = query.job_options

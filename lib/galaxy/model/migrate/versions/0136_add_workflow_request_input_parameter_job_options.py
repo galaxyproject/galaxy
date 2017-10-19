@@ -10,7 +10,7 @@ from galaxy.model.custom_types import JSONType
 
 import logging
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
@@ -19,28 +19,28 @@ def upgrade(migrate_engine):
     print(__doc__)
     metadata.reflect()
 
-    JobOptions_column = Column( "job_options", JSONType )
-    __add_column( JobOptions_column, "workflow_request_input_parameters", metadata )
+    JobOptions_column = Column("job_options", JSONType)
+    __add_column(JobOptions_column, "workflow_request_input_parameters", metadata)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    __drop_column( "job_options", "workflow_request_input_parameters", metadata )
+    __drop_column("job_options", "workflow_request_input_parameters", metadata)
 
 
 def __add_column(column, table_name, metadata, **kwds):
     try:
-        table = Table( table_name, metadata, autoload=True )
-        column.create( table, **kwds )
+        table = Table(table_name, metadata, autoload=True)
+        column.create(table, **kwds)
     except Exception:
         log.exception("Adding column %s column failed.", column)
 
 
-def __drop_column( column_name, table_name, metadata ):
+def __drop_column(column_name, table_name, metadata):
     try:
-        table = Table( table_name, metadata, autoload=True )
-        getattr( table.c, column_name ).drop()
+        table = Table(table_name, metadata, autoload=True)
+        getattr(table.c, column_name).drop()
     except Exception:
         log.exception("Dropping column %s failed.", column_name)

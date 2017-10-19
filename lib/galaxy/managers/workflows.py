@@ -425,7 +425,7 @@ class WorkflowContentsManager(UsesAnnotations):
             'name'                  : stored.name,
             'workflow_options': [{'value': 'low', 'label': 'Low'},
                                  {'value': 'med', 'label': 'Medium'},
-                                 {'value': 'high', 'label': 'High'}],# TODO: Replace this with dict generated from xml
+                                 {'value': 'high', 'label': 'High'}],  # TODO: Replace this with dict generated from xml
             'steps'                 : step_models,
             'step_version_changes'  : step_version_changes,
             'has_upgrade_messages'  : has_upgrade_messages
