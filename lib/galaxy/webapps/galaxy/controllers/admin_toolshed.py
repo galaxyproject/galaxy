@@ -559,7 +559,6 @@ class AdminToolshed(AdminGalaxy):
     @web.expose
     @web.require_admin
     def manage_repositories(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
         api_installation = util.asbool(kwd.get('api', 'false'))
         if api_installation:
             tsr_ids = json.loads(kwd.get('tool_shed_repository_ids', '[]'))
@@ -570,34 +569,8 @@ class AdminToolshed(AdminGalaxy):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if not tsridslist:
-                message = 'Select at least 1 tool shed repository to %s.' % operation
-                kwd['message'] = message
-                kwd['status'] = 'error'
-                del kwd['operation']
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='manage_repositories',
-                                                                **kwd))
-            if operation == 'browse':
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='browse_repository',
-                                                                **kwd))
-            elif operation == 'uninstall':
-                # TODO: I believe this block should be removed, but make sure..
-                repositories_for_uninstallation = []
-                for repository_id in tsridslist:
-                    repository = trans.install_model.context.query(trans.install_model.ToolShedRepository) \
-                                                            .get(trans.security.decode_id(repository_id))
-                    if repository.status in [trans.install_model.ToolShedRepository.installation_status.INSTALLED,
-                                             trans.install_model.ToolShedRepository.installation_status.ERROR]:
-                        repositories_for_uninstallation.append(repository)
-                if repositories_for_uninstallation:
-                    return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                    action='uninstall_repositories',
-                                                                    **kwd))
-                else:
-                    kwd['message'] = 'All selected tool shed repositories are already uninstalled.'
-                    kwd['status'] = 'error'
-            elif operation == "install":
+                return self.message_exception(trans, 'Select at least 1 tool shed repository to %s.' % operation)
+            if operation == 'install':
                 irm = install_manager.InstallRepositoryManager(trans.app)
                 reinstalling = util.string_as_bool(kwd.get('reinstalling', False))
                 encoded_kwd = kwd['encoded_kwd']
@@ -614,16 +587,9 @@ class AdminToolshed(AdminGalaxy):
                         reinstalling=reinstalling,
                     )
                     tsr_ids_for_monitoring = [trans.security.encode_id(tsr.id) for tsr in tool_shed_repositories]
-                    if api_installation:
-                        return json.dumps(tsr_ids_for_monitoring)
-                    else:
-                        trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                 action='monitor_repository_installation',
-                                                                 tool_shed_repository_ids=tsr_ids_for_monitoring))
+                    return json.dumps(tsr_ids_for_monitoring)
                 except install_manager.RepositoriesInstalledException as e:
-                    kwd['message'] = e.message
-                    kwd['status'] = 'error'
-        return self.repository_installation_grid(trans, **kwd)
+                    return self.message_exception(trans, e.message)
 
     @web.expose
     @web.require_admin
