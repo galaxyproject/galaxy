@@ -296,6 +296,8 @@ def build_workflow_run_configs(trans, workflow, payload):
                 normalized_inputs[key] = value['content']
             else:
                 normalized_inputs[key] = value
+        if 'workflow_options' in payload:
+            normalized_inputs['workflow_options'] = payload.get('workflow_options', {})
         run_configs.append(WorkflowRunConfig(
             target_history=history,
             replacement_dict=payload.get('replacement_params', {}),
@@ -314,11 +316,12 @@ def workflow_run_config_to_request(trans, run_config, workflow):
     workflow_invocation.uuid = uuid.uuid1()
     workflow_invocation.history = run_config.target_history
 
-    def add_parameter(name, value, type):
+    def add_parameter(name, value, type, job_options):
         parameter = model.WorkflowRequestInputParameter(
             name=name,
             value=value,
             type=type,
+            job_options=job_options
         )
         workflow_invocation.input_parameters.append(parameter)
 
@@ -353,16 +356,19 @@ def workflow_run_config_to_request(trans, run_config, workflow):
             )
 
     replacement_dict = run_config.replacement_dict
-    for name, value in replacement_dict.items():
+    for name, value, job_options in replacement_dict.items():
         add_parameter(
             name=name,
             value=value,
             type=param_types.REPLACEMENT_PARAMETERS,
+            job_options=job_options,
         )
     for step_id, content in run_config.inputs.items():
         workflow_invocation.add_input(content, step_id)
 
-    add_parameter("copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false", param_types.META_PARAMETERS)
+    if 'workflow_options' in run_config.inputs:
+        workflow_options = run_config.inputs['workflow_options']
+    add_parameter("copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false", param_types.META_PARAMETERS, workflow_options)
     return workflow_invocation
 
 

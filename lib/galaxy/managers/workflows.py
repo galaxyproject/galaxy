@@ -423,6 +423,9 @@ class WorkflowContentsManager(UsesAnnotations):
             'id'                    : trans.app.security.encode_id(stored.id),
             'history_id'            : trans.app.security.encode_id(trans.history.id) if trans.history else None,
             'name'                  : stored.name,
+            'workflow_options': [{'value': 'low', 'label': 'Low'},
+                                 {'value': 'med', 'label': 'Medium'},
+                                 {'value': 'high', 'label': 'High'}],# TODO: Replace this with dict generated from xml
             'steps'                 : step_models,
             'step_version_changes'  : step_version_changes,
             'has_upgrade_messages'  : has_upgrade_messages

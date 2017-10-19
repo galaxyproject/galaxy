@@ -11,6 +11,7 @@ import sys
 import copy
 import collections
 import re
+import json
 from functools import reduce
 
 
@@ -1229,6 +1230,28 @@ def map_tool_to_destination(
     # set default priority to med
     default_priority = 'med'
     priority = default_priority
+
+    # fetch priority information from workflow/job parameters
+    job_parameter_list = job.get_parameters()
+    workflow_params = None
+    job_params = None
+    if job_parameter_list is not None:
+        for param in job_parameter_list:
+            if param.name == "__workflow_params__":
+                workflow_params = param.value
+            if param.name == "__job_resource":
+                job_params = param.value
+
+    # Priority coming from workflow invocation takes precedence over job specific priorities
+    if workflow_params is not None:
+        resource_params = json.loads(workflow_params)
+        if 'workflow_job_priority' in resource_params:
+            priority = resource_params['workflow_job_priority']
+    elif job_params is not None:
+        resource_params = json.loads(job_params)
+        if 'priority' in resource_params:
+            priority = resource_params['priority']
+            # TODO: Once workflow priority options are generated from xml, add validation against the same xml
 
     if config is not None:
         # get the users priority

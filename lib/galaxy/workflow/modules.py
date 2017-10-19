@@ -855,6 +855,8 @@ class ToolModule(WorkflowModule):
 
             param_combinations.append(execution_state.inputs)
 
+        workflow_options = self._fetch_workflow_options(trans, invocation.uuid.hex)
+
         try:
             execution_tracker = execute(
                 trans=self.trans,
@@ -862,7 +864,8 @@ class ToolModule(WorkflowModule):
                 param_combinations=param_combinations,
                 history=invocation.history,
                 collection_info=collection_info,
-                workflow_invocation_uuid=invocation.uuid.hex
+                workflow_invocation_uuid=invocation.uuid.hex,
+                workflow_options=workflow_options
             )
         except ToolInputsNotReadyException:
             delayed_why = "tool [%s] inputs are not ready, this special tool requires inputs to be ready" % tool.id
@@ -884,6 +887,18 @@ class ToolModule(WorkflowModule):
             message = "Failed to create %d out of %s job(s) for workflow step." % (failed_count, all_count)
             raise Exception(message)
         return jobs
+
+    def _fetch_workflow_options(self, trans, workflow_invocation_uuid):
+        workflow_options = None
+
+        query = trans.sa_session.query(trans.app.model.WorkflowRequestInputParameter.job_options).join(
+            trans.app.model.WorkflowInvocation).filter(
+            trans.app.model.WorkflowInvocation.uuid==workflow_invocation_uuid).one_or_none()
+
+        if query is not None:
+            workflow_options = query.job_options
+
+        return workflow_options
 
     def recover_mapping(self, step, step_invocations, progress):
         # Grab a job representing this invocation - for normal workflows

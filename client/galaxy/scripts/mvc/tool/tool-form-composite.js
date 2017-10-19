@@ -274,6 +274,7 @@ define(
                 this._renderMessage();
                 this._renderParameters();
                 this._renderHistory();
+                this._renderWorkflowOptions();
                 _.each(this.steps, function(step) {
                     self._renderStep(step);
                 });
@@ -388,6 +389,22 @@ define(
                     ]
                 });
                 this._append(this.$steps, this.history_form.$el);
+            },
+
+            /** Render Workflow Options */
+            _renderWorkflowOptions: function() {
+                this.workflow_options_form = new Form({
+                    cls    : 'ui-portlet-narrow',
+                    title  : '<b>Workflow Options</b>',
+                    inputs : [{
+                        type    : 'select',
+                        name    : 'workflow_job_priority',
+                        label   : 'Workflow Job Priority',
+                        help    : 'What priority should the jobs in this workflow run at? (Overrides any declared job priority)',
+                        data    : this.model.get('workflow_options')
+                    }]
+                });
+                this._append( this.$steps, this.workflow_options_form.$el );
             },
 
             /** Render step */
@@ -639,6 +656,9 @@ define(
                     history_id: !history_form_data["new_history|name"]
                         ? this.model.get("history_id")
                         : null,
+                    workflow_options: this.workflow_options_form
+                        ? this.workflow_options_form.data.create()
+                        : {},
                     replacement_params: this.wp_form
                         ? this.wp_form.data.create()
                         : {},
