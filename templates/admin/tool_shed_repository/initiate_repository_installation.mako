@@ -19,7 +19,7 @@
                 type: "POST",
                 url: "${h.url_for( controller='admin_toolshed', action='install_repositories' )}",
                 dataType: "html",
-                data: { operation: "install", tool_shed_repository_ids: iri_ids, encoded_kwd: encoded_kwd, reinstalling: reinstalling },
+                data: { tool_shed_repository_ids: iri_ids, encoded_kwd: encoded_kwd, reinstalling: reinstalling },
                 success : function ( data ) {
                     console.log( "Initializing repository installation succeeded" );
                 },
