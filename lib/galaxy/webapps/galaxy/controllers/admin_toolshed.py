@@ -797,7 +797,7 @@ class AdminToolshed(AdminGalaxy):
         return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
                                         tool_shed_repositories=tool_shed_repositories,
                                         query=query,
-                                        message=kwd.get('message'),
+                                        message=escape(kwd.get('message')),
                                         status=kwd.get('status'))
 
     @web.json
