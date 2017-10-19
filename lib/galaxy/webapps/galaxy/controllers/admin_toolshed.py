@@ -796,7 +796,9 @@ class AdminToolshed(AdminGalaxy):
         query = trans.install_model.context.current.query(trans.install_model.ToolShedRepository).filter(or_(*clause_list))
         return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
                                         tool_shed_repositories=tool_shed_repositories,
-                                        query=query)
+                                        query=query,
+                                        message=kwd.get('message'),
+                                        status=kwd.get('status'))
 
     @web.json
     @web.require_admin

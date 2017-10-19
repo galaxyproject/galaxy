@@ -11,7 +11,7 @@
 
 <%def name="repository_installation_javascripts()">
     <script type="text/javascript">
-        %if hasattr(self, "initiate_repository_installation_ids"):
+        %if context.get("initiate_repository_installation_ids"):
             $(document).ready(function( ){
                 initiate_repository_installation( "${initiate_repository_installation_ids}", "${encoded_kwd}", "${reinstalling}" );
             });
@@ -31,8 +31,8 @@
     </script>
 </%def>
 
-%if hasattr(self, "message"):
-    ${render_msg( message, error )}
+%if context.get("message"):
+    ${render_msg( message, status )}
 %endif
 
 %if tool_shed_repositories:
