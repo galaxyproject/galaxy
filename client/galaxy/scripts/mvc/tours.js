@@ -11,13 +11,14 @@ define(["libs/bootstrap-tour"], function(BootstrapTour) {
 Select any tour to get started (and remember, you can click 'End Tour' at any time).</p>
 
 <ul>
-<% _.each(tourgroups, function(tourgroupdata) { %>
+<% _.each(tourtagorder, function(tourtagkey) { %>
+    <% var tourtag = tourtags[tourtagkey]; %>
     <li>
         <span>
-            <%- tourgroupdata.attributes.name %>
+            <%- tourtag.name %>
         </span>
         <ul>
-        <% _.each(tourgroupdata.attributes.tours, function(tour) { %>
+        <% _.each(tourtag.tours, function(tour) { %>
             <li>
                 <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
                     <%- tour.name || tour.id %>
@@ -120,8 +121,28 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
 
         render: function() {
             var tpl = _.template(tourpage_template);
+
+            var tourtags = {};
+            _.each(this.model.models, function(tour) {
+                if(tour.attributes.tags === null) {
+                    if(tourtags[""] === undefined) {
+                        tourtags[""] = {"name": "Untagged", "tours": []};
+                    }
+                    tourtags[""]["tours"].push(tour);
+                } else {
+                    _.each(tour.attributes.tags, function (tag) {
+                        if (tourtags[tag] === undefined) {
+                            tourtags[tag] = {"name": tag, "tours": []};
+                        }
+                        tourtags[tag]["tours"].push(tour);
+                    });
+                }
+            });
+
+            var tourtagorder = Object.keys(tourtags).sort();
+
             this.$el
-                .html(tpl({ tourgroups: this.model.models }))
+                .html(tpl({ tours: this.model.models, tourtags: tourtags, tourtagorder: tourtagorder}))
                 .on("click", ".tourItem", function(e) {
                     e.preventDefault();
                     giveTour($(this).data("tour.id"));

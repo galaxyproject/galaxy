@@ -27,20 +27,16 @@ def tour_loader(contents_dict):
 
 
 class ToursRegistry(object):
-
     def __init__(self, tour_directories):
         self.tour_directories = util.config_directories_from_setting(tour_directories)
         self.load_tours()
 
     def tours_by_id_with_description(self):
-        return [{'name': self.tourgroups[i].get('name', None),
-                 'tours': [{'id': k,
-                     'description': self.tours[k].get('description', None),
-                     'name': self.tours[k].get('name', None),
-                     'group': self.tours[k].get('group_name', None)}
-                     for k in self.tours.keys()
-                     if self.tours[k].get('group', None) == i]}
-                for i in self.tourgroups.keys()]
+        return [{'id': k,
+                 'description': self.tours[k].get('description', None),
+                 'name': self.tours[k].get('name', None),
+                 'tags': self.tours[k].get('tags', None)}
+                for k in self.tours.keys()]
 
     def load_tour(self, tour_id):
         for tour_dir in self.tour_directories:
@@ -56,7 +52,6 @@ class ToursRegistry(object):
 
     def load_tours(self):
         self.tours = {}
-        self.tourgroups = {}
         for tour_dir in self.tour_directories:
             for filename in os.listdir(tour_dir):
                 if filename.endswith('.yaml') or filename.endswith('.yml'):
@@ -76,9 +71,6 @@ class ToursRegistry(object):
                 conf = yaml.safe_load(handle)
                 tour = tour_loader(conf)
                 self.tours[tour_id] = tour_loader(conf)
-                if tour['group'] not in self.tourgroups.keys():
-                    self.tourgroups[tour['group']] = {'name': tour['group_name'], 'tours': []}
-                self.tourgroups[tour['group']]['tours'].append(tour_id)
                 log.info("Loaded tour '%s'" % tour_id)
                 return tour
         except IOError:
