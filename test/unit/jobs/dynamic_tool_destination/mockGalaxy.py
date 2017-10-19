@@ -7,6 +7,7 @@ class Job(object):
         self.input_datasets = []
         self.input_library_datasets = []
         self.param_values = dict()
+        self.parameters = []
 
     def get_param_values(self, app, ignore_errors=False):
         return self.param_values
@@ -16,6 +17,9 @@ class Job(object):
 
     def add_input_dataset(self, dataset):
         self.input_datasets.append(dataset)
+
+    def get_parameters(self):
+        return self.parameters
 
 
 class InputDataset(object):

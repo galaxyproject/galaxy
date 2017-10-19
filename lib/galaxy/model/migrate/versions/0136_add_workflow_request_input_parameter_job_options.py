@@ -4,11 +4,12 @@ Migration script to add a 'job_options' column to the
 """
 from __future__ import print_function
 
+import logging
+
 from sqlalchemy import Column, MetaData, Table
 
 from galaxy.model.custom_types import JSONType
 
-import logging
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
