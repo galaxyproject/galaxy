@@ -76,5 +76,5 @@
         </div>
     </div>
 %else:
-    ${render_msg("There is no repository is being installed.", "info")}
+    ${render_msg("There is no repository being installed.", "info")}
 %endif
