@@ -72,6 +72,7 @@ class Cleanup(object):
         parser.add_option('-U', '--no-update-time', action='store_false', dest='update_time', help="Don't set update_time on updated objects", default=True)
         parser.add_option('-s', '--sequence', dest='sequence', help='Comma-separated sequence of actions, chosen from: %s' % self.action_names, default='')
         parser.add_option('-w', '--work-mem', dest='work_mem', help='Set PostgreSQL work_mem for this connection', default=None)
+        parser.add_option('-l', '--log-dir', dest='log_dir', help='Log file directory', default=os.path.join(galaxy_root, 'scripts', 'cleanup_datasets'))
         (self.options, self.args) = parser.parse_args()
 
         self.options.sequence = [x.strip() for x in self.options.sequence.split(',')]
@@ -117,7 +118,7 @@ class Cleanup(object):
 
     def _open_logfile(self):
         action_name = inspect.stack()[1][3]
-        logname = os.path.join(galaxy_root, 'scripts', 'cleanup_datasets', action_name + '.log')
+        logname = os.path.join(self.options.log_dir, action_name + '.log')
 
         if self.options.dry_run:
             log.debug('--dry-run specified, logging changes to stdout instead of log file: %s' % logname)
