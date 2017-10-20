@@ -111,8 +111,10 @@ function spin(
             type: "GET",
             timeout: spin_state.ajax_timeout,
             success: function(data, status, jqxhr) {
-                if (!success_callback(data, status, jqxhr))
+                if (!success_callback(data, status, jqxhr)) {
+                    spin_state.count++;
                     spin_again(spin_state);
+                }
             },
             error: function(jqxhr, status, error) {
                 if (status == "timeout") {
