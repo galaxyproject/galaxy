@@ -510,4 +510,3 @@ class Analyze75(Binary):
                 rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
         rval.append('</ul></div></html>')
         return "\n".join(rval)
-
