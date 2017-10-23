@@ -25,7 +25,7 @@ def upgrade(migrate_engine):
             t = Table(table_name, metadata, autoload=True)
             t.drop()
             metadata.remove(t)
-        except:
+        except Exception:
             log.exception("Failed to drop table '%s', ignoring (might result in wrong schema)" % table_name)
 
     # 2) Readd
@@ -46,7 +46,7 @@ def upgrade(migrate_engine):
     for table in [WorkflowInvocation_table, WorkflowInvocationStep_table]:
         try:
             table.create()
-        except:
+        except Exception:
             log.exception("Failed to create table '%s', ignoring (might result in wrong schema)" % table.name)
 
 

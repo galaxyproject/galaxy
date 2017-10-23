@@ -131,7 +131,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if "k8s_supplemental_group_id" in self.runner_params:
             try:
                 return int(self.runner_params["k8s_supplemental_group_id"])
-            except:
+            except Exception:
                 log.warning("Supplemental group passed for Kubernetes runner needs to be an integer, value "
                          + self.runner_params["k8s_supplemental_group_id"] + " passed is invalid")
                 return None
@@ -141,7 +141,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if "k8s_fs_group_id" in self.runner_params:
             try:
                 return int(self.runner_params["k8s_fs_group_id"])
-            except:
+            except Exception:
                 log.warning("FS group passed for Kubernetes runner needs to be an integer, value "
                          + self.runner_params["k8s_fs_group_id"] + " passed is invalid")
                 return None

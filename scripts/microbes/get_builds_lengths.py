@@ -12,7 +12,7 @@ def __main__():
     base_dir = os.path.join(os.getcwd(), "bacteria")
     try:
         base_dir = sys.argv[1]
-    except:
+    except IndexError:
         pass
 
     organisms = {}
@@ -44,7 +44,7 @@ def __main__():
         # if no gpi, then must be a ncbi chr which corresponds to a UCSC org, w/o matching UCSC designation
         try:
             build = org['genome project id']
-        except:
+        except KeyError:
             continue
 
         if 'build' in org:

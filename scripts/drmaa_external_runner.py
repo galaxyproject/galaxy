@@ -30,7 +30,7 @@ def load_job_template_from_file(jt, filename):
 def valid_numeric_userid(userid):
     try:
         uid = int(userid)
-    except:
+    except ValueError:
         return False
     try:
         pwd.getpwuid(uid)

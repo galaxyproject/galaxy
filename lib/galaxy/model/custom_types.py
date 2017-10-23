@@ -291,10 +291,10 @@ class MetadataType(JSONType):
             ret = metadata_pickler.loads(str(value))
             if ret:
                 ret = dict(ret.__dict__)
-        except:
+        except Exception:
             try:
                 ret = json_decoder.decode(str(_sniffnfix_pg9_hex(value)))
-            except:
+            except Exception:
                 ret = None
         return ret
 

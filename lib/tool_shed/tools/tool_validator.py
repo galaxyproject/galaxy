@@ -45,7 +45,7 @@ class ToolValidator(object):
         can_use_disk_file = filecmp.cmp(file_path, latest_version_of_file)
         try:
             os.unlink(latest_version_of_file)
-        except:
+        except Exception:
             pass
         return can_use_disk_file
 
@@ -325,10 +325,10 @@ class ToolValidator(object):
             for tmp_code_file in tmp_code_files:
                 try:
                     os.unlink(tmp_code_file)
-                except:
+                except Exception:
                     pass
             try:
                 os.unlink(tmp_tool_config)
-            except:
+            except Exception:
                 pass
         return tool, message

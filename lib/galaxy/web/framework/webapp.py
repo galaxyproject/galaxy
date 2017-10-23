@@ -340,7 +340,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                 return self.response.cookies[name].value
             else:
                 return self.request.cookies[name].value
-        except:
+        except Exception:
             return None
 
     def set_cookie(self, value, name='galaxysession', path='/', age=90, version='1'):
@@ -654,7 +654,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             try:
                 users_last_session = user.galaxy_sessions[0]
                 last_accessed = True
-            except:
+            except Exception:
                 users_last_session = None
                 last_accessed = False
             if (prev_galaxy_session.current_history and not

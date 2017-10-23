@@ -55,7 +55,7 @@ class BowtieIndex(Html):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Bowtie index file"
 
 

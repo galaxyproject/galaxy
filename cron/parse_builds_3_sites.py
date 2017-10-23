@@ -21,13 +21,13 @@ def main():
         builds = []
         try:
             text = requests.get(site).text
-        except:
+        except Exception:
             print("#Unable to connect to " + site)
             continue
 
         try:
             tree = ElementTree.fromstring(text)
-        except:
+        except Exception:
             print("#Invalid xml passed back from " + site)
             continue
         print("#Harvested from", site)

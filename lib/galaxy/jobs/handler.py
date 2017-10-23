@@ -1,20 +1,33 @@
 """
 Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 """
-
 import datetime
-import os
-import time
 import logging
+import os
 import threading
-from Queue import Queue, Empty
+import time
+from Queue import (
+    Empty,
+    Queue
+)
 
-from sqlalchemy.sql.expression import and_, or_, select, func, true, null
+from sqlalchemy.sql.expression import (
+    and_,
+    func,
+    null,
+    or_,
+    select,
+    true
+)
 
 from galaxy import model
-from galaxy.util.sleeper import Sleeper
-from galaxy.jobs import JobWrapper, TaskWrapper, JobDestination
+from galaxy.jobs import (
+    JobDestination,
+    JobWrapper,
+    TaskWrapper
+)
 from galaxy.jobs.mapper import JobNotReadyException
+from galaxy.util.sleeper import Sleeper
 
 log = logging.getLogger(__name__)
 
@@ -196,7 +209,7 @@ class JobHandlerQueue(object):
                 # to the sleep.
                 if not self.app.job_manager.job_lock:
                     self.__monitor_step()
-            except:
+            except Exception:
                 log.exception("Exception in monitor_step")
             # Sleep
             self.sleeper.sleep(1)
@@ -703,7 +716,7 @@ class JobHandlerStopQueue(object):
         while self.running:
             try:
                 self.monitor_step()
-            except:
+            except Exception:
                 log.exception("Exception in monitor_step")
             # Sleep
             self.sleeper.sleep(1)

@@ -56,7 +56,7 @@ class RequestsAPIController(BaseAPIController):
             return "Malformed id ( %s ) specified, unable to decode." % (str(id))
         try:
             request = trans.sa_session.query(trans.app.model.Request).get(request_id)
-        except:
+        except Exception:
             request = None
         if not request or not (trans.user_is_admin() or request.user.id == trans.user.id):
             trans.response.status = 400
@@ -91,7 +91,7 @@ class RequestsAPIController(BaseAPIController):
             return "Malformed  request id ( %s ) specified, unable to decode." % str(id)
         try:
             request = trans.sa_session.query(trans.app.model.Request).get(request_id)
-        except:
+        except Exception:
             request = None
         if not request or not (trans.user_is_admin() or request.user.id == trans.user.id):
             trans.response.status = 400

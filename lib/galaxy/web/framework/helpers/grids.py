@@ -440,7 +440,7 @@ class Grid(object):
             # Ensure ids are integers
             try:
                 id = list(map(int, id))
-            except:
+            except Exception:
                 decorators.error("Invalid id")
         return id
 

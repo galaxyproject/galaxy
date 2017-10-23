@@ -35,13 +35,9 @@ import argparse
 import re
 import sys
 
-try:
-    import configparser
-except:
-    import ConfigParser as configparser
-
 import numpy
 import psycopg2
+from six.moves import configparser
 from sqlalchemy.engine import url
 
 
@@ -144,7 +140,7 @@ def query(tool_id=None, user=None, like=None, source='metrics',
     if user:
         try:
             user_id = int(user)
-        except:
+        except ValueError:
             if '@' not in user:
                 field = 'username'
             else:

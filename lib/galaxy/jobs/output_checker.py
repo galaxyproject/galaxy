@@ -1,8 +1,8 @@
 import re
-from .error_level import StdioErrorLevel
 import traceback
-
 from logging import getLogger
+
+from .error_level import StdioErrorLevel
 
 log = getLogger(__name__)
 
@@ -126,7 +126,7 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
                 success = True
 
     # On any exception, return True.
-    except:
+    except Exception:
         tb = traceback.format_exc()
         log.warning("Tool check encountered unexpected exception; " +
                     "assuming tool was successful: " + tb)

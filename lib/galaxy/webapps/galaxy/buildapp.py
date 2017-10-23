@@ -53,7 +53,7 @@ def paste_app_factory(global_conf, **kwargs):
         try:
             app = galaxy.app.UniverseApplication(global_conf=global_conf, **kwargs)
             galaxy.app.app = app
-        except:
+        except Exception:
             traceback.print_exc()
             sys.exit(1)
     # Call app's shutdown method when the interpeter exits, this cleanly stops
@@ -145,13 +145,13 @@ def paste_app_factory(global_conf, **kwargs):
     # Close any pooled database connections before forking
     try:
         galaxy.model.mapping.metadata.bind.dispose()
-    except:
+    except Exception:
         log.exception("Unable to dispose of pooled galaxy model database connections.")
     try:
         # This model may not actually be bound.
         if galaxy.model.tool_shed_install.mapping.metadata.bind:
             galaxy.model.tool_shed_install.mapping.metadata.bind.dispose()
-    except:
+    except Exception:
         log.exception("Unable to dispose of pooled toolshed install model database connections.")
 
     app.application_stack.register_postfork_function(postfork_setup)
