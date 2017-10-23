@@ -912,7 +912,7 @@ class SelectToolParameter(ToolParameter):
                 value = options[0][1]
             else:
                 value = None
-        elif len(value) == 1:
+        elif len(value) == 1 or not self.multiple:
             value = value[0]
         return value
 

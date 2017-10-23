@@ -395,6 +395,7 @@ class Configuration(object):
         self.genomespace_ui_url = kwargs.get('genomespace_ui_url', 'https://gsui.genomespace.org/jsui/')
         self.library_import_dir = kwargs.get('library_import_dir', None)
         self.user_library_import_dir = kwargs.get('user_library_import_dir', None)
+        self.user_library_import_symlink_whitelist = listify(kwargs.get('user_library_import_symlink_whitelist', []), do_strip=True)
         # Searching data libraries
         self.enable_lucene_library_search = string_as_bool(kwargs.get('enable_lucene_library_search', False))
         self.enable_whoosh_library_search = string_as_bool(kwargs.get('enable_whoosh_library_search', False))
