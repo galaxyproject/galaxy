@@ -20,7 +20,7 @@ Please visit <a href="https://galaxyproject.org/admin" target="_blank">the Galax
                     <strong>Display applications</strong> - See all display applications configured in this Galaxy.
                 </li>
                 <li>
-                    <strong>Manage jobs</strong> - Display all jobs that are currently not finished (i.e., their state is new, waiting, queued, or running).  Administrators are able to cleanly stop long-running jobs. 
+                    <strong>Manage jobs</strong> - Display all jobs that are currently not finished (i.e., their state is new, waiting, queued, or running).  Administrators are able to cleanly stop long-running jobs.
                 </li>
             </ul>
 
@@ -61,7 +61,7 @@ Please visit <a href="https://galaxyproject.org/admin" target="_blank">the Galax
         <h4>User Management</h4>
             <ul>
                 <li>
-                    <strong>Users</strong> - A view of all users and all groups and non-private roles associated with each user.  
+                    <strong>Users</strong> - A view of all users and all groups and non-private roles associated with each user.
                 </li>
                 <li>
                     <strong>Groups</strong> - A view of all groups along with the members of the group and the roles associated with each group.
@@ -98,13 +98,6 @@ Please visit <a href="https://galaxyproject.org/admin" target="_blank">the Galax
             <ul>
                 <li>
                     <strong>Form definitions</strong> - Manage local form definitions.
-                </li>
-            </ul>
-
-        <h4>Sample tracking</h4>
-            <ul>
-                <li>
-                    Please see the <a href="https://galaxyproject.org/archive/library-sample-tracking" target="_blank">sample tracking tutorial</a>.
                 </li>
             </ul>
 %endif
