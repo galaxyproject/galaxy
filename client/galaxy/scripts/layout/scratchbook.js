@@ -4,9 +4,10 @@ define(
         "mvc/ui/ui-frames",
         "mvc/dataset/data",
         "viz/visualization",
-        "viz/trackster"
+        "viz/trackster",
+        "utils/localization"
     ],
-    function(Frames, DATA, visualization, trackster) {
+    function(Frames, DATA, visualization, trackster, _l) {
         return Backbone.View.extend({
             initialize: function(options) {
                 var self = this;
