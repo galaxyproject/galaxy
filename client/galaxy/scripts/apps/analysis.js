@@ -1,6 +1,6 @@
 import jQuery from "jquery";
 var $ = jQuery;
-import { GalaxyApp } from "galaxy";
+import GalaxyApp from "galaxy";
 import Router from "layout/router";
 import ToolPanel from "./panels/tool-panel";
 import HistoryPanel from "./panels/history-panel";
@@ -33,7 +33,7 @@ import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
  *      * etc.
  */
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp(options, bootstrapped);
+    window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
     Galaxy.debug("analysis app");
 
     /** Routes */
