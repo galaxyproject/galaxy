@@ -11,14 +11,20 @@ window.Backbone = Backbone;
 // console.debug('globals loaded:', window.jQuery, window.Backbone, '...');
 
 // these are galaxy globals not defined in the provider (although they could be - but why encourage that?)
-window.panels = require("layout/panel");
+import Panel from "layout/panel";
+window.panels = Panel;
+
 // using extend bc there are multiple fns/objs to decorate the window with
-_.extend(window, require("layout/modal"));
-window.async_save_text = require("utils/async-save-text");
+import layout_modal from "layout/modal";
+_.extend(window, layout_modal);
+// _.extend(window, require("layout/modal"));
+import async_save_text from "utils/async-save-text";
+window.async_save_text = async_save_text;
 import POPUPMENU from "ui/popupmenu";
 window.make_popupmenu = POPUPMENU.make_popupmenu;
 window.make_popup_menus = POPUPMENU.make_popup_menus;
-window.init_tag_click_function = require("ui/autocom_tagging");
+import init_tag_click_function from 'ui/autocom_tagging';
+window.init_tag_click_function = init_tag_click_function;
 import TOURS from "mvc/tours";
 import QUERY_STRING from "utils/query-string-parsing";
 // console.debug( 'galaxy globals loaded' );
