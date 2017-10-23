@@ -156,6 +156,7 @@ var HistoryViewEdit = _super.extend(
     renderItems : function( $whereTo ){
         var views = _super.prototype.renderItems.call( this, $whereTo );
         if( !this.searchFor ){ this._renderCounts( $whereTo ); }
+        else{ this._renderSearchFindings( $whereTo ); }
         return views;
     },
 
@@ -427,10 +428,10 @@ var HistoryViewEdit = _super.extend(
     },
 
     /** override to display number found in subtitle */
-    _renderSearchFindings : function(){
-        this.$( '> .controls .subtitle' ).html([
-            _l( 'Found' ), this.views.length
-        ].join(' '));
+    _renderSearchFindings : function( $whereTo ){
+        $whereTo = $whereTo instanceof jQuery? $whereTo : this.$el;
+        var html = this.templates.found( this.model.toJSON(), this );
+        $whereTo.find( '> .controls .subtitle' ).html( html );
         return this;
     },
 
@@ -598,8 +599,37 @@ HistoryViewEdit.prototype.templates = (function(){
         '<% } %>',
     ], 'history' );
 
+    var foundTemplate = BASE_MVC.wrapTemplate([
+        _l( 'Found' ), ' <%- view.views.length %>, ',
+
+        '<% if( history.contents_active.deleted ){ %>',
+            '<% if( view.model.contents.includeDeleted ){ %>',
+                '<a class="toggle-deleted-link" href="javascript:void(0);">',
+                    _l( 'hide deleted' ),
+                '</a>, ',
+            '<% } else { %>',
+                '<a class="toggle-deleted-link" href="javascript:void(0);">',
+                    _l( 'show deleted' ),
+                '</a>, ',
+            '<% } %>',
+        '<% } %>',
+
+        '<% if( history.contents_active.hidden ){ %>',
+            '<% if( view.model.contents.includeHidden ){ %>',
+                '<a class="toggle-hidden-link" href="javascript:void(0);">',
+                    _l( 'hide hidden' ),
+                '</a>',
+            '<% } else { %>',
+                '<a class="toggle-hidden-link" href="javascript:void(0);">',
+                    _l( 'show hidden' ),
+                '</a>',
+            '<% } %>',
+        '<% } %>',
+    ], 'history' );
+
     return _.extend( _.clone( _super.prototype.templates ), {
-        counts : countsTemplate
+        counts : countsTemplate,
+        found : foundTemplate 
     });
 }());
 

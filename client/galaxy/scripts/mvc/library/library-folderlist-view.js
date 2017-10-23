@@ -277,7 +277,7 @@ var FolderListView = Backbone.View.extend({
          // Iterate each checkbox
          $(':checkbox', '#folder_list_body').each(function() {
             this.checked = selected;
-            var $row = $(this.parentElement.parentElement);
+            var $row = $(this).closest('tr');
             // Change color of selected/unselected
             if (selected) {
               that.makeDarkRow($row);
@@ -295,12 +295,11 @@ var FolderListView = Backbone.View.extend({
         var checkbox = '';
         var $row;
         var source;
+        $row = $(event.target).closest('tr');
         if (event.target.localName === 'input'){
             checkbox = event.target;
-            $row = $(event.target.parentElement.parentElement);
             source = 'input';
         } else if (event.target.localName === 'td') {
-            $row = $(event.target.parentElement);
             checkbox = $row.find(':checkbox')[0];
             source = 'td';
         }

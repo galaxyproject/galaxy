@@ -1,15 +1,9 @@
 define([
-    "layout/masthead",
-    "mvc/base-mvc",
-    "utils/utils",
     "libs/toastr",
     "mvc/library/library-model",
     "mvc/library/library-libraryrow-view",
     "libs/underscore"
 ], function(
-    mod_masthead,
-    mod_baseMVC,
-    mod_utils,
     mod_toastr,
     mod_library_model,
     mod_library_libraryrow_view,
@@ -199,13 +193,6 @@ var LibraryListView = Backbone.View.extend({
         }
     },
 
-    redirectToHome: function(){
-        window.location = '../';
-    },
-    redirectToLogin: function(){
-        window.location = '/user/login';
-    },
-
     /**
      * In case the search_term is not empty perform the search and render
      * the result. Render all visible libraries otherwise.
@@ -217,7 +204,7 @@ var LibraryListView = Backbone.View.extend({
         var results = null
         results = this.collection.search( search_term );
         this.options.searching = true;
-        this.render({'models': results});
+        this.render({models: results, show_page: 1});
       } else {
         this.options.searching = false;
         this.render();

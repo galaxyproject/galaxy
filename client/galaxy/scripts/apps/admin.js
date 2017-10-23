@@ -7,6 +7,7 @@ var jQuery = require( 'jquery' ),
     Ui = require( 'mvc/ui/ui-misc' ),
     QueryStringParsing = require( 'utils/query-string-parsing' ),
     Router = require( 'layout/router' ),
+    Utils = require( 'utils/utils' ),
     Page = require( 'layout/page' );
 
 window.app = function app( options, bootstrapped ){
@@ -114,6 +115,7 @@ window.app = function app( options, bootstrapped ){
 
     $(function() {
         _.extend( options.config, { active_view : 'admin' } );
+        Utils.setWindowTitle("Administration");
         Galaxy.page = new Page.View( _.extend( options, {
             Left    : AdminPanel,
             Router  : AdminRouter

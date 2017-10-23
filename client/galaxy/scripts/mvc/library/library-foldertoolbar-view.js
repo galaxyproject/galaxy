@@ -269,10 +269,11 @@ var FolderToolbarView = Backbone.View.extend({
     var dataset_ids = [];
     var folder_ids = [];
     $('#folder_table').find(':checked').each(function(){
-        if ($(this.parentElement.parentElement).data('id') !== '' && this.parentElement.parentElement.classList.contains('dataset_row') ) {
-            dataset_ids.push($(this.parentElement.parentElement).data('id'));
-        } else if ($(this.parentElement.parentElement).data('id') !== '' && this.parentElement.parentElement.classList.contains('folder_row') ) {
-            folder_ids.push($(this.parentElement.parentElement).data('id'));
+        var row_id = $(this).closest('tr').data('id');
+        if (row_id.substring(0,1) == 'F'){
+            folder_ids.push(row_id);
+        } else {
+            dataset_ids.push(row_id);
         }
     });
     // prepare the dataset objects to be imported
@@ -323,10 +324,11 @@ var FolderToolbarView = Backbone.View.extend({
     var dataset_ids = [];
     var folder_ids = [];
         $( '#folder_table' ).find( ':checked' ).each( function(){
-            if ( $(this.parentElement.parentElement).data('id') !== '' && this.parentElement.parentElement.classList.contains('dataset_row') ) {
-                dataset_ids.push( $(this.parentElement.parentElement).data('id') );
-            } else if ( $(this.parentElement.parentElement).data('id') !== '' && this.parentElement.parentElement.classList.contains('folder_row') ) {
-                folder_ids.push( $(this.parentElement.parentElement).data('id') );
+            var row_id = $(this).closest('tr').data('id');
+            if (row_id.substring(0,1) == 'F'){
+                folder_ids.push(row_id);
+            } else {
+                dataset_ids.push(row_id);
             }
         } );
     var url = Galaxy.root + 'api/libraries/datasets/download/' + format;
@@ -367,10 +369,9 @@ var FolderToolbarView = Backbone.View.extend({
       .done(function(){
         self.modal = Galaxy.modal;
         var template_modal = self.templateAddFilesFromHistory();
-        var folder_name = self.options.full_path[self.options.full_path.length - 1][1]
         self.modal.show({
             closing_events  : true,
-            title           : 'Adding datasets from your history to ' + folder_name,
+            title           : 'Adding datasets from your history',
             body            : template_modal({histories: self.histories.models}),
             buttons         : {
                 'Add'       : function() {self.addAllDatasetsFromHistory();},
@@ -758,9 +759,9 @@ var FolderToolbarView = Backbone.View.extend({
     } else {
       this.modal.disableButton( 'Add' );
       checked_hdas.each(function(){
-        var hid = $( this.parentElement.parentElement.parentElement ).data( 'id' );
+        var hid = $(this).closest('li').data( 'id' );
         if ( hid ) {
-          var item_type = $( this.parentElement.parentElement.parentElement ).data( 'name' );
+          var item_type = $(this).closest('li').data( 'name' );
           history_item_ids.push( hid );
           history_item_types.push( item_type );
         }
@@ -941,8 +942,8 @@ var FolderToolbarView = Backbone.View.extend({
   chainCallDeletingItems: function( items_to_delete ){
   var self = this;
   this.deleted_items = new mod_library_model.Folder();
-  var popped_item = items_to_delete.pop();
-  if ( typeof popped_item === "undefined" ) {
+  var item_to_delete = items_to_delete.pop();
+  if ( typeof item_to_delete === "undefined" ) {
     if ( this.options.chain_call_control.failed_number === 0 ){
       mod_toastr.success( 'Selected items were deleted.' );
     } else if ( this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number ){
@@ -953,10 +954,9 @@ var FolderToolbarView = Backbone.View.extend({
     Galaxy.modal.hide();
     return this.deleted_items;
   }
-  var promise = $.when( popped_item.destroy() );
-
-  promise.done( function( item ){
-            Galaxy.libraries.folderListView.collection.remove( popped_item.id );
+  item_to_delete.destroy()
+      .done( function( item ){
+            Galaxy.libraries.folderListView.collection.remove( item_to_delete.id );
             self.updateProgress();
             // add the deleted item to collection, triggers rendering
             if ( Galaxy.libraries.folderListView.options.include_deleted ){
@@ -973,11 +973,11 @@ var FolderToolbarView = Backbone.View.extend({
             }
             self.chainCallDeletingItems( items_to_delete );
           })
-          .fail( function(){
-            self.options.chain_call_control.failed_number += 1;
-            self.updateProgress();
-            self.chainCallDeletingItems( items_to_delete );
-          });
+      .fail( function(){
+        self.options.chain_call_control.failed_number += 1;
+        self.updateProgress();
+        self.chainCallDeletingItems( items_to_delete );
+      });
   },
 
   /**
@@ -995,8 +995,10 @@ var FolderToolbarView = Backbone.View.extend({
    * Delete the selected items. Atomic. One by one.
    */
   deleteSelectedItems: function(){
-    var checkedValues = $('#folder_table').find(':checked');
-    if(checkedValues.length === 0){
+    var dataset_ids = [];
+    var folder_ids = [];
+    var $checkedValues = $('#folder_table').find(':checked');
+    if($checkedValues.length === 0){
         mod_toastr.info('You must select at least one item for deletion.');
     } else {
       var template = this.templateDeletingItemsProgressBar();
@@ -1012,15 +1014,13 @@ var FolderToolbarView = Backbone.View.extend({
       // init the control counters
       this.options.chain_call_control.total_number = 0;
       this.options.chain_call_control.failed_number = 0;
-
-      var dataset_ids = [];
-      var folder_ids = [];
-      checkedValues.each(function(){
-          if ($(this.parentElement.parentElement).data('id') !== undefined) {
-              if ($(this.parentElement.parentElement).data('id').substring(0,1) == 'F'){
-                folder_ids.push($(this.parentElement.parentElement).data('id'));
+      $checkedValues.each(function(){
+          var row_id = $(this).closest('tr').data('id');
+          if (row_id !== undefined) {
+              if (row_id.substring(0,1) == 'F'){
+                folder_ids.push(row_id);
               } else {
-                dataset_ids.push($(this.parentElement.parentElement).data('id'));
+                dataset_ids.push(row_id);
               }
           }
       });
@@ -1040,7 +1040,7 @@ var FolderToolbarView = Backbone.View.extend({
           items_to_delete.push(folder);
       }
 
-      this.options.chain_call_control.total_number = items_total.length;
+      this.options.chain_call_control.total_number = items_total;
       // call the recursive function to call ajax one after each other (request FIFO queue)
       this.chainCallDeletingItems(items_to_delete);
     }
@@ -1436,7 +1436,7 @@ var FolderToolbarView = Backbone.View.extend({
     return _.template([
     '<div id="add_files_modal">',
       '<div>',
-        'Select history:  ',
+        '1.&nbsp;Select history:&nbsp;',
         '<select id="dataset_add_bulk" name="dataset_add_bulk" style="width:66%; "> ',
           '<% _.each(histories, function(history) { %>', //history select box
             '<option value="<%= _.escape(history.get("id")) %>"><%= _.escape(history.get("name")) %></option>',
@@ -1452,7 +1452,7 @@ var FolderToolbarView = Backbone.View.extend({
 
   templateHistoryContents: function (){
     return _.template([
-    '<p>Choose the datasets to import:</p>',
+    '<p>2.&nbsp;Choose the datasets to import:</p>',
     '<div>',
     '<button title="Select all datasets" type="button" class="button primary-button history-import-select-all">',
       'Select all',
