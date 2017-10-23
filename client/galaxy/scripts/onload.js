@@ -17,7 +17,6 @@ window.panels = Panel;
 // using extend bc there are multiple fns/objs to decorate the window with
 import layout_modal from "layout/modal";
 _.extend(window, layout_modal);
-// _.extend(window, require("layout/modal"));
 import async_save_text from "utils/async-save-text";
 window.async_save_text = async_save_text;
 import POPUPMENU from "ui/popupmenu";
