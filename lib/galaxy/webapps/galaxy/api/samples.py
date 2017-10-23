@@ -24,6 +24,9 @@ class SamplesAPIController(BaseAPIController):
         GET /api/requests/{encoded_request_id}/samples
         Displays a collection (list) of sample of a sequencing request.
         """
+        if not trans.app.config.enable_legacy_sample_tracking_api:
+            trans.response.status = 403
+            return "The configuration of this Galaxy instance does not allow accessing this API."
         try:
             request_id = trans.security.decode_id(kwd['request_id'])
         except TypeError:
@@ -52,6 +55,9 @@ class SamplesAPIController(BaseAPIController):
         PUT /api/samples/{encoded_sample_id}
         Updates a sample or objects related ( mapped ) to a sample.
         """
+        if not trans.app.config.enable_legacy_sample_tracking_api:
+            trans.response.status = 403
+            return "The configuration of this Galaxy instance does not allow accessing this API."
         update_type = None
         if 'update_type' not in payload:
             trans.response.status = 400

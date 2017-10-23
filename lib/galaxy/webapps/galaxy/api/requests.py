@@ -5,6 +5,7 @@ import logging
 
 from sqlalchemy import and_, false
 
+from galaxy import exceptions
 from galaxy import web
 from galaxy.util.bunch import Bunch
 from galaxy.web import url_for
@@ -23,6 +24,9 @@ class RequestsAPIController(BaseAPIController):
         GET /api/requests
         Displays a collection (list) of sequencing requests.
         """
+        if not trans.app.config.enable_legacy_sample_tracking_api:
+            trans.response.status = 403
+            return "The configuration of this Galaxy instance does not allow accessing this API."
         # if admin user then return all requests
         if trans.user_is_admin():
             query = trans.sa_session.query(trans.app.model.Request) \
@@ -49,6 +53,9 @@ class RequestsAPIController(BaseAPIController):
         GET /api/requests/{encoded_request_id}
         Displays details of a sequencing request.
         """
+        if not trans.app.config.enable_legacy_sample_tracking_api:
+            trans.response.status = 403
+            return "The configuration of this Galaxy instance does not allow accessing this API."
         try:
             request_id = trans.security.decode_id(id)
         except TypeError:
@@ -75,6 +82,9 @@ class RequestsAPIController(BaseAPIController):
         Updates a request state, sample state or sample dataset transfer status
         depending on the update_type
         """
+        if not trans.app.config.enable_legacy_sample_tracking_api:
+            trans.response.status = 403
+            return "The configuration of this Galaxy instance does not allow accessing this API."
         update_type = None
         if 'update_type' not in payload:
             trans.response.status = 400
