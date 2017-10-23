@@ -54,14 +54,12 @@ class WebhooksRegistry(object):
                 log.warning('directory not found: %s', config_dir)
                 continue
 
-            config_file = os.listdir(config_dir)[0]
-            config_file = config_file \
-                if config_file.endswith('.yml') \
-                or config_file.endswith('.yaml') \
-                else ''
-
-            if config_file:
-                self.load_webhook_from_config(config_dir, config_file)
+            config_dir_contents = os.listdir(config_dir)
+            # We are assuming that all yml/yaml files in a webhooks'
+            # config directory are webhook config files.
+            for config_file in config_dir_contents:
+                if config_file.endswith('.yml') or config_file.endswith('.yaml'):
+                    self.load_webhook_from_config(config_dir, config_file)
 
     def load_webhook_from_config(self, config_dir, config_file):
         try:
