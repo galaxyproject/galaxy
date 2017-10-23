@@ -22,7 +22,7 @@ window.async_save_text = async_save_text;
 import POPUPMENU from "ui/popupmenu";
 window.make_popupmenu = POPUPMENU.make_popupmenu;
 window.make_popup_menus = POPUPMENU.make_popup_menus;
-import init_tag_click_function from 'ui/autocom_tagging';
+import init_tag_click_function from "ui/autocom_tagging";
 window.init_tag_click_function = init_tag_click_function;
 import TOURS from "mvc/tours";
 import QUERY_STRING from "utils/query-string-parsing";
