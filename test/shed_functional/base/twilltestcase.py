@@ -1091,11 +1091,9 @@ class ShedTwillTestCase(TwillTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def reactivate_repository(self, installed_repository):
-        params = dict(operation='activate or reinstall', id=self.security.encode_id(installed_repository.id))
-        url = '/admin_toolshed/browse_repositories'
+        params = dict(id=self.security.encode_id(installed_repository.id))
+        url = '/admin_toolshed/restore_repository'
         self.visit_galaxy_url(url, params)
-        strings_displayed = [installed_repository.name, 'repository has been activated']
-        self.check_for_strings(strings_displayed, [])
 
     def reinstall_repository(self,
                              installed_repository,
@@ -1158,12 +1156,6 @@ class ShedTwillTestCase(TwillTestCase):
         url = '/repository/reset_all_metadata?id=%s' % self.security.encode_id(repository.id)
         self.visit_url(url)
         self.check_for_strings(['All repository metadata has been reset.'])
-
-    def repair_installed_repository(self, repository):
-        repository_id = self.security.encode_id(repository.id)
-        url = '/admin_toolshed/repair_repository?id=%s' % repository_id
-        self.visit_galaxy_url(url)
-        self.submit_form('repair_repository', 'repair_repository_button')
 
     def review_repository(self, repository, review_contents_dict, user=None, changeset_revision=None):
         strings_displayed = []

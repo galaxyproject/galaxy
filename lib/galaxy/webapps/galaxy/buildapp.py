@@ -102,6 +102,7 @@ def paste_app_factory(global_conf, **kwargs):
     webapp.add_client_route('/admin/roles', 'admin')
     webapp.add_client_route('/admin/forms', 'admin')
     webapp.add_client_route('/admin/groups', 'admin')
+    webapp.add_client_route('/admin/repositories', 'admin')
     webapp.add_client_route('/admin/tool_versions', 'admin')
     webapp.add_client_route('/admin/quotas', 'admin')
     webapp.add_client_route('/admin/form/{form_id}', 'admin')

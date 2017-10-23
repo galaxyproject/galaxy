@@ -58,8 +58,9 @@ var AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: "Manage installed tools",
-                        url: "admin_toolshed/browse_repositories",
-                        enabled: self.settings.is_repo_installed
+                        url: "admin/repositories",
+                        enabled: self.settings.is_repo_installed,
+                        target: "__use_router__"
                     },
                     {
                         title: "Reset metadata",

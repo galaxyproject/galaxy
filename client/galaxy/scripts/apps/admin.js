@@ -17,13 +17,14 @@ window.app = function app(options, bootstrapped) {
     /** Routes */
     var AdminRouter = Router.extend({
         routes: {
-            "(/)admin(/)users": "show_users",
-            "(/)admin(/)roles": "show_roles",
-            "(/)admin(/)groups": "show_groups",
-            "(/)admin(/)tool_versions": "show_tool_versions",
-            "(/)admin(/)quotas": "show_quotas",
-            "(/)admin(/)forms": "show_forms",
-            "(/)admin(/)form(/)(:form_id)": "show_form"
+            "(/)admin(/)users" : "show_users",
+            "(/)admin(/)roles" : "show_roles",
+            "(/)admin(/)groups" : "show_groups",
+            "(/)admin(/)tool_versions" : "show_tool_versions",
+            "(/)admin(/)quotas" : "show_quotas",
+            "(/)admin(/)repositories" : "show_repositories",
+            "(/)admin(/)forms" : "show_forms",
+            "(/)admin(/)form(/)(:form_id)" : "show_form"
         },
 
         authenticate: function(args, name) {
@@ -54,6 +55,16 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: Galaxy.root + "admin/groups_list",
+                    url_data: Galaxy.params,
+                    dict_format: true
+                })
+            );
+        },
+
+        show_repositories: function() {
+            this.page.display(
+                new GridView({
+                    url_base: Galaxy.root + "admin_toolshed/browse_repositories",
                     url_data: Galaxy.params,
                     dict_format: true
                 })
