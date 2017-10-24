@@ -2,7 +2,7 @@ name: Scratchbook - Introduction
 title_default: "Scratchbook Introduction"
 description: "An introduction on how to display multiple datasets and visualizations next to each other."
 tags:
-  - "default"
+  - "core"
   - "UI"
   - "visualization"
 
