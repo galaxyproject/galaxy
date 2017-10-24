@@ -100,7 +100,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
             case_error = None
             try:
                 input.get_current_case(values[input.test_param.name])
-            except:
+            except Exception:
                 case_error = 'The selected case is unavailable/invalid.'
                 pass
             callback_helper(input.test_param, values, new_name_prefix, label_prefix, parent_prefix=name_prefix, context=context, error=case_error)

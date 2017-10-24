@@ -671,13 +671,8 @@ define(
                     async: async
                 });
                 switch (target) {
-                    case "inbound":
-                        // this currently assumes that there is only a single grid shown at a time
-                        var $div = $(".grid-header").closest(".inbound");
-                        if ($div.length !== 0) {
-                            $div.load(href);
-                            return;
-                        }
+                    case "center":
+                        $("#galaxy_main").attr("src", href);
                         break;
                     case "top":
                         window.top.location = href;

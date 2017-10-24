@@ -2,8 +2,9 @@
 API operations on Group objects.
 """
 import logging
-from galaxy.web.base.controller import BaseAPIController, url_for
+
 from galaxy import web
+from galaxy.web.base.controller import BaseAPIController, url_for
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ class GroupUsersAPIController(BaseAPIController):
         decoded_group_id = trans.security.decode_id(group_id)
         try:
             group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-        except:
+        except Exception:
             group = None
         if not group:
             trans.response.status = 400

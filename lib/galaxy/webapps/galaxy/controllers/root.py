@@ -4,20 +4,28 @@ Contains the main interface in the Universe class
 from __future__ import absolute_import
 
 import cgi
+import logging
 import os
 
 import requests
-from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
+from paste.httpexceptions import (
+    HTTPBadGateway,
+    HTTPNotFound
+)
 
-from galaxy import web
-from galaxy import util
-from galaxy.util import listify, string_as_bool, FILENAME_VALID_CHARS
-
-from galaxy.web.base import controller
+from galaxy import (
+    managers,
+    util,
+    web
+)
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy import managers
+from galaxy.util import (
+    FILENAME_VALID_CHARS,
+    listify,
+    string_as_bool
+)
+from galaxy.web.base import controller
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -183,7 +191,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         if hid is not None:
             try:
                 hid = int(hid)
-            except:
+            except ValueError:
                 return "hid '%s' is invalid" % str(hid)
             history = trans.get_history()
             for dataset in history.datasets:
@@ -197,7 +205,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 id = self.decode_id(encoded_id)
             try:
                 data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-            except:
+            except Exception:
                 return "Dataset id '%s' is invalid" % str(id)
         if data:
             current_user_roles = trans.get_current_user_roles()
@@ -214,7 +222,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 trans.log_event("Display dataset id: %s" % str(id))
                 try:
                     return open(data.file_name)
-                except:
+                except Exception:
                     return "This dataset contains no content"
             else:
                 return "You are not allowed to access this dataset"
@@ -303,7 +311,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 association = trans.sa_session.query(trans.app.model.GalaxySessionToHistoryAssociation) \
                                               .filter_by(session_id=galaxy_session.id, history_id=new_history.id) \
                                               .first()
-            except:
+            except Exception:
                 association = None
             new_history.add_galaxy_session(galaxy_session, association=association)
             trans.sa_session.add(new_history)
@@ -323,7 +331,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 association = trans.sa_session.query(trans.app.model.GalaxySessionToHistoryAssociation) \
                                               .filter_by(session_id=galaxy_session.id, history_id=new_history.id) \
                                               .first()
-            except:
+            except Exception:
                 association = None
             new_history.add_galaxy_session(galaxy_session, association=association)
             trans.sa_session.add(new_history)
@@ -405,7 +413,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             trans.sa_session.add(new_data)
             trans.sa_session.flush()
             return trans.show_message("<p>Secondary dataset has been made primary.</p>", refresh_frames=['history'])
-        except:
+        except Exception:
             return trans.show_error_message("<p>Failed to make secondary dataset primary.</p>")
 
     @web.expose
@@ -451,7 +459,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                     rval[k] = string_as_bool(rval[k])
                 rval[k] = float(rval[k])
                 rval[k] = int(rval[k])
-            except:
+            except Exception:
                 pass
         return rval
 
@@ -468,7 +476,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         try:
             code = int(code)
-        except Exception:
+        except ValueError:
             code = 500
 
         if code == 502:

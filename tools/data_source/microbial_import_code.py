@@ -77,7 +77,7 @@ def load_microbial_data(GALAXY_DATA_INDEX_DIR, sep='\t'):
                     orgs[org_num]['chrs'][chr_acc]['data'][uid] = data
                 else:
                     continue
-            except:
+            except Exception:
                 continue
     for org_num in orgs:
         org = orgs[org_num]
@@ -149,7 +149,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
                 copyfile(filepath, newdata.file_name)
                 newdata.info = newdata.name
                 newdata.state = newdata.states.OK
-            except:
+            except Exception:
                 newdata.info = "The requested file is missing from the system."
                 newdata.state = newdata.states.ERROR
             newdata.dbkey = dbkey

@@ -17,7 +17,6 @@ from tool_shed.galaxy_install import (
 from tool_shed.galaxy_install.grids import admin_toolshed_grids
 from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
-from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from tool_shed.galaxy_install.tools import (
     data_manager,
@@ -56,21 +55,17 @@ class AdminToolshed(AdminGalaxy):
         repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
         try:
             trans.app.installed_repository_manager.activate_repository(repository)
+            message = 'The <b>%s</b> repository has been activated.' % escape(repository.name)
+            status = 'done'
         except Exception as e:
             error_message = "Error activating repository %s: %s" % (escape(repository.name), str(e))
             log.exception(error_message)
             message = '%s.<br/>You may be able to resolve this by uninstalling and then reinstalling the repository.  Click <a href="%s">here</a> to uninstall the repository.' \
                 % (error_message, web.url_for(controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id(repository.id)))
             status = 'error'
-            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                            action='manage_repository',
-                                                            id=repository_id,
-                                                            message=message,
-                                                            status=status))
-        message = 'The <b>%s</b> repository has been activated.' % escape(repository.name)
-        status = 'done'
         return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='browse_repositories',
+                                                        action='manage_repository',
+                                                        id=repository_id,
                                                         message=message,
                                                         status=status))
 
@@ -85,91 +80,70 @@ class AdminToolshed(AdminGalaxy):
                                    message=message,
                                    status=status)
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
     def browse_repositories(self, trans, **kwd):
+        message = kwd.get('message', '')
+        status = kwd.get('status', '')
         if 'operation' in kwd:
             operation = kwd.pop('operation').lower()
-            if operation == "manage_repository":
+            if operation == "update tool shed status":
+                message, status = repository_util.check_for_updates(trans.app, trans.install_model, kwd.get('id'))
+        if message and status:
+            kwd['message'] = util.sanitize_text(message)
+            kwd['status'] = 'success' if status in ['ok', 'done', 'success'] else 'error'
+        kwd['dict_format'] = True
+        return self.installed_repository_grid(trans, **kwd)
+
+    @web.expose
+    @web.require_admin
+    def restore_repository(self, trans, **kwd):
+        repository_id = kwd['id']
+        repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
+        if repository.uninstalled:
+            # Since we're reinstalling the repository we need to find the latest changeset revision to which it can
+            # be updated so that we can reset the metadata if necessary.  This will ensure that information about
+            # repository dependencies and tool dependencies will be current.  Only allow selecting a different section
+            # in the tool panel if the repository was uninstalled and it contained tools that should be displayed in
+            # the tool panel.
+            changeset_revision_dict = trans.app.update_repository_manager.get_update_to_changeset_revision_and_ctx_rev(repository)
+            current_changeset_revision = changeset_revision_dict.get('changeset_revision', None)
+            current_ctx_rev = changeset_revision_dict.get('ctx_rev', None)
+            if current_changeset_revision and current_ctx_rev:
+                if current_ctx_rev == repository.ctx_rev:
+                    # The uninstalled repository is current.
+                    return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
+                                                                    action='reselect_tool_panel_section',
+                                                                    **kwd))
+                else:
+                    # The uninstalled repository has updates available in the tool shed.
+                    updated_repo_info_dict = \
+                        self.get_updated_repository_information(trans=trans,
+                                                                repository_id=trans.security.encode_id(repository.id),
+                                                                repository_name=repository.name,
+                                                                repository_owner=repository.owner,
+                                                                changeset_revision=current_changeset_revision)
+                    json_repo_info_dict = json.dumps(updated_repo_info_dict)
+                    encoded_repo_info_dict = encoding_util.tool_shed_encode(json_repo_info_dict)
+                    kwd['latest_changeset_revision'] = current_changeset_revision
+                    kwd['latest_ctx_rev'] = current_ctx_rev
+                    kwd['updated_repo_info_dict'] = encoded_repo_info_dict
+                    return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
+                                                                    action='reselect_tool_panel_section',
+                                                                    **kwd))
+            else:
+                message = "Unable to get latest revision for repository <b>%s</b> from " % escape(str(repository.name))
+                message += "the Tool Shed, so repository re-installation is not possible at this time."
+                status = "error"
                 return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                                 action='manage_repository',
-                                                                **kwd))
-            if operation == "get updates":
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='check_for_updates',
-                                                                **kwd))
-            if operation == "update tool shed status":
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='update_tool_shed_status_for_installed_repository',
-                                                                **kwd))
-            if operation == "reset to install":
-                kwd['reset_repository'] = True
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='reset_to_install',
-                                                                **kwd))
-            if operation == "purge":
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='purge_repository',
-                                                                **kwd))
-            if operation == "activate or reinstall":
-                repository = repository_util.get_installed_tool_shed_repository(trans.app, kwd['id'])
-                if repository.uninstalled:
-                    # Since we're reinstalling the repository we need to find the latest changeset revision to which it can
-                    # be updated so that we can reset the metadata if necessary.  This will ensure that information about
-                    # repository dependencies and tool dependencies will be current.  Only allow selecting a different section
-                    # in the tool panel if the repository was uninstalled and it contained tools that should be displayed in
-                    # the tool panel.
-                    changeset_revision_dict = \
-                        trans.app.update_repository_manager.get_update_to_changeset_revision_and_ctx_rev(repository)
-                    current_changeset_revision = changeset_revision_dict.get('changeset_revision', None)
-                    current_ctx_rev = changeset_revision_dict.get('ctx_rev', None)
-                    if current_changeset_revision and current_ctx_rev:
-                        if current_ctx_rev == repository.ctx_rev:
-                            # The uninstalled repository is current.
-                            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                            action='reselect_tool_panel_section',
-                                                                            **kwd))
-                        else:
-                            # The uninstalled repository has updates available in the tool shed.
-                            updated_repo_info_dict = \
-                                self.get_updated_repository_information(trans=trans,
-                                                                        repository_id=trans.security.encode_id(repository.id),
-                                                                        repository_name=repository.name,
-                                                                        repository_owner=repository.owner,
-                                                                        changeset_revision=current_changeset_revision)
-                            json_repo_info_dict = json.dumps(updated_repo_info_dict)
-                            encoded_repo_info_dict = encoding_util.tool_shed_encode(json_repo_info_dict)
-                            kwd['latest_changeset_revision'] = current_changeset_revision
-                            kwd['latest_ctx_rev'] = current_ctx_rev
-                            kwd['updated_repo_info_dict'] = encoded_repo_info_dict
-                            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                            action='reselect_tool_panel_section',
-                                                                            **kwd))
-                    else:
-                        message = "Unable to get latest revision for repository <b>%s</b> from " % escape(str(repository.name))
-                        message += "the Tool Shed, so repository re-installation is not possible at this time."
-                        status = "error"
-                        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                        action='browse_repositories',
-                                                                        message=message,
-                                                                        status=status))
-                else:
-                    return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                    action='activate_repository',
-                                                                    **kwd))
-            if operation == "deactivate or uninstall":
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='deactivate_or_uninstall_repository',
-                                                                **kwd))
-            if operation == "install latest revision":
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='install_latest_repository_revision',
-                                                                **kwd))
-            if operation == 'install':
-                # The user is attempting to install a white ghost.
-                kwd['status'] = 'error'
-                kwd['message'] = 'It seems you are attempting to install a "white ghost", which should instead be purged.'
-        return self.installed_repository_grid(trans, **kwd)
+                                                                id=repository_id,
+                                                                message=message,
+                                                                status=status))
+        else:
+            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
+                                                            action='activate_repository',
+                                                            **kwd))
 
     @web.expose
     @web.require_admin
@@ -268,11 +242,6 @@ class AdminToolshed(AdminGalaxy):
                         message += 'Attempting to uninstall tool dependencies resulted in errors: %s' % errors
                         status = max(status, statuses.index('error'))
         status = statuses[status]
-        if kwd.get('deactivate_or_uninstall_repository_button', False):
-            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                            action='browse_repositories',
-                                                            message=message,
-                                                            status=status))
         remove_from_disk_check_box = CheckboxField('remove_from_disk', checked=remove_from_disk_checked)
         return trans.fill_template('/admin/tool_shed_repository/deactivate_or_uninstall_repository.mako',
                                    repository=tool_shed_repositories,
@@ -467,8 +436,6 @@ class AdminToolshed(AdminGalaxy):
     @web.require_admin
     def install_latest_repository_revision(self, trans, **kwd):
         """Install the latest installable revision of a repository that has been previously installed."""
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
         repository_id = kwd.get('id', None)
         if repository_id is not None:
             repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
@@ -484,8 +451,7 @@ class AdminToolshed(AdminGalaxy):
                 url = util.build_url(tool_shed_url, pathspec=pathspec, params=params)
                 latest_downloadable_revision = json.loads(raw_text)
                 if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
-                    message = 'Error retrieving the latest downloadable revision for this repository via the url <b>%s</b>.' % url
-                    status = 'error'
+                    return trans.show_error_message('Error retrieving the latest downloadable revision for this repository via the url <b>%s</b>.' % url)
                 else:
                     # Make sure the latest changeset_revision of the repository has not already been installed.
                     # Updates to installed repository revisions may have occurred, so make sure to locate the
@@ -502,7 +468,7 @@ class AdminToolshed(AdminGalaxy):
                             (latest_downloadable_revision, name, owner)
                         if current_changeset_revision != latest_downloadable_revision:
                             message += '  The current changeset revision is <b>%s</b>.' % current_changeset_revision
-                        status = 'error'
+                        return trans.show_error_message(message)
                     else:
                         # Install the latest downloadable revision of the repository.
                         params = dict(name=name,
@@ -513,15 +479,9 @@ class AdminToolshed(AdminGalaxy):
                         url = util.build_url(tool_shed_url, pathspec=pathspec, params=params)
                         return trans.response.send_redirect(url)
             else:
-                message = 'Cannot locate installed tool shed repository with encoded id <b>%s</b>.' % str(repository_id)
-                status = 'error'
+                return trans.show_error_message('Cannot locate installed tool shed repository with encoded id <b>%s</b>.' % str(repository_id))
         else:
-            message = 'The request parameters did not include the required encoded <b>id</b> of installed repository.'
-            status = 'error'
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='browse_repositories',
-                                                        message=message,
-                                                        status=status))
+            return trans.show_error_message('The request parameters did not include the required encoded <b>id</b> of installed repository.')
 
     @web.expose
     @web.require_admin
@@ -964,11 +924,7 @@ class AdminToolshed(AdminGalaxy):
                     message += 'include newly defined repository or tool dependency definitions, and attempting '
                     message += 'to update the repository resulted in the following error.  Contact the Tool Shed '
                     message += 'administrator if necessary.<br/>%s' % str(e)
-                    status = 'error'
-                    return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                    action='browse_repositories',
-                                                                    message=message,
-                                                                    status=status))
+                    return trans.show_error_message(message)
                 changeset_revisions = updating_to_changeset_revision
             else:
                 changeset_revisions = kwd.get('changeset_revisions', None)
@@ -1194,7 +1150,7 @@ class AdminToolshed(AdminGalaxy):
                         irm = trans.app.installed_repository_manager
                         purge_status, purge_message = irm.purge_repository(repository)
                         if purge_status == 'ok':
-                            new_kwd['status'] = "done"
+                            new_kwd['status'] = 'done'
                         else:
                             new_kwd['status'] = 'error'
                         new_kwd['message'] = purge_message
@@ -1210,9 +1166,7 @@ class AdminToolshed(AdminGalaxy):
         else:
             new_kwd['status'] = 'error'
             new_kwd['message'] = 'Invalid repository id value "None" received for repository to be purged.'
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='browse_repositories',
-                                                        **new_kwd))
+        return trans.fill_template('message.mako', **new_kwd)
 
     @web.expose
     @web.require_admin
@@ -1363,67 +1317,6 @@ class AdminToolshed(AdminGalaxy):
                                    tool_shed_repositories=tool_shed_repositories,
                                    initiate_repository_installation_ids=encoded_repository_ids,
                                    reinstalling=True)
-
-    @web.expose
-    @web.require_admin
-    def repair_repository(self, trans, **kwd):
-        """
-        Inspect the repository dependency hierarchy for a specified repository and attempt to make sure they are all properly installed as well as
-        each repository's tool dependencies.
-        """
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        repository_id = kwd.get('id', None)
-        if not repository_id:
-            message = 'Invalid installed tool shed repository id %s received.' % str(repository_id)
-            status = 'error'
-            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                            action='browse_repositories',
-                                                            message=message,
-                                                            status=status))
-        tool_shed_repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
-        rrm = RepairRepositoryManager(trans.app)
-        if kwd.get('repair_repository_button', False):
-            encoded_repair_dict = kwd.get('repair_dict', None)
-            if encoded_repair_dict:
-                repair_dict = encoding_util.tool_shed_decode(encoded_repair_dict)
-            else:
-                repair_dict = None
-            if not repair_dict:
-                repair_dict = rrm.get_repair_dict(tool_shed_repository)
-            ordered_tsr_ids = repair_dict.get('ordered_tsr_ids', [])
-            ordered_repo_info_dicts = repair_dict.get('ordered_repo_info_dicts', [])
-            if ordered_tsr_ids and ordered_repo_info_dicts:
-                repositories_for_repair = []
-                for tsr_id in ordered_tsr_ids:
-                    repository = trans.install_model.context.query(trans.install_model.ToolShedRepository).get(trans.security.decode_id(tsr_id))
-                    repositories_for_repair.append(repository)
-                return self.repair_tool_shed_repositories(trans, rrm, repositories_for_repair, ordered_repo_info_dicts)
-        tool_shed_repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
-        repair_dict = rrm.get_repair_dict(tool_shed_repository)
-        encoded_repair_dict = encoding_util.tool_shed_encode(repair_dict)
-        ordered_tsr_ids = repair_dict.get('ordered_tsr_ids', [])
-        ordered_repo_info_dicts = repair_dict.get('ordered_repo_info_dicts', [])
-        return trans.fill_template('admin/tool_shed_repository/repair_repository.mako',
-                                   repository=tool_shed_repository,
-                                   encoded_repair_dict=encoded_repair_dict,
-                                   repair_dict=repair_dict,
-                                   message=message,
-                                   status=status)
-
-    @web.expose
-    @web.require_admin
-    def repair_tool_shed_repositories(self, trans, repair_repository_manager, tool_shed_repositories, repo_info_dicts, **kwd):
-        """Repair specified tool shed repositories."""
-        # The received lists of tool_shed_repositories and repo_info_dicts are ordered.
-        for index, tool_shed_repository in enumerate(tool_shed_repositories):
-            repo_info_dict = repo_info_dicts[index]
-            repair_repository_manager.repair_tool_shed_repository(tool_shed_repository,
-                                                                  encoding_util.tool_shed_encode(repo_info_dict))
-        tsr_ids_for_monitoring = [trans.security.encode_id(tsr.id) for tsr in tool_shed_repositories]
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='monitor_repository_installation',
-                                                        tool_shed_repository_ids=tsr_ids_for_monitoring))
 
     @web.json
     def repository_installation_status_updates(self, trans, ids=None, status_list=None):
@@ -1675,7 +1568,8 @@ class AdminToolshed(AdminGalaxy):
     @web.require_admin
     def reset_to_install(self, trans, **kwd):
         """An error occurred while cloning the repository, so reset everything necessary to enable another attempt."""
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, kwd['id'])
+        repository_id = kwd['id']
+        repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
         if kwd.get('reset_repository', False):
             repository_util.set_repository_attributes(trans.app,
                                                       repository,
@@ -1687,12 +1581,9 @@ class AdminToolshed(AdminGalaxy):
             new_kwd = {}
             new_kwd['message'] = "You can now attempt to install the repository named <b>%s</b> again." % escape(str(repository.name))
             new_kwd['status'] = "done"
-            return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                            action='browse_repositories',
-                                                            **new_kwd))
         return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                         action='manage_repository',
-                                                        **kwd))
+                                                        id=repository_id))
 
     @web.expose
     @web.require_admin
@@ -1974,15 +1865,6 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def update_tool_shed_status_for_installed_repository(self, trans, **kwd):
-        message, status = repository_util.check_for_updates(trans.app, trans.install_model, kwd.get('id', None))
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='browse_repositories',
-                                                        message=message,
-                                                        status=status))
-
-    @web.expose
-    @web.require_admin
     def view_tool_metadata(self, trans, repository_id, tool_id, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -2015,6 +1897,15 @@ class AdminToolshed(AdminGalaxy):
                                    tool_lineage=tool_lineage,
                                    message=message,
                                    status=status)
+
+    @web.expose
+    @web.require_admin
+    def update_tool_shed_status_for_installed_repository(self, trans, **kwd):
+        message, status = repository_util.check_for_updates(trans.app, trans.install_model, kwd.get('id', None))
+        return trans.response.send_redirect(web.url_for(controller='admin',
+                                                        action='repositories',
+                                                        message=message,
+                                                        status=status))
 
     @web.expose
     @web.require_admin

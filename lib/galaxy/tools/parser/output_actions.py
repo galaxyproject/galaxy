@@ -544,7 +544,7 @@ class BooleanFilter(ToolOutputActionOptionFilter):
             try:
                 value = fields[self.column]
                 value = self.cast(value)
-            except:
+            except Exception:
                 value = False  # unable to cast or access value; treat as false
             if self.keep == bool(value):
                 rval.append(fields)

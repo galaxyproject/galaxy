@@ -2,17 +2,26 @@ import logging
 import os
 import urllib
 
-from markupsafe import escape
 import paste.httpexceptions
+from markupsafe import escape
 from six import string_types, text_type
 from sqlalchemy import false, true
 
-from galaxy import datatypes, model, util, web
-from galaxy import managers
+from galaxy import (
+    datatypes,
+    managers,
+    model,
+    util,
+    web
+)
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
-from galaxy.util import inflector, smart_str, sanitize_text
+from galaxy.util import (
+    inflector,
+    sanitize_text,
+    smart_str
+)
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
@@ -58,7 +67,7 @@ class HistoryDatasetAssociationListGrid(grids.Grid):
         grids.TextColumn("Name", key="name",
                          # Link name to dataset's history.
                          link=(lambda item: iff(item.history.deleted, None, dict(operation="switch", id=item.id))), filterable="advanced", attach_popup=True),
-        HistoryColumn("History", key="history", sortable=False, target="inbound",
+        HistoryColumn("History", key="history", sortable=False,
                       link=(lambda item: iff(item.history.deleted, None, dict(operation="switch_history", id=item.id)))),
         grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid"),
         StatusColumn("Status", key="deleted", attach_popup=False),
@@ -131,7 +140,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         try:
             job = self._get_job_for_dataset(trans, dataset_id)
             stdout = job.stdout
-        except:
+        except Exception:
             stdout = "Invalid dataset ID or you are not allowed to access this dataset"
         return smart_str(stdout)
 
@@ -143,7 +152,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         try:
             job = self._get_job_for_dataset(trans, dataset_id)
             stderr = job.stderr
-        except:
+        except Exception:
             stderr = "Invalid dataset ID or you are not allowed to access this dataset"
         return smart_str(stderr)
 
@@ -154,7 +163,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         try:
             job = self._get_job_for_dataset(trans, dataset_id)
             exit_code = job.exit_code
-        except:
+        except Exception:
             exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
         return exit_code
 
@@ -182,10 +191,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(self.decode_id(hda_id))
             if data is None:
                 raise ValueError('Invalid reference dataset id: %s.' % hda_id)
-        except:
+        except Exception:
             try:
                 data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(hda_id))
-            except:
+            except Exception:
                 data = None
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable("Invalid reference dataset id: %s." % str(hda_id))
@@ -722,7 +731,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return trans.show_error_message('Invalid parameters specified for "display at" link, please contact a Galaxy administrator')
         try:
             redirect_url = kwd['redirect_url'] % urllib.quote_plus(kwd['display_url'])
-        except:
+        except Exception:
             redirect_url = kwd['redirect_url']  # not all will need custom text
         if trans.app.security_agent.dataset_is_public(data.dataset):
             return trans.response.send_redirect(redirect_url)  # anon access already permitted by rbac
@@ -901,7 +910,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     def _unhide(self, trans, dataset_id):
         try:
             id = self.decode_id(dataset_id)
-        except:
+        except Exception:
             return False
         history = trans.get_history()
         hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
@@ -959,7 +968,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     hda.dataset.full_delete()
                     trans.log_event("Dataset id %s has been purged upon the the purge of HDA id %s" % (hda.dataset.id, hda.id))
                     trans.sa_session.add(hda.dataset)
-                except:
+                except Exception:
                     log.exception('Unable to purge dataset (%s) on purge of HDA (%s):' % (hda.dataset.id, hda.id))
             trans.sa_session.flush()
         except Exception as exc:
@@ -1061,14 +1070,14 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     # Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
                     try:
                         params_objects = job.get_param_values(trans.app, ignore_errors=False)
-                    except:
+                    except Exception:
                         params_objects = job.get_param_values(trans.app, ignore_errors=True)
                         # use different param_objects in the following line, since we want to display original values as much as possible
                         upgrade_messages = tool.check_and_update_param_values(job.get_param_values(trans.app, ignore_errors=True),
                                                                               trans,
                                                                               update_values=False)
                         has_parameter_errors = True
-                except:
+                except Exception:
                     pass
         if job is None:
             return trans.show_error_message("Job information is not available for this dataset.")

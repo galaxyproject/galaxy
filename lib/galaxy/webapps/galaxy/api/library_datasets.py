@@ -428,7 +428,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
                 # the reasoning here is that galaxy admins may not have direct filesystem access or can only access
                 # library_import_dir via FTP (which cannot create symlinks), and may rely on sysadmins to set up the
                 # import directory. if they have filesystem access, all bets are off.
-                raise exceptions.RequestParameterInvalidException( 'The given path is invalid.' )
+                raise exceptions.RequestParameterInvalidException('The given path is invalid.')
             path = os.path.join(import_base_dir, path)
         elif source in ['userdir_file', 'userdir_folder']:
             unsafe = None
@@ -725,7 +725,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
                 try:
                     return open(dataset.file_name)
-                except:
+                except Exception:
                     raise exceptions.InternalServerError("This dataset contains no content.")
         else:
             raise exceptions.RequestParameterInvalidException("Wrong format parameter specified")

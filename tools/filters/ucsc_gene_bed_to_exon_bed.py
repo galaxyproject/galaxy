@@ -38,13 +38,13 @@ def main():
 
     try:
         out_file = open(options.output, "w")
-    except:
+    except Exception:
         print("Bad output file.", file=sys.stderr)
         sys.exit(0)
 
     try:
         in_file = open(options.input)
-    except:
+    except Exception:
         print("Bad input file.", file=sys.stderr)
         sys.exit(0)
 
@@ -120,7 +120,7 @@ def main():
                                 print_tab_sep(out_file, chrom, start, end, name, "0", strand)
                             else:
                                 print_tab_sep(out_file, chrom, start, end)
-        except:
+        except Exception:
             continue
 
 

@@ -1166,7 +1166,7 @@ class JobWrapper(object, HasResourceParameters):
         # TODO: After failing here, consider returning from the function.
         try:
             self.reclaim_ownership()
-        except:
+        except Exception:
             log.exception('(%s) Failed to change ownership of %s, failing' % (job.id, self.working_directory))
             return self.fail(job.info, stdout=stdout, stderr=stderr, exit_code=tool_exit_code)
 
@@ -1316,7 +1316,7 @@ class JobWrapper(object, HasResourceParameters):
                             dataset.set_peek(line_count=context['line_count'], is_multi_byte=True)
                         else:
                             dataset.set_peek(line_count=context['line_count'])
-                    except:
+                    except Exception:
                         if (not dataset.datatype.composite_type and dataset.dataset.is_multi_byte()) or self.tool.is_multi_byte:
                             dataset.set_peek(is_multi_byte=True)
                         else:
@@ -1467,7 +1467,7 @@ class JobWrapper(object, HasResourceParameters):
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             if delete_files:
                 self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
-        except:
+        except Exception:
             log.exception("Unable to cleanup job %d", self.job_id)
 
     def _collect_extra_files(self, dataset, job_working_directory):
@@ -1765,7 +1765,7 @@ class JobWrapper(object, HasResourceParameters):
         if external_chown_script and job.user is not None:
             try:
                 self._change_ownership(self.user_system_pwent[0], str(self.user_system_pwent[3]))
-            except:
+            except Exception:
                 log.exception('(%s) Failed to change ownership of %s, making world-writable instead' % (job.id, self.working_directory))
                 os.chmod(self.working_directory, 0o777)
 
