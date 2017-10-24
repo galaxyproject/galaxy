@@ -6,23 +6,9 @@ import re
 import sgmllib
 
 from six import unichr
+from six.moves.html_entities import name2codepoint
 
 from galaxy.util import unicodify
-
-
-# reversable htmlentitydefs mappings for Python 2.2
-try:
-    from htmlentitydefs import name2codepoint, codepoint2name
-except:
-    import htmlentitydefs
-    name2codepoint = {}
-    codepoint2name = {}
-    for (name, codepoint) in htmlentitydefs.entitydefs.iteritems():
-        if codepoint.startswith('&#'):
-            codepoint = unichr(int(codepoint[2:-1]))
-        name2codepoint[name] = ord(codepoint)
-        codepoint2name[ord(codepoint)] = name
-
 
 _cp1252 = {
     unichr(128): unichr(8364),  # euro sign
@@ -363,7 +349,7 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
 
         # declare xlink namespace, if needed
         if self.mathmlOK or self.svgOK:
-            if filter(lambda n, v: n.startswith('xlink:'), attrs):
+            if any(map(lambda n, v: n.startswith('xlink:'), attrs)):
                 if not ('xmlns:xlink', 'http://www.w3.org/1999/xlink') in attrs:
                     attrs.append(('xmlns:xlink', 'http://www.w3.org/1999/xlink'))
 

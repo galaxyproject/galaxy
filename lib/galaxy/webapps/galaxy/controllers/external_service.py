@@ -133,7 +133,7 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
         external_service_id = kwd.get('id', None)
         try:
             external_service = trans.sa_session.query(trans.model.ExternalService).get(trans.security.decode_id(external_service_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'external_service', external_service_id, 'external_service', action='browse_external_services')
         external_service_type = self.get_external_service_type(trans, external_service.external_service_type_id)
         return trans.fill_template('/admin/external_service/view_external_service.mako',
@@ -149,7 +149,7 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
         external_service_id = params.get('id', None)
         try:
             external_service = trans.sa_session.query(trans.model.ExternalService).get(trans.security.decode_id(external_service_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'external_service', external_service_id, 'external_service', action='browse_external_services')
         if params.get('edit_external_service_button', False):
             external_service = self.__save_external_service(trans, **kwd)
@@ -206,7 +206,7 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
         external_service_id = kwd.get('id', None)
         try:
             external_service = trans.sa_session.query(trans.model.ExternalService).get(trans.security.decode_id(external_service_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'external_service', external_service_id, 'external_service', action='browse_external_services')
         vars = dict(id=trans.security.encode_id(external_service.form_definition.form_definition_current_id),
                     response_redirect=web.url_for(controller='external_service',
@@ -221,7 +221,7 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
         external_service_id = kwd.get('id', None)
         try:
             external_service = trans.sa_session.query(trans.model.ExternalService).get(trans.security.decode_id(external_service_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'external_service', external_service_id, 'external_service', action='browse_external_services')
         external_service.form_definition = external_service.form_definition.current.latest_form
         trans.sa_session.add(external_service)
@@ -241,7 +241,7 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
         for external_service_id in external_service_id_list:
             try:
                 external_service = trans.sa_session.query(trans.model.ExternalService).get(trans.security.decode_id(external_service_id))
-            except:
+            except Exception:
                 return invalid_id_redirect(trans, 'external_service', external_service_id, 'external_service', action='browse_external_services')
             external_service.deleted = True
             trans.sa_session.add(external_service)
@@ -260,7 +260,7 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
         for external_service_id in external_service_id_list:
             try:
                 external_service = trans.sa_session.query(trans.model.ExternalService).get(trans.security.decode_id(external_service_id))
-            except:
+            except Exception:
                 return invalid_id_redirect(trans, 'external_service', external_service_id, 'external_service', action='browse_external_services')
             external_service.deleted = False
             trans.sa_session.add(external_service)

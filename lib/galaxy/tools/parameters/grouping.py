@@ -322,7 +322,7 @@ class UploadDataset(Group):
                 if not dataset_name and 'filename' in data_file:
                     dataset_name = get_file_name(data_file['filename'])
                 return Bunch(type='file', path=data_file['local_filename'], name=dataset_name, purge_source=purge)
-            except:
+            except Exception:
                 # The uploaded file should've been persisted by the upload tool action
                 return Bunch(type=None, path=None, name=None)
 

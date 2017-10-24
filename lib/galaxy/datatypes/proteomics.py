@@ -285,7 +285,7 @@ class ThermoRAW(Binary):
             if header.find(finnigan) != -1:
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -299,7 +299,7 @@ class ThermoRAW(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Thermo Finnigan RAW file (%s)" % (nice_size(dataset.get_size()))
 
 

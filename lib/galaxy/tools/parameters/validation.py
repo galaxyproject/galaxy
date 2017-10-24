@@ -410,7 +410,7 @@ class MetadataInDataTableColumnValidator(Validator):
         metadata_column = elem.get("metadata_column", 0)
         try:
             metadata_column = int(metadata_column)
-        except:
+        except ValueError:
             pass
         message = elem.get("message", "Value for metadata %s was not found in %s." % (metadata_name, table_name))
         line_startswith = elem.get("line_startswith", None)

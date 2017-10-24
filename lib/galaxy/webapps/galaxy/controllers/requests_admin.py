@@ -1,14 +1,22 @@
 from __future__ import absolute_import
+
 import logging
 import os
+
+from markupsafe import escape
 
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, web
 from galaxy.web.form_builder import build_select_field
-from galaxy.web.framework.helpers import time_ago, grids
-from .requests_common import RequestsGrid, invalid_id_redirect
-from markupsafe import escape
+from galaxy.web.framework.helpers import (
+    grids,
+    time_ago
+)
 
+from .requests_common import (
+    invalid_id_redirect,
+    RequestsGrid
+)
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +60,7 @@ class DataTransferGrid(grids.Grid):
         def get_value(self, trans, grid, sample_dataset):
             try:
                 return escape(sample_dataset.external_service.name)
-            except:
+            except Exception:
                 return 'None'
     # Grid definition
     title = "Sample Datasets"
@@ -175,7 +183,7 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
                                                             id=request_id))
         try:
             request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(request_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'requests_admin', request_id)
         # Validate
         comment = util.restore_text(params.get('comment', ''))
@@ -220,7 +228,7 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
             sample_id = params.get('id', None)
         try:
             sample = trans.sa_session.query(trans.model.Sample).get(trans.security.decode_id(sample_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'requests_admin', sample_id, 'sample')
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
@@ -235,7 +243,7 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
             for sample_dataset_id in id_list:
                 try:
                     sample_dataset = trans.sa_session.query(trans.model.SampleDataset).get(trans.security.decode_id(sample_dataset_id))
-                except:
+                except Exception:
                     return invalid_id_redirect(trans, 'requests_admin', sample_dataset_id, 'sample dataset')
                 selected_sample_datasets.append(sample_dataset)
             if operation == "view":
@@ -318,7 +326,7 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
         sample_id = kwd.get('sample_id', None)
         try:
             sample = trans.sa_session.query(trans.model.Sample).get(trans.security.decode_id(sample_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'requests_admin', sample_id, 'sample')
         # id_list is list of SampleDataset ids, which is a subset of all
         # of the SampleDatasets associated with the Sample.  The user may
@@ -391,7 +399,7 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
         # The admin user must have LIBRARY_ADD permission for the target library and folder
         try:
             sample = trans.sa_session.query(trans.model.Sample).get(trans.security.decode_id(sample_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'requests_admin', sample_id, 'sample')
         message = ""
         status = "done"
@@ -444,7 +452,7 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
             try:
                 sd_id = trans.security.decode_id(id)
                 sample_dataset = trans.sa_session.query(trans.app.model.SampleDataset).get(sd_id)
-            except:
+            except Exception:
                 trans.response.status = 400
                 return 400, "Invalid sample dataset id ( %s ) specified." % str(id)
             sample_dataset.status = new_status

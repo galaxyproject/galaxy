@@ -81,7 +81,7 @@ class SequenceSplitLocations(data.Text):
                     if 'start' not in section or 'end' not in section or 'sequences' not in section:
                         return False
                 return True
-            except:
+            except Exception:
                 pass
         return False
 
@@ -376,7 +376,7 @@ class Fasta(Sequence):
                     else:
                         break  # we found a non-empty line, but it's not a fasta header
             fh.close()
-        except:
+        except Exception:
             pass
         return False
 
@@ -543,7 +543,7 @@ class csFasta(Sequence):
                     else:
                         break  # we found a non-empty line, but it's not a header
             fh.close()
-        except:
+        except Exception:
             pass
         return False
 
@@ -634,7 +634,7 @@ class BaseFastq (Sequence):
                     return False
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
@@ -930,7 +930,7 @@ class Maf(Alignment):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             return False
 
 
@@ -968,7 +968,7 @@ class MafCustomTrack(data.Text):
                 dataset.metadata.vp_chromosome = chrom
                 dataset.metadata.vp_start = forward_strand_start
                 dataset.metadata.vp_end = forward_strand_end
-        except:
+        except Exception:
             pass
 
 
@@ -1019,7 +1019,7 @@ class Axt(data.Text):
                     return False
                 try:
                     map(int, [hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]])
-                except:
+                except Exception:
                     return False
                 if hdr[7] not in data.valid_strand:
                     return False
@@ -1060,7 +1060,7 @@ class Lav(data.Text):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             return False
 
 
@@ -1205,7 +1205,7 @@ class Genbank(data.Text):
         try:
             with open(filename, 'r') as handle:
                 return 'LOCUS ' == handle.read(6)
-        except:
+        except Exception:
             pass
 
         return False
@@ -1236,7 +1236,7 @@ class MemePsp(Sequence):
             for item in l.split():
                 try:
                     float(item)
-                except:
+                except ValueError:
                     return False
             return True
         try:
@@ -1269,7 +1269,7 @@ class MemePsp(Sequence):
                         # We found a non-empty line,
                         # but it's not a psp id width.
                         return False
-        except:
+        except Exception:
             return False
         # We've reached EOF in less than 100 lines.
         return True

@@ -31,7 +31,7 @@ class SamplesAPIController(BaseAPIController):
             return "Malformed request id ( %s ) specified, unable to decode." % str(kwd['request_id'])
         try:
             request = trans.sa_session.query(trans.app.model.Request).get(request_id)
-        except:
+        except Exception:
             request = None
         if not request or not (trans.user_is_admin() or request.user.id == trans.user.id):
             trans.response.status = 400
@@ -69,7 +69,7 @@ class SamplesAPIController(BaseAPIController):
             return "Malformed sample_id (%s) specified, unable to decode." % str(sample_id)
         try:
             sample = trans.sa_session.query(trans.app.model.Sample).get(decoded_sample_id)
-        except:
+        except Exception:
             sample = None
         if not sample:
             trans.response.status = 400
@@ -83,7 +83,7 @@ class SamplesAPIController(BaseAPIController):
             if deferred_plugin:
                 try:
                     trans.app.job_manager.deferred_job_queue.plugins[deferred_plugin].create_job(trans, sample=sample, **payload)
-                except:
+                except Exception:
                     log.exception('update() called with a deferred job plugin (%s) but creating the deferred job failed:' % deferred_plugin)
             status, output = requests_admin_controller.edit_template_info(trans,
                                                                           cntrller='api',

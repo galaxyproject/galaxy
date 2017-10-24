@@ -212,7 +212,7 @@ class Configuration(object):
                         self.hours_between_check = 12.0
             else:
                 self.hours_between_check = 12
-        except:
+        except Exception:
             self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get("update_integrated_tool_panel", True)
         self.enable_data_manager_user_view = string_as_bool(kwargs.get("enable_data_manager_user_view", "False"))
@@ -794,7 +794,7 @@ class Configuration(object):
 
         try:
             port = config.getint('server:%s' % self.server_name, 'port')
-        except:
+        except Exception:
             # uWSGI galaxy installations don't use paster and only speak uWSGI not http
             port = None
         return port

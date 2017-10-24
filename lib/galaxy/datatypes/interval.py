@@ -111,20 +111,20 @@ class Interval(Tabular):
                                         int(elems[1])
                                         if overwrite or not dataset.metadata.element_is_set('startCol'):
                                             dataset.metadata.startCol = 2
-                                    except:
+                                    except Exception:
                                         pass  # Metadata default will be used
                                     try:
                                         int(elems[2])
                                         if overwrite or not dataset.metadata.element_is_set('endCol'):
                                             dataset.metadata.endCol = 3
-                                    except:
+                                    except Exception:
                                         pass  # Metadata default will be used
                                     # we no longer want to guess that this column is the 'name', name must now be set manually for interval files
                                     # we will still guess at the strand, as we can make a more educated guess
                                     # if len( elems ) > 3:
                                     #    try:
                                     #        int( elems[3] )
-                                    #    except:
+                                    #    except Exception:
                                     #        if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
                                     #            dataset.metadata.nameCol = 4
                                     if len(elems) < 6 or elems[5] not in data.valid_strand:
@@ -149,7 +149,7 @@ class Interval(Tabular):
                 and dataset.metadata.chromCol \
                 and dataset.metadata.startCol \
                 and dataset.metadata.endCol
-        except:
+        except Exception:
             return False
 
     def get_estimated_display_viewport(self, dataset, chrom_col=None, start_col=None, end_col=None):
@@ -331,10 +331,10 @@ class Interval(Tabular):
                         # respectively ( for 0 based columns )
                         int(hdr[1])
                         int(hdr[2])
-                    except:
+                    except Exception:
                         return False
             return True
-        except:
+        except Exception:
             return False
 
     def get_track_resolution(self, dataset, start, end):
@@ -458,14 +458,14 @@ class Bed(Interval):
                                         fields2 = fields[11].rstrip(",").split(",")  # remove trailing comma and split on comma
                                         for field in fields2:
                                             int(field)
-            except:
+            except Exception:
                 return Interval.as_ucsc_display_file(self, dataset)
             # only check first line for proper form
             break
 
         try:
             return open(dataset.file_name)
-        except:
+        except Exception:
             return "This item contains no content"
 
     def sniff(self, filename):
@@ -510,7 +510,7 @@ class Bed(Interval):
                     try:
                         int(hdr[1])
                         int(hdr[2])
-                    except:
+                    except Exception:
                         return False
                     if len(hdr) > 4:
                         # hdr[3] is a string, 'name', which defines the name of the BED line - difficult to test for this.
@@ -518,7 +518,7 @@ class Bed(Interval):
                         try:
                             if int(hdr[4]) < 0 or int(hdr[4]) > 1000:
                                 return False
-                        except:
+                        except Exception:
                             return False
                     if len(hdr) > 5:
                         # hdr[5] is strand
@@ -528,48 +528,48 @@ class Bed(Interval):
                         # hdr[6] is thickStart, the starting position at which the feature is drawn thickly.
                         try:
                             int(hdr[6])
-                        except:
+                        except Exception:
                             return False
                     if len(hdr) > 7:
                         # hdr[7] is thickEnd, the ending position at which the feature is drawn thickly
                         try:
                             int(hdr[7])
-                        except:
+                        except Exception:
                             return False
                     if len(hdr) > 8:
                         # hdr[8] is itemRgb, an RGB value of the form R,G,B (e.g. 255,0,0).  However, this could also be an int (e.g., 0)
                         try:
                             int(hdr[8])
-                        except:
+                        except Exception:
                             try:
                                 hdr[8].split(',')
-                            except:
+                            except Exception:
                                 return False
                     if len(hdr) > 9:
                         # hdr[9] is blockCount, the number of blocks (exons) in the BED line.
                         try:
                             block_count = int(hdr[9])
-                        except:
+                        except Exception:
                             return False
                     if len(hdr) > 10:
                         # hdr[10] is blockSizes - A comma-separated list of the block sizes.
                         # Sometimes the blosck_sizes and block_starts lists end in extra commas
                         try:
                             block_sizes = hdr[10].rstrip(',').split(',')
-                        except:
+                        except Exception:
                             return False
                     if len(hdr) > 11:
                         # hdr[11] is blockStarts - A comma-separated list of block starts.
                         try:
                             block_starts = hdr[11].rstrip(',').split(',')
-                        except:
+                        except Exception:
                             return False
                         if len(block_sizes) != block_count or len(block_starts) != block_count:
                             return False
                 else:
                     return False
             return True
-        except:
+        except Exception:
             return False
 
 
@@ -678,15 +678,15 @@ class Gff(Tabular, _RemoteCallMixin):
                                 # Try int.
                                 int(value)
                                 value_type = "int"
-                            except:
+                            except ValueError:
                                 try:
                                     # Try float.
                                     float(value)
                                     value_type = "float"
-                                except:
+                                except ValueError:
                                     pass
                             attribute_types[name] = value_type
-                    except:
+                    except Exception:
                         pass
                 if i + 1 == num_lines:
                     break
@@ -708,7 +708,7 @@ class Gff(Tabular, _RemoteCallMixin):
                         int(elems[3])
                         int(elems[4])
                         break
-                    except:
+                    except Exception:
                         pass
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
@@ -771,7 +771,7 @@ class Gff(Tabular, _RemoteCallMixin):
                                     # Make sure we have not spanned chromosomes
                                     start = min(start, int(elems[3]))
                                     stop = max(stop, int(elems[4]))
-                    except:
+                    except Exception:
                         # most likely start/stop is not an int or not enough fields
                         pass
                     # make sure we are at the next new line
@@ -848,19 +848,19 @@ class Gff(Tabular, _RemoteCallMixin):
                     try:
                         int(hdr[3])
                         int(hdr[4])
-                    except:
+                    except Exception:
                         return False
                     if hdr[5] != '.':
                         try:
                             float(hdr[5])
-                        except:
+                        except Exception:
                             return False
                     if hdr[6] not in data.valid_strand:
                         return False
                     if hdr[7] not in self.valid_gff_frame:
                         return False
             return True
-        except:
+        except Exception:
             return False
 
     # ------------- Dataproviders
@@ -919,13 +919,13 @@ class Gff3(Gff):
                     try:
                         start = int(elems[3])
                         valid_start = True
-                    except:
+                    except Exception:
                         if elems[3] == '.':
                             valid_start = True
                     try:
                         end = int(elems[4])
                         valid_end = True
-                    except:
+                    except Exception:
                         if elems[4] == '.':
                             valid_end = True
                     strand = elems[6]
@@ -982,18 +982,18 @@ class Gff3(Gff):
                         return False
                     try:
                         int(hdr[3])
-                    except:
+                    except Exception:
                         if hdr[3] != '.':
                             return False
                     try:
                         int(hdr[4])
-                    except:
+                    except Exception:
                         if hdr[4] != '.':
                             return False
                     if hdr[5] != '.':
                         try:
                             float(hdr[5])
-                        except:
+                        except Exception:
                             return False
                     if hdr[6] not in self.valid_gff3_strand:
                         return False
@@ -1001,7 +1001,7 @@ class Gff3(Gff):
                         return False
                     parse_gff3_attributes(hdr[8])
             return True
-        except:
+        except Exception:
             return False
 
 
@@ -1055,12 +1055,12 @@ class Gtf(Gff):
                     try:
                         int(hdr[3])
                         int(hdr[4])
-                    except:
+                    except Exception:
                         return False
                     if hdr[5] != '.':
                         try:
                             float(hdr[5])
-                        except:
+                        except Exception:
                             return False
                     if hdr[6] not in data.valid_strand:
                         return False
@@ -1077,7 +1077,7 @@ class Gtf(Gff):
                     else:
                         return False
             return True
-        except:
+        except Exception:
             return False
 
 
@@ -1140,7 +1140,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                                     start = min(int(fields[0]), start)
                                     end = max(end, int(fields[0]) + span)
                                 viewport_feature_count -= 1
-                    except:
+                    except Exception:
                         pass
                     # make sure we are at the next new line
                     readline_count = VIEWPORT_MAX_READS_PER_LINE
@@ -1199,7 +1199,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                 try:
                     float(elems[0])  # "Wiggle track data values can be integer or real, positive or negative values"
                     break
-                except:
+                except Exception:
                     do_break = False
                     for col_startswith in data.col1_startswith:
                         if elems[0].lower().startswith(col_startswith):
@@ -1244,7 +1244,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                 if len(hdr) > 1 and hdr[0] == 'track' and hdr[1].startswith('type=wiggle'):
                     return True
             return False
-        except:
+        except Exception:
             return False
 
     def get_track_resolution(self, dataset, start, end):
@@ -1394,7 +1394,7 @@ class CustomTrack (Tabular):
                             return False
                     else:
                         return False
-                except:
+                except Exception:
                     return False
             else:
                 try:
@@ -1404,9 +1404,9 @@ class CustomTrack (Tabular):
                         try:
                             int(hdr[1])
                             int(hdr[2])
-                        except:
+                        except Exception:
                             return False
-                except:
+                except Exception:
                     return False
         return True
 
@@ -1539,7 +1539,7 @@ class ScIdx(Tabular):
                 count += 1
             if count < 100 and count > 0:
                 return True
-        except:
+        except Exception:
             return False
         finally:
             fh.close()

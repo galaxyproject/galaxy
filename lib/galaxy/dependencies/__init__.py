@@ -63,7 +63,7 @@ class ConditionalDependencies(object):
         try:
             name = name.replace('-', '_').replace('.', '_')
             return getattr(self, 'check_' + name)()
-        except:
+        except Exception:
             return False
 
     def check_psycopg2(self):

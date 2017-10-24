@@ -2,12 +2,12 @@ import csv
 import logging
 import re
 
-from sqlalchemy import and_, false, func, select
 from markupsafe import escape
+from sqlalchemy import and_, false, func, select
 
 from galaxy import model, util, web
-from galaxy.util import unicodify
 from galaxy.security.validate_user_input import validate_email
+from galaxy.util import unicodify
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
 from galaxy.web.form_builder import build_select_field, CheckboxField, SelectField, TextField
 from galaxy.web.framework.helpers import grids, iff, time_ago
@@ -271,7 +271,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         request_id = params.get('id', None)
         try:
             request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(request_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, cntrller, request_id)
         # Build a list of sample widgets (based on the attributes of each sample) for display.
         displayable_sample_widgets = self.__get_sample_widgets(trans, request, request.samples, **kwd)
@@ -293,7 +293,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         request_id = params.get('id', None)
         try:
             request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(request_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, cntrller, request_id)
         name = util.restore_text(params.get('name', ''))
         if params.get('edit_basic_request_info_button', False):
@@ -385,7 +385,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         status = util.restore_text(params.get('status', 'done'))
         try:
             request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(request_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, cntrller, request_id)
         ok = True
         if not request.samples:
@@ -443,7 +443,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         request_id = params.get('id', None)
         try:
             request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(request_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, cntrller, request_id)
         if params.get('cancel_changes_button', False):
             return trans.response.send_redirect(web.url_for(controller='requests_common',
@@ -533,7 +533,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         for sample_id in sample_ids:
             try:
                 sample = trans.sa_session.query(trans.model.Sample).get(trans.security.decode_id(sample_id))
-            except:
+            except Exception:
                 if cntrller == 'api':
                     trans.response.status = 400
                     return "Invalid sample id ( %s ) specified, unable to decode." % str(sample_id)
@@ -562,7 +562,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
             try:
                 # This block will handle bots that do not send valid request ids.
                 request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(id))
-            except:
+            except Exception:
                 ok_for_now = False
             if ok_for_now:
                 # We will only allow the request to be deleted by a non-admin user if not request.submitted
@@ -605,7 +605,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
             try:
                 # This block will handle bots that do not send valid request ids.
                 request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(id))
-            except:
+            except Exception:
                 ok_for_now = False
             if ok_for_now:
                 request.deleted = False
@@ -632,7 +632,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         request_id = params.get('id', None)
         try:
             request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(request_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, cntrller, request_id)
         return trans.fill_template('/requests/common/view_request_history.mako',
                                    cntrller=cntrller,
@@ -651,7 +651,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         request_id = params.get('id', None)
         try:
             request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(request_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, cntrller, request_id)
         email_address = CheckboxField.is_checked(params.get('email_address', ''))
         additional_email_addresses = params.get('additional_email_addresses', '')
@@ -706,7 +706,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         request_id = params.get('request_id', None)
         try:
             request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(request_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, cntrller, request_id)
         # Make sure all the samples of the current request have the same state
         common_state = request.samples_have_common_state
@@ -832,7 +832,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         sample_id = params.get('sample_id', None)
         try:
             sample = trans.sa_session.query(trans.model.Sample).get(trans.security.decode_id(sample_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, cntrller, sample_id, 'sample')
         return trans.fill_template('/requests/common/view_sample_history.mako',
                                    cntrller=cntrller,
@@ -847,7 +847,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         request_id = params.get('id', None)
         try:
             request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(request_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, cntrller, request_id)
         libraries = trans.app.security_agent.get_accessible_libraries(trans, request.user)
         # Build a list of sample widgets (based on the attributes of each sample) for display.
@@ -889,7 +889,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         status = params.get('status', 'done')
         try:
             request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(request_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, cntrller, request_id)
         # Get the widgets for rendering the request form
         request_widgets = self.__get_request_widgets(trans, request.id)
@@ -976,7 +976,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         sample_id = params.get('id', None)
         try:
             sample = trans.sa_session.query(trans.model.Sample).get(trans.security.decode_id(sample_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, cntrller, sample_id, 'sample')
         # See if we have any associated templates
         widgets = sample.get_template_widgets(trans)
@@ -1003,7 +1003,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         request_id = params.get('request_id', None)
         try:
             request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(request_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, cntrller, request_id)
         displayable_sample_widgets = self.__get_sample_widgets(trans, request, request.samples, **kwd)
         sample_index = int(params.get('sample_id', 0))
@@ -1034,7 +1034,7 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         sample_id = params.get('sample_id', None)
         try:
             sample = trans.sa_session.query(trans.model.Sample).get(trans.security.decode_id(sample_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, cntrller, sample_id, 'sample')
         external_service_id = params.get('external_service_id', None)
         external_service = trans.sa_session.query(trans.model.ExternalService).get(trans.security.decode_id(external_service_id))
@@ -1401,14 +1401,14 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
     def __get_library_and_folder(self, trans, library_id, folder_id):
         try:
             library = trans.sa_session.query(trans.model.Library).get(trans.security.decode_id(library_id))
-        except:
+        except Exception:
             library = None
         if library and folder_id == 'none':
             folder = library.root_folder
         elif library and folder_id != 'none':
             try:
                 folder = trans.sa_session.query(trans.model.LibraryFolder).get(trans.security.decode_id(folder_id))
-            except:
+            except Exception:
                 if library:
                     folder = library.root_folder
                 else:
@@ -1421,14 +1421,14 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
         try:
             history = trans.sa_session.query(trans.model.History).get(trans.security.decode_id(history_id))
             return history
-        except:
+        except Exception:
             return None
 
     def __get_workflow(self, trans, workflow_id):
         try:
             workflow = trans.sa_session.query(trans.model.Workflow).get(trans.security.decode_id(workflow_id))
             return workflow
-        except:
+        except Exception:
             return None
 
     def __get_active_folders(self, folder, active_folders_list):

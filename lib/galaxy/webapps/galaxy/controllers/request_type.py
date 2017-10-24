@@ -2,13 +2,17 @@ from __future__ import absolute_import
 
 import logging
 
-from sqlalchemy import false
 from markupsafe import escape
+from sqlalchemy import false
 
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, web
 from galaxy.web.form_builder import build_select_field, TextField
-from galaxy.web.framework.helpers import iff, grids
+from galaxy.web.framework.helpers import (
+    grids,
+    iff
+)
+
 from .requests_common import invalid_id_redirect
 
 log = logging.getLogger(__name__)
@@ -172,7 +176,7 @@ class RequestType(BaseUIController, UsesFormDefinitionsMixin):
                 id = params.get('external_service_id_%i' % i, '')
                 try:
                     external_service = trans.sa_session.query(trans.model.ExternalService).get(trans.security.decode_id(id))
-                except:
+                except Exception:
                     return invalid_id_redirect(trans, 'request_type', id, 'external service', action='browse_request_types')
                 external_services_list.append(external_service)
                 i += 1
@@ -189,7 +193,7 @@ class RequestType(BaseUIController, UsesFormDefinitionsMixin):
         request_type_id = params.get('id', None)
         try:
             request_type = trans.sa_session.query(trans.model.RequestType).get(trans.security.decode_id(request_type_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'request_type', request_type_id, 'request type', action='browse_request_types')
         # See if we have any associated templates
         widgets = request_type.get_template_widgets(trans)
@@ -218,7 +222,7 @@ class RequestType(BaseUIController, UsesFormDefinitionsMixin):
         request_type_id = params.get('id', None)
         try:
             request_type = trans.sa_session.query(trans.model.RequestType).get(trans.security.decode_id(request_type_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'request_type', request_type_id, 'request type', action='browse_request_types')
         # See if we have any associated templates
         widgets = request_type.get_template_widgets(trans)
@@ -265,12 +269,12 @@ class RequestType(BaseUIController, UsesFormDefinitionsMixin):
                                                             status='error'))
         try:
             request_form = trans.sa_session.query(trans.model.FormDefinition).get(trans.security.decode_id(request_form_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'request_type', request_type_id, 'form definition', action='browse_request_types')
 
         try:
             sample_form = trans.sa_session.query(trans.model.FormDefinition).get(trans.security.decode_id(sample_form_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'request_type', request_type_id, 'form definition', action='browse_request_types')
         if request_type_id:
             # We're saving changed attributes of an existing request_type.
@@ -369,7 +373,7 @@ class RequestType(BaseUIController, UsesFormDefinitionsMixin):
         request_type_id = kwd.get('id', None)
         try:
             request_type = trans.sa_session.query(trans.model.RequestType).get(trans.security.decode_id(request_type_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'request_type', request_type_id, 'request type', action='browse_request_types')
         # See if we have any associated templates
         widgets = request_type.get_template_widgets(trans)
@@ -389,7 +393,7 @@ class RequestType(BaseUIController, UsesFormDefinitionsMixin):
         for request_type_id in request_type_id_list:
             try:
                 request_type = trans.sa_session.query(trans.model.RequestType).get(trans.security.decode_id(request_type_id))
-            except:
+            except Exception:
                 return invalid_id_redirect(trans, 'request_type', request_type_id, 'request type', action='browse_request_types')
             request_type.deleted = True
             trans.sa_session.add(request_type)
@@ -408,7 +412,7 @@ class RequestType(BaseUIController, UsesFormDefinitionsMixin):
         for request_type_id in request_type_id_list:
             try:
                 request_type = trans.sa_session.query(trans.model.RequestType).get(trans.security.decode_id(request_type_id))
-            except:
+            except Exception:
                 return invalid_id_redirect(trans, 'request_type', request_type_id, 'request type', action='browse_request_types')
             request_type.deleted = False
             trans.sa_session.add(request_type)
@@ -429,7 +433,7 @@ class RequestType(BaseUIController, UsesFormDefinitionsMixin):
         request_type_id = kwd.get('id', '')
         try:
             request_type = trans.sa_session.query(trans.model.RequestType).get(trans.security.decode_id(request_type_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'request_type', request_type_id, 'request type', action='browse_request_types')
         roles = trans.sa_session.query(trans.model.Role) \
                                 .filter(trans.model.Role.table.c.deleted == false()) \
@@ -454,7 +458,7 @@ class RequestType(BaseUIController, UsesFormDefinitionsMixin):
         form_definition_id = kwd.get('id', None)
         try:
             form_definition = trans.sa_session.query(trans.model.FormDefinition).get(trans.security.decode_id(form_definition_id))
-        except:
+        except Exception:
             return invalid_id_redirect(trans, 'request_type', form_definition_id, 'form definition', action='browse_request_types')
         return trans.fill_template('/admin/forms/view_form_definition.mako',
                                    form_definition=form_definition)
