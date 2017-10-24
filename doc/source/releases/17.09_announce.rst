@@ -55,7 +55,7 @@ Limited Galaxy Data Library unauthorized filesystem access
 Tracked as `GX-2017-0001 <https://lists.galaxyproject.org/pipermail/galaxy-dev/2017-October/026058.html>`__
 
 A medium severity security vulnerability in Galaxy Data Libraries was
-recently discovered by `Jelle Scholtalbers <https://github.com/scholtalbers>`__. 
+recently discovered by `Jelle Scholtalbers <https://github.com/scholtalbers>`__.
 This vulnerability allows the following unauthorized actions:
 
 1. Any user that has been granted the permission to add datasets to a
@@ -95,7 +95,7 @@ Tracked as `GX-2017-0003 <https://lists.galaxyproject.org/pipermail/galaxy-dev/2
 
 A medium severity security vulnerability in tools utilizing the Galaxy data
 source protocol was recently discovered by the Galaxy Committers Team.
-Anyone who is able to run an external data source tool can access 
+Anyone who is able to run an external data source tool can access
 any file that is readable by the user running Galaxy jobs
 on the host where the job runs.
 
@@ -117,6 +117,7 @@ Deprecation Notices
   user interface and introduce configuration option to keep relevant API controllers active if desired. `Related PR <https://github.com/galaxyproject/galaxy/pull/4526>`__.
 * The deprecated admin-only interface for Galaxy Data Libraries is staged to be removed in the next release.
 * Workflows API: When exposing WorkflowInvocationSteps ``state`` will no longer be available.
+* The ``refresh_on_change`` attribute of a ``<param>`` tag in the tool syntax can no longer be set to a value of another parameter. Use boolean instead (e.g.``refresh_on_change="True"``). `Details <https://github.com/galaxyproject/galaxy/issues/4810>`__
 
 
 Release Notes
