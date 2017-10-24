@@ -49,7 +49,7 @@ The 17.09 Galaxy version includes four security patches. Per our `Security Polic
 
 For the best security we recommend all deployers to update to the latest release.
 
-If you maintain a publicly accessible Galaxy please consider signing up for this [mailing list](https://lists.galaxyproject.org/listinfo/galaxy-public-servers) to receive the future security patches in advance of the public disclosure.
+If you maintain a publicly accessible Galaxy please consider signing up for this `mailing list <https://lists.galaxyproject.org/listinfo/galaxy-public-servers>`__ to receive the future security patches in advance of the public disclosure.
 
 Details of the patched vulnerabilities can be found in the `Security patch details`_ section of these release notes.
 
