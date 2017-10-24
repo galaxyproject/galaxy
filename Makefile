@@ -85,6 +85,9 @@ reports-config-lint: ## lint reports YAML configuration file
 reports-config-rebuild-rst: ## Rebuild sample reports RST docs
 	$(CONFIG_MANAGE) build_rst reports > doc/source/admin/reports_options.rst
 
+pin-linting:
+	sed -i.bak -e "s/>=/==/" tox.ini
+
 release-ensure-upstream: ## Ensure upstream branch for release commands setup
 ifeq (shell git remote -v | grep $(RELEASE_UPSTREAM), )
 	git remote add $(RELEASE_UPSTREAM) git@github.com:galaxyproject/galaxy.git
