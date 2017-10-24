@@ -33,7 +33,7 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
              - <%- tour.attributes.description || \"No description given.\" %>
              <% _.each(tour.attributes.tags, function(tag) { %>
                 <span class="label label-primary">
-                    <%- tag %>
+                    <%- tag.charAt(0).toUpperCase() + tag.slice(1) %>
                 </span>
              <% }); %>
         </li>
@@ -143,6 +143,7 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
                     tourtags.Untagged.tours.push(tour);
                 } else {
                     _.each(tour.attributes.tags, function(tag) {
+                        tag = tag.charAt(0).toUpperCase() + tag.slice(1);
                         if (tourtags[tag] === undefined) {
                             tourtags[tag] = { name: tag, tours: [] };
                         }
