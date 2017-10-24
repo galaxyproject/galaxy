@@ -136,15 +136,15 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
 
             var tourtags = {};
             _.each(this.model.models, function(tour) {
-                if(tour.attributes.tags === null) {
-                    if(tourtags[""] === undefined) {
-                        tourtags[""] = {"name": "Untagged", "tours": []};
+                if (tour.attributes.tags === null) {
+                    if (tourtags[""] === undefined) {
+                        tourtags[""] = { name: "Untagged", tours: [] };
                     }
                     tourtags[""]["tours"].push(tour);
                 } else {
-                    _.each(tour.attributes.tags, function (tag) {
+                    _.each(tour.attributes.tags, function(tag) {
                         if (tourtags[tag] === undefined) {
-                            tourtags[tag] = {"name": tag, "tours": []};
+                            tourtags[tag] = { name: tag, tours: [] };
                         }
                         tourtags[tag]["tours"].push(tour);
                     });
@@ -153,7 +153,13 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
             var tourtagorder = Object.keys(tourtags).sort();
 
             this.$el
-                .html(tpl({ tours: this.model.models, tourtags: tourtags, tourtagorder: tourtagorder}))
+                .html(
+                    tpl({
+                        tours: this.model.models,
+                        tourtags: tourtags,
+                        tourtagorder: tourtagorder
+                    })
+                )
                 .on("click", ".tourItem", function(e) {
                     e.preventDefault();
                     giveTour($(this).data("tour.id"));
@@ -166,10 +172,10 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
                     elem.toggleClass("btn-primary");
                     elem.toggleClass("btn-secondary");
 
-                    if(elem.hasClass("btn-secondary")) {
+                    if (elem.hasClass("btn-secondary")) {
                         display = "none";
                     }
-                    $("div[tag='"+tag+"']").css({display: display});
+                    $("div[tag='" + tag + "']").css({ display: display });
                 });
         }
     });
