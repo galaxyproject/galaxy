@@ -59,9 +59,9 @@ recently discovered by `Jelle Scholtalbers <https://github.com/scholtalbers>`__.
 This vulnerability allows the following unauthorized actions:
 
 1. Any user that has been granted the permission to add datasets to a
-library, library folder, or to modify an existing library dataset (an
-"authorized user"), is able to import any file on the system that is
-readable by the user running the Galaxy server.
+   library, library folder, or to modify an existing library dataset (an
+   "authorized user"), is able to import any file on the system that is
+   readable by the user running the Galaxy server.
 
 2. Anyone can create libraries and library folders (but not add datasets to them)
 
