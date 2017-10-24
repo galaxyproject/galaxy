@@ -1,6 +1,6 @@
 import Ui from "mvc/ui/ui-misc";
 import historyOptionsMenu from "mvc/history/options-menu";
-import { CurrentHistoryView } from "mvc/history/history-view-edit-current";
+import CurrentHistoryView from "mvc/history/history-view-edit-current";
 import _l from "utils/localization";
 
 /** the right hand panel in the analysis page that shows the current history */
@@ -12,8 +12,10 @@ var HistoryPanel = Backbone.View.extend({
         this.root = options.root;
 
         // view of the current history
-        this.historyView = new CurrentHistoryView({
-            className: CurrentHistoryView.prototype.className + " middle",
+        this.historyView = new CurrentHistoryView.CurrentHistoryView({
+            className:
+                CurrentHistoryView.CurrentHistoryView.prototype.className +
+                " middle",
             purgeAllowed: this.allow_user_dataset_purge,
             linkTarget: "galaxy_main"
         });
