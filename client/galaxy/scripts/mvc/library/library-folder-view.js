@@ -34,8 +34,8 @@ define(
                     error: function(model, response) {
                         if (typeof response.responseJSON !== "undefined") {
                             mod_toastr.error(
-                                response.responseJSON.err_msg +
-                                    " Click this to go back.",
+                                `${response.responseJSON
+                                    .err_msg} Click this to go back.`,
                                 "",
                                 {
                                     onclick: function() {
@@ -73,10 +73,7 @@ define(
 
                 var self = this;
                 $.get(
-                    Galaxy.root +
-                        "api/folders/" +
-                        self.id +
-                        "/permissions?scope=current"
+                    `${Galaxy.root}api/folders/${self.id}/permissions?scope=current`
                 )
                     .done(function(fetched_permissions) {
                         self.prepareSelectBoxes({
@@ -98,7 +95,7 @@ define(
                 var selected_roles = [];
                 for (var i = 0; i < role_list.length; i++) {
                     selected_roles.push(
-                        role_list[i][1] + ":" + role_list[i][0]
+                        `${role_list[i][1]}:${role_list[i][0]}`
                     );
                 }
                 return selected_roles;
@@ -151,13 +148,9 @@ define(
                     css: id,
                     multiple: true,
                     placeholder: "Click to select a role",
-                    container: self.$el.find("#" + id),
+                    container: self.$el.find(`#${id}`),
                     ajax: {
-                        url:
-                            Galaxy.root +
-                            "api/folders/" +
-                            self.id +
-                            "/permissions?scope=available",
+                        url: `${Galaxy.root}api/folders/${self.id}/permissions?scope=available`,
                         dataType: "json",
                         quietMillis: 100,
                         data: function(term, page) {
@@ -175,7 +168,7 @@ define(
                         }
                     },
                     formatResult: function roleFormatResult(role) {
-                        return role.name + " type: " + role.type;
+                        return `${role.name} type: ${role.type}`;
                     },
 
                     formatSelection: function roleFormatSelection(role) {
@@ -228,10 +221,7 @@ define(
                     this.modifySelectObject.$el.select2("data")
                 );
                 $.post(
-                    Galaxy.root +
-                        "api/folders/" +
-                        self.id +
-                        "/permissions?action=set_permissions",
+                    `${Galaxy.root}api/folders/${self.id}/permissions?action=set_permissions`,
                     {
                         "add_ids[]": add_ids,
                         "manage_ids[]": manage_ids,

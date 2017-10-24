@@ -235,7 +235,7 @@ define(["layout/masthead", "utils/utils", "libs/toastr"], function(
             var row_view = this;
 
             // mark the library undeleted
-            library.url = library.urlRoot + library.id + "?undelete=true";
+            library.url = `${library.urlRoot + library.id}?undelete=true`;
             library.destroy({
                 success: function(library) {
                     // add the newly undeleted library back to the collection
