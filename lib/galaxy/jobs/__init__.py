@@ -43,6 +43,7 @@ log = logging.getLogger(__name__)
 # that import Galaxy internals - but it shouldn't be used in Galaxy's code
 # itself.
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
+TOOL_PROVIDED_JOB_METADATA_KEYS = ['name', 'info', 'dbkey']
 
 # Override with config.default_job_shell.
 DEFAULT_JOB_SHELL = '/bin/bash'
@@ -884,6 +885,9 @@ class JobWrapper(object, HasResourceParameters):
         self.galaxy_lib_dir
         # Shell fragment to inject dependencies
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
+        if self.tool.requires_galaxy_python_environment:
+            # These tools (upload, metadata, data_source) may need access to the datatypes registry.
+            self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, 'registry.xml'))
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         job.command_line = unicodify(self.command_line)
@@ -1317,14 +1321,17 @@ class JobWrapper(object, HasResourceParameters):
                             dataset.set_peek(is_multi_byte=True)
                         else:
                             dataset.set_peek()
-                    for context_key in ['name', 'info', 'dbkey']:
-                        if context_key in context:
-                            context_value = context[context_key]
-                            setattr(dataset, context_key, context_value)
                 else:
+                    # Handle an empty dataset.
                     dataset.blurb = "empty"
                     if dataset.ext == 'auto':
-                        dataset.extension = 'txt'
+                        dataset.extension = context.get('ext', 'txt')
+
+                for context_key in TOOL_PROVIDED_JOB_METADATA_KEYS:
+                    if context_key in context:
+                        context_value = context[context_key]
+                        setattr(dataset, context_key, context_value)
+
                 self.sa_session.add(dataset)
             if job.states.ERROR == final_job_state:
                 log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
@@ -1385,7 +1392,6 @@ class JobWrapper(object, HasResourceParameters):
             # Maybe this is a legacy job, use the job working directory instead
             tool_working_directory = self.working_directory
         collected_datasets = {
-            'children': self.tool.collect_child_datasets(out_data, tool_working_directory),
             'primary': self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
         }
         self.tool.collect_dynamic_collections(
@@ -1450,7 +1456,7 @@ class JobWrapper(object, HasResourceParameters):
 
     def cleanup(self, delete_files=True):
         # At least one of these tool cleanup actions (job import), is needed
-        # for thetool to work properly, that is why one might want to run
+        # for the tool to work properly, that is why one might want to run
         # cleanup but not delete files.
         try:
             if delete_files:
@@ -1568,6 +1574,9 @@ class JobWrapper(object, HasResourceParameters):
                     paths.append(DatasetPath(da.id, real_path=real_path, false_path=false_path, mutable=False))
         return paths
 
+    def get_output_basenames(self):
+        return map(os.path.basename, map(str, self.get_output_fnames()))
+
     def get_output_fnames(self):
         if self.output_paths is None:
             self.compute_outputs()
@@ -1645,7 +1654,8 @@ class JobWrapper(object, HasResourceParameters):
 
     def setup_external_metadata(self, exec_dir=None, tmp_dir=None,
                                 dataset_files_path=None, config_root=None,
-                                config_file=None, resolve_metadata_dependencies=False,
+                                config_file=None, datatypes_config=None,
+                                resolve_metadata_dependencies=False,
                                 set_extension=True, **kwds):
         # extension could still be 'auto' if this is the upload tool.
         job = self.get_job()
@@ -1664,8 +1674,9 @@ class JobWrapper(object, HasResourceParameters):
             config_root = self.app.config.root
         if config_file is None:
             config_file = self.app.config.config_file
-        datatypes_config = os.path.join(self.working_directory, 'registry.xml')
-        self.app.datatypes_registry.to_xml_file(path=datatypes_config)
+        if datatypes_config is None:
+            datatypes_config = os.path.join(self.working_directory, 'registry.xml')
+            self.app.datatypes_registry.to_xml_file(path=datatypes_config)
         command = self.external_output_metadata.setup_external_metadata([output_dataset_assoc.dataset for
                                                                          output_dataset_assoc in
                                                                          job.output_datasets + job.output_library_datasets],
@@ -1676,7 +1687,7 @@ class JobWrapper(object, HasResourceParameters):
                                                                         config_root=config_root,
                                                                         config_file=config_file,
                                                                         datatypes_config=datatypes_config,
-                                                                        job_metadata=os.path.join(self.tool_working_directory, TOOL_PROVIDED_JOB_METADATA_FILE),
+                                                                        job_metadata=os.path.join(self.tool_working_directory, self.tool.provided_metadata_file),
                                                                         max_metadata_value_size=self.app.config.max_metadata_value_size,
                                                                         **kwds)
         if resolve_metadata_dependencies:
@@ -1704,14 +1715,14 @@ class JobWrapper(object, HasResourceParameters):
         else:
             return 'anonymous@unknown'
 
-    def __update_output(self, job, dataset, clean_only=False):
+    def __update_output(self, job, hda, clean_only=False):
         """Handle writing outputs to the object store.
 
         This should be called regardless of whether the job was failed or not so
         that writing of partial results happens and so that the object store is
         cleaned up if the dataset has been purged.
         """
-        dataset = dataset.dataset
+        dataset = hda.dataset
         if dataset not in job.output_library_datasets:
             purged = dataset.purged
             if not purged and not clean_only:
@@ -1974,7 +1985,7 @@ class TaskWrapper(JobWrapper):
         pass
 
     def setup_external_metadata(self, exec_dir=None, tmp_dir=None, dataset_files_path=None,
-                                config_root=None, config_file=None,
+                                config_root=None, config_file=None, datatypes_config=None,
                                 set_extension=True, **kwds):
         # There is no metadata setting for tasks.  This is handled after the merge, at the job level.
         return ""
@@ -1993,6 +2004,10 @@ class ComputeEnvironment(object):
     """ Definition of the job as it will be run on the (potentially) remote
     compute server.
     """
+
+    @abstractmethod
+    def output_names(self):
+        """ Output unqualified filenames defined by job. """
 
     @abstractmethod
     def output_paths(self):
@@ -2058,6 +2073,9 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
         self.app = job_wrapper.app
         self.job_wrapper = job_wrapper
         self.job = job
+
+    def output_names(self):
+        return self.job_wrapper.get_output_basenames()
 
     def output_paths(self):
         return self.job_wrapper.get_output_fnames()

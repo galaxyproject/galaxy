@@ -139,9 +139,9 @@ if [ $REPLACE_PIP -eq 1 ]; then
 fi
 
 if [ $FETCH_WHEELS -eq 1 ]; then
-    pip install -r requirements.txt --index-url "${GALAXY_WHEELS_INDEX_URL}"
+    pip install -r requirements.txt --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url https://pypi.python.org/pypi
     GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "import galaxy.dependencies; print '\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE'))")
-    [ -z "$GALAXY_CONDITIONAL_DEPENDENCIES" ] || echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}"
+    [ -z "$GALAXY_CONDITIONAL_DEPENDENCIES" ] || echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url https://pypi.python.org/pypi
 fi
 
 if [ $FETCH_WHEELS -eq 1 -a $DEV_WHEELS -eq 1 ]; then

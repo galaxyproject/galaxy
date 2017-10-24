@@ -1,6 +1,8 @@
 #!/bin/sh
 
-uwsgi_args="--master --pythonpath=lib"
+: ${GALAXY_STATIC_DIRECTORY:=static}
+: ${GALAXY_STYLE_DIRECTORY:=static/style/blue}
+uwsgi_args="--master --pythonpath=lib --static-map /static=$GALAXY_STATIC_DIRECTORY --static-map /static/style=$GALAXY_STYLE_DIRECTORY"
 
 parse_common_args() {
     INITIALIZE_TOOL_DEPENDENCIES=1

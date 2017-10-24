@@ -10,6 +10,8 @@ import re
 import subprocess
 import tempfile
 
+from six.moves import shlex_quote
+
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
 from galaxy.datatypes.sniff import iter_headers
@@ -148,13 +150,12 @@ class Ipynb(Json):
             ofilename = ofile_handle.name
             ofile_handle.close()
             try:
-                cmd = 'jupyter nbconvert --to html --template full %s --output %s' % (dataset.file_name, ofilename)
-                log.info("Calling command %s" % cmd)
-                subprocess.call(cmd, shell=True)
+                cmd = ['jupyter', 'nbconvert', '--to', 'html', '--template', 'full', dataset.file_name, '--output', ofilename]
+                subprocess.check_call(cmd)
                 ofilename = '%s.html' % ofilename
-            except:
+            except subprocess.CalledProcessError:
                 ofilename = dataset.file_name
-                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', cmd)
+                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex_quote, cmd)))
             return open(ofilename)
 
     def set_meta(self, dataset, **kwd):
@@ -350,8 +351,8 @@ class Arff(Text):
             5.1,3.5,1.4,0.2,Iris-setosa
             4.9,3.0,1.4,0.2,Iris-setosa
         """
+        comment_lines = column_count = 0
         if dataset.has_data():
-            comment_lines = 0
             first_real_line = False
             data_block = False
             with open(dataset.file_name) as handle:

@@ -376,10 +376,10 @@ associated with a tool's single input dataset. The 2 metadata elements we're
 using look like this.
 
 ```python
-MetadataElement( name="field_names", default=[], desc="Field names", readonly=True, optional=True, visible=True, no_value=[] )
+MetadataElement(name="field_names", default=[], desc="Field names", readonly=True, optional=True, visible=True, no_value=[])
 # The keys in the field_components map to the list of field_names in the above element
 # which ensures order for select list options that are built from it.
-MetadataElement( name="field_components", default={}, desc="Field names and components", readonly=True, optional=True, visible=True, no_value={} )
+MetadataElement(name="field_components", default={}, desc="Field names and components", readonly=True, optional=True, visible=True, no_value={})
 ```
 
 Our tool config includes a code file tag like this.
@@ -427,11 +427,11 @@ list, which is the behavior we want.
 The ``get_field_components_options()`` method looks like this.
 
 ```python
-def get_field_components_options( dataset, field_name ):
+def get_field_components_options(dataset, field_name):
     options = []
     if dataset.metadata is None:
         return options
-    if not hasattr( dataset.metadata, 'field_names' ):
+    if not hasattr(dataset.metadata, 'field_names'):
         return options
     if dataset.metadata.field_names is None:
         return options
@@ -439,12 +439,12 @@ def get_field_components_options( dataset, field_name ):
         # The expression validator that helps populate the select list of input
         # datsets in the icqsol_color_surface_field tool does not filter out
         # datasets with no field field_names, so we need this check.
-        if len( dataset.metadata.field_names ) == 0:
+        if len(dataset.metadata.field_names) == 0:
             return options
         field_name = dataset.metadata.field_names[0]
-    field_components = dataset.metadata.field_components.get( field_name, [] )
-    for i, field_component in enumerate( field_components ):
-        options.append( ( field_component, field_component, i == 0 ) )
+    field_components = dataset.metadata.field_components.get(field_name, [])
+    for i, field_component in enumerate(field_components):
+        options.append((field_component, field_component, i == 0))
     return options
 ```
 
@@ -1299,7 +1299,7 @@ provides a demonstration of using this tag.
     </xs:annotation>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Name of the metdata element to check.</xs:documentation>
+        <xs:documentation xml:lang="en">Name of the metadata element to check.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
@@ -1716,7 +1716,7 @@ shown above:
 
 ```
 biom convert -i "${input_type.input_table}" -o "${output_table}"
-#if str( $input_type.input_type_selector ) == "tsv":
+#if str($input_type.input_type_selector) == "tsv":
     #if $input_type.process_obs_metadata:
         --process-obs-metadata "${input_type.process_obs_metadata}"
     #end if
@@ -1854,7 +1854,7 @@ This Cheetah code can be used in the ``<command>`` tag set or the
 ``<configfile>`` tag set.
 
 ```xml
-#for $i, $s in enumerate( $series )
+#for $i, $s in enumerate($series)
     rank_of_series=$i
     input_path='${s.input}'
     x_colom=${s.xcol}
@@ -2541,9 +2541,9 @@ bedtools annotate
                 '${bed.inputName}'
             #end for
         #else:
-            #set files = '" "'.join( [ str( $file ) for $file in $names.beds ] )
+            #set files = '" "'.join([str($file) for $file in $names.beds])
             -files '${files}'
-            #set names = '" "'.join( [ str( $name.display_name ) for $name in $names.beds ] )
+            #set names = '" "'.join([str($name.display_name) for $name in $names.beds])
             -names '${names}'
         #end if
         $strand
@@ -2770,7 +2770,7 @@ dataset for the contained input of the type specified using the ``type`` tag.
     </xs:annotation>
     <xs:attribute name="name" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Name of cheetah variable to create for converted dataset.</xs:documentation>
+        <xs:documentation xml:lang="en">Name of Cheetah variable to create for converted dataset.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="type" type="xs:string">
@@ -4039,7 +4039,7 @@ based on inputs, as shown below:
 
 ```xml
 <data format="fastqsanger" name="output_unaligned_reads_r" label="${tool.name} on ${on_string}: unaligned reads (R)">
-    <filter>( library['type'] == "paired" or library['type'] == "paired_collection" ) and library['unaligned_file'] is True</filter>
+    <filter>(library['type'] == "paired" or library['type'] == "paired_collection") and library['unaligned_file'] is True</filter>
     <actions>
         <conditional name="library.type">
             <when value="paired">
@@ -4100,7 +4100,7 @@ Or in case of multiple files:
 <outputs>
     <data format="tabular" name="output_short">
         <actions>
-            <action name="column_names" type="metadata" default="Geneid,${','.join([ a.name for a in $input_files ])}" />
+            <action name="column_names" type="metadata" default="Geneid,${','.join([a.name for a in $input_files])}" />
         </actions>
     </data>
 </outputs>
@@ -4445,27 +4445,27 @@ tool config.
 <configfiles>
     <configfile name="script_file">
       ## Setup R error handling to go to stderr
-      options( show.error.messages=F, error = function () { cat( geterrmessage(), file=stderr() ); q( "no", 1, F ) } )
+      options(show.error.messages=F, error = function () { cat(geterrmessage(), file=stderr()); q("no", 1, F) })
       ## Determine range of all series in the plot
-      xrange = c( NULL, NULL )
-      yrange = c( NULL, NULL )
-      #for $i, $s in enumerate( $series )
-          s${i} = read.table( "${s.input.file_name}" )
+      xrange = c(NULL, NULL)
+      yrange = c(NULL, NULL)
+      #for $i, $s in enumerate($series)
+          s${i} = read.table("${s.input.file_name}")
           x${i} = s${i}[,${s.xcol}]
           y${i} = s${i}[,${s.ycol}]
-          xrange = range( x${i}, xrange )
-          yrange = range( y${i}, yrange )
+          xrange = range(x${i}, xrange)
+          yrange = range(y${i}, yrange)
       #end for
       ## Open output PDF file
-      pdf( "${out_file1}" )
+      pdf("${out_file1}")
       ## Dummy plot for axis / labels
-      plot( NULL, type="n", xlim=xrange, ylim=yrange, main="${main}", xlab="${xlab}", ylab="${ylab}" )
+      plot(NULL, type="n", xlim=xrange, ylim=yrange, main="${main}", xlab="${xlab}", ylab="${ylab}")
       ## Plot each series
-      #for $i, $s in enumerate( $series )
+      #for $i, $s in enumerate($series)
           #if $s.series_type['type'] == "line"
-              lines( x${i}, y${i}, lty=${s.series_type.lty}, lwd=${s.series_type.lwd}, col=${s.series_type.col} )
+              lines(x${i}, y${i}, lty=${s.series_type.lty}, lwd=${s.series_type.lwd}, col=${s.series_type.col})
           #elif $s.series_type.type == "points"
-              points( x${i}, y${i}, pch=${s.series_type.pch}, cex=${s.series_type.cex}, col=${s.series_type.col} )
+              points(x${i}, y${i}, pch=${s.series_type.pch}, cex=${s.series_type.cex}, col=${s.series_type.col})
           #end if
       #end for
       ## Close the PDF file

@@ -19,7 +19,7 @@ import bx.interval_index_file
 import bx.intervals
 from six.moves import xrange
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 log = logging.getLogger(__name__)
 
@@ -442,7 +442,7 @@ def iter_blocks_split_by_src(block, src):
         new_block.text_size = block.text_size
         for c in block.components:
             if c == src_c or c.src != src:
-                new_block.add_component(deepcopy(c))  # components have reference to alignment, dont want to loose reference to original alignment block in original components
+                new_block.add_component(deepcopy(c))  # components have reference to alignment, don't want to lose reference to original alignment block in original components
         yield new_block
 
 

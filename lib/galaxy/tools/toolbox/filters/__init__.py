@@ -83,7 +83,7 @@ class FilterFactory(object):
             try:
                 __import__(full_module_name)
             except ImportError:
-                # log.debug("Failed to load module.", exc_info=True)
+                # log.debug("Failed to load module %s using sys.path %s", full_module_name, sys.path, exc_info=True)
                 continue
             module = sys.modules[full_module_name]
             if hasattr(module, function_name):

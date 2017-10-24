@@ -36,7 +36,7 @@ class Filter(object):
         self.elem = elem
 
     def get_dependency_name(self):
-        """Returns the name of any depedencies, otherwise None"""
+        """Returns the name of any dependencies, otherwise None"""
         return None
 
     def filter_options(self, options, trans, other_values):
@@ -493,29 +493,16 @@ class DynamicOptions(object):
         self.missing_index_file = None
         dataset_file = elem.get('from_dataset', None)
         from_parameter = elem.get('from_parameter', None)
-        tool_data_table_name = elem.get('from_data_table', None)
+        self.tool_data_table_name = elem.get('from_data_table', None)
         # Options are defined from a data table loaded by the app
-        self.tool_data_table = None
-        self.missing_tool_data_table_name = None
-        if tool_data_table_name:
-            app = tool_param.tool.app
-            if tool_data_table_name in app.tool_data_tables:
-                self.tool_data_table = app.tool_data_tables[tool_data_table_name]
-                # Column definitions are optional, but if provided override those from the table
-                if elem.find("column") is not None:
-                    self.parse_column_definitions(elem)
-                else:
-                    self.columns = self.tool_data_table.columns
-                # Set self.missing_index_file if the index file to
-                # which the tool_data_table refers does not exist.
-                if self.tool_data_table.missing_index_file:
-                    self.missing_index_file = self.tool_data_table.missing_index_file
-            else:
-                self.missing_tool_data_table_name = tool_data_table_name
-                log.warning("Data table named '%s' is required by tool but not configured" % tool_data_table_name)
+        self._tool_data_table = None
+        self.elem = elem
+        self.column_elem = elem.find("column")
+        self.tool_data_table  # Need to touch tool data table once to populate self.columns
+
         # Options are defined by parsing tabular text data from a data file
         # on disk, a dataset, or the value of another parameter
-        elif data_file is not None or dataset_file is not None or from_parameter is not None:
+        if not self.tool_data_table_name and (data_file is not None or dataset_file is not None or from_parameter is not None):
             self.parse_column_definitions(elem)
             if data_file is not None:
                 data_file = data_file.strip()
@@ -544,6 +531,30 @@ class DynamicOptions(object):
 
         if self.dataset_ref_name:
             tool_param.data_ref = self.dataset_ref_name
+
+    @property
+    def tool_data_table(self):
+        if self.tool_data_table_name:
+            tool_data_table = self.tool_param.tool.app.tool_data_tables.get(self.tool_data_table_name, None)
+            if tool_data_table:
+                # Column definitions are optional, but if provided override those from the table
+                if self.column_elem is not None:
+                    self.parse_column_definitions(self.elem)
+                else:
+                    self.columns = tool_data_table.columns
+                # Set self.missing_index_file if the index file to
+                # which the tool_data_table refers does not exist.
+                if tool_data_table.missing_index_file:
+                    self.missing_index_file = tool_data_table.missing_index_file
+            return tool_data_table
+        return None
+
+    @property
+    def missing_tool_data_table_name(self):
+        if not self.tool_data_table:
+            log.warning("Data table named '%s' is required by tool but not configured" % self.tool_data_table_name)
+            return self.tool_data_table_name
+        return None
 
     def parse_column_definitions(self, elem):
         for column_elem in elem.findall('column'):

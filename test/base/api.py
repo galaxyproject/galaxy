@@ -8,13 +8,15 @@ from .api_asserts import (
     assert_not_has_keys,
     assert_status_code_is,
 )
-from .api_util import get_master_api_key, get_user_api_key
+from .api_util import (
+    ADMIN_TEST_USER,
+    get_master_api_key,
+    get_user_api_key,
+    OTHER_USER,
+    TEST_USER,
+)
 from .interactor import GalaxyInteractorApi as BaseInteractor
 from .testcase import FunctionalTestCase
-
-TEST_USER = "user@bx.psu.edu"
-ADMIN_TEST_USER = "test@bx.psu.edu"
-DEFAULT_OTHER_USER = "otheruser@bx.psu.edu"  # A second user for API testing.
 
 
 class UsesApiTestCaseMixin:
@@ -48,7 +50,7 @@ class UsesApiTestCaseMixin:
         return self._post("users/%s/api_key" % user["id"], admin=True).json()
 
     @contextmanager
-    def _different_user(self, email=DEFAULT_OTHER_USER):
+    def _different_user(self, email=OTHER_USER):
         """ Use in test cases to switch get/post operations to act as new user,
 
             with self._different_user( "other_user@bx.psu.edu" ):

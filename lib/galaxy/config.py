@@ -29,6 +29,7 @@ from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util import unicodify
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.logging import LOGLV_TRACE
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.web.stack import register_postfork_function
 from .version import VERSION_MAJOR
@@ -394,6 +395,7 @@ class Configuration(object):
         self.genomespace_ui_url = kwargs.get('genomespace_ui_url', 'https://gsui.genomespace.org/jsui/')
         self.library_import_dir = kwargs.get('library_import_dir', None)
         self.user_library_import_dir = kwargs.get('user_library_import_dir', None)
+        self.user_library_import_symlink_whitelist = listify(kwargs.get('user_library_import_symlink_whitelist', []), do_strip=True)
         # Searching data libraries
         self.enable_lucene_library_search = string_as_bool(kwargs.get('enable_lucene_library_search', False))
         self.enable_whoosh_library_search = string_as_bool(kwargs.get('enable_whoosh_library_search', False))
@@ -876,6 +878,7 @@ def configure_logging(config):
     or a simple dictionary of configuration variables.
     """
     # Get root logger
+    logging.addLevelName(LOGLV_TRACE, "TRACE")
     root = logging.getLogger()
     # PasteScript will have already configured the logger if the
     # 'loggers' section was found in the config file, otherwise we do
@@ -1019,7 +1022,7 @@ class ConfiguresGalaxyMixin:
 
         # Set up the tool sheds registry
         if os.path.isfile(self.config.tool_sheds_config_file):
-            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry(self.config.root, self.config.tool_sheds_config_file)
+            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry(self.config.tool_sheds_config_file)
         else:
             self.tool_shed_registry = None
 
@@ -1036,6 +1039,10 @@ class ConfiguresGalaxyMixin:
         # database file under the hood.
         combined_install_database = not(install_db_url and install_db_url != db_url)
         install_db_url = install_db_url or db_url
+
+        if getattr(self.config, "max_metadata_value_size", None):
+            from galaxy.model import custom_types
+            custom_types.MAX_METADATA_VALUE_SIZE = self.config.max_metadata_value_size
 
         if check_migrate_databases:
             # Initialize database / check for appropriate schema version.  # If this

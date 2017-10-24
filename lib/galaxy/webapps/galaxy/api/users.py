@@ -282,7 +282,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         path = trans.app.config.user_preferences_extra_config_file
         try:
             with open(path, 'r') as stream:
-                config = yaml.load(stream)
+                config = yaml.safe_load(stream)
         except:
             log.warning('Config file (%s) could not be found or is malformed.' % path)
             return {}

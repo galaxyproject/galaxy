@@ -1,11 +1,11 @@
-define( ["viz/visualization", "libs/bbi/bigwig"],
-        function(visualization, bigwig) {
-
+define(["viz/visualization", "libs/bbi/bigwig"], function(
+    visualization,
+    bigwig
+) {
     /**
      * Data manager for BBI datasets/files, including BigWig and BigBed.
      */
     var BBIDataManager = visualization.GenomeDataManager.extend({
-
         /**
          * Load data from server and manage data entries. Adds a Deferred to manager
          * for region; when data becomes available, replaces Deferred with data.
@@ -15,11 +15,21 @@ define( ["viz/visualization", "libs/bbi/bigwig"],
             var deferred = $.Deferred();
             this.set_data(region, deferred);
 
-            var url = Galaxy.root + 'datasets/' + this.get('dataset').id + '/display',
+            var url =
+                    Galaxy.root +
+                    "datasets/" +
+                    this.get("dataset").id +
+                    "/display",
                 self = this;
-                var promise = new $.Deferred();
-                $.when(bigwig.makeBwg(url)).then(function(bb, err) {
-                    $.when(bb.readWigData(region.get("chrom"), region.get("start"), region.get("end"))).then(function(data) {
+            var promise = new $.Deferred();
+            $.when(bigwig.makeBwg(url)).then(function(bb, err) {
+                $.when(
+                    bb.readWigData(
+                        region.get("chrom"),
+                        region.get("start"),
+                        region.get("end")
+                    )
+                ).then(function(data) {
                     // Transform data into "bigwig" format for LinePainter. "bigwig" format is an array of 2-element arrays
                     // where each element is [position, score]; unlike real bigwig format, no gaps are allowed.
                     var result = [],
@@ -46,10 +56,10 @@ define( ["viz/visualization", "libs/bbi/bigwig"],
                     });
 
                     var entry = {
-                            data: result,
-                            region: region,
-                            dataset_type: 'bigwig'
-                        };
+                        data: result,
+                        region: region,
+                        dataset_type: "bigwig"
+                    };
 
                     self.set_data(region, entry);
                     deferred.resolve(entry);
@@ -57,11 +67,10 @@ define( ["viz/visualization", "libs/bbi/bigwig"],
             });
 
             return deferred;
-        },
+        }
     });
 
     return {
         BBIDataManager: BBIDataManager
     };
-
 });

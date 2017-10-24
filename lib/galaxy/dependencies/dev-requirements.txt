@@ -4,6 +4,7 @@ NoseHTML
 twill==0.9.1
 mock
 selenium
+watchdog
 
 # For relase process
 pygithub3

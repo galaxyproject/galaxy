@@ -4,8 +4,12 @@ import json
 
 from requests import delete, put
 
-from base import api
-from base.populators import DatasetCollectionPopulator, LibraryPopulator, TestsDatasets
+from base import api  # noqa: I100
+from base.populators import (  # noqa: I100
+    DatasetCollectionPopulator,
+    LibraryPopulator,
+    TestsDatasets
+)
 
 
 # TODO: Test anonymous access.

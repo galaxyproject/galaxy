@@ -1,36 +1,32 @@
 """
 Provides factory methods to assemble the Galaxy web application
 """
+import atexit
+import logging
 import os
 import sys
 import threading
-import atexit
+import traceback
 
-try:
-    import configparser
-except:
-    import ConfigParser as configparser
-
+from paste import httpexceptions
+from six.moves import configparser
 
 import galaxy.app
+import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping
-import galaxy.datatypes.registry
 import galaxy.web.framework
 import galaxy.web.framework.webapp
-from galaxy.webapps.util import (
-    MiddlewareWrapUnsupported,
-    build_template_error_formatters,
-    wrap_if_allowed,
-    wrap_if_allowed_or_fail
-)
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
+from galaxy.webapps.util import (
+    build_template_error_formatters,
+    MiddlewareWrapUnsupported,
+    wrap_if_allowed,
+    wrap_if_allowed_or_fail
+)
 
-from paste import httpexceptions
-
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -58,7 +54,6 @@ def paste_app_factory(global_conf, **kwargs):
             app = galaxy.app.UniverseApplication(global_conf=global_conf, **kwargs)
             galaxy.app.app = app
         except:
-            import traceback
             traceback.print_exc()
             sys.exit(1)
     # Call app's shutdown method when the interpeter exits, this cleanly stops
@@ -105,10 +100,12 @@ def paste_app_factory(global_conf, **kwargs):
 
     webapp.add_client_route('/admin/users', 'admin')
     webapp.add_client_route('/admin/roles', 'admin')
+    webapp.add_client_route('/admin/forms', 'admin')
     webapp.add_client_route('/admin/groups', 'admin')
+    webapp.add_client_route('/admin/repositories', 'admin')
     webapp.add_client_route('/admin/tool_versions', 'admin')
     webapp.add_client_route('/admin/quotas', 'admin')
-    webapp.add_client_route('/admin/forms/{form_id}', 'admin')
+    webapp.add_client_route('/admin/form/{form_id}', 'admin')
     webapp.add_client_route('/tours')
     webapp.add_client_route('/tours/{tour_id}')
     webapp.add_client_route('/user')
@@ -117,11 +114,16 @@ def paste_app_factory(global_conf, **kwargs):
     webapp.add_client_route('/workflows/list_published')
     webapp.add_client_route('/visualizations/list_published')
     webapp.add_client_route('/visualizations/list')
+    webapp.add_client_route('/visualizations/edit')
     webapp.add_client_route('/pages/list')
     webapp.add_client_route('/pages/list_published')
+    webapp.add_client_route('/pages/create')
+    webapp.add_client_route('/pages/edit')
     webapp.add_client_route('/histories/list')
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')
+    webapp.add_client_route('/histories/rename')
+    webapp.add_client_route('/histories/permissions')
     webapp.add_client_route('/datasets/list')
     webapp.add_client_route('/datasets/edit')
     webapp.add_client_route('/datasets/error')
@@ -418,7 +420,7 @@ def populate_api_routes(webapp, app):
         "invocations": "",
         "usage": "_deprecated",
     }
-    for noun, suffix in invoke_names.iteritems():
+    for noun, suffix in invoke_names.items():
         name = "%s%s" % (noun, suffix)
         webapp.mapper.connect(
             'list_workflow_%s' % name,
@@ -1055,12 +1057,12 @@ def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
     # wrap any static dirs for plugins
     plugin_frameworks = plugin_frameworks or []
     for framework in plugin_frameworks:
-        if framework and framework.serves_static:
-            # invert control to each plugin for finding their own static dirs
-            for plugin_url, plugin_static_path in framework.get_static_urls_and_paths():
-                plugin_url = '/plugins/' + plugin_url
-                urlmap[(plugin_url)] = Static(plugin_static_path, cache_time)
-                log.debug('added url, path to static middleware: %s, %s', plugin_url, plugin_static_path)
+        # invert control to each plugin for finding their own static dirs
+        for plugin in framework.plugins.values():
+            if plugin.serves_static:
+                plugin_url = '/plugins/' + plugin.static_url
+                urlmap[(plugin_url)] = Static(plugin.static_path, cache_time)
+                log.debug('added url, path to static middleware: %s, %s', plugin_url, plugin.static_path)
 
     # URL mapper becomes the root webapp
     return urlmap

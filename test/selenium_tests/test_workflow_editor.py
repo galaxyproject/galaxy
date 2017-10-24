@@ -1,14 +1,12 @@
-import time
-
-from .framework import (
-    selenium_test,
-    SeleniumTestCase
-)
-
 from ._workflow_fixtures import (
     WORKFLOW_SIMPLE_CAT_TWICE,
-    WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_INVALID_STATE,
+    WORKFLOW_WITH_OLD_TOOL_VERSION,
+)
+from .framework import (
+    retry_assertion_during_transitions,
+    selenium_test,
+    SeleniumTestCase
 )
 
 
@@ -27,7 +25,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
     def test_data_input(self):
         self.workflow_create_new()
         menu = self.wait_for_selector(".toolMenu")
-        time.sleep(1)
+        self.sleep_for(self.wait_types.UX_RENDER)
         inputs_section = menu.find_element_by_css_selector("#title___workflow__inputs__")
         inputs_link = inputs_section.find_element_by_css_selector("a span")
         inputs_link.click()
@@ -43,7 +41,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.workflow_index_open()
         self.workflow_index_click_option("Edit")
-        time.sleep(1)
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_editor_click_option("Save As")
 
     @selenium_test
@@ -52,10 +50,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_OLD_TOOL_VERSION, exact_tools=True)
         self.workflow_index_open()
         self.workflow_index_click_option("Edit")
-        time.sleep(.5)
-        modal_element = self.wait_for_selector_visible(self.modal_body_selector())
-        text = modal_element.text
-        assert "Using version '0.2' instead of version '0.0.1'" in text, text
+        self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
 
     @selenium_test
     def test_editor_invalid_tool_state(self):
@@ -63,11 +58,8 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_INVALID_STATE, exact_tools=True)
         self.workflow_index_open()
         self.workflow_index_click_option("Edit")
-        time.sleep(.5)
-        modal_element = self.wait_for_selector_visible(self.modal_body_selector())
-        text = modal_element.text
-        assert "Using version '0.2' instead of version '0.0.1'" in text, text
-        assert "Using default: '1'" in text, text
+        self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
+        self.assert_modal_has_text("Using default: '1'")
 
     @selenium_test
     def test_missing_tools(self):
@@ -84,10 +76,7 @@ steps:
 """)
         self.workflow_index_open()
         self.workflow_index_click_option("Edit")
-        time.sleep(.5)
-        modal_element = self.wait_for_selector_visible(self.modal_body_selector())
-        text = modal_element.text
-        assert "Tool is not installed" in text, text
+        self.assert_modal_has_text("Tool is not installed")
 
     def workflow_create_new(self, name=None, annotation=None):
         self.workflow_index_open()
@@ -104,3 +93,9 @@ steps:
             'workflow_annotation': annotation,
         })
         self.click_submit(form_element)
+
+    @retry_assertion_during_transitions
+    def assert_modal_has_text(self, expected_text):
+        modal_element = self.wait_for_selector_visible(self.modal_body_selector())
+        text = modal_element.text
+        assert expected_text in text, "Failed to find expected text [%s] in modal text [%s]" % (expected_text, text)

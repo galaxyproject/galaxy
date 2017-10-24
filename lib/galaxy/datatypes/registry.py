@@ -359,7 +359,7 @@ class Registry(object):
             build_sites_config_file = getattr(self.config, "build_sites_config_file", None)
             if build_sites_config_file and os.path.exists(build_sites_config_file):
                 with open(build_sites_config_file, "r") as f:
-                    build_sites_config = yaml.load(f)
+                    build_sites_config = yaml.safe_load(f)
                 if not isinstance(build_sites_config, list):
                     self.log.exception("Build sites configuration YAML file does not declare list of sites.")
                     return

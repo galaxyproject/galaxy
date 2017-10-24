@@ -1,15 +1,17 @@
 """
 Contains the main interface in the Universe class
 """
+from __future__ import absolute_import
+
 import cgi
 import os
-import urllib
 
+import requests
 from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
 
 from galaxy import web
 from galaxy import util
-from galaxy.util import listify, Params, string_as_bool, FILENAME_VALID_CHARS
+from galaxy.util import listify, string_as_bool, FILENAME_VALID_CHARS
 
 from galaxy.web.base import controller
 from galaxy.model.item_attrs import UsesAnnotations
@@ -220,25 +222,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             return "No dataset with id '%s'" % str(id)
 
     @web.expose
-    def display_child(self, trans, parent_id=None, designation=None, tofile=None, toext=".txt"):
-        """Returns child data directly into the browser, based upon parent_id and designation.
-        """
-        # TODO: unencoded id
-        try:
-            data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(parent_id)
-            if data:
-                child = data.get_child_by_designation(designation)
-                if child:
-                    current_user_roles = trans.get_current_user_roles()
-                    if trans.app.security_agent.can_access_dataset(current_user_roles, child):
-                        return self.display(trans, id=child.id, tofile=tofile, toext=toext)
-                    else:
-                        return "You are not privileged to access this dataset."
-        except Exception:
-            pass
-        return "A child named %s could not be found for data %s" % (designation, parent_id)
-
-    @web.expose
     def display_as(self, trans, id=None, display_app=None, **kwd):
         """Returns a file in a format that can successfully be displayed in display_app.
         """
@@ -408,42 +391,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             return trans.show_error_message("Adding File to History has Failed")
 
     @web.expose
-    def history_set_default_permissions(self, trans, id=None, **kwd):
-        """Sets the permissions on a history.
-        """
-        # TODO: unencoded id
-        if trans.user:
-            if 'update_roles_button' in kwd:
-                history = None
-                if id:
-                    try:
-                        id = int(id)
-                    except:
-                        id = None
-                    if id:
-                        history = trans.sa_session.query(trans.app.model.History).get(id)
-                if not history:
-                    # If we haven't retrieved a history, use the current one
-                    history = trans.get_history()
-                p = Params(kwd)
-                permissions = {}
-                for k, v in trans.app.model.Dataset.permitted_actions.items():
-                    in_roles = p.get(k + '_in', [])
-                    if not isinstance(in_roles, list):
-                        in_roles = [in_roles]
-                    in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in in_roles]
-                    permissions[trans.app.security_agent.get_action(v.action)] = in_roles
-                dataset = 'dataset' in kwd
-                bypass_manage_permission = 'bypass_manage_permission' in kwd
-                trans.app.security_agent.history_set_default_permissions(history, permissions,
-                                                                         dataset=dataset, bypass_manage_permission=bypass_manage_permission)
-                return trans.show_ok_message('Default history permissions have been changed.')
-            return trans.fill_template('history/permissions.mako')
-        else:
-            # user not logged in, history group must be only public
-            return trans.show_error_message("You must be logged in to change a history's default permissions.")
-
-    @web.expose
     def dataset_make_primary(self, trans, id=None):
         """Copies a dataset and makes primary.
         """
@@ -470,8 +417,8 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
     def bucket_proxy(self, trans, bucket=None, **kwd):
         if bucket:
             trans.response.set_content_type('text/xml')
-            b_list_xml = urllib.urlopen('http://s3.amazonaws.com/%s/' % bucket)
-            return b_list_xml.read()
+            b_list_xml = requests.get('http://s3.amazonaws.com/%s/' % bucket)
+            return b_list_xml.text
         raise Exception("You must specify a bucket")
 
     # ---- Debug methods ----------------------------------------------------

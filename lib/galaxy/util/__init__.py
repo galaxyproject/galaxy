@@ -8,8 +8,8 @@ from __future__ import absolute_import
 import binascii
 import collections
 import errno
+import importlib
 import json
-import logging
 import os
 import random
 import re
@@ -29,7 +29,7 @@ except ImportError:
 
 from datetime import datetime
 from hashlib import md5
-from os.path import normpath, relpath
+from os.path import relpath
 from xml.etree import ElementInclude, ElementTree
 from xml.etree.ElementTree import ParseError
 
@@ -49,10 +49,12 @@ except ImportError:
     docutils_html4css1 = None
 
 from .inflection import English, Inflector
+from .logging import get_logger
+from .path import safe_contains, safe_makedirs, safe_relpath  # noqa: F401
 
 inflector = Inflector(English)
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 _lock = threading.RLock()
 
 CHUNK_SIZE = 65536  # 64k
@@ -66,6 +68,9 @@ DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
 BINARY_CHARS = [NULL_CHAR]
 FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+
+defaultdict = collections.defaultdict
 
 
 def remove_protocol_from_url(url):
@@ -604,31 +609,19 @@ def which(file):
     return None
 
 
-def safe_makedirs(path):
-    """ Safely make a directory, do not fail if it already exist or
-    is created during execution.
-    """
-    if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except OSError as e:
-            # review source for Python 2.7 this would only ever happen
-            # for the last path anyway so need to recurse - this exception
-            # means the last part of the path was already in existence.
-            if e.errno != errno.EEXIST:
-                raise
-
-
 def in_directory(file, directory, local_path_module=os.path):
     """
     Return true, if the common prefix of both is equal to directory
     e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
-    """
 
-    # Make both absolute.
-    directory = local_path_module.abspath(directory)
-    file = local_path_module.abspath(file)
-    return local_path_module.commonprefix([file, directory]) == directory
+    local_path_module is used by Pulsar to check Windows paths while running on
+    a POSIX-like system.
+    """
+    if local_path_module != os.path:
+        _safe_contains = importlib.import_module('galaxy.util.path.%s' % local_path_module.__name__).safe_contains
+    else:
+        _safe_contains = safe_contains
+    return _safe_contains(directory, file)
 
 
 def merge_sorted_iterables(operator, *iterables):
@@ -762,7 +755,7 @@ class Params(object):
 
 def rst_to_html(s, error=False):
     """Convert a blob of reStructuredText to HTML"""
-    log = logging.getLogger("docutils")
+    log = get_logger("docutils")
 
     if docutils_core is None:
         raise Exception("Attempted to use rst_to_html but docutils unavailable.")
@@ -782,9 +775,9 @@ def rst_to_html(s, error=False):
                                   # number of sections in help content.
     }
 
-    return unicodify(docutils_core.publish_string(s,
-                      writer=docutils_html4css1.Writer(),
-                      settings_overrides=settings_overrides))
+    return unicodify(docutils_core.publish_string(
+        s, writer=docutils_html4css1.Writer(),
+        settings_overrides=settings_overrides))
 
 
 def xml_text(root, name=None):
@@ -886,8 +879,25 @@ def roundify(amount, sfs=2):
 
 
 def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
-    """
+    u"""
     Returns a unicode string or None.
+
+    >>> unicodify(None) is None
+    True
+    >>> unicodify('simple string') == u'simple string'
+    True
+    >>> unicodify(3) == u'3'
+    True
+    >>> unicodify(Exception('message')) == u'message'
+    True
+    >>> unicodify('cómplǐcḁtëd strĩñg') == u'cómplǐcḁtëd strĩñg'
+    True
+    >>> s = u'lâtín strìñg'; unicodify(s.encode('latin-1'), 'latin-1') == s
+    True
+    >>> s = u'lâtín strìñg'; unicodify(s.encode('latin-1')) == u'l\ufffdt\ufffdn str\ufffd\ufffdg'
+    True
+    >>> s = u'lâtín strìñg'; unicodify(s.encode('latin-1'), error='ignore') == u'ltn strg'
+    True
     """
     if value is None:
         return None
@@ -1461,6 +1471,7 @@ def build_url(base_url, port=80, scheme='http', pathspec=None, params=None, dose
     parsed_url = urlparse.urlparse(base_url)
     if scheme != 'http':
         parsed_url.scheme = scheme
+    assert parsed_url.scheme in ('http', 'https', 'ftp'), 'Invalid URL scheme: %s' % scheme
     if port != 80:
         url = '%s://%s:%d/%s' % (parsed_url.scheme, parsed_url.netloc.rstrip('/'), int(port), parsed_url.path)
     else:
@@ -1502,22 +1513,6 @@ def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
             if not chunk:
                 break
             f.write(chunk)
-
-
-def safe_relpath(path):
-    """
-    Given what we expect to be a relative path, determine whether the path
-    would exist inside the current directory.
-
-    :type   path:   string
-    :param  path:   a path to check
-    :rtype:         bool
-    :returns:       ``True`` if path is relative and does not reference a path
-        in a parent directory, ``False`` otherwise.
-    """
-    if path.startswith(os.sep) or normpath(path).startswith(os.pardir):
-        return False
-    return True
 
 
 class ExecutionTimer(object):

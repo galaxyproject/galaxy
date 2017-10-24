@@ -7,9 +7,7 @@ from base.populators import (
     DatasetPopulator,
     LibraryPopulator,
     skip_without_tool,
-    skip_without_datatype,
 )
-from galaxy.tools.verify.test_data import TestDataResolver
 
 
 class ToolsTestCase(api.ApiTestCase):
@@ -86,104 +84,6 @@ class ToolsTestCase(api.ApiTestCase):
         tool_info = tool_show_response.json()
         self._assert_has_keys(tool_info, "inputs", "outputs", "panel_section_id")
         return tool_info
-
-    def test_upload1_paste(self):
-        with self.dataset_populator.test_history() as history_id:
-            payload = self.dataset_populator.upload_payload(history_id, 'Hello World')
-            create_response = self._post("tools", data=payload)
-            self._assert_has_keys(create_response.json(), 'outputs')
-
-    def test_upload_posix_newline_fixes(self):
-        windows_content = "1\t2\t3\r4\t5\t6\r"
-        posix_content = windows_content.replace("\r", "\n")
-        result_content = self._upload_and_get_content(windows_content)
-        self.assertEquals(result_content, posix_content)
-
-    def test_upload_disable_posix_fix(self):
-        windows_content = "1\t2\t3\r4\t5\t6\r"
-        result_content = self._upload_and_get_content(windows_content, to_posix_lines=None)
-        self.assertEquals(result_content, windows_content)
-
-    def test_upload_tab_to_space(self):
-        table = "1 2 3\n4 5 6\n"
-        result_content = self._upload_and_get_content(table, space_to_tab="Yes")
-        self.assertEquals(result_content, "1\t2\t3\n4\t5\t6\n")
-
-    def test_upload_tab_to_space_off_by_default(self):
-        table = "1 2 3\n4 5 6\n"
-        result_content = self._upload_and_get_content(table)
-        self.assertEquals(result_content, table)
-
-    def test_rdata_not_decompressed(self):
-        # Prevent regression of https://github.com/galaxyproject/galaxy/issues/753
-        rdata_path = TestDataResolver().get_filename("1.RData")
-        rdata_metadata = self._upload_and_get_details(open(rdata_path, "rb"), file_type="auto")
-        self.assertEquals(rdata_metadata["file_ext"], "rdata")
-
-    @skip_without_datatype("velvet")
-    def test_composite_datatype(self):
-        with self.dataset_populator.test_history() as history_id:
-            dataset = self._velvet_upload(history_id, extra_inputs={
-                "files_1|url_paste": "roadmaps content",
-                "files_1|type": "upload_dataset",
-                "files_2|url_paste": "log content",
-                "files_2|type": "upload_dataset",
-            })
-
-            roadmaps_content = self._get_roadmaps_content(history_id, dataset)
-            assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
-
-    @skip_without_datatype("velvet")
-    def test_composite_datatype_space_to_tab(self):
-        # Like previous test but set one upload with space_to_tab to True to
-        # verify that works.
-        with self.dataset_populator.test_history() as history_id:
-            dataset = self._velvet_upload(history_id, extra_inputs={
-                "files_1|url_paste": "roadmaps content",
-                "files_1|type": "upload_dataset",
-                "files_1|space_to_tab": "Yes",
-                "files_2|url_paste": "log content",
-                "files_2|type": "upload_dataset",
-            })
-
-            roadmaps_content = self._get_roadmaps_content(history_id, dataset)
-            assert roadmaps_content.strip() == "roadmaps\tcontent", roadmaps_content
-
-    @skip_without_datatype("velvet")
-    def test_composite_datatype_posix_lines(self):
-        # Like previous test but set one upload with space_to_tab to True to
-        # verify that works.
-        with self.dataset_populator.test_history() as history_id:
-            dataset = self._velvet_upload(history_id, extra_inputs={
-                "files_1|url_paste": "roadmaps\rcontent",
-                "files_1|type": "upload_dataset",
-                "files_1|space_to_tab": "Yes",
-                "files_2|url_paste": "log\rcontent",
-                "files_2|type": "upload_dataset",
-            })
-
-            roadmaps_content = self._get_roadmaps_content(history_id, dataset)
-            assert roadmaps_content.strip() == "roadmaps\ncontent", roadmaps_content
-
-    def _velvet_upload(self, history_id, extra_inputs):
-        payload = self.dataset_populator.upload_payload(
-            history_id,
-            "sequences content",
-            file_type="velvet",
-            extra_inputs=extra_inputs,
-        )
-        run_response = self.dataset_populator.tools_post(payload)
-        self.dataset_populator.wait_for_tool_run(history_id, run_response)
-        datasets = run_response.json()["outputs"]
-
-        assert len(datasets) == 1
-        dataset = datasets[0]
-
-        return dataset
-
-    def _get_roadmaps_content(self, history_id, dataset):
-        roadmaps_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=dataset, filename="Roadmaps")
-        return roadmaps_content
 
     def test_unzip_collection(self):
         with self.dataset_populator.test_history() as history_id:
@@ -1376,20 +1276,6 @@ class ToolsTestCase(api.ApiTestCase):
             return create
         else:
             return create_response
-
-    def _upload(self, content, **upload_kwds):
-        history_id = self.dataset_populator.new_history()
-        new_dataset = self.dataset_populator.new_dataset(history_id, content=content, **upload_kwds)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return history_id, new_dataset
-
-    def _upload_and_get_content(self, content, **upload_kwds):
-        history_id, new_dataset = self._upload(content, **upload_kwds)
-        return self.dataset_populator.get_history_dataset_content(history_id, dataset=new_dataset)
-
-    def _upload_and_get_details(self, content, **upload_kwds):
-        history_id, new_dataset = self._upload(content, **upload_kwds)
-        return self.dataset_populator.get_history_dataset_details(history_id, dataset=new_dataset)
 
     def __tool_ids(self):
         index = self._get("tools")

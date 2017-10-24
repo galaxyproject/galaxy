@@ -888,7 +888,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         token = ''
         if self.galaxy_session:
             token = self.security.encode_id(
-                self.galaxy_session.id, kind="session_csrf_token"
+                self.galaxy_session.id, kind="csrf"
             )
         return token
 

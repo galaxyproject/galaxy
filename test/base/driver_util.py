@@ -431,7 +431,7 @@ def cleanup_directory(tempdir):
         log.info("GALAXY_TEST_NO_CLEANUP is on. Temporary files in %s" % tempdir)
         return
     try:
-        if os.path.exists(tempdir) and skip_cleanup:
+        if os.path.exists(tempdir) and not skip_cleanup:
             shutil.rmtree(tempdir)
     except Exception:
         pass

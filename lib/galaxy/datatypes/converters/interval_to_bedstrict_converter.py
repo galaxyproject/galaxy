@@ -6,7 +6,7 @@ import sys
 
 import bx.intervals.io
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def stop_err(msg):

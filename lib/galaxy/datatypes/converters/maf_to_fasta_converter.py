@@ -8,7 +8,7 @@ import bx.align.maf
 
 from galaxy.tools.util import maf_utilities
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def __main__():
