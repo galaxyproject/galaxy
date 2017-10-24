@@ -4,7 +4,7 @@ description: "An introduction on how to display multiple datasets and visualizat
 tags:
   - "default"
   - "UI"
-  - "visualisation"
+  - "visualization"
 
 steps:
     - content: "This short tour will walk you through <b>Galaxy's Scratchbook</b> feature"
