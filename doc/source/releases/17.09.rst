@@ -29,10 +29,11 @@ Enhancements
   `Pull Request 3611`_
 * Add job runner for `Chronos <https://mesos.github.io/chronos/>`__
   (thanks to `@theosotr <https://github.com/theosotr>`__).
-  `Pull Request 3946`_
-* Paramiko based shell job runner
+  `Pull Request 3946`_, `Pull Request 4120`_
+* Many improvements to the shell job runner (including a new Paramiko based
+  runner with retry support)
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4358`_
+  `Pull Request 4358`_, `Pull Request 4599`_, `Pull Request 4343`_
 * Add entry for ``empty_extra_files_path`` validator
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 3994`_
@@ -94,10 +95,13 @@ Enhancements
   `Pull Request 3179`_
 * Speed up and optimize the process of identifying public libraries.
   `Pull Request 4640`_
-* Various data libraries improvements.
-  `Pull Request 4512`_
-* Enhance workflow import API endpoint to allow admins to install repositories corresponding to a supplied
-  workflow (thanks to `@manabuishii <https://github.com/manabuishii>`__).
+* Numerous data library fixes and improvements - both to the frontend and backend.
+  `Pull Request 4568`_, `Pull Request 4595`_,
+  `Pull Request 4594`_, `Pull Request 4579`_, `Pull Request 4560`_
+  `Pull Request 4512`_, `Pull Request 4621`_, `Pull Request 4752`_
+* Enhance workflow import API endpoint to allow admins to install repositories corresponding
+  to a supplied workflow
+  (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 3064`_
 * GFF3 support in filter by attribute
   (thanks to `@peterjc <https://github.com/peterjc>`__).
@@ -188,11 +192,9 @@ Enhancements
   `Pull Request 4163`_, `Pull Request 4101`_
 * Set content type to application/json for JSON text types.
   `Pull Request 4160`_
-* Improved Mulled Containers
-  `Pull Request 4173`_
-* Allow Galaxy to use cached mulled containers for Singularity.
-  `Pull Request 4179`_
-* Build mulled images for Singularity on demand...
+* Assorted enhancements for container support (both for mulled container generation
+  and fetching as well as to new Singularity support).
+  `Pull Request 4173`_, `Pull Request 4179`_, `Pull Request 4180`_,
   `Pull Request 4185`_
 * Make updateucsc.sh.sample usable without any change
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -214,7 +216,7 @@ Enhancements
 * "Join two Datasets" (join1) preserve column headers
   (thanks to `@lecorguille <https://github.com/lecorguille>`__).
   `Pull Request 4229`_
-* add public-only filter for data libraries
+* Add public-only filter for data libraries
   (thanks to `@pvanheus <https://github.com/pvanheus>`__).
   `Pull Request 4232`_
 * Fix import order and Python3 compatibility for 51 files
@@ -467,16 +469,9 @@ Enhancements
 * Check user roles only once if user has no roles
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4546`_
-* Fix data library collection import.
-  `Pull Request 4568`_
-* Various fixes for data libraries.
-  `Pull Request 4595`_
 * Remove unused bam to bai converter
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4598`_
-* Retry job submissions in ShellJobRunner
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4599`_
 * Remove various unreachable statements
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4603`_
@@ -492,186 +487,152 @@ Fixes
 
 .. major_bug
 
-
 .. bug
 
+* Various hashtag (or name tag) fixes (also backported to 17.05).
+  `Pull Request 4139`_, `Pull Request 4188`_
 * Simplify RC creation in Makefile.
   `Pull Request 4011`_
-* Do not recurse in ensure_installed()
+* Do not recurse in ``ensure_installed()``
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 4049`_
 * Minor fixes for new locales, rebuild of client.
   `Pull Request 4050`_
-* French error
+* French translation error
   (thanks to `@yvanlebras <https://github.com/yvanlebras>`__).
   `Pull Request 4051`_
-* Very minor history tour tweaks
+* Minor history tour tweaks.
   `Pull Request 4061`_
-* conditional postclick execution onNext
+* Improve tour button logic
   (thanks to `@bagnacan <https://github.com/bagnacan>`__).
   `Pull Request 4062`_
-* Don't try to get the file name of purged files
+* Bug fix to prevent fetching the file path of purged files
   (thanks to `@dpryan79 <https://github.com/dpryan79>`__).
   `Pull Request 4066`_
-* Rebuild to provide new localization.
-  `Pull Request 4081`_
 * ToolShed tool dependency install fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4105`_
-* Fix failed merge for populate model
-  `Pull Request 4112`_
 * Fix legacy Python path for genome diversity tools from miller lab.
   `Pull Request 4117`_
-* Fix chronos client initialization
-  (thanks to `@theosotr <https://github.com/theosotr>`__).
-  `Pull Request 4120`_
 * Avoid locale specific string.letters for job_name
   (thanks to `@peterjc <https://github.com/peterjc>`__).
   `Pull Request 4121`_
-* New workflow menu message fix
-  `Pull Request 4124`_
-* Fix typo
+* Fix typo in job_conf.xml.sample
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 4126`_
-* Tag fixes
-  `Pull Request 4139`_
 * Hide error highlighting if user interacts with highlighted field
   `Pull Request 4147`_
-* fix webhooks loading url
+* Fix webhooks loading URL.
   `Pull Request 4158`_
 * Fix older GIE config sample description.
   `Pull Request 4164`_
-* Improve default handling of Singularity volumes.
-  `Pull Request 4180`_
 * Fix `#3990 <https://github.com/galaxyproject/galaxy/issues/3990>`__, don't
   chown non-galaxy files
   (thanks to `@dpryan79 <https://github.com/dpryan79>`__).
   `Pull Request 4186`_
-* Hashtags w/ workflow-defined tags fix
-  `Pull Request 4188`_
 * Debug of script library_upload_dir.py
   (thanks to `@FredericBGA <https://github.com/FredericBGA>`__).
   `Pull Request 4199`_
 * Correct name of neo4j datatype class
   (thanks to `@pvanheus <https://github.com/pvanheus>`__).
   `Pull Request 4223`_
-* Fix Registry.get_datatype_by_extension() to return None if ext is unknown
+* Fix ``Registry.get_datatype_by_extension()`` to return ``None`` if ``ext`` is unknown
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4224`_
-* avoids broken version of mercurial in conda
+* Avoid broken version of Mercurial in conda
   (thanks to `@bwlang <https://github.com/bwlang>`__).
   `Pull Request 4227`_
 * Fix empty tabular output error when using discover_datasets.
   (thanks to `@pkrog <https://github.com/pkrog>`__).
   `Pull Request 4240`_
-* Importing old exported histories failing
+* Fix importing old exported histories.
   (thanks to `@cche <https://github.com/cche>`__).
   `Pull Request 4268`_
-* Update tool_conf.xml.main to reflect main's current state.
+* Update ``tool_conf.xml.main`` to reflect usegalaxy.org's current state.
   `Pull Request 4295`_
-* Fix TypeError when uploading large files from ftp to s3
+* Fix ``TypeError`` when uploading large files from FTP to S3.
   (thanks to `@jlhg <https://github.com/jlhg>`__).
   `Pull Request 4315`_
-* Fix for loading tools when tool.lineage is None.
+* Fix for loading tools when ``tool.lineage is None``.
   `Pull Request 4317`_
 * Fix for the caching of location filenames when they are broken symlinks.
   `Pull Request 4318`_
 * Remove print debug option from toolshed.
   `Pull Request 4332`_
-* Prevent early dataset state changes in the ShellJobRunner
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4343`_
 * Fix default output labels for subworkflows
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4346`_
-* Search Overlay plugin bug fix
+* Search overlay plugin bug fix
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4348`_
-* Patch bug preventing creation of dataset library folders
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
-  `Pull Request 4357`_
 * Tool version and lineage fixes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4375`_
-* Bugfix: Ensure task splitting handles before job resolution.
+* Fix bug in ``scripts/extract_dataset_part.py`` during task splitting.
   `Pull Request 4383`_
-* Fix get_tool returning list when it shouldn't.
+* Fix ``get_tool`` returning list when it shouldn't.
   `Pull Request 4390`_
-* Bugfix for loading subworkflows from workflow descriptions.
+* Bug fix for loading subworkflows from workflow descriptions.
   `Pull Request 4394`_
-* Bugfix: __str__ method on tool parsers would throw an Exception.
+* Bug fix ``__str__`` method on tool parsers that previously would throw an ``Exception``.
   `Pull Request 4395`_
-* Add missing chemical formats to datatypes_conf.xml.sample
+* Add missing chemical formats to ``datatypes_conf.xml.sample``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4413`_
-* Don't cast tool_version to string if tool_version is None-type
+* Don't cast ``tool_version`` to string if ``tool_version`` is None-type
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4420`_
-* some unicoding for local runner
+* Some unicoding for local runner
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4426`_
 * Break connection in workflow editor if necessary
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4431`_
-* Fix private role validation
+* Fix private role validation.
   `Pull Request 4432`_
 * Remove print of non-existent attribute 'content'
   (thanks to `@chambm <https://github.com/chambm>`__).
   `Pull Request 4439`_
-* Fix API tests broken in `#4434
-  <https://github.com/galaxyproject/galaxy/issues/4434>`__
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 4445`_
-* Fix E201 errors (spaces in parens) in new memepsp datatype
-  `Pull Request 4446`_
 * Fix quota function name
   `Pull Request 4469`_
 * Fixes for VCF/BCF datatypes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4477`_
-* Validate workflow step after step argument injection
+* Validate workflow step after step argument injection.
   `Pull Request 4483`_
 * Fix drag and drop from history for Firefox
   `Pull Request 4496`_
 * 2017-08 Security Patch
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4501`_
-* import of history works even if we use symlink in database directory
+* Fix history import if using symlink in database directory
   (thanks to `@FredericBGA <https://github.com/FredericBGA>`__).
   `Pull Request 4511`_
-* Fix missing tools wf editor alternative
+* Fix missing tools in the workflow editor
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4552`_
 * Prevent unbound variable error history controller.
   `Pull Request 4557`_
-* improve docs and access checks in datalibs manager/api
-  `Pull Request 4560`_
 * Backport uwsgi fix from `#2836
   <https://github.com/galaxyproject/galaxy/issues/2836>`__.
   `Pull Request 4565`_
-* Bug: Fix startup of galaxy when webhooks dir is empty
+* Bug fix startup of galaxy when webhooks dir is empty
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4570`_
-* Fix delete option in history menu
+* Fix delete option in history menu.
   `Pull Request 4574`_
-* datalibs: fix two bugs, refactor
-  `Pull Request 4579`_
 * Cancel workflow invocations when histories are deleted.
   `Pull Request 4580`_
-* Fix datalib search pagination
-  `Pull Request 4594`_
 * Multiview missing histories fix
   `Pull Request 4610`_
 * Fix virtualenv activation for some scripts
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4616`_
-* replace separators in library sharing role names
-  `Pull Request 4621`_
 * Pulsar remote metadata fixes
   `Pull Request 4622`_
 * Swap sanitize whitelist form to use a post.
   `Pull Request 4625`_
-* Misc. spelling/grammatical error fixes.
+* Fix various spelling and grammatical error fixes.
   `Pull Request 4626`_
 * Typo fix
   (thanks to `@VJalili <https://github.com/VJalili>`__).
@@ -687,7 +648,6 @@ Fixes
 * Explicitly write registry.xml when creating a job for the upload tool
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4644`_, `Pull Request 4600`_
-
 * Fix links on workflow, history items.
   `Pull Request 4656`_
 * Fix for modules resolver.
@@ -706,9 +666,9 @@ Fixes
 * Add message (error and info) display to workflows display list.
   `Pull Request 4716`_
 * If the newest version of a tool is hidden, load the newest older version, if
-  any, into the tool panel
+  any, into the tool panel.
   `Pull Request 4726`_
-* Fix missing support for command_inject when using containers lib in GIEs
+* Fix missing support for command_inject when using containers lib in GIEs.
   `Pull Request 4740`_
 * Fix t, a, g, s returned in to_dict() method
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -720,8 +680,6 @@ Fixes
   `Pull Request 4748`_
 * Force onload webhooks to wait for Galaxy object (and root) resolution.
   `Pull Request 4750`_
-* replace selector for selecting selected rows
-  `Pull Request 4752`_
 * GIEs: Grandfather automatic uppercasing of some env_override variables
   `Pull Request 4760`_
 
