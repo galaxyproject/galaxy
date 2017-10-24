@@ -45,9 +45,32 @@ See `the community hub <https://galaxyproject.org/develop/source-code/>`__ for a
 Security
 ========
 
-Together with the 17.09 Galaxy version we release the following three security patches. Per our `Security Policy <https://github.com/galaxyproject/galaxy/blob/dev/SECURITY_POLICY.md>`__ these has been already applied to all Galaxy releases in the last 12 months.
+The 17.09 Galaxy version includes four security patches. Per our `Security Policy <https://github.com/galaxyproject/galaxy/blob/dev/SECURITY_POLICY.md>`__ these has been already applied to all Galaxy releases in the last 12 months.
+
+For the best security we recommend all deployers to update to the latest release.
 
 If you maintain a publicly accessible Galaxy please consider signing up for this [mailing list](https://lists.galaxyproject.org/listinfo/galaxy-public-servers) to receive the future security patches in advance of the public disclosure.
+
+Details of the patched vulnerabilities can be found in the `Security patch details`_ section of these release notes.
+
+Deprecation Notices
+===================
+
+* The Galaxy Sample Tracking and External Services functionality is now considered deprecated. In future releases we will strip down the related
+  user interface and introduce configuration option to keep relevant API controllers active if desired. `Related PR <https://github.com/galaxyproject/galaxy/pull/4526>`__.
+* The deprecated admin-only interface for Galaxy Data Libraries is staged to be removed in the next release.
+* Workflows API: When exposing WorkflowInvocationSteps ``state`` will no longer be available.
+* The ``refresh_on_change`` attribute of a ``<param>`` tag in the tool syntax can no longer be set to a value of another parameter. Use boolean instead (e.g.``refresh_on_change="True"``). `Details <https://github.com/galaxyproject/galaxy/issues/4810>`__
+
+
+Release Notes
+===========================================================
+
+.. include:: 17.09.rst
+   :start-after: announce_start
+
+Security patch details
+======================
 
 Limited Galaxy Data Library unauthorized filesystem access
 ----------------------------------------------------------
@@ -110,20 +133,16 @@ access to read on the host(s) where jobs run.
 
 The fix for this issue has been applied to Galaxy releases back to 16.07 and can be found in this `commit <https://github.com/galaxyproject/galaxy/commit/0e698813a96f1ad61d797255686f69cf5e6b1280>`__
 
-Deprecation Notices
-===================
+Cross site scripting and session fixation
+-----------------------------------------
 
-* The Galaxy Sample Tracking and External Services functionality is now considered deprecated. In future releases we will strip down the related
-  user interface and introduce configuration option to keep relevant API controllers active if desired. `Related PR <https://github.com/galaxyproject/galaxy/pull/4526>`__.
-* The deprecated admin-only interface for Galaxy Data Libraries is staged to be removed in the next release.
-* Workflows API: When exposing WorkflowInvocationSteps ``state`` will no longer be available.
-* The ``refresh_on_change`` attribute of a ``<param>`` tag in the tool syntax can no longer be set to a value of another parameter. Use boolean instead (e.g.``refresh_on_change="True"``). `Details <https://github.com/galaxyproject/galaxy/issues/4810>`__
+Disclosed on the `mailing list <https://lists.galaxyproject.org/pipermail/galaxy-dev/2017-August/025938.html>`__ in August 2017.
 
+Vulnerabilities were found by Eric Rasche and Manabu Ishii respectively. Detailed descriptions of these categories of vulnerabilities can be found at:
 
-Release Notes
-===========================================================
+- https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)
+- https://www.owasp.org/index.php/Session_fixation
 
-.. include:: 17.09.rst
-   :start-after: announce_start
+The fix for these issues has been applied to Galaxy releases back to 16.10 and can be found in this `diff <https://gist.githubusercontent.com/jmchilton/760bf8ba6055b9a47a48529fcc49a493/raw/01bc98e5a8067a435f38d7cf4fda4e304c4425a2/2017augsecurity_1610.patch>`__
 
 .. include:: _thanks.rst
