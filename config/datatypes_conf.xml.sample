@@ -339,6 +339,8 @@
     <datatype extension="phyloxml" type="galaxy.datatypes.xml:Phyloxml" display_in_upload="true" />
     <datatype extension="nhx" type="galaxy.datatypes.data:Newick" display_in_upload="true" />
     <datatype extension="nex" type="galaxy.datatypes.data:Nexus" display_in_upload="true" />
+    <datatype extension="iqtree" type="galaxy.datatypes.data:IQTree" />
+    <datatype extension="mldist" type="galaxy.datatypes.data:MaximumLikelihoodDistanceMatrix" />
     <!-- Start RGenetics Datatypes -->
     <datatype extension="affybatch" type="galaxy.datatypes.genetics:Affybatch" display_in_upload="true"/>
     <!-- eigenstrat pedigree input file -->
@@ -737,6 +739,8 @@
     <sniffer type="galaxy.datatypes.tabular:Sam"/>
     <sniffer type="galaxy.datatypes.data:Newick"/>
     <sniffer type="galaxy.datatypes.data:Nexus"/>
+    <sniffer type="galaxy.datatypes.data:MaximumLikelihoodDistanceMatrix"/>
+    <sniffer type="galaxy.datatypes.data:IQTree"/>
     <sniffer type="galaxy.datatypes.text:Obo"/>
     <sniffer type="galaxy.datatypes.text:Arff"/>
     <sniffer type="galaxy.datatypes.text:Ipynb"/>

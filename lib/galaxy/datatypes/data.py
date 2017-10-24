@@ -994,6 +994,133 @@ class Newick(Text):
         return ['phyloviz']
 
 
+class MaximumLikelihoodDistanceMatrix(Text):
+    """Distance matrix of sequence homology"""
+    file_ext = 'mldist'
+
+    def init_meta(self, dataset, copy_from=None):
+        Text.init_meta(self, dataset, copy_from=copy_from)
+
+    def sniff(self, filename):
+        """
+        Detect the MLDIST file
+
+        Header is an integer, and all other lines follow
+        a sample name followed by an array of floats
+        overall conforming to the standard square matrix
+        type.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('example.mldist')
+        >>> MaximumLikelihoodDistanceMatrix().sniff(fname)
+        True
+
+
+        >>> fname = get_test_fname('example.iqtree')
+        >>> MaximumLikelihoodDistanceMatrix().sniff(fname)
+        False
+
+
+        >>> fname = get_test_fname('mothur_datatypetest_false.mothur.pair.dist')
+        >>> MaximumLikelihoodDistanceMatrix().sniff(fname)
+        False
+
+
+        >>> fname = get_test_fname('mothur_datatypetest_false.mothur.lower.dist')
+        >>> MaximumLikelihoodDistanceMatrix().sniff(fname)
+        False
+        """
+        with open(filename, "r") as fio:
+
+            header = fio.readline()
+
+            try:
+                int(header)
+            except ValueError:
+                return False
+
+            num_tokens = -1
+
+            for line in fio:
+                line = line.splitlines()[0].strip()
+
+                if line == "":
+                    continue
+
+                tokens = line.split()
+
+                if num_tokens == -1:
+                    num_tokens = len(tokens)
+
+                elif len(tokens) != num_tokens:
+                    # not a square matrix
+                    return False
+
+                try:
+                    [float(tok) for tok in tokens[1:]]
+                except ValueError:
+                    return False
+
+            return True
+
+        return False
+
+
+class IQTree(Text):
+    """IQ-TREE format"""
+    file_ext = 'iqtree'
+
+    def __init__(self, **kwd):
+        """Init mixed format"""
+        Text.__init__(self, **kwd)
+
+    def init_meta(self, dataset, copy_from=None):
+        Text.init_meta(self, dataset, copy_from=copy_from)
+
+    def sniff(self, filename):
+        """
+        Detect the IQTree file
+
+        Scattered text file containing various headers and data
+        types.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('example.iqtree')
+        >>> IQTree().sniff(fname)
+        True
+
+
+        >>> fname = get_test_fname('temp.txt')
+        >>> IQTree().sniff(fname)
+        False
+
+
+        >>> fname = get_test_fname('test_tab1.tabular')
+        >>> IQTree().sniff(fname)
+        False
+        """
+        with open(filename, 'r') as fio:
+
+            found_line = {
+                'IQ-TREE' : False,
+                'REFERENCES': False,
+                'SEQUENCE ALIGNMENT': False,
+                'ModelFinder': False,
+                'SUBSTITUTION PROCESS': False,
+                'MAXIMUM LIKELIHOOD TREE': False,
+                'TIME STAMP': False
+            }
+
+            for line in fio:
+                for wanted_line in found_line:
+                    if line.startswith(wanted_line):
+                        found_line[wanted_line] = True
+
+            return set(found_line.values()) == {True}
+
+        return False
+
+
 class Nexus(Text):
     """Nexus format as used By Paup, Mr Bayes, etc"""
     edam_data = "data_0872"
