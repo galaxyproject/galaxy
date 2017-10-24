@@ -26,6 +26,11 @@ def load_job_template_from_file(jt, filename):
         if attr in data:
             setattr(jt, attr, data[attr])
 
+def load_job_template(jt, data):
+    for attr in DRMAA_jobTemplate_attributes:
+        if attr in data:
+            setattr(jt, attr, data[attr])
+
 
 def load_job_template(jt, data):
     for attr in DRMAA_jobTemplate_attributes:
