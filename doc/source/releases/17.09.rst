@@ -103,6 +103,9 @@ Enhancements
 * Improved Kubernetes support (non-privileged filesystem access, updated k8s Job API target)
   (thanks to `@phnmnl <https://github.com/phnmnl>`__).
   `Pull Request 3972`_
+* New Dependency resolver for the LMOD environment modules system
+  (thanks to `@arbernard <https://github.com/arbernard>`__).
+  `Pull Request 4489`_
 * Nicer tool click targets for toolbox
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4470`_
@@ -344,37 +347,33 @@ Enhancements
 * Uniform indentation of multiline if conditionals
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4455`_
-* Logging fixes
+* Small logging improvements
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4456`_
-* More detailed sentry reports
+* Improvements to `Sentry <https://sentry.io/welcome/>`__ integration
   (thanks to `@erasche <https://github.com/erasche>`__).
-  `Pull Request 4457`_
-* don't uppercase envoverride
+  `Pull Request 4457`_, `Pull Request 4471`_
+* Fix for GIEs to not automatically uppercase environment variables
   (thanks to `@xgaia <https://github.com/xgaia>`__).
   `Pull Request 4458`_
-* Fix checking WorkflowInvocation for published workflows
+* Fix security checking of WorkflowInvocation for published workflows
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4465`_
-* More items per page in saved history and directly show tags
+* Show more items per page in saved history view and directly show tags
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4467`_
-* needed for sentry functionality in reports webapp
-  (thanks to `@erasche <https://github.com/erasche>`__).
-  `Pull Request 4471`_
-* Show tags, import by drag-and-drop and avoid refreshed in workflow page
+* A variety of usability improvements to the workflow index page (show tags,
+  allow import by drag-and-drop, and avoid unneeded page refreshs)
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4476`_
-* Use pysam instead of samtools binary
+* Use pysam instead of samtools binary when discovering BAM metadata in one
+  place (samtools is still required by Galaxy)
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4479`_
-* replace exclamation with a clock icon
+* Replace exclamation with a clock icon for "new" datasets in the history panel.
   `Pull Request 4485`_
 * Minor copy datasets dialog improvement.
   `Pull Request 4486`_
-* New Dependency resolver for the LMOD environment modules system
-  (thanks to `@arbernard <https://github.com/arbernard>`__).
-  `Pull Request 4489`_
 * 41% reduction in freiburg galaxy startup time
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4495`_
