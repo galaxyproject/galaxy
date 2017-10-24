@@ -32,7 +32,7 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
             </a>
              - <%- tour.attributes.description || \"No description given.\" %>
              <% _.each(tour.attributes.tags, function(tag) { %>
-                <span class="label label-primary">
+                <span class="label label-primary sm-label-pad">
                     <%- tag.charAt(0).toUpperCase() + tag.slice(1) %>
                 </span>
              <% }); %>
