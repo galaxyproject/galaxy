@@ -45,13 +45,16 @@ See `the community hub <https://galaxyproject.org/develop/source-code/>`__ for a
 Security
 ========
 
-The 17.09 Galaxy version includes four security patches. Per our `Security Policy <https://github.com/galaxyproject/galaxy/blob/dev/SECURITY_POLICY.md>`__ these has been already applied to all Galaxy releases in the last 12 months.
+The 17.09 Galaxy version includes many security patches. Per our new `Security Policy
+<https://github.com/galaxyproject/galaxy/blob/dev/SECURITY_POLICY.md>`__ some of these have been
+applied to Galaxy releases going back 12 months.
 
-For the best security we recommend all deployers to update to the latest release.
+Details of the vulnerabilities that have been backported can be found in the `Security patch details`_
+section of these release notes. Some issues have only been addressed in 17.09, for this reason
+if security is important to your Galaxy instance we strongly recommend upgrading to this latest release
+as soon as possible.
 
 If you maintain a publicly accessible Galaxy please consider signing up for this `mailing list <https://lists.galaxyproject.org/listinfo/galaxy-public-servers>`__ to receive the future security patches in advance of the public disclosure.
-
-Details of the patched vulnerabilities can be found in the `Security patch details`_ section of these release notes.
 
 Deprecation Notices
 ===================
