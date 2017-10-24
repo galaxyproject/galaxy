@@ -77,6 +77,15 @@ Enhancements
 * Add mz5 datatype
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4466`_
+* Refactor tool error reporting into plugins and implement a new
+  plugin for `influxdb <https://www.influxdata.com/>`__
+  (thanks to `@erasche <https://github.com/erasche>`__).
+  `Pull Request 4305`_, `Pull Request 4533`_
+* Implement second toolshed installation UX targetting the API.
+  `Pull Request 3626`_
+* Tool-Describing-Tours
+  (thanks to `@anatskiy <https://github.com/anatskiy>`__).
+  `Pull Request 4019`_
 
 .. enhancement
 
@@ -121,10 +130,7 @@ Enhancements
   `Pull Request 4588`_, `Pull Request 4589`_, `Pull Request 4647`_,
   `Pull Request 3992`_, `Pull Request 4003`_, `Pull Request 4053`_,
   `Pull Request 4576`_, `Pull Request 4561`_, `Pull Request 4531`_, `Pull Request 4564`_,
-  `Pull Request 4582`_, `Pull Request 4586`_, `Pull Request 4592`_
-* Tool-Describing-Tours
-  (thanks to `@anatskiy <https://github.com/anatskiy>`__).
-  `Pull Request 4019`_
+  `Pull Request 4582`_, `Pull Request 4586`_, `Pull Request 4592`_, `Pull Request 4042`_
 * Prevent graphite from dying loudly
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4036`_
@@ -172,7 +178,8 @@ Enhancements
 * Replace various mako templates with client side JavaScript rendering.
   `Pull Request 4157`_, `Pull Request 4167`_, `Pull Request 4169`_,
   `Pull Request 4201`_, `Pull Request 4311`_, `Pull Request 4377`_,
-  `Pull Request 4411`_, `Pull Request 4334`_
+  `Pull Request 4411`_, `Pull Request 4334`_, `Pull Request 4305`_,
+  `Pull Request 4067`_, `Pull Request 4327`_
 * Related to the above mako transition, rework various "grid" rendering code
   to do more on the client side as well.
   `Pull Request 4302`_, `Pull Request 4291`_, `Pull Request 4293`_,
@@ -228,46 +235,40 @@ Enhancements
 * Keep tool parameters when rerunning a job
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4271`_
-* Uniform titles
+* More uniform backend code for generating page titles
   (thanks to `@erasche <https://github.com/erasche>`__).
-  `Pull Request 4272`_
+  `Pull Request 4272`_, `Pull Request 4578`_
 * Fix blockquote>p sizing
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4273`_
 * Expose more user properties to admins via the API.
   `Pull Request 4274`_
-* Ensure tags are copied and presented when moving Collections
+* Ensure tags are copied and presented when moving collections
   (thanks to `@pvanheus <https://github.com/pvanheus>`__).
   `Pull Request 4277`_
-* Add test_errors to .gitignore.
+* Add ``test_errors`` to .gitignore.
   `Pull Request 4278`_
-* Package locking for node modules.
+* Implement package locking for node modules.
   `Pull Request 4283`_
 * Enhancement for Phylocanvas plugin
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4284`_
-* Local network access restrictions
+* Improve security via local network access restrictions
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4289`_
 * Enhancement for Phyloviz viz plugin
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4292`_
-* Submitting the galaxy jobs as a predefined system user: using
-  'real_system_username'
+* Allow submitting the galaxy jobs as a predefined system user using
+  ``real_system_username``
   (thanks to `@ashvark <https://github.com/ashvark>`__).
   `Pull Request 4294`_
 * Update Japanese translation
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 4304`_
-* Refactor bug reporting into plugins / Remove bug report mako
-  (thanks to `@erasche <https://github.com/erasche>`__).
-  `Pull Request 4305`_
-* Localization support for Tool Help
+* Allow localization of more UI strings
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
-  `Pull Request 4306`_
-* Support Localization Scratchbook
-  (thanks to `@manabuishii <https://github.com/manabuishii>`__).
-  `Pull Request 4307`_
+  `Pull Request 4306`_, `Pull Request 4307`_
 * Allow import of history archives via simple file upload
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4326`_
@@ -277,12 +278,13 @@ Enhancements
 * Updated the version requirements
   (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 4342`_
-* CSRF protection for login, logout, and user registration.
+* CSRF protection for login, logout, and user registration (most parts of the
+  Galaxy UI still don't have explicit CSRF protection).
   `Pull Request 4365`_, `Pull Request 4710`_
 * Implement ``default_identifier_source`` for tool collection outputs and sort
   input keys by default
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4368`_
+  `Pull Request 4368`_, `Pull Request 4380`_
 * Galactic Radio Telescope Update
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4376`_
@@ -324,9 +326,6 @@ Enhancements
 * Add autopep8 script to help rebasing branches after `#4440
   <https://github.com/galaxyproject/galaxy/issues/4440>`__.
   `Pull Request 4447`_
-* Interactive Environment: possibility to don't uppercase env variables
-  (thanks to `@xgaia <https://github.com/xgaia>`__).
-  `Pull Request 4454`_
 * Uniform indentation of multiline if conditionals
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4455`_
@@ -338,7 +337,7 @@ Enhancements
   `Pull Request 4457`_, `Pull Request 4471`_
 * Fix for GIEs to not automatically uppercase environment variables
   (thanks to `@xgaia <https://github.com/xgaia>`__).
-  `Pull Request 4458`_
+  `Pull Request 4458`_, `Pull Request 4454`_
 * Fix security checking of WorkflowInvocation for published workflows
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4465`_
@@ -369,9 +368,6 @@ Enhancements
   `Pull Request 4514`_
 * Display d3 hierarchy datatype in upload interface
   `Pull Request 4522`_
-* Implement influxdb error reporter
-  (thanks to `@erasche <https://github.com/erasche>`__).
-  `Pull Request 4533`_
 * Sync non-CWL galaxy-lib changes.
   `Pull Request 4535`_
 * Add a small howto on profiling galaxy code
@@ -405,66 +401,55 @@ Enhancements
 
 .. small_enhancement
 
-* API installation of toolshed repositories.
-  `Pull Request 3626`_
 * Add test case clarifying datasets do get "renamed" by rename PJA in
   collections.
   `Pull Request 3983`_
-* One more fix for main_panel fix in `#3992
-  <https://github.com/galaxyproject/galaxy/issues/3992>`__.
-  `Pull Request 4042`_
 * Add some test tools for collection job failures.
   `Pull Request 4044`_
-* Add admin app
-  `Pull Request 4067`_
 * Merge ShedToolLineage and StockLineage to ToolLineage
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4119`_
 * Move PlantTribes datatypes to a separate file with enhancements and fixes
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 4137`_
-* Move galaxy.tools.toolbox.cache to galaxy.tools.cache.
+* Move ``galaxy.tools.toolbox.cache`` to ``galaxy.tools.cache``.
   `Pull Request 4155`_
-* Spacing convention, -> util.asbool, atribute -> attribute
+* Small code style and error message fixes for data library code
   (thanks to `@bwlang <https://github.com/bwlang>`__).
   `Pull Request 4250`_
-* refactors tag manager to use only what it needs…
+* Refactors tag manager to not consume the unneeded ``app`` argument
   (thanks to `@bwlang <https://github.com/bwlang>`__).
   `Pull Request 4253`_
-* Use contextmanager when using compression_util.get_fileobj()
+* Use contextmanager when using ``compression_util.get_fileobj()``
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4270`_
-* Swap the deprecated unescape() for decodeURIComponent
+* Swap the deprecated ``unescape()`` for ``decodeURIComponent``.
   `Pull Request 4321`_
-* Separate admin controllers
-  `Pull Request 4327`_
-* Some formatting
+* More consistent formatting for model mapping code
   (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 4333`_
-* Merging configure menu with main workflow view
+* Merge configure menu with main workflow view
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4353`_
-* Delete conda_exec_home instead of env['HOME']
+* Delete ``conda_exec_home`` instead of ``env['HOME']``
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4360`_
-* Add test tool for API tests
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4380`_
-* Replace list with generator when iterating headers
+* Replace list with generator when iterating headers in datatypes code
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4388`_
-* Get tools with tool_version in more places
+* Get tools with ``tool_version`` in more places
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4391`_
-* Fix lgtm alerts
+* Fix issues identified by the JavaScript linting application
+  `lgtm <https://github.com/lgtmco/lgtm>`__.
   (thanks to `@xiemaisi <https://github.com/xiemaisi>`__).
   `Pull Request 4421`_
-* Remove /mobile and associated templates
+* Remove /mobile and associated templates (the code was unused and broken).
   `Pull Request 4494`_
 * Workflow loading speedup
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4500`_
-* Prevent transient job state test failures from failing the build.
+* Prevent transient job state API test failures from failing the build.
   `Pull Request 4510`_
 * More robust workflow invocation testing.
   `Pull Request 4530`_
@@ -482,28 +467,23 @@ Enhancements
 * Check user roles only once if user has no roles
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4546`_
-* Fix datalib collection import
+* Fix data library collection import.
   `Pull Request 4568`_
-* Delegate displaying of page titles to Layout.display()
-  `Pull Request 4578`_
-* Datalibs various fixes
+* Various fixes for data libraries.
   `Pull Request 4595`_
-* Remove bam to bai converter
+* Remove unused bam to bai converter
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4598`_
 * Retry job submissions in ShellJobRunner
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4599`_
-* Write datatypes registry xml to working directory
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4600`_
-* Remove unreachable statements
+* Remove various unreachable statements
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4603`_
-* Refactored a dataset variable to hda
+* Refactored a dataset variable to HDA
   (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 4630`_
-* disable MacOS CI on travis
+* Disable MacOS tests on TravisCI.
   `Pull Request 4631`_
 
 
@@ -706,7 +686,8 @@ Fixes
   `Pull Request 4639`_
 * Explicitly write registry.xml when creating a job for the upload tool
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4644`_
+  `Pull Request 4644`_, `Pull Request 4600`_
+
 * Fix links on workflow, history items.
   `Pull Request 4656`_
 * Fix for modules resolver.
