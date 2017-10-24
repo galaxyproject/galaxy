@@ -29,6 +29,9 @@ var AdminPanel = Backbone.View.extend({
             },{
                 title   : "Local data",
                 url     : "data_manager"
+            },{
+                title   : "Data libraries",
+                url     : "library_admin/browse_libraries"
             } ]
         },{
             title : "User Management",
