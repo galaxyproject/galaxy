@@ -11,7 +11,7 @@ Highlights
 **Singularity**
   Tool execution using the HPC-friendly container technology `Singularity <http://singularity.lbl.gov/>`__
   is now supported. Custom containers can be specified by the Galaxy admin on a per job destination basis
-  or standardized containers can be built or downloaded corresponding to Conda requirements automatically
+  or standardized containers corresponding to Conda requirements can be built or downloaded automatically
   using the mulled toolkit built into Galaxy (just like is possible for Docker). For more information
   checkout `this presentation <http://bit.ly/gcc-biocontainers>`__ from the 2017 Galaxy Community Conference.
   `Pull Request 4175`_
@@ -39,7 +39,7 @@ To update an existing Galaxy repository run:
 
       $ git checkout release_17.09 && git pull --ff-only origin release_17.09
 
-See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+See `the community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
 
 Security
@@ -55,12 +55,13 @@ Limited Galaxy Data Library unauthorized filesystem access
 Tracked as `GX-2017-0001 <https://lists.galaxyproject.org/pipermail/galaxy-dev/2017-October/026058.html>`__
 
 A medium severity security vulnerability in Galaxy Data Libraries was
-recently discovered by Jelle Scholtalbers. This vulnerability allows the following unauthorized actions:
+recently discovered by `Jelle Scholtalbers <https://github.com/scholtalbers>`__. 
+This vulnerability allows the following unauthorized actions:
 
 1. Any user that has been granted the permission to add datasets to a
-library, library folder, or to modify an existing library dataset (an
-"authorized user"), is able to import any file on the system that is
-readable by the user running the Galaxy server.
+   library, library folder, or to modify an existing library dataset (an
+   "authorized user"), is able to import any file on the system that is
+   readable by the user running the Galaxy server.
 
 2. Anyone can create libraries and library folders (but not add datasets to them)
 
@@ -79,7 +80,7 @@ on the Galaxy server as the user running the Galaxy server process.
 The vulnerability only affects Galaxy servers on which Galaxy Interactive
 Environments are enabled (by setting the
 `interactive_environment_plugins_directory`
-option in galaxy.ini). Because the vulnerability can be exploited to
+option in `galaxy.ini`). Because the vulnerability can be exploited to
 execute arbitrary code, the impact for affected servers is severe.
 
 Administrators of Galaxy servers where GIEs *are* enabled should update
@@ -93,9 +94,9 @@ Unauthorized filesystem access via data source tools
 Tracked as `GX-2017-0003 <https://lists.galaxyproject.org/pipermail/galaxy-dev/2017-October/026060.html>`__
 
 A medium severity security vulnerability in tools utilizing the Galaxy data
-source protocol was recently discovered by the Galaxy Committers Team. This
-vulnerability allows anyone able to run an external data source tool to add
-to their history any file that is readable by the user running Galaxy jobs
+source protocol was recently discovered by the Galaxy Committers Team.
+Anyone who is able to run an external data source tool can access 
+any file that is readable by the user running Galaxy jobs
 on the host where the job runs.
 
 Many such "external data source" tools are provided with the Galaxy
@@ -104,7 +105,7 @@ section of the tool panel), meaning that its exploitability is fairly high,
 as only one such tool needs to be enabled to be vulnerable, including any
 custom data source tools (any tool that uses
 `tools/data_source/data_source.py`).
-What files will be readable depends entirely upon what the job's user has
+What files are readable depends entirely upon what the job's user has
 access to read on the host(s) where jobs run.
 
 The fix for this issue has been applied to Galaxy releases back to 16.07 and can be found in this `commit <https://github.com/galaxyproject/galaxy/commit/0e698813a96f1ad61d797255686f69cf5e6b1280>`__
