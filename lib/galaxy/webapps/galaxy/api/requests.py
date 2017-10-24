@@ -5,7 +5,6 @@ import logging
 
 from sqlalchemy import and_, false
 
-from galaxy import exceptions
 from galaxy import web
 from galaxy.util.bunch import Bunch
 from galaxy.web import url_for
