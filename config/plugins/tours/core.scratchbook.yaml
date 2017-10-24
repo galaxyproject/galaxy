@@ -2,9 +2,9 @@ name: Scratchbook - Introduction
 title_default: "Scratchbook Introduction"
 description: "An introduction on how to display multiple datasets and visualizations next to each other."
 tags:
-  - "default"
+  - "core"
   - "UI"
-  - "visualisation"
+  - "visualization"
 
 steps:
     - content: "This short tour will walk you through <b>Galaxy's Scratchbook</b> feature"

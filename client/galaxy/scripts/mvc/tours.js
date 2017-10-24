@@ -32,8 +32,8 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
             </a>
              - <%- tour.attributes.description || \"No description given.\" %>
              <% _.each(tour.attributes.tags, function(tag) { %>
-                <span class="label label-primary">
-                    <%- tag %>
+                <span class="label label-primary sm-label-pad">
+                    <%- tag.charAt(0).toUpperCase() + tag.slice(1) %>
                 </span>
              <% }); %>
         </li>
@@ -137,16 +137,17 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
             var tourtags = {};
             _.each(this.model.models, function(tour) {
                 if (tour.attributes.tags === null) {
-                    if (tourtags[""] === undefined) {
-                        tourtags[""] = { name: "Untagged", tours: [] };
+                    if (tourtags.Untagged === undefined) {
+                        tourtags.Untagged = { name: "Untagged", tours: [] };
                     }
-                    tourtags[""]["tours"].push(tour);
+                    tourtags.Untagged.tours.push(tour);
                 } else {
                     _.each(tour.attributes.tags, function(tag) {
+                        tag = tag.charAt(0).toUpperCase() + tag.slice(1);
                         if (tourtags[tag] === undefined) {
                             tourtags[tag] = { name: tag, tours: [] };
                         }
-                        tourtags[tag]["tours"].push(tour);
+                        tourtags[tag].tours.push(tour);
                     });
                 }
             });
