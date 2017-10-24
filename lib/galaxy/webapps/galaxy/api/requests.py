@@ -108,11 +108,34 @@ class RequestsAPIController(BaseAPIController):
             return "Invalid request id ( %s ) specified." % str(request_id)
         # check update type
         if update_type == 'request_state':
-            return self.__update_request_state(trans, encoded_request_id=id)
-
-    def __update_request_state(self, trans, encoded_request_id):
-        requests_common_cntrller = trans.webapp.controllers['requests_common']
-        status, output = requests_common_cntrller.update_request_state(trans,
-                                                                       cntrller='api',
-                                                                       request_id=encoded_request_id)
-        return status, output
+            # Make sure all the samples of the current request have the same state
+            common_state = request.samples_have_common_state
+            if not common_state:
+                # If the current request state is complete and one of its samples moved from
+                # the final sample state, then move the request state to In-progress
+                if request.is_complete:
+                    message = "At least 1 sample state moved from the final sample state, so now the request's state is (%s)" % request.states.SUBMITTED
+                    event = trans.model.RequestEvent(request, request.states.SUBMITTED, message)
+                    trans.sa_session.add(event)
+                    trans.sa_session.flush()
+            else:
+                final_state = False
+                request_type_state = request.type.final_sample_state
+                if common_state.id == request_type_state.id:
+                    # since all the samples are in the final state, change the request state to 'Complete'
+                    comment = "All samples of this sequencing request are in the final sample state (%s). " % request_type_state.name
+                    state = request.states.COMPLETE
+                    final_state = True
+                else:
+                    comment = "All samples of this sequencing request are in the (%s) sample state. " % common_state.name
+                    state = request.states.SUBMITTED
+                event = trans.model.RequestEvent(request, state, comment)
+                trans.sa_session.add(event)
+                trans.sa_session.flush()
+                # See if an email notification is configured to be sent when the samples are in this state.
+                retval = request.send_email_notification(trans, common_state, final_state)
+                if retval:
+                    message = comment + retval
+                else:
+                    message = comment
+            return 200, message
