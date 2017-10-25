@@ -8,6 +8,8 @@ import itertools
 import logging
 from threading import Thread
 
+import six
+
 from six.moves.queue import Queue
 
 from galaxy import model
@@ -289,6 +291,14 @@ class ExecutionTracker(object):
         trans.sa_session.flush()
         self.implicit_collections = collection_instances
 
+    @property
+    def implicit_collection_jobs(self):
+        # TODO: refactor to track this properly maybe?
+        if self.implicit_collections:
+            return six.next(six.itervalues(self.implicit_collections)).implicit_collection_jobs
+        else:
+            return None
+
     def finalize_dataset_collections(self, trans):
         # TODO: this probably needs to be reworked some, we should have the collection methods
         # return a list of changed objects to add to the session and flush and we should only
@@ -392,10 +402,10 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
 
     def record_success(self, execution_slice, job, outputs):
         super(WorkflowStepExecutionTracker, self).record_success(execution_slice, job, outputs)
-        # job_assoc = model.WorkflowInvocationStepJobAssociation()
-        # job_assoc.index = execution_slice.job_index
-        # job_assoc.workflow_invocation_step = self.invocation_step
-        # job_assoc.job_id = job.id
+        if self.collection_info:
+            self.invocation_step.implicit_collection_jobs = self.implicit_collection_jobs
+        else:
+            self.invocation_step.job = job
         self.job_callback(job)
 
     def new_collection_execution_slices(self):
