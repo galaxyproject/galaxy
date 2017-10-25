@@ -8,6 +8,7 @@ var babel = require('gulp-babel');
 var sourcemaps = require('gulp-sourcemaps');
 var uglify = require('gulp-uglify');
 var cached = require('gulp-cached');
+var plumber = require('gulp-plumber');
 
 var paths = {
     node_modules: './node_modules',
@@ -37,6 +38,7 @@ var paths = {
 
 gulp.task('scripts', function() {
   return gulp.src(paths.scripts)
+    .pipe(plumber())
     .pipe(cached('scripts'))
     .pipe(sourcemaps.init())
     .pipe(babel())
