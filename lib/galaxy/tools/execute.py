@@ -12,7 +12,7 @@ from six.moves.queue import Queue
 
 from galaxy import model
 from galaxy.dataset_collections.structure import tool_output_to_structure
-from galaxy.tools.actions import on_text_for_names, ToolExecutionCache
+from galaxy.tools.actions import filter_output, on_text_for_names, ToolExecutionCache
 from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.util import ExecutionTimer
 
@@ -163,6 +163,16 @@ class ExecutionTracker(object):
         return self.mapping_params.param_combinations
 
     @property
+    def example_params(self):
+        if self.mapping_params.param_combinations:
+            return self.mapping_params.param_combinations[0]
+        else:
+            # TODO: This isn't quite right - what we want is something like param_template wrapped,
+            # need a test case with an output filter applied to an empty list, still this is
+            # an improvement over not allowing mapping of empty lists.
+            return self.mapping_params.param_template
+
+    @property
     def job_count(self):
         return len(self.param_combinations)
 
@@ -259,6 +269,8 @@ class ExecutionTracker(object):
 
         implicit_collection_jobs = model.ImplicitCollectionJobs()
         for output_name, output in self.tool.outputs.items():
+            if filter_output(output, self.example_params):
+                continue
             output_collection_name = self.output_name(trans, history, params, output)
             effective_structure = self._mapped_output_structure(trans, output)
             collection_instance = trans.app.dataset_collections_service.precreate_dataset_collection_instance(
