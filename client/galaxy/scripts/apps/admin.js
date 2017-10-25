@@ -1,6 +1,6 @@
 import jQuery from "jquery";
 var $ = jQuery;
-import { GalaxyApp } from "galaxy";
+import GalaxyApp from "galaxy";
 import AdminPanel from "./panels/admin-panel";
 import FormWrapper from "mvc/form/form-wrapper";
 import GridView from "mvc/grid/grid-view";
@@ -11,7 +11,7 @@ import Utils from "utils/utils";
 import Page from "layout/page";
 
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp(options, bootstrapped);
+    window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
     Galaxy.debug("admin app");
 
     /** Routes */
