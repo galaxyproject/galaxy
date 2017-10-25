@@ -136,7 +136,10 @@ define(
                         Galaxy.libraries.folderListView.collection.add(
                             updated_dataset
                         );
-                        Galaxy.libraries.folderListView.collection.sortByNameAsc();
+                        Galaxy.libraries.folderListView.collection.sortFolder(
+                            "name",
+                            "asc"
+                        );
                         mod_toastr.success(
                             "Dataset undeleted. Click this to see it.",
                             "",
@@ -190,7 +193,10 @@ define(
                         Galaxy.libraries.folderListView.collection.add(
                             updated_folder
                         );
-                        Galaxy.libraries.folderListView.collection.sortByNameAsc();
+                        Galaxy.libraries.folderListView.collection.sortFolder(
+                            "name",
+                            "asc"
+                        );
                         mod_toastr.success("Folder undeleted.");
                     },
                     error: function(model, response) {

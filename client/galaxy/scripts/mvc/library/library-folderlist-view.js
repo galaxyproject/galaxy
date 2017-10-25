@@ -24,13 +24,16 @@ define(
 
             folderContainer: null,
 
-            sort: "asc",
+            current_sort_order: "asc",
+
+            current_sort_key: "name",
 
             events: {
                 "click #select-all-checkboxes": "selectAll",
                 "click .dataset_row": "selectClickedRow",
                 "click .folder_row": "selectClickedRow",
-                "click .sort-folder-link": "sortColumnClicked"
+                "click .sort-folder-name": "sortColumnClicked",
+                "click .sort-folder-datatype": "sortColumnClicked"
             },
 
             collection: null,
@@ -139,7 +142,7 @@ define(
                             .metadata.parent_library_id,
                         id: this.options.id,
                         upper_folder_id: upper_folder_id,
-                        order: this.sort
+                        order: this.current_sort_order
                     })
                 );
 
@@ -226,7 +229,7 @@ define(
             addAll: function(models) {
                 _.each(models, function(model) {
                     Galaxy.libraries.folderListView.collection.add(model, {
-                        sort: false
+                        current_sort_order: false
                     });
                 });
                 $("#center [data-toggle]").tooltip();
@@ -318,35 +321,27 @@ define(
                 }
             },
 
-            /** User clicked the table heading = he wants to sort stuff */
             sortColumnClicked: function(event) {
                 event.preventDefault();
-                if (this.sort === "asc") {
-                    this.sortFolder("name", "desc");
-                    this.sort = "desc";
-                } else {
-                    this.sortFolder("name", "asc");
-                    this.sort = "asc";
+                this.current_sort_order =
+                    this.current_sort_order === "asc" ? "desc" : "asc";
+                console.log('this.current_sort_order');
+                console.log(this.current_sort_order);
+                if (event.currentTarget.className === "sort-folder-name") {
+                    this.collection.sortFolder("name", this.current_sort_order);
+                    this.current_sort_key = "name";
+                } else if (
+                    event.currentTarget.className === "sort-folder-datatype"
+                ) {
+                    this.collection.sortFolder(
+                        "file_ext",
+                        this.current_sort_order
+                    );
+                    this.current_sort_key = "datatype";
                 }
+                console.log('this.current_sort_key');
+                console.log(this.current_sort_key);
                 this.renderSortIcon();
-            },
-
-            /**
-     *  Sorts the underlying collection according to the parameters received.
-     *  Currently supports only sorting by name.
-     */
-            sortFolder: function(sort_by, order) {
-                // default to asc sort by name
-                if (sort_by === "undefined" && order === "undefined") {
-                    return this.collection.sortByNameAsc();
-                }
-                if (sort_by === "name") {
-                    if (order === "asc") {
-                        return this.collection.sortByNameAsc();
-                    } else if (order === "desc") {
-                        return this.collection.sortByNameDesc();
-                    }
-                }
             },
 
             /**
@@ -435,14 +430,17 @@ define(
             },
 
             renderSortIcon: function() {
-                if (this.sort === "asc") {
-                    $(".sort-icon")
+                if (this.current_sort_order === "asc") {
+                    $('[class*="sort-icon"]')
                         .removeClass("fa-sort-alpha-desc")
-                        .addClass("fa-sort-alpha-asc");
+                        .removeClass("fa-sort-alpha-asc");
+                    $(".sort-icon" + "-" + this.current_sort_key).addClass(
+                        "fa-sort-alpha-asc"
+                    );
                 } else {
-                    $(".sort-icon")
-                        .removeClass("fa-sort-alpha-asc")
-                        .addClass("fa-sort-alpha-desc");
+                    $(".sort-icon" + "-" + this.current_sort_key).addClass(
+                        "fa-sort-alpha-desc"
+                    );
                 }
             },
 
@@ -466,9 +464,10 @@ define(
                         "<thead>",
                         '<th class="button_heading"></th>',
                         '<th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>',
-                        '<th><a class="sort-folder-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="sort-icon fa fa-sort-alpha-<%- order %>"></span></th>',
+                        '<th><a class="sort-folder-name" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span></th>',
                         '<th style="width:20%;">description</th>',
-                        '<th style="width:5%;">data type</th>',
+                        '<th style="width:5%;"><a class="sort-folder-datatype" title="Click to reverse order" href="#">data type</a> <span title="Sorted alphabetically" class="sort-icon-datatype fa"></span></th>',
+                        // '<th style="width:5%;">data type</th>',
                         '<th style="width:10%;">size</th>',
                         '<th style="width:160px;">time updated (UTC)</th>',
                         '<th style="width:5%;">state</th> ',
