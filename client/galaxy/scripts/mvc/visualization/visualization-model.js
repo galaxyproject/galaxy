@@ -1,6 +1,3 @@
-//define([
-//], function(){
-
 //==============================================================================
 /** @class Model for a saved Galaxy visualization.
  *
@@ -137,9 +134,3 @@ var VisualizationCollection = Backbone.Collection.extend(
         }
     }
 );
-
-//==============================================================================
-//return {
-//    Visualization           : Visualization,
-//    VisualizationCollection : VisualizationCollection
-//};});
