@@ -91,7 +91,7 @@ class MetadataCollection(object):
     def get(self, key, default=None):
         try:
             return self.__getattr__(key) or default
-        except:
+        except Exception:
             return default
 
     def items(self):

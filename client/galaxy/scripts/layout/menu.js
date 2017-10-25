@@ -79,29 +79,6 @@ define(
                 });
 
                 //
-                // Lab menu.
-                //
-                options.user_requests &&
-                    this.add({
-                        id: "lab",
-                        title: "Lab",
-                        menu: [
-                            {
-                                title: "Sequencing Requests",
-                                url: "requests/index"
-                            },
-                            {
-                                title: "Find Samples",
-                                url: "requests/find_samples_index"
-                            },
-                            {
-                                title: "Help",
-                                url: options.lims_doc_url
-                            }
-                        ]
-                    });
-
-                //
                 // Visualization tab.
                 //
                 this.add({

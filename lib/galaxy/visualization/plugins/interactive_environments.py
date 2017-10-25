@@ -2,15 +2,17 @@ import json
 import logging
 import os
 import random
+import shlex
 import stat
 import string
 import tempfile
 import uuid
+from itertools import product
 from subprocess import PIPE, Popen
 from sys import platform as _platform
 
 import yaml
-from six.moves import configparser
+from six.moves import configparser, shlex_quote
 
 from galaxy import model, web
 from galaxy.containers import build_container_interfaces
@@ -132,7 +134,7 @@ class InteractiveEnvironmentRequest(object):
         # their defaults dictionary instead.
         default_dict = {
             'container_interface': None,
-            'command': 'docker {docker_args}',
+            'command': 'docker',
             'command_inject': '-e DEBUG=false -e DEFAULT_CONTAINER_RUNTIME=120',
             'docker_hostname': 'localhost',
             'wx_tempdir': 'False',
@@ -273,40 +275,40 @@ class InteractiveEnvironmentRequest(object):
     def _get_name_for_run(self):
         return CONTAINER_NAME_PREFIX + uuid.uuid4().hex
 
+    def base_docker_cmd(self, subcmd=None):
+        # This is the basic docker command such as "sudo -u docker docker" or just "docker"
+        # Previously, {docker_args} was required to be in the string, this is no longer the case
+        base = shlex.split(self.attr.viz_config.get("docker", "command").format(docker_args='').strip())
+        if subcmd:
+            base.append(subcmd)
+        return base
+
     def docker_cmd(self, image, env_override=None, volumes=None):
         """
             Generate and return the docker command to execute
         """
-        if volumes is None:
-            volumes = []
-        env = self._get_env_for_run(env_override)
-        import_volume_def = self._get_import_volume_for_run()
-        env_str = ' '.join('-e "%s=%s"' % (key, item) for key, item in env.items())
-        volume_str = ' '.join('-v "%s"' % volume for volume in volumes) if self.use_volumes else ''
-        import_volume_str = '-v "{import_volume}"'.format(import_volume=import_volume_def) if import_volume_def else ''
-        name = None
-        # This is the basic docker command such as "sudo -u docker docker {docker_args}"
-        # or just "docker {docker_args}"
-        command = self.attr.viz_config.get("docker", "command")
-        # Then we format in the entire docker command in place of
-        # {docker_args}, so as to let the admin not worry about which args are
-        # getting passed
+        def _flag_opts(flag, opts):
+            return [arg for pair in product((flag,), opts) for arg in pair]
+
         command_inject = self.attr.viz_config.get("docker", "command_inject")
         # --name should really not be set, but we'll try to honor it anyway
-        if '--name' not in command_inject:
-            name = self._get_name_for_run()
-        command = command.format(docker_args='run {command_inject} {name} {environment} -d -P {import_volume_str} {volume_str} {image}')
+        name = ['--name=%s' % self._get_name_for_run()] if '--name' not in command_inject else []
+        env = self._get_env_for_run(env_override)
+        import_volume_def = self._get_import_volume_for_run()
+        if volumes is None:
+            volumes = []
+        if import_volume_def:
+            volumes.insert(0, import_volume_def)
 
-        # Once that's available, we format again with all of our arguments
-        command = command.format(
-            command_inject=command_inject,
-            name='--name=%s' % name if name is not None else '',
-            environment=env_str,
-            import_volume_str=import_volume_str,
-            volume_str=volume_str,
-            image=image,
+        return (
+            self.base_docker_cmd('run') +
+            shlex.split(command_inject) +
+            name +
+            _flag_opts('-e', ['='.join(map(str, t)) for t in env.items()]) +
+            ['-d', '-P'] +
+            _flag_opts('-v', map(str, volumes)) +
+            [image]
         )
-        return command
 
     @property
     def use_volumes(self):
@@ -398,9 +400,9 @@ class InteractiveEnvironmentRequest(object):
 
         log.info("Starting docker container for IE {0} with command [{1}]".format(
             self.attr.viz_id,
-            raw_cmd
+            ' '.join([shlex_quote(x) for x in raw_cmd])
         ))
-        p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+        p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
             log.error("Container Launch error\n\n%s\n%s" % (stdout, stderr))
@@ -504,14 +506,13 @@ class InteractiveEnvironmentRequest(object):
 
         :returns: inspect_data, a dict of docker inspect output
         """
-        command = self.attr.viz_config.get("docker", "command")
-        command = command.format(docker_args="inspect %s" % container_id)
+        raw_cmd = self.base_docker_cmd('inspect') + [container_id]
         log.info("Inspecting docker container {0} with command [{1}]".format(
             container_id,
-            command
+            ' '.join([shlex_quote(x) for x in raw_cmd])
         ))
 
-        p = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+        p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
             log.error("Container Launch error\n\n%s\n%s" % (stdout, stderr))

@@ -726,7 +726,7 @@ class StdioParser(object):
                 else:
                     try:
                         exit_code.range_start = int(code_range)
-                    except:
+                    except Exception:
                         log.error(code_range)
                         log.warning("Invalid range start for tool's exit_code %s: exit_code ignored" % code_range)
                         continue

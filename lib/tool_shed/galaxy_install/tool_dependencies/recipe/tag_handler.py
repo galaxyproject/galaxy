@@ -44,7 +44,7 @@ class SyncDatabase(object):
         try:
             log.debug("The value of app.config.running_functional_tests is: %s" %
                 str(app.config.running_functional_tests))
-        except:
+        except Exception:
             pass
         sa_session = app.install_model.context
         can_install_tool_dependency = False
@@ -497,7 +497,7 @@ class Repository(RecipeTag, SyncDatabase):
             if os.path.exists(file_name):
                 try:
                     os.remove(file_name)
-                except:
+                except Exception:
                     pass
 
 
