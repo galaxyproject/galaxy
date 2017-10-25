@@ -541,7 +541,8 @@ define(
                 }
             },
 
-            copyToClipboard: function() {
+            copyToClipboard: function(e) {
+                e.preventDefault();
                 var href = Backbone.history.location.href;
                 if (href.lastIndexOf("/permissions") !== -1) {
                     href = href.substr(0, href.lastIndexOf("/permissions"));
@@ -764,7 +765,7 @@ define(
 
                         '<% if (item.get("is_unrestricted")) { %>',
                         "<div>",
-                        'This dataset is unrestricted so everybody with the link can access it. Just share <span class="copy-link-to-clipboard"><a>this page</a></span>.',
+                        'This dataset is unrestricted so everybody with the link can access it. Just share <span class="copy-link-to-clipboard"><a href=""a>this page</a></span>.',
                         "</div>",
                         "<% } %>",
 
@@ -853,7 +854,33 @@ define(
                         '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
                         "</tr>",
                         "<% } %>",
+                        '<% if ( item.get("uuid") !== "ok" ) { %>',
+                        "<tr>",
+                        '<th scope="row">UUID</th>',
+                        '<td scope="row"><%= _.escape(item.get("uuid")) %></td>',
+                        "</tr>",
+                        "<% } %>",
+                        '<% if ( item.get("state") !== "ok" ) { %>',
+                        "<tr>",
+                        '<th scope="row">State</th>',
+                        '<td scope="row"><%= _.escape(item.get("state")) %></td>',
+                        "</tr>",
+                        "<% } %>",
                         "</table>",
+
+                        '<% if (item.get("job_stderr")) { %>',
+                        "<h4>Job Standard Error</h4>",
+                        '<pre class="code">',
+                        '<%= _.escape(item.get("job_stderr")) %>',
+                        "</pre>",
+                        "<% } %>",
+
+                        '<% if (item.get("job_stdout")) { %>',
+                        "<h4>Job Standard Output</h4>",
+                        '<pre class="code">',
+                        '<%= _.escape(item.get("job_stdout")) %>',
+                        "</pre>",
+                        "<% } %>",
 
                         "<div>",
                         '<pre class="peek">',
@@ -1154,9 +1181,9 @@ define(
                         "<h2>Dataset-related permissions</h2>",
                         '<div class="alert alert-warning">Changes made below will affect <strong>every</strong> library item that was created from this dataset and also every history this dataset is part of.</div>',
                         '<% if (!item.get("is_unrestricted")) { %>',
-                        '<p>You can <span class="remove-restrictions"><a>remove all access restrictions</a></span> on this dataset.</p>',
+                        '<p>You can <span class="remove-restrictions"><a href="">remove all access restrictions</a></span> on this dataset.</p>',
                         "<% } else { %>",
-                        '<p>You can <span class="make-private"><a>make this dataset private</a></span> to you.</p>',
+                        '<p>You can <span class="make-private"><a href="">make this dataset private</a></span> to you.</p>',
                         "<% } %>",
                         "<h4>Roles that can access the dataset</h4>",
                         '<div id="access_perm" class="access_perm roles-selection"></div>',
