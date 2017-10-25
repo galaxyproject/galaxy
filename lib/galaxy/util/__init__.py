@@ -631,6 +631,7 @@ def in_directory( file, directory, local_path_module=os.path ):
     if local_path_module != os.path:
         _safe_contains = importlib.import_module('galaxy.util.path.%s' % local_path_module.__name__).safe_contains
     else:
+        directory = os.path.realpath(directory)
         _safe_contains = safe_contains
     return _safe_contains(directory, file)
 

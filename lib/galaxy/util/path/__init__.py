@@ -119,7 +119,7 @@ def __walk(path):
 
 def __contains(prefix, path, whitelist=None):
     real = realpath(join(prefix, path))
-    yield not relpath(real, realpath(prefix)).startswith(pardir)
+    yield not relpath(real, prefix).startswith(pardir)
     for wldir in whitelist or []:
         yield not relpath(real, wldir).startswith(pardir)
 
