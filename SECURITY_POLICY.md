@@ -13,8 +13,7 @@ Security issues which *only* affect a pre-release version of Galaxy (i.e. the `d
 The following branches or releases receive security support:
 
 - Development on the `dev` branch, hosted on GitHub, which will become the next release of Galaxy
-- Releases within the past 12 months.
-  - E.g. 16.04 will receive support until 2017-04. As the month changes to 2017-05 it will become unsupported.
+- The last two stable releases.
 - There are currently no plans for Long Term Support (LTS) releases.
 
 For unsupported branches:
