@@ -166,7 +166,7 @@ class Genome(object):
         try:
             next(len_file_enumerate)
             next_chroms = True
-        except:
+        except StopIteration:
             # No more chroms to read.
             pass
 

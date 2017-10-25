@@ -94,7 +94,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             try:
                 decoded_history_id = self.decode_id(history_id)
                 query = query.filter(trans.app.model.Job.history_id == decoded_history_id)
-            except:
+            except Exception:
                 raise exceptions.ObjectAttributeInvalidException()
 
         out = []

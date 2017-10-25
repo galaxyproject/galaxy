@@ -26,7 +26,7 @@ class Hmmer(Text):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "HMMER database (%s)" % (nice_size(dataset.get_size()))
 
     @abc.abstractmethod
@@ -77,7 +77,7 @@ class HmmerPress(Binary):
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "HMMER3 database (multiple files)"
 
     def __init__(self, **kwd):

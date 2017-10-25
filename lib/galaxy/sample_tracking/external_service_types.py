@@ -1,10 +1,15 @@
-import os
 import logging
-from galaxy.util.odict import odict
-from galaxy import util, model
-from galaxy.forms.forms import form_factory
+import os
+
+from galaxy import (
+    model,
+    util
+)
 from galaxy.external_services.service import ExternalServiceActionsGroup
+from galaxy.forms.forms import form_factory
 from galaxy.sample_tracking.data_transfer import data_transfer_factories
+from galaxy.util.odict import odict
+
 log = logging.getLogger(__name__)
 
 
@@ -20,7 +25,7 @@ class ExternalServiceTypesCollection(object):
         self.app = app
         try:
             self.load_all(config_filename)
-        except:
+        except Exception:
             log.exception("ExternalServiceTypesCollection error reading %s", config_filename)
 
     def load_all(self, config_filename):
@@ -37,7 +42,7 @@ class ExternalServiceTypesCollection(object):
                     log.debug("Loaded external_service_type: %s %s" % (external_service_type.name, external_service_type.config_version))
                     if visible:
                         self.visible_external_service_types.append(external_service_type.id)
-            except:
+            except Exception:
                 log.exception("error reading external_service_type from path: %s", file_path)
 
     def load_external_service_type(self, config_file, visible=True):

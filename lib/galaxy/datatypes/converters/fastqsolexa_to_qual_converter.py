@@ -68,10 +68,10 @@ def __main__():
             # peek: ascii or digits?
             val = line.split()[0]
 
+            fastq_integer = True
             try:
                 int(val)
-                fastq_integer = True
-            except:
+            except ValueError:
                 fastq_integer = False
 
             if fastq_integer:  # digits

@@ -8,6 +8,7 @@ from __future__ import absolute_import
 import binascii
 import collections
 import errno
+import importlib
 import json
 import os
 import random
@@ -28,7 +29,7 @@ except ImportError:
 
 from datetime import datetime
 from hashlib import md5
-from os.path import normpath, relpath
+from os.path import relpath
 from xml.etree import ElementInclude, ElementTree
 from xml.etree.ElementTree import ParseError
 
@@ -49,6 +50,7 @@ except ImportError:
 
 from .inflection import English, Inflector
 from .logging import get_logger
+from .path import safe_contains, safe_makedirs, safe_relpath  # noqa: F401
 
 inflector = Inflector(English)
 
@@ -309,11 +311,11 @@ def get_file_size(value, default=None):
     try:
         # try built-in
         return os.path.getsize(value)
-    except:
+    except Exception:
         try:
             # try built-in one name attribute
             return os.path.getsize(value.name)
-        except:
+        except Exception:
             try:
                 # try tell() of end of object
                 offset = value.tell()
@@ -321,7 +323,7 @@ def get_file_size(value, default=None):
                 rval = value.tell()
                 value.seek(offset)
                 return rval
-            except:
+            except Exception:
                 # return default value
                 return default
 
@@ -607,31 +609,19 @@ def which(file):
     return None
 
 
-def safe_makedirs(path):
-    """ Safely make a directory, do not fail if it already exist or
-    is created during execution.
-    """
-    if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except OSError as e:
-            # review source for Python 2.7 this would only ever happen
-            # for the last path anyway so need to recurse - this exception
-            # means the last part of the path was already in existence.
-            if e.errno != errno.EEXIST:
-                raise
-
-
 def in_directory(file, directory, local_path_module=os.path):
     """
     Return true, if the common prefix of both is equal to directory
     e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
-    """
 
-    # Make both absolute.
-    directory = local_path_module.abspath(directory)
-    file = local_path_module.abspath(file)
-    return local_path_module.commonprefix([file, directory]) == directory
+    local_path_module is used by Pulsar to check Windows paths while running on
+    a POSIX-like system.
+    """
+    if local_path_module != os.path:
+        _safe_contains = importlib.import_module('galaxy.util.path.%s' % local_path_module.__name__).safe_contains
+    else:
+        _safe_contains = safe_contains
+    return _safe_contains(directory, file)
 
 
 def merge_sorted_iterables(operator, *iterables):
@@ -1039,7 +1029,7 @@ def read_dbnames(filename):
                 try:  # manual build (i.e. microbes)
                     int(fields[0])
                     man_builds.append((fields[1], fields[0]))
-                except:  # UCSC build
+                except Exception:  # UCSC build
                     db_base = fields[0].rstrip('0123456789')
                     if db_base not in ucsc_builds:
                         ucsc_builds[db_base] = []
@@ -1048,10 +1038,10 @@ def read_dbnames(filename):
                     build_rev = re.compile(r'\d+$')
                     try:
                         build_rev = int(build_rev.findall(fields[0])[0])
-                    except:
+                    except Exception:
                         build_rev = 0
                     ucsc_builds[db_base].append((build_rev, fields[0], fields[1]))
-            except:
+            except Exception:
                 continue
         sort_names = sorted(name_to_db_base.keys())
         for name in sort_names:
@@ -1089,9 +1079,9 @@ def read_build_sites(filename, check_builds=True):
                 else:
                     site_dict = {'name': site_name, 'url': site}
                 build_sites.append(site_dict)
-            except:
+            except Exception:
                 continue
-    except:
+    except Exception:
         log.error("ERROR: Unable to read builds for site file %s", filename)
     return build_sites
 
@@ -1181,7 +1171,7 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
             try:
                 desired_group = grp.getgrgid(gid)
                 current_group = grp.getgrgid(st.st_gid)
-            except:
+            except Exception:
                 desired_group = gid
                 current_group = st.st_gid
             log.warning('Unable to honor primary group (%s) for %s, group remains %s, error was: %s' % (desired_group,
@@ -1237,7 +1227,7 @@ def nice_size(size):
         if size < 0:
             size = abs(size)
             prefix = '-'
-    except:
+    except Exception:
         return '??? bytes'
     for ind, word in enumerate(words):
         step = 1024 ** (ind + 1)
@@ -1256,7 +1246,7 @@ def size_to_bytes(size):
     # Assume input in bytes if we can convert directly to an int
     try:
         return int(size)
-    except:
+    except ValueError:
         pass
     # Otherwise it must have non-numeric characters
     size_re = re.compile('([\d\.]+)\s*([tgmk]b?|b|bytes?)$')
@@ -1523,22 +1513,6 @@ def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
             if not chunk:
                 break
             f.write(chunk)
-
-
-def safe_relpath(path):
-    """
-    Given what we expect to be a relative path, determine whether the path
-    would exist inside the current directory.
-
-    :type   path:   string
-    :param  path:   a path to check
-    :rtype:         bool
-    :returns:       ``True`` if path is relative and does not reference a path
-        in a parent directory, ``False`` otherwise.
-    """
-    if path.startswith(os.sep) or normpath(path).startswith(os.pardir):
-        return False
-    return True
 
 
 class ExecutionTimer(object):

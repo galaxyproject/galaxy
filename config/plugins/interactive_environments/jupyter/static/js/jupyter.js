@@ -53,7 +53,7 @@ function keep_alive(){
     var count_max = 60;
     // we sleep 15 seconds between requests and the default timeout for the Jupyter container is 120 seconds, so start
     // with a pretty high ajax timeout. sleep starts low because we want to get the warning up pretty quickly
-    var spin_state = make_spin_state("IE keep alive", 8000, 16000, 2000, 5000, 15000, 5000, false);
+    var spin_state = make_spin_state("IE keepalive", 8000, 16000, 2000, 5000, 15000, 5000, false);
     var success = function(){
         console.log("IE keepalive request succeeded");
         toastr.clear()
@@ -85,7 +85,7 @@ function keep_alive(){
             return true;  // stop spinning
         }
     }
-    console.log("IE keep alive worker starting");
+    console.log("IE keepalive worker starting");
     spin(notebook_access_url, false, success, timeout_error, timeout_error, spin_state);
 }
 

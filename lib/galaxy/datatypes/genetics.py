@@ -126,7 +126,7 @@ class GenomeGraphs(Tabular):
             hasheader = 0
             try:
                 ['%f' % x for x in d[0][1:]]  # first is name - see if starts all numerics
-            except:
+            except Exception:
                 hasheader = 1
             # Generate column header
             out.append('<tr>')
@@ -158,7 +158,7 @@ class GenomeGraphs(Tabular):
                 for j, x in enumerate(ll):
                     try:
                         x = float(x)
-                    except:
+                    except Exception:
                         badvals.append('col%d:%s' % (j + 1, x))
         if len(badvals) > 0:
             errors.append('row %d, %s' % (' '.join(badvals)))
@@ -331,13 +331,13 @@ class Rgenetics(Html):
             return True
         try:
             efp = dataset.extra_files_path
-        except:
+        except Exception:
             if verbose:
                 gal_Log.debug('@@@rgenetics set_meta failed %s - dataset %s has no efp ?' % (sys.exc_info()[0], dataset.name))
             return False
         try:
             flist = os.listdir(efp)
-        except:
+        except Exception:
             if verbose:
                 gal_Log.debug('@@@rgenetics set_meta failed %s - dataset %s has no efp ?' % (sys.exc_info()[0], dataset.name))
             return False
@@ -655,7 +655,7 @@ class RexpBase(Html):
             pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
             try:
                 p = open(pp, 'r').readlines()
-            except:
+            except Exception:
                 p = ['##failed to find %s' % pp, ]
             dataset.peek = ''.join(p[:5])
             dataset.blurb = 'Galaxy Rexpression composite file'
@@ -670,7 +670,7 @@ class RexpBase(Html):
         pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
         try:
             p = open(pp, 'r').readlines()
-        except:
+        except Exception:
             p = ['##failed to find %s' % pp]
         return ''.join(p[:5])
 
@@ -681,7 +681,7 @@ class RexpBase(Html):
         h = '## rexpression get_file_peek: no file found'
         try:
             h = open(filename, 'r').readlines()
-        except:
+        except Exception:
             pass
         return ''.join(h[:5])
 
@@ -713,7 +713,7 @@ class RexpBase(Html):
         Html.set_meta(self, dataset, **kwd)
         try:
             flist = os.listdir(dataset.extra_files_path)
-        except:
+        except Exception:
             if verbose:
                 gal_Log.debug('@@@rexpression set_meta failed - no dataset?')
             return False
@@ -731,7 +731,7 @@ class RexpBase(Html):
         dataset.metadata.pheno_path = pp
         try:
             pf = open(pp, 'r').readlines()  # read the basename.phenodata in the extra_files_path
-        except:
+        except Exception:
             pf = None
         if pf:
             h = pf[0].strip()

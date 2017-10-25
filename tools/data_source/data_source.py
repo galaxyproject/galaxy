@@ -6,7 +6,7 @@ import socket
 import sys
 from json import dumps, loads
 
-from six.moves.urllib.parse import urlencode
+from six.moves.urllib.parse import urlencode, urlparse
 from six.moves.urllib.request import urlopen
 
 from galaxy.datatypes import sniff
@@ -29,14 +29,14 @@ def load_input_parameters(filename, erase_file=True):
     try:
         json_params = loads(open(filename, 'r').read())
         datasource_params = json_params.get('param_dict')
-    except:
+    except Exception:
         json_params = None
         for line in open(filename, 'r'):
             try:
                 line = line.strip()
                 fields = line.split('\t')
                 datasource_params[fields[0]] = fields[1]
-            except:
+            except Exception:
                 continue
     if erase_file:
         open(filename, 'w').close()  # open file for writing, then close, removes params from file
@@ -47,7 +47,7 @@ def __main__():
     filename = sys.argv[1]
     try:
         max_file_size = int(sys.argv[2])
-    except:
+    except Exception:
         max_file_size = 0
 
     job_params, params = load_input_parameters(filename)
@@ -80,7 +80,7 @@ def __main__():
     for data_dict in job_params['output_data']:
         cur_filename = data_dict.get('file_name', filename)
         cur_URL = params.get('%s|%s|URL' % (GALAXY_PARAM_PREFIX, data_dict['out_data_name']), URL)
-        if not cur_URL:
+        if not cur_URL or urlparse(cur_URL).scheme not in ('http', 'https', 'ftp'):
             open(cur_filename, 'w').write("")
             stop_err('The remote data source application has not sent back a URL parameter in the request.')
 

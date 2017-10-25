@@ -2534,7 +2534,7 @@ def db_next_hid(self, n=1):
         table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
         trans.commit()
         return next_hid
-    except:
+    except Exception:
         trans.rollback()
         raise
 
