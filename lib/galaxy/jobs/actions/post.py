@@ -269,10 +269,10 @@ class DeleteIntermediatesAction(DefaultJobAction):
         # concurrently, sometimes non-terminal steps won't be cleaned up
         # because of the lag in job state updates.
         sa_session.flush()
-        if not job.workflow_invocation_step_assoc.workflow_invocation_step:
+        if not job.workflow_invocation_step:
             log.debug("This job is not part of a workflow invocation, delete intermediates aborted.")
             return
-        wfi = job.workflow_invocation_step_assoc.workflow_invocation_step.workflow_invocation
+        wfi = job.workflow_invocation_step.workflow_invocation
         sa_session.refresh(wfi)
         if wfi.active:
             log.debug("Workflow still scheduling so new jobs may appear, skipping deletion of intermediate files.")
@@ -285,9 +285,9 @@ class DeleteIntermediatesAction(DefaultJobAction):
             jobs_to_check = []
             for wfi_step in wfi_steps:
                 sa_session.refresh(wfi_step)
-                wfi_step_job_assocs = wfi_step.jobs
-                if wfi_step_job_assocs:
-                    jobs_to_check.extend(map(lambda j: j.job, wfi_step_job_assocs))
+                wfi_step_job = wfi_step.job
+                if wfi_step_job:
+                    jobs_to_check.append(wfi_step_job)
                 else:
                     log.debug("No job found yet for wfi_step %s, (step %s)" % (wfi_step, wfi_step.workflow_step))
             for j2c in jobs_to_check:
@@ -302,7 +302,7 @@ class DeleteIntermediatesAction(DefaultJobAction):
                 for (input_dataset, creating_job) in creating_jobs:
                     sa_session.refresh(creating_job)
                     sa_session.refresh(input_dataset)
-                for input_dataset in [x.dataset for (x, creating_job) in creating_jobs if creating_job.workflow_invocation_step_assoc and creating_job.workflow_invocation_step_assoc.workflow_invocation_step.workflow_invocation == wfi]:
+                for input_dataset in [x.dataset for (x, creating_job) in creating_jobs if creating_job.workflow_invocation_step and creating_job.workflow_invocation_step.workflow_invocation == wfi]:
                     # note that the above input_dataset is a reference to a
                     # job.input_dataset.dataset at this point
                     safe_to_delete = True

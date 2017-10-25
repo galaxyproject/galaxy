@@ -804,9 +804,8 @@ class Job(object, JobLike, UsesCreateAndUpdateTime, Dictifiable):
 
     def set_final_state(self, final_state):
         self.set_state(final_state)
-        workflow_invocation_step_assoc = self.workflow_invocation_step_assoc
-        if workflow_invocation_step_assoc:
-            workflow_invocation_step_assoc.workflow_invocation_step.update()
+        if self.workflow_invocation_step:
+            self.workflow_invocation_step.update()
 
     def get_destination_configuration(self, config, key, default=None):
         """ Get a destination parameter that can be defaulted back
@@ -1070,6 +1069,10 @@ class ImplicitCollectionJobs(object):
     ):
         self.id = id
         self.populated_state = populated_state or ImplicitCollectionJobs.populated_states.NEW
+
+    @property
+    def job_list(self):
+        return [icjja.job for icjja in self.jobs]
 
 
 class ImplicitCollectionJobsJobAssociation(object):
@@ -4155,12 +4158,12 @@ class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
             inputs = {}
             for step in self.steps:
                 if step.workflow_step.type == 'tool':
-                    for step_job_assoc in step.jobs:
+                    for job in step.jobs:
                         for step_input in step.workflow_step.input_connections:
                             output_step_type = step_input.output_step.type
                             if output_step_type in ['data_input', 'data_collection_input']:
                                 src = "hda" if output_step_type == 'data_input' else 'hdca'
-                                for job_input in step_job_assoc.job.input_datasets:
+                                for job_input in job.input_datasets:
                                     if job_input.name == step_input.input_name:
                                         inputs[str(step_input.output_step.order_index)] = {
                                             "id": job_input.dataset_id, "src": src,
@@ -4263,6 +4266,15 @@ class WorkflowInvocationStep(object, Dictifiable):
             self.output_dataset_collections.append(output_assoc)
         else:
             raise Exception("Uknown output type encountered")
+
+    @property
+    def jobs(self):
+        if self.job:
+            return [self.job]
+        elif self.implicit_collection_jobs:
+            return self.implicit_collection_jobs.job_list
+        else:
+            return []
 
     def to_dict(self, view='collection', value_mapper=None):
         rval = super(WorkflowInvocationStep, self).to_dict(view=view, value_mapper=value_mapper)

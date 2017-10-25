@@ -925,17 +925,9 @@ model.WorkflowInvocationStep.table = Table(
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True, nullable=False),
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
     Column("state", TrimmedString(64), index=True),
+    Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=True),
+    Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
     Column("action", JSONType, nullable=True))
-
-
-model.WorkflowInvocationStepJobAssociation.table = Table(
-    "workflow_invocation_step_job_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id"), index=True, nullable=False),
-    Column("order_index", Integer, nullable=True),  # recovering partially complete WorkflowInvocationSteps requires knowing which jobs have been scheduled
-    Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=False),
-)
-
 
 model.WorkflowInvocationOutputDatasetAssociation.table = Table(
     "workflow_invocation_output_dataset_association", metadata,
@@ -2426,16 +2418,10 @@ mapper(model.WorkflowInvocationToSubworkflowInvocationAssociation, model.Workflo
     workflow_step=relation(model.WorkflowStep),
 ))
 
-
-simple_mapping(model.WorkflowInvocationStepJobAssociation,
-    workflow_invocation_step=relation(model.WorkflowInvocationStep, backref="jobs"),
-    job=relation(model.Job,
-        backref=backref('workflow_invocation_step_assoc',
-            uselist=False)))
-
-
 simple_mapping(model.WorkflowInvocationStep,
-    workflow_step=relation(model.WorkflowStep))
+    workflow_step=relation(model.WorkflowStep),
+    job=relation(model.Job, backref=backref('workflow_invocation_step', uselist=False), uselist=False),
+    implicit_collection_jobs=relation(model.ImplicitCollectionJobs, backref=backref('workflow_invocation_step', uselist=False), uselist=False),)
 
 
 simple_mapping(model.WorkflowRequestInputParameter,
