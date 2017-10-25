@@ -1,3 +1,4 @@
 {
-  "presets": ["env"]
+  "presets": ["env"],
+  "moduleIds": true
 }

@@ -39,7 +39,9 @@ gulp.task('scripts', function() {
   return gulp.src(paths.scripts)
     .pipe(cached('scripts'))
     .pipe(sourcemaps.init())
-    .pipe(babel({plugins: ['transform-es2015-modules-amd']}))
+    .pipe(babel({
+        plugins: ['transform-es2015-modules-amd']
+    }))
     .pipe(uglify())
     .pipe(sourcemaps.write('../maps/'))
     .pipe(gulp.dest('../static/scripts/'));
