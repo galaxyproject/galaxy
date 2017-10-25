@@ -211,33 +211,6 @@ define(
                                 "/download";
                         }
                     });
-                    menu_button.addMenu({
-                        icon: "fa-refresh",
-                        title: "Reload XML",
-                        onclick: function() {
-                            Utils.get({
-                                url:
-                                    Galaxy.root +
-                                    "api/tools/" +
-                                    options.id +
-                                    "/reload",
-                                success: function(response) {
-                                    self.message.update({
-                                        persistent: false,
-                                        message: "Tool XML has been reloaded.",
-                                        status: "success"
-                                    });
-                                },
-                                error: function(response) {
-                                    self.message.update({
-                                        persistent: false,
-                                        message: response.err_msg,
-                                        status: "danger"
-                                    });
-                                }
-                            });
-                        }
-                    });
                 }
 
                 // button for version selection
