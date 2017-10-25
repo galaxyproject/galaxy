@@ -95,9 +95,6 @@ var AdminPanel = Backbone.View.extend({
                 url     : "admin/tool_versions",
                 target  : "__use_router__"
             },{
-                title   : "Reload a tool\"s configuration",
-                url     : "admin/reload_tool"
-            },{
                 title   : "Review tool migration stages",
                 url     : "admin/review_tool_migration_stages"
             },{
