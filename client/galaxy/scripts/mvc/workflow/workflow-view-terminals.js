@@ -1,6 +1,9 @@
-import Globals from "mvc/workflow/workflow-globals";
 import Terminals from "mvc/workflow/workflow-terminals";
 import Connector from "mvc/workflow/workflow-connector";
+
+// TODO; tie into Galaxy state?
+window.workflow_globals = window.workflow_globals || {};
+
 var TerminalMappingView = Backbone.View.extend({
     tagName: "div",
     className: "fa-icon-button fa fa-folder-o",
@@ -196,7 +199,7 @@ var BaseOutputTerminalView = TerminalView.extend({
             $(d.proxy).css({ left: x, top: y });
             d.proxy.terminal.redraw();
             // FIXME: global
-            Globals.canvas_manager.update_viewport_overlay();
+            window.workflow_globals.canvas_manager.update_viewport_overlay();
         };
         onmove();
         $("#canvas-container")
@@ -206,7 +209,7 @@ var BaseOutputTerminalView = TerminalView.extend({
     onDragStart: function(e, d) {
         $(d.available).addClass("input-terminal-active");
         // Save PJAs in the case of change datatype actions.
-        Globals.workflow.check_changes_in_active_form();
+        window.workflow_globals.workflow.check_changes_in_active_form();
         // Drag proxy div
         var h = $(
             '<div class="drag-terminal" style="position: absolute;"></div>'

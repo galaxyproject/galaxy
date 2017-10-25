@@ -1,4 +1,6 @@
-import Globals from "mvc/workflow/workflow-globals";
+// TODO; tie into Galaxy state?
+window.workflow_globals = window.workflow_globals || {};
+
 var DataInputView = Backbone.View.extend({
     className: "form-row dataRow input-data-row",
 
@@ -132,8 +134,8 @@ var OutputCalloutView = Backbone.View.extend({
                                             "static/images/fugue/asterisk-small.png"
                                     );
                             }
-                            Globals.workflow.has_changes = true;
-                            Globals.canvas_manager.draw_overview();
+                            window.workflow_globals.workflow.has_changes = true;
+                            window.workflow_globals.canvas_manager.draw_overview();
                         })
                 )
             )

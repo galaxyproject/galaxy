@@ -1,5 +1,4 @@
 import Utils from "utils/utils";
-import Globals from "mvc/workflow/workflow-globals";
 import Workflow from "mvc/workflow/workflow-manager";
 import WorkflowCanvas from "mvc/workflow/workflow-canvas";
 import Node from "mvc/workflow/workflow-node";
@@ -9,6 +8,10 @@ import Ui from "mvc/ui/ui-misc";
 import async_save_text from "utils/async-save-text";
 import Toastr from "libs/toastr";
 import "ui/editable-text";
+
+// TODO; tie into Galaxy state?
+window.workflow_globals = window.workflow_globals || {};
+
 // Reset tool search to start state.
 function reset_tool_search(initValue) {
     // Function may be called in top frame or in tool_menu_frame;
@@ -54,7 +57,7 @@ function add_node_icon($to_el, nodeType) {
 // create form view
 export default Backbone.View.extend({
     initialize: function(options) {
-        var self = (Globals.app = this);
+        var self = (window.workflow_globals.app = this);
         this.options = options;
         this.urls = (options && options.urls) || {};
         var close_editor = function() {
@@ -225,7 +228,7 @@ export default Backbone.View.extend({
             });
 
         // Canvas overview management
-        this.canvas_manager = Globals.canvas_manager = new WorkflowCanvas(
+        this.canvas_manager = window.workflow_globals.canvas_manager = new WorkflowCanvas(
             this,
             $("#canvas-viewport"),
             $("#overview")
@@ -632,7 +635,7 @@ export default Backbone.View.extend({
     // Global state for the whole workflow
     reset: function() {
         this.workflow && this.workflow.remove_all();
-        this.workflow = Globals.workflow = new Workflow(
+        this.workflow = window.workflow_globals.workflow = new Workflow(
             this,
             $("#canvas-container")
         );

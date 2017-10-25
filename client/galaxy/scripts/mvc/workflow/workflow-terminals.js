@@ -1,4 +1,5 @@
-import Globals from "mvc/workflow/workflow-globals";
+// TODO; tie into Galaxy state?
+window.workflow_globals = window.workflow_globals || {};
 function CollectionTypeDescription(collectionType) {
     this.collectionType = collectionType;
     this.isCollection = true;
@@ -369,7 +370,7 @@ var BaseInputTerminal = Terminal.extend({
                     other_datatype == "input" ||
                     other_datatype == "_sniff_" ||
                     other_datatype == "input_collection" ||
-                    Globals.app.isSubType(
+                    window.workflow_globals.app.isSubType(
                         cat_outputs[other_datatype_i],
                         thisDatatype
                     )
