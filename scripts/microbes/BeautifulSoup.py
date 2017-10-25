@@ -1544,9 +1544,7 @@ class SimplifyingSOAPParser(BeautifulSOAP):
 # Download from http://chardet.feedparser.org/
 try:
     import chardet
-#    import chardet.constants
-#    chardet.constants._debug = 1
-except:
+except ImportError:
     chardet = None
 chardet = None
 
@@ -1710,7 +1708,7 @@ class UnicodeDammit:
                 pass
             xml_encoding_match = re.compile('^<\?.*encoding=[\'"](.*?)[\'"].*\?>')\
                                    .match(xml_data)
-        except:
+        except Exception:
             xml_encoding_match = None
         if xml_encoding_match:
             xml_encoding = xml_encoding_match.groups()[0].lower()

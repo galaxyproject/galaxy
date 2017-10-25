@@ -312,7 +312,7 @@ define(["utils/localization"], function(_l) {
         var d = new Date();
         var hours = (d.getHours() < 10 ? "0" : "") + d.getHours();
         var minutes = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
-        return (datetime =
+        return (
             d.getDate() +
             "/" +
             (d.getMonth() + 1) +
@@ -321,7 +321,8 @@ define(["utils/localization"], function(_l) {
             ", " +
             hours +
             ":" +
-            minutes);
+            minutes
+        );
     }
 
     /** Append script and style tags to Galaxy main application */

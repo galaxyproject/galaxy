@@ -1,19 +1,36 @@
 """
 API operations on the contents of a data library.
 """
-from galaxy import util
-from galaxy import web
-from galaxy import exceptions
-from galaxy import managers
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
-from galaxy.web.base.controller import HTTPBadRequest, url_for
-from galaxy.managers.collections_util import api_payload_to_create_params, dictify_dataset_collection_instance
-from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex
-from sqlalchemy.orm.exc import MultipleResultsFound
-from sqlalchemy.orm.exc import NoResultFound
-
 import logging
+
+from sqlalchemy.orm.exc import (
+    MultipleResultsFound,
+    NoResultFound,
+)
+
+from galaxy import (
+    exceptions,
+    managers,
+    util,
+    web
+)
+from galaxy.managers.collections_util import (
+    api_payload_to_create_params,
+    dictify_dataset_collection_instance
+)
+from galaxy.model import (
+    ExtendedMetadata,
+    ExtendedMetadataIndex
+)
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    HTTPBadRequest,
+    url_for,
+    UsesLibraryMixin,
+    UsesLibraryMixinItems
+)
+
 log = logging.getLogger(__name__)
 
 
@@ -384,7 +401,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                     try:
                         ld.library_dataset_dataset_association.dataset.full_delete()
                         trans.sa_session.add(ld.dataset)
-                    except:
+                    except Exception:
                         pass
                     # flush now to preserve deleted state in case of later interruption
                     trans.sa_session.flush()

@@ -36,7 +36,7 @@ def test_tool_dependencies():
                 p = os.path.join(base_path, name, version)
             try:
                 makedirs(p)
-            except:
+            except Exception:
                 pass
             if sub == "env.sh":
                 __touch(os.path.join(p, "env.sh"))

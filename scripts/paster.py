@@ -16,7 +16,7 @@ from check_python import check_python  # noqa: I100
 # ensure supported version
 try:
     check_python()
-except:
+except Exception:
     sys.exit(1)
 
 if 'LOG_TEMPFILES' in os.environ:

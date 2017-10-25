@@ -112,7 +112,10 @@ define(
                             show_page: parseInt(this.options.show_page),
                             page_count: parseInt(this.options.page_count),
                             total_items_count: this.options.total_items_count,
-                            items_shown: this.options.items_shown
+                            items_shown: this.options.items_shown,
+                            folder_page_size: Galaxy.libraries.preferences.get(
+                                "folder_page_size"
+                            )
                         })
                     );
             },
@@ -1432,7 +1435,8 @@ define(
             /**
    * Show user the prompt to change the number of items shown on page.
    */
-            showPageSizePrompt: function() {
+            showPageSizePrompt: function(e) {
+                e.preventDefault();
                 var folder_page_size = prompt(
                     "How many items per page do you want to see?",
                     Galaxy.libraries.preferences.get("folder_page_size")
@@ -1886,11 +1890,10 @@ define(
                         "<% } %>",
                         "</ul>",
                         "<span>",
-                        "&nbsp;showing&nbsp;",
-                        '<a data-toggle="tooltip" data-placement="top" title="Click to change the number of items on page" class="page_size_prompt">',
-                        "<%- items_shown %>",
-                        "</a>",
-                        "&nbsp;of <%- total_items_count %> items",
+                        ' <%- items_shown %> items shown <a href="" data-toggle="tooltip" data-placement="top" title="currently <%- folder_page_size %> per page" class="page_size_prompt">(change)</a>',
+                        "</span>",
+                        "<span>",
+                        " <%- total_items_count %> total",
                         "</span>"
                     ].join("")
                 );

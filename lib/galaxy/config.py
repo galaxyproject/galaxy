@@ -212,7 +212,7 @@ class Configuration(object):
                         self.hours_between_check = 12.0
             else:
                 self.hours_between_check = 12
-        except:
+        except Exception:
             self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get("update_integrated_tool_panel", True)
         self.enable_data_manager_user_view = string_as_bool(kwargs.get("enable_data_manager_user_view", "False"))
@@ -337,6 +337,9 @@ class Configuration(object):
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))
         # Beta containers interface used by GIEs
         self.enable_beta_containers_interface = string_as_bool(kwargs.get('enable_beta_containers_interface', 'False'))
+
+        # Deprecated API for sample tracking
+        self.enable_legacy_sample_tracking_api = string_as_bool(kwargs.get('enable_legacy_sample_tracking_api', 'False'))
 
         # Certain modules such as the pause module will automatically cause
         # workflows to be scheduled in job handlers the way all workflows will
@@ -794,7 +797,7 @@ class Configuration(object):
 
         try:
             port = config.getint('server:%s' % self.server_name, 'port')
-        except:
+        except Exception:
             # uWSGI galaxy installations don't use paster and only speak uWSGI not http
             port = None
         return port

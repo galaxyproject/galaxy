@@ -31,7 +31,7 @@ def upgrade(migrate_engine):
         try:
             i = Index("ix_history_published", History_table.c.published)
             i.create()
-        except:
+        except Exception:
             # Mysql doesn't have a named index, but alter should work
             History_table.c.published.alter(unique=False)
 
@@ -49,7 +49,7 @@ def upgrade(migrate_engine):
         try:
             i = Index("ix_stored_workflow_published", StoredWorkflow_table.c.published)
             i.create()
-        except:
+        except Exception:
             # Mysql doesn't have a named index, but alter should work
             StoredWorkflow_table.c.published.alter(unique=False)
 
@@ -67,7 +67,7 @@ def upgrade(migrate_engine):
         try:
             i = Index("ix_page_importable", Page_table.c.importable)
             i.create()
-        except:
+        except Exception:
             # Mysql doesn't have a named index, but alter should work
             Page_table.c.importable.alter(unique=False)
 

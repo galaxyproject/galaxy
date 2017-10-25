@@ -24,6 +24,9 @@ class SamplesAPIController(BaseAPIController):
         GET /api/requests/{encoded_request_id}/samples
         Displays a collection (list) of sample of a sequencing request.
         """
+        if not trans.app.config.enable_legacy_sample_tracking_api:
+            trans.response.status = 403
+            return "The configuration of this Galaxy instance does not allow accessing this API."
         try:
             request_id = trans.security.decode_id(kwd['request_id'])
         except TypeError:
@@ -31,7 +34,7 @@ class SamplesAPIController(BaseAPIController):
             return "Malformed request id ( %s ) specified, unable to decode." % str(kwd['request_id'])
         try:
             request = trans.sa_session.query(trans.app.model.Request).get(request_id)
-        except:
+        except Exception:
             request = None
         if not request or not (trans.user_is_admin() or request.user.id == trans.user.id):
             trans.response.status = 400
@@ -52,6 +55,9 @@ class SamplesAPIController(BaseAPIController):
         PUT /api/samples/{encoded_sample_id}
         Updates a sample or objects related ( mapped ) to a sample.
         """
+        if not trans.app.config.enable_legacy_sample_tracking_api:
+            trans.response.status = 403
+            return "The configuration of this Galaxy instance does not allow accessing this API."
         update_type = None
         if 'update_type' not in payload:
             trans.response.status = 400
@@ -69,7 +75,7 @@ class SamplesAPIController(BaseAPIController):
             return "Malformed sample_id (%s) specified, unable to decode." % str(sample_id)
         try:
             sample = trans.sa_session.query(trans.app.model.Sample).get(decoded_sample_id)
-        except:
+        except Exception:
             sample = None
         if not sample:
             trans.response.status = 400
@@ -83,7 +89,7 @@ class SamplesAPIController(BaseAPIController):
             if deferred_plugin:
                 try:
                     trans.app.job_manager.deferred_job_queue.plugins[deferred_plugin].create_job(trans, sample=sample, **payload)
-                except:
+                except Exception:
                     log.exception('update() called with a deferred job plugin (%s) but creating the deferred job failed:' % deferred_plugin)
             status, output = requests_admin_controller.edit_template_info(trans,
                                                                           cntrller='api',

@@ -40,7 +40,7 @@ class FunctionalTestCase(unittest.TestCase):
         if self.keepOutdir > '':
             try:
                 os.makedirs(self.keepOutdir)
-            except:
+            except Exception:
                 pass
 
     @classmethod

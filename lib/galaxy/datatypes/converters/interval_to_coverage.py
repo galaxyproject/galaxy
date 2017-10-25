@@ -127,7 +127,7 @@ if __name__ == "__main__":
         chr_col_1, start_col_1, end_col_1, strand_col_1 = [int(x) - 1 for x in options.cols1.split(',')]
         chr_col_2, position_col_2, forward_col_2, reverse_col_2 = [int(x) - 1 for x in options.cols2.split(',')]
         in_fname, out_fname = args
-    except:
+    except Exception:
         doc_optparse.exception()
 
     # Sort through a tempfile first

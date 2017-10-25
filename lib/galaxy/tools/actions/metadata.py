@@ -60,7 +60,7 @@ class SetMetadataToolAction(ToolAction):
         try:
             # For backward compatibility, some tools may not have versions yet.
             job.tool_version = tool.version
-        except:
+        except AttributeError:
             job.tool_version = "1.0.1"
         job.state = job.states.WAITING  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         job.set_handler(tool.get_job_handler(job_params))
