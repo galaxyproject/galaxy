@@ -1,4 +1,4 @@
-import d3 from "libs/d3";
+import * as d3 from "libs/d3";
 import visualization_mod from "viz/visualization";
 import data_mod from "mvc/dataset/data";
 import mod_icon_btn from "mvc/ui/icon-button";

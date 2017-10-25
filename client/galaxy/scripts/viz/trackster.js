@@ -8,7 +8,7 @@ var view = null;
 var browser_router = null;
 
 // trackster viewer
-import _ from "libs/underscore";
+import * as _ from "libs/underscore";
 import tracks from "viz/trackster/tracks";
 import visualization from "viz/visualization";
 import mod_icon_btn from "mvc/ui/icon-button";

@@ -2,7 +2,7 @@
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
 
-import _ from "libs/underscore";
+import * as _ from "libs/underscore";
 import util from "viz/trackster/util";
 import data from "mvc/dataset/data";
 import ToolForm from "mvc/tool/tool-form";

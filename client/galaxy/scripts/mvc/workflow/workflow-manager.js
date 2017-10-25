@@ -1,5 +1,5 @@
 import Connector from "mvc/workflow/workflow-connector";
-import Toastr from "libs/toastr";
+import * as Toastr from "libs/toastr";
 function Workflow(app, canvas_container) {
     this.app = app;
     this.canvas_container = canvas_container;

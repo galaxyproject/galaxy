@@ -1,4 +1,4 @@
-import _ from "libs/underscore";
+import * as _ from "libs/underscore";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
 import DataViews from "mvc/workflow/workflow-view-data";
 export default Backbone.View.extend({

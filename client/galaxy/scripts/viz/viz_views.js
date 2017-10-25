@@ -1,4 +1,4 @@
-import _ from "libs/underscore";
+import * as _ from "libs/underscore";
 /**
  * View for track/group header.
  */

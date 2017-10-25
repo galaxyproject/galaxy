@@ -1,4 +1,4 @@
-import _ from "libs/underscore";
+import * as _ from "libs/underscore";
 import util_mod from "viz/trackster/util";
 import config_mod from "utils/config";
 /**

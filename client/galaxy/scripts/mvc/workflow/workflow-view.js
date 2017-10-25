@@ -6,7 +6,7 @@ import WorkflowIcons from "mvc/workflow/workflow-icons";
 import FormWrappers from "mvc/workflow/workflow-forms";
 import Ui from "mvc/ui/ui-misc";
 import async_save_text from "utils/async-save-text";
-import Toastr from "libs/toastr";
+import * as Toastr from "libs/toastr";
 import "ui/editable-text";
 
 // TODO; tie into Galaxy state?

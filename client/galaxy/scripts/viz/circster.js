@@ -1,5 +1,5 @@
-import _ from "libs/underscore";
-import d3 from "libs/d3";
+import * as _ from "libs/underscore";
+import * as d3 from "libs/d3";
 import visualization from "viz/visualization";
 import mod_utils from "utils/utils";
 import config from "utils/config";

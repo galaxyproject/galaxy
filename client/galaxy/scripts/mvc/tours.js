@@ -3,7 +3,7 @@
  *  rendering a tour menu.
  */
 
-import BootstrapTour from "libs/bootstrap-tour";
+import * as BootstrapTour from "libs/bootstrap-tour";
 var gxy_root = typeof Galaxy === "undefined" ? "/" : Galaxy.root;
 
 var tourpage_template = `<h2>Galaxy Tours</h2>

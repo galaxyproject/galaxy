@@ -1,4 +1,4 @@
-import _ from "libs/underscore";
+import * as _ from "libs/underscore";
 import visualization from "viz/visualization";
 import viz_views from "viz/viz_views";
 import util from "viz/trackster/util";

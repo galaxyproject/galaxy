@@ -1,5 +1,5 @@
 /** Workflow view */
-import mod_toastr from "libs/toastr";
+import * as mod_toastr from "libs/toastr";
 import TAGS from "mvc/tag";
 import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";

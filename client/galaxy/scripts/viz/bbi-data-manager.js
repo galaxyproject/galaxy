@@ -1,5 +1,5 @@
 import visualization from "viz/visualization";
-import bigwig from "libs/bbi/bigwig";
+import * as bigwig from "libs/bbi/bigwig";
 /**
      * Data manager for BBI datasets/files, including BigWig and BigBed.
      */

@@ -3,8 +3,8 @@
  * genomic visualization.
  */
 
-import _ from "libs/underscore";
-import d3 from "libs/d3";
+import * as _ from "libs/underscore";
+import * as d3 from "libs/d3";
 import util from "viz/trackster/util";
 import visualization from "viz/visualization";
 import tracks from "viz/trackster/tracks";
