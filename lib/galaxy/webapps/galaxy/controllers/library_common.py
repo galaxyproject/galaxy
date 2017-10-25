@@ -277,7 +277,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     status=escape( status ) )
 
     @web.expose
-    @web.require_admin
     def create_folder( self, trans, cntrller, parent_id, library_id, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
@@ -802,7 +801,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     status=escape( status ) )
 
     @web.expose
-    @web.require_admin
     def upload_library_dataset( self, trans, cntrller, library_id, folder_id, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
