@@ -2409,7 +2409,7 @@ steps:
         self.assertEqual(hda_info_response.json()["metadata_data_lines"], lines)
 
     def __invoke_workflow(self, *args, **kwds):
-        self.workflow_populator.invoke_workflow(*args, **kwds)
+        return self.workflow_populator.invoke_workflow(*args, **kwds)
 
     def __import_workflow(self, workflow_id, deprecated_route=False):
         if deprecated_route:
