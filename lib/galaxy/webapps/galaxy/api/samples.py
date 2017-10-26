@@ -122,11 +122,11 @@ class SamplesAPIController(BaseAPIController, UsesFormDefinitionsMixin):
         if not new_state:
             trans.response.status = 400
             return "Invalid sample state requested ( %s )." % new_state_name
-        sample_ids=[encoded_sample_id]
+        sample_ids = [encoded_sample_id]
         for sample_id in sample_ids:
             try:
                 sample = trans.sa_session.query(trans.model.Sample).get(trans.security.decode_id(sample_id))
-            except:
+            except Exception:
                 trans.response.status = 400
                 return "Invalid sample id ( %s ) specified, unable to decode." % str(sample_id)
             if comment is None:
@@ -156,7 +156,7 @@ class SamplesAPIController(BaseAPIController, UsesFormDefinitionsMixin):
             try:
                 sd_id = trans.security.decode_id(id)
                 sample_dataset = trans.sa_session.query(trans.app.model.SampleDataset).get(sd_id)
-            except:
+            except Exception:
                 trans.response.status = 400
                 return 400, "Invalid sample dataset id ( %s ) specified." % str(id)
             sample_dataset.status = new_status
