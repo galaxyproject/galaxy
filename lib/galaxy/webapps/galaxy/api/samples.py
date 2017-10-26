@@ -6,12 +6,12 @@ import logging
 from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.web import url_for
-from galaxy.web.base.controller import BaseAPIController, web
+from galaxy.web.base.controller import BaseAPIController, UsesFormDefinitionsMixin, web
 
 log = logging.getLogger(__name__)
 
 
-class SamplesAPIController(BaseAPIController):
+class SamplesAPIController(BaseAPIController, UsesFormDefinitionsMixin):
     update_types = Bunch(SAMPLE=['sample_state', 'run_details'],
                          SAMPLE_DATASET=['sample_dataset_transfer_status'])
     update_type_values = []
@@ -83,7 +83,6 @@ class SamplesAPIController(BaseAPIController):
         if not trans.user_is_admin():
             trans.response.status = 403
             return "You are not authorized to update samples."
-        requests_admin_controller = trans.webapp.controllers['requests_admin']
         if update_type == 'run_details':
             deferred_plugin = payload.pop('deferred_plugin', None)
             if deferred_plugin:
@@ -91,12 +90,12 @@ class SamplesAPIController(BaseAPIController):
                     trans.app.job_manager.deferred_job_queue.plugins[deferred_plugin].create_job(trans, sample=sample, **payload)
                 except Exception:
                     log.exception('update() called with a deferred job plugin (%s) but creating the deferred job failed:' % deferred_plugin)
-            status, output = requests_admin_controller.edit_template_info(trans,
-                                                                          cntrller='api',
-                                                                          item_type='sample',
-                                                                          form_type=trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE,
-                                                                          sample_id=sample_id,
-                                                                          **payload)
+            status, output = self.edit_template_info(trans,
+                                                     cntrller='api',
+                                                     item_type='sample',
+                                                     form_type=trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE,
+                                                     sample_id=sample_id,
+                                                     **payload)
             return status, output
         elif update_type == 'sample_state':
             return self.__update_sample_state(trans, sample, sample_id, **payload)
@@ -123,13 +122,19 @@ class SamplesAPIController(BaseAPIController):
         if not new_state:
             trans.response.status = 400
             return "Invalid sample state requested ( %s )." % new_state_name
-        requests_common_cntrller = trans.webapp.controllers['requests_common']
-        status, output = requests_common_cntrller.update_sample_state(trans=trans,
-                                                                      cntrller='api',
-                                                                      sample_ids=[encoded_sample_id],
-                                                                      new_state=new_state,
-                                                                      comment=comment)
-        return status, output
+        sample_ids = [encoded_sample_id]
+        for sample_id in sample_ids:
+            try:
+                sample = trans.sa_session.query(trans.model.Sample).get(trans.security.decode_id(sample_id))
+            except Exception:
+                trans.response.status = 400
+                return "Invalid sample id ( %s ) specified, unable to decode." % str(sample_id)
+            if comment is None:
+                comment = 'Sample state set to %s' % str(new_state)
+            event = trans.model.SampleEvent(sample, new_state, comment)
+            trans.sa_session.add(event)
+            trans.sa_session.flush()
+        return 200, 'Done'
 
     def __update_sample_dataset_status(self, trans, **payload):
         # only admin user may transfer sample datasets in Galaxy sample tracking
@@ -142,10 +147,20 @@ class SamplesAPIController(BaseAPIController):
         sample_dataset_ids = payload.pop('sample_dataset_ids')
         new_status = payload.pop('new_status')
         error_msg = payload.get('error_msg', '')
-        requests_admin_cntrller = trans.webapp.controllers['requests_admin']
-        status, output = requests_admin_cntrller.update_sample_dataset_status(trans=trans,
-                                                                              cntrller='api',
-                                                                              sample_dataset_ids=sample_dataset_ids,
-                                                                              new_status=new_status,
-                                                                              error_msg=error_msg)
-        return status, output
+        # check if the new status is a valid transfer status
+        possible_status_list = [v[1] for v in trans.app.model.SampleDataset.transfer_status.items()]
+        if new_status not in possible_status_list:
+            trans.response.status = 400
+            return 400, "The requested transfer status ( %s ) is not a valid transfer status." % new_status
+        for id in util.listify(sample_dataset_ids):
+            try:
+                sd_id = trans.security.decode_id(id)
+                sample_dataset = trans.sa_session.query(trans.app.model.SampleDataset).get(sd_id)
+            except Exception:
+                trans.response.status = 400
+                return 400, "Invalid sample dataset id ( %s ) specified." % str(id)
+            sample_dataset.status = new_status
+            sample_dataset.error_msg = error_msg
+            trans.sa_session.add(sample_dataset)
+            trans.sa_session.flush()
+        return 200, 'Done'
