@@ -24,47 +24,6 @@ var AdminPanel = Backbone.View.extend({
                 title   : "Data libraries",
                 url     : "library_admin/browse_libraries"
             },{
-<<<<<<< HEAD
-                title   : 'Manage jobs',
-                url     : 'admin/jobs'
-            },{
-                title   : 'Local data',
-                url     : 'data_manager'
-            } ]
-        },{
-            title : 'User Management',
-            items : [ {
-                title   : 'Users',
-                url     : 'admin/users',
-                target  : '__use_router__'
-            },{
-                title   : 'Quotas',
-                url     : 'admin/quotas',
-                target  : '__use_router__',
-                enabled : self.config.enable_quotas
-            },{
-                title   : 'Groups',
-                url     : 'admin/groups',
-                target  : '__use_router__'
-            },{
-                title   : 'Roles',
-                url     : 'admin/roles',
-                target  : '__use_router__'
-            },{
-                title   : 'Forms',
-                url     : 'admin/forms',
-                target  : '__use_router__'
-            },{
-                title   : 'API keys',
-                url     : 'userskeys/all_users'
-            },{
-                title   : 'Impersonate a user',
-                url     : 'admin/impersonate',
-                enabled : self.config.allow_user_impersonation
-            }]
-        },{
-            title : 'Tools and Tool Shed',
-=======
                 title   : "Display applications",
                 url     : "admin/display_applications"
             },{
@@ -76,7 +35,6 @@ var AdminPanel = Backbone.View.extend({
             } ]
         },{
             title : "User Management",
->>>>>>> dev
             items : [ {
                 title   : "Users",
                 url     : "admin/users",
@@ -102,10 +60,6 @@ var AdminPanel = Backbone.View.extend({
                 title   : "API keys",
                 url     : "userskeys/all_users"
             },{
-<<<<<<< HEAD
-                title   : 'Manage Tool Dependencies',
-                url     : 'admin/manage_tool_dependencies'
-=======
                 title   : "Impersonate a user",
                 url     : "admin/impersonate",
                 enabled : self.config.allow_user_impersonation
@@ -155,7 +109,6 @@ var AdminPanel = Backbone.View.extend({
             },{
                 title   : "Manage Tool Dependencies",
                 url     : "admin/manage_tool_dependencies"
->>>>>>> dev
             } ]
         }]);
         this.setElement( this._template() );
