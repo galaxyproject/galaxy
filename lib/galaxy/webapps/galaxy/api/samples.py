@@ -142,10 +142,20 @@ class SamplesAPIController(BaseAPIController):
         sample_dataset_ids = payload.pop('sample_dataset_ids')
         new_status = payload.pop('new_status')
         error_msg = payload.get('error_msg', '')
-        requests_admin_cntrller = trans.webapp.controllers['requests_admin']
-        status, output = requests_admin_cntrller.update_sample_dataset_status(trans=trans,
-                                                                              cntrller='api',
-                                                                              sample_dataset_ids=sample_dataset_ids,
-                                                                              new_status=new_status,
-                                                                              error_msg=error_msg)
-        return status, output
+        # check if the new status is a valid transfer status
+        possible_status_list = [v[1] for v in trans.app.model.SampleDataset.transfer_status.items()]
+        if new_status not in possible_status_list:
+            trans.response.status = 400
+            return 400, "The requested transfer status ( %s ) is not a valid transfer status." % new_status
+        for id in util.listify(sample_dataset_ids):
+            try:
+                sd_id = trans.security.decode_id(id)
+                sample_dataset = trans.sa_session.query(trans.app.model.SampleDataset).get(sd_id)
+            except:
+                trans.response.status = 400
+                return 400, "Invalid sample dataset id ( %s ) specified." % str(id)
+            sample_dataset.status = new_status
+            sample_dataset.error_msg = error_msg
+            trans.sa_session.add(sample_dataset)
+            trans.sa_session.flush()
+        return 200, 'Done'
