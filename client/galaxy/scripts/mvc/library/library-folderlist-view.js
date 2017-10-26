@@ -325,8 +325,6 @@ define(
                 event.preventDefault();
                 this.current_sort_order =
                     this.current_sort_order === "asc" ? "desc" : "asc";
-                console.log('this.current_sort_order');
-                console.log(this.current_sort_order);
                 if (event.currentTarget.className === "sort-folder-name") {
                     this.collection.sortFolder("name", this.current_sort_order);
                     this.current_sort_key = "name";
@@ -339,8 +337,6 @@ define(
                     );
                     this.current_sort_key = "datatype";
                 }
-                console.log('this.current_sort_key');
-                console.log(this.current_sort_key);
                 this.renderSortIcon();
             },
 
