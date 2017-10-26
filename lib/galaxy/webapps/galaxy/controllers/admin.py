@@ -914,24 +914,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                            message=message,
                                            status='error')
 
-    @web.expose
-    @web.require_admin
-    def reload_tool(self, trans, **kwd):
-        params = util.Params(kwd)
-        message = util.restore_text(params.get('message', ''))
-        status = params.get('status', 'done')
-        toolbox = self.app.toolbox
-        tool_id = None
-        if params.get('reload_tool_button', False):
-            tool_id = kwd.get('tool_id', None)
-            galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id})
-            message, status = trans.app.toolbox.reload_tool_by_id(tool_id)
-        return trans.fill_template('/admin/reload_tool.mako',
-                                   tool_id=tool_id,
-                                   toolbox=toolbox,
-                                   message=message,
-                                   status=status)
-
     @web.expose_api
     @web.require_admin
     def tool_versions_list(self, trans, **kwd):
