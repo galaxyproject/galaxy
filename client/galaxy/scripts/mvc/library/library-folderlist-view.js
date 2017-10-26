@@ -463,7 +463,6 @@ define(
                         '<th><a class="sort-folder-name" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span></th>',
                         '<th style="width:20%;">description</th>',
                         '<th style="width:5%;"><a class="sort-folder-datatype" title="Click to reverse order" href="#">data type</a> <span title="Sorted alphabetically" class="sort-icon-datatype fa"></span></th>',
-                        // '<th style="width:5%;">data type</th>',
                         '<th style="width:10%;">size</th>',
                         '<th style="width:160px;">time updated (UTC)</th>',
                         '<th style="width:5%;">state</th> ',
