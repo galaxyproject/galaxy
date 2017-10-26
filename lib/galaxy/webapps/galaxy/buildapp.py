@@ -1,36 +1,32 @@
 """
 Provides factory methods to assemble the Galaxy web application
 """
+import atexit
+import logging
 import os
 import sys
 import threading
-import atexit
+import traceback
 
-try:
-    import configparser
-except:
-    import ConfigParser as configparser
-
+from paste import httpexceptions
+from six.moves import configparser
 
 import galaxy.app
+import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping
-import galaxy.datatypes.registry
 import galaxy.web.framework
 import galaxy.web.framework.webapp
-from galaxy.webapps.util import (
-    MiddlewareWrapUnsupported,
-    build_template_error_formatters,
-    wrap_if_allowed,
-    wrap_if_allowed_or_fail
-)
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
+from galaxy.webapps.util import (
+    build_template_error_formatters,
+    MiddlewareWrapUnsupported,
+    wrap_if_allowed,
+    wrap_if_allowed_or_fail
+)
 
-from paste import httpexceptions
-
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -57,8 +53,7 @@ def paste_app_factory(global_conf, **kwargs):
         try:
             app = galaxy.app.UniverseApplication(global_conf=global_conf, **kwargs)
             galaxy.app.app = app
-        except:
-            import traceback
+        except Exception:
             traceback.print_exc()
             sys.exit(1)
     # Call app's shutdown method when the interpeter exits, this cleanly stops
@@ -107,6 +102,7 @@ def paste_app_factory(global_conf, **kwargs):
     webapp.add_client_route('/admin/roles', 'admin')
     webapp.add_client_route('/admin/forms', 'admin')
     webapp.add_client_route('/admin/groups', 'admin')
+    webapp.add_client_route('/admin/repositories', 'admin')
     webapp.add_client_route('/admin/tool_versions', 'admin')
     webapp.add_client_route('/admin/quotas', 'admin')
     webapp.add_client_route('/admin/form/{form_id}', 'admin')
@@ -118,11 +114,16 @@ def paste_app_factory(global_conf, **kwargs):
     webapp.add_client_route('/workflows/list_published')
     webapp.add_client_route('/visualizations/list_published')
     webapp.add_client_route('/visualizations/list')
+    webapp.add_client_route('/visualizations/edit')
     webapp.add_client_route('/pages/list')
     webapp.add_client_route('/pages/list_published')
+    webapp.add_client_route('/pages/create')
+    webapp.add_client_route('/pages/edit')
     webapp.add_client_route('/histories/list')
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')
+    webapp.add_client_route('/histories/rename')
+    webapp.add_client_route('/histories/permissions')
     webapp.add_client_route('/datasets/list')
     webapp.add_client_route('/datasets/edit')
     webapp.add_client_route('/datasets/error')
@@ -144,13 +145,13 @@ def paste_app_factory(global_conf, **kwargs):
     # Close any pooled database connections before forking
     try:
         galaxy.model.mapping.metadata.bind.dispose()
-    except:
+    except Exception:
         log.exception("Unable to dispose of pooled galaxy model database connections.")
     try:
         # This model may not actually be bound.
         if galaxy.model.tool_shed_install.mapping.metadata.bind:
             galaxy.model.tool_shed_install.mapping.metadata.bind.dispose()
-    except:
+    except Exception:
         log.exception("Unable to dispose of pooled toolshed install model database connections.")
 
     app.application_stack.register_postfork_function(postfork_setup)
@@ -416,7 +417,7 @@ def populate_api_routes(webapp, app):
         "invocations": "",
         "usage": "_deprecated",
     }
-    for noun, suffix in invoke_names.iteritems():
+    for noun, suffix in invoke_names.items():
         name = "%s%s" % (noun, suffix)
         webapp.mapper.connect(
             'list_workflow_%s' % name,
@@ -649,43 +650,49 @@ def populate_api_routes(webapp, app):
 
     webapp.mapper.connect('show_ld_item',
                           '/api/libraries/datasets/{id}',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='show',
                           conditions=dict(method=["GET"]))
 
     webapp.mapper.connect('load_ld',
                           '/api/libraries/datasets/',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='load',
                           conditions=dict(method=["POST"]))
 
     webapp.mapper.connect('show_version_of_ld_item',
                           '/api/libraries/datasets/{encoded_dataset_id}/versions/{encoded_ldda_id}',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='show_version',
                           conditions=dict(method=["GET"]))
 
-    webapp.mapper.connect('show_legitimate_lda_roles',
+    webapp.mapper.connect('update_ld',
+                          '/api/libraries/datasets/{encoded_dataset_id}',
+                          controller='library_datasets',
+                          action='update',
+                          conditions=dict(method=["PATCH"]))
+
+    webapp.mapper.connect('show_legitimate_ld_roles',
                           '/api/libraries/datasets/{encoded_dataset_id}/permissions',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='show_roles',
                           conditions=dict(method=["GET"]))
 
-    webapp.mapper.connect('update_lda_permissions',
+    webapp.mapper.connect('update_ld_permissions',
                           '/api/libraries/datasets/{encoded_dataset_id}/permissions',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='update_permissions',
                           conditions=dict(method=["POST"]))
 
-    webapp.mapper.connect('delete_lda_item',
+    webapp.mapper.connect('delete_ld_item',
                           '/api/libraries/datasets/{encoded_dataset_id}',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='delete',
                           conditions=dict(method=["DELETE"]))
 
-    webapp.mapper.connect('download_lda_items',
+    webapp.mapper.connect('download_ld_items',
                           '/api/libraries/datasets/download/{format}',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='download',
                           conditions=dict(method=["POST", "GET"]))
 
@@ -1047,12 +1054,12 @@ def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
     # wrap any static dirs for plugins
     plugin_frameworks = plugin_frameworks or []
     for framework in plugin_frameworks:
-        if framework and framework.serves_static:
-            # invert control to each plugin for finding their own static dirs
-            for plugin_url, plugin_static_path in framework.get_static_urls_and_paths():
-                plugin_url = '/plugins/' + plugin_url
-                urlmap[(plugin_url)] = Static(plugin_static_path, cache_time)
-                log.debug('added url, path to static middleware: %s, %s', plugin_url, plugin_static_path)
+        # invert control to each plugin for finding their own static dirs
+        for plugin in framework.plugins.values():
+            if plugin.serves_static:
+                plugin_url = '/plugins/' + plugin.static_url
+                urlmap[(plugin_url)] = Static(plugin.static_path, cache_time)
+                log.debug('added url, path to static middleware: %s, %s', plugin_url, plugin.static_path)
 
     # URL mapper becomes the root webapp
     return urlmap

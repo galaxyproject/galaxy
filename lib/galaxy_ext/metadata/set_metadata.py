@@ -10,8 +10,6 @@ set to the path of the dataset on which metadata is being set
 (output_filename_override could previously be left empty and the path would be
 constructed automatically).
 """
-
-import cPickle
 import json
 import logging
 import os
@@ -20,6 +18,7 @@ import sys
 # insert *this* galaxy before all others on sys.path
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
+from six.moves import cPickle
 from sqlalchemy.orm import clear_mappers
 
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
@@ -57,17 +56,18 @@ def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, data
             # https://trello.com/c/Nrwodu9d
             pass
 
-    for metadata_name, metadata_value in file_dict.get('metadata', {}).iteritems():
+    for metadata_name, metadata_value in file_dict.get('metadata', {}).items():
         setattr(dataset_instance.metadata, metadata_name, metadata_value)
     dataset_instance.datatype.set_meta(dataset_instance, **set_meta_kwds)
-    for metadata_name, metadata_value in file_dict.get('metadata', {}).iteritems():
+    for metadata_name, metadata_value in file_dict.get('metadata', {}).items():
         setattr(dataset_instance.metadata, metadata_name, metadata_value)
 
 
 def set_metadata():
     # locate galaxy_root for loading datatypes
     galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
-    galaxy.datatypes.metadata.MetadataTempFile.tmp_dir = tool_job_working_directory = os.path.abspath(os.getcwd())
+    import galaxy.model
+    galaxy.model.metadata.MetadataTempFile.tmp_dir = tool_job_working_directory = os.path.abspath(os.getcwd())
 
     # This is ugly, but to transition from existing jobs without this parameter
     # to ones with, smoothly, it has to be the last optional parameter and we
@@ -81,6 +81,17 @@ def set_metadata():
 
     # Set up datatypes registry
     datatypes_config = sys.argv.pop(1)
+    if not os.path.exists(datatypes_config):
+        # This path should exist, except for jobs that started running on release 17.05, where a global
+        # datatypes_config (instead of a datatypes_config per job) was used. For a while release 17.05
+        # would remove the global datatypes config on shutdown and toolbox reload, which would lead to
+        # failed metadata jobs. To remedy this we scan jobs at startup for missing registry.xml files,
+        # and if we detect such a job we write out the current registry.xml file.
+        datatypes_config = os.path.join(tool_job_working_directory, "registry.xml")
+        if not os.path.exists(datatypes_config):
+            print("Metadata setting failed because registry.xml could not be found. You may retry setting metadata.")
+            sys.exit(1)
+    import galaxy.datatypes.registry
     datatypes_registry = galaxy.datatypes.registry.Registry()
     datatypes_registry.load_datatypes(root_dir=galaxy_root, config=datatypes_config)
     galaxy.model.set_datatypes_registry(datatypes_registry)
@@ -96,7 +107,7 @@ def set_metadata():
                     existing_job_metadata_dict[line['dataset_id']] = line
                 elif line['type'] == 'new_primary_dataset':
                     new_job_metadata_dict[line['filename']] = line
-            except:
+            except Exception:
                 continue
 
     for filenames in sys.argv[1:]:
@@ -131,7 +142,7 @@ def set_metadata():
             file_dict = existing_job_metadata_dict.get(dataset.dataset.id, {})
             set_meta_with_tool_provided(dataset, file_dict, set_meta_kwds, datatypes_registry)
             if max_metadata_value_size:
-                for k, v in dataset.metadata.items():
+                for k, v in list(dataset.metadata.items()):
                     if total_size(v) > max_metadata_value_size:
                         log.info("Key %s too large for metadata, discarding" % k)
                         dataset.metadata.remove_key(k)
@@ -140,7 +151,7 @@ def set_metadata():
         except Exception as e:
             json.dump((False, str(e)), open(filename_results_code, 'wb+'))  # setting metadata has failed somehow
 
-    for i, (filename, file_dict) in enumerate(new_job_metadata_dict.iteritems(), start=1):
+    for i, (filename, file_dict) in enumerate(new_job_metadata_dict.items(), start=1):
         new_dataset_filename = os.path.join(tool_job_working_directory, "working", file_dict['filename'])
         new_dataset = galaxy.model.Dataset(id=-i, external_filename=new_dataset_filename)
         extra_files = file_dict.get('extra_files', None)
@@ -152,7 +163,7 @@ def set_metadata():
         file_dict['metadata'] = json.loads(new_dataset_instance.metadata.to_JSON_dict())  # storing metadata in external form, need to turn back into dict, then later jsonify
     if existing_job_metadata_dict or new_job_metadata_dict:
         with open(job_metadata, 'wb') as job_metadata_fh:
-            for value in existing_job_metadata_dict.values() + new_job_metadata_dict.values():
+            for value in list(existing_job_metadata_dict.values()) + list(new_job_metadata_dict.values()):
                 job_metadata_fh.write("%s\n" % (json.dumps(value)))
 
     clear_mappers()

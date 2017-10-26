@@ -1,16 +1,15 @@
 import contextlib
 import json
 import time
-
+from functools import wraps
 from operator import itemgetter
 
 import requests
-
 from pkg_resources import resource_string
 from six import StringIO
 
-from base import api_asserts
-from base.workflows_format_2 import (
+from . import api_asserts
+from .workflows_format_2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )
@@ -26,8 +25,9 @@ DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
 
 
 def skip_without_tool(tool_id):
-    """ Decorate an API test method as requiring a specific tool,
-    have nose skip the test case is the tool is unavailable.
+    """Decorate an API test method as requiring a specific tool.
+
+    Have test framework skip the test case is the tool is unavailable.
     """
 
     def method_wrapper(method):
@@ -39,19 +39,44 @@ def skip_without_tool(tool_id):
             tool_ids = [itemgetter("id")(_) for _ in tools]
             return tool_ids
 
+        @wraps(method)
         def wrapped_method(api_test_case, *args, **kwargs):
-            if tool_id not in get_tool_ids(api_test_case):
-                from nose.plugins.skip import SkipTest
-                raise SkipTest()
-
+            _raise_skip_if(tool_id not in get_tool_ids(api_test_case))
             return method(api_test_case, *args, **kwargs)
 
-        # Must preserve method name so nose can detect and report tests by
-        # name.
-        wrapped_method.__name__ = method.__name__
         return wrapped_method
 
     return method_wrapper
+
+
+def skip_without_datatype(extension):
+    """Decorate an API test method as requiring a specific datatype.
+
+    Have test framework skip the test case is the tool is unavailable.
+    """
+
+    def has_datatype(api_test_case):
+        index_response = api_test_case.galaxy_interactor.get("datatypes")
+        assert index_response.status_code == 200, "Failed to fetch datatypes for target Galaxy."
+        datatypes = index_response.json()
+        assert isinstance(datatypes, list)
+        return extension in datatypes
+
+    def method_wrapper(method):
+        @wraps(method)
+        def wrapped_method(api_test_case, *args, **kwargs):
+            _raise_skip_if(not has_datatype(api_test_case))
+            method(api_test_case, *args, **kwargs)
+
+        return wrapped_method
+
+    return method_wrapper
+
+
+def _raise_skip_if(check):
+    if check:
+        from nose.plugins.skip import SkipTest
+        raise SkipTest()
 
 
 # Deprecated mixin, use dataset populator instead.
@@ -79,16 +104,26 @@ class BaseDatasetPopulator(object):
     Galaxy - implementations must implement _get and _post.
     """
 
-    def new_dataset(self, history_id, content='TestData123', wait=False, **kwds):
-        payload = self.upload_payload(history_id, content, **kwds)
-        run_response = self._post("tools", data=payload)
-        run = run_response.json()
+    def new_dataset(self, history_id, content=None, wait=False, **kwds):
+        run_response = self.new_dataset_request(history_id, content=content, wait=wait, **kwds)
+        return run_response.json()["outputs"][0]
+
+    def new_dataset_request(self, history_id, content=None, wait=False, **kwds):
+        if content is None and "ftp_files" not in kwds:
+            content = "TestData123"
+        payload = self.upload_payload(history_id, content=content, **kwds)
+        run_response = self.tools_post(payload)
         if wait:
-            assert run_response.status_code == 200, run
-            job = run["jobs"][0]
-            self.wait_for_job(job["id"])
-            self.wait_for_history(history_id, assert_ok=True)
-        return run["outputs"][0]
+            self.wait_for_tool_run(history_id, run_response)
+        return run_response
+
+    def wait_for_tool_run(self, history_id, run_response):
+        run = run_response.json()
+        assert run_response.status_code == 200, run
+        job = run["jobs"][0]
+        self.wait_for_job(job["id"])
+        self.wait_for_history(history_id, assert_ok=True)
+        return run_response
 
     def wait_for_history(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
         try:
@@ -124,7 +159,7 @@ class BaseDatasetPopulator(object):
         history_id = create_history_response.json()["id"]
         return history_id
 
-    def upload_payload(self, history_id, content, **kwds):
+    def upload_payload(self, history_id, content=None, **kwds):
         name = kwds.get("name", "Test Dataset")
         dbkey = kwds.get("dbkey", "?")
         file_type = kwds.get("file_type", 'txt')
@@ -133,7 +168,11 @@ class BaseDatasetPopulator(object):
             'dbkey': dbkey,
             'file_type': file_type,
         }
-        if hasattr(content, 'read'):
+        if dbkey is None:
+            del upload_params["dbkey"]
+        if content is None:
+            upload_params["files_0|ftp_files"] = kwds.get("ftp_files")
+        elif hasattr(content, 'read'):
             upload_params["files_0|file_data"] = content
         else:
             upload_params['files_0|url_paste'] = content
@@ -144,12 +183,16 @@ class BaseDatasetPopulator(object):
             upload_params["files_0|space_to_tab"] = kwds["space_to_tab"]
         if "auto_decompress" in kwds:
             upload_params["files_0|auto_decompress"] = kwds["auto_decompress"]
+        upload_params.update(kwds.get("extra_inputs", {}))
         return self.run_tool_payload(
             tool_id='upload1',
             inputs=upload_params,
             history_id=history_id,
             upload_type='upload_dataset'
         )
+
+    def get_remote_files(self, target="ftp"):
+        return self._get("remote_files", data={"target": target}).json()
 
     def run_tool_payload(self, tool_id, inputs, history_id, **kwds):
         if "files_0|file_data" in inputs:
@@ -163,15 +206,25 @@ class BaseDatasetPopulator(object):
             **kwds
         )
 
-    def run_tool(self, tool_id, inputs, history_id, **kwds):
+    def run_tool(self, tool_id, inputs, history_id, assert_ok=True, **kwds):
         payload = self.run_tool_payload(tool_id, inputs, history_id, **kwds)
-        tool_response = self._post("tools", data=payload)
-        api_asserts.assert_status_code_is(tool_response, 200)
-        return tool_response.json()
+        tool_response = self.tools_post(payload)
+        if assert_ok:
+            api_asserts.assert_status_code_is(tool_response, 200)
+            return tool_response.json()
+        else:
+            return tool_response
 
-    def get_history_dataset_content(self, history_id, wait=True, **kwds):
+    def tools_post(self, payload):
+        tool_response = self._post("tools", data=payload)
+        return tool_response
+
+    def get_history_dataset_content(self, history_id, wait=True, filename=None, **kwds):
         dataset_id = self.__history_content_id(history_id, wait=wait, **kwds)
-        display_response = self.__get_contents_request(history_id, "/%s/display" % dataset_id)
+        data = {}
+        if filename:
+            data["filename"] = filename
+        display_response = self.__get_contents_request(history_id, "/%s/display" % dataset_id, data=data)
         assert display_response.status_code == 200, display_response.content
         return display_response.content
 
@@ -212,11 +265,11 @@ class BaseDatasetPopulator(object):
                 history_content_id = history_contents[-1]["id"]
         return history_content_id
 
-    def __get_contents_request(self, history_id, suffix=""):
+    def __get_contents_request(self, history_id, suffix="", data={}):
         url = "histories/%s/contents" % history_id
         if suffix:
             url = "%s%s" % (url, suffix)
-        return self._get(url)
+        return self._get(url, data=data)
 
 
 class DatasetPopulator(BaseDatasetPopulator):
@@ -231,8 +284,8 @@ class DatasetPopulator(BaseDatasetPopulator):
 
         return self.galaxy_interactor.post(route, data, files=files)
 
-    def _get(self, route):
-        return self.galaxy_interactor.get(route)
+    def _get(self, route, data={}):
+        return self.galaxy_interactor.get(route, data=data)
 
     def _summarize_history(self, history_id):
         self.galaxy_interactor._summarize_history(history_id)
@@ -305,8 +358,8 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
     def _post(self, route, data={}):
         return self.galaxy_interactor.post(route, data)
 
-    def _get(self, route):
-        return self.galaxy_interactor.get(route)
+    def _get(self, route, data={}):
+        return self.galaxy_interactor.get(route, data=data)
 
     # Required for ImporterGalaxyInterface interface - so we can recurisvely import
     # nested workflows.
@@ -497,6 +550,16 @@ class BaseDatasetCollectionPopulator(object):
             datasets.append(self.dataset_populator.new_dataset(history_id, **new_kwds))
         return datasets
 
+    def wait_for_dataset_collection(self, create_payload, assert_ok=False, timeout=DEFAULT_TIMEOUT):
+        for element in create_payload["elements"]:
+            if element['element_type'] == 'hda':
+                self.dataset_populator.wait_for_dataset(history_id=element['object']['history_id'],
+                                                        dataset_id=element['object']['id'],
+                                                        assert_ok=assert_ok,
+                                                        timeout=timeout)
+            elif element['element_type'] == 'dataset_collection':
+                self.wait_for_dataset_collection(element['object'], assert_ok=assert_ok, timeout=timeout)
+
 
 class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
 
@@ -526,8 +589,8 @@ def wait_on_state(state_func, skip_states=["running", "queued", "new", "ready"],
 class GiPostGetMixin:
     """Mixin for adapting Galaxy testing populators helpers to bioblend."""
 
-    def _get(self, route):
-        return self._gi.make_get_request(self.__url(route))
+    def _get(self, route, data={}):
+        return self._gi.make_get_request(self.__url(route), data)
 
     def _post(self, route, data={}):
         data = data.copy()

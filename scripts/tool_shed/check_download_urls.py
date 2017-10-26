@@ -2,6 +2,8 @@
 # Dan Blankenberg
 # Script that checks toolshed tags to see if URLs are accessible.
 # Does not currently handle 'download_binary'
+from __future__ import print_function
+
 import os
 import urllib2
 import xml.etree.ElementTree as ET
@@ -30,9 +32,9 @@ def main():
                             try:
                                 urllib2.urlopen(urllib2.Request(url))
                             except Exception as e:
-                                print "Bad URL '%s' in file '%s': %s" % (url, path, e)
+                                print("Bad URL '%s' in file '%s': %s" % (url, path, e))
                 except Exception as e:
-                    print "Unable to check XML file '%s': %s" % (path, e)
+                    print("Unable to check XML file '%s': %s" % (path, e))
 
 
 if __name__ == "__main__":

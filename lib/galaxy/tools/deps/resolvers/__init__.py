@@ -97,7 +97,7 @@ class MappableDependencyResolver:
     @staticmethod
     def _mapping_file_to_list(mapping_file):
         with open(mapping_file, "r") as f:
-            raw_mapping = yaml.load(f) or []
+            raw_mapping = yaml.safe_load(f) or []
         return map(RequirementMapping.from_dict, raw_mapping)
 
     def _expand_mappings(self, requirement):

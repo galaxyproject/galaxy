@@ -26,7 +26,7 @@ messages = Bunch(
 
 def decode_dbkey(dbkey):
     """ Decodes dbkey and returns tuple ( username, dbkey )"""
-    if ':' in dbkey:
+    if isinstance(dbkey, str) and ':' in dbkey:
         return dbkey.split(':')
     else:
         return None, dbkey
@@ -166,7 +166,7 @@ class Genome(object):
         try:
             next(len_file_enumerate)
             next_chroms = True
-        except:
+        except StopIteration:
             # No more chroms to read.
             pass
 

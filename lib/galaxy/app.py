@@ -3,7 +3,6 @@ import logging
 import signal
 import sys
 import time
-import os
 
 from galaxy import config, jobs
 import galaxy.model
@@ -219,17 +218,10 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         except AttributeError:
             # There is no control_worker
             pass
-        try:
-            # If the datatypes registry was persisted, attempt to
-            # remove the temporary file in which it was written.
-            if self.datatypes_registry.integrated_datatypes_configs is not None:
-                os.unlink(self.datatypes_registry.integrated_datatypes_configs)
-        except:
-            pass
 
     def configure_fluent_log(self):
         if self.config.fluent_log:
-            from galaxy.util.log.fluent_log import FluentTraceLogger
+            from galaxy.util.logging.fluent_log import FluentTraceLogger
             self.trace_logger = FluentTraceLogger('galaxy', self.config.fluent_host, self.config.fluent_port)
         else:
             self.trace_logger = None

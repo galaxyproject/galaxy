@@ -4,6 +4,7 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
+import ipaddress
 import logging
 import logging.config
 import os
@@ -26,7 +27,9 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.util import ExecutionTimer
 from galaxy.util import listify
 from galaxy.util import string_as_bool
+from galaxy.util import unicodify
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.logging import LOGLV_TRACE
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.web.stack import register_postfork_function
 from .version import VERSION_MAJOR
@@ -209,7 +212,7 @@ class Configuration(object):
                         self.hours_between_check = 12.0
             else:
                 self.hours_between_check = 12
-        except:
+        except Exception:
             self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get("update_integrated_tool_panel", True)
         self.enable_data_manager_user_view = string_as_bool(kwargs.get("enable_data_manager_user_view", "False"))
@@ -226,6 +229,13 @@ class Configuration(object):
         self.remote_user_logout_href = kwargs.get("remote_user_logout_href", None)
         self.remote_user_secret = kwargs.get("remote_user_secret", None)
         self.require_login = string_as_bool(kwargs.get("require_login", "False"))
+        self.fetch_url_whitelist_ips = [
+            ipaddress.ip_network(unicodify(ip.strip()))  # If it has a slash, assume 127.0.0.1/24 notation
+            if '/' in ip else
+            ipaddress.ip_address(unicodify(ip.strip()))  # Otherwise interpret it as an ip address.
+            for ip in kwargs.get("fetch_url_whitelist", "").split(',')
+            if len(ip.strip()) > 0
+        ]
         self.allow_user_creation = string_as_bool(kwargs.get("allow_user_creation", "True"))
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
         self.allow_user_dataset_purge = string_as_bool(kwargs.get("allow_user_dataset_purge", "True"))
@@ -328,6 +338,9 @@ class Configuration(object):
         # Beta containers interface used by GIEs
         self.enable_beta_containers_interface = string_as_bool(kwargs.get('enable_beta_containers_interface', 'False'))
 
+        # Deprecated API for sample tracking
+        self.enable_legacy_sample_tracking_api = string_as_bool(kwargs.get('enable_legacy_sample_tracking_api', 'False'))
+
         # Certain modules such as the pause module will automatically cause
         # workflows to be scheduled in job handlers the way all workflows will
         # be someday - the following two properties can also be used to force this
@@ -385,6 +398,7 @@ class Configuration(object):
         self.genomespace_ui_url = kwargs.get('genomespace_ui_url', 'https://gsui.genomespace.org/jsui/')
         self.library_import_dir = kwargs.get('library_import_dir', None)
         self.user_library_import_dir = kwargs.get('user_library_import_dir', None)
+        self.user_library_import_symlink_whitelist = listify(kwargs.get('user_library_import_symlink_whitelist', []), do_strip=True)
         # Searching data libraries
         self.enable_lucene_library_search = string_as_bool(kwargs.get('enable_lucene_library_search', False))
         self.enable_whoosh_library_search = string_as_bool(kwargs.get('enable_whoosh_library_search', False))
@@ -783,7 +797,7 @@ class Configuration(object):
 
         try:
             port = config.getint('server:%s' % self.server_name, 'port')
-        except:
+        except Exception:
             # uWSGI galaxy installations don't use paster and only speak uWSGI not http
             port = None
         return port
@@ -867,6 +881,7 @@ def configure_logging(config):
     or a simple dictionary of configuration variables.
     """
     # Get root logger
+    logging.addLevelName(LOGLV_TRACE, "TRACE")
     root = logging.getLogger()
     # PasteScript will have already configured the logger if the
     # 'loggers' section was found in the config file, otherwise we do
@@ -1010,7 +1025,7 @@ class ConfiguresGalaxyMixin:
 
         # Set up the tool sheds registry
         if os.path.isfile(self.config.tool_sheds_config_file):
-            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry(self.config.root, self.config.tool_sheds_config_file)
+            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry(self.config.tool_sheds_config_file)
         else:
             self.tool_shed_registry = None
 
@@ -1027,6 +1042,10 @@ class ConfiguresGalaxyMixin:
         # database file under the hood.
         combined_install_database = not(install_db_url and install_db_url != db_url)
         install_db_url = install_db_url or db_url
+
+        if getattr(self.config, "max_metadata_value_size", None):
+            from galaxy.model import custom_types
+            custom_types.MAX_METADATA_VALUE_SIZE = self.config.max_metadata_value_size
 
         if check_migrate_databases:
             # Initialize database / check for appropriate schema version.  # If this

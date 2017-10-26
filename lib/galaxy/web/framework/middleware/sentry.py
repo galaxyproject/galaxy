@@ -9,7 +9,7 @@ raven.middleware
 try:
     from raven import Client
     from raven.utils.wsgi import get_current_url, get_headers, get_environ
-except:
+except ImportError:
     Client = None
 
 from galaxy.web.stack import register_postfork_function

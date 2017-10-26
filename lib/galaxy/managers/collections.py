@@ -1,21 +1,28 @@
+import logging
+
 from galaxy import model
 from galaxy.dataset_collections import builder
 from galaxy.dataset_collections.matching import MatchingCollections
 from galaxy.dataset_collections.registry import DatasetCollectionTypesRegistry
 from galaxy.dataset_collections.type_description import CollectionTypeDescriptionFactory
-from galaxy.exceptions import ItemAccessibilityException
-from galaxy.exceptions import MessageException
-from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.managers import hdas  # TODO: Refactor all mixin use into managers.
-from galaxy.managers import histories
-from galaxy.managers import lddas
-from galaxy.managers import tags
+from galaxy.exceptions import (
+    ItemAccessibilityException,
+    MessageException,
+    RequestParameterInvalidException
+)
+from galaxy.managers import (
+    hdas,
+    histories,
+    lddas,
+    tags
+)
 from galaxy.managers.collections_util import validate_input_element_identifiers
-from galaxy.util import odict
-from galaxy.util import validation
-import logging
-log = logging.getLogger(__name__)
+from galaxy.util import (
+    odict,
+    validation
+)
 
+log = logging.getLogger(__name__)
 
 ERROR_INVALID_ELEMENTS_SPECIFICATION = "Create called with invalid parameters, must specify element identifiers."
 ERROR_NO_COLLECTION_TYPE = "Create called without specifing a collection type."
@@ -23,7 +30,7 @@ ERROR_NO_COLLECTION_TYPE = "Create called without specifing a collection type."
 
 class DatasetCollectionManager(object):
     """
-    Abstraction for interfacing with dataset collections instance - ideally abstarcts
+    Abstraction for interfacing with dataset collections instance - ideally abstracts
     out model and plugin details.
     """
     ELEMENTS_UNINITIALIZED = object()
@@ -100,7 +107,7 @@ class DatasetCollectionManager(object):
             raise MessageException(message)
         tags = tags or {}
         if implicit_collection_info:
-            for k, v in implicit_collection_info.get('implicit_inputs', []):
+            for _, v in implicit_collection_info.get('implicit_inputs', []):
                 for tag in [t for t in v.tags if t.user_tname == 'name']:
                     tags[tag.value] = tag
         for _, tag in tags.items():
@@ -227,7 +234,7 @@ class DatasetCollectionManager(object):
 
     def history_dataset_collections(self, history, query):
         collections = history.active_dataset_collections
-        collections = filter(query.direct_match, collections)
+        collections = list(filter(query.direct_match, collections))
         return collections
 
     def __persist(self, dataset_collection_instance):

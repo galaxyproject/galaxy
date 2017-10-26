@@ -8,10 +8,13 @@ import os
 import shutil
 import struct
 import subprocess
+import sys
+import tarfile
 import tempfile
 import zipfile
 from json import dumps
 
+import h5py
 import pysam
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
@@ -19,6 +22,7 @@ from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
 from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite, which
+from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
 
 
@@ -102,7 +106,7 @@ class Ab1(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary ab1 sequence file (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -121,7 +125,7 @@ class Idat(Binary):
             if header == b'IDAT':
                 return True
             return False
-        except:
+        except Exception:
             return False
 
 
@@ -153,7 +157,7 @@ class Cel(Binary):
             if header == b';\x01\x00\x00':
                 return True
             return False
-        except:
+        except Exception:
             return False
 
 
@@ -179,7 +183,7 @@ class CompressedArchive(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Compressed binary file (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -204,7 +208,7 @@ class CompressedZipArchive(CompressedArchive):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Compressed zip file (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -248,12 +252,8 @@ class Bam(Binary):
             message = 'Attempting to use functionality requiring samtools, but it cannot be located on Galaxy\'s PATH.'
             raise Exception(message)
 
-        # Get the version of samtools via --version-only, if available
-        p = subprocess.Popen(['samtools', '--version-only'],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        p = subprocess.Popen(['samtools', '--version-only'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, error = p.communicate()
-
         # --version-only is available
         # Format is <version x.y.z>+htslib-<a.b.c>
         if p.returncode == 0:
@@ -290,10 +290,8 @@ class Bam(Binary):
 
     def _is_coordinate_sorted(self, file_name):
         """See if the input BAM file is sorted from the header information."""
-        params = ["samtools", "view", "-H", file_name]
-        output = subprocess.Popen(params, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()[0]
-        # find returns -1 if string is not found
-        return output.find("SO:coordinate") != -1 or output.find("SO:sorted") != -1
+        output = subprocess.check_output(["samtools", "view", "-H", file_name])
+        return 'SO:coordinate' in output or 'SO:sorted' in output
 
     def dataset_content_needs_grooming(self, file_name):
         """See if file_name is a sorted BAM file"""
@@ -318,8 +316,7 @@ class Bam(Binary):
                 return False
             index_name = tempfile.NamedTemporaryFile(prefix="bam_index").name
             stderr_name = tempfile.NamedTemporaryFile(prefix="bam_index_stderr").name
-            command = 'samtools index %s %s' % (file_name, index_name)
-            proc = subprocess.Popen(args=command, shell=True, stderr=open(stderr_name, 'wb'))
+            proc = subprocess.Popen(['samtools', 'index', file_name, index_name], stderr=open(stderr_name, 'wb'))
             proc.wait()
             stderr = open(stderr_name).read().strip()
             if stderr:
@@ -362,8 +359,8 @@ class Bam(Binary):
         tmp_sorted_dataset_file_name_prefix = os.path.join(tmp_dir, 'sorted')
         stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_sort_stderr").name
         samtools_created_sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix  # samtools accepts a prefix, not a filename, it always adds .bam to the prefix
-        command = "samtools sort %s %s" % (file_name, tmp_sorted_dataset_file_name_prefix)
-        proc = subprocess.Popen(args=command, shell=True, cwd=tmp_dir, stderr=open(stderr_name, 'wb'))
+        proc = subprocess.Popen(['samtools', 'sort', file_name, tmp_sorted_dataset_file_name_prefix],
+                                cwd=tmp_dir, stderr=open(stderr_name, 'wb'))
         exit_code = proc.wait()
         # Did sort succeed?
         stderr = open(stderr_name).read().strip()
@@ -428,7 +425,7 @@ class Bam(Binary):
             dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
             dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
             dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)
-        except:
+        except Exception:
             # Per Dan, don't log here because doing so will cause datasets that
             # fail metadata to end in the error state
             pass
@@ -441,7 +438,7 @@ class Bam(Binary):
             if header == b'BAM\1':
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -455,7 +452,7 @@ class Bam(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary bam alignments file (%s)" % (nice_size(dataset.get_size()))
 
     def to_archive(self, trans, dataset, name=""):
@@ -667,7 +664,7 @@ class CRAM(Binary):
             if header == b"CRAM":
                 return True
             return False
-        except:
+        except Exception:
             return False
 
 
@@ -703,7 +700,7 @@ class Bcf(BaseBcf):
             if header == b'BCF':
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
@@ -759,7 +756,7 @@ class BcfUncompressed(Bcf):
             if header == b'BCF':
                 return True
             return False
-        except:
+        except Exception:
             return False
 
 
@@ -792,7 +789,7 @@ class H5(Binary):
             if header == self._magic:
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -806,10 +803,94 @@ class H5(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary HDF5 file (%s)" % (nice_size(dataset.get_size()))
 
 
+class Biom2(H5):
+    """
+    Class describing a biom2 file (http://biom-format.org/documentation/biom_format.html)
+    """
+    MetadataElement(name="id", default=None, desc="table id", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="format_url", default=None, desc="format-url", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="format_version", default=None, desc="format-version", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="type", default=None, desc="table type", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="generated_by", default=None, desc="generated by", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="creation_date", default=None, desc="creation date", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="nnz", default=-1, desc="nnz: The number of non-zero elements in the table", readonly=True, visible=True, no_value=-1)
+    MetadataElement(name="shape", default=(), desc="shape: The number of rows and columns in the dataset", readonly=True, visible=True, no_value=())
+
+    file_ext = "biom2"
+    edam_format = "format_3746"
+
+    def sniff(self, filename):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'biom2_sparse_otu_table_hdf5.biom' )
+        >>> Biom2().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'test.mz5' )
+        >>> Biom2().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'wiggle.wig' )
+        >>> Biom2().sniff( fname )
+        False
+        """
+        if super(Biom2, self).sniff(filename):
+            try:
+                f = h5py.File(filename)
+                attributes = list(dict(f.attrs.items()))
+                required_fields = ['id', 'format-url', 'type', 'generated-by', 'creation-date', 'nnz', 'shape']
+                return set(required_fields).issubset(attributes)
+            except Exception:
+                return False
+        return False
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(Biom2, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            f = h5py.File(dataset.file_name)
+            attributes = dict(f.attrs.items())
+
+            dataset.metadata.id = attributes['id']
+            dataset.metadata.format_url = attributes['format-url']
+            if 'format-version' in attributes:  # biom 2.1
+                dataset.metadata.format_version = '.'.join(map(str, list(attributes['format-version'])))
+            elif 'format' in attributes:  # biom 2.0
+                dataset.metadata.format = attributes['format']
+            dataset.metadata.type = attributes['type']
+            dataset.metadata.shape = tuple(attributes['shape'])
+            dataset.metadata.generated_by = attributes['generated-by']
+            dataset.metadata.creation_date = attributes['creation-date']
+            dataset.metadata.nnz = int(attributes['nnz'])
+
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            lines = ['Biom2 (HDF5) file']
+            try:
+                f = h5py.File(dataset.file_name)
+                for k, v in dict(f.attrs).items():
+                    lines.append('%s:  %s' % (k, v))
+            except Exception as e:
+                log.warning('%s, set_peek Exception: %s', self, e)
+            dataset.peek = '\n'.join(lines)
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Biom2 (HDF5) file (%s)" % (nice_size(dataset.get_size()))
+
+
+Binary.register_sniffable_binary_format("biom2", "biom2", Biom2)
 Binary.register_sniffable_binary_format("h5", "h5", H5)
 
 
@@ -830,7 +911,7 @@ class Scf(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary scf sequence file (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -851,7 +932,7 @@ class Sff(Binary):
             if header == b'.sff':
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -865,7 +946,7 @@ class Sff(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary sff file (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -895,7 +976,7 @@ class BigWig(Binary):
         try:
             magic = self._unpack("I", open(filename, 'rb'))
             return magic[0] == self._magic
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -909,7 +990,7 @@ class BigWig(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary UCSC %s file (%s)" % (self._name, nice_size(dataset.get_size()))
 
 
@@ -959,7 +1040,7 @@ class TwoBit(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary TwoBit format nucleotide file (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -1016,7 +1097,7 @@ class SQlite(Binary):
             if header == b'SQLite format 3\0':
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -1027,7 +1108,7 @@ class SQlite(Binary):
                 for table in dataset.metadata.tables:
                     try:
                         lines.append('%s [%s]' % (table, dataset.metadata.table_row_count[table]))
-                    except:
+                    except Exception:
                         continue
             dataset.peek = '\n'.join(lines)
             dataset.blurb = nice_size(dataset.get_size())
@@ -1038,7 +1119,7 @@ class SQlite(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "SQLite Database (%s)" % (nice_size(dataset.get_size()))
 
     @dataproviders.decorators.dataprovider_factory('sqlite', dataproviders.dataset.SQliteDataProvider.settings)
@@ -1110,7 +1191,7 @@ class GeminiSQLite(SQlite):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or 'unknown')
 
 
@@ -1184,7 +1265,7 @@ class IdpDB(SQlite):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "IDPickerDB SQLite file (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -1208,7 +1289,7 @@ class Xlsx(Binary):
                 if "[Content_Types].xml" in tempzip.namelist() and tempzip.read("[Content_Types].xml").find(b'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml') != -1:
                     return True
             return False
-        except:
+        except Exception:
             return False
 
 
@@ -1221,11 +1302,8 @@ class ExcelXls(Binary):
     edam_format = "format_3468"
 
     def sniff(self, filename):
-        mime_type = subprocess.check_output("file --mime-type '{}'".format(filename), shell=True).rstrip()
-        if mime_type.find("application/vnd.ms-excel") != -1:
-            return True
-        else:
-            return False
+        mime_type = subprocess.check_output(['file', '--mime-type', filename])
+        return "application/vnd.ms-excel" in mime_type
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
@@ -1242,7 +1320,7 @@ class ExcelXls(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Microsoft Excel XLS file (%s)" % (data.nice_size(dataset.get_size()))
 
 
@@ -1263,7 +1341,7 @@ class Sra(Binary):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -1277,7 +1355,7 @@ class Sra(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return 'Binary sra file (%s)' % (nice_size(dataset.get_size()))
 
 
@@ -1298,7 +1376,7 @@ class RData(Binary):
             header = gzip.open(filename).read(7)
             if header == rdata_header:
                 return True
-        except:
+        except Exception:
             return False
 
 
@@ -1488,6 +1566,164 @@ Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
                                         OxliGraphLabels)
 
 
+class PostgresqlArchive(CompressedArchive):
+    """
+    Class describing a Postgresql database packed into a tar archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'postgresql_fake.tar.bz2' )
+    >>> PostgresqlArchive().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'test.fast5.tar' )
+    >>> PostgresqlArchive().sniff( fname )
+    False
+    """
+    MetadataElement(name="version", default=None, param=MetadataParameter, desc="PostgreSQL database version",
+                    readonly=True, visible=True, no_value=None)
+    file_ext = "postgresql"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(PostgresqlArchive, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            if dataset and tarfile.is_tarfile(dataset.file_name):
+                with tarfile.open(dataset.file_name, 'r') as temptar:
+                    pg_version_file = temptar.extractfile('postgresql/db/PG_VERSION')
+                    dataset.metadata.version = pg_version_file.read().strip()
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def sniff(self, filename):
+        if filename and tarfile.is_tarfile(filename):
+            try:
+                with tarfile.open(filename, 'r') as temptar:
+                    return 'postgresql/db/PG_VERSION' in temptar.getnames()
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "PostgreSQL Archive (%s)" % (nice_size(dataset.get_size()))
+            dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or 'unknown')
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "PostgreSQL Archive (%s)" % (nice_size(dataset.get_size()))
+
+
+Binary.register_sniffable_binary_format("postgresql_archiv", "postgresql", PostgresqlArchive)
+
+
+class Fast5Archive(CompressedArchive):
+    """
+    Class describing a FAST5 archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'test.fast5.tar' )
+    >>> Fast5Archive().sniff( fname )
+    True
+    """
+    MetadataElement(name="fast5_count", default='0', param=MetadataParameter, desc="Read Count",
+                    readonly=True, visible=True, no_value=None)
+    file_ext = "fast5.tar"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(Fast5Archive, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            if dataset and tarfile.is_tarfile(dataset.file_name):
+                with tarfile.open(dataset.file_name, 'r') as temptar:
+                    dataset.metadata.fast5_count = sum(
+                        1 for f in temptar if f.name.endswith('.fast5')
+                    )
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def sniff(self, filename):
+        try:
+            if filename and tarfile.is_tarfile(filename):
+                with tarfile.open(filename, 'r') as temptar:
+                    for f in temptar:
+                        if not f.isfile():
+                            continue
+                        if f.name.endswith('.fast5'):
+                            return True
+                        else:
+                            return False
+        except Exception as e:
+            log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "FAST5 Archive (%s)" % (nice_size(dataset.get_size()))
+            dataset.blurb = "%s sequences" % (dataset.metadata.fast5_count or 'unknown')
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "FAST5 Archive (%s)" % (nice_size(dataset.get_size()))
+
+
+class Fast5ArchiveGz(Fast5Archive):
+    """
+    Class describing a gzip-compressed FAST5 archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'test.fast5.tar.gz' )
+    >>> Fast5ArchiveGz().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'test.fast5.tar.bz2' )
+    >>> Fast5ArchiveGz().sniff( fname )
+    False
+    >>> fname = get_test_fname( 'test.fast5.tar' )
+    >>> Fast5ArchiveGz().sniff( fname )
+    False
+    """
+    file_ext = "fast5.tar.gz"
+
+    def sniff(self, filename):
+        if not is_gzip(filename):
+            return False
+        return Fast5Archive.sniff(self, filename)
+
+
+class Fast5ArchiveBz2(Fast5Archive):
+    """
+    Class describing a bzip2-compressed FAST5 archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'test.fast5.tar.bz2' )
+    >>> Fast5ArchiveBz2().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'test.fast5.tar.gz' )
+    >>> Fast5ArchiveBz2().sniff( fname )
+    False
+    >>> fname = get_test_fname( 'test.fast5.tar' )
+    >>> Fast5ArchiveBz2().sniff( fname )
+    False
+    """
+    file_ext = "fast5.tar.bz2"
+
+    def sniff(self, filename):
+        if not is_bz2(filename):
+            return False
+        return Fast5Archive.sniff(self, filename)
+
+
+Binary.register_sniffable_binary_format("fast5_archive_bz2", "fast5.tar.bz2", Fast5ArchiveBz2)
+Binary.register_sniffable_binary_format("fast5_archive_gz", "fast5.tar.gz", Fast5ArchiveGz)
+Binary.register_sniffable_binary_format("fast5_archive", "fast5.tar", Fast5Archive)
+
+
 class SearchGuiArchive(CompressedArchive):
     """Class describing a SearchGUI archive """
     MetadataElement(name="searchgui_version", default='1.28.0', param=MetadataParameter, desc="SearchGui Version",
@@ -1535,7 +1771,7 @@ class SearchGuiArchive(CompressedArchive):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or 'unknown')
 
 
@@ -1559,7 +1795,7 @@ class NetCDF(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary netCDF file (%s)" % (nice_size(dataset.get_size()))
 
     def sniff(self, filename):
@@ -1569,7 +1805,7 @@ class NetCDF(Binary):
             if header == b'CDF':
                 return True
             return False
-        except:
+        except Exception:
             return False
 
 
@@ -1602,8 +1838,13 @@ class DMND(Binary):
             if header == self._magic:
                 return True
             return False
-        except:
+        except Exception:
             return False
 
 
 Binary.register_sniffable_binary_format("dmnd", "dmnd", DMND)
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod(sys.modules[__name__])

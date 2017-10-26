@@ -1,12 +1,17 @@
-import bz2
 import gzip
 import re
+import sys
 import zipfile
 
 from six import StringIO
 
 from galaxy import util
 from galaxy.util.image_util import image_type
+
+if sys.version_info < (3, 3):
+    import bz2file as bz2
+else:
+    import bz2
 
 HTML_CHECK_LINES = 100
 
@@ -66,7 +71,7 @@ def check_gzip(file_path, check_content=True):
         temp.close()
         if magic_check != util.gzip_magic:
             return (False, False)
-    except:
+    except Exception:
         return (False, False)
     # We support some binary data types, so check if the compressed binary file is valid
     # If the file is Bam, it should already have been detected as such, so we'll just check
@@ -75,7 +80,7 @@ def check_gzip(file_path, check_content=True):
         header = gzip.open(file_path).read(4)
         if header == b'.sff':
             return (True, True)
-    except:
+    except Exception:
         return(False, False)
 
     if not check_content:
@@ -98,7 +103,7 @@ def check_bz2(file_path, check_content=True):
         temp.close()
         if magic_check != util.bz2_magic:
             return (False, False)
-    except:
+    except Exception:
         return(False, False)
 
     if not check_content:

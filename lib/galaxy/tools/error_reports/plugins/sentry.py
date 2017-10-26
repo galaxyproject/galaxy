@@ -42,6 +42,7 @@ class SentryPlugin(ErrorPlugin):
                 'info': job.info,
                 'id': job.id,
                 'command_line': unicodify(job.command_line),
+                'destination_id': unicodify(job.destination_id),
                 'stderr': unicodify(job.stderr),
                 'traceback': unicodify(job.traceback),
                 'exit_code': job.exit_code,

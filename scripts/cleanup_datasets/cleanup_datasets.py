@@ -27,7 +27,7 @@ log = logging.getLogger()
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def main():
@@ -371,7 +371,7 @@ def purge_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_re
         dataset_count += 1
         try:
             disk_space += file_size
-        except:
+        except Exception:
             pass
     stop = time.time()
     print('Purged %d datasets' % dataset_count)

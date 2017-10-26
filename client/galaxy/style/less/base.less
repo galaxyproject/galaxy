@@ -312,7 +312,7 @@ div.unified-panel-body {
     width: 100%;
     padding: 0px;
 }
-@panel-bg-color: #DFE5F9;
+
 div.unified-panel-body-background {
     background: none repeat scroll 0 0 @panel-bg-color;
 }
@@ -1271,6 +1271,10 @@ a.action-button {
     }
 }
 
+.menubutton.background-none {
+    background: none;
+}
+
 // A split menu button, the main button has an action, the arrow causes the
 // popup menu to appear
 
@@ -1546,6 +1550,15 @@ div.toolTitle
   }
 }
 
+div a.tool-link {
+	text-decoration: none;
+	display: block;
+
+	span.tool-old-link {
+		text-decoration: underline;
+	}
+}
+
 div.toolSectionBody div.toolPanelLabel
 {
   padding-top: 5px;
@@ -1814,4 +1827,27 @@ div.toolTitleNoSection
 
 .other-options {
     margin-bottom: 2%;
+}
+
+.hidden_description_layer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(200, 200, 200, 0.6);
+  visibility: hidden;
+  opacity: 0;
+  font-size: 2.0em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* transition effect. not necessary */
+  transition: opacity .2s, visibility .2s;
+}
+
+.hidden_description_layer.dragover {
+  visibility: visible;
+  opacity: 1;
 }

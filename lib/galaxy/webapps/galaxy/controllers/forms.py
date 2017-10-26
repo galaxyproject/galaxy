@@ -1,9 +1,10 @@
 import copy
-import csv
 import logging
 import re
 
+import six
 from markupsafe import escape
+
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids, iff, time_ago
@@ -88,7 +89,7 @@ class Forms(BaseUIController):
         if 'operation' in kwd:
             id = kwd.get('id')
             if not id:
-                return message_exception(trans, 'Invalid form id (%s) received.' % str(id))
+                return self.message_exception(trans, 'Invalid form id (%s) received.' % str(id))
             ids = util.listify(id)
             operation = kwd['operation'].lower()
             if operation == 'delete':
@@ -105,8 +106,7 @@ class Forms(BaseUIController):
     @web.require_admin
     def create_form(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
-            fd_types = trans.app.model.FormDefinition.types.items()
-            fd_types.sort()
+            fd_types = sorted(trans.app.model.FormDefinition.types.items())
             return {
                 'title'         : 'Create new form',
                 'submit_title'  : 'Create',
@@ -148,7 +148,7 @@ class Forms(BaseUIController):
                     index = index + 1
             new_form, message = self.save_form_definition(trans, None, payload)
             if new_form is None:
-                return message_exception(trans, message)
+                return self.message_exception(trans, message)
             imported = (' with %i imported fields' % index) if index > 0 else ''
             message = 'The form \'%s\' has been created%s.' % (payload.get('name'), imported)
             return {'message': util.sanitize_text(message)}
@@ -158,12 +158,11 @@ class Forms(BaseUIController):
     def edit_form(self, trans, payload=None, **kwd):
         id = kwd.get('id')
         if not id:
-            return message_exception(trans, 'No form id received for editing.')
+            return self.message_exception(trans, 'No form id received for editing.')
         form = get_form(trans, id)
         latest_form = form.latest_form
         if trans.request.method == 'GET':
-            fd_types = trans.app.model.FormDefinition.types.items()
-            fd_types.sort()
+            fd_types = sorted(trans.app.model.FormDefinition.types.items())
             ff_types = [(t.__name__.replace('Field', ''), t.__name__) for t in trans.model.FormDefinition.supported_field_types]
             field_cache = []
             field_inputs = [{
@@ -233,7 +232,7 @@ class Forms(BaseUIController):
         else:
             new_form, message = self.save_form_definition(trans, id, payload)
             if new_form is None:
-                return message_exception(trans, message)
+                return self.message_exception(trans, message)
             message = 'The form \'%s\' has been updated.' % payload.get('name')
             return {'message': util.sanitize_text(message)}
 
@@ -254,7 +253,7 @@ class Forms(BaseUIController):
                 field_dict = {attr: payload.get('%s%s' % (prefix, attr)) for attr in field_attributes}
                 field_dict['visible'] = True
                 field_dict['required'] = field_dict['required'] == 'true'
-                if isinstance(field_dict['selectlist'], basestring):
+                if isinstance(field_dict['selectlist'], six.string_types):
                     field_dict['selectlist'] = field_dict['selectlist'].split(',')
                 else:
                     field_dict['selectlist'] = []
@@ -330,11 +329,6 @@ class Forms(BaseUIController):
         return ('Undeleted %i form(s).' % len(ids), 'done')
 
 # ---- Utility methods -------------------------------------------------------
-
-
-def message_exception(trans, message):
-    trans.response.status = 400
-    return {'err_msg': util.sanitize_text(message)}
 
 
 def get_form(trans, form_id):

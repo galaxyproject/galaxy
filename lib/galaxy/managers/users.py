@@ -283,7 +283,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             'quota_percent' : lambda i, k, **c: self.user_manager.quota(i),
             'quota'         : lambda i, k, **c: self.user_manager.quota(i, total=True),
 
-            'tags_used'     : lambda i, k, **c: self.user_manager.tags_used(i)
+            'tags_used'     : lambda i, k, **c: self.user_manager.tags_used(i),
         })
 
 

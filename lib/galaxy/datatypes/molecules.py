@@ -33,7 +33,7 @@ def count_special_lines(word, filename, invert=False):
         cmd.extend([word, filename])
         out = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
-    except:
+    except Exception:
         pass
     return 0
 
@@ -48,14 +48,14 @@ def count_lines(filename, non_empty=False):
         else:
             out = subprocess.Popen(['wc', '-l', filename], stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
-    except:
+    except Exception:
         pass
     return 0
 
 
 class GenericMolFile(data.Text):
     """
-        abstract class for most of the molecule files
+    Abstract class for most of the molecule files.
     """
     MetadataElement(name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
 
@@ -92,26 +92,53 @@ class SDF(GenericMolFile):
         """
         Try to guess if the file is a SDF2 file.
 
+        An SDfile (structure-data file) can contain multiple compounds.
+
+        Each compound starts with a block in V2000 or V3000 molfile format,
+        which ends with a line equal to 'M  END'.
+        This is followed by a non-structural data block, which ends with a line
+        equal to '$$$$'.
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('drugbank_drugs.sdf')
         >>> SDF().sniff(fname)
         True
 
-        >>> fname = get_test_fname('drugbank_drugs.cml')
+        >>> fname = get_test_fname('github88.v3k.sdf')
+        >>> SDF().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('chebi_57262.v3k.mol')
         >>> SDF().sniff(fname)
         False
         """
-        counter = count_special_lines("^M\s*END", filename) + count_special_lines("^\$\$\$\$", filename)
-        if counter > 0 and counter % 2 == 0:
-            return True
-        else:
-            return False
+        m_end_found = False
+        limit = 10000
+        idx = 0
+        with open(filename) as in_file:
+            for line in in_file:
+                idx += 1
+                line = line.rstrip('\n\r')
+                if idx < 4:
+                    continue
+                elif idx == 4:
+                    if len(line) != 39 or not(line.endswith(' V2000') or
+                            line.endswith(' V3000')):
+                        return False
+                elif not m_end_found:
+                    if line == 'M  END':
+                        m_end_found = True
+                elif line == '$$$$':
+                    return True
+                if idx == limit:
+                    break
+        return False
 
     def set_meta(self, dataset, **kwd):
         """
         Set the number of molecules in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines("^\$\$\$\$", dataset.file_name)
+        dataset.metadata.number_of_molecules = count_special_lines("^\$\$\$\$$", dataset.file_name)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
@@ -180,10 +207,17 @@ class MOL2(GenericMolFile):
         >>> MOL2().sniff(fname)
         False
         """
-        if count_special_lines("@<TRIPOS>MOLECULE", filename) > 0:
-            return True
-        else:
-            return False
+        limit = 60
+        idx = 0
+        with open(filename) as in_file:
+            for line in in_file:
+                line = line.rstrip('\n\r')
+                if line == '@<TRIPOS>MOLECULE':
+                    return True
+                idx += 1
+                if idx == limit:
+                    break
+        return False
 
     def set_meta(self, dataset, **kwd):
         """
@@ -393,7 +427,7 @@ class OBFS(Binary):
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "OpenBabel Fastsearch Index"
 
     def display_data(self, trans, data, preview=False, filename=None,
@@ -668,7 +702,7 @@ class SMILES(Tabular):
                     # if we have atoms, we have a molecule
                     if not len(pybel.readstring('smi', smiles).atoms) > 0:
                         return False
-                except:
+                except Exception:
                     # if convert fails its not a smiles string
                     return False
             return True
@@ -716,16 +750,13 @@ class CML(GenericXml):
         >>> CML().sniff(fname)
         True
         """
-        handle = open(filename)
-        line = handle.readline()
-        if line.strip() != '<?xml version="1.0"?>':
-            handle.close()
-            return False
-        line = handle.readline()
-        if line.strip().find('http://www.xml-cml.org/schema') == -1:
-            handle.close()
-            return False
-        handle.close()
+        with open(filename) as handle:
+            line = handle.readline()
+            if line.strip() != '<?xml version="1.0"?>':
+                return False
+            line = handle.readline()
+            if line.strip().find('http://www.xml-cml.org/schema') == -1:
+                return False
         return True
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
