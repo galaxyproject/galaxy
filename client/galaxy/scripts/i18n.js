@@ -1,7 +1,6 @@
 /**
- * @license RequireJS i18n 2.0.4 Copyright (c) 2010-2012, The Dojo Foundation All Rights Reserved.
- * Available via the MIT or new BSD license.
- * see: http://github.com/requirejs/i18n for details
+ * @license i18n 2.0.6 Copyright jQuery Foundation and other contributors.
+ * Released under MIT license, http://github.com/requirejs/i18n/LICENSE
  */
 /*jslint regexp: true */
 /*global require: false, navigator: false, define: false */
@@ -11,13 +10,13 @@
  *
  * 1) A regular module can have a dependency on an i18n bundle, but the regular
  * module does not want to specify what locale to load. So it just specifies
- * the top-level bundle, like "i18n!nls/colors".
+ * the top-level bundle, like 'i18n!nls/colors'.
  *
  * This plugin will load the i18n bundle at nls/colors, see that it is a root/master
  * bundle since it does not have a locale in its name. It will then try to find
  * the best match locale available in that master bundle, then request all the
- * locale pieces for that best match locale. For instance, if the locale is "en-us",
- * then the plugin will ask for the "en-us", "en" and "root" bundles to be loaded
+ * locale pieces for that best match locale. For instance, if the locale is 'en-us',
+ * then the plugin will ask for the 'en-us', 'en' and 'root' bundles to be loaded
  * (but only if they are specified on the master bundle).
  *
  * Once all the bundles for the locale pieces load, then it mixes in all those
@@ -38,10 +37,10 @@
     "use strict";
 
     //regexp for reconstructing the master bundle name from parts of the regexp match
-    //nlsRegExp.exec("foo/bar/baz/nls/en-ca/foo") gives:
-    //["foo/bar/baz/nls/en-ca/foo", "foo/bar/baz/nls/", "/", "/", "en-ca", "foo"]
-    //nlsRegExp.exec("foo/bar/baz/nls/foo") gives:
-    //["foo/bar/baz/nls/foo", "foo/bar/baz/nls/", "/", "/", "foo", ""]
+    //nlsRegExp.exec('foo/bar/baz/nls/en-ca/foo') gives:
+    //['foo/bar/baz/nls/en-ca/foo', 'foo/bar/baz/nls/', '/', '/', 'en-ca', 'foo']
+    //nlsRegExp.exec('foo/bar/baz/nls/foo') gives:
+    //['foo/bar/baz/nls/foo', 'foo/bar/baz/nls/', '/', '/', 'foo', '']
     //so, if match[5] is blank, it means this is the top bundle definition.
     var nlsRegExp = /(^.*(^|\/)nls(\/|$))([^\/]*)\/?([^\/]*)/;
 
@@ -92,7 +91,7 @@
         var masterConfig = module.config ? module.config() : {};
 
         return {
-            version: "2.0.4",
+            version: "2.0.6",
             /**
              * Called when a dependency needs to be loaded.
              */
@@ -131,7 +130,9 @@
                         locale = masterConfig.locale =
                             typeof navigator === "undefined"
                                 ? "root"
-                                : (navigator.language ||
+                                : ((navigator.languages &&
+                                      navigator.languages[0]) ||
+                                      navigator.language ||
                                       navigator.userLanguage ||
                                       "root"
                                   ).toLowerCase();
