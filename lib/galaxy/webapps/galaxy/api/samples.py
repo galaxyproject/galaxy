@@ -6,12 +6,12 @@ import logging
 from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.web import url_for
-from galaxy.web.base.controller import BaseAPIController, web
+from galaxy.web.base.controller import BaseAPIController, UsesFormDefinitionsMixin, web
 
 log = logging.getLogger(__name__)
 
 
-class SamplesAPIController(BaseAPIController):
+class SamplesAPIController(BaseAPIController, UsesFormDefinitionsMixin):
     update_types = Bunch(SAMPLE=['sample_state', 'run_details'],
                          SAMPLE_DATASET=['sample_dataset_transfer_status'])
     update_type_values = []
@@ -83,7 +83,6 @@ class SamplesAPIController(BaseAPIController):
         if not trans.user_is_admin():
             trans.response.status = 403
             return "You are not authorized to update samples."
-        requests_admin_controller = trans.webapp.controllers['requests_admin']
         if update_type == 'run_details':
             deferred_plugin = payload.pop('deferred_plugin', None)
             if deferred_plugin:
@@ -91,12 +90,12 @@ class SamplesAPIController(BaseAPIController):
                     trans.app.job_manager.deferred_job_queue.plugins[deferred_plugin].create_job(trans, sample=sample, **payload)
                 except Exception:
                     log.exception('update() called with a deferred job plugin (%s) but creating the deferred job failed:' % deferred_plugin)
-            status, output = requests_admin_controller.edit_template_info(trans,
-                                                                          cntrller='api',
-                                                                          item_type='sample',
-                                                                          form_type=trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE,
-                                                                          sample_id=sample_id,
-                                                                          **payload)
+            status, output = self.edit_template_info(trans,
+                                                     cntrller='api',
+                                                     item_type='sample',
+                                                     form_type=trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE,
+                                                     sample_id=sample_id,
+                                                     **payload)
             return status, output
         elif update_type == 'sample_state':
             return self.__update_sample_state(trans, sample, sample_id, **payload)
