@@ -148,9 +148,7 @@
                 var new_tag_button = build_tag_button(new_value);
                 var tag_buttons = tag_area.children(".tag-button");
                 if (tag_buttons.length !== 0) {
-                    var last_tag_button = tag_buttons.slice(
-                        tag_buttons.length - 1
-                    );
+                    var last_tag_button = tag_buttons.slice(tag_buttons.length - 1);
                     last_tag_button.after(new_tag_button);
                 } else {
                     tag_area.prepend(new_tag_button);
@@ -173,9 +171,7 @@
                         // Failed. Roll back changes and show alert.
                         new_tag_button.remove();
                         delete settings.tags[tag_name_and_value[0]];
-                        var new_text = settings.get_toggle_link_text_fn(
-                            settings.tags
-                        );
+                        var new_text = settings.get_toggle_link_text_fn(settings.tags);
                         toggle_link.text(new_text);
                         alert("Add tag failed");
                     },
@@ -192,17 +188,9 @@
         });
 
         // Add autocomplete to input.
-        var format_item_func = function(
-            key,
-            row_position,
-            num_rows,
-            value,
-            search_term
-        ) {
+        var format_item_func = function(key, row_position, num_rows, value, search_term) {
             var tag_name_and_value = value.split(":");
-            return tag_name_and_value.length === 1
-                ? tag_name_and_value[0]
-                : tag_name_and_value[1];
+            return tag_name_and_value.length === 1 ? tag_name_and_value[0] : tag_name_and_value[1];
         };
         var autocomplete_options = {
             selectFirst: false,
@@ -210,10 +198,7 @@
             autoFill: false,
             highlight: false
         };
-        tag_input_field.autocomplete_verheul(
-            settings.ajax_autocomplete_tag_url,
-            autocomplete_options
-        );
+        tag_input_field.autocomplete_verheul(settings.ajax_autocomplete_tag_url, autocomplete_options);
 
         // Initialize delete tag images for current tags.
         this_obj.find(".delete-tag-img").each(function() {
@@ -357,16 +342,11 @@
                         }
                         alert("Remove tag failed");
 
-                        toggle_link.text(
-                            settings.get_toggle_link_text_fn(settings.tags)
-                        );
+                        toggle_link.text(settings.get_toggle_link_text_fn(settings.tags));
 
                         // TODO: no idea why it's necessary to set this up again.
                         delete_img.mouseenter(function() {
-                            $(this).attr(
-                                "src",
-                                settings.delete_tag_img_rollover
-                            );
+                            $(this).attr("src", settings.delete_tag_img_rollover);
                         });
                         delete_img.mouseleave(function() {
                             $(this).attr("src", settings.delete_tag_img);
@@ -395,10 +375,7 @@
                 .addClass("tag-name");
             tag_name_elt.click(function() {
                 var tag_name_and_value = tag_str.split(":");
-                settings.tag_click_fn(
-                    tag_name_and_value[0],
-                    tag_name_and_value[1]
-                );
+                settings.tag_click_fn(tag_name_and_value[0], tag_name_and_value[1]);
                 return true;
             });
 

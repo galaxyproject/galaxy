@@ -3,14 +3,10 @@ define([], function() {
         var that = this;
         var shed_url = this.shed_url;
         var base_url = Galaxy.root + "api/tool_shed/search";
-        $.get(
-            base_url,
-            { term: request.term, tool_shed_url: shed_url },
-            function(data) {
-                var result_list = that.shedParser(data);
-                response(result_list);
-            }
-        );
+        $.get(base_url, { term: request.term, tool_shed_url: shed_url }, function(data) {
+            var result_list = that.shedParser(data);
+            response(result_list);
+        });
     };
 
     var shedParser = function(jsondata) {
@@ -32,17 +28,9 @@ define([], function() {
 
     var addToQueue = function(metadata) {
         if (metadata.tool_shed_url.substr(-1) == "/") {
-            metadata.tool_shed_url = metadata.tool_shed_url.substr(
-                0,
-                metadata.tool_shed_url.length - 1
-            );
+            metadata.tool_shed_url = metadata.tool_shed_url.substr(0, metadata.tool_shed_url.length - 1);
         }
-        var key =
-            metadata.tool_shed_url +
-            "|" +
-            metadata.repository_id +
-            "|" +
-            metadata.changeset_revision;
+        var key = metadata.tool_shed_url + "|" + metadata.repository_id + "|" + metadata.changeset_revision;
         var queued_repos = new Object();
         if (localStorage.repositories) {
             queued_repos = JSON.parse(localStorage.repositories);

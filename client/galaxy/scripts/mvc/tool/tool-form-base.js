@@ -21,18 +21,10 @@ define(
                 this._update(this.model.get("initialmodel"));
 
                 // listen to history panel
-                if (
-                    this.model.get("listen_to_history") &&
-                    parent.Galaxy &&
-                    parent.Galaxy.currHistoryPanel
-                ) {
-                    this.listenTo(
-                        parent.Galaxy.currHistoryPanel.collection,
-                        "change",
-                        function() {
-                            self.model.get("onchange")();
-                        }
-                    );
+                if (this.model.get("listen_to_history") && parent.Galaxy && parent.Galaxy.currHistoryPanel) {
+                    this.listenTo(parent.Galaxy.currHistoryPanel.collection, "change", function() {
+                        self.model.get("onchange")();
+                    });
                 }
                 // destroy dom elements
                 this.$el.on("remove", function() {
@@ -63,10 +55,7 @@ define(
                 this.$el.off().hide();
                 this.deferred.execute(function() {
                     FormBase.prototype.remove.call(self);
-                    Galaxy.emit.debug(
-                        "tool-form-base::_destroy()",
-                        "Destroy view."
-                    );
+                    Galaxy.emit.debug("tool-form-base::_destroy()", "Destroy view.");
                 });
             },
 
@@ -127,11 +116,7 @@ define(
                     title: (!options.narrow && "Versions") || null,
                     tooltip: "Select another tool version"
                 });
-                if (
-                    !options.sustain_version &&
-                    options.versions &&
-                    options.versions.length > 1
-                ) {
+                if (!options.sustain_version && options.versions && options.versions.length > 1) {
                     for (var i in options.versions) {
                         var version = options.versions[i];
                         if (version != options.version) {
@@ -141,13 +126,7 @@ define(
                                 icon: "fa-cube",
                                 onclick: function() {
                                     // here we update the tool version (some tools encode the version also in the id)
-                                    self.model.set(
-                                        "id",
-                                        options.id.replace(
-                                            options.version,
-                                            this.version
-                                        )
-                                    );
+                                    self.model.set("id", options.id.replace(options.version, this.version));
                                     self.model.set("version", this.version);
                                     self._update();
                                 }
@@ -176,11 +155,7 @@ define(
                         icon: "fa-search",
                         title: "Search",
                         onclick: function() {
-                            window.open(
-                                options.biostar_url +
-                                    "/local/search/page/?q=" +
-                                    options.name
-                            );
+                            window.open(options.biostar_url + "/local/search/page/?q=" + options.name);
                         }
                     });
                 }
@@ -190,10 +165,7 @@ define(
                     onclick: function() {
                         prompt(
                             "Copy to clipboard: Ctrl+C, Enter",
-                            window.location.origin +
-                                Galaxy.root +
-                                "root?tool_id=" +
-                                options.id
+                            window.location.origin + Galaxy.root + "root?tool_id=" + options.id
                         );
                     }
                 });
@@ -204,11 +176,7 @@ define(
                         icon: "fa-download",
                         title: "Download",
                         onclick: function() {
-                            window.location.href =
-                                Galaxy.root +
-                                "api/tools/" +
-                                options.id +
-                                "/download";
+                            window.location.href = Galaxy.root + "api/tools/" + options.id + "/download";
                         }
                     });
                     menu_button.addMenu({
@@ -216,11 +184,7 @@ define(
                         title: "Reload XML",
                         onclick: function() {
                             Utils.get({
-                                url:
-                                    Galaxy.root +
-                                    "api/tools/" +
-                                    options.id +
-                                    "/reload",
+                                url: Galaxy.root + "api/tools/" + options.id + "/reload",
                                 success: function(response) {
                                     self.message.update({
                                         persistent: false,
@@ -246,17 +210,12 @@ define(
                         icon: "fa-info-circle",
                         title: "Requirements",
                         onclick: function() {
-                            if (
-                                !this.requirements_visible ||
-                                self.portlet.collapsed
-                            ) {
+                            if (!this.requirements_visible || self.portlet.collapsed) {
                                 this.requirements_visible = true;
                                 self.portlet.expand();
                                 self.message.update({
                                     persistent: true,
-                                    message: self._templateRequirements(
-                                        options
-                                    ),
+                                    message: self._templateRequirements(options),
                                     status: "info"
                                 });
                             } else {
@@ -286,10 +245,7 @@ define(
                                 icon: webhook.config.icon,
                                 title: webhook.config.title,
                                 onclick: function() {
-                                    var func = new Function(
-                                        "options",
-                                        webhook.config.function
-                                    );
+                                    var func = new Function("options", webhook.config.function);
                                     func(options);
                                 }
                             });
@@ -338,19 +294,12 @@ define(
                     _.each(options.requirements, function(req, i) {
                         requirements_message +=
                             req.name +
-                            (req.version
-                                ? " (Version " + req.version + ")"
-                                : "") +
-                            (i < nreq - 2
-                                ? ", "
-                                : i == nreq - 2 ? " and " : "");
+                            (req.version ? " (Version " + req.version + ")" : "") +
+                            (i < nreq - 2 ? ", " : i == nreq - 2 ? " and " : "");
                     });
                     var requirements_link = $("<a/>")
                         .attr("target", "_blank")
-                        .attr(
-                            "href",
-                            "https://galaxyproject.org/tools/requirements/"
-                        )
+                        .attr("href", "https://galaxyproject.org/tools/requirements/")
                         .text("here");
                     return $("<span/>")
                         .append(requirements_message + ". Click ")

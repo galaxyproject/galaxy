@@ -29,9 +29,7 @@
             [
                 '<div class="dropdown-select btn-group">',
                 '<button type="button" class="btn btn-default">',
-                '<span class="dropdown-select-selected">' +
-                    selected +
-                    "</span>",
+                '<span class="dropdown-select-selected">' + selected + "</span>",
                 "</button>",
                 "</div>"
             ].join("\n")
@@ -49,11 +47,7 @@
                 [
                     '<ul class="dropdown-menu" role="menu">',
                     _.map(options, function(option) {
-                        return [
-                            '<li><a href="javascript:void(0)">',
-                            option,
-                            "</a></li>"
-                        ].join("");
+                        return ['<li><a href="javascript:void(0)">', option, "</a></li>"].join("");
                     }).join("\n"),
                     "</ul>"
                 ].join("\n")
@@ -118,13 +112,7 @@
 
     /** render (or re-render) the controls on the element */
     FilterControl.prototype.render = function _render() {
-        this.$element
-            .empty()
-            .append([
-                this._renderKeySelect(),
-                this._renderOpSelect(),
-                this._renderValueInput()
-            ]);
+        this.$element.empty().append([this._renderKeySelect(), this._renderOpSelect(), this._renderValueInput()]);
         return this;
     };
 
@@ -137,10 +125,7 @@
         this.$keySelect = dropDownSelect(keys, this.currFilter.key)
             .addClass("filter-control-key")
             .on("change.dropdown-select", function(event, selection) {
-                filterControl.currFilter = _.findWhere(
-                    filterControl.options.filters,
-                    { key: selection }
-                );
+                filterControl.currFilter = _.findWhere(filterControl.options.filters, { key: selection });
                 // when the filter/key changes, re-render the control entirely
                 filterControl.render()._triggerChange();
             });
@@ -185,17 +170,11 @@
 
     /** return the current state/setting for the filter as a three key object: key, op, value */
     FilterControl.prototype.val = function _val() {
-        var key = this.$element
-                .find(".filter-control-key .dropdown-select-selected")
-                .text(),
-            op = this.$element
-                .find(".filter-control-op .dropdown-select-selected")
-                .text(),
+        var key = this.$element.find(".filter-control-key .dropdown-select-selected").text(),
+            op = this.$element.find(".filter-control-op .dropdown-select-selected").text(),
             // handle either a dropdown or plain input
             $value = this.$element.find(".filter-control-value"),
-            value = $value.hasClass("dropdown-select")
-                ? $value.find(".dropdown-select-selected").text()
-                : $value.val();
+            value = $value.hasClass("dropdown-select") ? $value.find(".dropdown-select-selected").text() : $value.val();
         return { key: key, op: op, value: value };
     };
 

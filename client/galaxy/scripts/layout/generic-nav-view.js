@@ -11,21 +11,13 @@ define(["mvc/ui/ui-modal"], function(Modal) {
             var host = window.Galaxy.config.communication_server_host,
                 port = window.Galaxy.config.communication_server_port,
                 username = escape(window.Galaxy.user.attributes.username),
-                persistent_communication_rooms = escape(
-                    window.Galaxy.config.persistent_communication_rooms
-                ),
+                persistent_communication_rooms = escape(window.Galaxy.config.persistent_communication_rooms),
                 query_string =
-                    "?username=" +
-                    username +
-                    "&persistent_communication_rooms=" +
-                    persistent_communication_rooms,
+                    "?username=" + username + "&persistent_communication_rooms=" + persistent_communication_rooms,
                 src = host + ":" + port + query_string,
                 $el_chat_modal_header = null,
                 $el_chat_modal_body = null,
-                iframe_template =
-                    '<iframe class="f-iframe fade in communication-iframe" src="' +
-                    src +
-                    '"> </iframe>',
+                iframe_template = '<iframe class="f-iframe fade in communication-iframe" src="' + src + '"> </iframe>',
                 header_template =
                     '<i class="fa fa-comment" aria-hidden="true" title="Communicate with other users"></i>' +
                     '<i class="fa fa-expand expand-compress-modal" aria-hidden="true" title="Maximize"></i>' +

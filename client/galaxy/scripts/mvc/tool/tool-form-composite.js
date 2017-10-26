@@ -11,23 +11,12 @@ define(
         "mvc/webhooks",
         "mvc/workflow/workflow-icons"
     ],
-    function(
-        Utils,
-        Deferred,
-        Ui,
-        Form,
-        FormData,
-        ToolFormBase,
-        Modal,
-        Webhooks,
-        WorkflowIcons
-    ) {
+    function(Utils, Deferred, Ui, Form, FormData, ToolFormBase, Modal, Webhooks, WorkflowIcons) {
         var View = Backbone.View.extend({
             initialize: function(options) {
                 var self = this;
                 this.modal = parent.Galaxy.modal || new Modal.View();
-                this.model =
-                    (options && options.model) || new Backbone.Model(options);
+                this.model = (options && options.model) || new Backbone.Model(options);
                 this.deferred = new Deferred();
                 this.setElement(
                     $("<div/>")
@@ -67,15 +56,9 @@ define(
                 this.links = [];
                 this.parms = [];
                 _.each(this.model.get("steps"), function(step, i) {
-                    Galaxy.emit.debug(
-                        "tool-form-composite::initialize()",
-                        i + " : Preparing workflow step."
-                    );
+                    Galaxy.emit.debug("tool-form-composite::initialize()", i + " : Preparing workflow step.");
                     var icon = WorkflowIcons[step.step_type];
-                    var title =
-                        parseInt(i + 1) +
-                        ": " +
-                        (step.step_label || step.step_name);
+                    var title = parseInt(i + 1) + ": " + (step.step_label || step.step_name);
                     if (step.annotation) {
                         title += " - " + step.annotation;
                     }
@@ -122,13 +105,9 @@ define(
 
                 // iterate through data input modules and collect linked sub steps
                 _.each(this.steps, function(step, i) {
-                    _.each(step.output_connections, function(
-                        output_connection
-                    ) {
+                    _.each(step.output_connections, function(output_connection) {
                         _.each(self.steps, function(sub_step, j) {
-                            sub_step.step_index ===
-                                output_connection.input_step_index &&
-                                self.links[i].push(sub_step);
+                            sub_step.step_index === output_connection.input_step_index && self.links[i].push(sub_step);
                         });
                     });
                 });
@@ -139,24 +118,16 @@ define(
                     _.each(self.steps, function(sub_step, j) {
                         var connections_by_name = {};
                         _.each(step.output_connections, function(connection) {
-                            sub_step.step_index ===
-                                connection.input_step_index &&
-                                (connections_by_name[
-                                    connection.input_name
-                                ] = connection);
+                            sub_step.step_index === connection.input_step_index &&
+                                (connections_by_name[connection.input_name] = connection);
                         });
                         _.each(self.parms[j], function(input, name) {
                             var connection = connections_by_name[name];
                             if (connection) {
                                 input.type = "hidden";
-                                input.help = input.step_linked
-                                    ? input.help + ", "
-                                    : "";
+                                input.help = input.step_linked ? input.help + ", " : "";
                                 input.help +=
-                                    "Output dataset '" +
-                                    connection.output_name +
-                                    "' from step " +
-                                    (parseInt(i) + 1);
+                                    "Output dataset '" + connection.output_name + "' from step " + (parseInt(i) + 1);
                                 input.step_linked = input.step_linked || [];
                                 input.step_linked.push(step);
                             }
@@ -173,14 +144,11 @@ define(
                     while ((match = re.exec(String(value)))) {
                         var wp_name = match[1];
                         callback(
-                            (self.wp_inputs[wp_name] = self.wp_inputs[
-                                wp_name
-                            ] || {
+                            (self.wp_inputs[wp_name] = self.wp_inputs[wp_name] || {
                                 label: wp_name,
                                 name: wp_name,
                                 type: "text",
-                                color:
-                                    "hsl( " + ++wp_count * 100 + ", 70%, 30% )",
+                                color: "hsl( " + ++wp_count * 100 + ", 70%, 30% )",
                                 style: "ui-form-wp-source",
                                 links: []
                             })
@@ -189,9 +157,7 @@ define(
                 }
                 _.each(this.steps, function(step, i) {
                     _.each(self.parms[i], function(input, name) {
-                        _handleWorkflowParameter(input.value, function(
-                            wp_input
-                        ) {
+                        _handleWorkflowParameter(input.value, function(wp_input) {
                             wp_input.links.push(step);
                             input.wp_linked = true;
                             input.type = "text";
@@ -211,53 +177,25 @@ define(
                 _.each(this.steps, function(step, i) {
                     if (step.step_type == "tool") {
                         var data_resolved = true;
-                        FormData.visitInputs(step.inputs, function(
-                            input,
-                            name,
-                            context
-                        ) {
-                            var is_runtime_value =
-                                input.value &&
-                                input.value.__class__ == "RuntimeValue";
-                            var is_data_input =
-                                ["data", "data_collection"].indexOf(
-                                    input.type
-                                ) != -1;
+                        FormData.visitInputs(step.inputs, function(input, name, context) {
+                            var is_runtime_value = input.value && input.value.__class__ == "RuntimeValue";
+                            var is_data_input = ["data", "data_collection"].indexOf(input.type) != -1;
                             var data_ref = context[input.data_ref];
-                            input.step_linked &&
-                                !self._isDataStep(input.step_linked) &&
-                                (data_resolved = false);
+                            input.step_linked && !self._isDataStep(input.step_linked) && (data_resolved = false);
                             input.options &&
-                                ((input.options.length == 0 &&
-                                    !data_resolved) ||
-                                    input.wp_linked) &&
+                                ((input.options.length == 0 && !data_resolved) || input.wp_linked) &&
                                 (input.is_workflow = true);
                             data_ref &&
                                 (input.is_workflow =
-                                    (data_ref.step_linked &&
-                                        !self._isDataStep(
-                                            data_ref.step_linked
-                                        )) ||
+                                    (data_ref.step_linked && !self._isDataStep(data_ref.step_linked)) ||
                                     input.wp_linked);
                             (is_data_input ||
-                                (input.value &&
-                                    input.value.__class__ == "RuntimeValue" &&
-                                    !input.step_linked)) &&
+                                (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked)) &&
                                 (step.collapsed = false);
-                            is_runtime_value &&
-                                (input.value = input.default_value);
+                            is_runtime_value && (input.value = input.default_value);
                             input.flavor = "workflow";
-                            if (
-                                !is_runtime_value &&
-                                !is_data_input &&
-                                input.type !== "hidden" &&
-                                !input.wp_linked
-                            ) {
-                                if (
-                                    input.optional ||
-                                    (!Utils.isEmpty(input.value) &&
-                                        input.value !== "")
-                                ) {
+                            if (!is_runtime_value && !is_data_input && input.type !== "hidden" && !input.wp_linked) {
+                                if (input.optional || (!Utils.isEmpty(input.value) && input.value !== "")) {
                                     input.collapsible_value = input.value;
                                     input.collapsible_preview = true;
                                 }
@@ -315,9 +253,7 @@ define(
                         }).$el
                     );
                 }
-                var step_version_changes = this.model.get(
-                    "step_version_changes"
-                );
+                var step_version_changes = this.model.get("step_version_changes");
                 if (step_version_changes && step_version_changes.length > 0) {
                     this.$message.append(
                         new Ui.Message({
@@ -341,10 +277,7 @@ define(
                         inputs: this.wp_inputs,
                         cls: "ui-portlet-narrow",
                         onchange: function() {
-                            _.each(self.wp_form.input_list, function(
-                                input_def,
-                                i
-                            ) {
+                            _.each(self.wp_form.input_list, function(input_def, i) {
                                 _.each(input_def.links, function(step) {
                                     self._refreshStep(step);
                                 });
@@ -412,20 +345,12 @@ define(
                             );
                             Utils.request({
                                 type: "POST",
-                                url:
-                                    Galaxy.root +
-                                    "api/tools/" +
-                                    step.id +
-                                    "/build",
+                                url: Galaxy.root + "api/tools/" + step.id + "/build",
                                 data: current_state,
                                 success: function(data) {
                                     form.update(data);
                                     form.wait(false);
-                                    Galaxy.emit.debug(
-                                        "tool-form-composite::postchange()",
-                                        "Received new model.",
-                                        data
-                                    );
+                                    Galaxy.emit.debug("tool-form-composite::postchange()", "Received new model.", data);
                                     process.resolve();
                                 },
                                 error: function(response) {
@@ -439,10 +364,7 @@ define(
                             });
                         };
                         form = new ToolFormBase(step);
-                        if (
-                            step.post_job_actions &&
-                            step.post_job_actions.length
-                        ) {
+                        if (step.post_job_actions && step.post_job_actions.length) {
                             form.portlet.append(
                                 $("<div/>")
                                     .addClass("ui-form-element-disabled")
@@ -458,11 +380,7 @@ define(
                                                 _.reduce(
                                                     step.post_job_actions,
                                                     function(memo, value) {
-                                                        return (
-                                                            memo +
-                                                            " " +
-                                                            value.short_str
-                                                        );
+                                                        return memo + " " + value.short_str;
                                                     },
                                                     ""
                                                 )
@@ -471,10 +389,7 @@ define(
                             );
                         }
                     } else {
-                        var is_simple_input =
-                            ["data_input", "data_collection_input"].indexOf(
-                                step.step_type
-                            ) != -1;
+                        var is_simple_input = ["data_input", "data_collection_input"].indexOf(step.step_type) != -1;
                         _.each(step.inputs, function(input) {
                             input.flavor = "module";
                             input.hide_label = is_simple_input;
@@ -484,9 +399,7 @@ define(
                                 {
                                     title: step.fixed_title,
                                     onchange: function() {
-                                        _.each(self.links[step.index], function(
-                                            link
-                                        ) {
+                                        _.each(self.links[step.index], function(link) {
                                             self._refreshStep(link);
                                         });
                                     },
@@ -496,8 +409,7 @@ define(
                                             : [
                                                   {
                                                       type: "hidden",
-                                                      name:
-                                                          "No options available.",
+                                                      name: "No options available.",
                                                       ignore: null
                                                   }
                                               ]
@@ -515,8 +427,7 @@ define(
                         self.execute_btn.model.set({
                             wait: true,
                             wait_text: "Preparing...",
-                            percentage:
-                                (step.index + 1) * 100.0 / self.steps.length
+                            percentage: (step.index + 1) * 100.0 / self.steps.length
                         });
                     Galaxy.emit.debug(
                         "tool-form-composite::initialize()",
@@ -541,25 +452,16 @@ define(
                                 var new_value = undefined;
                                 if (input.step_linked) {
                                     new_value = { values: [] };
-                                    _.each(input.step_linked, function(
-                                        source_step
-                                    ) {
+                                    _.each(input.step_linked, function(source_step) {
                                         if (self._isDataStep(source_step)) {
-                                            var value = self.forms[
-                                                source_step.index
-                                            ].data.create().input;
+                                            var value = self.forms[source_step.index].data.create().input;
                                             value &&
-                                                _.each(value.values, function(
-                                                    v
-                                                ) {
+                                                _.each(value.values, function(v) {
                                                     new_value.values.push(v);
                                                 });
                                         }
                                     });
-                                    if (
-                                        !input.multiple &&
-                                        new_value.values.length > 0
-                                    ) {
+                                    if (!input.multiple && new_value.values.length > 0) {
                                         new_value = {
                                             values: [new_value.values[0]]
                                         };
@@ -569,18 +471,10 @@ define(
                                     var re = /\$\{(.+?)\}/g,
                                         match;
                                     while ((match = re.exec(input.value))) {
-                                        var wp_field =
-                                            self.wp_form.field_list[
-                                                self.wp_form.data.match(
-                                                    match[1]
-                                                )
-                                            ];
-                                        var wp_value =
-                                            wp_field && wp_field.value();
+                                        var wp_field = self.wp_form.field_list[self.wp_form.data.match(match[1])];
+                                        var wp_value = wp_field && wp_field.value();
                                         if (wp_value) {
-                                            new_value = new_value
-                                                .split(match[0])
-                                                .join(wp_value);
+                                            new_value = new_value.split(match[0]).join(wp_value);
                                         }
                                     }
                                 }
@@ -599,10 +493,7 @@ define(
             /** Refresh the history after job submission while form is shown */
             _refreshHistory: function() {
                 var self = this;
-                var history =
-                    parent.Galaxy &&
-                    parent.Galaxy.currHistoryPanel &&
-                    parent.Galaxy.currHistoryPanel.model;
+                var history = parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.model;
                 this._refresh_history && clearTimeout(this._refresh_history);
                 if (history) {
                     history.refresh().success(function() {
@@ -636,12 +527,8 @@ define(
                     new_history_name: history_form_data["new_history|name"]
                         ? history_form_data["new_history|name"]
                         : null,
-                    history_id: !history_form_data["new_history|name"]
-                        ? this.model.get("history_id")
-                        : null,
-                    replacement_params: this.wp_form
-                        ? this.wp_form.data.create()
-                        : {},
+                    history_id: !history_form_data["new_history|name"] ? this.model.get("history_id") : null,
+                    replacement_params: this.wp_form ? this.wp_form.data.create() : {},
                     parameters: {},
                     // Tool form will submit flat maps for each parameter
                     // (e.g. "repeat_0|cond|param": "foo" instead of nested
@@ -665,26 +552,19 @@ define(
                         var input_def = form.input_list[input_id];
                         if (!input_def.step_linked) {
                             if (this._isDataStep(step)) {
-                                validated =
-                                    input_value &&
-                                    input_value.values &&
-                                    input_value.values.length > 0;
+                                validated = input_value && input_value.values && input_value.values.length > 0;
                             } else {
                                 validated =
                                     input_def.optional ||
-                                    (input_def.is_workflow &&
-                                        input_value !== "") ||
-                                    (!input_def.is_workflow &&
-                                        input_value !== null);
+                                    (input_def.is_workflow && input_value !== "") ||
+                                    (!input_def.is_workflow && input_value !== null);
                             }
                             if (!validated) {
                                 form.highlight(input_id);
                                 break;
                             }
-                            job_def.parameters[step_index] =
-                                job_def.parameters[step_index] || {};
-                            job_def.parameters[step_index][job_input_id] =
-                                job_inputs[job_input_id];
+                            job_def.parameters[step_index] = job_def.parameters[step_index] || {};
+                            job_def.parameters[step_index][job_input_id] = job_inputs[job_input_id];
                         }
                     }
                     if (!validated) {
@@ -693,42 +573,23 @@ define(
                 }
                 if (!validated) {
                     self._enabled(true);
-                    Galaxy.emit.debug(
-                        "tool-form-composite::submit()",
-                        "Validation failed.",
-                        job_def
-                    );
+                    Galaxy.emit.debug("tool-form-composite::submit()", "Validation failed.", job_def);
                 } else {
-                    Galaxy.emit.debug(
-                        "tool-form-composite::submit()",
-                        "Validation complete.",
-                        job_def
-                    );
+                    Galaxy.emit.debug("tool-form-composite::submit()", "Validation complete.", job_def);
                     Utils.request({
                         type: "POST",
-                        url:
-                            Galaxy.root +
-                            "api/workflows/" +
-                            this.model.id +
-                            "/invocations",
+                        url: Galaxy.root + "api/workflows/" + this.model.id + "/invocations",
                         data: job_def,
                         success: function(response) {
-                            Galaxy.emit.debug(
-                                "tool-form-composite::submit",
-                                "Submission successful.",
-                                response
-                            );
+                            Galaxy.emit.debug("tool-form-composite::submit", "Submission successful.", response);
                             self.$el.children().hide();
                             self.$el.append(self._templateSuccess(response));
 
                             // Show Webhook if job is running
                             if ($.isArray(response) && response.length > 0) {
-                                self.$el.append(
-                                    $("<div/>", { id: "webhook-view" })
-                                );
+                                self.$el.append($("<div/>", { id: "webhook-view" }));
                                 var WebhookApp = new Webhooks.WebhookView({
-                                    urlRoot:
-                                        Galaxy.root + "api/webhooks/workflow",
+                                    urlRoot: Galaxy.root + "api/webhooks/workflow",
                                     toolId: job_def.tool_id,
                                     toolVersion: job_def.tool_version
                                 });
@@ -737,28 +598,16 @@ define(
                             self._refreshHistory();
                         },
                         error: function(response) {
-                            Galaxy.emit.debug(
-                                "tool-form-composite::submit",
-                                "Submission failed.",
-                                response
-                            );
+                            Galaxy.emit.debug("tool-form-composite::submit", "Submission failed.", response);
                             var input_found = false;
                             if (response && response.err_data) {
                                 for (var i in self.forms) {
                                     var form = self.forms[i];
-                                    var step_related_errors =
-                                        response.err_data[
-                                            form.model.get("step_index")
-                                        ];
+                                    var step_related_errors = response.err_data[form.model.get("step_index")];
                                     if (step_related_errors) {
-                                        var error_messages = form.data.matchResponse(
-                                            step_related_errors
-                                        );
+                                        var error_messages = form.data.matchResponse(step_related_errors);
                                         for (var input_id in error_messages) {
-                                            form.highlight(
-                                                input_id,
-                                                error_messages[input_id]
-                                            );
+                                            form.highlight(input_id, error_messages[input_id]);
                                             input_found = true;
                                             break;
                                         }
@@ -768,10 +617,7 @@ define(
                             if (!input_found) {
                                 self.modal.show({
                                     title: "Workflow submission failed",
-                                    body: self._templateError(
-                                        job_def,
-                                        response && response.err_msg
-                                    ),
+                                    body: self._templateError(job_def, response && response.err_msg),
                                     buttons: {
                                         Close: function() {
                                             self.modal.hide();
@@ -799,10 +645,8 @@ define(
                     wait_text: "Sending...",
                     percentage: -1
                 });
-                this.wp_form &&
-                    this.wp_form.portlet[enabled ? "enable" : "disable"]();
-                this.history_form &&
-                    this.history_form.portlet[enabled ? "enable" : "disable"]();
+                this.wp_form && this.wp_form.portlet[enabled ? "enable" : "disable"]();
+                this.history_form && this.history_form.portlet[enabled ? "enable" : "disable"]();
                 _.each(this.forms, function(form) {
                     form && form.portlet[enabled ? "enable" : "disable"]();
                 });
@@ -813,11 +657,7 @@ define(
                 var lst = $.isArray(steps) ? steps : [steps];
                 for (var i = 0; i < lst.length; i++) {
                     var step = lst[i];
-                    if (
-                        !step ||
-                        !step.step_type ||
-                        !step.step_type.startsWith("data")
-                    ) {
+                    if (!step || !step.step_type || !step.step_type.startsWith("data")) {
                         return false;
                     }
                 }
@@ -834,11 +674,7 @@ define(
                                 "Successfully invoked workflow <b>" +
                                     Utils.sanitize(this.model.get("name")) +
                                     "</b>" +
-                                    (response.length > 1
-                                        ? " <b>" +
-                                          response.length +
-                                          " times</b>"
-                                        : "") +
+                                    (response.length > 1 ? " <b>" + response.length + " times</b>" : "") +
                                     "."
                             )
                         )
@@ -850,10 +686,7 @@ define(
                                 )
                         );
                 } else {
-                    return this._templateError(
-                        response,
-                        "Invalid success response. No invocations found."
-                    );
+                    return this._templateError(response, "Invalid success response. No invocations found.");
                 }
             },
 
@@ -866,9 +699,7 @@ define(
                                 (JSON.stringify(err_msg) || "")
                         )
                     )
-                    .append(
-                        $("<pre/>").text(JSON.stringify(response, null, 4))
-                    );
+                    .append($("<pre/>").text(JSON.stringify(response, null, 4)));
             }
         });
         return {

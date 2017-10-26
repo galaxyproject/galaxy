@@ -1,9 +1,5 @@
 // Additional dependencies: jQuery, underscore.
-define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
-    Modal,
-    Frames,
-    mod_icon_btn
-) {
+define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(Modal, Frames, mod_icon_btn) {
     /**
  * Dataset metedata.
  */
@@ -82,8 +78,7 @@ define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
             if (this.attributes.first_data_chunk) {
                 this.attributes.offset = this.attributes.first_data_chunk.offset;
             }
-            this.attributes.chunk_url =
-                Galaxy.root + "dataset/display?dataset_id=" + this.id;
+            this.attributes.chunk_url = Galaxy.root + "dataset/display?dataset_id=" + this.id;
             this.attributes.url_viz = Galaxy.root + "visualization";
         },
 
@@ -168,10 +163,7 @@ define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
 
         render: function() {
             // Add loading indicator.
-            this.loading_indicator = $("<div/>").attr(
-                "id",
-                "loading_indicator"
-            );
+            this.loading_indicator = $("<div/>").attr("id", "loading_indicator");
             this.$el.append(this.loading_indicator);
 
             // Add data table and header.
@@ -184,9 +176,7 @@ define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
                 header_container = $("<thead/>").appendTo(data_table),
                 header_row = $("<tr/>").appendTo(header_container);
             if (column_names) {
-                header_row.append(
-                    "<th>" + column_names.join("</th><th>") + "</th>"
-                );
+                header_row.append("<th>" + column_names.join("</th><th>") + "</th>");
             } else {
                 for (var j = 1; j <= this.model.get_metadata("columns"); j++) {
                     header_row.append("<th>" + j + "</th>");
@@ -230,10 +220,7 @@ define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
                 $cell.attr("colspan", colspan).addClass("stringalign");
             } else if (column_types) {
                 if (index < column_types.length) {
-                    if (
-                        column_types[index] === "str" ||
-                        column_types[index] === "list"
-                    ) {
+                    if (column_types[index] === "str" || column_types[index] === "list") {
                         /* Left align all str columns, right align the rest */
                         $cell.addClass("stringalign");
                     }
@@ -269,12 +256,7 @@ define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
                     },
                     this
                 );
-                row.append(
-                    this._renderCell(
-                        cells.slice(num_columns - 1).join("\t"),
-                        num_columns - 1
-                    )
-                );
+                row.append(this._renderCell(cells.slice(num_columns - 1).join("\t"), num_columns - 1));
             } else if (cells.length === 1) {
                 // Comment line, just return the one cell.
                 row.append(this._renderCell(line, 0, num_columns));
@@ -338,12 +320,7 @@ define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
      * Returns true if user has scrolled to the bottom of the view.
      */
         scrolled_to_bottom: function() {
-            return (
-                this.$el.height() -
-                    this.scroll_elt.scrollTop() -
-                    this.scroll_elt.height() <=
-                0
-            );
+            return this.$el.height() - this.scroll_elt.scrollTop() - this.scroll_elt.height() <= 0;
         }
     });
 
@@ -366,10 +343,7 @@ define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
      * Returns true if user has scrolled to the bottom of the view.
      */
         scrolled_to_bottom: function() {
-            return (
-                this.$el.scrollTop() + this.$el.innerHeight() >=
-                this.el.scrollHeight
-            );
+            return this.$el.scrollTop() + this.$el.innerHeight() >= this.el.scrollHeight;
         }
     });
 
@@ -429,19 +403,13 @@ define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
             // check for bed-file format
             if (this.file_ext == "bed") {
                 // verify that metadata exists
-                if (
-                    metadata.get("chromCol") &&
-                    metadata.get("startCol") &&
-                    metadata.get("endCol")
-                ) {
+                if (metadata.get("chromCol") && metadata.get("startCol") && metadata.get("endCol")) {
                     // read in columns
                     this.col.chrom = metadata.get("chromCol") - 1;
                     this.col.start = metadata.get("startCol") - 1;
                     this.col.end = metadata.get("endCol") - 1;
                 } else {
-                    console.log(
-                        "TabularButtonTrackster : Bed-file metadata incomplete."
-                    );
+                    console.log("TabularButtonTrackster : Bed-file metadata incomplete.");
                     return;
                 }
             }
@@ -450,8 +418,7 @@ define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
             if (this.file_ext == "vcf") {
                 // search array
                 function search(str, array) {
-                    for (var j = 0; j < array.length; j++)
-                        if (array[j].match(str)) return j;
+                    for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
                     return -1;
                 }
 
@@ -462,9 +429,7 @@ define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
 
                 // verify that metadata exists
                 if (this.col.chrom == -1 || this.col.start == -1) {
-                    console.log(
-                        "TabularButtonTrackster : VCF-file metadata incomplete."
-                    );
+                    console.log("TabularButtonTrackster : VCF-file metadata incomplete.");
                     return;
                 }
             }
@@ -478,9 +443,7 @@ define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
             if (model.id) {
                 this.dataset_id = model.id;
             } else {
-                console.log(
-                    "TabularButtonTrackster : Dataset identification is missing."
-                );
+                console.log("TabularButtonTrackster : Dataset identification is missing.");
                 return;
             }
 
@@ -488,9 +451,7 @@ define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
             if (model.get("url_viz")) {
                 this.url_viz = model.get("url_viz");
             } else {
-                console.log(
-                    "TabularButtonTrackster : Url for visualization controller is missing."
-                );
+                console.log("TabularButtonTrackster : Url for visualization controller is missing.");
                 return;
             }
 
@@ -580,8 +541,7 @@ define(["mvc/ui/ui-modal", "mvc/ui/ui-frames", "mvc/ui/icon-button"], function(
                 $("#btn_viz").click(function() {
                     self.frame.add({
                         title: "Trackster",
-                        url:
-                            self.url_viz + "/trackster?" + $.param(btn_viz_pars)
+                        url: self.url_viz + "/trackster?" + $.param(btn_viz_pars)
                     });
                 });
 

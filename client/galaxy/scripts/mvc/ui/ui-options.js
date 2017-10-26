@@ -18,12 +18,7 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
             this.listenTo(this.model, "change:value", this._changeValue, this);
             this.listenTo(this.model, "change:wait", this._changeWait, this);
             this.listenTo(this.model, "change:data", this._changeData, this);
-            this.listenTo(
-                this.model,
-                "change:visible",
-                this._changeVisible,
-                this
-            );
+            this.listenTo(this.model, "change:visible", this._changeVisible, this);
             this.on("change", function() {
                 self.model.get("onchange")(self.value());
             });
@@ -45,9 +40,7 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
             if (this.model.get("multiple")) {
                 this.all_button = new Buttons.ButtonCheck({
                     onclick: function() {
-                        self
-                            .$("input")
-                            .prop("checked", self.all_button.value() !== 0);
+                        self.$("input").prop("checked", self.all_button.value() !== 0);
                         self.value(self._getValue());
                         self.trigger("change");
                     }
@@ -70,9 +63,7 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
             var self = this;
             this.$options.empty();
             if (this._templateOptions) {
-                this.$options.append(
-                    this._templateOptions(this.model.get("data"))
-                );
+                this.$options.append(this._templateOptions(this.model.get("data")));
             } else {
                 _.each(this.model.get("data"), function(option) {
                     self.$options.append(
@@ -120,18 +111,11 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
 
         _changeValue: function() {
             this._setValue(this.model.get("value"));
-            if (
-                this._getValue() === null &&
-                !this.model.get("multiple") &&
-                !this.model.get("optional")
-            ) {
+            if (this._getValue() === null && !this.model.get("multiple") && !this.model.get("optional")) {
                 this._setValue(this.first());
             }
             this.all_button &&
-                this.all_button.value(
-                    $.isArray(this._getValue()) ? this._getValue().length : 0,
-                    this.length()
-                );
+                this.all_button.value($.isArray(this._getValue()) ? this._getValue().length : 0, this.length());
         },
 
         /** Return/Set current selection */

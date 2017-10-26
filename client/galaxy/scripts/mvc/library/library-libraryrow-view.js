@@ -1,9 +1,5 @@
 // dependencies
-define(["layout/masthead", "utils/utils", "libs/toastr"], function(
-    mod_masthead,
-    mod_utils,
-    mod_toastr
-) {
+define(["layout/masthead", "utils/utils", "libs/toastr"], function(mod_masthead, mod_utils, mod_toastr) {
     // galaxy library row view
     var LibraryRowView = Backbone.View.extend({
         events: {
@@ -32,9 +28,7 @@ define(["layout/masthead", "utils/utils", "libs/toastr"], function(
 
         render: function(library) {
             if (typeof library === "undefined") {
-                library = Galaxy.libraries.libraryListView.collection.get(
-                    this.$el.data("id")
-                );
+                library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
             }
             this.prepareButtons(library);
             var tmpl = this.templateRow();
@@ -122,43 +116,28 @@ define(["layout/masthead", "utils/utils", "libs/toastr"], function(
         },
 
         save_library_modification: function() {
-            var library = Galaxy.libraries.libraryListView.collection.get(
-                this.$el.data("id")
-            );
+            var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
             var is_changed = false;
 
             var new_name = this.$el.find(".input_library_name").val();
-            if (
-                typeof new_name !== "undefined" &&
-                new_name !== library.get("name")
-            ) {
+            if (typeof new_name !== "undefined" && new_name !== library.get("name")) {
                 if (new_name.length > 2) {
                     library.set("name", new_name);
                     is_changed = true;
                 } else {
-                    mod_toastr.warning(
-                        "Library name has to be at least 3 characters long."
-                    );
+                    mod_toastr.warning("Library name has to be at least 3 characters long.");
                     return;
                 }
             }
 
-            var new_description = this.$el
-                .find(".input_library_description")
-                .val();
-            if (
-                typeof new_description !== "undefined" &&
-                new_description !== library.get("description")
-            ) {
+            var new_description = this.$el.find(".input_library_description").val();
+            if (typeof new_description !== "undefined" && new_description !== library.get("description")) {
                 library.set("description", new_description);
                 is_changed = true;
             }
 
             var new_synopsis = this.$el.find(".input_library_synopsis").val();
-            if (
-                typeof new_synopsis !== "undefined" &&
-                new_synopsis !== library.get("synopsis")
-            ) {
+            if (typeof new_synopsis !== "undefined" && new_synopsis !== library.get("synopsis")) {
                 library.set("synopsis", new_synopsis);
                 is_changed = true;
             }
@@ -176,9 +155,7 @@ define(["layout/masthead", "utils/utils", "libs/toastr"], function(
                         if (typeof response.responseJSON !== "undefined") {
                             mod_toastr.error(response.responseJSON.err_msg);
                         } else {
-                            mod_toastr.error(
-                                "An error occured while attempting to update the library."
-                            );
+                            mod_toastr.error("An error occured while attempting to update the library.");
                         }
                     }
                 });
@@ -190,9 +167,7 @@ define(["layout/masthead", "utils/utils", "libs/toastr"], function(
         },
 
         delete_library: function() {
-            var library = Galaxy.libraries.libraryListView.collection.get(
-                this.$el.data("id")
-            );
+            var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
             var row_view = this;
             // mark the library deleted
             library.destroy({
@@ -201,17 +176,11 @@ define(["layout/masthead", "utils/utils", "libs/toastr"], function(
                     // add the new deleted library back to the collection (Galaxy specialty)
                     Galaxy.libraries.libraryListView.collection.add(library);
                     row_view.edit_mode = false;
-                    if (
-                        Galaxy.libraries.preferences.get("with_deleted") ===
-                        false
-                    ) {
+                    if (Galaxy.libraries.preferences.get("with_deleted") === false) {
                         $(".tooltip").hide();
                         row_view.repaint(library);
                         row_view.$el.remove();
-                    } else if (
-                        Galaxy.libraries.preferences.get("with_deleted") ===
-                        true
-                    ) {
+                    } else if (Galaxy.libraries.preferences.get("with_deleted") === true) {
                         row_view.repaint(library);
                     }
                     mod_toastr.success("Library has been marked deleted.");
@@ -220,18 +189,14 @@ define(["layout/masthead", "utils/utils", "libs/toastr"], function(
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error(
-                            "An error occured during deleting the library."
-                        );
+                        mod_toastr.error("An error occured during deleting the library.");
                     }
                 }
             });
         },
 
         undelete_library: function() {
-            var library = Galaxy.libraries.libraryListView.collection.get(
-                this.$el.data("id")
-            );
+            var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
             var row_view = this;
 
             // mark the library undeleted
@@ -250,9 +215,7 @@ define(["layout/masthead", "utils/utils", "libs/toastr"], function(
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error(
-                            "An error occured while undeleting the library."
-                        );
+                        mod_toastr.error("An error occured while undeleting the library.");
                     }
                 }
             });

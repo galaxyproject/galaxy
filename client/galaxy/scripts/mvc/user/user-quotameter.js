@@ -25,11 +25,7 @@ define(["mvc/base-mvc", "utils/localization"], function(baseMVC, _l) {
                 _.extend(this.options, options);
 
                 //this.bind( 'all', function( event, data ){ this.log( this + ' event:', event, data ); }, this );
-                this.listenTo(
-                    this.model,
-                    "change:quota_percent change:total_disk_usage",
-                    this.render
-                );
+                this.listenTo(this.model, "change:quota_percent change:total_disk_usage", this.render);
             },
 
             /** Re-load user model data from the api */
@@ -45,8 +41,7 @@ define(["mvc/base-mvc", "utils/localization"], function(baseMVC, _l) {
             isOverQuota: function() {
                 return (
                     this.model.get("quota_percent") !== null &&
-                    this.model.get("quota_percent") >=
-                        this.options.errorAtPercent
+                    this.model.get("quota_percent") >= this.options.errorAtPercent
                 );
             },
 
@@ -80,10 +75,7 @@ define(["mvc/base-mvc", "utils/localization"], function(baseMVC, _l) {
                     //this.log( '\t approaching quota' );
                     $bar.attr("class", "progress-bar progress-bar-warning");
                     //TODO: only trigger event if state has changed
-                    this.trigger(
-                        "quota:under quota:under:approaching",
-                        modelJson
-                    );
+                    this.trigger("quota:under quota:under:approaching", modelJson);
 
                     // otherwise, hide/don't use the msg box
                 } else {
@@ -114,14 +106,8 @@ define(["mvc/base-mvc", "utils/localization"], function(baseMVC, _l) {
                 var meterHtml = null;
 
                 // no quota on server ('quota_percent' === null (can be valid at 0)), show usage instead
-                this.log(
-                    this + ".model.quota_percent:",
-                    this.model.get("quota_percent")
-                );
-                if (
-                    this.model.get("quota_percent") === null ||
-                    this.model.get("quota_percent") === undefined
-                ) {
+                this.log(this + ".model.quota_percent:", this.model.get("quota_percent"));
+                if (this.model.get("quota_percent") === null || this.model.get("quota_percent") === undefined) {
                     meterHtml = this._render_usage();
 
                     // otherwise, render percent of quota (and warning, error)
@@ -161,9 +147,7 @@ define(["mvc/base-mvc", "utils/localization"], function(baseMVC, _l) {
                 return [
                     '<div id="quota-meter" class="quota-meter" style="background-color: transparent">',
                     '<div class="quota-meter-text" data-placement="left" data-original-title="This value is recalculated when you log out." style="top: 6px; color: white">',
-                    data.nice_total_disk_usage
-                        ? _l("Using ") + data.nice_total_disk_usage
-                        : "",
+                    data.nice_total_disk_usage ? _l("Using ") + data.nice_total_disk_usage : "",
                     "</div>",
                     "</div>"
                 ].join("");

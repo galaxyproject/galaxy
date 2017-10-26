@@ -9,15 +9,7 @@ define(
         "mvc/upload/composite/composite-view",
         "mvc/upload/collection/collection-view"
     ],
-    function(
-        Utils,
-        Modal,
-        Tabs,
-        UploadButton,
-        UploadViewDefault,
-        UploadViewComposite,
-        UploadViewCollection
-    ) {
+    function(Utils, Modal, Tabs, UploadButton, UploadViewDefault, UploadViewComposite, UploadViewCollection) {
         return Backbone.View.extend({
             options: {
                 nginx_upload_path: "",
@@ -51,10 +43,7 @@ define(
                         self.show();
                     },
                     onunload: function() {
-                        var percentage = self.ui_button.model.get(
-                            "percentage",
-                            0
-                        );
+                        var percentage = self.ui_button.model.get("percentage", 0);
                         if (percentage > 0 && percentage < 100) {
                             return "Several uploads are queued.";
                         }
@@ -81,9 +70,7 @@ define(
                         self.list_extensions.sort(function(a, b) {
                             var a_text = a.text && a.text.toLowerCase();
                             var b_text = b.text && b.text.toLowerCase();
-                            return a_text > b_text
-                                ? 1
-                                : a_text < b_text ? -1 : 0;
+                            return a_text > b_text ? 1 : a_text < b_text ? -1 : 0;
                         });
                         if (!self.options.datatypes_disable_auto) {
                             self.list_extensions.unshift(self.options.auto);
@@ -108,9 +95,7 @@ define(
                             if (b.id == self.options.default_genome) {
                                 return 1;
                             }
-                            return a.text > b.text
-                                ? 1
-                                : a.text < b.text ? -1 : 0;
+                            return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
                         });
                     }
                 });
@@ -119,10 +104,7 @@ define(
             /** Show/hide upload dialog */
             show: function() {
                 var self = this;
-                if (
-                    !Galaxy.currHistoryPanel ||
-                    !Galaxy.currHistoryPanel.model
-                ) {
+                if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
                     window.setTimeout(function() {
                         self.show();
                     }, 500);
@@ -163,9 +145,7 @@ define(
 
             /** Refresh user and current history */
             currentHistory: function() {
-                return (
-                    this.current_user && Galaxy.currHistoryPanel.model.get("id")
-                );
+                return this.current_user && Galaxy.currHistoryPanel.model.get("id");
             },
 
             /** Get ftp configuration */
@@ -201,25 +181,16 @@ define(
                         if (it.get("file_size") > 0) {
                             var prefix = "files_" + index + "|";
                             inputs[prefix + "type"] = "upload_dataset";
-                            inputs[prefix + "space_to_tab"] =
-                                (it.get("space_to_tab") && "Yes") || null;
-                            inputs[prefix + "to_posix_lines"] =
-                                (it.get("to_posix_lines") && "Yes") || null;
+                            inputs[prefix + "space_to_tab"] = (it.get("space_to_tab") && "Yes") || null;
+                            inputs[prefix + "to_posix_lines"] = (it.get("to_posix_lines") && "Yes") || null;
                             inputs[prefix + "dbkey"] = it.get("genome", null);
-                            inputs[prefix + "file_type"] = it.get(
-                                "extension",
-                                null
-                            );
+                            inputs[prefix + "file_type"] = it.get("extension", null);
                             switch (it.get("file_mode")) {
                                 case "new":
-                                    inputs[prefix + "url_paste"] = it.get(
-                                        "url_paste"
-                                    );
+                                    inputs[prefix + "url_paste"] = it.get("url_paste");
                                     break;
                                 case "ftp":
-                                    inputs[prefix + "ftp_files"] = it.get(
-                                        "file_path"
-                                    );
+                                    inputs[prefix + "ftp_files"] = it.get("file_path");
                                     break;
                                 case "local":
                                     data.files.push({

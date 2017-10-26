@@ -7,14 +7,7 @@ define(
         "mvc/base-mvc",
         "utils/ajax-queue"
     ],
-    function(
-        CONTROLLED_FETCH_COLLECTION,
-        HDA_MODEL,
-        HDCA_MODEL,
-        HISTORY_PREFS,
-        BASE_MVC,
-        AJAX_QUEUE
-    ) {
+    function(CONTROLLED_FETCH_COLLECTION, HDA_MODEL, HDCA_MODEL, HISTORY_PREFS, BASE_MVC, AJAX_QUEUE) {
         "use strict";
 
         //==============================================================================
@@ -34,48 +27,28 @@ define(
             /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
             model: function(attrs, options) {
                 if (attrs.history_content_type === "dataset") {
-                    return new HDA_MODEL.HistoryDatasetAssociation(
-                        attrs,
-                        options
-                    );
-                } else if (
-                    attrs.history_content_type === "dataset_collection"
-                ) {
+                    return new HDA_MODEL.HistoryDatasetAssociation(attrs, options);
+                } else if (attrs.history_content_type === "dataset_collection") {
                     switch (attrs.collection_type) {
                         case "list":
-                            return new HDCA_MODEL.HistoryListDatasetCollection(
-                                attrs,
-                                options
-                            );
+                            return new HDCA_MODEL.HistoryListDatasetCollection(attrs, options);
                         case "paired":
-                            return new HDCA_MODEL.HistoryPairDatasetCollection(
-                                attrs,
-                                options
-                            );
+                            return new HDCA_MODEL.HistoryPairDatasetCollection(attrs, options);
                         case "list:paired":
-                            return new HDCA_MODEL.HistoryListPairedDatasetCollection(
-                                attrs,
-                                options
-                            );
+                            return new HDCA_MODEL.HistoryListPairedDatasetCollection(attrs, options);
                         case "list:list":
-                            return new HDCA_MODEL.HistoryListOfListsDatasetCollection(
-                                attrs,
-                                options
-                            );
+                            return new HDCA_MODEL.HistoryListOfListsDatasetCollection(attrs, options);
                     }
                     // This is a hack inside a hack:
                     // Raise a plain object with validationError to fake a model.validationError
                     // (since we don't have a model to use validate with)
                     // (the outer hack being the mixed content/model function in this collection)
-                    var msg =
-                        "Unknown collection_type: " + attrs.collection_type;
+                    var msg = "Unknown collection_type: " + attrs.collection_type;
                     console.warn(msg, attrs);
                     return { validationError: msg };
                 }
                 return {
-                    validationError:
-                        "Unknown history_content_type: " +
-                        attrs.history_content_type
+                    validationError: "Unknown history_content_type: " + attrs.history_content_type
                 };
             },
 
@@ -104,11 +77,9 @@ define(
                 this.history = options.history || null;
                 this.setHistoryId(options.historyId || null);
                 /** @type {Boolean} does this collection contain and fetch deleted elements */
-                this.includeDeleted =
-                    options.includeDeleted || this.includeDeleted;
+                this.includeDeleted = options.includeDeleted || this.includeDeleted;
                 /** @type {Boolean} does this collection contain and fetch non-visible elements */
-                this.includeHidden =
-                    options.includeHidden || this.includeHidden;
+                this.includeHidden = options.includeHidden || this.includeHidden;
 
                 // backbonejs uses collection.model.prototype.idAttribute to determine if a model is *already* in a collection
                 //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
@@ -128,9 +99,7 @@ define(
                     return;
                 }
                 this.storage = new HISTORY_PREFS.HistoryPrefs({
-                    id: HISTORY_PREFS.HistoryPrefs.historyStorageKey(
-                        this.historyId
-                    )
+                    id: HISTORY_PREFS.HistoryPrefs.historyStorageKey(this.historyId)
                 });
                 this.trigger("new-storage", this.storage, this);
 
@@ -249,9 +218,7 @@ define(
             fetch: function(options) {
                 options = options || {};
                 if (this.historyId && !options.details) {
-                    var prefs = HISTORY_PREFS.HistoryPrefs
-                        .get(this.historyId)
-                        .toJSON();
+                    var prefs = HISTORY_PREFS.HistoryPrefs.get(this.historyId).toJSON();
                     if (!_.isEmpty(prefs.expandedIds)) {
                         options.details = _.values(prefs.expandedIds).join(",");
                     }
@@ -262,12 +229,9 @@ define(
             // ............. ControlledFetch stuff
             /** override to include the API versioning flag */
             _buildFetchData: function(options) {
-                return _.extend(
-                    _super.prototype._buildFetchData.call(this, options),
-                    {
-                        v: "dev"
-                    }
-                );
+                return _.extend(_super.prototype._buildFetchData.call(this, options), {
+                    v: "dev"
+                });
             },
 
             /** Extend to include details and version */
@@ -281,9 +245,7 @@ define(
 
             /** override to add deleted/hidden filters */
             _buildFetchFilters: function(options) {
-                var superFilters =
-                    _super.prototype._buildFetchFilters.call(this, options) ||
-                    {};
+                var superFilters = _super.prototype._buildFetchFilters.call(this, options) || {};
                 var filters = {};
                 if (!this.includeDeleted) {
                     filters.deleted = false;
@@ -376,23 +338,14 @@ define(
                 var idAttribute = self.model.prototype.idAttribute;
                 var updateArgs = [updateWhat];
 
-                return self
-                    .fetch({ filters: filterParams, remove: false })
-                    .then(function(fetched) {
-                        // convert filtered json array to model array
-                        fetched = fetched.reduce(function(
-                            modelArray,
-                            currJson,
-                            i
-                        ) {
-                            var model = self.get(currJson[idAttribute]);
-                            return model
-                                ? modelArray.concat(model)
-                                : modelArray;
-                        },
-                        []);
-                        return self.ajaxQueue("save", updateArgs, fetched);
-                    });
+                return self.fetch({ filters: filterParams, remove: false }).then(function(fetched) {
+                    // convert filtered json array to model array
+                    fetched = fetched.reduce(function(modelArray, currJson, i) {
+                        var model = self.get(currJson[idAttribute]);
+                        return model ? modelArray.concat(model) : modelArray;
+                    }, []);
+                    return self.ajaxQueue("save", updateArgs, fetched);
+                });
             },
 
             /** using a queue, perform ajaxFn on each of the models in this collection */
@@ -403,9 +356,7 @@ define(
                         .slice()
                         .reverse()
                         .map(function(content, i) {
-                            var fn = _.isString(ajaxFn)
-                                ? content[ajaxFn]
-                                : ajaxFn;
+                            var fn = _.isString(ajaxFn) ? content[ajaxFn] : ajaxFn;
                             return function() {
                                 return fn.apply(content, args);
                             };
@@ -418,12 +369,9 @@ define(
                 options = options || {};
                 var deferred = jQuery.Deferred();
                 var self = this;
-                var limit =
-                    options.limitPerCall || self.limitPerProgressiveFetch;
+                var limit = options.limitPerCall || self.limitPerProgressiveFetch;
                 // TODO: only fetch tags and annotations if specifically requested
-                var searchAttributes =
-                    HDA_MODEL.HistoryDatasetAssociation.prototype
-                        .searchAttributes;
+                var searchAttributes = HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes;
                 var detailKeys = searchAttributes.join(",");
 
                 function _recursivelyFetch(offset) {
@@ -458,10 +406,7 @@ define(
 
             /** does some bit of JSON represent something that can be copied into this contents collection */
             isCopyable: function(contentsJSON) {
-                var copyableModelClasses = [
-                    "HistoryDatasetAssociation",
-                    "HistoryDatasetCollectionAssociation"
-                ];
+                var copyableModelClasses = ["HistoryDatasetAssociation", "HistoryDatasetCollectionAssociation"];
                 return (
                     _.isObject(contentsJSON) &&
                     contentsJSON.id &&
@@ -485,10 +430,7 @@ define(
                             LibraryDatasetDatasetAssociation: "ldda",
                             HistoryDatasetCollectionAssociation: "hdca"
                         }[json.model_class] || "hda";
-                    type =
-                        contentType === "hdca"
-                            ? "dataset_collection"
-                            : "dataset";
+                    type = contentType === "hdca" ? "dataset_collection" : "dataset";
                 }
                 var collection = this,
                     xhr = jQuery
@@ -505,26 +447,17 @@ define(
                             collection.add([response], { parse: true });
                         })
                         .fail(function(error, status, message) {
-                            collection.trigger(
-                                "error",
-                                collection,
-                                xhr,
-                                {},
-                                "Error copying contents",
-                                { type: type, id: id, source: contentType }
-                            );
+                            collection.trigger("error", collection, xhr, {}, "Error copying contents", {
+                                type: type,
+                                id: id,
+                                source: contentType
+                            });
                         });
                 return xhr;
             },
 
             /** create a new HDCA in this collection */
-            createHDCA: function(
-                elementIdentifiers,
-                collectionType,
-                name,
-                hideSourceItems,
-                options
-            ) {
+            createHDCA: function(elementIdentifiers, collectionType, name, hideSourceItems, options) {
                 // normally collection.create returns the new model, but we need the promise from the ajax, so we fake create
                 //precondition: elementIdentifiers is an array of plain js objects
                 //  in the proper form to create the collectionType
@@ -573,11 +506,7 @@ define(
 
             /** String representation. */
             toString: function() {
-                return [
-                    "HistoryContents(",
-                    [this.historyId, this.length].join(),
-                    ")"
-                ].join("");
+                return ["HistoryContents(", [this.historyId, this.length].join(), ")"].join("");
             }
         });
 

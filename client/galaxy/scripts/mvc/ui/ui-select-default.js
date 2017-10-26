@@ -27,41 +27,21 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
                     pagesize: 20
                 }).set(options);
             this.on("change", function() {
-                self.model.get("onchange") &&
-                    self.model.get("onchange")(self.value());
+                self.model.get("onchange") && self.model.get("onchange")(self.value());
             });
             this.listenTo(this.model, "change:data", this._changeData, this);
-            this.listenTo(
-                this.model,
-                "change:disabled",
-                this._changeDisabled,
-                this
-            );
+            this.listenTo(this.model, "change:disabled", this._changeDisabled, this);
             this.listenTo(this.model, "change:wait", this._changeWait, this);
-            this.listenTo(
-                this.model,
-                "change:visible",
-                this._changeVisible,
-                this
-            );
+            this.listenTo(this.model, "change:visible", this._changeVisible, this);
             this.listenTo(this.model, "change:value", this._changeValue, this);
-            this.listenTo(
-                this.model,
-                "change:multiple change:searchable change:cls change:id",
-                this.render,
-                this
-            );
+            this.listenTo(this.model, "change:multiple change:searchable change:cls change:id", this.render, this);
             this.render();
         },
 
         render: function() {
             var self = this;
-            this.model.get("searchable")
-                ? this._renderSearchable()
-                : this._renderClassic();
-            this.$el
-                .addClass(this.model.get("cls"))
-                .attr("id", this.model.get("id"));
+            this.model.get("searchable") ? this._renderSearchable() : this._renderClassic();
+            this.$el.addClass(this.model.get("cls")).attr("id", this.model.get("id"));
             this.$select
                 .empty()
                 .addClass("select")
@@ -81,23 +61,13 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
         _renderClassic: function() {
             var self = this;
             this.$el
-                .addClass(
-                    this.model.get("multiple")
-                        ? "ui-select-multiple"
-                        : "ui-select"
-                )
+                .addClass(this.model.get("multiple") ? "ui-select-multiple" : "ui-select")
                 .append((this.$select = $("<select/>")))
                 .append((this.$dropdown = $("<div/>")))
-                .append(
-                    (this.$resize = $("<div/>").append(
-                        (this.$resize_icon = $("<i/>"))
-                    ))
-                );
+                .append((this.$resize = $("<div/>").append((this.$resize_icon = $("<i/>")))));
             if (this.model.get("multiple")) {
                 this.$dropdown.hide();
-                this.$resize_icon
-                    .addClass("fa fa-angle-double-right fa-rotate-45")
-                    .show();
+                this.$resize_icon.addClass("fa fa-angle-double-right fa-rotate-45").show();
                 this.$resize
                     .removeClass()
                     .addClass("icon-resize")
@@ -110,13 +80,7 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
                         $("#dd-helper")
                             .show()
                             .on("mousemove", function(event) {
-                                self.$select.height(
-                                    Math.max(
-                                        currentHeight +
-                                            (event.pageY - currentY),
-                                        self.minHeight
-                                    )
-                                );
+                                self.$select.height(Math.max(currentHeight + (event.pageY - currentY), self.minHeight));
                             })
                             .on("mouseup mouseleave", function() {
                                 $("#dd-helper")
@@ -134,9 +98,7 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
         /** Renders the default select2 field */
         _renderSearchable: function() {
             var self = this;
-            this.$el
-                .append((this.$select = $("<div/>")))
-                .append((this.$dropdown = $("<div/>")));
+            this.$el.append((this.$select = $("<div/>"))).append((this.$dropdown = $("<div/>")));
             this.$dropdown.hide();
             if (!this.model.get("multiple")) {
                 this.$dropdown.show().on("click", function() {
@@ -144,11 +106,7 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
                 });
             }
             this.all_button = null;
-            if (
-                this.model.get("multiple") &&
-                !this.model.get("individual") &&
-                !this.model.get("readonly")
-            ) {
+            if (this.model.get("multiple") && !this.model.get("individual") && !this.model.get("readonly")) {
                 this.all_button = new Buttons.ButtonCheck({
                     onclick: function() {
                         var new_value = [];
@@ -223,10 +181,7 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
                             return found || self._match(q.term, e.text);
                         });
                         q.callback({
-                            results: results.slice(
-                                (q.page - 1) * pagesize,
-                                q.page * pagesize
-                            ),
+                            results: results.slice((q.page - 1) * pagesize, q.page * pagesize),
                             more: results.length >= q.page * pagesize
                         });
                     },
@@ -265,19 +220,14 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
                     );
                 });
             }
-            this.model.set(
-                "disabled",
-                this.model.get("readonly") || this.length() == 0
-            );
+            this.model.set("disabled", this.model.get("readonly") || this.length() == 0);
             this._changeValue();
         },
 
         /** Handles field enabling/disabling, usually used when no options are available */
         _changeDisabled: function() {
             if (this.model.get("searchable")) {
-                this.$select.select2(
-                    this.model.get("disabled") ? "disable" : "enable"
-                );
+                this.$select.select2(this.model.get("disabled") ? "disable" : "enable");
             } else {
                 this.$select.prop("disabled", this.model.get("disabled"));
             }
@@ -288,11 +238,7 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
             this.$dropdown
                 .removeClass()
                 .addClass("icon-dropdown fa")
-                .addClass(
-                    this.model.get("wait")
-                        ? "fa-spinner fa-spin"
-                        : "fa-caret-down"
-                );
+                .addClass(this.model.get("wait") ? "fa-spinner fa-spin" : "fa-caret-down");
         },
 
         /** Handles field visibility */
@@ -307,15 +253,9 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
             if (this.model.get("multiple")) {
                 if (this.all_button) {
                     var value = this._getValue();
-                    this.all_button.value(
-                        $.isArray(value) ? value.length : 0,
-                        this.length()
-                    );
+                    this.all_button.value($.isArray(value) ? value.length : 0, this.length());
                 }
-            } else if (
-                this._getValue() === null &&
-                !this.model.get("optional")
-            ) {
+            } else if (this._getValue() === null && !this.model.get("optional")) {
                 this._setValue(this.first());
             }
         },
@@ -381,9 +321,7 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
         /** Update all available options at once */
         add: function(options, sorter) {
             _.each(this.model.get("data"), function(v) {
-                v.keep &&
-                    !_.findWhere(options, { value: v.value }) &&
-                    options.push(v);
+                v.keep && !_.findWhere(options, { value: v.value }) && options.push(v);
             });
             sorter && options && options.sort(sorter);
             this.model.set("data", options);
@@ -401,9 +339,7 @@ define(["utils/utils", "mvc/ui/ui-buttons"], function(Utils, Buttons) {
 
         /** Number of available options */
         length: function() {
-            return $.isArray(this.model.get("data"))
-                ? this.model.get("data").length
-                : 0;
+            return $.isArray(this.model.get("data")) ? this.model.get("data").length : 0;
         },
 
         /** Set value to dom */

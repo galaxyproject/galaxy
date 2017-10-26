@@ -37,7 +37,7 @@
     "build-toolshed": "grunt --app=toolshed",
     "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js",
     "build-charts": "webpack -p --config ../config/plugins/visualizations/charts/webpack.config.js",
-    "prettier": "prettier --write --tab-width 4 \"galaxy/scripts/{,!(libs)/**/}/*.js\""
+    "prettier": "prettier --write --print-width 120 --tab-width 4 \"galaxy/scripts/{,!(libs)/**/}/*.js\""
   },
   "devDependencies": {
     "babel-core": "^6.24.0",

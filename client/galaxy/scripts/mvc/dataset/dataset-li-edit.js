@@ -8,15 +8,7 @@ define(
         "mvc/base-mvc",
         "utils/localization"
     ],
-    function(
-        STATES,
-        DATASET_LI,
-        TAGS,
-        ANNOTATIONS,
-        faIconButton,
-        BASE_MVC,
-        _l
-    ) {
+    function(STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, _l) {
         "use strict";
         //==============================================================================
         var _super = DATASET_LI.DatasetListItemView;
@@ -36,26 +28,20 @@ define(
                     /** should the tags editor be shown or hidden initially? */
                     this.tagsEditorShown = attributes.tagsEditorShown || false;
                     /** should the tags editor be shown or hidden initially? */
-                    this.annotationEditorShown =
-                        attributes.annotationEditorShown || false;
+                    this.annotationEditorShown = attributes.annotationEditorShown || false;
                 },
 
                 // ......................................................................... titlebar actions
                 /** In this override, add the other two primary actions: edit and delete */
                 _renderPrimaryActions: function() {
-                    var actions = _super.prototype._renderPrimaryActions.call(
-                        this
-                    );
+                    var actions = _super.prototype._renderPrimaryActions.call(this);
                     if (this.model.get("state") === STATES.NOT_VIEWABLE) {
                         return actions;
                     }
                     // render the display, edit attr and delete icon-buttons
                     return _super.prototype._renderPrimaryActions
                         .call(this)
-                        .concat([
-                            this._renderEditButton(),
-                            this._renderDeleteButton()
-                        ]);
+                        .concat([this._renderEditButton(), this._renderDeleteButton()]);
                 },
 
                 //TODO: move titleButtons into state renderers, remove state checks in the buttons
@@ -65,20 +51,14 @@ define(
                     var self = this;
                     // don't show edit while uploading, in-accessible
                     // DO show if in error (ala previous history panel)
-                    if (
-                        this.model.get("state") === STATES.DISCARDED ||
-                        !this.model.get("accessible")
-                    ) {
+                    if (this.model.get("state") === STATES.DISCARDED || !this.model.get("accessible")) {
                         return null;
                     }
                     var purged = this.model.get("purged"),
                         deleted = this.model.get("deleted"),
                         editBtnData = {
                             title: _l("Edit attributes"),
-                            href:
-                                Galaxy.root +
-                                "datasets/edit?dataset_id=" +
-                                this.model.attributes.id,
+                            href: Galaxy.root + "datasets/edit?dataset_id=" + this.model.attributes.id,
                             faIcon: "fa-pencil",
                             classes: "edit-btn",
                             onclick: function(ev) {
@@ -94,26 +74,15 @@ define(
                     if (deleted || purged) {
                         editBtnData.disabled = true;
                         if (purged) {
-                            editBtnData.title = _l(
-                                "Cannot edit attributes of datasets removed from disk"
-                            );
+                            editBtnData.title = _l("Cannot edit attributes of datasets removed from disk");
                         } else if (deleted) {
-                            editBtnData.title = _l(
-                                "Undelete dataset to edit attributes"
-                            );
+                            editBtnData.title = _l("Undelete dataset to edit attributes");
                         }
 
                         // disable if still uploading or new
-                    } else if (
-                        _.contains(
-                            [STATES.UPLOAD, STATES.NEW],
-                            this.model.get("state")
-                        )
-                    ) {
+                    } else if (_.contains([STATES.UPLOAD, STATES.NEW], this.model.get("state"))) {
                         editBtnData.disabled = true;
-                        editBtnData.title = _l(
-                            "This dataset is not yet editable"
-                        );
+                        editBtnData.title = _l("This dataset is not yet editable");
                     }
                     return faIconButton(editBtnData);
                 },
@@ -128,17 +97,13 @@ define(
                     var self = this,
                         deletedAlready = this.model.isDeletedOrPurged();
                     return faIconButton({
-                        title: !deletedAlready
-                            ? _l("Delete")
-                            : _l("Dataset is already deleted"),
+                        title: !deletedAlready ? _l("Delete") : _l("Dataset is already deleted"),
                         disabled: deletedAlready,
                         faIcon: "fa-times",
                         classes: "delete-btn",
                         onclick: function() {
                             // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
-                            self.$el
-                                .find(".icon-btn.delete-btn")
-                                .trigger("mouseout");
+                            self.$el.find(".icon-btn.delete-btn").trigger("mouseout");
                             self.model["delete"]();
                         }
                     });
@@ -151,10 +116,7 @@ define(
                     var $details = _super.prototype._renderDetails.call(this),
                         state = this.model.get("state");
 
-                    if (
-                        !this.model.isDeletedOrPurged() &&
-                        _.contains([STATES.OK, STATES.FAILED_METADATA], state)
-                    ) {
+                    if (!this.model.isDeletedOrPurged() && _.contains([STATES.OK, STATES.FAILED_METADATA], state)) {
                         this._renderTags($details);
                         this._renderAnnotation($details);
                         this._makeDbkeyEditLink($details);
@@ -174,32 +136,19 @@ define(
                     var self = this;
 
                     var parseToolBuild = function(data) {
-                        var helpString =
-                            '<div id="thdiv-' +
-                            datasetID +
-                            '" class="toolhelp">';
+                        var helpString = '<div id="thdiv-' + datasetID + '" class="toolhelp">';
                         if (data.name && data.help) {
-                            helpString +=
-                                "<strong>Tool help for " +
-                                data.name +
-                                "</strong><hr/>";
+                            helpString += "<strong>Tool help for " + data.name + "</strong><hr/>";
                             helpString += data.help;
                         } else {
-                            helpString +=
-                                "<strong>Tool help is unavailable for this dataset.</strong><hr/>";
+                            helpString += "<strong>Tool help is unavailable for this dataset.</strong><hr/>";
                         }
                         helpString += "</div>";
-                        self.$el
-                            .find(".details")
-                            .append($.parseHTML(helpString));
+                        self.$el.find(".details").append($.parseHTML(helpString));
                     };
                     var parseToolID = function(data) {
                         $.ajax({
-                            url:
-                                Galaxy.root +
-                                "api/tools/" +
-                                data.tool_id +
-                                "/build"
+                            url: Galaxy.root + "api/tools/" + data.tool_id + "/build"
                         })
                             .done(function(data) {
                                 parseToolBuild(data);
@@ -242,9 +191,7 @@ define(
 
                 /** Add less commonly used actions in the details section based on state */
                 _renderSecondaryActions: function() {
-                    var actions = _super.prototype._renderSecondaryActions.call(
-                        this
-                    );
+                    var actions = _super.prototype._renderSecondaryActions.call(this);
                     switch (this.model.get("state")) {
                         case STATES.UPLOAD:
                         case STATES.NOT_VIEWABLE:
@@ -252,10 +199,7 @@ define(
                         case STATES.ERROR:
                             // error button comes first
                             actions.unshift(this._renderErrButton());
-                            return actions.concat([
-                                this._renderRerunButton(),
-                                this._renderToolHelpButton()
-                            ]);
+                            return actions.concat([this._renderRerunButton(), this._renderToolHelpButton()]);
                         case STATES.OK:
                         case STATES.FAILED_METADATA:
                             return actions.concat([
@@ -264,10 +208,7 @@ define(
                                 this._renderToolHelpButton()
                             ]);
                     }
-                    return actions.concat([
-                        this._renderRerunButton(),
-                        this._renderToolHelpButton()
-                    ]);
+                    return actions.concat([this._renderRerunButton(), this._renderToolHelpButton()]);
                 },
 
                 /** Render icon-button to report an error on this dataset to the galaxy admin. */
@@ -275,10 +216,7 @@ define(
                     var self = this;
                     return faIconButton({
                         title: _l("View or report this error"),
-                        href:
-                            Galaxy.root +
-                            "datasets/error?dataset_id=" +
-                            this.model.attributes.id,
+                        href: Galaxy.root + "datasets/error?dataset_id=" + this.model.attributes.id,
                         classes: "report-error-btn",
                         faIcon: "fa-bug",
                         onclick: function(ev) {
@@ -331,19 +269,11 @@ define(
                         return null;
                     }
 
-                    var $visualizations = $(
-                        this.templates.visualizations(visualizations, this)
-                    );
+                    var $visualizations = $(this.templates.visualizations(visualizations, this));
                     //HACK: need to re-write those directed at galaxy_main with linkTarget
-                    $visualizations
-                        .find('[target="galaxy_main"]')
-                        .attr("target", this.linkTarget);
+                    $visualizations.find('[target="galaxy_main"]').attr("target", this.linkTarget);
                     // use addBack here to include the root $visualizations elem (for the case of 1 visualization)
-                    this._addScratchBookFn(
-                        $visualizations
-                            .find(".visualization-link")
-                            .addBack(".visualization-link")
-                    );
+                    this._addScratchBookFn($visualizations.find(".visualization-link").addBack(".visualization-link"));
                     return $visualizations;
                 },
 
@@ -426,16 +356,11 @@ define(
                 /** If the format/dbkey/genome_build isn't set, make the display a link to the edit page */
                 _makeDbkeyEditLink: function($details) {
                     // make the dbkey a link to editing
-                    if (
-                        this.model.get("metadata_dbkey") === "?" &&
-                        !this.model.isDeletedOrPurged()
-                    ) {
+                    if (this.model.get("metadata_dbkey") === "?" && !this.model.isDeletedOrPurged()) {
                         var editableDbkey = $('<a class="value">?</a>')
                             .attr("href", this.model.urls.edit)
                             .attr("target", "_top");
-                        $details
-                            .find(".dbkey .value")
-                            .replaceWith(editableDbkey);
+                        $details.find(".dbkey .value").replaceWith(editableDbkey);
                     }
                 },
 
@@ -473,13 +398,7 @@ define(
 
                 /** listener for item purge (in the messages section) */
                 _clickPurgeLink: function(ev) {
-                    if (
-                        confirm(
-                            _l(
-                                "This will permanently remove the data in your dataset. Are you sure?"
-                            )
-                        )
-                    ) {
+                    if (confirm(_l("This will permanently remove the data in your dataset. Are you sure?"))) {
                         this.model.purge();
                     }
                     return false;
@@ -488,9 +407,7 @@ define(
                 // ......................................................................... misc
                 /** string rep */
                 toString: function() {
-                    var modelString = this.model
-                        ? this.model + ""
-                        : "(no model)";
+                    var modelString = this.model ? this.model + "" : "(no model)";
                     return "HDAEditView(" + modelString + ")";
                 }
             }
@@ -505,9 +422,7 @@ define(
                         // in this override, provide a link to the edit page
                         '<% if( dataset.state === "failed_metadata" ){ %>',
                         '<div class="failed_metadata-warning warningmessagesmall">',
-                        _l(
-                            "An error occurred setting the metadata for this dataset"
-                        ),
+                        _l("An error occurred setting the metadata for this dataset"),
                         '<br /><a href="<%- dataset.urls.edit %>" target="_top">',
                         _l("Set it manually or retry auto-detection"),
                         "</a>",

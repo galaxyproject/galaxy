@@ -162,9 +162,7 @@ define(
             // create and initialize menu
             var buttons = new IconButtonCollection(
                 _.map(config, function(button_config) {
-                    return new IconButton(
-                        _.extend(button_config, global_config)
-                    );
+                    return new IconButton(_.extend(button_config, global_config));
                 })
             );
 

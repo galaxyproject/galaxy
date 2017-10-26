@@ -10,11 +10,7 @@ define(["utils/utils", "mvc/ui/ui-options"], function(Utils, Options) {
         /** Set states for selected values */
         _setValue: function(new_value) {
             Options.BaseIcons.prototype._setValue.call(this, new_value);
-            if (
-                new_value !== undefined &&
-                new_value !== null &&
-                this.header_index
-            ) {
+            if (new_value !== undefined && new_value !== null && this.header_index) {
                 var self = this;
                 var values = $.isArray(new_value) ? new_value : [new_value];
                 _.each(values, function(v) {
@@ -33,14 +29,10 @@ define(["utils/utils", "mvc/ui/ui-options"], function(Utils, Options) {
             $button.data("is_expanded", is_expanded);
             if (is_expanded) {
                 $subgroup.show();
-                $button
-                    .removeClass("fa-plus-square")
-                    .addClass("fa-minus-square");
+                $button.removeClass("fa-plus-square").addClass("fa-minus-square");
             } else {
                 $subgroup.hide();
-                $button
-                    .removeClass("fa-minus-square")
-                    .addClass("fa-plus-square");
+                $button.removeClass("fa-minus-square").addClass("fa-plus-square");
             }
         },
 

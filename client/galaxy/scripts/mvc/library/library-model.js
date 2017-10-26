@@ -65,16 +65,10 @@ define([], function() {
        */
         sortByNameAsc: function() {
             this.comparator = function(libraryA, libraryB) {
-                if (
-                    libraryA.get("name").toLowerCase() >
-                    libraryB.get("name").toLowerCase()
-                ) {
+                if (libraryA.get("name").toLowerCase() > libraryB.get("name").toLowerCase()) {
                     return 1; // after
                 }
-                if (
-                    libraryB.get("name").toLowerCase() >
-                    libraryA.get("name").toLowerCase()
-                ) {
+                if (libraryB.get("name").toLowerCase() > libraryA.get("name").toLowerCase()) {
                     return -1; // before
                 }
                 return 0; // equal
@@ -88,16 +82,10 @@ define([], function() {
        */
         sortByNameDesc: function() {
             this.comparator = function(libraryA, libraryB) {
-                if (
-                    libraryA.get("name").toLowerCase() >
-                    libraryB.get("name").toLowerCase()
-                ) {
+                if (libraryA.get("name").toLowerCase() > libraryB.get("name").toLowerCase()) {
                     return -1; // before
                 }
-                if (
-                    libraryB.get("name").toLowerCase() >
-                    libraryA.get("name").toLowerCase()
-                ) {
+                if (libraryB.get("name").toLowerCase() > libraryA.get("name").toLowerCase()) {
                     return 1; // after
                 }
                 return 0; // equal
@@ -129,16 +117,10 @@ define([], function() {
         sortByNameAsc: function() {
             this.comparator = function(itemA, itemB) {
                 if (itemA.get("type") === itemB.get("type")) {
-                    if (
-                        itemA.get("name").toLowerCase() >
-                        itemB.get("name").toLowerCase()
-                    ) {
+                    if (itemA.get("name").toLowerCase() > itemB.get("name").toLowerCase()) {
                         return 1; // after
                     }
-                    if (
-                        itemB.get("name").toLowerCase() >
-                        itemA.get("name").toLowerCase()
-                    ) {
+                    if (itemB.get("name").toLowerCase() > itemA.get("name").toLowerCase()) {
                         return -1; // before
                     }
                     return 0; // equal
@@ -160,16 +142,10 @@ define([], function() {
         sortByNameDesc: function() {
             this.comparator = function(itemA, itemB) {
                 if (itemA.get("type") === itemB.get("type")) {
-                    if (
-                        itemA.get("name").toLowerCase() >
-                        itemB.get("name").toLowerCase()
-                    ) {
+                    if (itemA.get("name").toLowerCase() > itemB.get("name").toLowerCase()) {
                         return -1; // after
                     }
-                    if (
-                        itemB.get("name").toLowerCase() >
-                        itemA.get("name").toLowerCase()
-                    ) {
+                    if (itemB.get("name").toLowerCase() > itemA.get("name").toLowerCase()) {
                         return 1; // before
                     }
                     return 0; // equal
@@ -205,9 +181,7 @@ define([], function() {
                     var file_item = new Ldda(obj.folder_contents[i]);
                     this.get("folder").add(file_item);
                 } else {
-                    Galaxy.emit.error(
-                        "Unknown folder item type encountered while parsing response."
-                    );
+                    Galaxy.emit.error("Unknown folder item type encountered while parsing response.");
                 }
             }
             return obj;

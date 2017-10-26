@@ -17,15 +17,8 @@ define(
                 this.model = new toolshed_model.RepositoryCollection();
                 this.listenTo(this.model, "sync", this.render);
                 var shed = params.tool_shed.replace(/\//g, "%2f");
-                this.model.url +=
-                    "?tool_shed_url=" +
-                    shed +
-                    "&repository_id=" +
-                    params.repository_id;
-                this.model.tool_shed_url = params.tool_shed.replace(
-                    /%2f/g,
-                    "/"
-                );
+                this.model.url += "?tool_shed_url=" + shed + "&repository_id=" + params.repository_id;
+                this.model.tool_shed_url = params.tool_shed.replace(/%2f/g, "/");
                 this.model.tool_shed = shed;
                 this.model.category = params.repository_id;
                 this.model.fetch();
@@ -40,12 +33,8 @@ define(
                     queue: toolshed_util.queueLength()
                 };
                 var changesets = Object.keys(this.options.repository.metadata);
-                this.options.current_changeset =
-                    this.options.current_changeset ||
-                    changesets[changesets.length - 1];
-                this.options.current_metadata = this.options.repository.metadata[
-                    this.options.current_changeset
-                ];
+                this.options.current_changeset = this.options.current_changeset || changesets[changesets.length - 1];
+                this.options.current_metadata = this.options.repository.metadata[this.options.current_changeset];
                 this.options.current_metadata.tool_shed_url = this.model.tool_shed_url;
                 this.options.tools = this.options.current_metadata.tools;
                 this.options.repository_dependencies_template = this.templateRepoDependencies;
@@ -53,18 +42,12 @@ define(
                 this.options.tps_template_global_select = this.templateGlobalSectionSelect;
                 this.options.tps_template_tool_select = this.templateToolSectionSelect;
                 this.options.tps_select_options = this.templatePanelSelectOptions;
-                this.options.tool_dependencies = models.get(
-                    "tool_dependencies"
-                );
+                this.options.tool_dependencies = models.get("tool_dependencies");
                 this.options.shed_tool_conf = this.templateShedToolConf({
                     stc_html: models.get("shed_conf")
                 });
-                this.options.panel_section_dict = models.get(
-                    "panel_section_dict"
-                );
-                this.options.api_url =
-                    Galaxy.root +
-                    "api/tool_shed_repositories/install?async=True";
+                this.options.panel_section_dict = models.get("panel_section_dict");
+                this.options.api_url = Galaxy.root + "api/tool_shed_repositories/install?async=True";
                 this.options = _.extend(this.options, options);
                 this.$el.html(repo_details_template(this.options));
                 this.checkInstalled(this.options.current_metadata);
@@ -78,10 +61,7 @@ define(
                     that.options.current_changeset = $("#changeset")
                         .find("option:selected")
                         .text();
-                    that.options.current_metadata =
-                        that.options.repository.metadata[
-                            that.options.current_changeset
-                        ];
+                    that.options.current_metadata = that.options.repository.metadata[that.options.current_changeset];
                     that.checkInstalled(that.options.current_metadata);
                     that.reDraw();
                 });
@@ -100,23 +80,13 @@ define(
                                 .val()
                         ]
                     ]);
-                    params.tool_shed_repository_ids = JSON.stringify([
-                        $("#install_repository").attr("data-tsrid")
-                    ]);
+                    params.tool_shed_repository_ids = JSON.stringify([$("#install_repository").attr("data-tsrid")]);
                     params.tool_shed_url = that.model.tool_shed_url;
-                    params.install_tool_dependencies = $(
-                        "#install_tool_dependencies"
-                    ).val();
-                    params.install_repository_dependencies = $(
-                        "#install_repository_dependencies"
-                    ).val();
-                    params.install_resolver_dependencies = $(
-                        "#install_resolver_dependencies"
-                    ).val();
+                    params.install_tool_dependencies = $("#install_tool_dependencies").val();
+                    params.install_repository_dependencies = $("#install_repository_dependencies").val();
+                    params.install_resolver_dependencies = $("#install_resolver_dependencies").val();
                     var tps = that.panelSelect(params);
-                    params.tool_panel_section = JSON.stringify(
-                        that.panelSelect(params)
-                    );
+                    params.tool_panel_section = JSON.stringify(that.panelSelect(params));
                     params.shed_tool_conf = $("select[name='shed_tool_conf']")
                         .find("option:selected")
                         .val();
@@ -130,39 +100,22 @@ define(
                     that.options.current_changeset = $("#changeset")
                         .find("option:selected")
                         .text();
-                    that.options.current_metadata =
-                        that.options.repository.metadata[
-                            that.options.current_changeset
-                        ];
+                    that.options.current_metadata = that.options.repository.metadata[that.options.current_changeset];
                     var changeset = that.options.current_changeset;
                     var repository_metadata = {};
-                    _.each(Object.keys(that.options.current_metadata), function(
-                        key
-                    ) {
+                    _.each(Object.keys(that.options.current_metadata), function(key) {
                         if (!repository_metadata[key]) {
-                            repository_metadata[key] =
-                                that.options.current_metadata[key];
+                            repository_metadata[key] = that.options.current_metadata[key];
                         }
                     });
-                    repository_metadata.install_tool_dependencies = $(
-                        "#install_tool_dependencies"
-                    ).val();
-                    repository_metadata.install_repository_dependencies = $(
-                        "#install_repository_dependencies"
-                    ).val();
-                    repository_metadata.install_resolver_dependencies = $(
-                        "#install_resolver_dependencies"
-                    ).val();
-                    repository_metadata.tool_panel_section = JSON.stringify(
-                        that.panelSelect({})
-                    );
-                    repository_metadata.shed_tool_conf = $(
-                        "select[name='shed_tool_conf']"
-                    )
+                    repository_metadata.install_tool_dependencies = $("#install_tool_dependencies").val();
+                    repository_metadata.install_repository_dependencies = $("#install_repository_dependencies").val();
+                    repository_metadata.install_resolver_dependencies = $("#install_resolver_dependencies").val();
+                    repository_metadata.tool_panel_section = JSON.stringify(that.panelSelect({}));
+                    repository_metadata.shed_tool_conf = $("select[name='shed_tool_conf']")
                         .find("option:selected")
                         .val();
-                    repository_metadata.tool_shed_url =
-                        that.model.tool_shed_url;
+                    repository_metadata.tool_shed_url = that.model.tool_shed_url;
                     if (repository_metadata.tool_shed_url.substr(-1) == "/") {
                         repository_metadata.tool_shed_url = repository_metadata.tool_shed_url.substr(
                             0,
@@ -210,18 +163,10 @@ define(
                         var toolform = new FormView(data);
                         Utils.deepeach(data.inputs, function(input) {
                             if (input.type) {
-                                if (
-                                    ["data", "data_collection"].indexOf(
-                                        input.type
-                                    ) != -1
-                                ) {
+                                if (["data", "data_collection"].indexOf(input.type) != -1) {
                                     input.type = "hidden";
                                     input.info =
-                                        "Data input '" +
-                                        input.name +
-                                        "' (" +
-                                        Utils.textify(input.extensions) +
-                                        ")";
+                                        "Data input '" + input.name + "' (" + Utils.textify(input.extensions) + ")";
                                 }
                             }
                         });
@@ -246,69 +191,47 @@ define(
                 var params = { name: metadata.name, owner: metadata.owner };
                 var already_installed = false;
                 var queued = that.repoQueued(metadata);
-                $.get(
-                    Galaxy.root + "api/tool_shed_repositories",
-                    params,
-                    function(data) {
-                        for (var index = 0; index < data.length; index++) {
-                            var repository = data[index];
-                            var installed =
-                                !repository.deleted && !repository.uninstalled;
-                            var changeset_match =
-                                repository.changeset_revision ==
-                                    metadata.changeset_revision ||
-                                repository.installed_changeset_revision ==
-                                    metadata.changeset_revision;
-                            if (
-                                repository.name == metadata.repository.name &&
-                                repository.owner == metadata.repository.owner &&
-                                installed &&
-                                changeset_match
-                            ) {
-                                already_installed = true;
-                            }
-                            if (already_installed) {
-                                $("#install_repository").prop("disabled", true);
-                                $("#install_repository").val(
-                                    "This revision is already installed"
-                                );
-                            } else {
-                                $("#install_repository").prop(
-                                    "disabled",
-                                    false
-                                );
-                                $("#install_repository").val(
-                                    "Install this revision"
-                                );
-                            }
+                $.get(Galaxy.root + "api/tool_shed_repositories", params, function(data) {
+                    for (var index = 0; index < data.length; index++) {
+                        var repository = data[index];
+                        var installed = !repository.deleted && !repository.uninstalled;
+                        var changeset_match =
+                            repository.changeset_revision == metadata.changeset_revision ||
+                            repository.installed_changeset_revision == metadata.changeset_revision;
+                        if (
+                            repository.name == metadata.repository.name &&
+                            repository.owner == metadata.repository.owner &&
+                            installed &&
+                            changeset_match
+                        ) {
+                            already_installed = true;
                         }
-                        if (that.repoQueued(metadata) || already_installed) {
-                            $("#queue_install").hide();
-                            $("#queue_install").val(
-                                "This revision is already in the queue"
-                            );
+                        if (already_installed) {
+                            $("#install_repository").prop("disabled", true);
+                            $("#install_repository").val("This revision is already installed");
                         } else {
-                            $("#queue_install").show();
-                            $("#queue_install").val(
-                                "Install this revision later"
-                            );
+                            $("#install_repository").prop("disabled", false);
+                            $("#install_repository").val("Install this revision");
                         }
                     }
-                );
+                    if (that.repoQueued(metadata) || already_installed) {
+                        $("#queue_install").hide();
+                        $("#queue_install").val("This revision is already in the queue");
+                    } else {
+                        $("#queue_install").show();
+                        $("#queue_install").val("Install this revision later");
+                    }
+                });
             },
 
             panelSelect: function(params) {
                 var tool_panel_section = {};
                 if ($("#tool_panel_section_select").length) {
-                    params.tool_panel_section_id = $(
-                        "#tool_panel_section_select"
-                    )
+                    params.tool_panel_section_id = $("#tool_panel_section_select")
                         .find("option:selected")
                         .val();
                 } else {
-                    params.new_tool_panel_section = $(
-                        "#new_tool_panel_section"
-                    ).val();
+                    params.new_tool_panel_section = $("#new_tool_panel_section").val();
                 }
                 $(".tool_panel_section_picker").each(function() {
                     var element_name = $(this).attr("name");
@@ -358,22 +281,14 @@ define(
                 if (shed_url.substr(-1) == "/") {
                     shed_url = shed_url.substr(0, shed_url.length - 1);
                 }
-                return (
-                    shed_url +
-                    "|" +
-                    metadata.repository_id +
-                    "|" +
-                    metadata.changeset_revision
-                );
+                return shed_url + "|" + metadata.repository_id + "|" + metadata.changeset_revision;
             },
 
             tpsSelection: function() {
                 new_tps = $("#tool_panel_section_select")
                     .find("option:selected")
                     .val();
-                $(
-                    '.tool_panel_section_picker[default="active"]'
-                ).each(function() {
+                $('.tool_panel_section_picker[default="active"]').each(function() {
                     $(this).val(new_tps);
                 });
             },
@@ -387,14 +302,11 @@ define(
             },
 
             doInstall: function(params) {
-                var controller_url =
-                    Galaxy.root + "admin_toolshed/manage_repositories";
+                var controller_url = Galaxy.root + "admin_toolshed/manage_repositories";
                 var repositories = params.repositories;
                 var new_route = "status/r/" + repositories.join("|");
                 $.post(controller_url, params, function(data) {
-                    console.log(
-                        "Initializing repository installation succeeded"
-                    );
+                    console.log("Initializing repository installation succeeded");
                 });
                 Backbone.history.navigate(new_route, {
                     trigger: true,

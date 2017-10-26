@@ -78,13 +78,9 @@ define(
             },
 
             template: function(id, options) {
-                return [
-                    '<ul id="',
-                    id,
-                    '-menu" class="dropdown-menu">',
-                    this._templateOptions(options),
-                    "</ul>"
-                ].join("");
+                return ['<ul id="', id, '-menu" class="dropdown-menu">', this._templateOptions(options), "</ul>"].join(
+                    ""
+                );
             },
 
             _templateOptions: function(options) {
@@ -95,19 +91,11 @@ define(
                     if (option.divider) {
                         return '<li class="divider"></li>';
                     } else if (option.header) {
-                        return [
-                            '<li class="head"><a href="javascript:void(0);">',
-                            option.html,
-                            "</a></li>"
-                        ].join("");
+                        return ['<li class="head"><a href="javascript:void(0);">', option.html, "</a></li>"].join("");
                     }
                     var href = option.href || "javascript:void(0);",
-                        target = option.target
-                            ? ' target="' + option.target + '"'
-                            : "",
-                        check = option.checked
-                            ? '<span class="fa fa-check"></span>'
-                            : "";
+                        target = option.target ? ' target="' + option.target + '"' : "",
+                        check = option.checked ? '<span class="fa fa-check"></span>' : "";
                     return [
                         '<li><a class="popupmenu-option" href="',
                         href,
@@ -128,10 +116,7 @@ define(
                 var x = clickEvent.pageX - menuWidth / 2;
 
                 // adjust to handle horiz. scroll and window dimensions ( draw entirely on visible screen area )
-                x = Math.min(
-                    x,
-                    $(document).scrollLeft() + $(window).width() - menuWidth - 5
-                );
+                x = Math.min(x, $(document).scrollLeft() + $(window).width() - menuWidth - 5);
                 x = Math.max(x, $(document).scrollLeft() + 5);
                 return {
                     top: clickEvent.pageY,
@@ -197,10 +182,7 @@ define(
             // search for a menu option by its html
             findIndexByHtml: function(html) {
                 for (var i = 0; i < this.options.length; i++) {
-                    if (
-                        _.has(this.options[i], "html") &&
-                        this.options[i].html === html
-                    ) {
+                    if (_.has(this.options[i], "html") && this.options[i].html === html) {
                         return i;
                     }
                 }
@@ -311,17 +293,10 @@ define(
  *  @param {String} menuElementLinkSelector jq selector string used to find anchors to be made into menu options
  *  @returns {PopupMenu} the PopupMenu (Backbone View) that can render, control the menu
  */
-        PopupMenu.fromExistingDom = function(
-            $buttonElement,
-            $menuElement,
-            menuElementLinkSelector
-        ) {
+        PopupMenu.fromExistingDom = function($buttonElement, $menuElement, menuElementLinkSelector) {
             $buttonElement = $($buttonElement);
             $menuElement = $($menuElement);
-            var options = PopupMenu.convertLinksToOptions(
-                $menuElement,
-                menuElementLinkSelector
-            );
+            var options = PopupMenu.convertLinksToOptions($menuElement, menuElementLinkSelector);
             // we're done with the menu (having converted it to an options map)
             $menuElement.remove();
             return new PopupMenu($buttonElement, options);
@@ -335,11 +310,7 @@ define(
  *      (Defaults to return '#' + $menuElement.attr( 'popupmenu' ); )
  *  @returns {PopupMenu[]} array of popupmenus created
  */
-        PopupMenu.make_popup_menus = function(
-            parent,
-            menuSelector,
-            buttonSelectorBuildFn
-        ) {
+        PopupMenu.make_popup_menus = function(parent, menuSelector, buttonSelectorBuildFn) {
             parent = parent || document;
             // orig. Glx popupmenu menus have a (non-std) attribute 'popupmenu'
             //  which contains the id of the button that activates the menu
@@ -357,12 +328,8 @@ define(
                 .find(menuSelector)
                 .each(function() {
                     var $menuElement = $(this),
-                        $buttonElement = $(parent).find(
-                            buttonSelectorBuildFn($menuElement, parent)
-                        );
-                    popupMenusCreated.push(
-                        PopupMenu.fromDom($buttonElement, $menuElement)
-                    );
+                        $buttonElement = $(parent).find(buttonSelectorBuildFn($menuElement, parent));
+                    popupMenusCreated.push(PopupMenu.fromDom($buttonElement, $menuElement));
                     $buttonElement.addClass("popup");
                 });
             return popupMenusCreated;

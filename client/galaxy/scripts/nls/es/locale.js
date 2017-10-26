@@ -76,8 +76,7 @@ define({
     // ---- history-model
     // ---- history-view
     "This history is empty": "Esta historia está vacía",
-    "No matching datasets found":
-        "No se encontraron conjuntos de datos coincidentes",
+    "No matching datasets found": "No se encontraron conjuntos de datos coincidentes",
     "An error occurred while getting updates from the server":
         "Se ha producido un error al obtener actualizaciones desde el servidor",
     "Please contact a Galaxy administrator if the problem persists":
@@ -86,8 +85,7 @@ define({
     //"An error was encountered while <% where %>" :
     //false,
     "search datasets": "Conjuntos de datos de búsqueda",
-    "You are currently viewing a deleted history!":
-        "¡Actualmente estás viendo un historial eliminado!",
+    "You are currently viewing a deleted history!": "¡Actualmente estás viendo un historial eliminado!",
     "You are over your disk quota": "Has sobrepasado tu cuota de disco",
     "Tool execution is on hold until your disk usage drops below your allocated quota":
         "La ejecución de la herramienta está en espera hasta que el uso del disco caiga por debajo de la cuota asignada",
@@ -99,14 +97,12 @@ define({
     "Edit history Annotation": "Editar anotación de la historia",
     "Click to rename history": "Haga clic para cambiar el nombre del historial",
     // multi operations
-    "Operations on multiple datasets":
-        "Operaciones en conjuntos de datos múltiples",
+    "Operations on multiple datasets": "Operaciones en conjuntos de datos múltiples",
     "Hide datasets": "Ocultar conjuntos de datos",
     "Unhide datasets": "Mostrar conjuntos de datos",
     "Delete datasets": "Borrar conjuntos de datos",
     "Undelete datasets": "Undelete datasets",
-    "Permanently delete datasets":
-        "Eliminar permanentemente conjuntos de datos",
+    "Permanently delete datasets": "Eliminar permanentemente conjuntos de datos",
     "This will permanently remove the data in your datasets. Are you sure?":
         "Esto eliminará permanentemente los datos de sus datasets. ¿Está seguro?",
     // ---- history-view-annotated
@@ -115,8 +111,7 @@ define({
     // ---- history-view-edit-current
     "This history is empty. Click 'Get Data' on the left tool menu to start":
         "Este historial está vacío. Haga clic en 'Obtener datos' en el menú de herramientas de la izquierda para iniciar",
-    "You must be logged in to create histories":
-        "Debe haber iniciado sesión para crear historiales",
+    "You must be logged in to create histories": "Debe haber iniciado sesión para crear historiales",
     //TODO:
     //"You can <% loadYourOwn %> or <% externalSource %>" :
     //false,
@@ -136,12 +131,10 @@ define({
     "Unable to purge dataset": "No se puede purgar el dataset",
     // ---- hda-base
     // display button
-    "Cannot display datasets removed from disk":
-        "No se pueden mostrar conjuntos de datos eliminados del disco",
+    "Cannot display datasets removed from disk": "No se pueden mostrar conjuntos de datos eliminados del disco",
     "This dataset must finish uploading before it can be viewed":
         "Este conjunto de datos debe terminar de cargar antes de que se pueda ver",
-    "This dataset is not yet viewable":
-        "Este conjunto de datos aún no se puede ver",
+    "This dataset is not yet viewable": "Este conjunto de datos aún no se puede ver",
     "View data": "Ver datos",
     // download button
     Download: "Descargar",
@@ -154,28 +147,23 @@ define({
     "This is a new dataset and not all of its data are available yet":
         "Este es un nuevo conjunto de datos y no todos sus datos están disponibles todavía",
     // state: noPermission
-    "You do not have permission to view this dataset":
-        "No tiene permiso para ver este conjunto de datos",
+    "You do not have permission to view this dataset": "No tiene permiso para ver este conjunto de datos",
     // state: discarded
     "The job creating this dataset was cancelled before completion":
         "El trabajo que creó este conjunto de datos se canceló antes de completarse",
     // state: queued
     "This job is waiting to run": "Este trabajo está a la espera de ejecutar",
     // state: upload
-    "This dataset is currently uploading":
-        "Este conjunto de datos se está subiendo actualmente",
+    "This dataset is currently uploading": "Este conjunto de datos se está subiendo actualmente",
     // state: setting_metadata
-    "Metadata is being auto-detected":
-        "Los metadatos se detectan automáticamente",
+    "Metadata is being auto-detected": "Los metadatos se detectan automáticamente",
     // state: running
-    "This job is currently running":
-        "Este trabajo se está ejecutando actualmente",
+    "This job is currently running": "Este trabajo se está ejecutando actualmente",
     // state: paused
     'This job is paused. Use the "Resume Paused Jobs" in the history menu to resume':
         'Este trabajo está en pausa Utilice la opción " Reanudar pausado Jobs " en el menú de historial para reanudar',
     // state: error
-    "An error occurred with this dataset":
-        "Se ha producido un error con este conjunto de datos",
+    "An error occurred with this dataset": "Se ha producido un error con este conjunto de datos",
     // state: empty
     "No data": "Sin datos",
     // state: failed_metadata
@@ -195,12 +183,10 @@ define({
     "Edit attributes": "Editar atributos",
     "Cannot edit attributes of datasets removed from disk":
         "No se pueden editar los atributos de conjuntos de datos eliminados del disco",
-    "Undelete dataset to edit attributes":
-        "Undelete el conjunto de datos para editar atributos",
+    "Undelete dataset to edit attributes": "Undelete el conjunto de datos para editar atributos",
     "This dataset must finish uploading before it can be edited":
         "Este conjunto de datos debe terminar de cargar antes de que pueda ser editado",
-    "This dataset is not yet editable":
-        "Este conjunto de datos aún no es editable",
+    "This dataset is not yet editable": "Este conjunto de datos aún no es editable",
     Delete: "Borrar",
     "Dataset is already deleted": "El conjunto de datos ya se ha eliminado",
     "View or report this error": "Ver o informar de este error",
@@ -211,8 +197,7 @@ define({
     "Permanently remove it from disk": "Eliminar permanentemente del disco",
     "Unhide it": "Mostrarlo",
     "You may be able to": "Usted puede ser capaz de",
-    "set it manually or retry auto-detection":
-        "Configurar manualmente o volver a intentar la detección automática",
+    "set it manually or retry auto-detection": "Configurar manualmente o volver a intentar la detección automática",
     "Edit dataset tags": "Editar etiquetas de dataset",
     "Edit dataset annotation": "Editar anotación del conjunto de datos",
     // ---------------------------------------------------------------------------- misc. MVC

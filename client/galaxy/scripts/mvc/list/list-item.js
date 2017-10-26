@@ -18,10 +18,7 @@ define(["mvc/base-mvc", "utils/localization"], function(BASE_MVC, _l) {
             /** are the details of this view expanded/shown or not? */
             this.expanded = attributes.expanded || false;
             this.log("\t expanded:", this.expanded);
-            this.fxSpeed =
-                attributes.fxSpeed !== undefined
-                    ? attributes.fxSpeed
-                    : this.fxSpeed;
+            this.fxSpeed = attributes.fxSpeed !== undefined ? attributes.fxSpeed : this.fxSpeed;
         },
 
         // ........................................................................ render main
@@ -45,9 +42,7 @@ define(["mvc/base-mvc", "utils/localization"], function(BASE_MVC, _l) {
             // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
             var $newRender = $(this.templates.el(this.model.toJSON(), this));
             if (this.expanded) {
-                this.$details($newRender).replaceWith(
-                    this._renderDetails().show()
-                );
+                this.$details($newRender).replaceWith(this._renderDetails().show());
             }
             return $newRender;
         },
@@ -87,12 +82,7 @@ define(["mvc/base-mvc", "utils/localization"], function(BASE_MVC, _l) {
         _swapNewRender: function($newRender) {
             return this.$el
                 .empty()
-                .attr(
-                    "class",
-                    _.isFunction(this.className)
-                        ? this.className()
-                        : this.className
-                )
+                .attr("class", _.isFunction(this.className) ? this.className() : this.className)
                 .append($newRender.children());
         },
 
@@ -115,9 +105,7 @@ define(["mvc/base-mvc", "utils/localization"], function(BASE_MVC, _l) {
 
         /** build the DOM for the details and set up behaviors on it */
         _renderDetails: function() {
-            var $newDetails = $(
-                this.templates.details(this.model.toJSON(), this)
-            );
+            var $newDetails = $(this.templates.details(this.model.toJSON(), this));
             this._setUpBehaviors($newDetails);
             return $newDetails;
         },
@@ -195,162 +183,132 @@ define(["mvc/base-mvc", "utils/localization"], function(BASE_MVC, _l) {
  *  Designed as a base class for history panel contents - but usable elsewhere (I hope).
  */
     var ListItemView = ExpandableView.extend(
-        BASE_MVC.mixin(
-            BASE_MVC.SelectableViewMixin,
-            BASE_MVC.DraggableViewMixin,
-            {
-                tagName: "div",
-                className: "list-item",
+        BASE_MVC.mixin(BASE_MVC.SelectableViewMixin, BASE_MVC.DraggableViewMixin, {
+            tagName: "div",
+            className: "list-item",
 
-                /** Set up the base class and all mixins */
-                initialize: function(attributes) {
-                    ExpandableView.prototype.initialize.call(this, attributes);
-                    BASE_MVC.SelectableViewMixin.initialize.call(
-                        this,
-                        attributes
-                    );
-                    BASE_MVC.DraggableViewMixin.initialize.call(
-                        this,
-                        attributes
-                    );
-                    this._setUpListeners();
-                },
+            /** Set up the base class and all mixins */
+            initialize: function(attributes) {
+                ExpandableView.prototype.initialize.call(this, attributes);
+                BASE_MVC.SelectableViewMixin.initialize.call(this, attributes);
+                BASE_MVC.DraggableViewMixin.initialize.call(this, attributes);
+                this._setUpListeners();
+            },
 
-                /** event listeners */
-                _setUpListeners: function() {
-                    // hide the primary actions in the title bar when selectable and narrow
-                    this.on(
-                        "selectable",
-                        function(isSelectable) {
-                            if (isSelectable) {
-                                this.$(".primary-actions").hide();
-                            } else {
-                                this.$(".primary-actions").show();
-                            }
-                        },
-                        this
-                    );
-                    return this;
-                },
-
-                // ........................................................................ rendering
-                /** In this override, call methods to build warnings, titlebar and primary actions */
-                _buildNewRender: function() {
-                    var $newRender = ExpandableView.prototype._buildNewRender.call(
-                        this
-                    );
-                    $newRender
-                        .children(".warnings")
-                        .replaceWith(this._renderWarnings());
-                    $newRender
-                        .children(".title-bar")
-                        .replaceWith(this._renderTitleBar());
-                    $newRender
-                        .children(".primary-actions")
-                        .append(this._renderPrimaryActions());
-                    $newRender
-                        .find("> .title-bar .subtitle")
-                        .replaceWith(this._renderSubtitle());
-                    return $newRender;
-                },
-
-                /** In this override, render the selector controls and set up dragging before the swap */
-                _swapNewRender: function($newRender) {
-                    ExpandableView.prototype._swapNewRender.call(
-                        this,
-                        $newRender
-                    );
-                    if (this.selectable) {
-                        this.showSelector(0);
-                    }
-                    if (this.draggable) {
-                        this.draggableOn();
-                    }
-                    return this.$el;
-                },
-
-                /** Render any warnings the item may need to show (e.g. "I'm deleted") */
-                _renderWarnings: function() {
-                    var view = this,
-                        $warnings = $('<div class="warnings"></div>'),
-                        json = view.model.toJSON();
-                    //TODO:! unordered (map)
-                    _.each(view.templates.warnings, function(templateFn) {
-                        $warnings.append($(templateFn(json, view)));
-                    });
-                    return $warnings;
-                },
-
-                /** Render the title bar (the main/exposed SUMMARY dom element) */
-                _renderTitleBar: function() {
-                    return $(
-                        this.templates.titleBar(this.model.toJSON(), this)
-                    );
-                },
-
-                /** Return an array of jQ objects containing common/easily-accessible item controls */
-                _renderPrimaryActions: function() {
-                    // override this
-                    return [];
-                },
-
-                /** Render the title bar (the main/exposed SUMMARY dom element) */
-                _renderSubtitle: function() {
-                    return $(
-                        this.templates.subtitle(this.model.toJSON(), this)
-                    );
-                },
-
-                // ......................................................................... events
-                /** event map */
-                events: {
-                    // expand the body when the title is clicked or when in focus and space or enter is pressed
-                    "click .title-bar": "_clickTitleBar",
-                    "keydown .title-bar": "_keyDownTitleBar",
-                    "click .selector": "toggleSelect"
-                },
-
-                /** expand when the title bar is clicked */
-                _clickTitleBar: function(event) {
-                    event.stopPropagation();
-                    if (event.altKey) {
-                        this.toggleSelect(event);
-                        if (!this.selectable) {
-                            this.showSelector();
+            /** event listeners */
+            _setUpListeners: function() {
+                // hide the primary actions in the title bar when selectable and narrow
+                this.on(
+                    "selectable",
+                    function(isSelectable) {
+                        if (isSelectable) {
+                            this.$(".primary-actions").hide();
+                        } else {
+                            this.$(".primary-actions").show();
                         }
-                    } else {
-                        this.toggleExpanded();
-                    }
-                },
+                    },
+                    this
+                );
+                return this;
+            },
 
-                /** expand when the title bar is in focus and enter or space is pressed */
-                _keyDownTitleBar: function(event) {
-                    // bail (with propagation) if keydown and not space or enter
-                    var KEYCODE_SPACE = 32,
-                        KEYCODE_RETURN = 13;
-                    if (
-                        event &&
-                        event.type === "keydown" &&
-                        (event.keyCode === KEYCODE_SPACE ||
-                            event.keyCode === KEYCODE_RETURN)
-                    ) {
-                        this.toggleExpanded();
-                        event.stopPropagation();
-                        return false;
-                    }
-                    return true;
-                },
+            // ........................................................................ rendering
+            /** In this override, call methods to build warnings, titlebar and primary actions */
+            _buildNewRender: function() {
+                var $newRender = ExpandableView.prototype._buildNewRender.call(this);
+                $newRender.children(".warnings").replaceWith(this._renderWarnings());
+                $newRender.children(".title-bar").replaceWith(this._renderTitleBar());
+                $newRender.children(".primary-actions").append(this._renderPrimaryActions());
+                $newRender.find("> .title-bar .subtitle").replaceWith(this._renderSubtitle());
+                return $newRender;
+            },
 
-                // ......................................................................... misc
-                /** String representation */
-                toString: function() {
-                    var modelString = this.model
-                        ? this.model + ""
-                        : "(no model)";
-                    return "ListItemView(" + modelString + ")";
+            /** In this override, render the selector controls and set up dragging before the swap */
+            _swapNewRender: function($newRender) {
+                ExpandableView.prototype._swapNewRender.call(this, $newRender);
+                if (this.selectable) {
+                    this.showSelector(0);
                 }
+                if (this.draggable) {
+                    this.draggableOn();
+                }
+                return this.$el;
+            },
+
+            /** Render any warnings the item may need to show (e.g. "I'm deleted") */
+            _renderWarnings: function() {
+                var view = this,
+                    $warnings = $('<div class="warnings"></div>'),
+                    json = view.model.toJSON();
+                //TODO:! unordered (map)
+                _.each(view.templates.warnings, function(templateFn) {
+                    $warnings.append($(templateFn(json, view)));
+                });
+                return $warnings;
+            },
+
+            /** Render the title bar (the main/exposed SUMMARY dom element) */
+            _renderTitleBar: function() {
+                return $(this.templates.titleBar(this.model.toJSON(), this));
+            },
+
+            /** Return an array of jQ objects containing common/easily-accessible item controls */
+            _renderPrimaryActions: function() {
+                // override this
+                return [];
+            },
+
+            /** Render the title bar (the main/exposed SUMMARY dom element) */
+            _renderSubtitle: function() {
+                return $(this.templates.subtitle(this.model.toJSON(), this));
+            },
+
+            // ......................................................................... events
+            /** event map */
+            events: {
+                // expand the body when the title is clicked or when in focus and space or enter is pressed
+                "click .title-bar": "_clickTitleBar",
+                "keydown .title-bar": "_keyDownTitleBar",
+                "click .selector": "toggleSelect"
+            },
+
+            /** expand when the title bar is clicked */
+            _clickTitleBar: function(event) {
+                event.stopPropagation();
+                if (event.altKey) {
+                    this.toggleSelect(event);
+                    if (!this.selectable) {
+                        this.showSelector();
+                    }
+                } else {
+                    this.toggleExpanded();
+                }
+            },
+
+            /** expand when the title bar is in focus and enter or space is pressed */
+            _keyDownTitleBar: function(event) {
+                // bail (with propagation) if keydown and not space or enter
+                var KEYCODE_SPACE = 32,
+                    KEYCODE_RETURN = 13;
+                if (
+                    event &&
+                    event.type === "keydown" &&
+                    (event.keyCode === KEYCODE_SPACE || event.keyCode === KEYCODE_RETURN)
+                ) {
+                    this.toggleExpanded();
+                    event.stopPropagation();
+                    return false;
+                }
+                return true;
+            },
+
+            // ......................................................................... misc
+            /** String representation */
+            toString: function() {
+                var modelString = this.model ? this.model + "" : "(no model)";
+                return "ListItemView(" + modelString + ")";
             }
-        )
+        })
     );
 
     // ............................................................................ TEMPLATES
@@ -439,8 +397,7 @@ define(["mvc/base-mvc", "utils/localization"], function(BASE_MVC, _l) {
                 this.expanded = false;
             }
             this.foldoutStyle = attributes.foldoutStyle || this.foldoutStyle;
-            this.foldoutPanelClass =
-                attributes.foldoutPanelClass || this.foldoutPanelClass;
+            this.foldoutPanelClass = attributes.foldoutPanelClass || this.foldoutPanelClass;
 
             ListItemView.prototype.initialize.call(this, attributes);
             this.foldout = this._createFoldoutPanel();

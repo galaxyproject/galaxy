@@ -5,9 +5,7 @@ define(["toolshed/repository-queue-model"], function() {
         render: function(options) {
             this.options = _.extend(this.options, options);
             var repository_queue_template = this.templateRepoQueue();
-            this.$el.html(
-                repository_queue_template({ repository: this.model })
-            );
+            this.$el.html(repository_queue_template({ repository: this.model }));
         },
 
         templateRepoQueueTab: _.template(

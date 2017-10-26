@@ -84,27 +84,17 @@ define(
                     },
                     Add: function() {
                         var requests = [];
-                        tabs
-                            .$(
-                                "input.grid-row-select-checkbox[name=id]:checked"
-                            )
-                            .each(function() {
-                                window.console.log($(this).val());
-                                requests[requests.length] = $.ajax({
-                                    url:
-                                        Galaxy.root +
-                                        "api/datasets/" +
-                                        $(this).val(),
-                                    dataType: "json",
-                                    data: {
-                                        data_type: "track_config",
-                                        hda_ldda:
-                                            tabs.current() == "histories"
-                                                ? "hda"
-                                                : "ldda"
-                                    }
-                                });
+                        tabs.$("input.grid-row-select-checkbox[name=id]:checked").each(function() {
+                            window.console.log($(this).val());
+                            requests[requests.length] = $.ajax({
+                                url: Galaxy.root + "api/datasets/" + $(this).val(),
+                                dataType: "json",
+                                data: {
+                                    data_type: "track_config",
+                                    hda_ldda: tabs.current() == "histories" ? "hda" : "ldda"
+                                }
                             });
+                        });
                         // To preserve order, wait until there are definitions for all tracks and then add
                         // them sequentially.
                         $.when.apply($, requests).then(function() {
@@ -131,10 +121,7 @@ define(
  * Canvas manager is used to create canvases for browsers as well as providing a pattern cache
  */
         var CanvasManager = function(default_font) {
-            this.default_font =
-                default_font !== undefined
-                    ? default_font
-                    : "9px Monaco, Lucida Console, monospace";
+            this.default_font = default_font !== undefined ? default_font : "9px Monaco, Lucida Console, monospace";
 
             this.dummy_canvas = this.new_canvas();
             this.dummy_context = this.dummy_canvas.getContext("2d");
@@ -145,19 +132,10 @@ define(
             this.patterns = {};
 
             // FIXME: move somewhere to make this more general
-            this.load_pattern(
-                "right_strand",
-                "/visualization/strand_right.png"
-            );
+            this.load_pattern("right_strand", "/visualization/strand_right.png");
             this.load_pattern("left_strand", "/visualization/strand_left.png");
-            this.load_pattern(
-                "right_strand_inv",
-                "/visualization/strand_right_inv.png"
-            );
-            this.load_pattern(
-                "left_strand_inv",
-                "/visualization/strand_left_inv.png"
-            );
+            this.load_pattern("right_strand_inv", "/visualization/strand_right_inv.png");
+            this.load_pattern("left_strand_inv", "/visualization/strand_left_inv.png");
         };
 
         _.extend(CanvasManager.prototype, {
@@ -167,10 +145,7 @@ define(
                     image = new Image();
                 image.src = Galaxy.root + "static/images" + path;
                 image.onload = function() {
-                    patterns[key] = dummy_context.createPattern(
-                        image,
-                        "repeat"
-                    );
+                    patterns[key] = dummy_context.createPattern(image, "repeat");
                 };
             },
             get_pattern: function(key) {
@@ -283,9 +258,7 @@ define(
                 return this.size() === 0
                     ? null
                     : // Most recent key is at the end of key array.
-                      this.attributes.key_ary[
-                          this.attributes.key_ary.length - 1
-                      ];
+                      this.attributes.key_ary[this.attributes.key_ary.length - 1];
             }
         });
 
@@ -350,9 +323,7 @@ define(
                     query_type =
                         this.get("data_type") === "raw_data"
                             ? "state"
-                            : this.get("data_type") === "data"
-                              ? "converted_datasets_state"
-                              : "error",
+                            : this.get("data_type") === "data" ? "converted_datasets_state" : "error",
                     ss_deferred = new util_mod.ServerStateDeferred({
                         ajax_settings: {
                             url: this.get("dataset").url(),
@@ -369,9 +340,7 @@ define(
                     });
 
                 $.when(ss_deferred.go()).then(function(response) {
-                    ready_deferred.resolve(
-                        response === "ok" || response === "data"
-                    );
+                    ready_deferred.resolve(response === "ok" || response === "data");
                 });
                 return ready_deferred;
             },
@@ -438,11 +407,7 @@ define(
             get_data: function(region, mode, resolution, extra_params) {
                 // Look for entry and return if it's a deferred or if data available is compatible with mode.
                 var entry = this.get_elt(region);
-                if (
-                    entry &&
-                    (util_mod.is_deferred(entry) ||
-                        this.get("data_mode_compatible")(entry, mode))
-                ) {
+                if (entry && (util_mod.is_deferred(entry) || this.get("data_mode_compatible")(entry, mode))) {
                     return entry;
                 }
 
@@ -466,17 +431,13 @@ define(
                         entry = obj_cache[entry_region.toString()];
                         if (
                             util_mod.is_deferred(entry) ||
-                            (this.get("data_mode_compatible")(entry, mode) &&
-                                this.get("can_subset")(entry))
+                            (this.get("data_mode_compatible")(entry, mode) && this.get("can_subset")(entry))
                         ) {
                             this.move_key_to_end(entry_region, i);
 
                             // If there's data, subset it.
                             if (!util_mod.is_deferred(entry)) {
-                                var subset_entry = this.subset_entry(
-                                    entry,
-                                    region
-                                );
+                                var subset_entry = this.subset_entry(entry, region);
                                 this.set_data(region, subset_entry);
                                 entry = subset_entry;
                             }
@@ -490,10 +451,7 @@ define(
                 // subsetted. For these cases, do not increase length because region will never be found (and
                 // an infinite loop will occur.)
                 // If needed, extend region to make it minimum size.
-                if (
-                    !is_subregion &&
-                    region.length() < this.attributes.min_region_size
-                ) {
+                if (!is_subregion && region.length() < this.attributes.min_region_size) {
                     // IDEA: alternative heuristic is to find adjacent cache entry to region and use that to extend.
                     // This would prevent bad extensions when zooming in/out while still preserving the behavior
                     // below.
@@ -503,22 +461,12 @@ define(
 
                     // Use heuristic to extend region: extend relative to last data request.
                     var last_request = this.most_recently_added();
-                    if (
-                        !last_request ||
-                        region.get("start") > last_request.get("start")
-                    ) {
+                    if (!last_request || region.get("start") > last_request.get("start")) {
                         // This request is after the last request, so extend right.
-                        region.set(
-                            "end",
-                            region.get("start") +
-                                this.attributes.min_region_size
-                        );
+                        region.set("end", region.get("start") + this.attributes.min_region_size);
                     } else {
                         // This request is after the last request, so extend left.
-                        region.set(
-                            "start",
-                            region.get("end") - this.attributes.min_region_size
-                        );
+                        region.set("start", region.get("end") - this.attributes.min_region_size);
                     }
 
                     // Trim region to avoid invalid coordinates.
@@ -545,23 +493,10 @@ define(
             /**
      * Gets more data for a region using either a depth-first or a breadth-first approach.
      */
-            get_more_data: function(
-                region,
-                mode,
-                resolution,
-                extra_params,
-                req_type
-            ) {
+            get_more_data: function(region, mode, resolution, extra_params, req_type) {
                 var cur_data = this._mark_stale(region);
-                if (
-                    !(
-                        cur_data &&
-                        this.get("data_mode_compatible")(cur_data, mode)
-                    )
-                ) {
-                    console.log(
-                        "ERROR: problem with getting more data: current data is not compatible"
-                    );
+                if (!(cur_data && this.get("data_mode_compatible")(cur_data, mode))) {
+                    console.log("ERROR: problem with getting more data: current data is not compatible");
                     return;
                 }
 
@@ -578,9 +513,7 @@ define(
                     // To get past an area of extreme feature depth, set query low to be after either
                     // (a) the maximum high or HACK/FIXME (b) the end of the last feature returned.
                     query_low =
-                        (cur_data.max_high
-                            ? cur_data.max_high
-                            : cur_data.data[cur_data.data.length - 1][2]) + 1;
+                        (cur_data.max_high ? cur_data.max_high : cur_data.data[cur_data.data.length - 1][2]) + 1;
                 }
                 var query_region = region.copy().set("start", query_low);
 
@@ -589,12 +522,7 @@ define(
                 // to signal when new data is available.
                 //
                 var data_manager = this,
-                    new_data_request = this.load_data(
-                        query_region,
-                        mode,
-                        resolution,
-                        extra_params
-                    ),
+                    new_data_request = this.load_data(query_region, mode, resolution, extra_params),
                     new_data_available = $.Deferred();
                 // load_data sets cache to new_data_request, but use custom deferred object so that signal and data
                 // is all data, not just new data.
@@ -608,10 +536,7 @@ define(
                         }
                         if (result.message) {
                             // HACK: replace number in message with current data length. Works but is ugly.
-                            result.message = result.message.replace(
-                                /[0-9]+/,
-                                result.data.length
-                            );
+                            result.message = result.message.replace(/[0-9]+/, result.data.length);
                         }
                     }
                     data_manager.set_data(region, result);
@@ -628,28 +553,17 @@ define(
 
                 // Can only get more detailed data for bigwig data that has less than 8000 data points.
                 // Summary tree returns *way* too much data, and 8000 data points ~ 500KB.
-                return (
-                    cur_data.dataset_type === "bigwig" &&
-                    cur_data.data.length < 8000
-                );
+                return cur_data.dataset_type === "bigwig" && cur_data.data.length < 8000;
             },
 
             /**
      * Returns more detailed data for an entry.
      */
-            get_more_detailed_data: function(
-                region,
-                mode,
-                resolution,
-                detail_multiplier,
-                extra_params
-            ) {
+            get_more_detailed_data: function(region, mode, resolution, detail_multiplier, extra_params) {
                 // Mark current entry as stale.
                 var cur_data = this._mark_stale(region);
                 if (!cur_data) {
-                    console.log(
-                        "ERROR getting more detailed data: no current data"
-                    );
+                    console.log("ERROR getting more detailed data: no current data");
                     return;
                 }
 
@@ -672,11 +586,7 @@ define(
             _mark_stale: function(region) {
                 var entry = this.get_elt(region);
                 if (!entry) {
-                    console.log(
-                        "ERROR: no data to mark as stale: ",
-                        this.get("dataset"),
-                        region.toString()
-                    );
+                    console.log("ERROR: no data to mark as stale: ", this.get("dataset"), region.toString());
                 }
                 entry.stale = true;
                 return entry;
@@ -693,25 +603,22 @@ define(
                 var self = this,
                     all_data_available = true,
                     //  Map chromosome info into genome data.
-                    gw_data = _.map(
-                        genome.get("chroms_info").chrom_info,
-                        function(chrom_info) {
-                            var chrom_data = self.get_elt(
-                                new GenomeRegion({
-                                    chrom: chrom_info.chrom,
-                                    start: 0,
-                                    end: chrom_info.len
-                                })
-                            );
+                    gw_data = _.map(genome.get("chroms_info").chrom_info, function(chrom_info) {
+                        var chrom_data = self.get_elt(
+                            new GenomeRegion({
+                                chrom: chrom_info.chrom,
+                                start: 0,
+                                end: chrom_info.len
+                            })
+                        );
 
-                            // Set flag if data is not available.
-                            if (!chrom_data) {
-                                all_data_available = false;
-                            }
-
-                            return chrom_data;
+                        // Set flag if data is not available.
+                        if (!chrom_data) {
+                            all_data_available = false;
                         }
-                    );
+
+                        return chrom_data;
+                    });
 
                 // -- If all data is available, return it. --
                 if (all_data_available) {
@@ -721,14 +628,10 @@ define(
                 // -- All data is not available, so load from server. --
 
                 var deferred = $.Deferred();
-                $.getJSON(
-                    this.get("dataset").url(),
-                    { data_type: "genome_data" },
-                    function(genome_wide_data) {
-                        self.add_data(genome_wide_data.data);
-                        deferred.resolve(genome_wide_data.data);
-                    }
-                );
+                $.getJSON(this.get("dataset").url(), { data_type: "genome_data" }, function(genome_wide_data) {
+                    self.add_data(genome_wide_data.data);
+                    deferred.resolve(genome_wide_data.data);
+                });
 
                 return deferred;
             },
@@ -741,32 +644,19 @@ define(
                 var subset_fns = {
                     bigwig: function(data, subregion) {
                         return _.filter(data, function(data_point) {
-                            return (
-                                data_point[0] >= subregion.get("start") &&
-                                data_point[0] <= subregion.get("end")
-                            );
+                            return data_point[0] >= subregion.get("start") && data_point[0] <= subregion.get("end");
                         });
                     },
                     refseq: function(data, subregion) {
-                        var seq_start =
-                            subregion.get("start") - entry.region.get("start");
-                        return entry.data.slice(
-                            seq_start,
-                            seq_start + subregion.length()
-                        );
+                        var seq_start = subregion.get("start") - entry.region.get("start");
+                        return entry.data.slice(seq_start, seq_start + subregion.length());
                     }
                 };
 
                 // Subset entry if there is a function for subsetting and regions are not the same.
                 var subregion_data = entry.data;
-                if (
-                    !entry.region.same(subregion) &&
-                    entry.dataset_type in subset_fns
-                ) {
-                    subregion_data = subset_fns[entry.dataset_type](
-                        entry.data,
-                        subregion
-                    );
+                if (!entry.region.same(subregion) && entry.dataset_type in subset_fns) {
+                    subregion_data = subset_fns[entry.dataset_type](entry.data, subregion);
                 }
 
                 // Return entry with subregion's data.
@@ -789,13 +679,7 @@ define(
             load_data: function(region, mode, resolution, extra_params) {
                 // Fetch data if region is not too large.
                 return region.length() <= 100000
-                    ? GenomeDataManager.prototype.load_data.call(
-                          this,
-                          region,
-                          mode,
-                          resolution,
-                          extra_params
-                      )
+                    ? GenomeDataManager.prototype.load_data.call(this, region, mode, resolution, extra_params)
                     : { data: null, region: region };
             }
         });
@@ -826,9 +710,7 @@ define(
      */
             get_chrom_region: function(chr_name) {
                 // FIXME: use findWhere in underscore 1.4
-                var chrom_info = _.find(this.get_chroms_info(), function(
-                    chrom_info
-                ) {
+                var chrom_info = _.find(this.get_chroms_info(), function(chrom_info) {
                     return chrom_info.chrom === chr_name;
                 });
                 return new GenomeRegion({
@@ -887,23 +769,14 @@ define(
                     }
 
                     // Keep a copy of region's string value for fast lookup.
-                    this.attributes.str_val =
-                        this.get("chrom") +
-                        ":" +
-                        this.get("start") +
-                        "-" +
-                        this.get("end");
+                    this.attributes.str_val = this.get("chrom") + ":" + this.get("start") + "-" + this.get("end");
 
                     // Set str_val on attribute change.
                     this.on(
                         "change",
                         function() {
                             this.attributes.str_val =
-                                this.get("chrom") +
-                                ":" +
-                                this.get("start") +
-                                "-" +
-                                this.get("end");
+                                this.get("chrom") + ":" + this.get("start") + "-" + this.get("end");
                         },
                         this
                     );
@@ -948,11 +821,7 @@ define(
                         overlap;
 
                     // Compare chroms.
-                    if (
-                        first_chrom &&
-                        second_chrom &&
-                        first_chrom !== second_chrom
-                    ) {
+                    if (first_chrom && second_chrom && first_chrom !== second_chrom) {
                         return GenomeRegion.overlap_results.DIF_CHROMS;
                     }
 
@@ -961,8 +830,7 @@ define(
                         if (first_end < second_start) {
                             overlap = GenomeRegion.overlap_results.BEFORE;
                         } else if (first_end < second_end) {
-                            overlap =
-                                GenomeRegion.overlap_results.OVERLAP_START;
+                            overlap = GenomeRegion.overlap_results.OVERLAP_START;
                         } else {
                             // first_end >= second_end
                             overlap = GenomeRegion.overlap_results.CONTAINS;
@@ -997,9 +865,7 @@ define(
 
                     // Only try to trim the end if genome is set.
                     if (this.attributes.genome) {
-                        var chrom_len = this.attributes.genome.get_chrom_len(
-                            this.attributes.chrom
-                        );
+                        var chrom_len = this.attributes.genome.get_chrom_len(this.attributes.chrom);
                         if (this.attributes.end > chrom_len) {
                             this.attributes.end = chrom_len - 1;
                         }
@@ -1012,10 +878,7 @@ define(
      * Returns true if this region contains a given region.
      */
                 contains: function(a_region) {
-                    return (
-                        this.compute_overlap(a_region) ===
-                        GenomeRegion.overlap_results.CONTAINS
-                    );
+                    return this.compute_overlap(a_region) === GenomeRegion.overlap_results.CONTAINS;
                 },
 
                 /**
@@ -1108,10 +971,7 @@ define(
 
                     this.set(
                         "config",
-                        config_mod.ConfigSettingCollection.from_models_and_saved_values(
-                            models,
-                            options.prefs
-                        )
+                        config_mod.ConfigSettingCollection.from_models_and_saved_values(models, options.prefs)
                     );
 
                     // -- Set up data manager. --
@@ -1132,14 +992,7 @@ define(
             },
             {
                 // This definition matches that produced by to_dict() methods in tracks.js
-                to_json_keys: [
-                    "track_type",
-                    "dataset",
-                    "prefs",
-                    "mode",
-                    "filters",
-                    "tool_state"
-                ],
+                to_json_keys: ["track_type", "dataset", "prefs", "mode", "filters", "tool_state"],
                 to_json_mappers: {
                     prefs: function(p, self) {
                         if (_.size(p) === 0) {
@@ -1212,18 +1065,12 @@ define(
 
                 initialize: function(options) {
                     // Replace drawables with tracks.
-                    this.set(
-                        "drawables",
-                        new BackboneTrackCollection(options.tracks)
-                    );
+                    this.set("drawables", new BackboneTrackCollection(options.tracks));
 
                     var models = [];
                     this.set(
                         "config",
-                        config_mod.ConfigSettingCollection.from_models_and_saved_values(
-                            models,
-                            options.prefs
-                        )
+                        config_mod.ConfigSettingCollection.from_models_and_saved_values(models, options.prefs)
                     );
 
                     // Clear track and data definitions to avoid storing large objects.

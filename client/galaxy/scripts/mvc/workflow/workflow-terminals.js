@@ -45,53 +45,30 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
 
     $.extend(CollectionTypeDescription.prototype, {
         append: function(otherCollectionTypeDescription) {
-            if (
-                otherCollectionTypeDescription ===
-                NULL_COLLECTION_TYPE_DESCRIPTION
-            ) {
+            if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
                 return this;
             }
-            if (
-                otherCollectionTypeDescription ===
-                ANY_COLLECTION_TYPE_DESCRIPTION
-            ) {
+            if (otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION) {
                 return otherCollectionType;
             }
             return new CollectionTypeDescription(
-                this.collectionType +
-                    ":" +
-                    otherCollectionTypeDescription.collectionType
+                this.collectionType + ":" + otherCollectionTypeDescription.collectionType
             );
         },
         canMatch: function(otherCollectionTypeDescription) {
-            if (
-                otherCollectionTypeDescription ===
-                NULL_COLLECTION_TYPE_DESCRIPTION
-            ) {
+            if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
                 return false;
             }
-            if (
-                otherCollectionTypeDescription ===
-                ANY_COLLECTION_TYPE_DESCRIPTION
-            ) {
+            if (otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION) {
                 return true;
             }
-            return (
-                otherCollectionTypeDescription.collectionType ==
-                this.collectionType
-            );
+            return otherCollectionTypeDescription.collectionType == this.collectionType;
         },
         canMapOver: function(otherCollectionTypeDescription) {
-            if (
-                otherCollectionTypeDescription ===
-                NULL_COLLECTION_TYPE_DESCRIPTION
-            ) {
+            if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
                 return false;
             }
-            if (
-                otherCollectionTypeDescription ===
-                ANY_COLLECTION_TYPE_DESCRIPTION
-            ) {
+            if (otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION) {
                 return false;
             }
             if (this.rank <= otherCollectionTypeDescription.rank) {
@@ -102,8 +79,7 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
             return this._endsWith(this.collectionType, requiredSuffix);
         },
         effectiveMapOver: function(otherCollectionTypeDescription) {
-            var otherCollectionType =
-                otherCollectionTypeDescription.collectionType;
+            var otherCollectionType = otherCollectionTypeDescription.collectionType;
             var effectiveCollectionType = this.collectionType.substring(
                 0,
                 this.collectionType.length - otherCollectionType.length - 1
@@ -111,10 +87,7 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
             return new CollectionTypeDescription(effectiveCollectionType);
         },
         equal: function(otherCollectionTypeDescription) {
-            return (
-                otherCollectionTypeDescription.collectionType ==
-                this.collectionType
-            );
+            return otherCollectionTypeDescription.collectionType == this.collectionType;
         },
         toString: function() {
             return "CollectionType[" + this.collectionType + "]";
@@ -194,10 +167,7 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
             }
         },
         isMappedOver: function() {
-            return (
-                this.terminalMapping &&
-                this.terminalMapping.mapOver.isCollection
-            );
+            return this.terminalMapping && this.terminalMapping.mapOver.isCollection;
         },
         resetMapping: function() {
             this.terminalMapping.disableMapOver();
@@ -215,10 +185,7 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
         resetMappingIfNeeded: function() {
             // If inputs were only mapped over to preserve
             // an output just disconnected reset these...
-            if (
-                !this.node.hasConnectedOutputTerminals() &&
-                !this.node.hasConnectedMappedInputTerminals()
-            ) {
+            if (!this.node.hasConnectedOutputTerminals() && !this.node.hasConnectedMappedInputTerminals()) {
                 _.each(this.node.mappedInputTerminals(), function(mappedInput) {
                     mappedInput.resetMappingIfNeeded();
                 });
@@ -265,9 +232,7 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
             // No output terminals are counting on this being mapped
             // over if connected inputs are still mapped over or if none
             // of the outputs are connected...
-            var reset =
-                this.node.hasConnectedMappedInputTerminals() ||
-                !this.node.hasConnectedOutputTerminals();
+            var reset = this.node.hasConnectedMappedInputTerminals() || !this.node.hasConnectedOutputTerminals();
             if (reset) {
                 this.resetMapping();
             }
@@ -337,16 +302,12 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
 
             var constraints = [];
             if (!this.node.hasConnectedOutputTerminals()) {
-                _.each(this.node.connectedMappedInputTerminals(), function(
-                    inputTerminal
-                ) {
+                _.each(this.node.connectedMappedInputTerminals(), function(inputTerminal) {
                     constraints.push(inputTerminal.mapOver());
                 });
             } else {
                 // All outputs should have same mapOver status - least specific.
-                constraints.push(
-                    _.first(_.values(this.node.output_terminals)).mapOver()
-                );
+                constraints.push(_.first(_.values(this.node.output_terminals)).mapOver());
             }
             return constraints;
         },
@@ -364,8 +325,7 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
                         var pja = other.node.post_job_actions[pja_i];
                         if (
                             pja.action_type == "ChangeDatatypeAction" &&
-                            (pja.output_name == "" ||
-                                pja.output_name == other.name) &&
+                            (pja.output_name == "" || pja.output_name == other.name) &&
                             pja.action_arguments
                         ) {
                             cat_outputs.push(pja.action_arguments["newtype"]);
@@ -379,10 +339,7 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
                         other_datatype == "input" ||
                         other_datatype == "_sniff_" ||
                         other_datatype == "input_collection" ||
-                        Globals.app.isSubType(
-                            cat_outputs[other_datatype_i],
-                            thisDatatype
-                        )
+                        Globals.app.isSubType(cat_outputs[other_datatype_i], thisDatatype)
                     ) {
                         return true;
                     }
@@ -438,22 +395,12 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
                         return false;
                     }
                 }
-                if (
-                    thisMapOver.isCollection &&
-                    thisMapOver.canMatch(otherCollectionType)
-                ) {
+                if (thisMapOver.isCollection && thisMapOver.canMatch(otherCollectionType)) {
                     return this._producesAcceptableDatatype(other);
                 } else {
                     //  Need to check if this would break constraints...
                     var mappingConstraints = this._mappingConstraints();
-                    if (
-                        mappingConstraints.every(
-                            _.bind(
-                                otherCollectionType.canMatch,
-                                otherCollectionType
-                            )
-                        )
-                    ) {
+                    if (mappingConstraints.every(_.bind(otherCollectionType.canMatch, otherCollectionType))) {
                         return this._producesAcceptableDatatype(other);
                     } else {
                         return false;
@@ -476,9 +423,7 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
             var collectionTypes = [];
             if (input.collection_types) {
                 _.each(input.collection_types, function(collectionType) {
-                    collectionTypes.push(
-                        new CollectionTypeDescription(collectionType)
-                    );
+                    collectionTypes.push(new CollectionTypeDescription(collectionType));
                 });
             } else {
                 collectionTypes.push(ANY_COLLECTION_TYPE_DESCRIPTION);
@@ -506,12 +451,8 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
                 for (var collectionTypeIndex in collectionTypes) {
                     var collectionType = collectionTypes[collectionTypeIndex];
                     if (otherCollectionType.canMapOver(collectionType)) {
-                        var effectiveMapOver = otherCollectionType.effectiveMapOver(
-                            collectionType
-                        );
-                        if (
-                            effectiveMapOver != NULL_COLLECTION_TYPE_DESCRIPTION
-                        ) {
+                        var effectiveMapOver = otherCollectionType.effectiveMapOver(collectionType);
+                        if (effectiveMapOver != NULL_COLLECTION_TYPE_DESCRIPTION) {
                             return effectiveMapOver;
                         }
                     }
@@ -530,12 +471,8 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
             if (otherCollectionType.isCollection) {
                 var effectiveCollectionTypes = this._effectiveCollectionTypes();
                 var thisMapOver = this.mapOver();
-                var canMatch = _.some(effectiveCollectionTypes, function(
-                    effectiveCollectionType
-                ) {
-                    return effectiveCollectionType.canMatch(
-                        otherCollectionType
-                    );
+                var canMatch = _.some(effectiveCollectionTypes, function(effectiveCollectionType) {
+                    return effectiveCollectionType.canMatch(otherCollectionType);
                 });
                 if (canMatch) {
                     // Only way a direct match...
@@ -569,15 +506,11 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
             Terminal.prototype.initialize.call(this, attr);
             this.datatypes = attr.datatypes;
             if (attr.collection_type) {
-                this.collectionType = new CollectionTypeDescription(
-                    attr.collection_type
-                );
+                this.collectionType = new CollectionTypeDescription(attr.collection_type);
             } else {
                 var collectionTypeSource = attr.collection_type_source;
                 if (!collectionTypeSource) {
-                    console.log(
-                        "Warning: No collection type or collection type source defined."
-                    );
+                    console.log("Warning: No collection type or collection type source defined.");
                 }
                 this.collectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
             }
@@ -586,23 +519,16 @@ define(["mvc/workflow/workflow-globals"], function(Globals) {
         update: function(output) {
             var newCollectionType;
             if (output.collection_type) {
-                newCollectionType = new CollectionTypeDescription(
-                    output.collection_type
-                );
+                newCollectionType = new CollectionTypeDescription(output.collection_type);
             } else {
                 var collectionTypeSource = output.collection_type_source;
                 if (!collectionTypeSource) {
-                    console.log(
-                        "Warning: No collection type or collection type source defined."
-                    );
+                    console.log("Warning: No collection type or collection type source defined.");
                 }
                 newCollectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
             }
 
-            if (
-                newCollectionType.collectionType !=
-                this.collectionType.collectionType
-            ) {
+            if (newCollectionType.collectionType != this.collectionType.collectionType) {
                 _.each(this.connectors, function(connector) {
                     // TODO: consider checking if connection valid before removing...
                     connector.destroy();

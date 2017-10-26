@@ -1,7 +1,6 @@
 var Ui = require("mvc/ui/ui-misc"),
     historyOptionsMenu = require("mvc/history/options-menu"),
-    CurrentHistoryView = require("mvc/history/history-view-edit-current")
-        .CurrentHistoryView,
+    CurrentHistoryView = require("mvc/history/history-view-edit-current").CurrentHistoryView,
     _l = require("utils/localization");
 
 /** the right hand panel in the analysis page that shows the current history */
@@ -53,11 +52,7 @@ var HistoryPanel = Backbone.View.extend({
         this.model = new Backbone.Model({
             cls: "history-right-panel",
             title: _l("History"),
-            buttons: [
-                this.buttonRefresh,
-                this.buttonOptions,
-                this.buttonViewMulti
-            ]
+            buttons: [this.buttonRefresh, this.buttonOptions, this.buttonViewMulti]
         });
 
         // build body template and connect history view
@@ -85,9 +80,7 @@ var HistoryPanel = Backbone.View.extend({
 
     /** add history view div */
     _template: function(data) {
-        return [
-            '<div id="current-history-panel" class="history-panel middle"/>'
-        ].join("");
+        return ['<div id="current-history-panel" class="history-panel middle"/>'].join("");
     },
 
     toString: function() {

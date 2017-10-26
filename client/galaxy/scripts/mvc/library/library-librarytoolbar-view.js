@@ -1,7 +1,4 @@
-define(["libs/toastr", "mvc/library/library-model"], function(
-    mod_toastr,
-    mod_library_model
-) {
+define(["libs/toastr", "mvc/library/library-model"], function(mod_toastr, mod_library_model) {
     /**
  * This view represents the top part of the library page.
  * It contains the tool bar with controls.
@@ -22,11 +19,7 @@ define(["libs/toastr", "mvc/library/library-model"], function(
         },
 
         initialize: function(options) {
-            this.options = _.defaults(
-                this.options || {},
-                options,
-                this.defaults
-            );
+            this.options = _.defaults(this.options || {}, options, this.defaults);
             this.render();
         },
 
@@ -38,16 +31,10 @@ define(["libs/toastr", "mvc/library/library-model"], function(
                 is_admin = Galaxy.user.isAdmin();
                 is_anonym = Galaxy.user.isAnonymous();
             }
-            this.$el.html(
-                toolbar_template({ admin_user: is_admin, anon_user: is_anonym })
-            );
+            this.$el.html(toolbar_template({ admin_user: is_admin, anon_user: is_anonym }));
             if (is_admin) {
-                this.$el.find(
-                    "#include_deleted_chk"
-                )[0].checked = Galaxy.libraries.preferences.get("with_deleted");
-                this.$el.find(
-                    "#exclude_restricted_chk"
-                )[0].checked = Galaxy.libraries.preferences.get(
+                this.$el.find("#include_deleted_chk")[0].checked = Galaxy.libraries.preferences.get("with_deleted");
+                this.$el.find("#exclude_restricted_chk")[0].checked = Galaxy.libraries.preferences.get(
                     "without_restricted"
                 );
             }
@@ -65,9 +52,7 @@ define(["libs/toastr", "mvc/library/library-model"], function(
                     page_count: parseInt(this.options.page_count),
                     total_libraries_count: this.options.total_libraries_count,
                     libraries_shown: this.options.libraries_shown,
-                    library_page_size: Galaxy.libraries.preferences.get(
-                        "library_page_size"
-                    )
+                    library_page_size: Galaxy.libraries.preferences.get("library_page_size")
                 })
             );
         },
@@ -106,9 +91,7 @@ define(["libs/toastr", "mvc/library/library-model"], function(
                 var self = this;
                 library.save(libraryDetails, {
                     success: function(library) {
-                        Galaxy.libraries.libraryListView.collection.add(
-                            library
-                        );
+                        Galaxy.libraries.libraryListView.collection.add(library);
                         self.modal.hide();
                         self.clearLibraryModal();
                         Galaxy.libraries.libraryListView.render();
@@ -137,10 +120,7 @@ define(["libs/toastr", "mvc/library/library-model"], function(
                 "How many libraries per page do you want to see?",
                 Galaxy.libraries.preferences.get("library_page_size")
             );
-            if (
-                library_page_size != null &&
-                library_page_size == parseInt(library_page_size)
-            ) {
+            if (library_page_size != null && library_page_size == parseInt(library_page_size)) {
                 Galaxy.libraries.preferences.set({
                     library_page_size: parseInt(library_page_size)
                 });

@@ -41,22 +41,14 @@ $.ui.plugin.add("draggable", "scrollPanel", {
             instance.offset.parent.left += t;
             ui.position.left -= t;
         }
-        if (
-            !moved &&
-            panel_pos.left > p_min_x &&
-            mouse_x + close_dist > max_vis_x
-        ) {
+        if (!moved && panel_pos.left > p_min_x && mouse_x + close_dist > max_vis_x) {
             var t = Math.min(nudge, panel_pos.left - p_min_x);
             panel.css("left", panel_pos.left - t);
             moved = true;
             instance.offset.parent.left -= t;
             ui.position.left += t;
         }
-        if (
-            !moved &&
-            panel_pos.top < p_max_y &&
-            mouse_y - close_dist < min_vis_y
-        ) {
+        if (!moved && panel_pos.top < p_max_y && mouse_y - close_dist < min_vis_y) {
             var t = Math.min(nudge, p_max_y - panel_pos.top);
             panel.css("top", panel_pos.top + t);
             // Firefox sometimes moves by less, so we need to check. Yuck.
@@ -65,11 +57,7 @@ $.ui.plugin.add("draggable", "scrollPanel", {
             ui.position.top -= amount_moved;
             moved = true;
         }
-        if (
-            !moved &&
-            panel_pos.top > p_min_y &&
-            mouse_y + close_dist > max_vis_y
-        ) {
+        if (!moved && panel_pos.top > p_min_y && mouse_y + close_dist > max_vis_y) {
             var t = Math.min(nudge, panel_pos.top - p_min_x);
             panel.css("top", panel_pos.top - t + "px");
             // Firefox sometimes moves by less, so we need to check. Yuck.

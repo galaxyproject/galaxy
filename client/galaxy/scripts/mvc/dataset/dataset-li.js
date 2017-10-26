@@ -1,11 +1,5 @@
 define(
-    [
-        "mvc/list/list-item",
-        "mvc/dataset/states",
-        "ui/fa-icon-button",
-        "mvc/base-mvc",
-        "utils/localization"
-    ],
+    ["mvc/list/list-item", "mvc/dataset/states", "ui/fa-icon-button", "mvc/base-mvc", "utils/localization"],
     function(LIST_ITEM, STATES, faIconButton, BASE_MVC, _l) {
         "use strict";
 
@@ -61,22 +55,15 @@ TODO:
                                 // normally, will render automatically (due to fetch -> change),
                                 // but! setting_metadata sometimes doesn't cause any other changes besides state
                                 // so, not rendering causes it to seem frozen in setting_metadata state
-                                self.model
-                                    .fetch({ silent: true })
-                                    .done(function() {
-                                        self.render();
-                                    });
+                                self.model.fetch({ silent: true }).done(function() {
+                                    self.render();
+                                });
                             } else {
-                                if (
-                                    _.has(model.changed, "tags") &&
-                                    _.keys(model.changed).length === 1
-                                ) {
+                                if (_.has(model.changed, "tags") && _.keys(model.changed).length === 1) {
                                     // If only the tags have changed, rerender specifically
                                     // the titlebar region.  Otherwise default to the full
                                     // render.
-                                    self
-                                        .$(".nametags")
-                                        .html(self._renderNametags());
+                                    self.$(".nametags").html(self._renderNametags());
                                 } else {
                                     self.render();
                                 }
@@ -142,11 +129,7 @@ TODO:
                 _renderDisplayButton: function() {
                     // don't show display if not viewable or not accessible
                     var state = this.model.get("state");
-                    if (
-                        state === STATES.NOT_VIEWABLE ||
-                        state === STATES.DISCARDED ||
-                        !this.model.get("accessible")
-                    ) {
+                    if (state === STATES.NOT_VIEWABLE || state === STATES.DISCARDED || !this.model.get("accessible")) {
                         return null;
                     }
 
@@ -158,23 +141,17 @@ TODO:
                     // show a disabled display if the data's been purged
                     if (this.model.get("purged")) {
                         displayBtnData.disabled = true;
-                        displayBtnData.title = _l(
-                            "Cannot display datasets removed from disk"
-                        );
+                        displayBtnData.title = _l("Cannot display datasets removed from disk");
 
                         // disable if still uploading
                     } else if (state === STATES.UPLOAD) {
                         displayBtnData.disabled = true;
-                        displayBtnData.title = _l(
-                            "This dataset must finish uploading before it can be viewed"
-                        );
+                        displayBtnData.title = _l("This dataset must finish uploading before it can be viewed");
 
                         // disable if still new
                     } else if (state === STATES.NEW) {
                         displayBtnData.disabled = true;
-                        displayBtnData.title = _l(
-                            "This dataset is not yet viewable"
-                        );
+                        displayBtnData.title = _l("This dataset is not yet viewable");
                     } else {
                         displayBtnData.title = _l("View data");
 
@@ -204,9 +181,7 @@ TODO:
 
                     // no access - render nothing but a message
                     if (this.model.get("state") === STATES.NOT_VIEWABLE) {
-                        return $(
-                            this.templates.noAccess(this.model.toJSON(), this)
-                        );
+                        return $(this.templates.noAccess(this.model.toJSON(), this));
                     }
 
                     var $details = _super.prototype._renderDetails.call(this);
@@ -218,9 +193,7 @@ TODO:
                         .find(".summary")
                         .html(this._renderSummary())
                         .prepend(this._renderDetailMessages());
-                    $details
-                        .find(".display-applications")
-                        .html(this._renderDisplayApplications());
+                    $details.find(".display-applications").html(this._renderDisplayApplications());
 
                     this._setUpBehaviors($details);
                     return $details;
@@ -230,8 +203,7 @@ TODO:
                 _renderSummary: function() {
                     var json = this.model.toJSON(),
                         summaryRenderFn = this.templates.summaries[json.state];
-                    summaryRenderFn =
-                        summaryRenderFn || this.templates.summaries.unknown;
+                    summaryRenderFn = summaryRenderFn || this.templates.summaries.unknown;
                     return summaryRenderFn(json, this);
                 },
 
@@ -254,14 +226,8 @@ TODO:
                     }
                     // render both old and new display apps using the same template
                     return [
-                        this.templates.displayApplications(
-                            this.model.get("display_apps"),
-                            this
-                        ),
-                        this.templates.displayApplications(
-                            this.model.get("display_types"),
-                            this
-                        )
+                        this.templates.displayApplications(this.model.get("display_apps"), this),
+                        this.templates.displayApplications(this.model.get("display_types"), this)
                     ].join("");
                 },
 
@@ -275,10 +241,7 @@ TODO:
                         case STATES.OK:
                         case STATES.FAILED_METADATA:
                         case STATES.ERROR:
-                            return [
-                                this._renderDownloadButton(),
-                                this._renderShowParamsButton()
-                            ];
+                            return [this._renderDownloadButton(), this._renderShowParamsButton()];
                     }
                     return [this._renderShowParamsButton()];
                 },
@@ -348,9 +311,7 @@ TODO:
                             '<li><a href="' + urls.download + '" download>',
                             _l("Download dataset"),
                             "</a></li>",
-                            _.map(this.model.get("meta_files"), function(
-                                meta_file
-                            ) {
+                            _.map(this.model.get("meta_files"), function(meta_file) {
                                 return [
                                     '<li><a href="',
                                     urls.meta_download + meta_file.file_type,
@@ -396,9 +357,7 @@ TODO:
                 // ......................................................................... misc
                 /** String representation */
                 toString: function() {
-                    var modelString = this.model
-                        ? this.model + ""
-                        : "(no model)";
+                    var modelString = this.model ? this.model + "" : "(no model)";
                     return "DatasetListItemView(" + modelString + ")";
                 }
             }
@@ -414,9 +373,7 @@ TODO:
                     // failed metadata is rendered as a warning on an otherwise ok dataset view
                     '<% if( model.state === "failed_metadata" ){ %>',
                     '<div class="warningmessagesmall">',
-                    _l(
-                        "An error occurred setting the metadata for this dataset"
-                    ),
+                    _l("An error occurred setting the metadata for this dataset"),
                     "</div>",
                     "<% } %>"
                 ]),
@@ -487,9 +444,7 @@ TODO:
 
             //TODO: still toooooooooooooo complex - rework
             var summaryTemplates = {};
-            summaryTemplates[STATES.OK] = summaryTemplates[
-                STATES.FAILED_METADATA
-            ] = BASE_MVC.wrapTemplate(
+            summaryTemplates[STATES.OK] = summaryTemplates[STATES.FAILED_METADATA] = BASE_MVC.wrapTemplate(
                 [
                     "<% if( dataset.misc_blurb ){ %>",
                     '<div class="blurb">',
@@ -526,31 +481,15 @@ TODO:
                 "dataset"
             );
             summaryTemplates[STATES.NEW] = BASE_MVC.wrapTemplate(
-                [
-                    "<div>",
-                    _l(
-                        "This is a new dataset and not all of its data are available yet"
-                    ),
-                    "</div>"
-                ],
+                ["<div>", _l("This is a new dataset and not all of its data are available yet"), "</div>"],
                 "dataset"
             );
             summaryTemplates[STATES.NOT_VIEWABLE] = BASE_MVC.wrapTemplate(
-                [
-                    "<div>",
-                    _l("You do not have permission to view this dataset"),
-                    "</div>"
-                ],
+                ["<div>", _l("You do not have permission to view this dataset"), "</div>"],
                 "dataset"
             );
             summaryTemplates[STATES.DISCARDED] = BASE_MVC.wrapTemplate(
-                [
-                    "<div>",
-                    _l(
-                        "The job creating this dataset was cancelled before completion"
-                    ),
-                    "</div>"
-                ],
+                ["<div>", _l("The job creating this dataset was cancelled before completion"), "</div>"],
                 "dataset"
             );
             summaryTemplates[STATES.QUEUED] = BASE_MVC.wrapTemplate(
@@ -572,9 +511,7 @@ TODO:
             summaryTemplates[STATES.PAUSED] = BASE_MVC.wrapTemplate(
                 [
                     "<div>",
-                    _l(
-                        'This job is paused. Use the "Resume Paused Jobs" in the history menu to resume'
-                    ),
+                    _l('This job is paused. Use the "Resume Paused Jobs" in the history menu to resume'),
                     "</div>"
                 ],
                 "dataset"
@@ -592,17 +529,11 @@ TODO:
                 "dataset"
             );
             summaryTemplates[STATES.EMPTY] = BASE_MVC.wrapTemplate(
-                [
-                    "<div>",
-                    _l("No data"),
-                    ": <i><%- dataset.misc_blurb %></i></div>"
-                ],
+                ["<div>", _l("No data"), ": <i><%- dataset.misc_blurb %></i></div>"],
                 "dataset"
             );
             summaryTemplates.unknown = BASE_MVC.wrapTemplate(
-                [
-                    '<div>Error: unknown dataset state: "<%- dataset.state %>"</div>'
-                ],
+                ['<div>Error: unknown dataset state: "<%- dataset.state %>"</div>'],
                 "dataset"
             );
 

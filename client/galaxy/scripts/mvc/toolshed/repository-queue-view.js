@@ -1,7 +1,4 @@
-define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
-    toolshed_model,
-    toolshed_util
-) {
+define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(toolshed_model, toolshed_util) {
     var View = Backbone.View.extend({
         el: "#center",
 
@@ -33,13 +30,8 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
         bindEvents: function() {
             var that = this;
             $(".install_one").on("click", function() {
-                var repository_metadata = that.loadFromQueue(
-                    $(this).attr("data-repokey")
-                );
-                that.installFromQueue(
-                    repository_metadata,
-                    $(this).attr("data-repokey")
-                );
+                var repository_metadata = that.loadFromQueue($(this).attr("data-repokey"));
+                that.installFromQueue(repository_metadata, $(this).attr("data-repokey"));
             });
             $(".remove_one").on("click", function() {
                 var queue_key = $(this).attr("data-repokey");
@@ -65,30 +57,19 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
         installFromQueue: function(repository_metadata, queue_key) {
             var that = this;
             var params = Object();
-            params.install_tool_dependencies =
-                repository_metadata.install_tool_dependencies;
-            params.install_repository_dependencies =
-                repository_metadata.install_repository_dependencies;
-            params.install_resolver_dependencies =
-                repository_metadata.install_resolver_dependencies;
+            params.install_tool_dependencies = repository_metadata.install_tool_dependencies;
+            params.install_repository_dependencies = repository_metadata.install_repository_dependencies;
+            params.install_resolver_dependencies = repository_metadata.install_resolver_dependencies;
             params.tool_panel_section = repository_metadata.tool_panel_section;
             params.shed_tool_conf = repository_metadata.shed_tool_conf;
             params.repositories = JSON.stringify([
-                [
-                    repository_metadata.repository.id,
-                    repository_metadata.changeset_revision
-                ]
+                [repository_metadata.repository.id, repository_metadata.changeset_revision]
             ]);
-            params.tool_shed_repository_ids = JSON.stringify([
-                repository_metadata.repository.id
-            ]);
+            params.tool_shed_repository_ids = JSON.stringify([repository_metadata.repository.id]);
             params.tool_shed_url = queue_key.split("|")[0];
             params.changeset = repository_metadata.changeset_revision;
-            var url =
-                Galaxy.root + "api/tool_shed_repositories/install?async=True";
-            $(
-                "#queued_repository_" + repository_metadata.repository.id
-            ).remove();
+            var url = Galaxy.root + "api/tool_shed_repositories/install?async=True";
+            $("#queued_repository_" + repository_metadata.repository.id).remove();
             if (localStorage.repositories) {
                 if (queue_key === undefined) {
                     queue_key = toolshed_util.queueKey(repository_metadata);
@@ -96,9 +77,7 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
                 var repository_queue = JSON.parse(localStorage.repositories);
                 if (repository_queue.hasOwnProperty(queue_key)) {
                     delete repository_queue[queue_key];
-                    localStorage.repositories = JSON.stringify(
-                        repository_queue
-                    );
+                    localStorage.repositories = JSON.stringify(repository_queue);
                 }
             }
 
@@ -106,15 +85,9 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
                 var iri_params = JSON.parse(data);
                 var repositories = iri_params.repositories;
                 var new_route = "status/r/" + repositories.join("|");
-                $.post(
-                    Galaxy.root + "admin_toolshed/manage_repositories",
-                    iri_params,
-                    function(data) {
-                        console.log(
-                            "Initializing repository installation succeeded"
-                        );
-                    }
-                );
+                $.post(Galaxy.root + "admin_toolshed/manage_repositories", iri_params, function(data) {
+                    console.log("Initializing repository installation succeeded");
+                });
                 Backbone.history.navigate(new_route, {
                     trigger: true,
                     replace: true

@@ -12,17 +12,7 @@ define(
         "mvc/collection/list-collection-creator",
         "utils/uploadbox"
     ],
-    function(
-        Utils,
-        UploadModel,
-        UploadRow,
-        UploadFtp,
-        UploadExtension,
-        Popover,
-        Select,
-        Ui,
-        LIST_COLLECTION_CREATOR
-    ) {
+    function(Utils, UploadModel, UploadRow, UploadFtp, UploadExtension, Popover, Select, Ui, LIST_COLLECTION_CREATOR) {
         return Backbone.View.extend({
             // current upload size in bytes
             upload_size: 0,
@@ -134,10 +124,7 @@ define(
                         self._eventAnnounce(index, file);
                     },
                     initialize: function(index) {
-                        return self.app.toData(
-                            [self.collection.get(index)],
-                            self.history_id
-                        );
+                        return self.app.toData([self.collection.get(index)], self.history_id);
                     },
                     progress: function(index, percentage) {
                         self._eventProgress(index, percentage);
@@ -250,10 +237,7 @@ define(
             _eventProgress: function(index, percentage) {
                 var it = this.collection.get(index);
                 it.set("percentage", percentage);
-                this.ui_button.model.set(
-                    "percentage",
-                    this._uploadPercentage(percentage, it.get("file_size"))
-                );
+                this.ui_button.model.set("percentage", this._uploadPercentage(percentage, it.get("file_size")));
             },
 
             /** Success */
@@ -262,10 +246,7 @@ define(
                 var hids = _.pluck(message["outputs"], "hid");
                 var it = this.collection.get(index);
                 it.set({ percentage: 100, status: "success", hids: hids });
-                this.ui_button.model.set(
-                    "percentage",
-                    this._uploadPercentage(100, it.get("file_size"))
-                );
+                this.ui_button.model.set("percentage", this._uploadPercentage(100, it.get("file_size")));
                 this.upload_completed += it.get("file_size") * 100;
                 this.counter.announce--;
                 this.counter.success++;
@@ -278,10 +259,7 @@ define(
                 var it = this.collection.get(index);
                 it.set({ percentage: 100, status: "error", info: message });
                 this.ui_button.model.set({
-                    percentage: this._uploadPercentage(
-                        100,
-                        it.get("file_size")
-                    ),
+                    percentage: this._uploadPercentage(100, it.get("file_size")),
                     status: "danger"
                 });
                 this.upload_completed += it.get("file_size") * 100;
@@ -293,8 +271,7 @@ define(
             /** Queue is done */
             _eventComplete: function() {
                 this.collection.each(function(model) {
-                    model.get("status") == "queued" &&
-                        model.set("status", "init");
+                    model.get("status") == "queued" && model.set("status", "init");
                 });
                 this.counter.running = 0;
                 this._updateScreen();
@@ -308,16 +285,10 @@ define(
                 var models = _.map(allHids, function(hid) {
                     return Galaxy.currHistoryPanel.collection.getByHid(hid);
                 });
-                var selection = new Galaxy.currHistoryPanel.collection
-                    .constructor(models);
+                var selection = new Galaxy.currHistoryPanel.collection.constructor(models);
                 // I'm building the selection wrong because I need to set this historyId directly.
-                selection.historyId =
-                    Galaxy.currHistoryPanel.collection.historyId;
-                Galaxy.currHistoryPanel.buildCollection(
-                    this.collectionType,
-                    selection,
-                    true
-                );
+                selection.historyId = Galaxy.currHistoryPanel.collection.historyId;
+                Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection, true);
                 this.counter.running = 0;
                 this._updateScreen();
                 this._eventReset();
@@ -374,9 +345,7 @@ define(
 
             /** Create a new file */
             _eventCreate: function() {
-                this.uploadbox.add([
-                    { name: "New File", size: 0, mode: "new" }
-                ]);
+                this.uploadbox.add([{ name: "New File", size: 0, mode: "new" }]);
             },
 
             /** Start upload process */
@@ -404,9 +373,7 @@ define(
             _eventStop: function() {
                 if (this.counter.running > 0) {
                     this.ui_button.model.set("status", "info");
-                    $(".upload-top-info").html(
-                        "Queue will pause after completing the current file..."
-                    );
+                    $(".upload-top-info").html("Queue will pause after completing the current file...");
                     this.uploadbox.stop();
                 }
             },
@@ -430,9 +397,7 @@ define(
                 this.collection.each(function(model) {
                     if (
                         model.get("status") == "init" &&
-                        (model.get("extension") ==
-                            self.options.default_extension ||
-                            !defaults_only)
+                        (model.get("extension") == self.options.default_extension || !defaults_only)
                     ) {
                         model.set("extension", extension);
                     }
@@ -451,8 +416,7 @@ define(
                 this.collection.each(function(model) {
                     if (
                         model.get("status") == "init" &&
-                        (model.get("genome") == self.options.default_genome ||
-                            !defaults_only)
+                        (model.get("genome") == self.options.default_genome || !defaults_only)
                     ) {
                         model.set("genome", genome);
                     }
@@ -486,33 +450,20 @@ define(
                 }
                 this.$(".upload-top-info").html(message);
                 var enable_reset =
-                    this.counter.running == 0 &&
-                    this.counter.announce +
-                        this.counter.success +
-                        this.counter.error >
-                        0;
-                var enable_start =
-                    this.counter.running == 0 && this.counter.announce > 0;
+                    this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0;
+                var enable_start = this.counter.running == 0 && this.counter.announce > 0;
                 var enable_build =
                     this.counter.running == 0 &&
                     this.counter.announce == 0 &&
                     this.counter.success > 0 &&
                     this.counter.error == 0;
                 var enable_sources = this.counter.running == 0;
-                var show_table =
-                    this.counter.announce +
-                        this.counter.success +
-                        this.counter.error >
-                    0;
+                var show_table = this.counter.announce + this.counter.success + this.counter.error > 0;
                 this.btnReset[enable_reset ? "enable" : "disable"]();
                 this.btnStart[enable_start ? "enable" : "disable"]();
-                this.btnStart.$el[enable_start ? "addClass" : "removeClass"](
-                    "btn-primary"
-                );
+                this.btnStart.$el[enable_start ? "addClass" : "removeClass"]("btn-primary");
                 this.btnBuild[enable_build ? "enable" : "disable"]();
-                this.btnBuild.$el[enable_build ? "addClass" : "removeClass"](
-                    "btn-primary"
-                );
+                this.btnBuild.$el[enable_build ? "addClass" : "removeClass"]("btn-primary");
                 this.btnStop[this.counter.running > 0 ? "enable" : "disable"]();
                 this.btnLocal[enable_sources ? "enable" : "disable"]();
                 this.btnFtp[enable_sources ? "enable" : "disable"]();
@@ -524,10 +475,7 @@ define(
 
             /** Calculate percentage of all queued uploads */
             _uploadPercentage: function(percentage, size) {
-                return (
-                    (this.upload_completed + percentage * size) /
-                    this.upload_size
-                );
+                return (this.upload_completed + percentage * size) / this.upload_size;
             },
 
             /** Template */

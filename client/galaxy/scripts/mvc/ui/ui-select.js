@@ -29,9 +29,7 @@ define(["utils/utils"], function(Utils) {
 
             // check if container exists
             if (!this.options.container) {
-                console.log(
-                    "ui-select::initialize() : container not specified."
-                );
+                console.log("ui-select::initialize() : container not specified.");
                 return;
             }
 
@@ -202,11 +200,7 @@ define(["utils/utils"], function(Utils) {
 
         // element
         _template: function(options) {
-            return (
-                '<input type="hidden" value="' +
-                this.options.initialData +
-                '"/>'
-            );
+            return '<input type="hidden" value="' + this.options.initialData + '"/>';
         }
     });
 

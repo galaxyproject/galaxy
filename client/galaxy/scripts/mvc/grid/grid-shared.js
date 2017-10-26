@@ -8,13 +8,7 @@ define(["mvc/grid/grid-view"], function(GridView) {
             this.item = this.model.get("item");
             this.title = this.model.get("plural");
             $.ajax({
-                url:
-                    Galaxy.root +
-                    this.item +
-                    "/" +
-                    this.model.get("action_id") +
-                    "?" +
-                    $.param(Galaxy.params),
+                url: Galaxy.root + this.item + "/" + this.model.get("action_id") + "?" + $.param(Galaxy.params),
                 success: function(response) {
                     response["dict_format"] = true;
                     self.model.set(response);
@@ -31,18 +25,9 @@ define(["mvc/grid/grid-view"], function(GridView) {
 
         _templateShared: function() {
             var self = this;
-            var $tmpl = $(
-                "<div>" +
-                    "<h2>" +
-                    this.model.get("plural") +
-                    " shared with you by others</h2>" +
-                    "</div>"
-            );
+            var $tmpl = $("<div>" + "<h2>" + this.model.get("plural") + " shared with you by others</h2>" + "</div>");
             var options = this.model.attributes;
-            if (
-                options.shared_by_others &&
-                options.shared_by_others.length > 0
-            ) {
+            if (options.shared_by_others && options.shared_by_others.length > 0) {
                 var $table = $(
                     '<table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">' +
                         '<tr class="header">' +
@@ -76,11 +61,7 @@ define(["mvc/grid/grid-view"], function(GridView) {
                 });
                 $tmpl.append($table);
             } else {
-                $tmpl.append(
-                    "No " +
-                        this.model.get("plural").toLowerCase() +
-                        " have been shared with you."
-                );
+                $tmpl.append("No " + this.model.get("plural").toLowerCase() + " have been shared with you.");
             }
             return $tmpl;
         }

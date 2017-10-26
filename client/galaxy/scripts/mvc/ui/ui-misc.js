@@ -16,8 +16,7 @@ define(
         var Label = Backbone.View.extend({
             tagName: "label",
             initialize: function(options) {
-                this.model =
-                    (options && options.model) || new Backbone.Model(options);
+                this.model = (options && options.model) || new Backbone.Model(options);
                 this.tagName = options.tagName || this.tagName;
                 this.setElement($("<" + this.tagName + "/>"));
                 this.listenTo(this.model, "change", this.render, this);
@@ -65,9 +64,7 @@ define(
                 var status = this.model.get("status");
                 if (this.model.get("large")) {
                     this.$el.addClass(
-                        ((status == "success" && "done") ||
-                            (status == "danger" && "error") ||
-                            status) + "messagelarge"
+                        ((status == "success" && "done") || (status == "danger" && "error") || status) + "messagelarge"
                     );
                 } else {
                     this.$el.addClass("alert").addClass("alert-" + status);
@@ -123,11 +120,7 @@ define(
                 input: "_onchange"
             },
             value: function(new_val) {
-                new_val !== undefined &&
-                    this.model.set(
-                        "value",
-                        typeof new_val === "string" ? new_val : ""
-                    );
+                new_val !== undefined && this.model.set("value", typeof new_val === "string" ? new_val : "");
                 return this.model.get("value");
             },
             render: function() {
@@ -157,25 +150,21 @@ define(
                     this.$el.val(this.model.get("value"));
                 }
                 _.each(["readonly", "disabled"], function(attr_name) {
-                    self.model.get(attr_name)
-                        ? self.$el.attr(attr_name, true)
-                        : self.$el.removeAttr(attr_name);
+                    self.model.get(attr_name) ? self.$el.attr(attr_name, true) : self.$el.removeAttr(attr_name);
                 });
                 this.$el[this.model.get("visible") ? "show" : "hide"]();
                 return this;
             },
             _onchange: function() {
                 this.value(this.$el.val());
-                this.model.get("onchange") &&
-                    this.model.get("onchange")(this.model.get("value"));
+                this.model.get("onchange") && this.model.get("onchange")(this.model.get("value"));
             }
         });
 
         /** Creates a hidden element input field used e.g. in the tool form */
         var Hidden = Backbone.View.extend({
             initialize: function(options) {
-                this.model =
-                    (options && options.model) || new Backbone.Model(options);
+                this.model = (options && options.model) || new Backbone.Model(options);
                 this.setElement(
                     $("<div/>")
                         .append((this.$info = $("<div/>")))
@@ -191,9 +180,7 @@ define(
             render: function() {
                 this.$el.attr("id", this.model.id);
                 this.$hidden.val(this.model.get("value"));
-                this.model.get("info")
-                    ? this.$info.show().text(this.model.get("info"))
-                    : this.$info.hide();
+                this.model.get("info") ? this.$info.show().text(this.model.get("info")) : this.$info.hide();
                 return this;
             }
         });
@@ -202,8 +189,7 @@ define(
         var Upload = Backbone.View.extend({
             initialize: function(options) {
                 var self = this;
-                this.model =
-                    (options && options.model) || new Backbone.Model(options);
+                this.model = (options && options.model) || new Backbone.Model(options);
                 this.setElement(
                     $("<div/>")
                         .append((this.$info = $("<div/>")))
@@ -217,11 +203,7 @@ define(
                                 .addClass("ui-textarea")
                                 .attr("disabled", true))
                         )
-                        .append(
-                            (this.$wait = $("<i/>").addClass(
-                                "fa fa-spinner fa-spin"
-                            ))
-                        )
+                        .append((this.$wait = $("<i/>").addClass("fa fa-spinner fa-spin")))
                 );
                 this.listenTo(this.model, "change", this.render, this);
                 this.$file.on("change", function(e) {
@@ -235,12 +217,8 @@ define(
             },
             render: function() {
                 this.$el.attr("id", this.model.id);
-                this.model.get("info")
-                    ? this.$info.show().text(this.model.get("info"))
-                    : this.$info.hide();
-                this.model.get("value")
-                    ? this.$text.text(this.model.get("value")).show()
-                    : this.$text.hide();
+                this.model.get("info") ? this.$info.show().text(this.model.get("info")) : this.$info.hide();
+                this.model.get("value") ? this.$text.text(this.model.get("value")).show() : this.$text.hide();
                 this.model.get("wait") ? this.$wait.show() : this.$wait.hide();
                 return this;
             },

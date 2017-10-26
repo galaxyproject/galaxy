@@ -39,9 +39,7 @@ define([], function() {
                 .removeClass()
                 .addClass("progress-bar")
                 .addClass("progress-bar-notransition")
-                .addClass(
-                    options.status != "" && "progress-bar-" + options.status
-                )
+                .addClass(options.status != "" && "progress-bar-" + options.status)
                 .css({ width: options.percentage + "%" });
         },
 

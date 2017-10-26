@@ -110,18 +110,13 @@ define(
                         view.has_changes = false;
 
                         // Needed to set URL when first saving a visualization.
-                        window.history.pushState(
-                            {},
-                            "",
-                            vis_info.url + window.location.hash
-                        );
+                        window.history.pushState({}, "", vis_info.url + window.location.hash);
                     })
                     .error(function() {
                         // show dialog
                         Galaxy.modal.show({
                             title: "Could Not Save",
-                            body:
-                                "Could not save visualization. Please try again later.",
+                            body: "Could not save visualization. Please try again later.",
                             buttons: {
                                 Cancel: function() {
                                     Galaxy.modal.hide();
@@ -142,20 +137,11 @@ define(
                                 icon_class: "plus-button",
                                 title: "Add tracks",
                                 on_click: function() {
-                                    visualization.select_datasets(
-                                        { dbkey: view.dbkey },
-                                        function(new_tracks) {
-                                            _.each(new_tracks, function(track) {
-                                                view.add_drawable(
-                                                    tracks.object_from_template(
-                                                        track,
-                                                        view,
-                                                        view
-                                                    )
-                                                );
-                                            });
-                                        }
-                                    );
+                                    visualization.select_datasets({ dbkey: view.dbkey }, function(new_tracks) {
+                                        _.each(new_tracks, function(track) {
+                                            view.add_drawable(tracks.object_from_template(track, view, view));
+                                        });
+                                    });
                                 }
                             },
                             {
@@ -174,21 +160,14 @@ define(
                                 title: "Bookmarks",
                                 on_click: function() {
                                     // HACK -- use style to determine if panel is hidden and hide/show accordingly.
-                                    force_right_panel(
-                                        $("div#right").css("right") == "0px"
-                                            ? "hide"
-                                            : "show"
-                                    );
+                                    force_right_panel($("div#right").css("right") == "0px" ? "hide" : "show");
                                 }
                             },
                             {
                                 icon_class: "globe",
                                 title: "Circster",
                                 on_click: function() {
-                                    window.location =
-                                        self.baseURL +
-                                        "visualization/circster?id=" +
-                                        view.vis_id;
+                                    window.location = self.baseURL + "visualization/circster?id=" + view.vis_id;
                                 }
                             },
                             {
@@ -269,18 +248,10 @@ define(
             /**
      * Create a complete Trackster visualization. Returns view.
      */
-            create_visualization: function(
-                view_config,
-                viewport_config,
-                drawables_config,
-                bookmarks_config,
-                editable
-            ) {
+            create_visualization: function(view_config, viewport_config, drawables_config, bookmarks_config, editable) {
                 // Create view.
                 var self = this,
-                    view = new tracks.TracksterView(
-                        _.extend(view_config, { header: false })
-                    );
+                    view = new tracks.TracksterView(_.extend(view_config, { header: false }));
                 view.editor = true;
                 $.when(view.load_chroms_deferred).then(function(chrom_info) {
                     // Viewport config.
@@ -306,23 +277,14 @@ define(
                         // FIXME: can from_dict() be used to create view and add drawables?
                         var drawable_config, drawable_type, drawable;
                         for (var i = 0; i < drawables_config.length; i++) {
-                            view.add_drawable(
-                                tracks.object_from_template(
-                                    drawables_config[i],
-                                    view,
-                                    view
-                                )
-                            );
+                            view.add_drawable(tracks.object_from_template(drawables_config[i], view, view));
                         }
                     }
 
                     // Set overview.
                     var overview_drawable;
                     for (var i = 0; i < view.drawables.length; i++) {
-                        if (
-                            view.drawables[i].config.get_value("name") ===
-                            overview_drawable_name
-                        ) {
+                        if (view.drawables[i].config.get_value("name") === overview_drawable_name) {
                             view.set_overview(view.drawables[i]);
                             break;
                         }
@@ -333,11 +295,7 @@ define(
                         var bookmark;
                         for (var i = 0; i < bookmarks_config.length; i++) {
                             bookmark = bookmarks_config[i];
-                            self.add_bookmark(
-                                bookmark["position"],
-                                bookmark["annotation"],
-                                editable
-                            );
+                            self.add_bookmark(bookmark["position"], bookmark["annotation"], editable);
                         }
                     }
 
@@ -376,23 +334,15 @@ define(
                             view.move_fraction(0.25);
                             break;
                         case 38:
-                            var change = Math.round(
-                                view.viewport_container.height() / 15.0
-                            );
-                            view.viewport_container.scrollTop(
-                                view.viewport_container.scrollTop() - 20
-                            );
+                            var change = Math.round(view.viewport_container.height() / 15.0);
+                            view.viewport_container.scrollTop(view.viewport_container.scrollTop() - 20);
                             break;
                         case 39:
                             view.move_fraction(-0.25);
                             break;
                         case 40:
-                            var change = Math.round(
-                                view.viewport_container.height() / 15.0
-                            );
-                            view.viewport_container.scrollTop(
-                                view.viewport_container.scrollTop() + 20
-                            );
+                            var change = Math.round(view.viewport_container.height() / 15.0);
+                            view.viewport_container.scrollTop(view.viewport_container.scrollTop() + 20);
                             break;
                     }
                 });
@@ -418,8 +368,7 @@ define(
                             },
                             Save: function() {
                                 $.when(self.save_viz()).then(function() {
-                                    window.location =
-                                        Galaxy.root + "visualization";
+                                    window.location = Galaxy.root + "visualization";
                                 });
                             }
                         }
@@ -443,9 +392,7 @@ define(
                 ui.buttonMenu.$el.attr("style", "float: right");
 
                 // add to center panel
-                $("#center .unified-panel-header-inner").append(
-                    ui.buttonMenu.$el
-                );
+                $("#center .unified-panel-header-inner").append(ui.buttonMenu.$el);
 
                 // configure right panel
                 $("#right .unified-panel-title").append("Bookmarks");
@@ -498,8 +445,7 @@ define(
                         "</ul></p>",
                     buttons: {
                         Cancel: function() {
-                            window.location =
-                                Galaxy.root + "visualizations/list";
+                            window.location = Galaxy.root + "visualizations/list";
                         },
                         "View in saved visualization": function() {
                             self.view_in_saved(dataset_params);
@@ -523,8 +469,7 @@ define(
                     body: tracks_grid.$el,
                     buttons: {
                         Cancel: function() {
-                            window.location =
-                                Galaxy.root + "visualizations/list";
+                            window.location = Galaxy.root + "visualizations/list";
                         },
                         "Add to visualization": function() {
                             $(parent.document)
@@ -532,9 +477,7 @@ define(
                                 .each(function() {
                                     dataset_params.id = $(this).val();
                                     window.location =
-                                        Galaxy.root +
-                                        "visualization/trackster?" +
-                                        $.param(dataset_params);
+                                        Galaxy.root + "visualization/trackster?" + $.param(dataset_params);
                                 });
                         }
                     }
@@ -583,14 +526,10 @@ define(
                             body: self.template_view_new(response),
                             buttons: {
                                 Cancel: function() {
-                                    window.location =
-                                        Galaxy.root + "visualizations/list";
+                                    window.location = Galaxy.root + "visualizations/list";
                                 },
                                 Create: function() {
-                                    self.create_browser(
-                                        $("#new-title").val(),
-                                        $("#new-dbkey").val()
-                                    );
+                                    self.create_browser($("#new-title").val(), $("#new-dbkey").val());
                                     Galaxy.modal.hide();
                                 }
                             }
@@ -602,14 +541,9 @@ define(
                         });
                         if (
                             galaxy_config.app.default_dbkey &&
-                            _.contains(
-                                dbkeys_in_genomes,
-                                galaxy_config.app.default_dbkey
-                            )
+                            _.contains(dbkeys_in_genomes, galaxy_config.app.default_dbkey)
                         ) {
-                            $("#new-dbkey").val(
-                                galaxy_config.app.default_dbkey
-                            );
+                            $("#new-dbkey").val(galaxy_config.app.default_dbkey);
                         }
 
                         // change focus
@@ -641,12 +575,7 @@ define(
 
                 // add dbkeys
                 for (var i = 0; i < response.length; i++) {
-                    html +=
-                        '<option value="' +
-                        response[i][1] +
-                        '">' +
-                        response[i][0] +
-                        "</option>";
+                    html += '<option value="' + response[i][1] + '">' + response[i][0] + "</option>";
                 }
 
                 // close selection/finalize template
@@ -690,35 +619,23 @@ define(
             // initialization for editor-specific functions.
             init_editor: function() {
                 // set title
-                $("#center .unified-panel-title").text(
-                    view.config.get_value("name") + " (" + view.dbkey + ")"
-                );
+                $("#center .unified-panel-title").text(view.config.get_value("name") + " (" + view.dbkey + ")");
 
                 // add dataset
                 if (galaxy_config.app.add_dataset)
                     $.ajax({
-                        url:
-                            Galaxy.root +
-                            "api/datasets/" +
-                            galaxy_config.app.add_dataset,
+                        url: Galaxy.root + "api/datasets/" + galaxy_config.app.add_dataset,
                         data: { hda_ldda: "hda", data_type: "track_config" },
                         dataType: "json",
                         success: function(track_data) {
-                            view.add_drawable(
-                                tracks.object_from_template(
-                                    track_data,
-                                    view,
-                                    view
-                                )
-                            );
+                            view.add_drawable(tracks.object_from_template(track_data, view, view));
                         }
                     });
 
                 // initialize icons
                 $("#add-bookmark-button").click(function() {
                     // add new bookmark.
-                    var position =
-                            view.chrom + ":" + view.low + "-" + view.high,
+                    var position = view.chrom + ":" + view.low + "-" + view.high,
                         annotation = "Bookmark description";
                     return ui.add_bookmark(position, annotation, true);
                 });

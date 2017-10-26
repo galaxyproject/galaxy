@@ -66,11 +66,7 @@ define(["jquery"], function(jQuery) {
                         url: save_url,
                         data: ajax_data,
                         error: function() {
-                            alert(
-                                "Text editing for elt " +
-                                    text_elt_id +
-                                    " failed"
-                            );
+                            alert("Text editing for elt " + text_elt_id + " failed");
                             // TODO: call finish or no? For now, let's not because error occurred.
                         },
                         success: function(processed_text) {

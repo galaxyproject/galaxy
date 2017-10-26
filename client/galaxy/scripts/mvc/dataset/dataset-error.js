@@ -1,8 +1,4 @@
-define(["utils/utils", "mvc/ui/ui-misc", "mvc/form/form-view"], function(
-    Utils,
-    Ui,
-    Form
-) {
+define(["utils/utils", "mvc/ui/ui-misc", "mvc/form/form-view"], function(Utils, Ui, Form) {
     /** Dataset edit attributes view */
     var View = Backbone.View.extend({
         initialize: function() {
@@ -15,28 +11,17 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/form/form-view"], function(
 
         // Fetch data for the selected dataset and
         render: function() {
-            var data_url =
-                    Galaxy.root +
-                    "api/datasets/" +
-                    this.model.get("dataset_id"),
+            var data_url = Galaxy.root + "api/datasets/" + this.model.get("dataset_id"),
                 self = this;
 
             Utils.get({
                 url: data_url,
                 success: function(dataset) {
-                    var job_url =
-                        Galaxy.root +
-                        "api/jobs/" +
-                        dataset.creating_job +
-                        "?full=True";
+                    var job_url = Galaxy.root + "api/jobs/" + dataset.creating_job + "?full=True";
                     Utils.get({
                         url: job_url,
                         success: function(job) {
-                            var job_url =
-                                Galaxy.root +
-                                "api/jobs/" +
-                                dataset.creating_job +
-                                "?full=True";
+                            var job_url = Galaxy.root + "api/jobs/" + dataset.creating_job + "?full=True";
                             self.render_error_page(self, dataset, job);
                         },
                         error: function(response) {
@@ -46,10 +31,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/form/form-view"], function(
                                 persistent: true,
                                 cls: "errormessage"
                             };
-                            self.display_message(
-                                error_response,
-                                self.$(".response-message")
-                            );
+                            self.display_message(error_response, self.$(".response-message"));
                         }
                     });
                 },
@@ -60,10 +42,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/form/form-view"], function(
                         persistent: true,
                         cls: "errormessage"
                     };
-                    self.display_message(
-                        error_response,
-                        self.$(".response-message")
-                    );
+                    self.display_message(error_response, self.$(".response-message"));
                 }
             });
         },
@@ -72,14 +51,8 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/form/form-view"], function(
         render_error_page: function(self, dataset, job) {
             self.$el.empty().append(self._templateHeader());
             self.$el.append("<h2>Dataset Error</h2>");
-            self.$el.append(
-                "<p>An error occured while running the tool <b>" +
-                    job.tool_id +
-                    "</b>.</p>"
-            );
-            self.$el.append(
-                "<p>Tool execution generated the following messages:</p>"
-            );
+            self.$el.append("<p>An error occured while running the tool <b>" + job.tool_id + "</b>.</p>");
+            self.$el.append("<p>Tool execution generated the following messages:</p>");
             self.$el.append('<pre class="code">' + job.stderr + "</pre>");
             self.$el.append("<h2>Report This Error</pre>");
             self.$el.append(
@@ -107,11 +80,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/form/form-view"], function(
 
         /** Main template */
         _templateHeader: function() {
-            return (
-                '<div class="page-container edit-attr">' +
-                '<div class="response-message"></div>' +
-                "</div>"
-            );
+            return '<div class="page-container edit-attr">' + '<div class="response-message"></div>' + "</div>";
         },
 
         /** Convert tab template */
@@ -161,8 +130,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/form/form-view"], function(
                         floating: "clear",
                         onclick: function() {
                             var form_data = form.data.create();
-                            var url =
-                                Galaxy.root + "api/jobs/" + job.id + "/error";
+                            var url = Galaxy.root + "api/jobs/" + job.id + "/error";
                             form_data.dataset_id = dataset.id;
                             self.submit(form_data, url);
                         }
@@ -200,15 +168,11 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/form/form-view"], function(
                 error: function(response) {
                     var error_response = {
                         status: "error",
-                        message:
-                            "Error occured while saving. Please fill all the required fields and try again.",
+                        message: "Error occured while saving. Please fill all the required fields and try again.",
                         persistent: true,
                         cls: "errormessage"
                     };
-                    self.display_message(
-                        error_response,
-                        self.$(".response-message")
-                    );
+                    self.display_message(error_response, self.$(".response-message"));
                 }
             });
         }

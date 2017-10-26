@@ -22,8 +22,7 @@ TODO:
                 //MODEL is either a DatasetCollection (or subclass) or a DatasetCollectionElement (list of pairs)
                 _logNamespace: logNamespace,
 
-                className:
-                    _super.prototype.className + " dataset-collection-panel",
+                className: _super.prototype.className + " dataset-collection-panel",
 
                 /** sub view class used for datasets */
                 DatasetDCEViewClass: DC_LI.DatasetDCEListItemView,
@@ -79,18 +78,12 @@ TODO:
                         case "dataset_collection":
                             return this.NestedDCDCEViewClass;
                     }
-                    throw new TypeError(
-                        "Unknown element type:",
-                        model.get("element_type")
-                    );
+                    throw new TypeError("Unknown element type:", model.get("element_type"));
                 },
 
                 /** override to add link target and anon */
                 _getItemViewOptions: function(model) {
-                    var options = _super.prototype._getItemViewOptions.call(
-                        this,
-                        model
-                    );
+                    var options = _super.prototype._getItemViewOptions.call(this, model);
                     return _.extend(options, {
                         linkTarget: this.linkTarget,
                         hasUser: this.hasUser,
@@ -149,11 +142,7 @@ TODO:
                 // ........................................................................ misc
                 /** string rep */
                 toString: function() {
-                    return (
-                        "CollectionView(" +
-                        (this.model ? this.model.get("name") : "") +
-                        ")"
-                    );
+                    return "CollectionView(" + (this.model ? this.model.get("name") : "") + ")";
                 }
             }
         );
@@ -216,11 +205,7 @@ TODO:
                 // ........................................................................ misc
                 /** string rep */
                 toString: function() {
-                    return (
-                        "ListCollectionView(" +
-                        (this.model ? this.model.get("name") : "") +
-                        ")"
-                    );
+                    return "ListCollectionView(" + (this.model ? this.model.get("name") : "") + ")";
                 }
             }
         );
@@ -232,11 +217,7 @@ TODO:
                 // ........................................................................ misc
                 /** string rep */
                 toString: function() {
-                    return (
-                        "PairCollectionView(" +
-                        (this.model ? this.model.get("name") : "") +
-                        ")"
-                    );
+                    return "PairCollectionView(" + (this.model ? this.model.get("name") : "") + ")";
                 }
             }
         );
@@ -254,11 +235,7 @@ TODO:
                 // ........................................................................ misc
                 /** string rep */
                 toString: function() {
-                    return (
-                        "ListOfPairsCollectionView(" +
-                        (this.model ? this.model.get("name") : "") +
-                        ")"
-                    );
+                    return "ListOfPairsCollectionView(" + (this.model ? this.model.get("name") : "") + ")";
                 }
             }
         );
@@ -273,11 +250,7 @@ TODO:
 
             /** string rep */
             toString: function() {
-                return (
-                    "ListOfListsCollectionView(" +
-                    (this.model ? this.model.get("name") : "") +
-                    ")"
-                );
+                return "ListOfListsCollectionView(" + (this.model ? this.model.get("name") : "") + ")";
             }
         });
 

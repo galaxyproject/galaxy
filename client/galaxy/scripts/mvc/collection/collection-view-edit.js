@@ -66,19 +66,11 @@ TODO:
                                 var previousName = panel.model.get("name");
                                 if (newName && newName !== previousName) {
                                     panel.$el.find(nameSelector).text(newName);
-                                    panel.model
-                                        .save({ name: newName })
-                                        .fail(function() {
-                                            panel.$el
-                                                .find(nameSelector)
-                                                .text(
-                                                    panel.model.previous("name")
-                                                );
-                                        });
+                                    panel.model.save({ name: newName }).fail(function() {
+                                        panel.$el.find(nameSelector).text(panel.model.previous("name"));
+                                    });
                                 } else {
-                                    panel.$el
-                                        .find(nameSelector)
-                                        .text(previousName);
+                                    panel.$el.find(nameSelector).text(previousName);
                                 }
                             }
                         });
@@ -96,11 +88,7 @@ TODO:
                 // ........................................................................ misc
                 /** string rep */
                 toString: function() {
-                    return (
-                        "CollectionViewEdit(" +
-                        (this.model ? this.model.get("name") : "") +
-                        ")"
-                    );
+                    return "CollectionViewEdit(" + (this.model ? this.model.get("name") : "") + ")";
                 }
             }
         );
@@ -116,11 +104,7 @@ TODO:
                 // ........................................................................ misc
                 /** string rep */
                 toString: function() {
-                    return (
-                        "ListCollectionViewEdit(" +
-                        (this.model ? this.model.get("name") : "") +
-                        ")"
-                    );
+                    return "ListCollectionViewEdit(" + (this.model ? this.model.get("name") : "") + ")";
                 }
             }
         );
@@ -132,11 +116,7 @@ TODO:
                 // ........................................................................ misc
                 /** string rep */
                 toString: function() {
-                    return (
-                        "PairCollectionViewEdit(" +
-                        (this.model ? this.model.get("name") : "") +
-                        ")"
-                    );
+                    return "PairCollectionViewEdit(" + (this.model ? this.model.get("name") : "") + ")";
                 }
             }
         );
@@ -155,11 +135,7 @@ TODO:
                 // ........................................................................ misc
                 /** string rep */
                 toString: function() {
-                    return (
-                        "NestedPairCollectionViewEdit(" +
-                        (this.model ? this.model.get("name") : "") +
-                        ")"
-                    );
+                    return "NestedPairCollectionViewEdit(" + (this.model ? this.model.get("name") : "") + ")";
                 }
             }
         );
@@ -177,11 +153,7 @@ TODO:
                 // ........................................................................ misc
                 /** string rep */
                 toString: function() {
-                    return (
-                        "ListOfPairsCollectionViewEdit(" +
-                        (this.model ? this.model.get("name") : "") +
-                        ")"
-                    );
+                    return "ListOfPairsCollectionViewEdit(" + (this.model ? this.model.get("name") : "") + ")";
                 }
             }
         );
@@ -199,11 +171,7 @@ TODO:
                 // ........................................................................ misc
                 /** string rep */
                 toString: function() {
-                    return (
-                        "ListOfListsCollectionViewEdit(" +
-                        (this.model ? this.model.get("name") : "") +
-                        ")"
-                    );
+                    return "ListOfListsCollectionViewEdit(" + (this.model ? this.model.get("name") : "") + ")";
                 }
             }
         );

@@ -1,8 +1,4 @@
-define(["libs/bibtex", "mvc/base-mvc", "utils/localization"], function(
-    parseBibtex,
-    baseMVC,
-    _l
-) {
+define(["libs/bibtex", "mvc/base-mvc", "utils/localization"], function(parseBibtex, baseMVC, _l) {
     /* global Backbone */
     // we use amd here to require, but bibtex uses a global or commonjs pattern.
     // webpack will load via commonjs and plain requirejs will load as global. Check both
@@ -66,23 +62,19 @@ define(["libs/bibtex", "mvc/base-mvc", "utils/localization"], function(
     //==============================================================================
     /** @class Backbone collection of citations.
  */
-    var BaseCitationCollection = Backbone.Collection
-        .extend(baseMVC.LoggableMixin)
-        .extend({
-            _logNamespace: logNamespace,
+    var BaseCitationCollection = Backbone.Collection.extend(baseMVC.LoggableMixin).extend({
+        _logNamespace: logNamespace,
 
-            /** root api url */
-            urlRoot: Galaxy.root + "api",
-            partial: true, // Assume some tools in history/workflow may not be properly annotated yet.
-            model: Citation
-        });
+        /** root api url */
+        urlRoot: Galaxy.root + "api",
+        partial: true, // Assume some tools in history/workflow may not be properly annotated yet.
+        model: Citation
+    });
 
     var HistoryCitationCollection = BaseCitationCollection.extend({
         /** complete api url */
         url: function() {
-            return (
-                this.urlRoot + "/histories/" + this.history_id + "/citations"
-            );
+            return this.urlRoot + "/histories/" + this.history_id + "/citations";
         }
     });
 

@@ -8,9 +8,7 @@ define([], function() {
             return undefined;
         }
         matches = _.map(matches, function(match) {
-            return decodeURIComponent(
-                match.substr(key.length + 1).replace(/\+/g, " ")
-            );
+            return decodeURIComponent(match.substr(key.length + 1).replace(/\+/g, " "));
         });
         if (matches.length === 1) {
             return matches[0];

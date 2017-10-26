@@ -1,8 +1,4 @@
-define(["libs/underscore", "viz/trackster/util", "utils/config"], function(
-    _,
-    util_mod,
-    config_mod
-) {
+define(["libs/underscore", "viz/trackster/util", "utils/config"], function(_, util_mod, config_mod) {
     /**
  * A configuration setting. Currently key is used as id.
  */
@@ -108,10 +104,7 @@ define(["libs/underscore", "viz/trackster/util", "utils/config"], function(
                 this.set(_.extend({}, defaults, options));
             }
 
-            if (
-                this.get("value") === undefined &&
-                this.get("default_value") !== undefined
-            ) {
+            if (this.get("value") === undefined && this.get("default_value") !== undefined) {
                 // Use default to set value (if present).
                 this.set_value(this.get("default_value"));
 
@@ -293,14 +286,8 @@ define(["libs/underscore", "viz/trackster/util", "utils/config"], function(
                                     .css({
                                         // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
                                         // top: $(this).position().top + $(this.height)
-                                        left:
-                                            $(this).position().left +
-                                            $(this).width() +
-                                            5,
-                                        top:
-                                            $(this).position().top -
-                                            $(tip).height() / 2 +
-                                            $(this).height() / 2
+                                        left: $(this).position().left + $(this).width() + 5,
+                                        top: $(this).position().top - $(tip).height() / 2 + $(this).height() / 2
                                     })
                                     .show();
 
@@ -312,15 +299,10 @@ define(["libs/underscore", "viz/trackster/util", "utils/config"], function(
                                 });
 
                                 // Hide tip if clicking outside of tip.
-                                $(document).bind(
-                                    "click.color-picker",
-                                    function() {
-                                        tip.hide();
-                                        $(document).unbind(
-                                            "click.color-picker"
-                                        );
-                                    }
-                                );
+                                $(document).bind("click.color-picker", function() {
+                                    tip.hide();
+                                    $(document).unbind("click.color-picker");
+                                });
 
                                 // No propagation to avoid triggering document click (and tip hiding) above.
                                 e.stopPropagation();
@@ -332,18 +314,12 @@ define(["libs/underscore", "viz/trackster/util", "utils/config"], function(
                             .attr("title", "Set new random color")
                             .tooltip(),
                         // Color picker in tool tip style.
-                        tip = $(
-                            "<div class='tooltip right' style='position: absolute;' />"
-                        )
+                        tip = $("<div class='tooltip right' style='position: absolute;' />")
                             .appendTo(container_div)
                             .hide(),
                         // Inner div for padding purposes
-                        tip_inner = $(
-                            "<div class='tooltip-inner' style='text-align: inherit'></div>"
-                        ).appendTo(tip),
-                        tip_arrow = $(
-                            "<div class='tooltip-arrow'></div>"
-                        ).appendTo(tip),
+                        tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip),
+                        tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(tip),
                         farb_obj = $.farbtastic(tip_inner, {
                             width: 100,
                             height: 100,
@@ -357,9 +333,7 @@ define(["libs/underscore", "viz/trackster/util", "utils/config"], function(
                     // Use function to fix farb_obj value.
                     (function(fixed_farb_obj) {
                         new_color_icon.click(function() {
-                            fixed_farb_obj.setColor(
-                                util_mod.get_random_color()
-                            );
+                            fixed_farb_obj.setColor(util_mod.get_random_color());
                         });
                     })(farb_obj);
                 } else {

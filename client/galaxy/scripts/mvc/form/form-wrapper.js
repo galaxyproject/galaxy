@@ -40,8 +40,7 @@ define(["mvc/form/form-view", "mvc/ui/ui-misc"], function(Form, Ui) {
                 .fail(function(response) {
                     self.$el.empty().append(
                         new Ui.Message({
-                            message:
-                                "Failed to load resource " + self.url + ".",
+                            message: "Failed to load resource " + self.url + ".",
                             status: "danger",
                             persistent: true
                         }).$el
@@ -64,16 +63,9 @@ define(["mvc/form/form-view", "mvc/ui/ui-misc"], function(Form, Ui) {
                         persistent: false
                     };
                     if (self.redirect) {
-                        window.location =
-                            Galaxy.root +
-                            self.redirect +
-                            "?" +
-                            $.param(success_message);
+                        window.location = Galaxy.root + self.redirect + "?" + $.param(success_message);
                     } else {
-                        form.data.matchModel(response, function(
-                            input,
-                            input_id
-                        ) {
+                        form.data.matchModel(response, function(input, input_id) {
                             form.field_list[input_id].value(input.value);
                         });
                         self._showMessage(form, success_message);
@@ -92,10 +84,7 @@ define(["mvc/form/form-view", "mvc/ui/ui-misc"], function(Form, Ui) {
             var $panel = form.$el
                 .parents()
                 .filter(function() {
-                    return (
-                        ["auto", "scroll"].indexOf($(this).css("overflow")) !=
-                        -1
-                    );
+                    return ["auto", "scroll"].indexOf($(this).css("overflow")) != -1;
                 })
                 .first();
             $panel.animate({ scrollTop: 0 }, 500);

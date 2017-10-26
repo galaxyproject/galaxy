@@ -29,10 +29,7 @@ define(["utils/utils"], function(Utils) {
 
             // add info text
             if (options.info_text) {
-                tmpl +=
-                    '<br><div class="toolParamHelp" style="clear: both;">' +
-                    options.info_text +
-                    "</div>";
+                tmpl += '<br><div class="toolParamHelp" style="clear: both;">' + options.info_text + "</div>";
             }
 
             // return
@@ -129,11 +126,7 @@ define(["utils/utils"], function(Utils) {
                     } else {
                         tmpl += column.label;
                     }
-                    tmpl +=
-                        '<span class="sort-arrow">' +
-                        column.extra +
-                        "</span>" +
-                        "</th>";
+                    tmpl += '<span class="sort-arrow">' + column.extra + "</span>" + "</th>";
                 }
             }
 
@@ -225,12 +218,7 @@ define(["utils/utils"], function(Utils) {
                         // Link
                         if (link) {
                             if (options.operations.length != 0) {
-                                tmpl +=
-                                    '<div id="' +
-                                    id +
-                                    '" class="' +
-                                    cls +
-                                    '" style="float: left;">';
+                                tmpl += '<div id="' + id + '" class="' + cls + '" style="float: left;">';
                             }
                             tmpl +=
                                 '<a class="menubutton-label use-target" target="' +
@@ -317,10 +305,7 @@ define(["utils/utils"], function(Utils) {
                 if (options.show_item_checkboxes) {
                     tmpl += "<td></td>";
                 }
-                tmpl +=
-                    '<td colspan="100">' +
-                    '<span id="page-link-container">' +
-                    "Page:";
+                tmpl += '<td colspan="100">' + '<span id="page-link-container">' + "Page:";
 
                 if (min_page > 1) {
                     tmpl +=
@@ -328,11 +313,7 @@ define(["utils/utils"], function(Utils) {
                 }
 
                 // create page urls
-                for (
-                    var page_index = min_page;
-                    page_index < max_page + 1;
-                    page_index++
-                ) {
+                for (var page_index = min_page; page_index < max_page + 1; page_index++) {
                     if (page_index == options.cur_page_num) {
                         tmpl +=
                             '<span class="page-link inactive-link" id="page-link-' +
@@ -426,12 +407,7 @@ define(["utils/utils"], function(Utils) {
 
             // add legend
             if (options.legend) {
-                tmpl +=
-                    "<tr>" +
-                    '<td colspan="100">' +
-                    options.legend +
-                    "</td>" +
-                    "</tr>";
+                tmpl += "<tr>" + '<td colspan="100">' + options.legend + "</td>" + "</tr>";
             }
 
             // return
@@ -511,8 +487,7 @@ define(["utils/utils"], function(Utils) {
 
             // show advanced search link in standard display
             if (show_advanced_search_link) {
-                tmpl +=
-                    '<a href="" class="advanced-search-toggle">Advanced Search</a>';
+                tmpl += '<a href="" class="advanced-search-toggle">Advanced Search</a>';
             }
 
             // finalize standard search display
@@ -562,10 +537,7 @@ define(["utils/utils"], function(Utils) {
             var tmpl = "<tr>";
 
             if (column.filterable == "advanced") {
-                tmpl +=
-                    '<td align="left" style="padding-left: 10px">' +
-                    column_label +
-                    ":</td>";
+                tmpl += '<td align="left" style="padding-left: 10px">' + column_label + ":</td>";
             }
             tmpl += '<td style="padding-bottom: 1px;">';
             if (column.is_text) {
@@ -608,10 +580,7 @@ define(["utils/utils"], function(Utils) {
                     if (type == "string") {
                         if (column_filter != "All") {
                             // append template
-                            tmpl += this.filter_element(
-                                column_key,
-                                column_filter
-                            );
+                            tmpl += this.filter_element(column_key, column_filter);
                         }
                     }
 

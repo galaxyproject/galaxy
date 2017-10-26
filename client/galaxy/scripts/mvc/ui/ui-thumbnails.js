@@ -1,9 +1,5 @@
 /** This class renders the selection grid. */
-define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-tabs"], function(
-    Utils,
-    Ui,
-    Tabs
-) {
+define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-tabs"], function(Utils, Ui, Tabs) {
     var View = Backbone.View.extend({
         events: {
             "click .ui-thumbnails-item": "_onclick",
@@ -12,19 +8,12 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-tabs"], function(
 
         initialize: function(options) {
             this.model = options.model || new Backbone.Model(options);
-            this.collection = new Backbone.Collection(
-                this.model.get("collection")
-            );
+            this.collection = new Backbone.Collection(this.model.get("collection"));
             this.tabs = new Tabs.View({});
             this.setElement(this.tabs.$el.addClass("ui-thumbnails"));
             this.render();
             this.listenTo(this.model, "change", this.render, this);
-            this.listenTo(
-                this.collection,
-                "reset change add remove",
-                this.render,
-                this
-            );
+            this.listenTo(this.collection, "reset change add remove", this.render, this);
         },
 
         render: function() {
@@ -46,10 +35,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-tabs"], function(
                         $(
                             self._templateThumbnailItem({
                                 id: model.id,
-                                title:
-                                    title.length < title_length
-                                        ? title
-                                        : title.substr(0, title_length) + "...",
+                                title: title.length < title_length ? title : title.substr(0, title_length) + "...",
                                 title_icon: model.get("title_icon"),
                                 image_src: model.get("image_src")
                             })
@@ -90,12 +76,8 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-tabs"], function(
             if (new_value !== undefined) {
                 new_value = new_value == "__first" ? this.first : new_value;
                 var before = this.$(".ui-thumbnail-current").attr("value");
-                this.$(".ui-thumbnail-current").removeClass(
-                    "ui-thumbnail-current"
-                );
-                this.$('[value="' + new_value + '"]').addClass(
-                    "ui-thumbnail-current"
-                );
+                this.$(".ui-thumbnail-current").removeClass("ui-thumbnail-current");
+                this.$('[value="' + new_value + '"]').addClass("ui-thumbnail-current");
                 var after = this.$(".ui-thumbnail-current").attr("value");
                 var change_handler = this.model.get("onchange");
                 after != before && change_handler && change_handler(after);
@@ -114,8 +96,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-tabs"], function(
 
         /** Add double click handler */
         _ondblclick: function(e) {
-            this.model.get("ondblclick") &&
-                this.model.get("ondblclick")(this.value());
+            this.model.get("ondblclick") && this.model.get("ondblclick")(this.value());
         },
 
         /* Thumbnail template with image */

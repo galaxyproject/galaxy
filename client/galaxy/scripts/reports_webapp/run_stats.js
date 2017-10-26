@@ -29,14 +29,7 @@ function date_by_subtracting_hours(date, hours) {
 // Gets the utc time without minutes and seconds
 function get_utc_time_hours() {
     var date = new Date();
-    return new Date(
-        date.getUTCFullYear(),
-        date.getUTCMonth(),
-        date.getUTCDate(),
-        date.getUTCHours(),
-        0,
-        0
-    );
+    return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), date.getUTCHours(), 0, 0);
 }
 
 // Refreshes the page for more up to date information
@@ -145,11 +138,7 @@ function create_chart(inp_data, name, time, title) {
                 .select("text")
                 .attr(
                     "transform",
-                    "translate( " +
-                        (margin.left - 5) +
-                        ", " +
-                        (height - d * zoom + +margin.top + 10) +
-                        " )"
+                    "translate( " + (margin.left - 5) + ", " + (height - d * zoom + +margin.top + 10) + " )"
                 )
                 .attr("visibility", "visible")
                 .text(d);
@@ -162,11 +151,7 @@ function create_chart(inp_data, name, time, title) {
                 .select("rect")
                 .attr(
                     "transform",
-                    "translate( " +
-                        (+margin.left - wdth) +
-                        ", " +
-                        (height - d * zoom + +margin.top) +
-                        " )"
+                    "translate( " + (+margin.left - wdth) + ", " + (height - d * zoom + +margin.top) + " )"
                 )
                 .attr("width", wdth + "px")
                 .attr("height", "15px")
@@ -245,12 +230,9 @@ function create_chart(inp_data, name, time, title) {
         .attr("class", "ax_title")
         .attr("transform", function(e) {
             var axis = d3.select("#y_" + name).node();
-            var left_pad =
-                +margin.left - axis.getBoundingClientRect().width - 5;
-            var top_pad =
-                +margin.top + axis.getBoundingClientRect().height / 2 - 30;
-            var trans =
-                "translate(" + left_pad + "," + top_pad + ")rotate(-90)";
+            var left_pad = +margin.left - axis.getBoundingClientRect().width - 5;
+            var top_pad = +margin.top + axis.getBoundingClientRect().height / 2 - 30;
+            var trans = "translate(" + left_pad + "," + top_pad + ")rotate(-90)";
 
             return trans;
         })
@@ -344,9 +326,7 @@ function create_chart(inp_data, name, time, title) {
                 var locale = "en-us";
 
                 if (hours_array[i].getDate() != curr_day_text) {
-                    time = String(
-                        hours_array[i].toLocaleString(locale, { month: "long" })
-                    );
+                    time = String(hours_array[i].toLocaleString(locale, { month: "long" }));
                     time += " " + String(hours_array[i].getDate());
 
                     curr_day_text = hours_array[i].getDate();
@@ -372,9 +352,7 @@ function create_chart(inp_data, name, time, title) {
                     curr_day = hours_array[i].getDate();
                 }
 
-                return (
-                    "translate( " + (this_width + 2) + ", " + text_height + " )"
-                );
+                return "translate( " + (this_width + 2) + ", " + text_height + " )";
             });
     } else if (time == "days") {
         // Append day lines
@@ -452,9 +430,7 @@ function create_chart(inp_data, name, time, title) {
                 var locale = "en-us";
 
                 if (days_array[i].getMonth() != curr_month_text) {
-                    time = String(
-                        days_array[i].toLocaleString(locale, { month: "long" })
-                    );
+                    time = String(days_array[i].toLocaleString(locale, { month: "long" }));
                     time += " " + String(days_array[i].getFullYear());
 
                     curr_month_text = days_array[i].getMonth();
@@ -480,9 +456,7 @@ function create_chart(inp_data, name, time, title) {
                     curr_month = days_array[i].getMonth();
                 }
 
-                return (
-                    "translate( " + (this_width + 2) + ", " + text_height + " )"
-                );
+                return "translate( " + (this_width + 2) + ", " + text_height + " )";
             });
     }
 
@@ -618,13 +592,7 @@ function create_histogram(inp_data, name, title) {
         .append("g")
         .attr("class", "bar")
         .attr("transform", function(d) {
-            return (
-                "translate(" +
-                (+x(d.x) + +margin.left) +
-                "," +
-                (+y(d.y) + +margin.top) +
-                ")"
-            );
+            return "translate(" + (+x(d.x) + +margin.left) + "," + (+y(d.y) + +margin.top) + ")";
         })
         .on("mouseenter", function(d) {
             // Show tool tip
@@ -642,11 +610,7 @@ function create_histogram(inp_data, name, title) {
                 .select("text")
                 .attr(
                     "transform",
-                    "translate( " +
-                        (margin.left - 5) +
-                        ", " +
-                        (height - d.length * zoom + +margin.top + 10) +
-                        " )"
+                    "translate( " + (margin.left - 5) + ", " + (height - d.length * zoom + +margin.top + 10) + " )"
                 )
                 .attr("visibility", "visible")
                 .text(d.length);
@@ -659,11 +623,7 @@ function create_histogram(inp_data, name, title) {
                 .select("rect")
                 .attr(
                     "transform",
-                    "translate( " +
-                        (+margin.left - wdth) +
-                        ", " +
-                        (height - d.length * zoom + +margin.top) +
-                        " )"
+                    "translate( " + (+margin.left - wdth) + ", " + (height - d.length * zoom + +margin.top) + " )"
                 )
                 .attr("width", wdth + "px")
                 .attr("height", "15px")
@@ -715,10 +675,7 @@ function create_histogram(inp_data, name, title) {
         .append("g")
         .attr("class", "x axis")
         .attr("id", "x_" + name)
-        .attr(
-            "transform",
-            "translate( " + margin.left + "," + (+height + +margin.top) + ")"
-        )
+        .attr("transform", "translate( " + margin.left + "," + (+height + +margin.top) + ")")
         .call(xAxis);
 
     // Add a title to the x axis
@@ -728,10 +685,8 @@ function create_histogram(inp_data, name, title) {
         .attr("class", "ax_title")
         .attr("transform", function(e) {
             var axis = d3.select("#x_" + name).node();
-            var left_pad =
-                +margin.left + axis.getBoundingClientRect().width / 2 + 30;
-            var top_pad =
-                +margin.top + height + axis.getBoundingClientRect().height + 10;
+            var left_pad = +margin.left + axis.getBoundingClientRect().width / 2 + 30;
+            var top_pad = +margin.top + height + axis.getBoundingClientRect().height + 10;
             var trans = "translate(" + left_pad + "," + top_pad + ")";
 
             return trans;
@@ -759,12 +714,9 @@ function create_histogram(inp_data, name, title) {
         .attr("class", "ax_title")
         .attr("transform", function(e) {
             var axis = d3.select("#y_" + name).node();
-            var left_pad =
-                +margin.left - axis.getBoundingClientRect().width - 5;
-            var top_pad =
-                +margin.top + axis.getBoundingClientRect().height / 2 - 30;
-            var trans =
-                "translate(" + left_pad + "," + top_pad + ")rotate(-90)";
+            var left_pad = +margin.left - axis.getBoundingClientRect().width - 5;
+            var top_pad = +margin.top + axis.getBoundingClientRect().height / 2 - 30;
+            var trans = "translate(" + left_pad + "," + top_pad + ")rotate(-90)";
 
             return trans;
         })

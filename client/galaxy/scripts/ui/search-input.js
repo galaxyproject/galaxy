@@ -101,18 +101,14 @@
                         event.stopPropagation();
 
                         // esc key will clear if desired
-                        if (
-                            event.which === KEYCODE_ESC &&
-                            options.escWillClear
-                        ) {
+                        if (event.which === KEYCODE_ESC && options.escWillClear) {
                             clearSearchInput.call(this, event);
                         } else {
                             var searchTerms = $(this).val();
                             // return key or the search string len > minSearchLen (if not 0) triggers search
                             if (
                                 event.which === KEYCODE_RETURN ||
-                                (options.minSearchLen &&
-                                    searchTerms.length >= options.minSearchLen)
+                                (options.minSearchLen && searchTerms.length >= options.minSearchLen)
                             ) {
                                 search.call(this, event, searchTerms);
                             }
@@ -142,12 +138,9 @@
         // a button for clearing the search bar, placed on the right hand side
         function $loadingIndicator() {
             return $(
-                [
-                    '<span class="search-loading fa fa-spinner fa-spin" ',
-                    'title="',
-                    _l("loading..."),
-                    '"></span>'
-                ].join("")
+                ['<span class="search-loading fa fa-spinner fa-spin" ', 'title="', _l("loading..."), '"></span>'].join(
+                    ""
+                )
             )
                 .hide()
                 .tooltip({ placement: "bottom" });
@@ -174,9 +167,7 @@
             options = jQuery.extend(true, {}, defaults, options);
         }
         //NOTE: prepended
-        return $parentNode
-            .addClass("search-input")
-            .prepend([$input(), $clearBtn(), $loadingIndicator()]);
+        return $parentNode.addClass("search-input").prepend([$input(), $clearBtn(), $loadingIndicator()]);
     }
 
     // as jq plugin

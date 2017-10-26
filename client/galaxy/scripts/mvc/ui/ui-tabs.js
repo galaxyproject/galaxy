@@ -24,12 +24,7 @@ define(["utils/utils"], function(Utils) {
             this.listenTo(this.collection, "remove", this._remove, this);
             this.listenTo(this.collection, "change", this._change, this);
             this.listenTo(this.collection, "reset", this._reset, this);
-            this.listenTo(
-                this.collection,
-                "add remove reset",
-                this.render,
-                this
-            );
+            this.listenTo(this.collection, "add remove reset", this.render, this);
         },
 
         render: function() {
@@ -141,9 +136,7 @@ define(["utils/utils"], function(Utils) {
 
         /** Change tab */
         _change: function(tab_model) {
-            this.$("#tab-" + tab_model.id)[
-                tab_model.get("hidden") ? "hide" : "show"
-            ]();
+            this.$("#tab-" + tab_model.id)[tab_model.get("hidden") ? "hide" : "show"]();
         },
 
         /** Main template */

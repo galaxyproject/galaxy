@@ -41,18 +41,13 @@ define(
                 // build upload functions
                 this.uploadinput = this.$el.uploadinput({
                     ondragover: function() {
-                        self.model.get("enabled") &&
-                            self.$el.addClass("warning");
+                        self.model.get("enabled") && self.$el.addClass("warning");
                     },
                     ondragleave: function() {
                         self.$el.removeClass("warning");
                     },
                     onchange: function(files) {
-                        if (
-                            self.model.get("status") != "running" &&
-                            files &&
-                            files.length > 0
-                        ) {
+                        if (self.model.get("status") != "running" && files && files.length > 0) {
                             self.model.reset({
                                 file_data: files[0],
                                 file_name: files[0].name,
@@ -159,15 +154,9 @@ define(
 
             render: function() {
                 this.$el.attr("id", "upload-row-" + this.model.id);
-                this.$file_name.html(
-                    _.escape(this.model.get("file_name") || "-")
-                );
-                this.$file_desc.html(
-                    this.model.get("file_desc") || "Unavailable"
-                );
-                this.$file_size.html(
-                    Utils.bytesToString(this.model.get("file_size"))
-                );
+                this.$file_name.html(_.escape(this.model.get("file_name") || "-"));
+                this.$file_desc.html(this.model.get("file_desc") || "Unavailable");
+                this.$file_size.html(Utils.bytesToString(this.model.get("file_size")));
                 this.$status.removeClass().addClass(this.status_classes.init);
             },
 
@@ -184,10 +173,7 @@ define(
             /** Refresh ready or not states */
             _refreshReady: function() {
                 this.app.collection.each(function(model) {
-                    model.set(
-                        "status",
-                        (model.get("file_size") > 0 && "ready") || "init"
-                    );
+                    model.set("status", (model.get("file_size") > 0 && "ready") || "init");
                 });
             },
 
@@ -202,9 +188,7 @@ define(
                             top: this.$el.height() - 8 + "px"
                         })
                         .show();
-                    this.$el.height(
-                        this.$el.height() - 8 + this.$text.height() + 16
-                    );
+                    this.$el.height(this.$el.height() - 8 + this.$text.height() + 16);
                     this.$text_content.val("").trigger("keyup");
                 } else {
                     this.$el.height(this.height);
@@ -216,9 +200,7 @@ define(
             _refreshInfo: function() {
                 var info = this.model.get("info");
                 if (info) {
-                    this.$info_text
-                        .html("<strong>Failed: </strong>" + info)
-                        .show();
+                    this.$info_text.html("<strong>Failed: </strong>" + info).show();
                 } else {
                     this.$info_text.hide();
                 }
@@ -235,30 +217,20 @@ define(
                     this.$progress_bar[0].offsetHeight;
                     this.$progress_bar.removeClass("no-transition");
                 }
-                this.$percentage.html(
-                    percentage != 100
-                        ? percentage + "%"
-                        : "Adding to history..."
-                );
+                this.$percentage.html(percentage != 100 ? percentage + "%" : "Adding to history...");
             },
 
             /** Refresh status */
             _refreshStatus: function() {
                 var status = this.model.get("status");
-                this.$status
-                    .removeClass()
-                    .addClass(this.status_classes[status]);
+                this.$status.removeClass().addClass(this.status_classes[status]);
                 this.model.set("enabled", status != "running");
                 this.$text_content.attr("disabled", !this.model.get("enabled"));
                 this.$el.removeClass("success danger warning");
                 if (status == "running" || status == "ready") {
                     this.model.set("percentage", 0);
                 }
-                this.$source
-                    .find(".button")
-                    [status == "running" ? "addClass" : "removeClass"](
-                        "disabled"
-                    );
+                this.$source.find(".button")[status == "running" ? "addClass" : "removeClass"]("disabled");
                 if (status == "success") {
                     this.$el.addClass("success");
                     this.model.set("percentage", 100);
@@ -282,9 +254,7 @@ define(
 
             /** File size */
             _refreshFileSize: function() {
-                this.$file_size.html(
-                    Utils.bytesToString(this.model.get("file_size"))
-                );
+                this.$file_size.html(Utils.bytesToString(this.model.get("file_size")));
             },
 
             /** Show/hide ftp popup */
@@ -297,10 +267,7 @@ define(
                             ftp_upload_site: this.app.ftp_upload_site,
                             onchange: function(ftp_file) {
                                 self.ftp.hide();
-                                if (
-                                    self.model.get("status") != "running" &&
-                                    ftp_file
-                                ) {
+                                if (self.model.get("status") != "running" && ftp_file) {
                                     self.model.reset({
                                         file_mode: "ftp",
                                         file_name: ftp_file.path,

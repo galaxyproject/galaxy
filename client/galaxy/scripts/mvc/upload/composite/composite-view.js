@@ -9,15 +9,7 @@ define(
         "mvc/ui/ui-select",
         "mvc/ui/ui-misc"
     ],
-    function(
-        Utils,
-        UploadModel,
-        UploadRow,
-        UploadExtension,
-        Popover,
-        Select,
-        Ui
-    ) {
+    function(Utils, UploadModel, UploadRow, UploadExtension, Popover, Select, Ui) {
         return Backbone.View.extend({
             collection: new UploadModel.Collection(),
             initialize: function(app) {
@@ -101,9 +93,7 @@ define(
                 this.listenTo(this.collection, "change add", function() {
                     self.render();
                 });
-                this.select_extension.options.onchange(
-                    this.select_extension.value()
-                );
+                this.select_extension.options.onchange(this.select_extension.value());
                 this.render();
             },
 
@@ -117,8 +107,7 @@ define(
                     this.select_extension.enable();
                 }
                 if (
-                    this.collection.where({ status: "ready" }).length ==
-                        this.collection.length &&
+                    this.collection.where({ status: "ready" }).length == this.collection.length &&
                     this.collection.length > 0
                 ) {
                     this.btnStart.enable();
@@ -127,9 +116,7 @@ define(
                     this.btnStart.disable();
                     this.btnStart.$el.removeClass("btn-primary");
                 }
-                this.$(".upload-table")[
-                    this.collection.length > 0 ? "show" : "hide"
-                ]();
+                this.$(".upload-table")[this.collection.length > 0 ? "show" : "hide"]();
             },
 
             //
@@ -140,9 +127,7 @@ define(
             _eventAnnounce: function(model) {
                 var upload_row = new UploadRow(this, { model: model });
                 this.$(".upload-table > tbody:first").append(upload_row.$el);
-                this.$(".upload-table")[
-                    this.collection.length > 0 ? "show" : "hide"
-                ]();
+                this.$(".upload-table")[this.collection.length > 0 ? "show" : "hide"]();
                 upload_row.render();
             },
 
