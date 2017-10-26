@@ -1,8 +1,4 @@
-define(["jquery", "libs/underscore", "libs/backbone"], function(
-    $,
-    _,
-    Backbone
-) {
+define(["jquery", "libs/underscore", "libs/backbone"], function($, _, Backbone) {
     "use strict";
 
     var MIN_PANEL_WIDTH = 160,
@@ -41,11 +37,7 @@ define(["jquery", "libs/underscore", "libs/backbone"], function(
 
         /** panel dom template. id is 'right' or 'left' */
         _templatePanel: function() {
-            return [
-                this._templateHeader(),
-                this._templateBody(),
-                this._templateFooter()
-            ].join("");
+            return [this._templateHeader(), this._templateBody(), this._templateFooter()].join("");
         },
 
         /** panel dom template. id is 'right' or 'left' */
@@ -91,14 +83,9 @@ define(["jquery", "libs/underscore", "libs/backbone"], function(
                 var delta = e.pageX - prevX;
                 prevX = e.pageX;
                 var oldWidth = self.$el.width(),
-                    newWidth = draggingLeft
-                        ? oldWidth + delta
-                        : oldWidth - delta;
+                    newWidth = draggingLeft ? oldWidth + delta : oldWidth - delta;
                 // Limit range
-                newWidth = Math.min(
-                    MAX_PANEL_WIDTH,
-                    Math.max(MIN_PANEL_WIDTH, newWidth)
-                );
+                newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth));
                 self.resize(newWidth);
             }
 
@@ -166,8 +153,7 @@ define(["jquery", "libs/underscore", "libs/backbone"], function(
         //TODO: only used in message.mako?
         /**   */
         handle_minwidth_hint: function(hint) {
-            var space =
-                this.$center().width() - (this.hidden ? this.saved_size : 0);
+            var space = this.$center().width() - (this.hidden ? this.saved_size : 0);
             if (space < hint) {
                 if (!this.hidden) {
                     this.toggle();
@@ -220,14 +206,12 @@ define(["jquery", "libs/underscore", "libs/backbone"], function(
         /** Display iframe if its target url changes, hide center panel */
         _iframeChangeHandler: function(ev) {
             var iframe = ev.currentTarget;
-            var location =
-                iframe.contentWindow && iframe.contentWindow.location;
+            var location = iframe.contentWindow && iframe.contentWindow.location;
             if (location && location.host) {
                 $(iframe).show();
                 this.$panel.empty().hide();
                 Galaxy.trigger("center-frame:load", {
-                    fullpath:
-                        location.pathname + location.search + location.hash,
+                    fullpath: location.pathname + location.search + location.hash,
                     pathname: location.pathname,
                     search: location.search,
                     hash: location.hash
@@ -238,8 +222,7 @@ define(["jquery", "libs/underscore", "libs/backbone"], function(
         /** Display a view in the center panel, hide iframe */
         display: function(view) {
             var contentWindow = this.$frame[0].contentWindow || {};
-            var message =
-                contentWindow.onbeforeunload && contentWindow.onbeforeunload();
+            var message = contentWindow.onbeforeunload && contentWindow.onbeforeunload();
             if (!message || confirm(message)) {
                 contentWindow.onbeforeunload = undefined;
                 this.$frame.attr("src", "about:blank").hide();

@@ -48,9 +48,7 @@
 
         this.currPage = this.options.startingPage;
         if (this.options.totalDataSize !== null) {
-            this.numPages = Math.ceil(
-                this.options.totalDataSize / this.options.perPage
-            );
+            this.numPages = Math.ceil(this.options.totalDataSize / this.options.perPage);
             // limit currPage by numPages
             if (this.currPage >= this.numPages) {
                 this.currPage = this.numPages - 1;
@@ -68,11 +66,7 @@
 
     /** helper to create a simple li + a combo */
     function _make$Li(contents) {
-        return $(
-            ['<li><a href="javascript:void(0);">', contents, "</a></li>"].join(
-                ""
-            )
-        );
+        return $(['<li><a href="javascript:void(0);">', contents, "</a></li>"].join(""));
     }
 
     /** render previous and next pagination buttons */
@@ -103,9 +97,7 @@
         var pagination = this,
             $prev = _make$Li("Prev"),
             $next = _make$Li("Next"),
-            $paginationContainer = $("<ul/>").addClass(
-                "pagination pagination-prev-next"
-            );
+            $paginationContainer = $("<ul/>").addClass("pagination pagination-prev-next");
 
         // disable if it either end
         if (this.currPage === 0) {
@@ -117,8 +109,7 @@
         }
         if (
             (this.numPages && this.currPage === this.numPages - 1) ||
-            (this.options.currDataSize &&
-                this.options.currDataSize < this.options.perPage)
+            (this.options.currDataSize && this.options.currDataSize < this.options.perPage)
         ) {
             $next.addClass("disabled");
         } else {
@@ -137,12 +128,8 @@
         // it's better to scroll the control and let the user see all pages
         //  than to force her/him to change pages in order to find the one they want (as traditional << >> does)
         var pagination = this,
-            $scrollingContainer = $("<div>").addClass(
-                "pagination-scroll-container"
-            ),
-            $paginationContainer = $("<ul/>").addClass(
-                "pagination pagination-page-list"
-            ),
+            $scrollingContainer = $("<div>").addClass("pagination-scroll-container"),
+            $paginationContainer = $("<ul/>").addClass("pagination pagination-page-list"),
             page$LiClick = function(ev) {
                 pagination.goToPage($(this).data("page"));
             };
@@ -159,9 +146,7 @@
             //console.debug( '\t', $pageLi );
             $paginationContainer.append($pageLi);
         }
-        return this.$element.html(
-            $scrollingContainer.html($paginationContainer)
-        );
+        return this.$element.html($scrollingContainer.html($paginationContainer));
     };
 
     /** scroll scroll-container (if any) to show the active page */
@@ -176,9 +161,7 @@
         var $activePage = this.$element.find("li.active"),
             midpoint = $container.width() / 2;
         //console.debug( $container, $activePage, midpoint );
-        $container.scrollLeft(
-            $container.scrollLeft() + $activePage.position().left - midpoint
-        );
+        $container.scrollLeft($container.scrollLeft() + $activePage.position().left - midpoint);
         return this;
     };
 
@@ -237,9 +220,7 @@
 
             // (other invocations only work on the first element in selected)
             var $firstElement = $(this[0]),
-                previousControl = $firstElement.data(
-                    Pagination.prototype.DATA_KEY
-                );
+                previousControl = $firstElement.data(Pagination.prototype.DATA_KEY);
             // if a pagination control was found for this element, either...
             if (previousControl) {
                 // invoke a function on the pagination object if passed a string (the function name)

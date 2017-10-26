@@ -1,11 +1,5 @@
 define(
-    [
-        "mvc/history/history-view",
-        "mvc/history/hda-li",
-        "mvc/history/hdca-li",
-        "mvc/base-mvc",
-        "utils/localization"
-    ],
+    ["mvc/history/history-view", "mvc/history/hda-li", "mvc/history/hdca-li", "mvc/base-mvc", "utils/localization"],
     function(HISTORY_VIEW, HDA_LI, HDCA_LI, BASE_MVC, _l) {
         "use strict";
 
@@ -24,16 +18,13 @@ TODO:
  */
         var AnnotatedHistoryView = _super.extend(
             /** @lends AnnotatedHistoryView.prototype */ {
-                className:
-                    _super.prototype.className + " annotated-history-panel",
+                className: _super.prototype.className + " annotated-history-panel",
 
                 // ------------------------------------------------------------------------ panel rendering
                 /** In this override, add the history annotation */
                 _buildNewRender: function() {
                     //TODO: shouldn't this display regardless (on all non-current panels)?
-                    var $newRender = _super.prototype._buildNewRender.call(
-                        this
-                    );
+                    var $newRender = _super.prototype._buildNewRender.call(this);
                     this.renderHistoryAnnotation($newRender);
                     return $newRender;
                 },
@@ -55,16 +46,10 @@ TODO:
                     var $controls = $whereTo.find("> .controls");
                     $controls.find(".contents-container.headers").remove();
 
-                    var $headers = $(
-                        '<div class="contents-container headers"/>'
-                    )
+                    var $headers = $('<div class="contents-container headers"/>')
                         .append([
-                            $('<div class="history-content header"/>').text(
-                                _l("Dataset")
-                            ),
-                            $('<div class="additional-info header"/>').text(
-                                _l("Annotation")
-                            )
+                            $('<div class="history-content header"/>').text(_l("Dataset")),
+                            $('<div class="additional-info header"/>').text(_l("Annotation"))
                         ])
                         .appendTo($controls);
 
@@ -76,9 +61,7 @@ TODO:
                 _renderItemView$el: function(view) {
                     return $('<div class="contents-container"/>').append([
                         view.render(0).$el,
-                        $('<div class="additional-info"/>').text(
-                            view.model.get("annotation") || ""
-                        )
+                        $('<div class="additional-info"/>').text(view.model.get("annotation") || "")
                     ]);
                 },
 
@@ -97,10 +80,7 @@ TODO:
                         // stopProp will prevent bootstrap from getting the click needed to open a dropdown
                         //  in the case of metafile download buttons - workaround here
                         var $currTarget = $(ev.currentTarget);
-                        if (
-                            $currTarget.length &&
-                            $currTarget.attr("data-toggle") === "dropdown"
-                        ) {
+                        if ($currTarget.length && $currTarget.attr("data-toggle") === "dropdown") {
                             $currTarget.dropdown("toggle");
                         }
                     }
@@ -117,11 +97,7 @@ TODO:
                 // ........................................................................ misc
                 /** Return a string rep of the history */
                 toString: function() {
-                    return (
-                        "AnnotatedHistoryView(" +
-                        (this.model ? this.model.get("name") : "") +
-                        ")"
-                    );
+                    return "AnnotatedHistoryView(" + (this.model ? this.model.get("name") : "") + ")";
                 }
             }
         );

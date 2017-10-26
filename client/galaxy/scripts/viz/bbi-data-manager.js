@@ -1,7 +1,4 @@
-define(["viz/visualization", "libs/bbi/bigwig"], function(
-    visualization,
-    bigwig
-) {
+define(["viz/visualization", "libs/bbi/bigwig"], function(visualization, bigwig) {
     /**
      * Data manager for BBI datasets/files, including BigWig and BigBed.
      */
@@ -15,21 +12,13 @@ define(["viz/visualization", "libs/bbi/bigwig"], function(
             var deferred = $.Deferred();
             this.set_data(region, deferred);
 
-            var url =
-                    Galaxy.root +
-                    "datasets/" +
-                    this.get("dataset").id +
-                    "/display",
+            var url = Galaxy.root + "datasets/" + this.get("dataset").id + "/display",
                 self = this;
             var promise = new $.Deferred();
             $.when(bigwig.makeBwg(url)).then(function(bb, err) {
-                $.when(
-                    bb.readWigData(
-                        region.get("chrom"),
-                        region.get("start"),
-                        region.get("end")
-                    )
-                ).then(function(data) {
+                $.when(bb.readWigData(region.get("chrom"), region.get("start"), region.get("end"))).then(function(
+                    data
+                ) {
                     // Transform data into "bigwig" format for LinePainter. "bigwig" format is an array of 2-element arrays
                     // where each element is [position, score]; unlike real bigwig format, no gaps are allowed.
                     var result = [],

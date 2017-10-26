@@ -57,9 +57,7 @@ define(["utils/utils", "mvc/ui/ui-misc"], function(Utils, Ui) {
             this.$header[options.title ? "show" : "hide"]();
             this.$title_text.html(options.title);
             _.each([this.$content, this.$body], function($el) {
-                $el[options.nopadding ? "addClass" : "removeClass"](
-                    "no-padding"
-                );
+                $el[options.nopadding ? "addClass" : "removeClass"]("no-padding");
             });
 
             // render title icon
@@ -74,11 +72,7 @@ define(["utils/utils", "mvc/ui/ui-misc"], function(Utils, Ui) {
             }
 
             // make portlet collapsible
-            this.$title_text
-                [options.collapsible ? "addClass" : "removeClass"](
-                    "no-highlight collapsible"
-                )
-                .off();
+            this.$title_text[options.collapsible ? "addClass" : "removeClass"]("no-highlight collapsible").off();
             if (options.collapsible) {
                 this.$title_text.on("click", function() {
                     self[self.collapsed ? "expand" : "collapse"]();
@@ -221,12 +215,8 @@ define(["utils/utils", "mvc/ui/ui-misc"], function(Utils, Ui) {
                         .append(
                             $("<div/>")
                                 .addClass("portlet-title")
-                                .append(
-                                    $("<i/>").addClass("portlet-title-icon")
-                                )
-                                .append(
-                                    $("<span/>").addClass("portlet-title-text")
-                                )
+                                .append($("<i/>").addClass("portlet-title-icon"))
+                                .append($("<span/>").addClass("portlet-title-text"))
                         )
                 )
                 .append(

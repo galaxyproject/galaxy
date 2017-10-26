@@ -1,8 +1,4 @@
-define(["mvc/dataset/states", "mvc/base-mvc", "utils/localization"], function(
-    STATES,
-    BASE_MVC,
-    _l
-) {
+define(["mvc/dataset/states", "mvc/base-mvc", "utils/localization"], function(STATES, BASE_MVC, _l) {
     "use strict";
 
     //==============================================================================
@@ -41,10 +37,7 @@ define(["mvc/dataset/states", "mvc/base-mvc", "utils/localization"], function(
      */
         isVisible: function(includeDeleted, includeHidden) {
             var isVisible = true;
-            if (
-                !includeDeleted &&
-                (this.get("deleted") || this.get("purged"))
-            ) {
+            if (!includeDeleted && (this.get("deleted") || this.get("purged"))) {
                 isVisible = false;
             }
             if (!includeHidden && !this.get("visible")) {
@@ -87,11 +80,7 @@ define(["mvc/dataset/states", "mvc/base-mvc", "utils/localization"], function(
 
         // ........................................................................ misc
         toString: function() {
-            return [
-                this.get("type_id"),
-                this.get("hid"),
-                this.get("name")
-            ].join(":");
+            return [this.get("type_id"), this.get("hid"), this.get("name")].join(":");
         }
     };
 

@@ -29,11 +29,7 @@ define([], function() {
             $(this.canvas).remove();
         },
         destroyIfInvalid: function() {
-            if (
-                this.handle1 &&
-                this.handle2 &&
-                !this.handle2.attachable(this.handle1)
-            ) {
+            if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1)) {
                 this.destroy();
             }
         },
@@ -66,10 +62,7 @@ define([], function() {
             var canvas_max_x = Math.max(start_x, end_x);
             var canvas_min_y = Math.min(start_y, end_y);
             var canvas_max_y = Math.max(start_y, end_y);
-            var cp_shift = Math.min(
-                Math.max(Math.abs(canvas_max_y - canvas_min_y) / 2, 100),
-                300
-            );
+            var cp_shift = Math.min(Math.max(Math.abs(canvas_max_y - canvas_min_y) / 2, 100), 300);
             var canvas_left = canvas_min_x - canvas_extra;
             var canvas_top = canvas_min_y - canvas_extra;
             var canvas_width = canvas_max_x - canvas_min_x + 2 * canvas_extra;

@@ -406,12 +406,7 @@ TODO:
     /** Create an edge in vertex named sourceName to targetName (optionally adding data to it)
  *      If directed is false, create a second edge from targetName to sourceName.
  */
-    Graph.prototype.createEdge = function(
-        sourceName,
-        targetName,
-        directed,
-        data
-    ) {
+    Graph.prototype.createEdge = function(sourceName, targetName, directed, data) {
         //note: allows multiple 'equivalent' edges (to/from same source/target)
         //console.debug( 'createEdge:', source, target, directed );
         var isReflexive = sourceName === targetName;
@@ -479,9 +474,7 @@ TODO:
     /** Print the graph to the console (debugging) */
     Graph.prototype.print = function() {
         var self = this;
-        console.log(
-            "Graph has " + Object.keys(self.vertices).length + " vertices"
-        );
+        console.log("Graph has " + Object.keys(self.vertices).length + " vertices");
         self.eachVertex(function(vertex) {
             console.log(vertex.toString());
             vertex.eachEdge(function(edge) {
@@ -577,9 +570,7 @@ TODO:
 
         function getComponent(undiscoveredVertex) {
             //TODO: better interface on dfs (search v. searchTree)
-            var search = new DepthFirstSearch(searchGraph)._search(
-                undiscoveredVertex
-            );
+            var search = new DepthFirstSearch(searchGraph)._search(undiscoveredVertex);
 
             // remove curr discovered from undiscovered
             undiscovered = undiscovered.filter(function(name) {
@@ -587,16 +578,12 @@ TODO:
             });
 
             return {
-                vertices: Object.keys(search.discovered).map(function(
-                    vertexName
-                ) {
+                vertices: Object.keys(search.discovered).map(function(vertexName) {
                     return self.vertices[vertexName].toJSON();
                 }),
                 edges: search.edges.map(function(edge) {
                     // restore any reversed edges
-                    var hasBeenReversed =
-                        self.vertices[edge.target].edges[edge.source] !==
-                        undefined;
+                    var hasBeenReversed = self.vertices[edge.target].edges[edge.source] !== undefined;
                     if (self.directed && hasBeenReversed) {
                         var swap = edge.source;
                         edge.source = edge.target;

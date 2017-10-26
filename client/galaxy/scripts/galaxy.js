@@ -8,15 +8,7 @@ define(
         "utils/add-logging",
         "utils/localization"
     ],
-    function(
-        _,
-        Backbone,
-        BASE_MVC,
-        userModel,
-        metricsLogger,
-        addLogging,
-        localize
-    ) {
+    function(_, Backbone, BASE_MVC, userModel, metricsLogger, addLogging, localize) {
         // TODO: move into a singleton pattern and have dependents import Galaxy
         // ============================================================================
         /** Base galaxy client-side application.
@@ -42,9 +34,7 @@ define(
         try {
             localDebugging = localStorage.getItem(DEBUGGING_KEY) == "true";
         } catch (storageErr) {
-            console.log(
-                localize("localStorage not available for debug flag retrieval")
-            );
+            console.log(localize("localStorage not available for debug flag retrieval"));
         }
 
         /** initalize options and sub-components */
@@ -53,13 +43,7 @@ define(
             _.extend(self, Backbone.Events);
             if (localDebugging) {
                 self.logger = console;
-                console.debug(
-                    "debugging galaxy:",
-                    "options:",
-                    options,
-                    "bootstrapped:",
-                    bootstrapped
-                );
+                console.debug("debugging galaxy:", "options:", options, "bootstrapped:", bootstrapped);
             }
 
             self._processOptions(options);
@@ -103,18 +87,14 @@ define(
         };
 
         /** filter to options present in defaultOptions (and default to them) */
-        GalaxyApp.prototype._processOptions = function _processOptions(
-            options
-        ) {
+        GalaxyApp.prototype._processOptions = function _processOptions(options) {
             var self = this,
                 defaults = self.defaultOptions;
 
             self.options = {};
             for (var k in defaults) {
                 if (defaults.hasOwnProperty(k)) {
-                    self.options[k] = options.hasOwnProperty(k)
-                        ? options[k]
-                        : defaults[k];
+                    self.options[k] = options.hasOwnProperty(k) ? options[k] : defaults[k];
                 }
             }
             return self;
@@ -154,30 +134,19 @@ define(
 
             // default to console logging at the debug level if the debug flag is set
             if (self.config.debug) {
-                loggerOptions.consoleLogger =
-                    loggerOptions.consoleLogger || console;
-                loggerOptions.consoleLevel =
-                    loggerOptions.consoleLevel ||
-                    metricsLogger.MetricsLogger.ALL;
+                loggerOptions.consoleLogger = loggerOptions.consoleLogger || console;
+                loggerOptions.consoleLevel = loggerOptions.consoleLevel || metricsLogger.MetricsLogger.ALL;
                 // load any logging namespaces from localStorage if we can
                 try {
-                    loggerOptions.consoleNamespaceWhitelist = localStorage
-                        .getItem(NAMESPACE_KEY)
-                        .split(",");
+                    loggerOptions.consoleNamespaceWhitelist = localStorage.getItem(NAMESPACE_KEY).split(",");
                 } catch (storageErr) {}
             }
 
             self.logger = new metricsLogger.MetricsLogger(loggerOptions);
             self.emit = {};
-            ["log", "debug", "info", "warn", "error", "metric"].map(function(
-                i
-            ) {
+            ["log", "debug", "info", "warn", "error", "metric"].map(function(i) {
                 self.emit[i] = function(data) {
-                    self.logger.emit(
-                        i,
-                        arguments[0],
-                        Array.prototype.slice.call(arguments, 1)
-                    );
+                    self.logger.emit(i, arguments[0], Array.prototype.slice.call(arguments, 1));
                 };
             });
 
@@ -246,11 +215,7 @@ define(
                 // also remove all namespaces
                 self.debuggingNamespaces(null);
             } catch (storageErr) {
-                console.log(
-                    localize(
-                        "localStorage not available for debug flag retrieval"
-                    )
-                );
+                console.log(localize("localStorage not available for debug flag retrieval"));
             }
             return false;
         };
@@ -261,9 +226,7 @@ define(
  *  Pass in an array of strings or single string of the namespaces to filter to.
  *  Returns the new/current namespaces as an array;
  */
-        GalaxyApp.prototype.debuggingNamespaces = function _debuggingNamespaces(
-            namespaces
-        ) {
+        GalaxyApp.prototype.debuggingNamespaces = function _debuggingNamespaces(namespaces) {
             var self = this;
             try {
                 if (namespaces === undefined) {
@@ -280,19 +243,13 @@ define(
                 }
                 return newSettings;
             } catch (storageErr) {
-                console.log(
-                    localize(
-                        "localStorage not available for debug namespace retrieval"
-                    )
-                );
+                console.log(localize("localStorage not available for debug namespace retrieval"));
             }
         };
 
         /** string rep */
         GalaxyApp.prototype.toString = function toString() {
-            var userEmail = this.user
-                ? this.user.get("email") || "(anonymous)"
-                : "uninitialized";
+            var userEmail = this.user ? this.user.get("email") || "(anonymous)" : "uninitialized";
             return "GalaxyApp(" + userEmail + ")";
         };
 

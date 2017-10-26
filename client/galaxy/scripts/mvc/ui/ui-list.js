@@ -1,9 +1,5 @@
 // dependencies
-define(["utils/utils", "mvc/ui/ui-portlet", "mvc/ui/ui-misc"], function(
-    Utils,
-    Portlet,
-    Ui
-) {
+define(["utils/utils", "mvc/ui/ui-portlet", "mvc/ui/ui-misc"], function(Utils, Portlet, Ui) {
     // ui list element
     var View = Backbone.View.extend({
         // create portlet to keep track of selected list elements

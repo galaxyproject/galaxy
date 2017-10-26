@@ -1,11 +1,5 @@
 define(
-    [
-        "mvc/list/list-item",
-        "ui/loading-indicator",
-        "mvc/base-mvc",
-        "utils/localization",
-        "ui/search-input"
-    ],
+    ["mvc/list/list-item", "ui/loading-indicator", "mvc/base-mvc", "utils/localization", "ui/search-input"],
     function(LIST_ITEM, LoadingIndicator, BASE_MVC, _l) {
         "use strict";
 
@@ -63,9 +57,7 @@ TODO:
 
                     // ---- instance vars
                     /** how quickly should jquery fx run? */
-                    this.fxSpeed = _.has(attributes, "fxSpeed")
-                        ? attributes.fxSpeed
-                        : this.fxSpeed;
+                    this.fxSpeed = _.has(attributes, "fxSpeed") ? attributes.fxSpeed : this.fxSpeed;
 
                     /** filters for displaying subviews */
                     this.filters = [];
@@ -76,10 +68,7 @@ TODO:
                     // this.indicator = new LoadingIndicator( this.$el );
 
                     /** currently showing selectors on items? */
-                    this.selecting =
-                        attributes.selecting !== undefined
-                            ? attributes.selecting
-                            : true;
+                    this.selecting = attributes.selecting !== undefined ? attributes.selecting : true;
                     //this.selecting = false;
 
                     /** cached selected item.model.ids to persist btwn renders */
@@ -96,16 +85,13 @@ TODO:
                     /** list item views */
                     this.views = [];
                     /** list item models */
-                    this.collection =
-                        attributes.collection ||
-                        this._createDefaultCollection();
+                    this.collection = attributes.collection || this._createDefaultCollection();
 
                     /** filter fns run over collection items to see if they should show in the list */
                     this.filters = attributes.filters || [];
 
                     /** override $scrollContainer fn via attributes - fn should return jq for elem to call scrollTo on */
-                    this.$scrollContainer =
-                        attributes.$scrollContainer || this.$scrollContainer;
+                    this.$scrollContainer = attributes.$scrollContainer || this.$scrollContainer;
 
                     /** @type {String} generic title */
                     this.title = attributes.title || "";
@@ -154,49 +140,27 @@ TODO:
 
                 /** listening for collection events */
                 _setUpCollectionListeners: function() {
-                    this.log(
-                        this + "._setUpCollectionListeners",
-                        this.collection
-                    );
+                    this.log(this + "._setUpCollectionListeners", this.collection);
                     this.stopListening(this.collection);
 
                     // bubble up error events
                     this.listenTo(this.collection, {
                         error: function(model, xhr, options, msg, details) {
-                            this.trigger(
-                                "error",
-                                model,
-                                xhr,
-                                options,
-                                msg,
-                                details
-                            );
+                            this.trigger("error", model, xhr, options, msg, details);
                         },
                         update: function(collection, options) {
                             var changes = options.changes;
                             // console.info( collection + ', update:', changes, '\noptions:', options );
                             // more than one: render everything
-                            if (
-                                options.renderAll ||
-                                changes.added.length + changes.removed.length >
-                                    1
-                            ) {
+                            if (options.renderAll || changes.added.length + changes.removed.length > 1) {
                                 return this.renderItems();
                             }
                             // otherwise, let the single add/remove handlers do it
                             if (changes.added.length === 1) {
-                                return this.addItemView(
-                                    _.first(changes.added),
-                                    collection,
-                                    options
-                                );
+                                return this.addItemView(_.first(changes.added), collection, options);
                             }
                             if (changes.removed.length === 1) {
-                                return this.removeItemView(
-                                    _.first(changes.removed),
-                                    collection,
-                                    options
-                                );
+                                return this.removeItemView(_.first(changes.removed), collection, options);
                             }
                         }
                     });
@@ -211,9 +175,7 @@ TODO:
                     this.on({
                         "view:selected": function(view, ev) {
                             if (ev && ev.shiftKey && this.lastSelected) {
-                                var lastSelectedView = this.viewFromModelId(
-                                    this.lastSelected
-                                );
+                                var lastSelectedView = this.viewFromModelId(this.lastSelected);
                                 if (lastSelectedView) {
                                     this.selectRange(view, lastSelectedView);
                                 }
@@ -225,10 +187,7 @@ TODO:
                         },
 
                         "view:de-selected": function(view, ev) {
-                            this.selected = _.without(
-                                this.selected,
-                                view.model.id
-                            );
+                            this.selected = _.without(this.selected, view.model.id);
                         }
                     });
                 },
@@ -351,11 +310,7 @@ TODO:
                         ].join("")
                     );
                     var $actions = actions.map(function(action) {
-                        var html = [
-                            '<li><a href="javascript:void(0);">',
-                            action.html,
-                            "</a></li>"
-                        ].join("");
+                        var html = ['<li><a href="javascript:void(0);">', action.html, "</a></li>"].join("");
                         return $(html).click(function(ev) {
                             ev.preventDefault();
                             return action.func(ev);
@@ -423,9 +378,7 @@ TODO:
                         panel._attachItems($whereTo);
                         // console.log( 'items attached' );
                     }
-                    panel
-                        ._renderEmptyMessage($whereTo)
-                        .toggle(!panel.views.length);
+                    panel._renderEmptyMessage($whereTo).toggle(!panel.views.length);
                     panel.trigger("views:ready", panel.views);
 
                     // console.log( '------------------------------------------- rendering items' );
@@ -436,9 +389,7 @@ TODO:
                 _filterCollection: function() {
                     // override this
                     var panel = this;
-                    return panel.collection.filter(
-                        _.bind(panel._filterItem, panel)
-                    );
+                    return panel.collection.filter(_.bind(panel._filterItem, panel));
                 },
 
                 /** Should the model be viewable in the current state?
@@ -530,10 +481,7 @@ TODO:
                             } else {
                                 json = [v.model.toJSON()];
                             }
-                            ev.dataTransfer.setData(
-                                "text",
-                                JSON.stringify(json)
-                            );
+                            ev.dataTransfer.setData("text", JSON.stringify(json));
                             //ev.dataTransfer.setDragImage( v.el, 60, 60 );
                         },
                         this
@@ -564,9 +512,7 @@ TODO:
                 /** render the empty/none-found message */
                 _renderEmptyMessage: function($whereTo) {
                     this.debug("_renderEmptyMessage", $whereTo, this.searchFor);
-                    var text = this.searchFor
-                        ? this.noneFoundMsg
-                        : this.emptyMsg;
+                    var text = this.searchFor ? this.noneFoundMsg : this.emptyMsg;
                     return this.$emptyMessage($whereTo).text(text);
                 },
 
@@ -603,9 +549,7 @@ TODO:
                         function(next) {
                             // hide the empty message first if only view
                             if (panel.$emptyMessage().is(":visible")) {
-                                panel
-                                    .$emptyMessage()
-                                    .fadeOut(panel.fxSpeed, next);
+                                panel.$emptyMessage().fadeOut(panel.fxSpeed, next);
                             } else {
                                 next();
                             }
@@ -627,10 +571,7 @@ TODO:
 
                     // use the modelIndex to splice into views and insert at the proper index in the DOM
                     panel.views.splice(modelIndex, 0, view);
-                    panel._insertIntoListAt(
-                        modelIndex,
-                        panel._renderItemView$el(view).hide()
-                    );
+                    panel._insertIntoListAt(modelIndex, panel._renderItemView$el(view).hide());
 
                     panel.trigger("view:attached", view);
                     if (useFx) {
@@ -681,9 +622,7 @@ TODO:
                             view.remove();
                             panel.trigger("view:removed:rendered");
                             if (!panel.views.length) {
-                                panel
-                                    ._renderEmptyMessage()
-                                    .fadeIn(panel.fxSpeed, next);
+                                panel._renderEmptyMessage().fadeIn(panel.fxSpeed, next);
                             } else {
                                 next();
                             }
@@ -795,10 +734,7 @@ TODO:
                     speed = speed !== undefined ? speed : this.fxSpeed;
                     this.selecting = true;
                     this.$(".list-actions").slideDown(speed);
-                    speed =
-                        this.views.length >= this.THROTTLE_SELECTOR_FX_AT
-                            ? 0
-                            : speed;
+                    speed = this.views.length >= this.THROTTLE_SELECTOR_FX_AT ? 0 : speed;
                     _.each(this.views, function(view) {
                         view.showSelector(speed);
                     });
@@ -811,10 +747,7 @@ TODO:
                     speed = speed !== undefined ? speed : this.fxSpeed;
                     this.selecting = false;
                     this.$(".list-actions").slideUp(speed);
-                    speed =
-                        this.views.length >= this.THROTTLE_SELECTOR_FX_AT
-                            ? 0
-                            : speed;
+                    speed = this.views.length >= this.THROTTLE_SELECTOR_FX_AT ? 0 : speed;
                     _.each(this.views, function(view) {
                         view.hideSelector(speed);
                     });
@@ -875,13 +808,7 @@ TODO:
                 // ------------------------------------------------------------------------ loading indicator
                 /** hide the $el and display a loading indicator (in the $el's parent) when loading new data */
                 _showLoadingIndicator: function(msg, speed, callback) {
-                    this.debug(
-                        "_showLoadingIndicator",
-                        this.indicator,
-                        msg,
-                        speed,
-                        callback
-                    );
+                    this.debug("_showLoadingIndicator", this.indicator, msg, speed, callback);
                     speed = speed !== undefined ? speed : this.fxSpeed;
                     if (!this.indicator) {
                         this.indicator = new LoadingIndicator(this.$el);
@@ -897,12 +824,7 @@ TODO:
 
                 /** hide the loading indicator */
                 _hideLoadingIndicator: function(speed, callback) {
-                    this.debug(
-                        "_hideLoadingIndicator",
-                        this.indicator,
-                        speed,
-                        callback
-                    );
+                    this.debug("_hideLoadingIndicator", this.indicator, speed, callback);
                     speed = speed !== undefined ? speed : this.fxSpeed;
                     if (this.indicator) {
                         this.indicator.hide(speed, callback);
@@ -1019,10 +941,7 @@ TODO:
 
             initialize: function(attributes) {
                 ListPanel.prototype.initialize.call(this, attributes);
-                this.selecting =
-                    attributes.selecting !== undefined
-                        ? attributes.selecting
-                        : false;
+                this.selecting = attributes.selecting !== undefined ? attributes.selecting : false;
 
                 this.setModel(this.model, attributes);
             },
@@ -1052,9 +971,7 @@ TODO:
                     //  the model[ modelCollectionKey ], attributes.collection, or an empty vanilla collection
                     this.stopListening(this.collection);
                     this.collection =
-                        this.model[this.modelCollectionKey] ||
-                        attributes.collection ||
-                        this._createDefaultCollection();
+                        this.model[this.modelCollectionKey] || attributes.collection || this._createDefaultCollection();
                     this._setUpCollectionListeners();
 
                     if (oldModelId && model.get("id") !== oldModelId) {

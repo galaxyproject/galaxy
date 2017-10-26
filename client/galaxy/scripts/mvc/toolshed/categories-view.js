@@ -1,7 +1,4 @@
-define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
-    toolshed_model,
-    toolshed_util
-) {
+define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(toolshed_model, toolshed_util) {
     var ToolShedCategories = Backbone.View.extend({
         el: "#center",
 
@@ -15,8 +12,7 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
             this.options = _.defaults(this.options || options, this.defaults);
             this.model = new toolshed_model.Categories();
             this.listenTo(this.model, "sync", this.render);
-            this.model.url =
-                this.model.url + "?tool_shed_url=" + this.options.tool_shed;
+            this.model.url = this.model.url + "?tool_shed_url=" + this.options.tool_shed;
             this.model.tool_shed = shed;
             this.model.fetch();
         },
@@ -36,10 +32,7 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
             require(["libs/jquery/jquery-ui"], function() {
                 $("#search_box").autocomplete({
                     source: function(request, response) {
-                        var shed_url = that.model.tool_shed.replace(
-                            /%2f/g,
-                            "/"
-                        );
+                        var shed_url = that.model.tool_shed.replace(/%2f/g, "/");
                         var base_url = Galaxy.root + "api/tool_shed/search";
                         var params = {
                             term: request.term,
@@ -59,11 +52,7 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
                             tool_shed_url: that.model.tool_shed,
                             tsr_id: tsr_id
                         };
-                        var new_route =
-                            "repository/s/" +
-                            that.model.tool_shed +
-                            "/r/" +
-                            tsr_id;
+                        var new_route = "repository/s/" + that.model.tool_shed + "/r/" + tsr_id;
                         Backbone.history.navigate(new_route, {
                             trigger: true,
                             replace: true
@@ -75,8 +64,7 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
 
         reDraw: function(options) {
             this.$el.empty();
-            this.model.url =
-                this.model.url + "?tool_shed_url=" + this.options.tool_shed;
+            this.model.url = this.model.url + "?tool_shed_url=" + this.options.tool_shed;
             this.initialize(options);
         },
 

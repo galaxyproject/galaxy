@@ -21,11 +21,7 @@ define(["utils/utils"], function(Utils) {
                     .attr("type", "button")
                     .append((this.$icon = $("<i/>")))
                     .append((this.$title = $("<span/>")))
-                    .append(
-                        (this.$progress = $("<div/>").append(
-                            (this.$progress_bar = $("<div/>"))
-                        ))
-                    )
+                    .append((this.$progress = $("<div/>").append((this.$progress_bar = $("<div/>")))))
             );
             this.listenTo(this.model, "change", this.render, this);
             this.render();
@@ -46,12 +42,8 @@ define(["utils/utils"], function(Utils) {
                     options.onclick && !self.disabled && options.onclick();
                 })
                 .tooltip({ title: options.tooltip, placement: "bottom" });
-            this.$progress
-                .addClass("progress")
-                .css("display", options.percentage !== -1 ? "block" : "none");
-            this.$progress_bar
-                .addClass("progress-bar")
-                .css({ width: options.percentage + "%" });
+            this.$progress.addClass("progress").css("display", options.percentage !== -1 ? "block" : "none");
+            this.$progress_bar.addClass("progress-bar").css({ width: options.percentage + "%" });
             this.$icon.removeClass().addClass("icon fa");
             this.$title.removeClass().addClass("title");
             if (options.wait) {
@@ -62,9 +54,7 @@ define(["utils/utils"], function(Utils) {
                 this.$el.addClass(options.cls);
                 this.$icon.addClass(options.icon);
                 this.$title.html(options.title);
-                options.icon &&
-                    options.title &&
-                    this.$icon.addClass("ui-margin-right");
+                options.icon && options.title && this.$icon.addClass("ui-margin-right");
             }
         },
 
@@ -149,11 +139,7 @@ define(["utils/utils"], function(Utils) {
                 new Backbone.Model({
                     id: Utils.uid(),
                     title: "Select/Unselect all",
-                    icons: [
-                        "fa-square-o",
-                        "fa-minus-square-o",
-                        "fa-check-square-o"
-                    ],
+                    icons: ["fa-square-o", "fa-minus-square-o", "fa-check-square-o"],
                     value: 0,
                     onchange: function() {}
                 }).set(options);
@@ -173,10 +159,7 @@ define(["utils/utils"], function(Utils) {
                 .addClass("ui-button-check")
                 .off("click")
                 .on("click", function() {
-                    self.model.set(
-                        "value",
-                        (self.model.get("value") === 0 && 2) || 0
-                    );
+                    self.model.set("value", (self.model.get("value") === 0 && 2) || 0);
                     options.onclick && options.onclick();
                 });
             this.$title.html(options.title);
@@ -241,17 +224,13 @@ define(["utils/utils"], function(Utils) {
                     $(".tooltip").hide();
                     !options.disabled && options.onclick && options.onclick();
                 });
-            this.$button
-                .addClass("button")
-                .tooltip({ title: options.tooltip, placement: "bottom" });
+            this.$button.addClass("button").tooltip({ title: options.tooltip, placement: "bottom" });
             this.$icon
                 .removeClass()
                 .addClass("icon fa")
                 .addClass(options.icon);
             this.$title.addClass("title").html(options.title);
-            options.icon &&
-                options.title &&
-                this.$icon.addClass("ui-margin-right");
+            options.icon && options.title && this.$icon.addClass("ui-margin-right");
         }
     });
 
@@ -284,12 +263,7 @@ define(["utils/utils"], function(Utils) {
                 )
             );
             this.listenTo(this.model, "change", this.render, this);
-            this.listenTo(
-                this.collection,
-                "change add remove reset",
-                this.render,
-                this
-            );
+            this.listenTo(this.collection, "change add remove reset", this.render, this);
             this.render();
         },
 
@@ -302,11 +276,7 @@ define(["utils/utils"], function(Utils) {
                 .addClass(options.cls)
                 .attr("id", options.id)
                 .css({
-                    display:
-                        options.visible &&
-                        this.collection.where({ visible: true }).length > 0
-                            ? "block"
-                            : "none"
+                    display: options.visible && this.collection.where({ visible: true }).length > 0 ? "block" : "none"
                 });
             this.$root
                 .addClass("root button dropdown-toggle")
@@ -326,9 +296,7 @@ define(["utils/utils"], function(Utils) {
                 .removeClass()
                 .addClass("title")
                 .html(options.title);
-            options.icon &&
-                options.title &&
-                this.$icon.addClass("ui-margin-right");
+            options.icon && options.title && this.$icon.addClass("ui-margin-right");
             this.$menu && this.$menu.remove();
             if (this.collection.length > 0) {
                 this.$menu = $("<ul/>")
@@ -350,10 +318,7 @@ define(["utils/utils"], function(Utils) {
                             $("<i/>")
                                 .addClass("fa")
                                 .addClass(suboptions.icon)
-                                .css(
-                                    "display",
-                                    suboptions.icon ? "inline-block" : "none"
-                                )
+                                .css("display", suboptions.icon ? "inline-block" : "none")
                         )
                         .append(suboptions.title)
                         .on("click", function(e) {
@@ -363,8 +328,7 @@ define(["utils/utils"], function(Utils) {
                             }
                         });
                     self.$menu.append($("<li/>").append($link));
-                    suboptions.divider &&
-                        self.$menu.append($("<li/>").addClass("divider"));
+                    suboptions.divider && self.$menu.append($("<li/>").addClass("divider"));
                 }
             });
         },

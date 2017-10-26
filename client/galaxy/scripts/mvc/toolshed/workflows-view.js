@@ -1,7 +1,4 @@
-define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
-    toolshed_model,
-    toolshed_util
-) {
+define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(toolshed_model, toolshed_util) {
     var View = Backbone.View.extend({
         el: "#center",
 
@@ -66,8 +63,7 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
                     $.get(api_url, params, function(data) {
                         var changesets = Object.keys(data.repository.metadata);
                         var current_changeset = changesets[0];
-                        var current_metadata =
-                            data.repository.metadata[current_changeset];
+                        var current_metadata = data.repository.metadata[current_changeset];
                         current_metadata.tool_shed_url = toolshed;
                         toolshed_util.addToQueue(current_metadata);
                         elem.remove();

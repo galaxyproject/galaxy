@@ -29,10 +29,7 @@ define(["utils/utils", "mvc/ui/ui-popover"], function(Utils, Popover) {
             if (options.description) {
                 var tmpl = options.description;
                 if (options.description_url) {
-                    tmpl +=
-                        '&nbsp;(<a href="' +
-                        options.description_url +
-                        '" target="_blank">read more</a>)';
+                    tmpl += '&nbsp;(<a href="' + options.description_url + '" target="_blank">read more</a>)';
                 }
                 return tmpl;
             } else {

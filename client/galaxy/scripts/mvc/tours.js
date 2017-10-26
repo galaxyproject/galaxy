@@ -111,12 +111,10 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
 
         render: function() {
             var tpl = _.template(tourpage_template);
-            this.$el
-                .html(tpl({ tours: this.model.models }))
-                .on("click", ".tourItem", function(e) {
-                    e.preventDefault();
-                    giveTour($(this).data("tour.id"));
-                });
+            this.$el.html(tpl({ tours: this.model.models })).on("click", ".tourItem", function(e) {
+                e.preventDefault();
+                giveTour($(this).data("tour.id"));
+            });
         }
     });
 

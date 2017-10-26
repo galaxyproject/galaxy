@@ -22,11 +22,7 @@ define([], function() {
                     return undefined;
                 }
                 if (this.logger.emit) {
-                    return this.logger.emit(
-                        logFn,
-                        this._logNamespace,
-                        arguments
-                    );
+                    return this.logger.emit(logFn, this._logNamespace, arguments);
                 }
                 if (this.logger[logFn]) {
                     //TODO:! there has to be a way to get the lineno/file into this

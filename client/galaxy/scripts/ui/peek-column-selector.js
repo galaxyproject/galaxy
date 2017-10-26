@@ -98,35 +98,16 @@
     /** validate the control data sent in for each row */
     function validateControl(control) {
         if (control.disabled && jQuery.type(control.disabled) !== "array") {
-            throw new Error(
-                '"disabled" must be defined as an array of indeces: ' +
-                    JSON.stringify(control)
-            );
+            throw new Error('"disabled" must be defined as an array of indeces: ' + JSON.stringify(control));
         }
-        if (
-            control.multiselect &&
-            control.selected &&
-            jQuery.type(control.selected) !== "array"
-        ) {
-            throw new Error(
-                'Mulitselect rows need an array for "selected": ' +
-                    JSON.stringify(control)
-            );
+        if (control.multiselect && control.selected && jQuery.type(control.selected) !== "array") {
+            throw new Error('Mulitselect rows need an array for "selected": ' + JSON.stringify(control));
         }
         if (!control.label || !control.id) {
-            throw new Error(
-                "Peek controls need a label and id for each control row: " +
-                    JSON.stringify(control)
-            );
+            throw new Error("Peek controls need a label and id for each control row: " + JSON.stringify(control));
         }
-        if (
-            control.disabled &&
-            control.disabled.indexOf(control.selected) !== -1
-        ) {
-            throw new Error(
-                "Selected column is in the list of disabled columns: " +
-                    JSON.stringify(control)
-            );
+        if (control.disabled && control.disabled.indexOf(control.selected) !== -1) {
+            throw new Error("Selected column is in the list of disabled columns: " + JSON.stringify(control));
         }
         return control;
     }
@@ -155,17 +136,9 @@
     function setSelectedText($cell, control, columnIndex) {
         var $button = $cell.children("." + BUTTON_CLASS);
         if ($cell.hasClass(SELECTED_CLASS)) {
-            $button.html(
-                control.selectedText !== undefined
-                    ? control.selectedText
-                    : control.label
-            );
+            $button.html(control.selectedText !== undefined ? control.selectedText : control.label);
         } else {
-            $button.html(
-                control.unselectedText !== undefined
-                    ? control.unselectedText
-                    : control.label
-            );
+            $button.html(control.unselectedText !== undefined ? control.unselectedText : control.label);
         }
     }
 
@@ -283,10 +256,7 @@
             // get the rows containing text starting with the comment char (also make them grey)
             $commentRows = $peektable.find("td[colspan]").map(function(e, i) {
                 var $this = $(this);
-                if (
-                    $this.text() &&
-                    $this.text().match(new RegExp("^" + options.commentChar))
-                ) {
+                if ($this.text() && $this.text().match(new RegExp("^" + options.commentChar))) {
                     return $(this)
                         .css("color", "grey")
                         .parent()
@@ -315,62 +285,46 @@
         }
 
         // save either the options column name or the parsed text of each column header in html5 data attr and text
-        var $headers = $peektable
-            .find("th:not(.top-left)")
-            .each(function(i, e) {
-                var $this = $(this),
-                    // can be '1.name' or '1'
-                    text = $this.text().replace(/^\d+\.*/, ""),
-                    name = options.columnNames[i] || text;
-                $this
-                    .attr("data-" + COLUMN_NAME_DATA_KEY, name)
-                    .text(i + 1 + (name ? "." + name : ""));
-            });
+        var $headers = $peektable.find("th:not(.top-left)").each(function(i, e) {
+            var $this = $(this),
+                // can be '1.name' or '1'
+                text = $this.text().replace(/^\d+\.*/, ""),
+                name = options.columnNames[i] || text;
+            $this.attr("data-" + COLUMN_NAME_DATA_KEY, name).text(i + 1 + (name ? "." + name : ""));
+        });
 
         // allow renaming of columns when the header is clicked
         if (options.renameColumns) {
-            $headers
-                .addClass(RENAMABLE_HEADER_CLASS)
-                .click(function renameColumn() {
-                    // prompt for new name
-                    var $this = $(this),
-                        index =
-                            $this.index() + (options.includePrompts ? 0 : 1),
-                        prevName = $this.data(COLUMN_NAME_DATA_KEY),
-                        newColumnName = prompt("New column name:", prevName);
-                    if (newColumnName !== null && newColumnName !== prevName) {
-                        // set the new text and data
+            $headers.addClass(RENAMABLE_HEADER_CLASS).click(function renameColumn() {
+                // prompt for new name
+                var $this = $(this),
+                    index = $this.index() + (options.includePrompts ? 0 : 1),
+                    prevName = $this.data(COLUMN_NAME_DATA_KEY),
+                    newColumnName = prompt("New column name:", prevName);
+                if (newColumnName !== null && newColumnName !== prevName) {
+                    // set the new text and data
+                    $this
+                        .text(index + (newColumnName ? "." + newColumnName : ""))
+                        .data(COLUMN_NAME_DATA_KEY, newColumnName)
+                        .attr("data-", COLUMN_NAME_DATA_KEY, newColumnName);
+                    // fire event for new column names
+                    var columnNames = jQuery.makeArray(
                         $this
-                            .text(
-                                index +
-                                    (newColumnName ? "." + newColumnName : "")
-                            )
-                            .data(COLUMN_NAME_DATA_KEY, newColumnName)
-                            .attr("data-", COLUMN_NAME_DATA_KEY, newColumnName);
-                        // fire event for new column names
-                        var columnNames = jQuery.makeArray(
-                            $this
-                                .parent()
-                                .children("th:not(.top-left)")
-                                .map(function() {
-                                    return $(this).data(COLUMN_NAME_DATA_KEY);
-                                })
-                        );
-                        $this
-                            .parents(".peek")
-                            .trigger(RENAME_EVENT, columnNames);
-                    }
-                });
+                            .parent()
+                            .children("th:not(.top-left)")
+                            .map(function() {
+                                return $(this).data(COLUMN_NAME_DATA_KEY);
+                            })
+                    );
+                    $this.parents(".peek").trigger(RENAME_EVENT, columnNames);
+                }
+            });
         }
 
         // build a row for each control
         options.controls.forEach(function(control, i) {
             validateControl(control);
-            var $controlRow = buildControlRow(
-                columnCount,
-                control,
-                options.includePrompts
-            );
+            var $controlRow = buildControlRow(columnCount, control, options.includePrompts);
             $peektable.find("tbody").append($controlRow);
         });
         return this;

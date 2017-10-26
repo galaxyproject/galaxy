@@ -15,17 +15,7 @@ define(
         "utils/config",
         "mvc/ui/icon-button"
     ],
-    function(
-        _,
-        d3,
-        util,
-        visualization,
-        tracks,
-        tools,
-        data,
-        config,
-        mod_icon_btn
-    ) {
+    function(_, d3, util, visualization, tracks, tools, data, config, mod_icon_btn) {
         /**
  * A collection of tool input settings. Object is useful for keeping a list of settings
  * for future use without changing the input's value and for preserving inputs order.
@@ -118,9 +108,7 @@ define(
      */
             set_tree_data: function() {
                 // Get samples for each parameter.
-                var params_samples = _.map(this.get_tree_params(), function(
-                    param
-                ) {
+                var params_samples = _.map(this.get_tree_params(), function(param) {
                     return {
                         param: param,
                         samples: param.get_samples()
@@ -153,10 +141,7 @@ define(
                                 name: setting,
                                 param: param,
                                 value: setting,
-                                children: create_tree_data(
-                                    params_samples,
-                                    index + 1
-                                )
+                                children: create_tree_data(params_samples, index + 1)
                             };
                         });
                     };
@@ -164,10 +149,7 @@ define(
                 this.set("tree_data", {
                     name: "Root",
                     id: node_id++,
-                    children:
-                        params_samples.length !== 0
-                            ? create_tree_data(params_samples, 0)
-                            : null
+                    children: params_samples.length !== 0 ? create_tree_data(params_samples, 0) : null
                 });
             },
 
@@ -204,8 +186,7 @@ define(
                 var cur_node = target_node.parent;
                 if (cur_node) {
                     while (cur_node.depth !== 0) {
-                        fixed_settings[cur_node.param.get("name")] =
-                            cur_node.value;
+                        fixed_settings[cur_node.param.get("name")] = cur_node.value;
                         cur_node = cur_node.parent;
                     }
                 }
@@ -280,10 +261,7 @@ define(
                 var cur_node = this.get("tree_data"),
                     find_child = function(children) {
                         return _.find(children, function(child) {
-                            return (
-                                settings[child.param.get("name")] ===
-                                child.value
-                            );
+                            return settings[child.param.get("name")] === child.value;
                         });
                     };
 
@@ -329,10 +307,7 @@ define(
                         },
                         options.track
                     );
-                    this.set(
-                        "track",
-                        tracks.object_from_template(track_config, {}, null)
-                    );
+                    this.set("track", tracks.object_from_template(track_config, {}, null));
                 }
             },
 
@@ -340,10 +315,7 @@ define(
                 var this_settings = this.get("settings"),
                     other_settings = a_track.get("settings");
                 for (var prop in this_settings) {
-                    if (
-                        !other_settings[prop] ||
-                        this_settings[prop] !== other_settings[prop]
-                    ) {
+                    if (!other_settings[prop] || this_settings[prop] !== other_settings[prop]) {
                         return false;
                     }
                 }
@@ -367,40 +339,25 @@ define(
  * Sweepster visualization model.
  */
         var SweepsterVisualization = visualization.Visualization.extend({
-            defaults: _.extend(
-                {},
-                visualization.Visualization.prototype.defaults,
-                {
-                    dataset: null,
-                    tool: null,
-                    parameter_tree: null,
-                    regions: null,
-                    tracks: null,
-                    default_mode: "Pack"
-                }
-            ),
+            defaults: _.extend({}, visualization.Visualization.prototype.defaults, {
+                dataset: null,
+                tool: null,
+                parameter_tree: null,
+                regions: null,
+                tracks: null,
+                default_mode: "Pack"
+            }),
 
             initialize: function(options) {
                 this.set("dataset", new data.Dataset(options.dataset));
                 this.set("tool", new tools.Tool(options.tool));
-                this.set(
-                    "regions",
-                    new visualization.GenomeRegionCollection(options.regions)
-                );
+                this.set("regions", new visualization.GenomeRegionCollection(options.regions));
                 this.set("tracks", new TrackCollection(options.tracks));
 
                 var tool_with_samplable_inputs = this.get("tool");
-                this.set(
-                    "tool_with_samplable_inputs",
-                    tool_with_samplable_inputs
-                );
+                this.set("tool_with_samplable_inputs", tool_with_samplable_inputs);
                 // Remove complex parameters for now.
-                tool_with_samplable_inputs.remove_inputs([
-                    "data",
-                    "hidden_data",
-                    "conditional",
-                    "text"
-                ]);
+                tool_with_samplable_inputs.remove_inputs(["data", "hidden_data", "conditional", "text"]);
 
                 this.set(
                     "parameter_tree",
@@ -418,10 +375,7 @@ define(
             toJSON: function() {
                 return {
                     id: this.get("id"),
-                    title:
-                        "Parameter exploration for dataset '" +
-                        this.get("dataset").get("name") +
-                        "'",
+                    title: "Parameter exploration for dataset '" + this.get("dataset").get("name") + "'",
                     type: "sweepster",
                     dataset_id: this.get("dataset").id,
                     tool_id: this.get("tool").id,
@@ -447,11 +401,7 @@ define(
             initialize: function(options) {
                 this.canvas_manager = options.canvas_manager;
                 this.render();
-                this.model.on(
-                    "change:track change:mode",
-                    this.draw_tiles,
-                    this
-                );
+                this.model.on("change:track change:mode", this.draw_tiles, this);
             },
 
             render: function() {
@@ -472,12 +422,7 @@ define(
                         .text("Track Settings")
                 );
                 settings.get("inputs").each(function(input) {
-                    settings_div.append(
-                        input.get("label") +
-                            ": " +
-                            values[input.get("name")] +
-                            "<br/>"
-                    );
+                    settings_div.append(input.get("label") + ": " + values[input.get("name")] + "<br/>");
                 });
                 var self = this,
                     run_on_dataset_button = $("<button/>")
@@ -512,13 +457,7 @@ define(
                     self.$el.append(
                         $("<td/>")
                             .addClass("tile")
-                            .html(
-                                $("<img/>").attr(
-                                    "src",
-                                    Galaxy.root +
-                                        "images/loading_large_white_bg.gif"
-                                )
-                            )
+                            .html($("<img/>").attr("src", Galaxy.root + "images/loading_large_white_bg.gif"))
                     );
                 });
 
@@ -542,37 +481,17 @@ define(
                 }
 
                 // When data is ready, draw tiles.
-                $.when(track.data_manager.data_is_ready()).then(function(
-                    data_ok
-                ) {
+                $.when(track.data_manager.data_is_ready()).then(function(data_ok) {
                     // Draw tile for each region.
                     regions.each(function(region, index) {
                         var resolution = region.length() / self.TILE_LEN,
                             w_scale = 1 / resolution,
                             mode = self.model.get("mode");
-                        $.when(
-                            track.data_manager.get_data(
-                                region,
-                                mode,
-                                resolution,
-                                {}
-                            )
-                        ).then(function(tile_data) {
+                        $.when(track.data_manager.get_data(region, mode, resolution, {})).then(function(tile_data) {
                             var canvas = self.canvas_manager.new_canvas();
                             canvas.width = self.TILE_LEN;
-                            canvas.height = track.get_canvas_height(
-                                tile_data,
-                                mode,
-                                w_scale,
-                                canvas.width
-                            );
-                            track.draw_tile(
-                                tile_data,
-                                canvas.getContext("2d"),
-                                mode,
-                                region,
-                                w_scale
-                            );
+                            canvas.height = track.get_canvas_height(tile_data, mode, w_scale, canvas.width);
+                            track.draw_tile(tile_data, canvas.getContext("2d"), mode, region, w_scale);
                             $(tile_containers[index])
                                 .empty()
                                 .append(canvas);
@@ -595,8 +514,7 @@ define(
                 ' samples: <input class="num_samples" type="text" size="1" value="<%= num_samples %>">' +
                 "</div>",
 
-            select_input_template:
-                '<div class="form-row-input sweep"><%= options %></div>',
+            select_input_template: '<div class="form-row-input sweep"><%= options %></div>',
 
             initialize: function(options) {
                 this.$el = options.tool_row;
@@ -616,18 +534,11 @@ define(
 
                 // Add row for parameter sweep inputs.
                 if (input instanceof tools.IntegerToolParameter) {
-                    sweep_inputs_row = $(
-                        _.template(this.number_input_template)(
-                            this.model.toJSON()
-                        )
-                    );
+                    sweep_inputs_row = $(_.template(this.number_input_template)(this.model.toJSON()));
                 } else if (input instanceof tools.SelectToolParameter) {
-                    var options = _.map(
-                            this.$el.find("select option"),
-                            function(option) {
-                                return $(option).val();
-                            }
-                        ),
+                    var options = _.map(this.$el.find("select option"), function(option) {
+                            return $(option).val();
+                        }),
                         options_text = options.join(", ");
                     sweep_inputs_row = $(
                         _.template(this.select_input_template)({
@@ -661,9 +572,7 @@ define(
                                     sweep_inputs_row.hide();
                                     single_input_row.show();
                                     $(this).hide();
-                                    self.$el
-                                        .find(".icon-button.plus-button")
-                                        .show();
+                                    self.$el.find(".icon-button.plus-button").show();
                                 }
                             }
                         ],
@@ -746,9 +655,7 @@ define(
                 var self = this;
 
                 // Layout tree.
-                var cluster = d3.layout
-                    .cluster()
-                    .size([this.height, this.width - 160]);
+                var cluster = d3.layout.cluster().size([this.height, this.width - 160]);
 
                 var diagonal = d3.svg.diagonal().projection(function(d) {
                     return [d.y, d.x];
@@ -799,10 +706,7 @@ define(
                         return "translate(" + d.y + "," + d.x + ")";
                     })
                     .on("mouseover", function(a_node) {
-                        var connected_node_ids = _.pluck(
-                            self.model.get_connected_nodes(a_node),
-                            "id"
-                        );
+                        var connected_node_ids = _.pluck(self.model.get_connected_nodes(a_node), "id");
                         // TODO: probably can use enter() to do this more easily.
                         node
                             .filter(function(d) {
@@ -849,20 +753,14 @@ define(
                 "</ol></div>",
 
             initialize: function(options) {
-                this.canvas_manager = new visualization.CanvasManager(
-                    this.$el.parents("body")
-                );
+                this.canvas_manager = new visualization.CanvasManager(this.$el.parents("body"));
                 this.tool_param_tree_view = new ToolParameterTreeView({
                     model: this.model.get("parameter_tree")
                 });
-                this.track_collection_container = $("<table/>").addClass(
-                    "tracks"
-                );
+                this.track_collection_container = $("<table/>").addClass("tracks");
 
                 // Handle node clicks for tree data.
-                this.model
-                    .get("parameter_tree")
-                    .on("change:tree_data", this.handle_node_clicks, this);
+                this.model.get("parameter_tree").on("change:tree_data", this.handle_node_clicks, this);
 
                 // Each track must have a view so it has a canvas manager.
                 var self = this;
@@ -946,9 +844,7 @@ define(
                     .attr("colspan", 2);
 
                 var tracks_div = $("<div>").addClass("tiles");
-                $("#right").append(
-                    tracks_div.append(this.track_collection_container)
-                );
+                $("#right").append(tracks_div.append(this.track_collection_container));
 
                 self.model.get("tracks").each(function(track) {
                     self.add_track(track);
@@ -1011,8 +907,7 @@ define(
                             icon_class: "cross-circle",
                             title: "Close",
                             on_click: function() {
-                                window.location =
-                                    "${h.url_for( controller='visualization', action='list' )}";
+                                window.location = "${h.url_for( controller='visualization', action='list' )}";
                             }
                         }
                     ],
@@ -1040,10 +935,7 @@ define(
             },
 
             get_base_color: function(base) {
-                return (
-                    this.config.get_value(base.toLowerCase() + "_color") ||
-                    this.config.get_value("n_color")
-                );
+                return this.config.get_value(base.toLowerCase() + "_color") || this.config.get_value("n_color");
             },
 
             run_tool_on_dataset: function(settings) {
@@ -1087,13 +979,8 @@ define(
                 self.track_collection_container.append(track_view.$el);
                 track_view.$el.hover(
                     function() {
-                        var settings_leaf = param_tree.get_leaf(
-                            pm_track.get("settings").get("values")
-                        );
-                        var connected_node_ids = _.pluck(
-                            param_tree.get_connected_nodes(settings_leaf),
-                            "id"
-                        );
+                        var settings_leaf = param_tree.get_leaf(pm_track.get("settings").get("values"));
+                        var connected_node_ids = _.pluck(param_tree.get_connected_nodes(settings_leaf), "id");
 
                         // TODO: can do faster with enter?
                         d3
@@ -1127,9 +1014,7 @@ define(
                 var self = this,
                     param_tree = this.model.get("parameter_tree"),
                     regions = this.model.get("regions"),
-                    node = d3
-                        .select(this.tool_param_tree_view.$el[0])
-                        .selectAll("g.node");
+                    node = d3.select(this.tool_param_tree_view.$el[0]).selectAll("g.node");
                 node.on("click", function(d, i) {
                     // Get all settings corresponding to node.
                     var tool = self.model.get("tool"),
@@ -1164,9 +1049,7 @@ define(
                         }
 
                         // Create and add tracks for each settings group.
-                        var new_tracks = _.map(all_settings, function(
-                            settings
-                        ) {
+                        var new_tracks = _.map(all_settings, function(settings) {
                             var pm_track = new SweepsterTrack({
                                 settings: settings,
                                 regions: regions,
@@ -1180,19 +1063,13 @@ define(
                         _.each(new_tracks, function(pm_track, index) {
                             setTimeout(function() {
                                 // Set inputs and run tool.
-                                tool.set_input_values(
-                                    pm_track.get("settings").get("values")
-                                );
-                                $.when(
-                                    tool.rerun(dataset, regions)
-                                ).then(function(output) {
+                                tool.set_input_values(pm_track.get("settings").get("values"));
+                                $.when(tool.rerun(dataset, regions)).then(function(output) {
                                     // HACKish: output is an HDA with track config attribute. To create a track
                                     // that works correctly with Backbone relational, it is necessary to
                                     // use a modified version of the track config.
                                     var dataset = output.first(),
-                                        track_config = dataset.get(
-                                            "track_config"
-                                        );
+                                        track_config = dataset.get("track_config");
                                     // Set dataset to be the tool's output.
                                     track_config.dataset = dataset;
                                     // Set tool to null so that it is not unpacked; unpacking it messes with
@@ -1202,11 +1079,7 @@ define(
                                     track_config.prefs = self.config.to_key_value_dict();
 
                                     // Create and add track for output dataset.
-                                    var track_obj = tracks.object_from_template(
-                                        track_config,
-                                        self,
-                                        null
-                                    );
+                                    var track_obj = tracks.object_from_template(track_config, self, null);
                                     track_obj.init_for_tool_data();
 
                                     pm_track.set("track", track_obj);

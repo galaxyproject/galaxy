@@ -10,9 +10,7 @@ define([], function() {
             this.content_list = {};
             this.$message = $("<div/>")
                 .addClass("ui-limitloader")
-                .append(
-                    "...only the first " + this.max + " entries are visible."
-                );
+                .append("...only the first " + this.max + " entries are visible.");
             this.$container.append(this.$message);
             this.listenTo(this.collection, "reset", this._reset, this);
             this.listenTo(this.collection, "add", this._refresh, this);

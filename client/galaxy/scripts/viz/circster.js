@@ -5,14 +5,7 @@ require(["utils/utils"], function(mod_utils) {
 });
 
 define(
-    [
-        "libs/underscore",
-        "libs/d3",
-        "viz/visualization",
-        "utils/config",
-        "mvc/ui/icon-button",
-        "libs/farbtastic"
-    ],
+    ["libs/underscore", "libs/d3", "viz/visualization", "utils/config", "mvc/ui/icon-button", "libs/farbtastic"],
     function(_, d3, visualization, config, mod_icon_btn) {
         /**
  * Utility class for working with SVG.
@@ -45,13 +38,7 @@ define(
  * Mixin for using ticks.
  */
         var UsesTicks = {
-            drawTicks: function(
-                parent_elt,
-                data,
-                dataHandler,
-                textTransform,
-                horizontal
-            ) {
+            drawTicks: function(parent_elt, data, dataHandler, textTransform, horizontal) {
                 // Set up group elements for chroms and for each tick.
                 var ticks = parent_elt
                     .append("g")
@@ -65,14 +52,7 @@ define(
                     .append("g")
                     .attr("class", "tick")
                     .attr("transform", function(d) {
-                        return (
-                            "rotate(" +
-                            (d.angle * 180 / Math.PI - 90) +
-                            ")" +
-                            "translate(" +
-                            d.radius +
-                            ",0)"
-                        );
+                        return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")" + "translate(" + d.radius + ",0)";
                     });
 
                 // Add line + text for ticks.
@@ -135,16 +115,10 @@ define(
                         rval = roundedNum;
                     } else if (num < 1000000) {
                         // Use K.
-                        rval =
-                            Math.round(
-                                (roundedNum / 1000).toPrecision(3)
-                            ).toFixed(0) + "K";
+                        rval = Math.round((roundedNum / 1000).toPrecision(3)).toFixed(0) + "K";
                     } else if (num < 1000000000) {
                         // Use M.
-                        rval =
-                            Math.round(
-                                (roundedNum / 1000000).toPrecision(3)
-                            ).toFixed(0) + "M";
+                        rval = Math.round((roundedNum / 1000000).toPrecision(3)).toFixed(0) + "M";
                     }
                 }
 
@@ -172,18 +146,12 @@ define(
 
                 // When tracks added to/removed from model, update view.
                 this.model.get("drawables").on("add", this.add_track, this);
-                this.model
-                    .get("drawables")
-                    .on("remove", this.remove_track, this);
+                this.model.get("drawables").on("remove", this.remove_track, this);
 
                 // When config settings change, update view.
                 var vis_config = this.model.get("config");
-                vis_config
-                    .get("arc_dataset_height")
-                    .on("change:value", this.update_track_bounds, this);
-                vis_config
-                    .get("track_gap")
-                    .on("change:value", this.update_track_bounds, this);
+                vis_config.get("arc_dataset_height").on("change:value", this.update_track_bounds, this);
+                vis_config.get("track_gap").on("change:value", this.update_track_bounds, this);
             },
 
             // HACKs: using track_type for circular/chord distinction in the functions below for now.
@@ -211,28 +179,20 @@ define(
      */
             get_tracks_bounds: function() {
                 var circular_tracks = this.get_circular_tracks(),
-                    dataset_arc_height = this.model
-                        .get("config")
-                        .get_value("arc_dataset_height"),
+                    dataset_arc_height = this.model.get("config").get_value("arc_dataset_height"),
                     track_gap = this.model.get("config").get_value("track_gap"),
                     // Subtract 20 to make sure chrom labels are on screen.
-                    min_dimension =
-                        Math.min(this.$el.width(), this.$el.height()) - 20,
+                    min_dimension = Math.min(this.$el.width(), this.$el.height()) - 20,
                     // Compute radius start based on model, will be centered
                     // and fit entirely inside element by default.
                     radius_start =
                         min_dimension / 2 -
-                        circular_tracks.length *
-                            (dataset_arc_height + track_gap) +
+                        circular_tracks.length * (dataset_arc_height + track_gap) +
                         // Add track_gap back in because no gap is needed for last track.
                         track_gap -
                         this.label_arc_height,
                     // Compute range of track starting radii.
-                    tracks_start_radii = d3.range(
-                        radius_start,
-                        min_dimension / 2,
-                        dataset_arc_height + track_gap
-                    );
+                    tracks_start_radii = d3.range(radius_start, min_dimension / 2, dataset_arc_height + track_gap);
 
                 // Map from track start to bounds.
                 var self = this;
@@ -267,12 +227,7 @@ define(
                                 var scale = d3.event.scale;
                                 svg.attr(
                                     "transform",
-                                    "translate(" +
-                                        d3.event.translate +
-                                        ")" +
-                                        " scale(" +
-                                        scale +
-                                        ")"
+                                    "translate(" + d3.event.translate + ")" + " scale(" + scale + ")"
                                 );
 
                                 // Propagate scale changes to views.
@@ -281,37 +236,28 @@ define(
                                     if (self.zoom_drag_timeout) {
                                         clearTimeout(self.zoom_drag_timeout);
                                     }
-                                    self.zoom_drag_timeout = setTimeout(
-                                        function() {
-                                            // Render more detail in tracks' visible elements.
-                                            // FIXME: do not do this right now; it is not fully implemented--e.g. data bounds
-                                            // are not updated when new data is fetched--and fetching more detailed quantitative
-                                            // data is not that useful.
-                                            /*
+                                    self.zoom_drag_timeout = setTimeout(function() {
+                                        // Render more detail in tracks' visible elements.
+                                        // FIXME: do not do this right now; it is not fully implemented--e.g. data bounds
+                                        // are not updated when new data is fetched--and fetching more detailed quantitative
+                                        // data is not that useful.
+                                        /*
                             _.each(self.circular_views, function(view) {
                                 view.update_scale(scale);
                             });
                             */
-                                        },
-                                        400
-                                    );
+                                    }, 400);
                                 }
                             })
                         )
-                        .attr(
-                            "transform",
-                            "translate(" + width / 2 + "," + height / 2 + ")"
-                        )
+                        .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
                         .append("svg:g")
                         .attr("class", "tracks");
 
                 // -- Render circular tracks. --
 
                 // Create a view for each track in the visualization and render.
-                this.circular_views = circular_tracks.map(function(
-                    track,
-                    index
-                ) {
+                this.circular_views = circular_tracks.map(function(track, index) {
                     var view = new CircsterBigWigTrackView({
                         el: svg.append("g")[0],
                         track: track,
@@ -346,13 +292,8 @@ define(
                 // Track bounds are:
                 // (a) outer radius of last circular track;
                 // (b)
-                var outermost_radius = this.circular_views[
-                        this.circular_views.length - 1
-                    ].radius_bounds[1],
-                    track_bounds = [
-                        outermost_radius,
-                        outermost_radius + this.label_arc_height
-                    ];
+                var outermost_radius = this.circular_views[this.circular_views.length - 1].radius_bounds[1],
+                    track_bounds = [outermost_radius, outermost_radius + this.label_arc_height];
                 this.label_track_view = new CircsterChromLabelTrackView({
                     el: svg.append("g")[0],
                     track: new CircsterLabelTrack(),
@@ -372,8 +313,7 @@ define(
 
                 if (new_track.get("track_type") === "DiagonalHeatmapTrack") {
                     // Added chords track.
-                    var innermost_radius_bounds = this.circular_views[0]
-                            .radius_bounds,
+                    var innermost_radius_bounds = this.circular_views[0].radius_bounds,
                         new_view = new CircsterChromInteractionsTrackView({
                             el: d3.select("g.tracks").append("g")[0],
                             track: new_track,
@@ -522,15 +462,11 @@ define(
                 var self = this,
                     data_manager = self.track.get("data_manager"),
                     // If track has a data manager, get deferred that resolves when data is ready.
-                    data_ready_deferred = data_manager
-                        ? data_manager.data_is_ready()
-                        : true;
+                    data_ready_deferred = data_manager ? data_manager.data_is_ready() : true;
 
                 // When data is ready, render track.
                 $.when(data_ready_deferred).then(function() {
-                    $.when(
-                        self._render_data(track_parent_elt)
-                    ).then(function() {
+                    $.when(self._render_data(track_parent_elt)).then(function() {
                         chroms_paths.style("fill", self.bg_fill);
 
                         // Render labels after data is available so that data attributes are available.
@@ -601,23 +537,14 @@ define(
                             data_deferred;
 
                         // If can't get more detailed data, return.
-                        if (
-                            !data_manager.can_get_more_detailed_data(
-                                chrom_region
-                            )
-                        ) {
+                        if (!data_manager.can_get_more_detailed_data(chrom_region)) {
                             return;
                         }
 
                         // -- Get more detailed data. --
                         data_deferred = self.track
                             .get("data_manager")
-                            .get_more_detailed_data(
-                                chrom_region,
-                                "Coverage",
-                                0,
-                                new_scale
-                            );
+                            .get_more_detailed_data(chrom_region, "Coverage", 0, new_scale);
 
                         // When more data is available, use new data to redraw path.
                         $.when(data_deferred).then(function(data) {
@@ -628,20 +555,14 @@ define(
                             self._update_data_bounds();
 
                             // Find chromosome arc to draw data on.
-                            var chrom_arc = _.find(self.chroms_layout, function(
-                                layout
-                            ) {
+                            var chrom_arc = _.find(self.chroms_layout, function(layout) {
                                 return layout.data.chrom === chrom;
                             });
 
                             // Add new data path and apply preferences.
                             var color = self.get_fill_color();
                             self
-                                ._render_chrom_data(
-                                    self.parent_elt,
-                                    chrom_arc,
-                                    data
-                                )
+                                ._render_chrom_data(self.parent_elt, chrom_arc, data)
                                 .style("stroke", color)
                                 .style("fill", color);
                         });
@@ -658,26 +579,19 @@ define(
             _transition_chrom_data: function() {
                 var track = this.track,
                     chrom_arcs = this.chroms_layout,
-                    chrom_data_paths = this.parent_elt.selectAll(
-                        "g>path.chrom-data"
-                    ),
+                    chrom_data_paths = this.parent_elt.selectAll("g>path.chrom-data"),
                     num_paths = chrom_data_paths[0].length;
 
                 if (num_paths > 0) {
                     var self = this;
-                    $.when(
-                        track
-                            .get("data_manager")
-                            .get_genome_wide_data(this.genome)
-                    ).then(function(genome_wide_data) {
+                    $.when(track.get("data_manager").get_genome_wide_data(this.genome)).then(function(
+                        genome_wide_data
+                    ) {
                         // Map chrom data to path data, filtering out null values.
                         var path_data = _.reject(
                             _.map(genome_wide_data, function(chrom_data, i) {
                                 var rval = null,
-                                    path_fn = self._get_path_function(
-                                        chrom_arcs[i],
-                                        chrom_data
-                                    );
+                                    path_fn = self._get_path_function(chrom_arcs[i], chrom_data);
                                 if (path_fn) {
                                     rval = path_fn(chrom_data.data);
                                 }
@@ -716,11 +630,7 @@ define(
                 var old_bounds = this.data_bounds;
                 this.data_bounds =
                     new_bounds ||
-                    this.get_data_bounds(
-                        this.track
-                            .get("data_manager")
-                            .get_genome_wide_data(this.genome)
-                    );
+                    this.get_data_bounds(this.track.get("data_manager").get_genome_wide_data(this.genome));
                 this._transition_chrom_data();
             },
 
@@ -734,9 +644,7 @@ define(
                     rendered_deferred = $.Deferred();
 
                 // When genome-wide data is available, render data.
-                $.when(
-                    track.get("data_manager").get_genome_wide_data(this.genome)
-                ).then(function(genome_wide_data) {
+                $.when(track.get("data_manager").get_genome_wide_data(this.genome)).then(function(genome_wide_data) {
                     // Set bounds.
                     self.data_bounds = self.get_data_bounds(genome_wide_data);
 
@@ -744,16 +652,12 @@ define(
                     // because these attributes are watched for changes and the viz is updated
                     // accordingly (set up in initialize). Because we are setting up, we don't want
                     // the watch to trigger events here.
-                    track
-                        .get("config")
-                        .set_value("min_value", self.data_bounds[0], {
-                            silent: true
-                        });
-                    track
-                        .get("config")
-                        .set_value("max_value", self.data_bounds[1], {
-                            silent: true
-                        });
+                    track.get("config").set_value("min_value", self.data_bounds[0], {
+                        silent: true
+                    });
+                    track.get("config").set_value("max_value", self.data_bounds[1], {
+                        silent: true
+                    });
 
                     // Merge chroms layout with data.
                     var layout_and_data = _.zip(chrom_arcs, genome_wide_data);
@@ -802,15 +706,11 @@ define(
                         })
                         .sort(null),
                     init_arcs = pie_layout(chroms_info),
-                    gap_per_chrom =
-                        2 * Math.PI * this.total_gap / chroms_info.length,
+                    gap_per_chrom = 2 * Math.PI * this.total_gap / chroms_info.length,
                     chrom_arcs = _.map(init_arcs, function(arc, index) {
                         // For short chroms, endAngle === startAngle.
                         var new_endAngle = arc.endAngle - gap_per_chrom;
-                        arc.endAngle =
-                            new_endAngle > arc.startAngle
-                                ? new_endAngle
-                                : arc.startAngle;
+                        arc.endAngle = new_endAngle > arc.startAngle ? new_endAngle : arc.startAngle;
                         return arc;
                     });
                 return chrom_arcs;
@@ -867,26 +767,18 @@ define(
                 /** Returns an array of tick angles and labels, given a chrom arc. */
                 var chromArcTicks = function(d) {
                     var k = (d.endAngle - d.startAngle) / d.value,
-                        ticks = d3
-                            .range(0, d.value, 25000000)
-                            .map(function(v, i) {
-                                return {
-                                    radius: self.innerRadius,
-                                    angle: v * k + d.startAngle,
-                                    label:
-                                        i === 0
-                                            ? 0
-                                            : i % 3 ? null : self.formatNum(v)
-                                };
-                            });
+                        ticks = d3.range(0, d.value, 25000000).map(function(v, i) {
+                            return {
+                                radius: self.innerRadius,
+                                angle: v * k + d.startAngle,
+                                label: i === 0 ? 0 : i % 3 ? null : self.formatNum(v)
+                            };
+                        });
 
                     // If there are fewer that 4 ticks, label last tick so that at least one non-zero tick is labeled.
                     if (ticks.length < 4) {
                         ticks[ticks.length - 1].label = self.formatNum(
-                            Math.round(
-                                (ticks[ticks.length - 1].angle - d.startAngle) /
-                                    k
-                            )
+                            Math.round((ticks[ticks.length - 1].angle - d.startAngle) / k)
                         );
                     }
 
@@ -895,9 +787,7 @@ define(
 
                 /** Rotate and move text as needed. */
                 var textTransform = function(d) {
-                    return d.angle > Math.PI
-                        ? "rotate(180)translate(-16)"
-                        : null;
+                    return d.angle > Math.PI ? "rotate(180)translate(-16)" : null;
                 };
 
                 // Filter chroms for only those large enough for display.
@@ -905,12 +795,7 @@ define(
                     return c.endAngle - c.startAngle > self.min_arc_len;
                 });
 
-                this.drawTicks(
-                    this.parent_elt,
-                    visibleChroms,
-                    chromArcTicks,
-                    textTransform
-                );
+                this.drawTicks(this.parent_elt, visibleChroms, chromArcTicks, textTransform);
             }
         });
         _.extend(CircsterChromLabelTrackView.prototype, UsesTicks);
@@ -924,15 +809,9 @@ define(
 
                 // When config settings change, update view.
                 var track_config = this.track.get("config");
-                track_config
-                    .get("min_value")
-                    .on("change:value", this._update_min_max, this);
-                track_config
-                    .get("max_value")
-                    .on("change:value", this._update_min_max, this);
-                track_config
-                    .get("color")
-                    .on("change:value", this._transition_chrom_data, this);
+                track_config.get("min_value").on("change:value", this._update_min_max, this);
+                track_config.get("max_value").on("change:value", this._update_min_max, this);
+                track_config.get("color").on("change:value", this._transition_chrom_data, this);
             },
 
             /**
@@ -940,10 +819,7 @@ define(
      */
             _update_min_max: function() {
                 var track_config = this.track.get("config"),
-                    new_bounds = [
-                        track_config.get_value("min_value"),
-                        track_config.get_value("max_value")
-                    ];
+                    new_bounds = [track_config.get_value("min_value"), track_config.get_value("max_value")];
                 this._update_data_bounds(new_bounds);
 
                 // FIXME: this works to update tick/text bounds, but there's probably a better way to do this
@@ -988,11 +864,7 @@ define(
      */
             _get_path_function: function(chrom_arc, chrom_data) {
                 // If no chrom data, return null.
-                if (
-                    typeof chrom_data === "string" ||
-                    !chrom_data.data ||
-                    chrom_data.data.length === 0
-                ) {
+                if (typeof chrom_data === "string" || !chrom_data.data || chrom_data.data.length === 0) {
                     return null;
                 }
 
@@ -1100,14 +972,7 @@ define(
                     .data(new_data)
                     .transition()
                     .attr("transform", function(d) {
-                        return (
-                            "rotate(" +
-                            (d.angle * 180 / Math.PI - 90) +
-                            ")" +
-                            "translate(" +
-                            d.radius +
-                            ",0)"
-                        );
+                        return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")" + "translate(" + d.radius + ",0)";
                     });
             },
 
@@ -1168,10 +1033,7 @@ define(
 
                 // For max, use 98% quantile in attempt to avoid very large values. However, this max may be 0
                 // for sparsely populated data, so use max in that case.
-                return [
-                    _.min(values),
-                    this._quantile(values, 0.98) || _.max(values)
-                ];
+                return [_.min(values), this._quantile(values, 0.98) || _.max(values)];
             }
         });
 
@@ -1183,45 +1045,32 @@ define(
                 var self = this;
 
                 // When data is ready, render track.
-                $.when(
-                    self.track.get("data_manager").data_is_ready()
-                ).then(function() {
+                $.when(self.track.get("data_manager").data_is_ready()).then(function() {
                     // When data has been fetched, render track.
-                    $.when(
-                        self.track
-                            .get("data_manager")
-                            .get_genome_wide_data(self.genome)
-                    ).then(function(genome_wide_data) {
+                    $.when(self.track.get("data_manager").get_genome_wide_data(self.genome)).then(function(
+                        genome_wide_data
+                    ) {
                         var chord_data = [],
                             chroms_info = self.genome.get_chroms_info();
                         // Convert chromosome data into chord data.
                         _.each(genome_wide_data, function(chrom_data, index) {
                             // Map each interaction into chord data.
                             var cur_chrom = chroms_info[index].chrom;
-                            var chrom_chord_data = _.map(
-                                chrom_data.data,
-                                function(datum) {
-                                    // Each datum is an interaction/chord.
-                                    var source_angle = self._get_region_angle(
-                                            cur_chrom,
-                                            datum[1]
-                                        ),
-                                        target_angle = self._get_region_angle(
-                                            datum[3],
-                                            datum[4]
-                                        );
-                                    return {
-                                        source: {
-                                            startAngle: source_angle,
-                                            endAngle: source_angle + 0.01
-                                        },
-                                        target: {
-                                            startAngle: target_angle,
-                                            endAngle: target_angle + 0.01
-                                        }
-                                    };
-                                }
-                            );
+                            var chrom_chord_data = _.map(chrom_data.data, function(datum) {
+                                // Each datum is an interaction/chord.
+                                var source_angle = self._get_region_angle(cur_chrom, datum[1]),
+                                    target_angle = self._get_region_angle(datum[3], datum[4]);
+                                return {
+                                    source: {
+                                        startAngle: source_angle,
+                                        endAngle: source_angle + 0.01
+                                    },
+                                    target: {
+                                        startAngle: target_angle,
+                                        endAngle: target_angle + 0.01
+                                    }
+                                };
+                            });
 
                             chord_data = chord_data.concat(chrom_chord_data);
                         });
@@ -1234,10 +1083,7 @@ define(
                             .enter()
                             .append("path")
                             .style("fill", self.get_fill_color())
-                            .attr(
-                                "d",
-                                d3.svg.chord().radius(self.radius_bounds[0])
-                            )
+                            .attr("d", d3.svg.chord().radius(self.radius_bounds[0]))
                             .style("opacity", 1);
                     });
                 });
@@ -1256,9 +1102,7 @@ define(
      */
             _get_region_angle: function(chrom, position) {
                 // Find chrom angle data
-                var chrom_angle_data = _.find(this.chroms_layout, function(
-                    chrom_layout
-                ) {
+                var chrom_angle_data = _.find(this.chroms_layout, function(chrom_layout) {
                     return chrom_layout.data.chrom === chrom;
                 });
 
@@ -1277,9 +1121,7 @@ define(
             initialize: function() {
                 // -- Configure visualization --
                 var genome = new visualization.Genome(galaxy_config.app.genome),
-                    vis = new visualization.GenomeVisualization(
-                        galaxy_config.app.viz_config
-                    );
+                    vis = new visualization.GenomeVisualization(galaxy_config.app.viz_config);
 
                 // Add Circster-specific config options.
                 vis.get("config").add([
@@ -1319,9 +1161,7 @@ define(
 
                 // setup title
                 $("#center .unified-panel-header-inner").append(
-                    galaxy_config.app.viz_config.title +
-                        " " +
-                        galaxy_config.app.viz_config.dbkey
+                    galaxy_config.app.viz_config.title + " " + galaxy_config.app.viz_config.dbkey
                 );
 
                 // setup menu
@@ -1331,23 +1171,18 @@ define(
                             icon_class: "plus-button",
                             title: "Add tracks",
                             on_click: function() {
-                                visualization.select_datasets(
-                                    { dbkey: vis.get("dbkey") },
-                                    function(tracks) {
-                                        vis.add_tracks(tracks);
-                                    }
-                                );
+                                visualization.select_datasets({ dbkey: vis.get("dbkey") }, function(tracks) {
+                                    vis.add_tracks(tracks);
+                                });
                             }
                         },
                         {
                             icon_class: "gear",
                             title: "Settings",
                             on_click: function() {
-                                var view = new config.ConfigSettingCollectionView(
-                                    {
-                                        collection: vis.get("config")
-                                    }
-                                );
+                                var view = new config.ConfigSettingCollectionView({
+                                    collection: vis.get("config")
+                                });
                                 view.render_in_modal("Configure Visualization");
                             }
                         },
@@ -1382,8 +1217,7 @@ define(
                                         // show dialog
                                         Galaxy.modal.show({
                                             title: "Could Not Save",
-                                            body:
-                                                "Could not save visualization. Please try again later.",
+                                            body: "Could not save visualization. Please try again later.",
                                             buttons: {
                                                 Cancel: function() {
                                                     Galaxy.modal.hide();
@@ -1397,8 +1231,7 @@ define(
                             icon_class: "cross-circle",
                             title: "Close",
                             on_click: function() {
-                                window.location =
-                                    Galaxy.root + "visualizations/list";
+                                window.location = Galaxy.root + "visualizations/list";
                             }
                         }
                     ],

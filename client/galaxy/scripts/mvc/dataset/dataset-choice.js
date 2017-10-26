@@ -1,11 +1,5 @@
 define(
-    [
-        "mvc/dataset/dataset-model",
-        "mvc/dataset/dataset-list",
-        "mvc/ui/ui-modal",
-        "mvc/base-mvc",
-        "utils/localization"
-    ],
+    ["mvc/dataset/dataset-model", "mvc/dataset/dataset-list", "mvc/ui/ui-modal", "mvc/base-mvc", "utils/localization"],
     function(DATASET, DATASET_LIST, MODAL, BASE_MVC, _l) {
         "use strict";
 
@@ -99,11 +93,7 @@ TODO:
                 selected: []
             });
             // default title should depend on multiselect
-            options.title =
-                options.title ||
-                (options.multiselect
-                    ? _l("Choose datasets:")
-                    : _l("Choose a dataset:"));
+            options.title = options.title || (options.multiselect ? _l("Choose datasets:") : _l("Choose a dataset:"));
 
             var modal,
                 list,
@@ -112,11 +102,7 @@ TODO:
                 filterFn = options.filter || _filterDatasetJSON;
 
             // filter the given datasets and if none left return a rejected promise for use with fail()
-            datasetJSON = filterFn(
-                datasetJSON,
-                options.where,
-                options.datasetsOnly
-            );
+            datasetJSON = filterFn(datasetJSON, options.where, options.datasetsOnly);
             if (!datasetJSON.length) {
                 return promise.reject("No matches found");
             }
@@ -163,9 +149,7 @@ TODO:
                 el: modal.$body.find(".list-panel"),
                 selecting: true,
                 selected: options.selected,
-                collection: new DATASET.DatasetAssociationCollection(
-                    datasetJSON
-                )
+                collection: new DATASET.DatasetAssociationCollection(datasetJSON)
             });
 
             // when the list is rendered, show the modal (also add a specifying class for css)
@@ -219,167 +203,147 @@ TODO:
  *          // ... do stuff with new selections
  *      });
  */
-        var DatasetChoice = Backbone.View
-            .extend(BASE_MVC.LoggableMixin)
-            .extend({
-                _logNamespace: logNamespace,
+        var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
+            _logNamespace: logNamespace,
 
-                className: "dataset-choice",
+            className: "dataset-choice",
 
-                /** set up defaults, options, and listeners */
-                initialize: function(attributes) {
-                    this.debug(
-                        this + "(DatasetChoice).initialize:",
-                        attributes
-                    );
+            /** set up defaults, options, and listeners */
+            initialize: function(attributes) {
+                this.debug(this + "(DatasetChoice).initialize:", attributes);
 
-                    this.label =
-                        attributes.label !== undefined
-                            ? _l(attributes.label)
-                            : "";
-                    this.where = attributes.where;
-                    this.datasetsOnly =
-                        attributes.datasetsOnly !== undefined
-                            ? attributes.datasetsOnly
-                            : true;
+                this.label = attributes.label !== undefined ? _l(attributes.label) : "";
+                this.where = attributes.where;
+                this.datasetsOnly = attributes.datasetsOnly !== undefined ? attributes.datasetsOnly : true;
 
-                    this.datasetJSON = attributes.datasetJSON || [];
-                    this.selected = attributes.selected || [];
+                this.datasetJSON = attributes.datasetJSON || [];
+                this.selected = attributes.selected || [];
 
-                    this._setUpListeners();
-                },
+                this._setUpListeners();
+            },
 
-                /** add any (bbone) listeners */
-                _setUpListeners: function() {
-                    //this.on( 'all', function(){
-                    //    this.log( this + '', arguments );
-                    //});
-                },
+            /** add any (bbone) listeners */
+            _setUpListeners: function() {
+                //this.on( 'all', function(){
+                //    this.log( this + '', arguments );
+                //});
+            },
 
-                /** render the view */
-                render: function() {
-                    var json = this.toJSON();
-                    this.$el.html(this._template(json));
-                    this.$(".selected").replaceWith(this._renderSelected(json));
-                    return this;
-                },
+            /** render the view */
+            render: function() {
+                var json = this.toJSON();
+                this.$el.html(this._template(json));
+                this.$(".selected").replaceWith(this._renderSelected(json));
+                return this;
+            },
 
-                /** return plain html for the overall control */
-                _template: function(json) {
-                    return _.template(
-                        [
-                            "<label>",
-                            '<span class="prompt"><%- label %></span>',
-                            '<div class="selected"></div>',
-                            "</label>"
-                        ].join("")
-                    )(json);
-                },
+            /** return plain html for the overall control */
+            _template: function(json) {
+                return _.template(
+                    [
+                        "<label>",
+                        '<span class="prompt"><%- label %></span>',
+                        '<div class="selected"></div>',
+                        "</label>"
+                    ].join("")
+                )(json);
+            },
 
-                /** return jQ DOM for the selected dataset (only one) */
-                _renderSelected: function(json) {
-                    if (json.selected.length) {
-                        //TODO: break out?
-                        return $(
-                            _.template(
-                                [
-                                    '<div class="selected">',
-                                    '<span class="title"><%- selected.hid %>: <%- selected.name %></span>',
-                                    '<span class="subtitle">',
-                                    "<i><%- selected.misc_blurb %></i>",
-                                    "<i>",
-                                    _l("format") + ": ",
-                                    "<%- selected.file_ext %></i>",
-                                    "<i><%- selected.misc_info %></i>",
-                                    "</span>",
-                                    "</div>"
-                                ].join(""),
-                                { variable: "selected" }
-                            )(json.selected[0])
-                        );
-                    }
+            /** return jQ DOM for the selected dataset (only one) */
+            _renderSelected: function(json) {
+                if (json.selected.length) {
+                    //TODO: break out?
                     return $(
-                        [
-                            '<span class="none-selected-msg">(',
-                            _l("click to select a dataset"),
-                            ")</span>"
-                        ].join("")
+                        _.template(
+                            [
+                                '<div class="selected">',
+                                '<span class="title"><%- selected.hid %>: <%- selected.name %></span>',
+                                '<span class="subtitle">',
+                                "<i><%- selected.misc_blurb %></i>",
+                                "<i>",
+                                _l("format") + ": ",
+                                "<%- selected.file_ext %></i>",
+                                "<i><%- selected.misc_info %></i>",
+                                "</span>",
+                                "</div>"
+                            ].join(""),
+                            { variable: "selected" }
+                        )(json.selected[0])
                     );
-                },
+                }
+                return $(['<span class="none-selected-msg">(', _l("click to select a dataset"), ")</span>"].join(""));
+            },
 
-                //TODO:?? why not just pass in view?
-                /** return a plain JSON object with both the view and dataset attributes */
-                toJSON: function() {
-                    var chooser = this;
-                    return {
-                        label: chooser.label,
-                        datasets: chooser.datasetJSON,
-                        selected: _.compact(
-                            _.map(chooser.selected, function(id) {
-                                return _.findWhere(chooser.datasetJSON, {
-                                    id: id
-                                });
-                            })
-                        )
-                    };
-                },
+            //TODO:?? why not just pass in view?
+            /** return a plain JSON object with both the view and dataset attributes */
+            toJSON: function() {
+                var chooser = this;
+                return {
+                    label: chooser.label,
+                    datasets: chooser.datasetJSON,
+                    selected: _.compact(
+                        _.map(chooser.selected, function(id) {
+                            return _.findWhere(chooser.datasetJSON, {
+                                id: id
+                            });
+                        })
+                    )
+                };
+            },
 
-                /** event map: when to open the modal */
-                events: {
-                    // the whole thing functions as a button
-                    click: "chooseWithModal"
-                },
+            /** event map: when to open the modal */
+            events: {
+                // the whole thing functions as a button
+                click: "chooseWithModal"
+            },
 
-                //TODO:?? modal to prop of this?
-                //TODO:?? should be able to handle 'none selectable' on initialize
-                /** open the modal and handle the promise representing the user's choice
+            //TODO:?? modal to prop of this?
+            //TODO:?? should be able to handle 'none selectable' on initialize
+            /** open the modal and handle the promise representing the user's choice
      *  @fires 'selected' when the user selects dataset(s) - passed full json of the selected datasets
      *  @fires 'cancelled' when the user clicks away/closes the modal (no selection made) - passed this
      *  @fires 'error' if the modal has no selectable datasets based on this.where - passed this and other args
      */
-                chooseWithModal: function() {
-                    var chooser = this;
+            chooseWithModal: function() {
+                var chooser = this;
 
-                    return this._createModal()
-                        .done(function(json) {
-                            if (json) {
-                                chooser.selected = _.pluck(json, "id");
-                                chooser.trigger("selected", chooser, json);
-                                chooser.render();
-                            } else {
-                                chooser.trigger("cancelled", chooser);
-                            }
-                        })
-                        .fail(function() {
-                            chooser.trigger("error", chooser, arguments);
-                        });
-                },
+                return this._createModal()
+                    .done(function(json) {
+                        if (json) {
+                            chooser.selected = _.pluck(json, "id");
+                            chooser.trigger("selected", chooser, json);
+                            chooser.render();
+                        } else {
+                            chooser.trigger("cancelled", chooser);
+                        }
+                    })
+                    .fail(function() {
+                        chooser.trigger("error", chooser, arguments);
+                    });
+            },
 
-                /** create and return the modal to use for choosing */
-                _createModal: function() {
-                    return new DatasetChoiceModal(
-                        this.datasetJSON,
-                        this._getModalOptions()
-                    );
-                },
+            /** create and return the modal to use for choosing */
+            _createModal: function() {
+                return new DatasetChoiceModal(this.datasetJSON, this._getModalOptions());
+            },
 
-                /** return a plain JSON containing the options to pass to the modal */
-                _getModalOptions: function() {
-                    return {
-                        title: this.label,
-                        multiselect: false,
-                        selected: this.selected,
-                        where: this.where,
-                        datasetsOnly: this.datasetsOnly
-                    };
-                },
+            /** return a plain JSON containing the options to pass to the modal */
+            _getModalOptions: function() {
+                return {
+                    title: this.label,
+                    multiselect: false,
+                    selected: this.selected,
+                    where: this.where,
+                    datasetsOnly: this.datasetsOnly
+                };
+            },
 
-                // ------------------------------------------------------------------------ misc
-                /** string rep */
-                toString: function() {
-                    return "DatasetChoice(" + this.selected + ")";
-                }
-            });
+            // ------------------------------------------------------------------------ misc
+            /** string rep */
+            toString: function() {
+                return "DatasetChoice(" + this.selected + ")";
+            }
+        });
 
         // ============================================================================
         /** Activator for multiple dataset selection modal and display of the selected datasets.
@@ -408,10 +372,7 @@ TODO:
 
             /** in this override, add the showHeaders and cells options */
             initialize: function(attributes) {
-                this.showHeaders =
-                    attributes.showHeaders !== undefined
-                        ? attributes.showHeaders
-                        : true;
+                this.showHeaders = attributes.showHeaders !== undefined ? attributes.showHeaders : true;
                 this.cells = attributes.cells || this.cells;
                 DatasetChoice.prototype.initialize.call(this, attributes);
             },
@@ -445,13 +406,7 @@ TODO:
                         )(json)
                     );
                 }
-                return $(
-                    [
-                        '<span class="none-selected-msg">(',
-                        _l("click to select a dataset"),
-                        ")</span>"
-                    ].join("")
-                );
+                return $(['<span class="none-selected-msg">(', _l("click to select a dataset"), ")</span>"].join(""));
             },
 
             /** in this override, send the showHeaders and cells options as well */
@@ -464,12 +419,9 @@ TODO:
 
             /** in this override, set multiselect to true */
             _getModalOptions: function() {
-                return _.extend(
-                    DatasetChoice.prototype._getModalOptions.call(this),
-                    {
-                        multiselect: true
-                    }
-                );
+                return _.extend(DatasetChoice.prototype._getModalOptions.call(this), {
+                    multiselect: true
+                });
             },
 
             // ------------------------------------------------------------------------ misc

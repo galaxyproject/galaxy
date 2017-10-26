@@ -1,10 +1,5 @@
 define(
-    [
-        "mvc/history/hdca-li",
-        "mvc/collection/collection-view-edit",
-        "ui/fa-icon-button",
-        "utils/localization"
-    ],
+    ["mvc/history/hdca-li", "mvc/collection/collection-view-edit", "ui/fa-icon-button", "utils/localization"],
     function(HDCA_LI, DC_VIEW_EDIT, faIconButton, _l) {
         "use strict";
 
@@ -29,10 +24,7 @@ define(
                         case "list:list":
                             return DC_VIEW_EDIT.ListOfListsCollectionViewEdit;
                     }
-                    throw new TypeError(
-                        "Uknown collection_type: " +
-                            this.model.get("collection_type")
-                    );
+                    throw new TypeError("Uknown collection_type: " + this.model.get("collection_type"));
                 },
 
                 // ......................................................................... delete
@@ -40,9 +32,7 @@ define(
                 _renderPrimaryActions: function() {
                     this.log(this + "._renderPrimaryActions");
                     // render the display, edit attr and delete icon-buttons
-                    return _super.prototype._renderPrimaryActions
-                        .call(this)
-                        .concat([this._renderDeleteButton()]);
+                    return _super.prototype._renderPrimaryActions.call(this).concat([this._renderDeleteButton()]);
                 },
 
                 /** Render icon-button to delete this collection. */
@@ -50,17 +40,13 @@ define(
                     var self = this,
                         deleted = this.model.get("deleted");
                     return faIconButton({
-                        title: deleted
-                            ? _l("Dataset collection is already deleted")
-                            : _l("Delete"),
+                        title: deleted ? _l("Dataset collection is already deleted") : _l("Delete"),
                         classes: "delete-btn",
                         faIcon: "fa-times",
                         disabled: deleted,
                         onclick: function() {
                             // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
-                            self.$el
-                                .find(".icon-btn.delete-btn")
-                                .trigger("mouseout");
+                            self.$el.find(".icon-btn.delete-btn").trigger("mouseout");
                             self.model["delete"]();
                         }
                     });
@@ -69,9 +55,7 @@ define(
                 // ......................................................................... misc
                 /** string rep */
                 toString: function() {
-                    var modelString = this.model
-                        ? this.model + ""
-                        : "(no model)";
+                    var modelString = this.model ? this.model + "" : "(no model)";
                     return "HDCAListItemEdit(" + modelString + ")";
                 }
             }

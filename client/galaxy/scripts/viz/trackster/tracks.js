@@ -13,19 +13,7 @@ define(
         "viz/bbi-data-manager",
         "ui/editable-text"
     ],
-    function(
-        _,
-        visualization,
-        viz_views,
-        util,
-        slotting,
-        painters,
-        filters_mod,
-        data,
-        tools_mod,
-        config_mod,
-        bbi
-    ) {
+    function(_, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod, bbi) {
         var extend = _.extend;
 
         // ---- Web UI specific utilities ----
@@ -52,12 +40,7 @@ define(
  * @param container_selector selector used to identify possible containers for this element
  * @param element_js_obj JavaScript object associated with element; used
  */
-        var moveable = function(
-            element,
-            handle_class,
-            container_selector,
-            element_js_obj
-        ) {
+        var moveable = function(element, handle_class, container_selector, element_js_obj) {
             // HACK: set default value for container selector.
             container_selector = ".group";
 
@@ -66,120 +49,101 @@ define(
 
             // Need to provide selector for handle, not class.
             element
-                .bind(
-                    "drag",
-                    { handle: "." + handle_class, relative: true },
-                    function(e, d) {
-                        var element = $(this),
-                            parent = $(this).parent(),
-                            // Only sorting amongst tracks and groups.
-                            children = parent.children(".track,.group"),
-                            this_obj = html_elt_js_obj_dict[$(this).attr("id")],
-                            child,
-                            container,
-                            top,
-                            bottom,
-                            i;
+                .bind("drag", { handle: "." + handle_class, relative: true }, function(e, d) {
+                    var element = $(this),
+                        parent = $(this).parent(),
+                        // Only sorting amongst tracks and groups.
+                        children = parent.children(".track,.group"),
+                        this_obj = html_elt_js_obj_dict[$(this).attr("id")],
+                        child,
+                        container,
+                        top,
+                        bottom,
+                        i;
 
-                        //
-                        // Enable three types of dragging: (a) out of container; (b) into container;
-                        // (c) sibling movement, aka sorting. Handle in this order for simplicity.
-                        //
+                    //
+                    // Enable three types of dragging: (a) out of container; (b) into container;
+                    // (c) sibling movement, aka sorting. Handle in this order for simplicity.
+                    //
 
-                        // Handle dragging out of container.
-                        container = $(this).parents(container_selector);
-                        if (container.length !== 0) {
-                            top = container.position().top;
-                            bottom = top + container.outerHeight();
-                            var cur_container =
-                                html_elt_js_obj_dict[container.attr("id")];
-                            if (d.offsetY < top) {
-                                // Moving above container.
-                                $(this).insertBefore(container);
-                                cur_container.remove_drawable(this_obj);
-                                cur_container.container.add_drawable_before(
-                                    this_obj,
-                                    cur_container
-                                );
-                                return;
-                            } else if (d.offsetY > bottom) {
-                                // Moving below container.
-                                $(this).insertAfter(container);
-                                cur_container.remove_drawable(this_obj);
-                                cur_container.container.add_drawable(this_obj);
-                                return;
-                            }
-                        }
-
-                        // Handle dragging into container. Child is appended to container's content_div.
-                        container = null;
-                        for (i = 0; i < children.length; i++) {
-                            child = $(children.get(i));
-                            top = child.position().top;
-                            bottom = top + child.outerHeight();
-                            // Dragging into container if child is a container and offset is inside container.
-                            if (
-                                child.is(container_selector) &&
-                                this !== child.get(0) &&
-                                d.offsetY >= top &&
-                                d.offsetY <= bottom
-                            ) {
-                                // Append/prepend based on where offsetY is closest to and return.
-                                if (d.offsetY - top < bottom - d.offsetY) {
-                                    child.find(".content-div").prepend(this);
-                                } else {
-                                    child.find(".content-div").append(this);
-                                }
-                                // Update containers. Object may not have container if it is being moved quickly.
-                                if (this_obj.container) {
-                                    this_obj.container.remove_drawable(
-                                        this_obj
-                                    );
-                                }
-                                html_elt_js_obj_dict[
-                                    child.attr("id")
-                                ].add_drawable(this_obj);
-                                return;
-                            }
-                        }
-
-                        // Handle sibling movement, aka sorting.
-
-                        // Determine new position
-                        for (i = 0; i < children.length; i++) {
-                            child = $(children.get(i));
-                            if (
-                                d.offsetY < child.position().top &&
-                                // Cannot move tracks above reference track or intro div.
-                                !(
-                                    child.hasClass("reference-track") ||
-                                    child.hasClass("intro")
-                                )
-                            ) {
-                                break;
-                            }
-                        }
-
-                        // If not already in the right place, move. Need
-                        // to handle the end specially since we don't have
-                        // insert at index
-                        if (i === children.length) {
-                            if (this !== children.get(i - 1)) {
-                                parent.append(this);
-                                html_elt_js_obj_dict[
-                                    parent.attr("id")
-                                ].move_drawable(this_obj, i);
-                            }
-                        } else if (this !== children.get(i)) {
-                            $(this).insertBefore(children.get(i));
-                            // Need to adjust insert position if moving down because move is changing
-                            // indices of all list items.
-                            html_elt_js_obj_dict[
-                                parent.attr("id")
-                            ].move_drawable(this_obj, d.deltaY > 0 ? i - 1 : i);
+                    // Handle dragging out of container.
+                    container = $(this).parents(container_selector);
+                    if (container.length !== 0) {
+                        top = container.position().top;
+                        bottom = top + container.outerHeight();
+                        var cur_container = html_elt_js_obj_dict[container.attr("id")];
+                        if (d.offsetY < top) {
+                            // Moving above container.
+                            $(this).insertBefore(container);
+                            cur_container.remove_drawable(this_obj);
+                            cur_container.container.add_drawable_before(this_obj, cur_container);
+                            return;
+                        } else if (d.offsetY > bottom) {
+                            // Moving below container.
+                            $(this).insertAfter(container);
+                            cur_container.remove_drawable(this_obj);
+                            cur_container.container.add_drawable(this_obj);
+                            return;
                         }
                     }
-                )
+
+                    // Handle dragging into container. Child is appended to container's content_div.
+                    container = null;
+                    for (i = 0; i < children.length; i++) {
+                        child = $(children.get(i));
+                        top = child.position().top;
+                        bottom = top + child.outerHeight();
+                        // Dragging into container if child is a container and offset is inside container.
+                        if (
+                            child.is(container_selector) &&
+                            this !== child.get(0) &&
+                            d.offsetY >= top &&
+                            d.offsetY <= bottom
+                        ) {
+                            // Append/prepend based on where offsetY is closest to and return.
+                            if (d.offsetY - top < bottom - d.offsetY) {
+                                child.find(".content-div").prepend(this);
+                            } else {
+                                child.find(".content-div").append(this);
+                            }
+                            // Update containers. Object may not have container if it is being moved quickly.
+                            if (this_obj.container) {
+                                this_obj.container.remove_drawable(this_obj);
+                            }
+                            html_elt_js_obj_dict[child.attr("id")].add_drawable(this_obj);
+                            return;
+                        }
+                    }
+
+                    // Handle sibling movement, aka sorting.
+
+                    // Determine new position
+                    for (i = 0; i < children.length; i++) {
+                        child = $(children.get(i));
+                        if (
+                            d.offsetY < child.position().top &&
+                            // Cannot move tracks above reference track or intro div.
+                            !(child.hasClass("reference-track") || child.hasClass("intro"))
+                        ) {
+                            break;
+                        }
+                    }
+
+                    // If not already in the right place, move. Need
+                    // to handle the end specially since we don't have
+                    // insert at index
+                    if (i === children.length) {
+                        if (this !== children.get(i - 1)) {
+                            parent.append(this);
+                            html_elt_js_obj_dict[parent.attr("id")].move_drawable(this_obj, i);
+                        }
+                    } else if (this !== children.get(i)) {
+                        $(this).insertBefore(children.get(i));
+                        // Need to adjust insert position if moving down because move is changing
+                        // indices of all list items.
+                        html_elt_js_obj_dict[parent.attr("id")].move_drawable(this_obj, d.deltaY > 0 ? i - 1 : i);
+                    }
+                })
                 .bind("dragstart", function() {
                     $(this).addClass("dragging");
                 })
@@ -215,12 +179,7 @@ define(
             TILE_CACHE_SIZE = 10,
             DATA_CACHE_SIZE = 20,
             // Numerical/continuous data display modes.
-            CONTINUOUS_DATA_MODES = [
-                "Histogram",
-                "Line",
-                "Filled",
-                "Intensity"
-            ];
+            CONTINUOUS_DATA_MODES = ["Histogram", "Line", "Filled", "Intensity"];
 
         /**
  * Round a number to a given number of decimal places.
@@ -336,15 +295,11 @@ define(
                 css_class: "toggle",
                 on_click_fn: function(drawable) {
                     if (drawable.config.get_value("content_visible")) {
-                        drawable.action_icons.toggle_icon
-                            .addClass("toggle-expand")
-                            .removeClass("toggle");
+                        drawable.action_icons.toggle_icon.addClass("toggle-expand").removeClass("toggle");
                         drawable.hide_contents();
                         drawable.config.set_value("content_visible", false);
                     } else {
-                        drawable.action_icons.toggle_icon
-                            .addClass("toggle")
-                            .removeClass("toggle-expand");
+                        drawable.action_icons.toggle_icon.addClass("toggle").removeClass("toggle-expand");
                         drawable.config.set_value("content_visible", true);
                         drawable.show_contents();
                     }
@@ -490,11 +445,7 @@ define(
                 this.drawables = [];
                 var drawable;
                 for (var i = 0; i < drawables_array.length; i++) {
-                    drawable = object_from_template(
-                        drawables_array[i],
-                        this.view,
-                        this
-                    );
+                    drawable = object_from_template(drawables_array[i], this.view, this);
                     this.add_drawable(drawable);
                 }
             },
@@ -558,18 +509,12 @@ define(
             /**
      * Replace one drawable with another.
      */
-            replace_drawable: function(
-                old_drawable,
-                new_drawable,
-                update_html
-            ) {
+            replace_drawable: function(old_drawable, new_drawable, update_html) {
                 var index = this.drawables.indexOf(old_drawable);
                 if (index !== -1) {
                     this.drawables[index] = new_drawable;
                     if (update_html) {
-                        old_drawable.container_div.replaceWith(
-                            new_drawable.container_div
-                        );
+                        old_drawable.container_div.replaceWith(new_drawable.container_div);
                     }
                     this.changed();
                 }
@@ -653,21 +598,14 @@ define(
                 .appendTo(this.container_div);
             is_container(this.container_div, this);
             is_container(this.content_div, this);
-            moveable(
-                this.container_div,
-                this.drag_handle_class,
-                ".group",
-                this
-            );
+            moveable(this.container_div, this.drag_handle_class, ".group", this);
 
             // Set up filters.
             this.filters_manager = new filters_mod.FiltersManager(this);
             this.header_div.after(this.filters_manager.parent_div);
 
             // HACK: add div to clear floating elements.
-            this.filters_manager.parent_div.after(
-                $("<div style='clear: both'/>")
-            );
+            this.filters_manager.parent_div.after($("<div style='clear: both'/>"));
 
             // For saving drawables' filter managers when group-level filtering is done:
             this.saved_filters_managers = [];
@@ -681,13 +619,8 @@ define(
             if ("filters" in obj_dict) {
                 // FIXME: Pass collection_dict to DrawableCollection/Drawable will make this easier.
                 var old_manager = this.filters_manager;
-                this.filters_manager = new filters_mod.FiltersManager(
-                    this,
-                    obj_dict.filters
-                );
-                old_manager.parent_div.replaceWith(
-                    this.filters_manager.parent_div
-                );
+                this.filters_manager = new filters_mod.FiltersManager(this, obj_dict.filters);
+                old_manager.parent_div.replaceWith(this.filters_manager.parent_div);
 
                 if (obj_dict.filters.visible) {
                     this.setup_multitrack_filtering();
@@ -695,288 +628,243 @@ define(
             }
         };
 
-        extend(
-            DrawableGroup.prototype,
-            Drawable.prototype,
-            DrawableCollection.prototype,
-            {
-                action_icons_def: [
-                    Drawable.prototype.action_icons_def[0],
-                    Drawable.prototype.action_icons_def[1],
-                    // Replace group with composite track.
-                    {
-                        name: "composite_icon",
-                        title: "Show composite track",
-                        css_class: "layers-stack",
-                        on_click_fn: function(group) {
-                            $(".tooltip").remove();
-                            group.show_composite_track();
-                        }
-                    },
-                    // Toggle track filters.
-                    {
-                        name: "filters_icon",
-                        title: "Filters",
-                        css_class: "ui-slider-050",
-                        on_click_fn: function(group) {
-                            // TODO: update Tooltip text.
-                            if (group.filters_manager.visible()) {
-                                // Hiding filters.
-                                group.filters_manager.clear_filters();
-                                group._restore_filter_managers();
-                                // TODO: maintain current filter by restoring and setting saved manager's
-                                // settings to current/shared manager's settings.
-                                // TODO: need to restore filter managers when moving drawable outside group.
-                            } else {
-                                // Showing filters.
-                                group.setup_multitrack_filtering();
-                                group.request_draw({ clear_tile_cache: true });
-                            }
-                            group.filters_manager.toggle();
-                        }
-                    },
-                    Drawable.prototype.action_icons_def[2]
-                ],
-
-                build_container_div: function() {
-                    var container_div = $("<div/>")
-                        .addClass("group")
-                        .attr("id", "group_" + this.id);
-                    if (this.container) {
-                        this.container.content_div.append(container_div);
+        extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
+            action_icons_def: [
+                Drawable.prototype.action_icons_def[0],
+                Drawable.prototype.action_icons_def[1],
+                // Replace group with composite track.
+                {
+                    name: "composite_icon",
+                    title: "Show composite track",
+                    css_class: "layers-stack",
+                    on_click_fn: function(group) {
+                        $(".tooltip").remove();
+                        group.show_composite_track();
                     }
-                    return container_div;
                 },
-
-                hide_contents: function() {
-                    this.tiles_div.hide();
+                // Toggle track filters.
+                {
+                    name: "filters_icon",
+                    title: "Filters",
+                    css_class: "ui-slider-050",
+                    on_click_fn: function(group) {
+                        // TODO: update Tooltip text.
+                        if (group.filters_manager.visible()) {
+                            // Hiding filters.
+                            group.filters_manager.clear_filters();
+                            group._restore_filter_managers();
+                            // TODO: maintain current filter by restoring and setting saved manager's
+                            // settings to current/shared manager's settings.
+                            // TODO: need to restore filter managers when moving drawable outside group.
+                        } else {
+                            // Showing filters.
+                            group.setup_multitrack_filtering();
+                            group.request_draw({ clear_tile_cache: true });
+                        }
+                        group.filters_manager.toggle();
+                    }
                 },
+                Drawable.prototype.action_icons_def[2]
+            ],
 
-                show_contents: function() {
-                    // Show the contents div and labels (if present)
-                    this.tiles_div.show();
-                    // Request a redraw of the content
-                    this.request_draw();
-                },
+            build_container_div: function() {
+                var container_div = $("<div/>")
+                    .addClass("group")
+                    .attr("id", "group_" + this.id);
+                if (this.container) {
+                    this.container.content_div.append(container_div);
+                }
+                return container_div;
+            },
 
-                update_icons: function() {
+            hide_contents: function() {
+                this.tiles_div.hide();
+            },
+
+            show_contents: function() {
+                // Show the contents div and labels (if present)
+                this.tiles_div.show();
+                // Request a redraw of the content
+                this.request_draw();
+            },
+
+            update_icons: function() {
+                //
+                // Handle update when there are no tracks.
+                //
+                var num_drawables = this.drawables.length;
+                if (num_drawables === 0) {
+                    this.action_icons.composite_icon.hide();
+                    this.action_icons.filters_icon.hide();
+                } else if (num_drawables === 1) {
+                    this.action_icons.composite_icon.toggle(this.drawables[0] instanceof CompositeTrack);
+                    this.action_icons.filters_icon.hide();
+                } else {
+                    // There are 2 or more tracks.
+
                     //
-                    // Handle update when there are no tracks.
+                    // Determine if a composite track can be created. Current criteria:
+                    // (a) all tracks are line tracks;
+                    //      OR
+                    // FIXME: this is not enabled right now because it has not been well tested:
+                    // (b) there is a single FeatureTrack.
                     //
-                    var num_drawables = this.drawables.length;
-                    if (num_drawables === 0) {
-                        this.action_icons.composite_icon.hide();
-                        this.action_icons.filters_icon.hide();
-                    } else if (num_drawables === 1) {
-                        this.action_icons.composite_icon.toggle(
-                            this.drawables[0] instanceof CompositeTrack
-                        );
-                        this.action_icons.filters_icon.hide();
+
+                    // All tracks the same?
+                    var i,
+                        j,
+                        drawable,
+                        same_type = true,
+                        a_type = this.drawables[0].get_type(),
+                        num_feature_tracks = 0;
+                    for (i = 0; i < num_drawables; i++) {
+                        drawable = this.drawables[i];
+                        if (drawable.get_type() !== a_type) {
+                            can_composite = false;
+                            break;
+                        }
+                        if (drawable instanceof FeatureTrack) {
+                            num_feature_tracks++;
+                        }
+                    }
+
+                    if (same_type && this.drawables[0] instanceof LineTrack) {
+                        this.action_icons.composite_icon.show();
                     } else {
-                        // There are 2 or more tracks.
-
-                        //
-                        // Determine if a composite track can be created. Current criteria:
-                        // (a) all tracks are line tracks;
-                        //      OR
-                        // FIXME: this is not enabled right now because it has not been well tested:
-                        // (b) there is a single FeatureTrack.
-                        //
-
-                        // All tracks the same?
-                        var i,
-                            j,
-                            drawable,
-                            same_type = true,
-                            a_type = this.drawables[0].get_type(),
-                            num_feature_tracks = 0;
-                        for (i = 0; i < num_drawables; i++) {
-                            drawable = this.drawables[i];
-                            if (drawable.get_type() !== a_type) {
-                                can_composite = false;
-                                break;
-                            }
-                            if (drawable instanceof FeatureTrack) {
-                                num_feature_tracks++;
-                            }
-                        }
-
-                        if (
-                            same_type &&
-                            this.drawables[0] instanceof LineTrack
-                        ) {
-                            this.action_icons.composite_icon.show();
-                        } else {
-                            this.action_icons.composite_icon.hide();
-                            $(".tooltip").remove();
-                        }
-
-                        //
-                        // Set up group-level filtering and update filter icon.
-                        //
-                        if (
-                            num_feature_tracks > 1 &&
-                            num_feature_tracks === this.drawables.length
-                        ) {
-                            //
-                            // Find shared filters.
-                            //
-                            var shared_filters = {},
-                                filter;
-
-                            // Init shared filters with filters from first drawable.
-                            drawable = this.drawables[0];
-                            for (
-                                j = 0;
-                                j < drawable.filters_manager.filters.length;
-                                j++
-                            ) {
-                                filter = drawable.filters_manager.filters[j];
-                                shared_filters[filter.name] = [filter];
-                            }
-
-                            // Create lists of shared filters.
-                            for (i = 1; i < this.drawables.length; i++) {
-                                drawable = this.drawables[i];
-                                for (
-                                    j = 0;
-                                    j < drawable.filters_manager.filters.length;
-                                    j++
-                                ) {
-                                    filter =
-                                        drawable.filters_manager.filters[j];
-                                    if (filter.name in shared_filters) {
-                                        shared_filters[filter.name].push(
-                                            filter
-                                        );
-                                    }
-                                }
-                            }
-
-                            //
-                            // Create filters for shared filters manager. Shared filters manager is group's
-                            // manager.
-                            //
-                            this.filters_manager.remove_all();
-                            var filters, new_filter, min, max;
-                            for (var filter_name in shared_filters) {
-                                filters = shared_filters[filter_name];
-                                if (filters.length === num_feature_tracks) {
-                                    // Add new filter.
-                                    // FIXME: can filter.copy() be used?
-                                    new_filter = new filters_mod.NumberFilter({
-                                        name: filters[0].name,
-                                        index: filters[0].index
-                                    });
-                                    this.filters_manager.add_filter(new_filter);
-                                }
-                            }
-
-                            // Show/hide icon based on filter availability.
-                            this.action_icons.filters_icon.toggle(
-                                this.filters_manager.filters.length > 0
-                            );
-                        } else {
-                            this.action_icons.filters_icon.hide();
-                        }
+                        this.action_icons.composite_icon.hide();
+                        $(".tooltip").remove();
                     }
-                },
 
-                /**
+                    //
+                    // Set up group-level filtering and update filter icon.
+                    //
+                    if (num_feature_tracks > 1 && num_feature_tracks === this.drawables.length) {
+                        //
+                        // Find shared filters.
+                        //
+                        var shared_filters = {},
+                            filter;
+
+                        // Init shared filters with filters from first drawable.
+                        drawable = this.drawables[0];
+                        for (j = 0; j < drawable.filters_manager.filters.length; j++) {
+                            filter = drawable.filters_manager.filters[j];
+                            shared_filters[filter.name] = [filter];
+                        }
+
+                        // Create lists of shared filters.
+                        for (i = 1; i < this.drawables.length; i++) {
+                            drawable = this.drawables[i];
+                            for (j = 0; j < drawable.filters_manager.filters.length; j++) {
+                                filter = drawable.filters_manager.filters[j];
+                                if (filter.name in shared_filters) {
+                                    shared_filters[filter.name].push(filter);
+                                }
+                            }
+                        }
+
+                        //
+                        // Create filters for shared filters manager. Shared filters manager is group's
+                        // manager.
+                        //
+                        this.filters_manager.remove_all();
+                        var filters, new_filter, min, max;
+                        for (var filter_name in shared_filters) {
+                            filters = shared_filters[filter_name];
+                            if (filters.length === num_feature_tracks) {
+                                // Add new filter.
+                                // FIXME: can filter.copy() be used?
+                                new_filter = new filters_mod.NumberFilter({
+                                    name: filters[0].name,
+                                    index: filters[0].index
+                                });
+                                this.filters_manager.add_filter(new_filter);
+                            }
+                        }
+
+                        // Show/hide icon based on filter availability.
+                        this.action_icons.filters_icon.toggle(this.filters_manager.filters.length > 0);
+                    } else {
+                        this.action_icons.filters_icon.hide();
+                    }
+                }
+            },
+
+            /**
      * Restore individual track filter managers.
      */
-                _restore_filter_managers: function() {
-                    for (var i = 0; i < this.drawables.length; i++) {
-                        this.drawables[
-                            i
-                        ].filters_manager = this.saved_filters_managers[i];
-                    }
-                    this.saved_filters_managers = [];
-                },
+            _restore_filter_managers: function() {
+                for (var i = 0; i < this.drawables.length; i++) {
+                    this.drawables[i].filters_manager = this.saved_filters_managers[i];
+                }
+                this.saved_filters_managers = [];
+            },
 
-                /**
+            /**
      *
      */
-                setup_multitrack_filtering: function() {
-                    // Save tracks' managers and set up shared manager.
-                    if (this.filters_manager.filters.length > 0) {
-                        // For all tracks, save current filter manager and set manager to shared (this object's) manager.
-                        this.saved_filters_managers = [];
-                        for (var i = 0; i < this.drawables.length; i++) {
-                            var drawable = this.drawables[i];
-                            this.saved_filters_managers.push(
-                                drawable.filters_manager
-                            );
-                            drawable.filters_manager = this.filters_manager;
-                        }
-
-                        //TODO: hide filters icons for each drawable?
+            setup_multitrack_filtering: function() {
+                // Save tracks' managers and set up shared manager.
+                if (this.filters_manager.filters.length > 0) {
+                    // For all tracks, save current filter manager and set manager to shared (this object's) manager.
+                    this.saved_filters_managers = [];
+                    for (var i = 0; i < this.drawables.length; i++) {
+                        var drawable = this.drawables[i];
+                        this.saved_filters_managers.push(drawable.filters_manager);
+                        drawable.filters_manager = this.filters_manager;
                     }
-                    this.filters_manager.init_filters();
-                },
 
-                /**
+                    //TODO: hide filters icons for each drawable?
+                }
+                this.filters_manager.init_filters();
+            },
+
+            /**
      * Replace group with a single composite track that includes all group's tracks.
      */
-                show_composite_track: function() {
-                    var composite_track = new CompositeTrack(
-                        this.view,
-                        this.view,
-                        {
-                            name: this.config.get_value("name"),
-                            drawables: this.drawables
-                        }
-                    );
-                    var index = this.container.replace_drawable(
-                        this,
-                        composite_track,
-                        true
-                    );
-                    composite_track.request_draw();
-                },
+            show_composite_track: function() {
+                var composite_track = new CompositeTrack(this.view, this.view, {
+                    name: this.config.get_value("name"),
+                    drawables: this.drawables
+                });
+                var index = this.container.replace_drawable(this, composite_track, true);
+                composite_track.request_draw();
+            },
 
-                add_drawable: function(drawable) {
-                    DrawableCollection.prototype.add_drawable.call(
-                        this,
-                        drawable
-                    );
-                    this.update_icons();
-                },
+            add_drawable: function(drawable) {
+                DrawableCollection.prototype.add_drawable.call(this, drawable);
+                this.update_icons();
+            },
 
-                remove_drawable: function(drawable) {
-                    DrawableCollection.prototype.remove_drawable.call(
-                        this,
-                        drawable
-                    );
-                    this.update_icons();
-                },
+            remove_drawable: function(drawable) {
+                DrawableCollection.prototype.remove_drawable.call(this, drawable);
+                this.update_icons();
+            },
 
-                to_dict: function() {
-                    // If filters are visible, need to restore original filter managers before converting to dict.
-                    if (this.filters_manager.visible()) {
-                        this._restore_filter_managers();
-                    }
-
-                    var obj_dict = extend(
-                        DrawableCollection.prototype.to_dict.call(this),
-                        { filters: this.filters_manager.to_dict() }
-                    );
-
-                    // Setup multi-track filtering again.
-                    if (this.filters_manager.visible()) {
-                        this.setup_multitrack_filtering();
-                    }
-
-                    return obj_dict;
-                },
-
-                request_draw: function(options) {
-                    _.each(this.drawables, function(d) {
-                        d.request_draw(options);
-                    });
+            to_dict: function() {
+                // If filters are visible, need to restore original filter managers before converting to dict.
+                if (this.filters_manager.visible()) {
+                    this._restore_filter_managers();
                 }
+
+                var obj_dict = extend(DrawableCollection.prototype.to_dict.call(this), {
+                    filters: this.filters_manager.to_dict()
+                });
+
+                // Setup multi-track filtering again.
+                if (this.filters_manager.visible()) {
+                    this.setup_multitrack_filtering();
+                }
+
+                return obj_dict;
+            },
+
+            request_draw: function(options) {
+                _.each(this.drawables, function(d) {
+                    d.request_draw(options);
+                });
             }
-        );
+        });
 
         /**
  * View object manages a trackster visualization, including tracks and user interactions.
@@ -988,19 +876,11 @@ define(
                 extend(obj_dict, {
                     obj_type: "View"
                 });
-                DrawableCollection.call(
-                    this,
-                    "View",
-                    obj_dict.container,
-                    obj_dict
-                );
+                DrawableCollection.call(this, "View", obj_dict.container, obj_dict);
                 this.chrom = null;
                 this.vis_id = obj_dict.vis_id;
                 this.dbkey = obj_dict.dbkey;
-                this.stand_alone =
-                    obj_dict.stand_alone !== undefined
-                        ? obj_dict.stand_alone
-                        : true;
+                this.stand_alone = obj_dict.stand_alone !== undefined ? obj_dict.stand_alone : true;
                 this.label_tracks = [];
                 this.tracks_to_be_redrawn = [];
                 this.max_low = 0;
@@ -1011,9 +891,7 @@ define(
                 // Deferred object that indicates when view's chrom data has been loaded.
                 this.load_chroms_deferred = null;
                 this.render();
-                this.canvas_manager = new visualization.CanvasManager(
-                    this.container.get(0).ownerDocument
-                );
+                this.canvas_manager = new visualization.CanvasManager(this.container.get(0).ownerDocument);
                 this.reset();
 
                 // Define track configuration
@@ -1100,16 +978,11 @@ define(
                     .addClass("action-button")
                     .appendTo(this.intro_div)
                     .click(function() {
-                        visualization.select_datasets(
-                            { dbkey: view.dbkey },
-                            function(tracks) {
-                                _.each(tracks, function(track) {
-                                    view.add_drawable(
-                                        object_from_template(track, view, view)
-                                    );
-                                });
-                            }
-                        );
+                        visualization.select_datasets({ dbkey: view.dbkey }, function(tracks) {
+                            _.each(tracks, function(track) {
+                                view.add_drawable(object_from_template(track, view, view));
+                            });
+                        });
                     });
 
                 // Navigation at top
@@ -1158,11 +1031,7 @@ define(
                     .append("<option value=''>Loading</option>")
                     .appendTo(this.nav_controls);
                 var submit_nav = function(e) {
-                    if (
-                        e.type === "focusout" ||
-                        (e.keyCode || e.which) === 13 ||
-                        (e.keyCode || e.which) === 27
-                    ) {
+                    if (e.type === "focusout" || (e.keyCode || e.which) === 13 || (e.keyCode || e.which) === 27) {
                         if ((e.keyCode || e.which) !== 27) {
                             // Not escape key
                             view.go_to($(this).val());
@@ -1189,9 +1058,7 @@ define(
                 this.location_span.click(function() {
                     view.location_span.hide();
                     view.chrom_select.hide();
-                    view.nav_input.val(
-                        view.chrom + ":" + view.low + "-" + view.high
-                    );
+                    view.nav_input.val(view.chrom + ":" + view.low + "-" + view.high);
                     view.nav_input.css("display", "inline-block");
                     view.nav_input.select();
                     view.nav_input.focus();
@@ -1200,34 +1067,25 @@ define(
                         source: function(request, response) {
                             // Using current text, query each track and create list of all matching features.
                             var all_features = [],
-                                feature_search_deferreds = $.map(
-                                    view.get_tracks(FeatureTrack),
-                                    function(t) {
-                                        return t.data_manager
-                                            .search_features(request.term)
-                                            .success(function(
-                                                dataset_features
-                                            ) {
-                                                all_features = all_features.concat(
-                                                    dataset_features
-                                                );
-                                            });
-                                    }
-                                );
+                                feature_search_deferreds = $.map(view.get_tracks(FeatureTrack), function(t) {
+                                    return t.data_manager
+                                        .search_features(request.term)
+                                        .success(function(dataset_features) {
+                                            all_features = all_features.concat(dataset_features);
+                                        });
+                                });
 
                             // When all searching is done, fill autocomplete.
-                            $.when
-                                .apply($, feature_search_deferreds)
-                                .done(function() {
-                                    response(
-                                        $.map(all_features, function(feature) {
-                                            return {
-                                                label: feature[0],
-                                                value: feature[1]
-                                            };
-                                        })
-                                    );
-                                });
+                            $.when.apply($, feature_search_deferreds).done(function() {
+                                response(
+                                    $.map(all_features, function(feature) {
+                                        return {
+                                            label: feature[0],
+                                            value: feature[1]
+                                        };
+                                    })
+                                );
+                            });
                         },
                         minLength: 2
                     });
@@ -1297,9 +1155,7 @@ define(
                         var delta = d.offsetX - this.current_x;
                         this.current_x = d.offsetX;
                         var delta_chrom = Math.round(
-                            delta /
-                                view.viewport_container.width() *
-                                (view.max_high - view.max_low)
+                            delta / view.viewport_container.width() * (view.max_high - view.max_low)
                         );
                         view.move_delta(-delta_chrom);
                     });
@@ -1324,17 +1180,11 @@ define(
                     .bind("drag", function(e, d) {
                         var container = $(this);
                         var delta = d.offsetX - d.current_x;
-                        var new_scroll =
-                            container.scrollTop() -
-                            (e.clientY - d.current_height);
+                        var new_scroll = container.scrollTop() - (e.clientY - d.current_height);
                         container.scrollTop(new_scroll);
                         d.current_height = e.clientY;
                         d.current_x = d.offsetX;
-                        var delta_chrom = Math.round(
-                            delta /
-                                view.viewport_container.width() *
-                                (view.high - view.low)
-                        );
+                        var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.high - view.low));
                         view.move_delta(delta_chrom);
                     });
                 /*
@@ -1357,27 +1207,16 @@ define(
                     .bind("dragstart", function(e, d) {
                         return $("<div/>")
                             .addClass("zoom-area")
-                            .css(
-                                "height",
-                                view.browser_content_div.height() +
-                                    view.top_labeltrack.height() +
-                                    1
-                            )
+                            .css("height", view.browser_content_div.height() + view.top_labeltrack.height() + 1)
                             .appendTo($(this));
                     })
                     .bind("drag", function(e, d) {
                         $(d.proxy).css({
-                            left:
-                                Math.min(e.pageX, d.startX) -
-                                view.container.offset().left,
+                            left: Math.min(e.pageX, d.startX) - view.container.offset().left,
                             width: Math.abs(e.pageX - d.startX)
                         });
-                        var min =
-                                Math.min(e.pageX, d.startX) -
-                                view.container.offset().left,
-                            max =
-                                Math.max(e.pageX, d.startX) -
-                                view.container.offset().left,
+                        var min = Math.min(e.pageX, d.startX) - view.container.offset().left,
+                            max = Math.max(e.pageX, d.startX) - view.container.offset().left,
                             span = view.high - view.low,
                             width = view.viewport_container.width();
                         view.update_location(
@@ -1420,9 +1259,7 @@ define(
         );
         */
 
-                this.add_label_track(
-                    new LabelTrack(this, { content_div: this.top_labeltrack })
-                );
+                this.add_label_track(new LabelTrack(this, { content_div: this.top_labeltrack }));
 
                 $(window).bind("resize", function() {
                     // Stop previous timer.
@@ -1444,10 +1281,7 @@ define(
             },
 
             get_base_color: function(base) {
-                return (
-                    this.config.get_value(base.toLowerCase() + "_color") ||
-                    this.config.get_value("n_color")
-                );
+                return this.config.get_value(base.toLowerCase() + "_color") || this.config.get_value("n_color");
             }
         });
 
@@ -1477,30 +1311,16 @@ define(
                     // location has stabilized.
                     var self = this;
                     this.timer = setTimeout(function() {
-                        self.trigger(
-                            "navigate",
-                            new_chrom + ":" + new_low + "-" + new_high
-                        );
+                        self.trigger("navigate", new_chrom + ":" + new_low + "-" + new_high);
                     }, 500);
                 } else {
-                    view.trigger(
-                        "navigate",
-                        new_chrom + ":" + new_low + "-" + new_high
-                    );
+                    view.trigger("navigate", new_chrom + ":" + new_low + "-" + new_high);
                 }
             },
 
             update_location: function(low, high) {
-                this.location_span.text(
-                    util.commatize(low) + " - " + util.commatize(high)
-                );
-                this.nav_input.val(
-                    this.chrom +
-                        ":" +
-                        util.commatize(low) +
-                        "-" +
-                        util.commatize(high)
-                );
+                this.location_span.text(util.commatize(low) + " - " + util.commatize(high));
+                this.nav_input.val(this.chrom + ":" + util.commatize(low) + "-" + util.commatize(high));
 
                 // Update location. Only update when there is a valid chrom; when loading vis, there may
                 // not be a valid chrom.
@@ -1538,15 +1358,9 @@ define(
                         view.chrom_data = result.chrom_info;
 
                         view.chrom_select.html("");
-                        view.chrom_select.append(
-                            $('<option value="">Select Chrom/Contig</option>')
-                        );
+                        view.chrom_select.append($('<option value="">Select Chrom/Contig</option>'));
 
-                        for (
-                            var i = 0, len = view.chrom_data.length;
-                            i < len;
-                            i++
-                        ) {
+                        for (var i = 0, len = view.chrom_data.length; i < len; i++) {
                             var chrom = view.chrom_data[i].chrom;
                             var chrom_option = $("<option>");
                             chrom_option.text(chrom);
@@ -1555,20 +1369,12 @@ define(
                         }
                         if (result.prev_chroms) {
                             view.chrom_select.append(
-                                $(
-                                    '<option value="previous">Previous ' +
-                                        MAX_CHROMS_SELECTABLE +
-                                        "</option>"
-                                )
+                                $('<option value="previous">Previous ' + MAX_CHROMS_SELECTABLE + "</option>")
                             );
                         }
                         if (result.next_chroms) {
                             view.chrom_select.append(
-                                $(
-                                    '<option value="next">Next ' +
-                                        MAX_CHROMS_SELECTABLE +
-                                        "</option>"
-                                )
+                                $('<option value="next">Next ' + MAX_CHROMS_SELECTABLE + "</option>")
                             );
                         }
                         view.chrom_start_index = result.start_index;
@@ -1576,10 +1382,7 @@ define(
                         chrom_data.resolve(result.chrom_info);
                     },
                     error: function() {
-                        alert(
-                            "Could not load chroms for this dbkey: " +
-                                view.dbkey
-                        );
+                        alert("Could not load chroms for this dbkey: " + view.dbkey);
                     }
                 });
                 return chrom_data;
@@ -1637,11 +1440,7 @@ define(
                         view.max_high = found.len - 1; // -1 because we're using 0-based indexing.
                         view.reset();
 
-                        for (
-                            var i = 0, len = view.drawables.length;
-                            i < len;
-                            i++
-                        ) {
+                        for (var i = 0, len = view.drawables.length; i < len; i++) {
                             var drawable = view.drawables[i];
                             if (drawable.init) {
                                 drawable.init();
@@ -1697,12 +1496,8 @@ define(
                 // Parse new location.
                 var chrom_pos = str.split(/\s+/),
                     chrom = chrom_pos[0],
-                    new_low = chrom_pos[1]
-                        ? parseInt(chrom_pos[1], 10)
-                        : undefined,
-                    new_high = chrom_pos[2]
-                        ? parseInt(chrom_pos[2], 10)
-                        : undefined;
+                    new_low = chrom_pos[1] ? parseInt(chrom_pos[1], 10) : undefined,
+                    new_high = chrom_pos[2] ? parseInt(chrom_pos[2], 10) : undefined;
 
                 this.change_chrom(chrom, new_low, new_high);
             },
@@ -1780,10 +1575,7 @@ define(
      * Remove drawable from the view.
      */
             remove_drawable: function(drawable, hide) {
-                DrawableCollection.prototype.remove_drawable.call(
-                    this,
-                    drawable
-                );
+                DrawableCollection.prototype.remove_drawable.call(this, drawable);
                 if (hide) {
                     var view = this;
                     drawable.container_div.hide(0, function() {
@@ -1810,12 +1602,9 @@ define(
 
                 // Add/update tracks in track list to redraw list.
                 _.each(track_list, function(track) {
-                    var track_options = _.find(
-                        view.tracks_to_be_redrawn,
-                        function(to) {
-                            return to[0] === track;
-                        }
-                    );
+                    var track_options = _.find(view.tracks_to_be_redrawn, function(to) {
+                        return to[0] === track;
+                    });
 
                     if (track_options) {
                         // Track already in list; update options.
@@ -1867,18 +1656,12 @@ define(
                 // -- Drawing code --
 
                 // Resolution is a pixel density.
-                this.resolution_px_b =
-                    this.viewport_container.width() / (this.high - this.low);
+                this.resolution_px_b = this.viewport_container.width() / (this.high - this.low);
 
                 // Overview
-                var left_px =
-                    this.low /
-                        (this.max_high - this.max_low) *
-                        this.overview_viewport.width() || 0;
+                var left_px = this.low / (this.max_high - this.max_low) * this.overview_viewport.width() || 0;
                 var width_px =
-                    (this.high - this.low) /
-                        (this.max_high - this.max_low) *
-                        this.overview_viewport.width() || 0;
+                    (this.high - this.low) / (this.max_high - this.max_low) * this.overview_viewport.width() || 0;
                 var min_width_px = 13;
 
                 this.overview_box
@@ -1888,10 +1671,7 @@ define(
                     })
                     .show();
                 if (width_px < min_width_px) {
-                    this.overview_box.css(
-                        "left",
-                        left_px - (min_width_px - width_px) / 2
-                    );
+                    this.overview_box.css("left", left_px - (min_width_px - width_px) / 2);
                 }
                 if (this.overview_highlight) {
                     this.overview_highlight.css({
@@ -1917,21 +1697,14 @@ define(
             },
 
             zoom_in: function(point, container) {
-                if (
-                    this.max_high === 0 ||
-                    this.high - this.low <= this.min_separation
-                ) {
+                if (this.max_high === 0 || this.high - this.low <= this.min_separation) {
                     return;
                 }
                 var span = this.high - this.low,
                     cur_center = span / 2 + this.low,
                     new_half = span / this.zoom_factor / 2;
                 if (point) {
-                    cur_center =
-                        point /
-                            this.viewport_container.width() *
-                            (this.high - this.low) +
-                        this.low;
+                    cur_center = point / this.viewport_container.width() * (this.high - this.low) + this.low;
                 }
                 this.low = Math.round(cur_center - new_half);
                 this.high = Math.round(cur_center + new_half);
@@ -1956,9 +1729,7 @@ define(
             /** Resize viewport. Use this method if header/footer content has changed in size. */
             resize_viewport: function() {
                 this.viewport_container.height(
-                    this.container.height() -
-                        this.top_container.height() -
-                        this.bottom_container.height()
+                    this.container.height() - this.top_container.height() - this.bottom_container.height()
                 );
             },
 
@@ -1973,10 +1744,7 @@ define(
                 if (this.overview_drawable) {
                     // If drawable to be set as overview is already in overview, do nothing.
                     // Otherwise, remove overview.
-                    if (
-                        this.overview_drawable.dataset.id ===
-                        drawable.dataset.id
-                    ) {
+                    if (this.overview_drawable.dataset.id === drawable.dataset.id) {
                         return;
                     }
                     this.overview_viewport.find(".track").remove();
@@ -1991,12 +1759,9 @@ define(
                 overview_drawable.is_overview = true;
                 view.overview_drawable = overview_drawable;
                 this.overview_drawable.postdraw_actions = function() {
-                    view.overview_highlight
-                        .show()
-                        .height(view.overview_drawable.content_div.height());
+                    view.overview_highlight.show().height(view.overview_drawable.content_div.height());
                     view.overview_viewport.height(
-                        view.overview_drawable.content_div.height() +
-                            view.overview_box.outerHeight()
+                        view.overview_drawable.content_div.height() + view.overview_box.outerHeight()
                     );
                     view.overview_close.show();
                     view.resize_window();
@@ -2032,10 +1797,7 @@ define(
 
                 // Restore tool visibility from state; default to hidden.
                 var hidden = true;
-                if (
-                    options.tool_state !== undefined &&
-                    options.tool_state.hidden !== undefined
-                ) {
+                if (options.tool_state !== undefined && options.tool_state.hidden !== undefined) {
                     hidden = options.tool_state.hidden;
                 }
                 this.set("hidden", hidden);
@@ -2226,9 +1988,7 @@ define(
                     },
                     current_track = track,
                     // Set name of track to include tool name, parameters, and region used.
-                    track_name =
-                        tool.get("name") +
-                        current_track.tool_region_and_parameters_str(region),
+                    track_name = tool.get("name") + current_track.tool_region_and_parameters_str(region),
                     container;
 
                 // If track not in a group, create a group for it and add new track to group. If track
@@ -2240,18 +2000,12 @@ define(
                     });
 
                     // Replace track with group.
-                    var index = current_track.container.replace_drawable(
-                        current_track,
-                        group,
-                        false
-                    );
+                    var index = current_track.container.replace_drawable(current_track, group, false);
 
                     // Update HTML.
                     // FIXME: this is ugly way to replace a track with a group -- make this easier via
                     // a Drawable or DrawableCollection function.
-                    group.container_div.insertBefore(
-                        current_track.view.content_div.children()[index]
-                    );
+                    group.container_div.insertBefore(current_track.view.content_div.children()[index]);
                     group.add_drawable(current_track);
                     current_track.container_div.appendTo(group.content_div);
                     container = group;
@@ -2267,9 +2021,7 @@ define(
                 });
                 new_track.init_for_tool_data();
                 new_track.change_mode(current_track.mode);
-                new_track.set_filters_manager(
-                    current_track.filters_manager.copy(new_track)
-                );
+                new_track.set_filters_manager(current_track.filters_manager.copy(new_track));
                 new_track.update_icons();
                 container.add_drawable(new_track);
                 new_track.tiles_div.text("Starting job.");
@@ -2319,9 +2071,7 @@ define(
                     } else if (response.error) {
                         // General error.
                         new_track.container_div.addClass("error");
-                        new_track.content_div.text(
-                            DATA_CANNOT_RUN_TOOL + response.message
-                        );
+                        new_track.content_div.text(DATA_CANNOT_RUN_TOOL + response.message);
                     } else {
                         // Job submitted and running.
                         success_callback(response);
@@ -2350,9 +2100,7 @@ define(
 
             // Scaling value is ratio of (filter's value compared to low) to (complete filter range).
             return (
-                (parseFloat(feature_data[this.filter.index]) -
-                    this.filter.low) /
-                (this.filter.high - this.filter.low)
+                (parseFloat(feature_data[this.filter.index]) - this.filter.low) / (this.filter.high - this.filter.low)
             );
         };
 
@@ -2593,16 +2341,11 @@ define(
             if (obj_dict.dataset) {
                 // Dataset can be a Backbone model or a dict that can be used to create a model.
                 this.dataset =
-                    obj_dict.dataset instanceof Backbone.Model
-                        ? obj_dict.dataset
-                        : new data.Dataset(obj_dict.dataset);
+                    obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : new data.Dataset(obj_dict.dataset);
             }
             this.dataset_check_type = "converted_datasets_state";
             this.data_url_extra_params = {};
-            this.data_query_wait =
-                "data_query_wait" in obj_dict
-                    ? obj_dict.data_query_wait
-                    : DEFAULT_DATA_QUERY_WAIT;
+            this.data_query_wait = "data_query_wait" in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT;
             // A little ugly creating data manager right now due to transition to Backbone-based objects.
             this.data_manager =
                 "data_manager" in obj_dict
@@ -2629,9 +2372,7 @@ define(
             //
             // Create content div, which is where track is displayed, and add to container if available.
             //
-            this.content_div = $("<div class='track-content'>").appendTo(
-                this.container_div
-            );
+            this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
             if (this.container) {
                 this.container.content_div.append(this.container_div);
                 if (!("resize" in obj_dict) || obj_dict.resize) {
@@ -2689,10 +2430,7 @@ define(
 
                         // Update track name.
                         if (track.tool.is_visible()) {
-                            track.set_name(
-                                track.config.get_value("name") +
-                                    track.tool_region_and_parameters_str()
-                            );
+                            track.set_name(track.config.get_value("name") + track.tool_region_and_parameters_str());
                         } else {
                             track.revert_name();
                         }
@@ -2723,29 +2461,20 @@ define(
                                 $(window).unbind("keypress.check_enter_esc");
                             },
                             ok_fn = function() {
-                                var regions_to_use = $(
-                                        'select[name="regions"] option:selected'
-                                    ).val(),
+                                var regions_to_use = $('select[name="regions"] option:selected').val(),
                                     regions,
-                                    view_region = new visualization.GenomeRegion(
-                                        {
-                                            chrom: view.chrom,
-                                            start: view.low,
-                                            end: view.high
-                                        }
-                                    ),
-                                    bookmarked_regions = _.map(
-                                        $(".bookmark"),
-                                        function(elt) {
-                                            return new visualization.GenomeRegion(
-                                                {
-                                                    from_str: $(elt)
-                                                        .children(".position")
-                                                        .text()
-                                                }
-                                            );
-                                        }
-                                    );
+                                    view_region = new visualization.GenomeRegion({
+                                        chrom: view.chrom,
+                                        start: view.low,
+                                        end: view.high
+                                    }),
+                                    bookmarked_regions = _.map($(".bookmark"), function(elt) {
+                                        return new visualization.GenomeRegion({
+                                            from_str: $(elt)
+                                                .children(".position")
+                                                .text()
+                                        });
+                                    });
 
                                 // Get regions for visualization.
                                 if (regions_to_use === "cur") {
@@ -2756,9 +2485,7 @@ define(
                                     regions = bookmarked_regions;
                                 } else {
                                     // Use both current region and bookmarks.
-                                    regions = [view_region].concat(
-                                        bookmarked_regions
-                                    );
+                                    regions = [view_region].concat(bookmarked_regions);
                                 }
 
                                 Galaxy.modal.hide();
@@ -2771,11 +2498,7 @@ define(
                                     $.param({
                                         dataset_id: track.dataset.id,
                                         hda_ldda: track.dataset.get("hda_ldda"),
-                                        regions: JSON.stringify(
-                                            new Backbone.Collection(
-                                                regions
-                                            ).toJSON()
-                                        )
+                                        regions: JSON.stringify(new Backbone.Collection(regions).toJSON())
                                     });
                             },
                             check_enter_esc = function(e) {
@@ -2790,8 +2513,7 @@ define(
 
                         // show dialog
                         Galaxy.modal.show({
-                            title:
-                                "Visualize tool parameter space and output from different parameter settings?",
+                            title: "Visualize tool parameter space and output from different parameter settings?",
                             body: html,
                             buttons: { No: cancel_fn, Yes: ok_fn }
                         });
@@ -2859,15 +2581,11 @@ define(
                     })
                     .bind("drag", function(e, d) {
                         var new_height = Math.min(
-                            Math.max(
-                                d.original_height + d.deltaY,
-                                track.min_height_px
-                            ),
+                            Math.max(d.original_height + d.deltaY, track.min_height_px),
                             track.max_height_px
                         );
                         $(track.tiles_div).css("height", new_height);
-                        track.visible_height_px =
-                            track.max_height_px === new_height ? 0 : new_height;
+                        track.visible_height_px = track.max_height_px === new_height ? 0 : new_height;
                         track.on_resize();
                     })
                     .bind("dragend", function(e, d) {
@@ -2876,10 +2594,7 @@ define(
                         if (!in_handle) {
                             drag_control.hide();
                         }
-                        track.config.set_value(
-                            "height",
-                            track.visible_height_px
-                        );
+                        track.config.set_value("height", track.visible_height_px);
                         track.changed();
                     })
                     .appendTo(track.container_div);
@@ -2980,11 +2695,7 @@ define(
                         retry: retry
                     };
                 $.getJSON(this.dataset.url(), params, function(result) {
-                    if (
-                        !result ||
-                        result === "error" ||
-                        result.kind === "error"
-                    ) {
+                    if (!result || result === "error" || result.kind === "error") {
                         // Dataset is in error state.
                         track.container_div.addClass("error");
                         var msg_elt = track.show_message(DATA_ERROR);
@@ -2996,10 +2707,7 @@ define(
                                     .click(function() {
                                         Galaxy.modal.show({
                                             title: "Trackster Error",
-                                            body:
-                                                "<pre>" +
-                                                result.message +
-                                                "</pre>",
+                                            body: "<pre>" + result.message + "</pre>",
                                             buttons: {
                                                 Close: function() {
                                                     Galaxy.modal.hide();
@@ -3022,8 +2730,7 @@ define(
                         track.show_message(DATA_NOCONVERTER);
                     } else if (
                         result === "no data" ||
-                        (result.data !== undefined &&
-                            (result.data === null || result.data.length === 0))
+                        (result.data !== undefined && (result.data === null || result.data.length === 0))
                     ) {
                         track.container_div.addClass("nodata");
                         track.show_message(DATA_NONE);
@@ -3042,21 +2749,14 @@ define(
                         track.tiles_div.text(DATA_OK);
                         if (track.view.chrom) {
                             track.tiles_div.text("");
-                            track.tiles_div.css(
-                                "height",
-                                track.visible_height_px + "px"
-                            );
+                            track.tiles_div.css("height", track.visible_height_px + "px");
                             track.enabled = true;
                             // predraw_init may be asynchronous, wait for it and then draw
-                            $.when
-                                .apply($, track.predraw_init())
-                                .done(function() {
-                                    init_deferred.resolve();
-                                    track.container_div.removeClass(
-                                        "nodata error pending"
-                                    );
-                                    track.request_draw();
-                                });
+                            $.when.apply($, track.predraw_init()).done(function() {
+                                init_deferred.resolve();
+                                track.container_div.removeClass("nodata error pending");
+                                track.request_draw();
+                            });
                         } else {
                             init_deferred.resolve();
                         }
@@ -3086,37 +2786,17 @@ define(
                         var data = result.data;
 
                         // Tracks may not have stat data either because there is no data or data is not yet ready.
-                        if (
-                            data &&
-                            data.min !== undefined &&
-                            data.max !== undefined
-                        ) {
+                        if (data && data.min !== undefined && data.max !== undefined) {
                             // Compute default minimum and maximum values
                             var min_value = data.min,
                                 max_value = data.max;
                             // If mean and sd are present, use them to compute a ~95% window
                             // but only if it would shrink the range on one side
-                            min_value = Math.floor(
-                                Math.min(
-                                    0,
-                                    Math.max(min_value, data.mean - 2 * data.sd)
-                                )
-                            );
-                            max_value = Math.ceil(
-                                Math.max(
-                                    0,
-                                    Math.min(max_value, data.mean + 2 * data.sd)
-                                )
-                            );
+                            min_value = Math.floor(Math.min(0, Math.max(min_value, data.mean - 2 * data.sd)));
+                            max_value = Math.ceil(Math.max(0, Math.min(max_value, data.mean + 2 * data.sd)));
                             // Update config, prefs
-                            track.config.set_default_value(
-                                "min_value",
-                                min_value
-                            );
-                            track.config.set_default_value(
-                                "max_value",
-                                max_value
-                            );
+                            track.config.set_default_value("min_value", min_value);
+                            track.config.set_default_value("max_value", max_value);
                             track.config.set_value("min_value", min_value);
                             track.config.set_value("max_value", max_value);
                         }
@@ -3138,12 +2818,7 @@ define(
             var track = this;
 
             // Make track moveable.
-            moveable(
-                track.container_div,
-                track.drag_handle_class,
-                ".group",
-                track
-            );
+            moveable(track.container_div, track.drag_handle_class, ".group", track);
 
             // Attribute init.
             this.filters_manager = new filters_mod.FiltersManager(
@@ -3202,14 +2877,11 @@ define(
                 // Show more rows when all features are not slotted.
                 {
                     name: "show_more_rows_icon",
-                    title:
-                        "To minimize track height, not all feature rows are displayed. Click to display more rows.",
+                    title: "To minimize track height, not all feature rows are displayed. Click to display more rows.",
                     css_class: "exclamation",
                     on_click_fn: function(track) {
                         $(".tooltip").remove();
-                        track.slotters[
-                            track.view.resolution_px_b
-                        ].max_rows *= 2;
+                        track.slotters[track.view.resolution_px_b].max_rows *= 2;
                         track.request_draw({ clear_tile_cache: true });
                     },
                     hide: true
@@ -3225,11 +2897,7 @@ define(
                 extend(obj_dict, {
                     data_manager: this.data_manager
                 });
-                var new_track = new this.constructor(
-                    this.view,
-                    container,
-                    obj_dict
-                );
+                var new_track = new this.constructor(this.view, container, obj_dict);
                 // Misc. init and return.
                 new_track.change_mode(this.mode);
                 new_track.enabled = this.enabled;
@@ -3281,30 +2949,16 @@ define(
                     function(result) {
                         var data = result.data;
                         if (
-                            isNaN(
-                                parseFloat(track.config.get_value("min_value"))
-                            ) ||
-                            isNaN(
-                                parseFloat(track.config.get_value("max_value"))
-                            )
+                            isNaN(parseFloat(track.config.get_value("min_value"))) ||
+                            isNaN(parseFloat(track.config.get_value("max_value")))
                         ) {
                             // Compute default minimum and maximum values
                             var min_value = data.min,
                                 max_value = data.max;
                             // If mean and sd are present, use them to compute a ~95% window
                             // but only if it would shrink the range on one side
-                            min_value = Math.floor(
-                                Math.min(
-                                    0,
-                                    Math.max(min_value, data.mean - 2 * data.sd)
-                                )
-                            );
-                            max_value = Math.ceil(
-                                Math.max(
-                                    0,
-                                    Math.min(max_value, data.mean + 2 * data.sd)
-                                )
-                            );
+                            min_value = Math.floor(Math.min(0, Math.max(min_value, data.mean - 2 * data.sd)));
+                            max_value = Math.ceil(Math.max(0, Math.min(max_value, data.mean + 2 * data.sd)));
                             // Update the prefs
                             track.config.set_value("min_value", min_value);
                             track.config.set_value("max_value", max_value);
@@ -3328,10 +2982,7 @@ define(
                     this.data_manager.clear();
                 }
                 track.request_draw({ clear_tile_cache: true });
-                this.action_icons.mode_icon.attr(
-                    "title",
-                    "Set display mode (now: " + track.mode + ")"
-                );
+                this.action_icons.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
                 return track;
             },
 
@@ -3350,9 +3001,7 @@ define(
                 // Show/hide tool icons.
                 //
                 track.action_icons.tools_icon.toggle(track.tool !== null);
-                track.action_icons.param_space_viz_icon.toggle(
-                    track.tool !== null
-                );
+                track.action_icons.param_space_viz_icon.toggle(track.tool !== null);
             },
 
             /**
@@ -3440,16 +3089,9 @@ define(
                         chrom: this.view.chrom,
                         start: tile_index * tile_width,
                         // Tile high cannot be larger than view.max_high, which the chromosome length.
-                        end: Math.min(
-                            (tile_index + 1) * tile_width,
-                            this.view.max_high
-                        )
+                        end: Math.min((tile_index + 1) * tile_width, this.view.max_high)
                     });
-                    tile_promise = this.draw_helper(
-                        tile_region,
-                        w_scale,
-                        options
-                    );
+                    tile_promise = this.draw_helper(tile_region, w_scale, options);
                     tile_promises.push(tile_promise);
                     $.when(tile_promise).then(function(tile) {
                         tiles.push(tile);
@@ -3480,12 +3122,7 @@ define(
                         return t !== null;
                     });
                     if (tiles.length !== 0) {
-                        track.postdraw_actions(
-                            tiles,
-                            width,
-                            w_scale,
-                            clear_after
-                        );
+                        track.postdraw_actions(tiles, width, w_scale, clear_after);
                     }
                 });
             },
@@ -3519,10 +3156,7 @@ define(
                             num_cols: 12,
                             on_finish: function(new_val) {
                                 $(".tooltip").remove();
-                                track.config.set_value(
-                                    pref_name,
-                                    round(new_val, 1)
-                                );
+                                track.config.set_value(pref_name, round(new_val, 1));
                                 on_change();
                             },
                             help_text: "Set " + text + " value"
@@ -3657,12 +3291,7 @@ define(
                     // Map drawable object to data needed for drawing.
                     var tile_data = _.map(drawables, function(d) {
                         // Get the track data/promise.
-                        return d.data_manager.get_data(
-                            region,
-                            data_mode,
-                            resolution,
-                            track.data_url_extra_params
-                        );
+                        return d.data_manager.get_data(region, data_mode, resolution, track.data_url_extra_params);
                     });
 
                     // Get reference data/promise.
@@ -3700,9 +3329,7 @@ define(
                         })
                     ) {
                         track.tile_cache.set_elt(key, undefined);
-                        $.when(
-                            track.draw_helper(region, w_scale, options)
-                        ).then(function(tile) {
+                        $.when(track.draw_helper(region, w_scale, options)).then(function(tile) {
                             tile_drawn.resolve(tile);
                         });
                         return;
@@ -3710,10 +3337,7 @@ define(
 
                     // If sequence data is available, subset to get only data in region.
                     if (view.reference_track) {
-                        seq_data = view.reference_track.data_manager.subset_entry(
-                            tile_data.pop(),
-                            region
-                        );
+                        seq_data = view.reference_track.data_manager.subset_entry(tile_data.pop(), region);
                     }
 
                     // Get drawing modes, heights for all tracks.
@@ -3728,18 +3352,14 @@ define(
                             d.update_auto_mode(mode);
                         }
                         drawing_modes.push(mode);
-                        drawing_heights.push(
-                            d.get_canvas_height(data, mode, w_scale, width)
-                        );
+                        drawing_heights.push(d.get_canvas_height(data, mode, w_scale, width));
                     });
 
                     var canvas = track.view.canvas_manager.new_canvas(),
                         tile_low = region.get("start"),
                         tile_high = region.get("end"),
                         all_data_index = 0,
-                        width =
-                            Math.ceil((tile_high - tile_low) * w_scale) +
-                            track.left_offset,
+                        width = Math.ceil((tile_high - tile_low) * w_scale) + track.left_offset,
                         height = _.max(drawing_heights),
                         tile;
 
@@ -3756,14 +3376,7 @@ define(
                         ctx.globalCompositeOperation = "source-over";
                     }
                     _.each(drawables, function(d, i) {
-                        tile = d.draw_tile(
-                            tracks_data[i],
-                            ctx,
-                            drawing_modes[i],
-                            region,
-                            w_scale,
-                            seq_data
-                        );
+                        tile = d.draw_tile(tracks_data[i], ctx, drawing_modes[i], region, w_scale, seq_data);
                     });
 
                     // Don't cache, show if no tile.
@@ -3789,28 +3402,14 @@ define(
             /**
      * Draw line (bigwig) data onto tile.
      */
-            _draw_line_track_tile: function(
-                result,
-                ctx,
-                mode,
-                region,
-                w_scale
-            ) {
+            _draw_line_track_tile: function(result, ctx, mode, region, w_scale) {
                 // Set min/max if they are not already set.
                 // FIXME: checking for different null/undefined/0 is messy; it would be nice to
                 // standardize this.
-                if (
-                    [undefined, null].indexOf(
-                        this.config.get_value("min_value")
-                    ) !== -1
-                ) {
+                if ([undefined, null].indexOf(this.config.get_value("min_value")) !== -1) {
                     this.config.set_value("min_value", 0);
                 }
-                if (
-                    [undefined, null, 0].indexOf(
-                        this.config.get_value("max_value")
-                    ) !== -1
-                ) {
+                if ([undefined, null, 0].indexOf(this.config.get_value("max_value")) !== -1) {
                     this.config.set_value(
                         "max_value",
                         _.max(
@@ -3831,13 +3430,7 @@ define(
                     );
                 painter.draw(ctx, canvas.width, canvas.height, w_scale);
 
-                return new LineTrackTile(
-                    this,
-                    region,
-                    w_scale,
-                    canvas,
-                    result.data
-                );
+                return new LineTrackTile(this, region, w_scale, canvas, result.data);
             },
 
             /**
@@ -3864,13 +3457,7 @@ define(
                 tile.predisplay_actions();
 
                 // Position tile element based on current viewport.
-                var left = Math.round(
-                    (tile.low -
-                        (this.is_overview
-                            ? this.view.max_low
-                            : this.view.low)) *
-                        w_scale
-                );
+                var left = Math.round((tile.low - (this.is_overview ? this.view.max_low : this.view.low)) * w_scale);
                 if (this.left_offset) {
                     left -= this.left_offset;
                 }
@@ -3892,10 +3479,7 @@ define(
                 // Update max height based on current tile's height.
                 // BUG/HACK: tile_element.height() returns a height that is always 2 pixels too big, so
                 // -2 to get the correct height.
-                this.max_height_px = Math.max(
-                    this.max_height_px,
-                    tile_element.height() - 2
-                );
+                this.max_height_px = Math.max(this.max_height_px, tile_element.height() - 2);
 
                 // Update height for all tiles based on max height.
                 tile_element
@@ -3906,10 +3490,7 @@ define(
                 // Update track height based on max height and visible height.
                 var track_height = this.max_height_px;
                 if (this.visible_height_px !== 0) {
-                    track_height = Math.min(
-                        this.max_height_px,
-                        this.visible_height_px
-                    );
+                    track_height = Math.min(this.max_height_px, this.visible_height_px);
                 }
                 this.tiles_div.css("height", track_height + "px");
             },
@@ -3919,18 +3500,9 @@ define(
      */
             tool_region_and_parameters_str: function(region) {
                 var track = this,
-                    region_str =
-                        region !== undefined ? region.toString() : "all",
-                    param_str = _.values(track.tool.get_inputs_dict()).join(
-                        ", "
-                    );
-                return (
-                    " - region=[" +
-                    region_str +
-                    "], parameters=[" +
-                    param_str +
-                    "]"
-                );
+                    region_str = region !== undefined ? region.toString() : "all",
+                    param_str = _.values(track.tool.get_inputs_dict()).join(", ");
+                return " - region=[" + region_str + "], parameters=[" + param_str + "]";
             },
 
             /**
@@ -3943,10 +3515,7 @@ define(
                 } else if (mode === "Coverage") {
                     // Histogram mode requires bigwig data.
                     return data.dataset_type === "bigwig";
-                } else if (
-                    data.dataset_type === "bigwig" ||
-                    data.extra_info === "no_detail"
-                ) {
+                } else if (data.dataset_type === "bigwig" || data.extra_info === "no_detail") {
                     // All other modes--Dense, Squish, Pack--require data + details.
                     return false;
                 } else {
@@ -4039,17 +3608,12 @@ define(
             _draw: function(options) {
                 var view = this.view,
                     range = view.high - view.low,
-                    tickDistance = Math.floor(
-                        Math.pow(10, Math.floor(Math.log(range) / Math.log(10)))
-                    ),
-                    position =
-                        Math.floor(view.low / tickDistance) * tickDistance,
+                    tickDistance = Math.floor(Math.pow(10, Math.floor(Math.log(range) / Math.log(10)))),
+                    position = Math.floor(view.low / tickDistance) * tickDistance,
                     width = this.view.container.width(),
                     new_div = $("<div/>").addClass("label-container");
                 while (position < view.high) {
-                    var screenPosition = Math.floor(
-                        (position - view.low) / range * width
-                    );
+                    var screenPosition = Math.floor((position - view.low) / range * width);
                     new_div.append(
                         $("<div/>")
                             .addClass("pos-label")
@@ -4083,11 +3647,7 @@ define(
                 var drawable;
                 for (var i = 0; i < obj_dict.drawables.length; i++) {
                     drawable = obj_dict.drawables[i];
-                    this.drawables[i] = object_from_template(
-                        drawable,
-                        view,
-                        null
-                    );
+                    this.drawables[i] = object_from_template(drawable, view, null);
 
                     // Track's left offset is the max of all tracks.
                     if (drawable.left_offset > this.left_offset) {
@@ -4336,12 +3896,7 @@ define(
  * Displays reference genome data.
  */
         var ReferenceTrack = function(view) {
-            TiledTrack.call(
-                this,
-                view,
-                { content_div: view.top_labeltrack },
-                { resize: false, header: false }
-            );
+            TiledTrack.call(this, view, { content_div: view.top_labeltrack }, { resize: false, header: false });
 
             // Use offset to ensure that bases at tile edges are drawn.
             this.left_offset = view.canvas_manager.char_width_px;
@@ -4354,97 +3909,83 @@ define(
             });
             this.hide_contents();
         };
-        extend(
-            ReferenceTrack.prototype,
-            Drawable.prototype,
-            TiledTrack.prototype,
-            {
-                build_config_params: function() {
-                    return _.union(Drawable.prototype.config_params, [
-                        {
-                            key: "height",
-                            type: "int",
-                            default_value: 13,
-                            hidden: true
-                        }
-                    ]);
-                },
+        extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+            build_config_params: function() {
+                return _.union(Drawable.prototype.config_params, [
+                    {
+                        key: "height",
+                        type: "int",
+                        default_value: 13,
+                        hidden: true
+                    }
+                ]);
+            },
 
-                init: function() {
-                    this.data_manager.clear();
-                    // Enable by default because there should always be data when drawing track.
-                    this.enabled = true;
-                },
+            init: function() {
+                this.data_manager.clear();
+                // Enable by default because there should always be data when drawing track.
+                this.enabled = true;
+            },
 
-                /**
+            /**
      * Additional initialization required before drawing track for the first time.
      */
-                predraw_init: function() {},
+            predraw_init: function() {},
 
-                can_draw: Drawable.prototype.can_draw,
+            can_draw: Drawable.prototype.can_draw,
 
-                /**
+            /**
      * Draws and shows tile if reference data can be displayed; otherwise track is hidden.
      */
-                draw_helper: function(region, w_scale, options) {
-                    var cur_visible = this.tiles_div.is(":visible"),
-                        new_visible,
-                        tile = null;
-                    if (w_scale > this.view.canvas_manager.char_width_px) {
-                        this.tiles_div.show();
-                        new_visible = true;
-                        tile = TiledTrack.prototype.draw_helper.call(
-                            this,
-                            region,
-                            w_scale,
-                            options
-                        );
-                    } else {
-                        new_visible = false;
-                        this.tiles_div.hide();
-                    }
+            draw_helper: function(region, w_scale, options) {
+                var cur_visible = this.tiles_div.is(":visible"),
+                    new_visible,
+                    tile = null;
+                if (w_scale > this.view.canvas_manager.char_width_px) {
+                    this.tiles_div.show();
+                    new_visible = true;
+                    tile = TiledTrack.prototype.draw_helper.call(this, region, w_scale, options);
+                } else {
+                    new_visible = false;
+                    this.tiles_div.hide();
+                }
 
-                    // NOTE: viewport resizing conceptually belongs in postdraw_actions(), but currently
-                    // postdraw_actions is not called when reference track not shown due to no tiles. If
-                    // it is moved to postdraw_actions, resize must be called each time because cannot
-                    // easily detect showing/hiding.
+                // NOTE: viewport resizing conceptually belongs in postdraw_actions(), but currently
+                // postdraw_actions is not called when reference track not shown due to no tiles. If
+                // it is moved to postdraw_actions, resize must be called each time because cannot
+                // easily detect showing/hiding.
 
-                    // If showing or hiding reference track, resize viewport.
-                    if (cur_visible !== new_visible) {
-                        this.view.resize_viewport();
-                    }
+                // If showing or hiding reference track, resize viewport.
+                if (cur_visible !== new_visible) {
+                    this.view.resize_viewport();
+                }
 
-                    return tile;
-                },
+                return tile;
+            },
 
-                can_subset: function(entry) {
-                    return true;
-                },
+            can_subset: function(entry) {
+                return true;
+            },
 
-                /**
+            /**
      * Draw ReferenceTrack tile.
      */
-                draw_tile: function(data, ctx, mode, region, w_scale) {
-                    // Try to subset data.
-                    var subset = this.data_manager.subset_entry(data, region),
-                        seq_data = subset.data;
+            draw_tile: function(data, ctx, mode, region, w_scale) {
+                // Try to subset data.
+                var subset = this.data_manager.subset_entry(data, region),
+                    seq_data = subset.data;
 
-                    // Draw sequence data.
-                    var canvas = ctx.canvas;
-                    ctx.font = ctx.canvas.manager.default_font;
-                    ctx.textAlign = "center";
-                    for (
-                        var c = 0, str_len = seq_data.length;
-                        c < str_len;
-                        c++
-                    ) {
-                        ctx.fillStyle = this.view.get_base_color(seq_data[c]);
-                        ctx.fillText(seq_data[c], Math.floor(c * w_scale), 10);
-                    }
-                    return new Tile(this, region, w_scale, canvas, subset);
+                // Draw sequence data.
+                var canvas = ctx.canvas;
+                ctx.font = ctx.canvas.manager.default_font;
+                ctx.textAlign = "center";
+                for (var c = 0, str_len = seq_data.length; c < str_len; c++) {
+                    ctx.fillStyle = this.view.get_base_color(seq_data[c]);
+                    ctx.fillText(seq_data[c], Math.floor(c * w_scale), 10);
                 }
+                return new Tile(this, region, w_scale, canvas, subset);
             }
-        );
+        });
 
         /**
  * Track displays continuous/numerical data. Track expects position data in 1-based format, i.e. wiggle format.
@@ -4458,11 +3999,9 @@ define(
             // If server has byte-range support, use BBI data manager to read directly from the BBI file.
             // FIXME: there should be a flag to wait for this check to complete before loading the track.
             var self = this;
-            $.when(
-                supportsByteRanges(
-                    Galaxy.root + "datasets/" + this.dataset.id + "/display"
-                )
-            ).then(function(supportsByteRanges) {
+            $.when(supportsByteRanges(Galaxy.root + "datasets/" + this.dataset.id + "/display")).then(function(
+                supportsByteRanges
+            ) {
                 if (supportsByteRanges) {
                     self.data_manager = new bbi.BBIDataManager({
                         dataset: self.dataset
@@ -4519,13 +4058,7 @@ define(
      * Draw track tile.
      */
             draw_tile: function(result, ctx, mode, region, w_scale) {
-                return this._draw_line_track_tile(
-                    result,
-                    ctx,
-                    mode,
-                    region,
-                    w_scale
-                );
+                return this._draw_line_track_tile(result, ctx, mode, region, w_scale);
             },
 
             /**
@@ -4553,99 +4086,94 @@ define(
             TiledTrack.call(this, view, container, obj_dict);
         };
 
-        extend(
-            DiagonalHeatmapTrack.prototype,
-            Drawable.prototype,
-            TiledTrack.prototype,
-            {
-                display_modes: ["Heatmap"],
+        extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+            display_modes: ["Heatmap"],
 
-                build_config_params: function() {
-                    return _.union(Drawable.prototype.config_params, [
-                        {
-                            key: "pos_color",
-                            label: "Positive Color",
-                            type: "color",
-                            default_value: "#FF8C00"
-                        },
-                        {
-                            key: "neg_color",
-                            label: "Negative Color",
-                            type: "color",
-                            default_value: "#4169E1"
-                        },
-                        {
-                            key: "min_value",
-                            label: "Min Value",
-                            type: "int",
-                            default_value: undefined
-                        },
-                        {
-                            key: "max_value",
-                            label: "Max Value",
-                            type: "int",
-                            default_value: undefined
-                        },
-                        {
-                            key: "mode",
-                            type: "string",
-                            default_value: this.mode,
-                            hidden: true
-                        },
-                        {
-                            key: "height",
-                            type: "int",
-                            default_value: 500,
-                            hidden: true
-                        }
-                    ]);
-                },
+            build_config_params: function() {
+                return _.union(Drawable.prototype.config_params, [
+                    {
+                        key: "pos_color",
+                        label: "Positive Color",
+                        type: "color",
+                        default_value: "#FF8C00"
+                    },
+                    {
+                        key: "neg_color",
+                        label: "Negative Color",
+                        type: "color",
+                        default_value: "#4169E1"
+                    },
+                    {
+                        key: "min_value",
+                        label: "Min Value",
+                        type: "int",
+                        default_value: undefined
+                    },
+                    {
+                        key: "max_value",
+                        label: "Max Value",
+                        type: "int",
+                        default_value: undefined
+                    },
+                    {
+                        key: "mode",
+                        type: "string",
+                        default_value: this.mode,
+                        hidden: true
+                    },
+                    {
+                        key: "height",
+                        type: "int",
+                        default_value: 500,
+                        hidden: true
+                    }
+                ]);
+            },
 
-                config_onchange: function() {
-                    this.set_name(this.config.get_value("name"));
-                    this.request_draw({ clear_tile_cache: true });
-                },
+            config_onchange: function() {
+                this.set_name(this.config.get_value("name"));
+                this.request_draw({ clear_tile_cache: true });
+            },
 
-                /**
+            /**
      * Additional initialization required before drawing track for the first time.
      */
-                predraw_init: function() {
-                    var track = this;
-                    return $.getJSON(
-                        track.dataset.url(),
-                        {
-                            data_type: "data",
-                            stats: true,
-                            chrom: track.view.chrom,
-                            low: 0,
-                            high: track.view.max_high,
-                            hda_ldda: track.dataset.get("hda_ldda")
-                        },
-                        function(result) {
-                            var data = result.data;
-                        }
-                    );
-                },
+            predraw_init: function() {
+                var track = this;
+                return $.getJSON(
+                    track.dataset.url(),
+                    {
+                        data_type: "data",
+                        stats: true,
+                        chrom: track.view.chrom,
+                        low: 0,
+                        high: track.view.max_high,
+                        hda_ldda: track.dataset.get("hda_ldda")
+                    },
+                    function(result) {
+                        var data = result.data;
+                    }
+                );
+            },
 
-                /**
+            /**
      * Draw tile.
      */
-                draw_tile: function(result, ctx, mode, region, w_scale) {
-                    // Paint onto canvas.
-                    var canvas = ctx.canvas,
-                        painter = new painters.DiagonalHeatmapPainter(
-                            result.data,
-                            region.get("start"),
-                            region.get("end"),
-                            this.config.to_key_value_dict(),
-                            mode
-                        );
-                    painter.draw(ctx, canvas.width, canvas.height, w_scale);
+            draw_tile: function(result, ctx, mode, region, w_scale) {
+                // Paint onto canvas.
+                var canvas = ctx.canvas,
+                    painter = new painters.DiagonalHeatmapPainter(
+                        result.data,
+                        region.get("start"),
+                        region.get("end"),
+                        this.config.to_key_value_dict(),
+                        mode
+                    );
+                painter.draw(ctx, canvas.width, canvas.height, w_scale);
 
-                    return new Tile(this, region, w_scale, canvas, result.data);
-                }
+                return new Tile(this, region, w_scale, canvas, result.data);
             }
-        );
+        });
 
         /**
  * A track that displays features/regions. Track expects position data in BED format, i.e. 0-based, half-open.
@@ -4661,189 +4189,166 @@ define(
             // this.painter = painters.LinkedFeaturePainter;
             this.set_painter_from_config();
         };
-        extend(
-            FeatureTrack.prototype,
-            Drawable.prototype,
-            TiledTrack.prototype,
-            {
-                display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
+        extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+            display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
 
-                build_config_params: function() {
-                    return _.union(Drawable.prototype.config_params, [
-                        {
-                            key: "block_color",
-                            label: "Block color",
-                            type: "color"
-                        },
-                        {
-                            key: "reverse_strand_color",
-                            label: "Antisense strand color",
-                            type: "color"
-                        },
-                        {
-                            key: "label_color",
-                            label: "Label color",
-                            type: "color",
-                            default_value: "black"
-                        },
-                        {
-                            key: "show_counts",
-                            label: "Show summary counts",
-                            type: "bool",
-                            default_value: true,
-                            help:
-                                "Show the number of items in each bin when drawing summary histogram"
-                        },
-                        {
-                            key: "min_value",
-                            label: "Histogram minimum",
-                            type: "float",
-                            default_value: undefined,
-                            help: "clear value to set automatically"
-                        },
-                        {
-                            key: "max_value",
-                            label: "Histogram maximum",
-                            type: "float",
-                            default_value: undefined,
-                            help: "clear value to set automatically"
-                        },
-                        {
-                            key: "connector_style",
-                            label: "Connector style",
-                            type: "select",
-                            default_value: "fishbones",
-                            options: [
-                                {
-                                    label: "Line with arrows",
-                                    value: "fishbone"
-                                },
-                                { label: "Arcs", value: "arcs" }
-                            ]
-                        },
-                        {
-                            key: "mode",
-                            type: "string",
-                            default_value: this.mode,
-                            hidden: true
-                        },
-                        {
-                            key: "height",
-                            type: "int",
-                            default_value: 0,
-                            hidden: true
-                        }
-                    ]);
-                },
-
-                config_onchange: function() {
-                    this.set_name(this.config.get_value("name"));
-                    this.set_painter_from_config();
-                    this.request_draw({ clear_tile_cache: true });
-                },
-
-                set_painter_from_config: function() {
-                    if (this.config.get_value("connector_style") === "arcs") {
-                        this.painter = painters.ArcLinkedFeaturePainter;
-                    } else {
-                        this.painter = painters.LinkedFeaturePainter;
+            build_config_params: function() {
+                return _.union(Drawable.prototype.config_params, [
+                    {
+                        key: "block_color",
+                        label: "Block color",
+                        type: "color"
+                    },
+                    {
+                        key: "reverse_strand_color",
+                        label: "Antisense strand color",
+                        type: "color"
+                    },
+                    {
+                        key: "label_color",
+                        label: "Label color",
+                        type: "color",
+                        default_value: "black"
+                    },
+                    {
+                        key: "show_counts",
+                        label: "Show summary counts",
+                        type: "bool",
+                        default_value: true,
+                        help: "Show the number of items in each bin when drawing summary histogram"
+                    },
+                    {
+                        key: "min_value",
+                        label: "Histogram minimum",
+                        type: "float",
+                        default_value: undefined,
+                        help: "clear value to set automatically"
+                    },
+                    {
+                        key: "max_value",
+                        label: "Histogram maximum",
+                        type: "float",
+                        default_value: undefined,
+                        help: "clear value to set automatically"
+                    },
+                    {
+                        key: "connector_style",
+                        label: "Connector style",
+                        type: "select",
+                        default_value: "fishbones",
+                        options: [
+                            {
+                                label: "Line with arrows",
+                                value: "fishbone"
+                            },
+                            { label: "Arcs", value: "arcs" }
+                        ]
+                    },
+                    {
+                        key: "mode",
+                        type: "string",
+                        default_value: this.mode,
+                        hidden: true
+                    },
+                    {
+                        key: "height",
+                        type: "int",
+                        default_value: 0,
+                        hidden: true
                     }
-                },
+                ]);
+            },
 
-                /**
+            config_onchange: function() {
+                this.set_name(this.config.get_value("name"));
+                this.set_painter_from_config();
+                this.request_draw({ clear_tile_cache: true });
+            },
+
+            set_painter_from_config: function() {
+                if (this.config.get_value("connector_style") === "arcs") {
+                    this.painter = painters.ArcLinkedFeaturePainter;
+                } else {
+                    this.painter = painters.LinkedFeaturePainter;
+                }
+            },
+
+            /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been
      * drawn/fetched and shown.
      */
-                postdraw_actions: function(tiles, width, w_scale, clear_after) {
-                    TiledTrack.prototype.postdraw_actions.call(
-                        this,
-                        tiles,
-                        width,
-                        w_scale,
-                        clear_after
-                    );
+            postdraw_actions: function(tiles, width, w_scale, clear_after) {
+                TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
 
-                    var track = this,
-                        i,
-                        line_track_tiles = _.filter(tiles, function(t) {
-                            return t instanceof LineTrackTile;
+                var track = this,
+                    i,
+                    line_track_tiles = _.filter(tiles, function(t) {
+                        return t instanceof LineTrackTile;
+                    });
+
+                //
+                // Finish drawing of features that span multiple tiles. Features that span multiple tiles
+                // are labeled incomplete on the tile level because they cannot be completely drawn.
+                //
+                if (line_track_tiles.length === 0) {
+                    // Gather incomplete features together.
+                    var all_incomplete_features = {};
+                    _.each(_.pluck(tiles, "incomplete_features"), function(inc_features) {
+                        _.each(inc_features, function(feature) {
+                            all_incomplete_features[feature[0]] = feature;
                         });
+                    });
 
-                    //
-                    // Finish drawing of features that span multiple tiles. Features that span multiple tiles
-                    // are labeled incomplete on the tile level because they cannot be completely drawn.
-                    //
-                    if (line_track_tiles.length === 0) {
-                        // Gather incomplete features together.
-                        var all_incomplete_features = {};
-                        _.each(_.pluck(tiles, "incomplete_features"), function(
-                            inc_features
-                        ) {
-                            _.each(inc_features, function(feature) {
-                                all_incomplete_features[feature[0]] = feature;
-                            });
-                        });
+                    // Draw incomplete features on each tile.
+                    var self = this;
+                    _.each(tiles, function(tile) {
+                        // Remove features already drawn on tile originally.
+                        var tile_incomplete_features = _.omit(
+                            all_incomplete_features,
+                            _.map(tile.incomplete_features, function(f) {
+                                return f[0];
+                            })
+                        );
 
-                        // Draw incomplete features on each tile.
-                        var self = this;
-                        _.each(tiles, function(tile) {
-                            // Remove features already drawn on tile originally.
-                            var tile_incomplete_features = _.omit(
-                                all_incomplete_features,
-                                _.map(tile.incomplete_features, function(f) {
-                                    return f[0];
-                                })
+                        // Remove features already drawn on tile in past postdraw actions.
+                        tile_incomplete_features = _.omit(
+                            tile_incomplete_features,
+                            _.keys(tile.other_tiles_features_drawn)
+                        );
+
+                        // Draw tile's incomplete features.
+                        if (_.size(tile_incomplete_features) !== 0) {
+                            // To draw incomplete features, create new canvas, copy original canvas/tile onto new
+                            // canvas, and then draw incomplete features on the new canvas.
+                            var features = {
+                                    data: _.values(tile_incomplete_features)
+                                },
+                                new_canvas = self.view.canvas_manager.new_canvas(),
+                                new_canvas_ctx = new_canvas.getContext("2d");
+                            new_canvas.height = Math.max(
+                                tile.canvas.height,
+                                self.get_canvas_height(features, tile.mode, tile.w_scale, 100)
                             );
-
-                            // Remove features already drawn on tile in past postdraw actions.
-                            tile_incomplete_features = _.omit(
-                                tile_incomplete_features,
-                                _.keys(tile.other_tiles_features_drawn)
+                            new_canvas.width = tile.canvas.width;
+                            new_canvas_ctx.drawImage(tile.canvas, 0, 0);
+                            new_canvas_ctx.translate(track.left_offset, 0);
+                            var new_tile = self.draw_tile(
+                                features,
+                                new_canvas_ctx,
+                                tile.mode,
+                                tile.region,
+                                tile.w_scale,
+                                tile.seq_data
                             );
+                            $(tile.canvas).replaceWith($(new_tile.canvas));
+                            tile.canvas = new_canvas;
+                            _.extend(tile.other_tiles_features_drawn, all_incomplete_features);
+                        }
+                    });
+                }
 
-                            // Draw tile's incomplete features.
-                            if (_.size(tile_incomplete_features) !== 0) {
-                                // To draw incomplete features, create new canvas, copy original canvas/tile onto new
-                                // canvas, and then draw incomplete features on the new canvas.
-                                var features = {
-                                        data: _.values(tile_incomplete_features)
-                                    },
-                                    new_canvas = self.view.canvas_manager.new_canvas(),
-                                    new_canvas_ctx = new_canvas.getContext(
-                                        "2d"
-                                    );
-                                new_canvas.height = Math.max(
-                                    tile.canvas.height,
-                                    self.get_canvas_height(
-                                        features,
-                                        tile.mode,
-                                        tile.w_scale,
-                                        100
-                                    )
-                                );
-                                new_canvas.width = tile.canvas.width;
-                                new_canvas_ctx.drawImage(tile.canvas, 0, 0);
-                                new_canvas_ctx.translate(track.left_offset, 0);
-                                var new_tile = self.draw_tile(
-                                    features,
-                                    new_canvas_ctx,
-                                    tile.mode,
-                                    tile.region,
-                                    tile.w_scale,
-                                    tile.seq_data
-                                );
-                                $(tile.canvas).replaceWith($(new_tile.canvas));
-                                tile.canvas = new_canvas;
-                                _.extend(
-                                    tile.other_tiles_features_drawn,
-                                    all_incomplete_features
-                                );
-                            }
-                        });
-                    }
-
-                    // If mode is Coverage and tiles do not share max, redraw tiles as necessary using new max.
-                    /*
+                // If mode is Coverage and tiles do not share max, redraw tiles as necessary using new max.
+                /*
         This code isn't used right now because Coverage mode uses predefined max in preferences.
         if (track.mode === "Coverage") {
             // Get global max.
@@ -4865,184 +4370,144 @@ define(
         }
         */
 
-                    //
-                    // Update filter attributes, UI.
-                    //
+                //
+                // Update filter attributes, UI.
+                //
 
-                    // Update filtering UI.
-                    if (track.filters_manager) {
-                        var filters = track.filters_manager.filters,
-                            f;
-                        for (f = 0; f < filters.length; f++) {
-                            filters[f].update_ui_elt();
-                        }
+                // Update filtering UI.
+                if (track.filters_manager) {
+                    var filters = track.filters_manager.filters,
+                        f;
+                    for (f = 0; f < filters.length; f++) {
+                        filters[f].update_ui_elt();
+                    }
 
-                        // Determine if filters are available; this is based on the tiles' data.
-                        // Criteria for filter to be available: (a) it is applicable to tile data and (b) filter min != filter max.
-                        var filters_available = false,
-                            example_feature,
-                            filter;
-                        for (i = 0; i < tiles.length; i++) {
-                            if (tiles[i].data.length) {
-                                example_feature = tiles[i].data[0];
-                                for (f = 0; f < filters.length; f++) {
-                                    filter = filters[f];
-                                    if (
-                                        filter.applies_to(example_feature) &&
-                                        filter.min !== filter.max
-                                    ) {
-                                        filters_available = true;
-                                        break;
-                                    }
+                    // Determine if filters are available; this is based on the tiles' data.
+                    // Criteria for filter to be available: (a) it is applicable to tile data and (b) filter min != filter max.
+                    var filters_available = false,
+                        example_feature,
+                        filter;
+                    for (i = 0; i < tiles.length; i++) {
+                        if (tiles[i].data.length) {
+                            example_feature = tiles[i].data[0];
+                            for (f = 0; f < filters.length; f++) {
+                                filter = filters[f];
+                                if (filter.applies_to(example_feature) && filter.min !== filter.max) {
+                                    filters_available = true;
+                                    break;
                                 }
                             }
                         }
-
-                        // If filter availability changed, hide filter div if necessary and update menu.
-                        if (track.filters_available !== filters_available) {
-                            track.filters_available = filters_available;
-                            if (!track.filters_available) {
-                                track.filters_manager.hide();
-                            }
-                            track.update_icons();
-                        }
                     }
 
-                    //
-                    // If not all features slotted, show icon for showing more rows (slots).
-                    //
-                    if (tiles[0] instanceof FeatureTrackTile) {
-                        var all_slotted = true;
-                        for (i = 0; i < tiles.length; i++) {
-                            if (!tiles[i].all_slotted) {
-                                all_slotted = false;
-                                break;
-                            }
+                    // If filter availability changed, hide filter div if necessary and update menu.
+                    if (track.filters_available !== filters_available) {
+                        track.filters_available = filters_available;
+                        if (!track.filters_available) {
+                            track.filters_manager.hide();
                         }
-                        this.action_icons.show_more_rows_icon.toggle(
-                            !all_slotted
-                        );
-                    } else {
-                        this.action_icons.show_more_rows_icon.hide();
+                        track.update_icons();
                     }
-                },
+                }
 
-                /**
+                //
+                // If not all features slotted, show icon for showing more rows (slots).
+                //
+                if (tiles[0] instanceof FeatureTrackTile) {
+                    var all_slotted = true;
+                    for (i = 0; i < tiles.length; i++) {
+                        if (!tiles[i].all_slotted) {
+                            all_slotted = false;
+                            break;
+                        }
+                    }
+                    this.action_icons.show_more_rows_icon.toggle(!all_slotted);
+                } else {
+                    this.action_icons.show_more_rows_icon.hide();
+                }
+            },
+
+            /**
      * Update track interface to show display mode being used.
      */
-                update_auto_mode: function(mode) {
-                    if (this.mode === "Auto") {
-                        if (mode === "no_detail") {
-                            mode = "feature spans";
-                        }
-                        this.action_icons.mode_icon.attr(
-                            "title",
-                            "Set display mode (now: Auto/" + mode + ")"
-                        );
+            update_auto_mode: function(mode) {
+                if (this.mode === "Auto") {
+                    if (mode === "no_detail") {
+                        mode = "feature spans";
                     }
-                },
+                    this.action_icons.mode_icon.attr("title", "Set display mode (now: Auto/" + mode + ")");
+                }
+            },
 
-                /**
+            /**
      * Place features in slots for drawing (i.e. pack features).
      * this.slotters[level] is created in this method. this.slotters[level]
      * is a Slotter object. Returns the number of slots used to pack features.
      */
-                incremental_slots: function(level, features, mode) {
-                    // Get/create incremental slots for level. If display mode changed,
-                    // need to create new slots.
+            incremental_slots: function(level, features, mode) {
+                // Get/create incremental slots for level. If display mode changed,
+                // need to create new slots.
 
-                    var dummy_context = this.view.canvas_manager.dummy_context,
-                        slotter = this.slotters[level];
-                    if (!slotter || slotter.mode !== mode) {
-                        slotter = new slotting.FeatureSlotter(
-                            level,
-                            mode,
-                            MAX_FEATURE_DEPTH,
-                            function(x) {
-                                return dummy_context.measureText(x);
-                            }
-                        );
-                        this.slotters[level] = slotter;
-                    }
+                var dummy_context = this.view.canvas_manager.dummy_context,
+                    slotter = this.slotters[level];
+                if (!slotter || slotter.mode !== mode) {
+                    slotter = new slotting.FeatureSlotter(level, mode, MAX_FEATURE_DEPTH, function(x) {
+                        return dummy_context.measureText(x);
+                    });
+                    this.slotters[level] = slotter;
+                }
 
-                    return slotter.slot_features(features);
-                },
+                return slotter.slot_features(features);
+            },
 
-                /**
+            /**
      * Returns appropriate display mode based on data.
      */
-                get_mode: function(data) {
-                    var mode;
-                    // HACK: use no_detail mode track is in overview to prevent overview from being too large.
-                    if (data.extra_info === "no_detail" || this.is_overview) {
-                        mode = "no_detail";
+            get_mode: function(data) {
+                var mode;
+                // HACK: use no_detail mode track is in overview to prevent overview from being too large.
+                if (data.extra_info === "no_detail" || this.is_overview) {
+                    mode = "no_detail";
+                } else {
+                    // Choose b/t Squish and Pack.
+                    // Proxy measures for using Squish:
+                    // (a) error message re: limiting number of features shown;
+                    // (b) X number of features shown;
+                    // (c) size of view shown.
+                    // TODO: cannot use (a) and (b) because it requires coordinating mode across tiles;
+                    // fix this so that tiles are redrawn as necessary to use the same mode.
+                    //if ( (result.message && result.message.match(/^Only the first [\d]+/)) ||
+                    //     (result.data && result.data.length > 2000) ||
+                    //var data = result.data;
+                    // if ( (data.length && data.length < 4) ||
+                    //      (this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH) ) {
+                    if (this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH) {
+                        mode = "Squish";
                     } else {
-                        // Choose b/t Squish and Pack.
-                        // Proxy measures for using Squish:
-                        // (a) error message re: limiting number of features shown;
-                        // (b) X number of features shown;
-                        // (c) size of view shown.
-                        // TODO: cannot use (a) and (b) because it requires coordinating mode across tiles;
-                        // fix this so that tiles are redrawn as necessary to use the same mode.
-                        //if ( (result.message && result.message.match(/^Only the first [\d]+/)) ||
-                        //     (result.data && result.data.length > 2000) ||
-                        //var data = result.data;
-                        // if ( (data.length && data.length < 4) ||
-                        //      (this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH) ) {
-                        if (
-                            this.view.high - this.view.low >
-                            MIN_SQUISH_VIEW_WIDTH
-                        ) {
-                            mode = "Squish";
-                        } else {
-                            mode = "Pack";
-                        }
+                        mode = "Pack";
                     }
-                    return mode;
-                },
+                }
+                return mode;
+            },
 
-                /**
+            /**
      * Returns canvas height needed to display data; return value is an integer that denotes the
      * number of pixels required.
      */
-                get_canvas_height: function(
-                    result,
-                    mode,
-                    w_scale,
-                    canvas_width
-                ) {
-                    if (
-                        mode === "Coverage" ||
-                        result.dataset_type === "bigwig"
-                    ) {
-                        return this.summary_draw_height;
-                    } else {
-                        // All other modes require slotting.
-                        var rows_required = this.incremental_slots(
-                            w_scale,
-                            result.data,
-                            mode
-                        );
-                        // HACK: use dummy painter to get required height. Painter should be extended so that get_required_height
-                        // works as a static function.
-                        var dummy_painter = new this.painter(
-                            null,
-                            null,
-                            null,
-                            this.config.to_key_value_dict(),
-                            mode
-                        );
-                        return Math.max(
-                            this.min_height_px,
-                            dummy_painter.get_required_height(
-                                rows_required,
-                                canvas_width
-                            )
-                        );
-                    }
-                },
+            get_canvas_height: function(result, mode, w_scale, canvas_width) {
+                if (mode === "Coverage" || result.dataset_type === "bigwig") {
+                    return this.summary_draw_height;
+                } else {
+                    // All other modes require slotting.
+                    var rows_required = this.incremental_slots(w_scale, result.data, mode);
+                    // HACK: use dummy painter to get required height. Painter should be extended so that get_required_height
+                    // works as a static function.
+                    var dummy_painter = new this.painter(null, null, null, this.config.to_key_value_dict(), mode);
+                    return Math.max(this.min_height_px, dummy_painter.get_required_height(rows_required, canvas_width));
+                }
+            },
 
-                /**
+            /**
      * Draw FeatureTrack tile.
      * @param result result from server
      * @param cxt canvas context to draw on
@@ -5052,137 +4517,103 @@ define(
      * @param ref_seq reference sequence data
      * @param cur_tile true if drawing is occurring on a currently visible tile.
      */
-                draw_tile: function(
-                    result,
-                    ctx,
-                    mode,
-                    region,
-                    w_scale,
-                    ref_seq,
-                    cur_tile
-                ) {
-                    var track = this,
-                        canvas = ctx.canvas,
-                        tile_low = region.get("start"),
-                        tile_high = region.get("end"),
-                        left_offset = this.left_offset;
+            draw_tile: function(result, ctx, mode, region, w_scale, ref_seq, cur_tile) {
+                var track = this,
+                    canvas = ctx.canvas,
+                    tile_low = region.get("start"),
+                    tile_high = region.get("end"),
+                    left_offset = this.left_offset;
 
-                    // If data is line track data, draw line track tile.
-                    if (result.dataset_type === "bigwig") {
-                        return this._draw_line_track_tile(
-                            result,
-                            ctx,
-                            mode,
-                            region,
-                            w_scale
-                        );
-                    }
+                // If data is line track data, draw line track tile.
+                if (result.dataset_type === "bigwig") {
+                    return this._draw_line_track_tile(result, ctx, mode, region, w_scale);
+                }
 
-                    // Handle row-by-row tracks
+                // Handle row-by-row tracks
 
-                    // Preprocessing: filter features and determine whether all unfiltered features have been slotted.
-                    var filtered = [],
-                        slots = this.slotters[w_scale].slots,
-                        all_slotted = true;
-                    if (result.data) {
-                        var filters = this.filters_manager.filters;
-                        for (
-                            var i = 0, len = result.data.length;
-                            i < len;
-                            i++
-                        ) {
-                            var feature = result.data[i];
-                            var hide_feature = false;
-                            var filter;
-                            for (
-                                var f = 0, flen = filters.length;
-                                f < flen;
-                                f++
-                            ) {
-                                filter = filters[f];
-                                filter.update_attrs(feature);
-                                if (!filter.keep(feature)) {
-                                    hide_feature = true;
-                                    break;
-                                }
+                // Preprocessing: filter features and determine whether all unfiltered features have been slotted.
+                var filtered = [],
+                    slots = this.slotters[w_scale].slots,
+                    all_slotted = true;
+                if (result.data) {
+                    var filters = this.filters_manager.filters;
+                    for (var i = 0, len = result.data.length; i < len; i++) {
+                        var feature = result.data[i];
+                        var hide_feature = false;
+                        var filter;
+                        for (var f = 0, flen = filters.length; f < flen; f++) {
+                            filter = filters[f];
+                            filter.update_attrs(feature);
+                            if (!filter.keep(feature)) {
+                                hide_feature = true;
+                                break;
                             }
-                            if (!hide_feature) {
-                                // Feature visible.
-                                filtered.push(feature);
-                                // Set flag if not slotted.
-                                if (!(feature[0] in slots)) {
-                                    all_slotted = false;
-                                }
+                        }
+                        if (!hide_feature) {
+                            // Feature visible.
+                            filtered.push(feature);
+                            // Set flag if not slotted.
+                            if (!(feature[0] in slots)) {
+                                all_slotted = false;
                             }
                         }
                     }
+                }
 
-                    // Create painter.
-                    var filter_alpha_scaler = this.filters_manager.alpha_filter
-                            ? new FilterScaler(
-                                  this.filters_manager.alpha_filter
-                              )
-                            : null,
-                        filter_height_scaler = this.filters_manager
-                            .height_filter
-                            ? new FilterScaler(
-                                  this.filters_manager.height_filter
-                              )
-                            : null,
-                        painter = new this.painter(
-                            filtered,
-                            tile_low,
-                            tile_high,
-                            this.config.to_key_value_dict(),
-                            mode,
-                            filter_alpha_scaler,
-                            filter_height_scaler,
-                            // HACK: ref_seq only be defined for ReadTracks, and only the ReadPainter accepts that argument
-                            ref_seq,
-                            // Only the ReadPainer will use this function
-                            function(b) {
-                                return track.view.get_base_color(b);
-                            }
-                        );
-                    var feature_mapper = null;
+                // Create painter.
+                var filter_alpha_scaler = this.filters_manager.alpha_filter
+                        ? new FilterScaler(this.filters_manager.alpha_filter)
+                        : null,
+                    filter_height_scaler = this.filters_manager.height_filter
+                        ? new FilterScaler(this.filters_manager.height_filter)
+                        : null,
+                    painter = new this.painter(
+                        filtered,
+                        tile_low,
+                        tile_high,
+                        this.config.to_key_value_dict(),
+                        mode,
+                        filter_alpha_scaler,
+                        filter_height_scaler,
+                        // HACK: ref_seq only be defined for ReadTracks, and only the ReadPainter accepts that argument
+                        ref_seq,
+                        // Only the ReadPainer will use this function
+                        function(b) {
+                            return track.view.get_base_color(b);
+                        }
+                    );
+                var feature_mapper = null;
 
-                    ctx.fillStyle = this.config.get_value("block_color");
-                    ctx.font = ctx.canvas.manager.default_font;
-                    ctx.textAlign = "right";
+                ctx.fillStyle = this.config.get_value("block_color");
+                ctx.font = ctx.canvas.manager.default_font;
+                ctx.textAlign = "right";
 
-                    if (result.data) {
-                        // Draw features.
-                        var draw_results = painter.draw(
-                            ctx,
-                            canvas.width,
-                            canvas.height,
-                            w_scale,
-                            slots
-                        );
-                        feature_mapper = draw_results.feature_mapper;
-                        incomplete_features = draw_results.incomplete_features;
-                        feature_mapper.translation = -left_offset;
-                    }
+                if (result.data) {
+                    // Draw features.
+                    var draw_results = painter.draw(ctx, canvas.width, canvas.height, w_scale, slots);
+                    feature_mapper = draw_results.feature_mapper;
+                    incomplete_features = draw_results.incomplete_features;
+                    feature_mapper.translation = -left_offset;
+                }
 
-                    // If not drawing on current tile, create new tile.
-                    if (!cur_tile) {
-                        return new FeatureTrackTile(
-                            track,
-                            region,
-                            w_scale,
-                            canvas,
-                            result.data,
-                            mode,
-                            result.message,
-                            all_slotted,
-                            feature_mapper,
-                            incomplete_features,
-                            ref_seq
-                        );
-                    }
+                // If not drawing on current tile, create new tile.
+                if (!cur_tile) {
+                    return new FeatureTrackTile(
+                        track,
+                        region,
+                        w_scale,
+                        canvas,
+                        result.data,
+                        mode,
+                        result.message,
+                        all_slotted,
+                        feature_mapper,
+                        incomplete_features,
+                        ref_seq
+                    );
                 }
             }
-        );
+        });
 
         /**
  * Displays variant data.
@@ -5197,253 +4628,194 @@ define(
             this.left_offset = 30;
         };
 
-        extend(
-            VariantTrack.prototype,
-            Drawable.prototype,
-            TiledTrack.prototype,
-            {
-                display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
+        extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+            display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
 
-                build_config_params: function() {
-                    return _.union(Drawable.prototype.config_params, [
-                        {
-                            key: "color",
-                            label: "Histogram color",
-                            type: "color"
-                        },
-                        {
-                            key: "show_sample_data",
-                            label: "Show sample data",
-                            type: "bool",
-                            default_value: true
-                        },
-                        {
-                            key: "show_labels",
-                            label: "Show summary and sample labels",
-                            type: "bool",
-                            default_value: true
-                        },
-                        {
-                            key: "summary_height",
-                            label: "Locus summary height",
-                            type: "float",
-                            default_value: 20
-                        },
-                        {
-                            key: "mode",
-                            type: "string",
-                            default_value: this.mode,
-                            hidden: true
-                        },
-                        {
-                            key: "height",
-                            type: "int",
-                            default_value: 0,
-                            hidden: true
-                        }
-                    ]);
-                },
+            build_config_params: function() {
+                return _.union(Drawable.prototype.config_params, [
+                    {
+                        key: "color",
+                        label: "Histogram color",
+                        type: "color"
+                    },
+                    {
+                        key: "show_sample_data",
+                        label: "Show sample data",
+                        type: "bool",
+                        default_value: true
+                    },
+                    {
+                        key: "show_labels",
+                        label: "Show summary and sample labels",
+                        type: "bool",
+                        default_value: true
+                    },
+                    {
+                        key: "summary_height",
+                        label: "Locus summary height",
+                        type: "float",
+                        default_value: 20
+                    },
+                    {
+                        key: "mode",
+                        type: "string",
+                        default_value: this.mode,
+                        hidden: true
+                    },
+                    {
+                        key: "height",
+                        type: "int",
+                        default_value: 0,
+                        hidden: true
+                    }
+                ]);
+            },
 
-                config_onchange: function() {
-                    this.set_name(this.config.get_value("name"));
-                    this.request_draw({ clear_tile_cache: true });
-                },
+            config_onchange: function() {
+                this.set_name(this.config.get_value("name"));
+                this.request_draw({ clear_tile_cache: true });
+            },
 
-                /**
+            /**
      * Draw tile.
      */
-                draw_tile: function(result, ctx, mode, region, w_scale) {
-                    // Data could be coverage data or variant data.
-                    if (result.dataset_type === "bigwig") {
-                        return this._draw_line_track_tile(
-                            result,
-                            ctx,
-                            "Histogram",
-                            region,
-                            w_scale
+            draw_tile: function(result, ctx, mode, region, w_scale) {
+                // Data could be coverage data or variant data.
+                if (result.dataset_type === "bigwig") {
+                    return this._draw_line_track_tile(result, ctx, "Histogram", region, w_scale);
+                } else {
+                    // result.dataset_type === 'variant'
+                    var view = this.view,
+                        painter = new this.painter(
+                            result.data,
+                            region.get("start"),
+                            region.get("end"),
+                            this.config.to_key_value_dict(),
+                            mode,
+                            function(b) {
+                                return view.get_base_color(b);
+                            }
                         );
-                    } else {
-                        // result.dataset_type === 'variant'
-                        var view = this.view,
-                            painter = new this.painter(
-                                result.data,
-                                region.get("start"),
-                                region.get("end"),
-                                this.config.to_key_value_dict(),
-                                mode,
-                                function(b) {
-                                    return view.get_base_color(b);
-                                }
-                            );
-                        painter.draw(
-                            ctx,
-                            ctx.canvas.width,
-                            ctx.canvas.height,
-                            w_scale
-                        );
-                        return new Tile(
-                            this,
-                            region,
-                            w_scale,
-                            ctx.canvas,
-                            result.data
-                        );
-                    }
-                },
+                    painter.draw(ctx, ctx.canvas.width, ctx.canvas.height, w_scale);
+                    return new Tile(this, region, w_scale, ctx.canvas, result.data);
+                }
+            },
 
-                /**
+            /**
      * Returns canvas height needed to display data; return value is an integer that denotes the
      * number of pixels required.
      */
-                get_canvas_height: function(
-                    result,
-                    mode,
-                    w_scale,
-                    canvas_width
-                ) {
-                    if (result.dataset_type === "bigwig") {
-                        return this.summary_draw_height;
-                    } else {
-                        // HACK: sample_names is not be defined when dataset definition is fetched before
-                        // dataset is complete (as is done when running tools). In that case, fall back on
-                        // # of samples in data. This can be fixed by re-requesting dataset definition
-                        // in init.
-                        var num_samples = this.dataset.get_metadata(
-                            "sample_names"
-                        )
-                            ? this.dataset.get_metadata("sample_names").length
-                            : 0;
-                        if (num_samples === 0 && result.data.length !== 0) {
-                            // Sample data is separated by commas, so this computes # of samples:
-                            num_samples = result.data[0][7].match(/,/g);
-                            if (num_samples === null) {
-                                num_samples = 1;
-                            } else {
-                                num_samples = num_samples.length + 1;
-                            }
+            get_canvas_height: function(result, mode, w_scale, canvas_width) {
+                if (result.dataset_type === "bigwig") {
+                    return this.summary_draw_height;
+                } else {
+                    // HACK: sample_names is not be defined when dataset definition is fetched before
+                    // dataset is complete (as is done when running tools). In that case, fall back on
+                    // # of samples in data. This can be fixed by re-requesting dataset definition
+                    // in init.
+                    var num_samples = this.dataset.get_metadata("sample_names")
+                        ? this.dataset.get_metadata("sample_names").length
+                        : 0;
+                    if (num_samples === 0 && result.data.length !== 0) {
+                        // Sample data is separated by commas, so this computes # of samples:
+                        num_samples = result.data[0][7].match(/,/g);
+                        if (num_samples === null) {
+                            num_samples = 1;
+                        } else {
+                            num_samples = num_samples.length + 1;
                         }
-
-                        var dummy_painter = new this.painter(
-                            null,
-                            null,
-                            null,
-                            this.config.to_key_value_dict(),
-                            mode
-                        );
-                        return dummy_painter.get_required_height(num_samples);
                     }
-                },
 
-                /**
+                    var dummy_painter = new this.painter(null, null, null, this.config.to_key_value_dict(), mode);
+                    return dummy_painter.get_required_height(num_samples);
+                }
+            },
+
+            /**
      * Additional initialization required before drawing track for the first time.
      */
-                predraw_init: function() {
-                    var deferreds = [Track.prototype.predraw_init.call(this)];
-                    // FIXME: updating dataset metadata is only needed for visual analysis. Can
-                    // this be moved somewhere else?
-                    if (!this.dataset.get_metadata("sample_names")) {
-                        deferreds.push(this.dataset.fetch());
-                    }
-                    return deferreds;
-                },
+            predraw_init: function() {
+                var deferreds = [Track.prototype.predraw_init.call(this)];
+                // FIXME: updating dataset metadata is only needed for visual analysis. Can
+                // this be moved somewhere else?
+                if (!this.dataset.get_metadata("sample_names")) {
+                    deferreds.push(this.dataset.fetch());
+                }
+                return deferreds;
+            },
 
-                /**
+            /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been
      * drawn/fetched and shown.
      */
-                postdraw_actions: function(tiles, width, w_scale, clear_after) {
-                    TiledTrack.prototype.postdraw_actions.call(
-                        this,
-                        tiles,
-                        width,
-                        w_scale,
-                        clear_after
-                    );
+            postdraw_actions: function(tiles, width, w_scale, clear_after) {
+                TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
 
-                    var line_track_tiles = _.filter(tiles, function(t) {
-                        return t instanceof LineTrackTile;
-                    });
+                var line_track_tiles = _.filter(tiles, function(t) {
+                    return t instanceof LineTrackTile;
+                });
 
-                    // Add summary/sample labels if needed and not already included.
-                    var sample_names = this.dataset.get_metadata(
-                        "sample_names"
-                    );
-                    if (
-                        line_track_tiles.length === 0 &&
-                        this.config.get_value("show_labels") &&
-                        sample_names &&
-                        sample_names.length > 1
-                    ) {
-                        var font_size;
+                // Add summary/sample labels if needed and not already included.
+                var sample_names = this.dataset.get_metadata("sample_names");
+                if (
+                    line_track_tiles.length === 0 &&
+                    this.config.get_value("show_labels") &&
+                    sample_names &&
+                    sample_names.length > 1
+                ) {
+                    var font_size;
 
-                        // Add and/or style labels.
-                        if (
-                            this.container_div.find(".yaxislabel.variant")
-                                .length === 0
-                        ) {
-                            // Add summary and sample labels.
+                    // Add and/or style labels.
+                    if (this.container_div.find(".yaxislabel.variant").length === 0) {
+                        // Add summary and sample labels.
 
-                            // Add summary label to middle of summary area.
-                            font_size =
-                                this.config.get_value("summary_height") / 2;
+                        // Add summary label to middle of summary area.
+                        font_size = this.config.get_value("summary_height") / 2;
+                        this.tiles_div.prepend(
+                            $("<div/>")
+                                .text("Summary")
+                                .addClass("yaxislabel variant top")
+                                .css({
+                                    "font-size": font_size + "px",
+                                    top: (this.config.get_value("summary_height") - font_size) / 2 + "px"
+                                })
+                        );
+
+                        // Show sample labels.
+                        if (this.config.get_value("show_sample_data")) {
+                            var samples_div_html = sample_names.join("<br/>");
+
                             this.tiles_div.prepend(
                                 $("<div/>")
-                                    .text("Summary")
-                                    .addClass("yaxislabel variant top")
+                                    .html(samples_div_html)
+                                    .addClass("yaxislabel variant top sample")
                                     .css({
-                                        "font-size": font_size + "px",
-                                        top:
-                                            (this.config.get_value(
-                                                "summary_height"
-                                            ) -
-                                                font_size) /
-                                                2 +
-                                            "px"
+                                        top: this.config.get_value("summary_height")
                                     })
                             );
-
-                            // Show sample labels.
-                            if (this.config.get_value("show_sample_data")) {
-                                var samples_div_html = sample_names.join(
-                                    "<br/>"
-                                );
-
-                                this.tiles_div.prepend(
-                                    $("<div/>")
-                                        .html(samples_div_html)
-                                        .addClass(
-                                            "yaxislabel variant top sample"
-                                        )
-                                        .css({
-                                            top: this.config.get_value(
-                                                "summary_height"
-                                            )
-                                        })
-                                );
-                            }
                         }
-
-                        // Style labels.
-
-                        // Match sample font size to mode.
-                        font_size = (this.mode === "Squish" ? 5 : 10) + "px";
-                        $(this.tiles_div)
-                            .find(".sample")
-                            .css({
-                                "font-size": font_size,
-                                "line-height": font_size
-                            });
-                        // Color labels to preference color.
-                        $(this.tiles_div)
-                            .find(".yaxislabel")
-                            .css("color", this.config.get_value("label_color"));
-                    } else {
-                        // Remove all labels.
-                        this.container_div.find(".yaxislabel.variant").remove();
                     }
+
+                    // Style labels.
+
+                    // Match sample font size to mode.
+                    font_size = (this.mode === "Squish" ? 5 : 10) + "px";
+                    $(this.tiles_div)
+                        .find(".sample")
+                        .css({
+                            "font-size": font_size,
+                            "line-height": font_size
+                        });
+                    // Color labels to preference color.
+                    $(this.tiles_div)
+                        .find(".yaxislabel")
+                        .css("color", this.config.get_value("label_color"));
+                } else {
+                    // Remove all labels.
+                    this.container_div.find(".yaxislabel.variant").remove();
                 }
             }
-        );
+        });
 
         /**
  * Track that displays mapped reads. Track expects position data in 1-based, closed format, i.e. SAM/BAM format.
@@ -5454,90 +4826,84 @@ define(
             this.update_icons();
         };
 
-        extend(
-            ReadTrack.prototype,
-            Drawable.prototype,
-            TiledTrack.prototype,
-            FeatureTrack.prototype,
-            {
-                build_config_params: function() {
-                    return _.union(Drawable.prototype.config_params, [
-                        {
-                            key: "block_color",
-                            label: "Histogram color",
-                            type: "color"
-                        },
-                        {
-                            key: "detail_block_color",
-                            label: "Sense strand block color",
-                            type: "color",
-                            default_value: "#AAAAAA"
-                        },
-                        {
-                            key: "reverse_strand_color",
-                            label: "Antisense strand block color",
-                            type: "color",
-                            default_value: "#DDDDDD"
-                        },
-                        {
-                            key: "label_color",
-                            label: "Label color",
-                            type: "color",
-                            default_value: "black"
-                        },
-                        {
-                            key: "show_insertions",
-                            label: "Show insertions",
-                            type: "bool",
-                            default_value: false
-                        },
-                        {
-                            key: "show_differences",
-                            label: "Show differences only",
-                            type: "bool",
-                            default_value: true
-                        },
-                        {
-                            key: "show_counts",
-                            label: "Show summary counts",
-                            type: "bool",
-                            default_value: true
-                        },
-                        {
-                            key: "mode",
-                            type: "string",
-                            default_value: this.mode,
-                            hidden: true
-                        },
-                        {
-                            key: "min_value",
-                            label: "Histogram minimum",
-                            type: "float",
-                            default_value: undefined,
-                            help: "clear value to set automatically"
-                        },
-                        {
-                            key: "max_value",
-                            label: "Histogram maximum",
-                            type: "float",
-                            default_value: undefined,
-                            help: "clear value to set automatically"
-                        },
-                        {
-                            key: "height",
-                            type: "int",
-                            default_value: 0,
-                            hidden: true
-                        }
-                    ]);
-                },
+        extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
+            build_config_params: function() {
+                return _.union(Drawable.prototype.config_params, [
+                    {
+                        key: "block_color",
+                        label: "Histogram color",
+                        type: "color"
+                    },
+                    {
+                        key: "detail_block_color",
+                        label: "Sense strand block color",
+                        type: "color",
+                        default_value: "#AAAAAA"
+                    },
+                    {
+                        key: "reverse_strand_color",
+                        label: "Antisense strand block color",
+                        type: "color",
+                        default_value: "#DDDDDD"
+                    },
+                    {
+                        key: "label_color",
+                        label: "Label color",
+                        type: "color",
+                        default_value: "black"
+                    },
+                    {
+                        key: "show_insertions",
+                        label: "Show insertions",
+                        type: "bool",
+                        default_value: false
+                    },
+                    {
+                        key: "show_differences",
+                        label: "Show differences only",
+                        type: "bool",
+                        default_value: true
+                    },
+                    {
+                        key: "show_counts",
+                        label: "Show summary counts",
+                        type: "bool",
+                        default_value: true
+                    },
+                    {
+                        key: "mode",
+                        type: "string",
+                        default_value: this.mode,
+                        hidden: true
+                    },
+                    {
+                        key: "min_value",
+                        label: "Histogram minimum",
+                        type: "float",
+                        default_value: undefined,
+                        help: "clear value to set automatically"
+                    },
+                    {
+                        key: "max_value",
+                        label: "Histogram maximum",
+                        type: "float",
+                        default_value: undefined,
+                        help: "clear value to set automatically"
+                    },
+                    {
+                        key: "height",
+                        type: "int",
+                        default_value: 0,
+                        hidden: true
+                    }
+                ]);
+            },
 
-                config_onchange: function() {
-                    this.set_name(this.config.get_value("name"));
-                    this.request_draw({ clear_tile_cache: true });
-                }
+            config_onchange: function() {
+                this.set_name(this.config.get_value("name"));
+                this.request_draw({ clear_tile_cache: true });
             }
-        );
+        });
 
         /**
  * Objects that can be added to a view.
@@ -5569,11 +4935,7 @@ define(
                 if (!drawable_type) {
                     drawable_type = template.track_type;
                 }
-                return new addable_objects[drawable_type](
-                    view,
-                    container,
-                    template
-                );
+                return new addable_objects[drawable_type](view, container, template);
             }
         };
 

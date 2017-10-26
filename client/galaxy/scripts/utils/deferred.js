@@ -38,11 +38,7 @@ define(["utils/utils"], function(Utils) {
             // deferred queue
             $.when(this.last).always(function() {
                 if (self.active[id]) {
-                    has_deferred &&
-                        Galaxy.emit.debug(
-                            "deferred::execute()",
-                            "Running " + id
-                        );
+                    has_deferred && Galaxy.emit.debug("deferred::execute()", "Running " + id);
                     callback(process);
                     !has_deferred && process.resolve();
                 } else {

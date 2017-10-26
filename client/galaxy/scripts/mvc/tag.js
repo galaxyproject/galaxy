@@ -21,8 +21,7 @@ define(["mvc/base-mvc", "utils/localization"], function(baseMVC, _l) {
                 if (options.usePrompt === false) {
                     this.label = "";
                 } else {
-                    this.label =
-                        '<label class="prompt">' + _l("Tags") + "</label>";
+                    this.label = '<label class="prompt">' + _l("Tags") + "</label>";
                 }
                 this.workflow_mode = options.workflow_mode || false;
                 if (this.workflow_mode) {
@@ -74,9 +73,7 @@ define(["mvc/base-mvc", "utils/localization"], function(baseMVC, _l) {
 
             _workflowTemplate: function() {
                 // Shows labels by default, event handler controls whether we show tags or editor
-                return [
-                    this.show_editor ? this._renderEditor() : this._renderTags()
-                ].join(" ");
+                return [this.show_editor ? this._renderEditor() : this._renderTags()].join(" ");
             },
 
             keydownHandler: function(e) {
@@ -101,11 +98,7 @@ define(["mvc/base-mvc", "utils/localization"], function(baseMVC, _l) {
 
             _renderEditor: function() {
                 // set up initial tags by adding as CSV to input vals (necc. to init select2)
-                return (
-                    '<input class="tags-input" value="' +
-                    this.tagsToCSV() +
-                    '"/>'
-                );
+                return '<input class="tags-input" value="' + this.tagsToCSV() + '"/>';
             },
 
             _renderTags: function() {
@@ -114,17 +107,12 @@ define(["mvc/base-mvc", "utils/localization"], function(baseMVC, _l) {
                 var renderedArray = [];
                 _.each(tags, function(tag) {
                     tag = tag.indexOf("name:") == 0 ? tag.slice(5) : tag;
-                    var renderString =
-                        '<span class="label label-info">' + tag + "</span>";
+                    var renderString = '<span class="label label-info">' + tag + "</span>";
                     renderedArray.push(renderString);
                 });
                 if (renderedArray.length === 0) {
                     // If there are no tags to render we just show the add-tag-button
-                    renderedArray.push(
-                        "<img src=" +
-                            addButton +
-                            ' class="add-tag-button" title="Add tags"/>'
-                    );
+                    renderedArray.push("<img src=" + addButton + ' class="add-tag-button" title="Add tags"/>');
                 }
                 return renderedArray.join(" ");
             },

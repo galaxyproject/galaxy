@@ -1,8 +1,4 @@
-define(["libs/underscore", "libs/backbone", "mvc/base-mvc"], function(
-    _,
-    Backbone,
-    BASE_MVC
-) {
+define(["libs/underscore", "libs/backbone", "mvc/base-mvc"], function(_, Backbone, BASE_MVC) {
     "use strict";
 
     //=============================================================================
@@ -13,11 +9,7 @@ define(["libs/underscore", "libs/backbone", "mvc/base-mvc"], function(
     var ControlledFetchCollection = Backbone.Collection.extend({
         /** call setOrder on initialization to build the comparator based on options */
         initialize: function(models, options) {
-            Backbone.Collection.prototype.initialize.call(
-                this,
-                models,
-                options
-            );
+            Backbone.Collection.prototype.initialize.call(this, models, options);
             this.setOrder(options.order || this.order, { silent: true });
         },
 
@@ -128,11 +120,7 @@ define(["libs/underscore", "libs/backbone", "mvc/base-mvc"], function(
         /** override to reset allFetched flag to false */
         reset: function(models, options) {
             this.allFetched = false;
-            return Backbone.Collection.prototype.reset.call(
-                this,
-                models,
-                options
-            );
+            return Backbone.Collection.prototype.reset.call(this, models, options);
         },
 
         // ........................................................................ order
@@ -188,11 +176,7 @@ define(["libs/underscore", "libs/backbone", "mvc/base-mvc"], function(
         limitPerPage: 500,
 
         initialize: function(models, options) {
-            ControlledFetchCollection.prototype.initialize.call(
-                this,
-                models,
-                options
-            );
+            ControlledFetchCollection.prototype.initialize.call(this, models, options);
             this.currentPage = options.currentPage || 0;
         },
 
@@ -229,10 +213,7 @@ define(["libs/underscore", "libs/backbone", "mvc/base-mvc"], function(
             var self = this;
             pageNum = self.constrainPageNum(pageNum);
             self.currentPage = pageNum;
-            options = _.defaults(
-                options || {},
-                self.getPageLimitOffset(pageNum)
-            );
+            options = _.defaults(options || {}, self.getPageLimitOffset(pageNum));
 
             self.trigger("fetching-more");
             return self.fetch(options).always(function() {
@@ -264,14 +245,9 @@ define(["libs/underscore", "libs/backbone", "mvc/base-mvc"], function(
         limitPerFetch: 100,
 
         initialize: function(models, options) {
-            ControlledFetchCollection.prototype.initialize.call(
-                this,
-                models,
-                options
-            );
+            ControlledFetchCollection.prototype.initialize.call(this, models, options);
             /** @type {Integer} number of contents to return from the first fetch */
-            this.limitOnFirstFetch =
-                options.limitOnFirstFetch || this.limitOnFirstFetch;
+            this.limitOnFirstFetch = options.limitOnFirstFetch || this.limitOnFirstFetch;
             /** @type {Integer} limit for every fetch after the first */
             this.limitPerFetch = options.limitPerFetch || this.limitPerFetch;
             /** @type {Boolean} are all contents fetched? */
@@ -285,10 +261,7 @@ define(["libs/underscore", "libs/backbone", "mvc/base-mvc"], function(
             // options (options for backbone.fetch and jquery.ajax generally)
             // backbone option; false here to make fetching an addititive process
             options.remove = options.remove || false;
-            return ControlledFetchCollection.prototype._buildFetchOptions.call(
-                this,
-                options
-            );
+            return ControlledFetchCollection.prototype._buildFetchOptions.call(this, options);
         },
 
         /** fetch the first 'page' of data */
@@ -323,8 +296,7 @@ define(["libs/underscore", "libs/backbone", "mvc/base-mvc"], function(
             } else if (options.offset === undefined) {
                 options.offset = collection.lastFetched;
             }
-            var limit = (options.limit =
-                options.limit || collection.limitPerFetch || null);
+            var limit = (options.limit = options.limit || collection.limitPerFetch || null);
             Galaxy.debug("fetchMore, limit:", limit, "offset:", options.offset);
 
             collection.trigger("fetching-more");
@@ -336,14 +308,9 @@ define(["libs/underscore", "libs/backbone", "mvc/base-mvc"], function(
                     })
                     // maintain allFetched flag and trigger if all were fetched this time
                     .done(function _postFetchMore(fetchedData) {
-                        var numFetched = _.isArray(fetchedData)
-                            ? fetchedData.length
-                            : 0;
+                        var numFetched = _.isArray(fetchedData) ? fetchedData.length : 0;
                         collection.lastFetched += numFetched;
-                        Galaxy.debug(
-                            "fetchMore, lastFetched:",
-                            collection.lastFetched
-                        );
+                        Galaxy.debug("fetchMore, lastFetched:", collection.lastFetched);
                         // anything less than a full page means we got all there is to get
                         if (!limit || numFetched < limit) {
                             collection.allFetched = true;

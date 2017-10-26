@@ -27,13 +27,8 @@ window.app = function app(options, bootstrapped) {
             this.page.$("#galaxy_main").prop("src", options.welcome_url);
         },
         _template: function() {
-            var login_url =
-                options.root + "user/login?" + $.param({ redirect: redirect });
-            return (
-                '<iframe src="' +
-                login_url +
-                '" frameborder="0" style="width: 100%; height: 100%;"/>'
-            );
+            var login_url = options.root + "user/login?" + $.param({ redirect: redirect });
+            return '<iframe src="' + login_url + '" frameborder="0" style="width: 100%; height: 100%;"/>';
         }
     });
 

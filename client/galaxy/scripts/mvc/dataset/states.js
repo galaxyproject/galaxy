@@ -46,13 +46,7 @@ define([], function() {
         STATES.ERROR
     ];
 
-    STATES.NOT_READY_STATES = [
-        STATES.UPLOAD,
-        STATES.QUEUED,
-        STATES.RUNNING,
-        STATES.SETTING_METADATA,
-        STATES.NEW
-    ];
+    STATES.NOT_READY_STATES = [STATES.UPLOAD, STATES.QUEUED, STATES.RUNNING, STATES.SETTING_METADATA, STATES.NEW];
 
     //==============================================================================
     return STATES;

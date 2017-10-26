@@ -11,15 +11,7 @@ define(
         "mvc/ui/ui-select-genomespace",
         "mvc/ui/ui-color-picker"
     ],
-    function(
-        Utils,
-        Ui,
-        SelectContent,
-        SelectLibrary,
-        SelectFtp,
-        SelectGenomeSpace,
-        ColorPicker
-    ) {
+    function(Utils, Ui, SelectContent, SelectLibrary, SelectFtp, SelectGenomeSpace, ColorPicker) {
         // create form view
         return Backbone.Model.extend({
             /** Available parameter types */
@@ -48,14 +40,9 @@ define(
             /** Returns an input field for a given field type */
             create: function(input_def) {
                 var fieldClass = this.types[input_def.type];
-                var field =
-                    typeof this[fieldClass] === "function"
-                        ? this[fieldClass].call(this, input_def)
-                        : null;
+                var field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
                 if (!field) {
-                    field = input_def.options
-                        ? this._fieldSelect(input_def)
-                        : this._fieldText(input_def);
+                    field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
                     Galaxy.emit.debug(
                         "form-parameters::_addRow()",
                         "Auto matched field type (" + input_def.type + ")."
@@ -89,8 +76,7 @@ define(
 
                 // customize properties
                 if (input_def.type == "data_column") {
-                    input_def.error_text =
-                        "Missing columns in referenced dataset.";
+                    input_def.error_text = "Missing columns in referenced dataset.";
                 }
 
                 // identify available options
@@ -204,10 +190,7 @@ define(
             _fieldBoolean: function(input_def) {
                 return new Ui.RadioButton.View({
                     id: "field-" + input_def.id,
-                    data: [
-                        { label: "Yes", value: "true" },
-                        { label: "No", value: "false" }
-                    ],
+                    data: [{ label: "Yes", value: "true" }, { label: "No", value: "false" }],
                     onchange: input_def.onchange
                 });
             },

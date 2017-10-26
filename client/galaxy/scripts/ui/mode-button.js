@@ -83,9 +83,7 @@
                 modeButton._incModeIndex();
             }
             // set the element html
-            $(this).html(
-                modeButton.options.modes[modeButton.currModeIndex].html
-            );
+            $(this).html(modeButton.options.modes[modeButton.currModeIndex].html);
         });
         return this.reset();
     };
@@ -184,18 +182,13 @@
             button = $first.data("mode-button");
 
         if (!button) {
-            throw new Error(
-                "modeButton needs an options object or string name of a function"
-            );
+            throw new Error("modeButton needs an options object or string name of a function");
         }
 
         if (button && $.type(options) === "string") {
             var fnName = options;
             if (button && $.type(button[fnName]) === "function") {
-                return button[fnName].apply(
-                    button,
-                    $.makeArray(arguments).slice(1)
-                );
+                return button[fnName].apply(button, $.makeArray(arguments).slice(1));
             }
         }
         return button;

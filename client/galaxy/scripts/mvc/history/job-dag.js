@@ -29,12 +29,7 @@ define(["utils/graph", "utils/add-logging"], function(GRAPH, addLogging) {
         self.filteredErroredJobs = [];
 
         self.dataKeys = ["jobs", "historyContents", "tools"];
-        _super.call(
-            self,
-            true,
-            _.pick(options, self.dataKeys),
-            _.omit(options, self.dataKeys)
-        );
+        _super.call(self, true, _.pick(options, self.dataKeys), _.omit(options, self.dataKeys));
     };
     JobDAG.prototype = new GRAPH.Graph();
     JobDAG.prototype.constructor = JobDAG;
@@ -97,11 +92,7 @@ define(["utils/graph", "utils/add-logging"], function(GRAPH, addLogging) {
     /**  */
     JobDAG.prototype.read = function _read(data) {
         var self = this;
-        if (
-            _.has(data, "historyContents") &&
-            _.has(data, "jobs") &&
-            _.has(data, "tools")
-        ) {
+        if (_.has(data, "historyContents") && _.has(data, "jobs") && _.has(data, "tools")) {
             // a job dag is composed of these three elements:
             //  clone the 3 data sources into the DAG, processing the jobs finally using the history and tools
             self
@@ -117,9 +108,7 @@ define(["utils/graph", "utils/add-logging"], function(GRAPH, addLogging) {
     };
 
     /**  */
-    JobDAG.prototype.preprocessHistoryContents = function _preprocessHistoryContents(
-        historyContents
-    ) {
+    JobDAG.prototype.preprocessHistoryContents = function _preprocessHistoryContents(historyContents) {
         this.info("processing history");
         var self = this;
         self._historyContentsMap = {};
@@ -212,20 +201,12 @@ define(["utils/graph", "utils/add-logging"], function(GRAPH, addLogging) {
 
     /**
  */
-    JobDAG.prototype._validateInputOutput = function __validateInputOutput(
-        inputOutput
-    ) {
+    JobDAG.prototype._validateInputOutput = function __validateInputOutput(inputOutput) {
         if (!inputOutput.id) {
-            throw new Error(
-                "No id on job input/output: ",
-                JSON.stringify(inputOutput)
-            );
+            throw new Error("No id on job input/output: ", JSON.stringify(inputOutput));
         }
         if (!inputOutput.src || inputOutput.src !== "hda") {
-            throw new Error(
-                "Bad src on job input/output: ",
-                JSON.stringify(inputOutput)
-            );
+            throw new Error("Bad src on job input/output: ", JSON.stringify(inputOutput));
         }
         return inputOutput;
     };
@@ -263,12 +244,7 @@ define(["utils/graph", "utils/add-logging"], function(GRAPH, addLogging) {
         var self = this;
         for (var i = 0; i < self.filters.length; i++) {
             if (!self.filters[i].call(self, jobData)) {
-                self.debug(
-                    "\t job",
-                    jobData.job.id,
-                    " has been filtered out by function:\n",
-                    self.filters[i]
-                );
+                self.debug("\t job", jobData.job.id, " has been filtered out by function:\n", self.filters[i]);
                 return false;
             }
         }
@@ -308,25 +284,17 @@ define(["utils/graph", "utils/add-logging"], function(GRAPH, addLogging) {
         });
         //console.debug( self.toVerticesAndEdges().edges );
 
-        self.debug(
-            "final graph: ",
-            JSON.stringify(self.toVerticesAndEdges(), null, "  ")
-        );
+        self.debug("final graph: ", JSON.stringify(self.toVerticesAndEdges(), null, "  "));
         return self;
     };
 
     /** Return a 'mangled' version of history contents id to prevent contents <-> job id collision */
-    JobDAG.prototype.createJobLessVertex = function _createJobLessVertex(
-        contentId
-    ) {
+    JobDAG.prototype.createJobLessVertex = function _createJobLessVertex(contentId) {
         // currently, copied contents are the only history contents without jobs (that I know of)
         //note: following needed to prevent id collision btwn content and jobs in vertex map
         var JOBLESS_ID_MANGLER = "copy-",
             mangledId = JOBLESS_ID_MANGLER + contentId;
-        return this.createVertex(
-            mangledId,
-            this._historyContentsMap[contentId]
-        );
+        return this.createVertex(mangledId, this._historyContentsMap[contentId]);
     };
 
     /** Override to re-sort (ugh) jobs in each component by update time */
@@ -337,12 +305,8 @@ define(["utils/graph", "utils/add-logging"], function(GRAPH, addLogging) {
             // note: using create_time (as opposed to update_time)
             //  since update_time for jobless/copied datasets is changes more often
             component.vertices.sort(function cmpCreate(a, b) {
-                var aCreateTime = a.data.job
-                        ? a.data.job.create_time
-                        : a.data.create_time,
-                    bCreateTime = b.data.job
-                        ? b.data.job.create_time
-                        : b.data.create_time;
+                var aCreateTime = a.data.job ? a.data.job.create_time : a.data.create_time,
+                    bCreateTime = b.data.job ? b.data.job.create_time : b.data.create_time;
                 if (aCreateTime > bCreateTime) {
                     return 1;
                 }

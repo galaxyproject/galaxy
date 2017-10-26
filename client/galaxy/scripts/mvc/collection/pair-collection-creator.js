@@ -1,10 +1,5 @@
 define(
-    [
-        "mvc/collection/list-collection-creator",
-        "mvc/history/hdca-model",
-        "mvc/base-mvc",
-        "utils/localization"
-    ],
+    ["mvc/collection/list-collection-creator", "mvc/history/hdca-model", "mvc/base-mvc", "utils/localization"],
     function(LIST_CREATOR, HDCA, BASE_MVC, _l) {
         "use strict";
 
@@ -18,49 +13,47 @@ TODO:
 
 ==============================================================================*/
         /**  */
-        var PairedDatasetCollectionElementView = Backbone.View
-            .extend(BASE_MVC.LoggableMixin)
-            .extend({
-                _logNamespace: logNamespace,
+        var PairedDatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
+            _logNamespace: logNamespace,
 
-                //TODO: use proper class (DatasetDCE or NestedDCDCE (or the union of both))
-                tagName: "li",
-                className: "collection-element",
+            //TODO: use proper class (DatasetDCE or NestedDCDCE (or the union of both))
+            tagName: "li",
+            className: "collection-element",
 
-                initialize: function(attributes) {
-                    this.element = attributes.element || {};
-                    this.identifier = attributes.identifier;
-                },
+            initialize: function(attributes) {
+                this.element = attributes.element || {};
+                this.identifier = attributes.identifier;
+            },
 
-                render: function() {
-                    this.$el.attr("data-element-id", this.element.id).html(
-                        this.template({
-                            identifier: this.identifier,
-                            element: this.element
-                        })
-                    );
-                    return this;
-                },
+            render: function() {
+                this.$el.attr("data-element-id", this.element.id).html(
+                    this.template({
+                        identifier: this.identifier,
+                        element: this.element
+                    })
+                );
+                return this;
+            },
 
-                //TODO: lots of unused space in the element - possibly load details and display them horiz.
-                template: _.template(
-                    [
-                        '<span class="identifier"><%- identifier %></span>',
-                        '<span class="name"><%- element.name %></span>'
-                    ].join("")
-                ),
+            //TODO: lots of unused space in the element - possibly load details and display them horiz.
+            template: _.template(
+                [
+                    '<span class="identifier"><%- identifier %></span>',
+                    '<span class="name"><%- element.name %></span>'
+                ].join("")
+            ),
 
-                /** remove the DOM and any listeners */
-                destroy: function() {
-                    this.off();
-                    this.$el.remove();
-                },
+            /** remove the DOM and any listeners */
+            destroy: function() {
+                this.off();
+                this.$el.remove();
+            },
 
-                /** string rep */
-                toString: function() {
-                    return "DatasetCollectionElementView()";
-                }
-            });
+            /** string rep */
+            toString: function() {
+                return "DatasetCollectionElementView()";
+            }
+        });
 
         // ============================================================================
         var _super = LIST_CREATOR.ListCollectionCreator;
@@ -72,8 +65,7 @@ TODO:
             elementViewClass: PairedDatasetCollectionElementView,
             /** the class this creator will create and save */
             collectionClass: HDCA.HistoryPairDatasetCollection,
-            className:
-                "pair-collection-creator collection-creator flex-row-container",
+            className: "pair-collection-creator collection-creator flex-row-container",
 
             /** override to no-op */
             _mangleDuplicateNames: function() {},
@@ -136,10 +128,7 @@ TODO:
 
             /** swap the forward, reverse elements and re-render */
             swap: function() {
-                this.workingElements = [
-                    this.workingElements[1],
-                    this.workingElements[0]
-                ];
+                this.workingElements = [this.workingElements[1], this.workingElements[0]];
                 this._renderList();
             },
 
@@ -216,9 +205,7 @@ TODO:
                         '<div class="alert alert-warning" style="display: block">',
                         '<span class="alert-message">',
                         "<% if( _.size( problems ) ){ %>",
-                        _l(
-                            "The following selections could not be included due to problems"
-                        ),
+                        _l("The following selections could not be included due to problems"),
                         "<ul><% _.each( problems, function( problem ){ %>",
                         "<li><b><%- problem.element.name %></b>: <%- problem.text %></li>",
                         "<% }); %></ul>",
@@ -233,9 +220,7 @@ TODO:
                         ': <%- _.pluck( elements, "name" ).join( ", ") %>',
                         "<% } %>",
                         "<br />",
-                        _l(
-                            "Two (and only two) elements are needed for the pair"
-                        ),
+                        _l("Two (and only two) elements are needed for the pair"),
                         ". ",
                         _l("You may need to "),
                         '<a class="cancel-create" href="javascript:void(0)">',
@@ -269,17 +254,10 @@ TODO:
 
         //==============================================================================
         /** List collection flavor of collectionCreatorModal. */
-        var pairCollectionCreatorModal = function _pairCollectionCreatorModal(
-            elements,
-            options
-        ) {
+        var pairCollectionCreatorModal = function _pairCollectionCreatorModal(elements, options) {
             options = options || {};
             options.title = _l("Create a collection from a pair of datasets");
-            return LIST_CREATOR.collectionCreatorModal(
-                elements,
-                options,
-                PairCollectionCreator
-            );
+            return LIST_CREATOR.collectionCreatorModal(elements, options, PairCollectionCreator);
         };
 
         //==============================================================================
@@ -295,12 +273,7 @@ TODO:
                             { name: "forward", src: "hda", id: elements[0].id },
                             { name: "reverse", src: "hda", id: elements[1].id }
                         ];
-                        return contents.createHDCA(
-                            elements,
-                            "paired",
-                            name,
-                            hideSourceItems
-                        );
+                        return contents.createHDCA(elements, "paired", name, hideSourceItems);
                     }
                 });
             return promise;

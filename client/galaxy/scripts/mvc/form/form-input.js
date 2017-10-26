@@ -12,12 +12,8 @@ define([], function() {
                 new Backbone.Model({
                     text_enable: this.app_options.text_enable || "Enable",
                     text_disable: this.app_options.text_disable || "Disable",
-                    cls_enable:
-                        this.app_options.cls_enable ||
-                        "fa fa-caret-square-o-down",
-                    cls_disable:
-                        this.app_options.cls_disable ||
-                        "fa fa-caret-square-o-up",
+                    cls_enable: this.app_options.cls_enable || "fa fa-caret-square-o-down",
+                    cls_disable: this.app_options.cls_disable || "fa fa-caret-square-o-up",
                     always_refresh: this.app_options.always_refresh
                 }).set(options);
 
@@ -42,8 +38,7 @@ define([], function() {
             var collapsible_value = this.model.get("collapsible_value");
             this.field.collapsed =
                 collapsible_value !== undefined &&
-                JSON.stringify(this.model.get("value")) ==
-                    JSON.stringify(collapsible_value);
+                JSON.stringify(this.model.get("value")) == JSON.stringify(collapsible_value);
             this.listenTo(this.model, "change", this.render, this);
             this.render();
 
@@ -83,10 +78,7 @@ define([], function() {
             $(".tooltip").hide();
             var help_text = this.model.get("help", "");
             var help_argument = this.model.get("argument");
-            if (
-                help_argument &&
-                help_text.indexOf("(" + help_argument + ")") == -1
-            ) {
+            if (help_argument && help_text.indexOf("(" + help_argument + ")") == -1) {
                 help_text += " (" + help_argument + ")";
             }
             this.$info.html(help_text);
@@ -95,9 +87,7 @@ define([], function() {
             // render preview view for collapsed fields
             this.$preview
                 [
-                    (this.field.collapsed &&
-                        this.model.get("collapsible_preview")) ||
-                    this.model.get("disabled")
+                    (this.field.collapsed && this.model.get("collapsible_preview")) || this.model.get("disabled")
                         ? "show"
                         : "hide"
                 ]()
@@ -110,9 +100,7 @@ define([], function() {
             // render backdrop
             this.$backdrop[this.model.get("backdrop") ? "show" : "hide"]();
             // render input field
-            this.field.collapsed || this.model.get("disabled")
-                ? this.$field.hide()
-                : this.$field.show();
+            this.field.collapsed || this.model.get("disabled") ? this.$field.hide() : this.$field.show();
             // render input field color and style
             this.field.model &&
                 this.field.model.set({
@@ -120,13 +108,8 @@ define([], function() {
                     style: this.model.get("style")
                 });
             // render collapsible options
-            if (
-                !this.model.get("disabled") &&
-                this.model.get("collapsible_value") !== undefined
-            ) {
-                var collapsible_state = this.field.collapsed
-                    ? "enable"
-                    : "disable";
+            if (!this.model.get("disabled") && this.model.get("collapsible_value") !== undefined) {
+                var collapsible_state = this.field.collapsed ? "enable" : "disable";
                 this.$title_text.hide();
                 this.$collapsible.show();
                 this.$collapsible_text.text(this.model.get("label"));
@@ -134,10 +117,7 @@ define([], function() {
                     .removeClass()
                     .addClass("icon")
                     .addClass(this.model.get("cls_" + collapsible_state))
-                    .attr(
-                        "data-original-title",
-                        this.model.get("text_" + collapsible_state)
-                    )
+                    .attr("data-original-title", this.model.get("text_" + collapsible_state))
                     .tooltip({ placement: "bottom" });
             } else {
                 this.$title_text.show().text(this.model.get("label"));
@@ -160,16 +140,8 @@ define([], function() {
                         .append(
                             $("<div/>")
                                 .addClass("ui-form-collapsible")
-                                .append(
-                                    $("<i/>").addClass(
-                                        "ui-form-collapsible-icon"
-                                    )
-                                )
-                                .append(
-                                    $("<span/>").addClass(
-                                        "ui-form-collapsible-text"
-                                    )
-                                )
+                                .append($("<i/>").addClass("ui-form-collapsible-icon"))
+                                .append($("<span/>").addClass("ui-form-collapsible-text"))
                         )
                         .append($("<span/>").addClass("ui-form-title-text"))
                 )

@@ -1,7 +1,4 @@
-define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
-    toolshed_model,
-    toolshed_util
-) {
+define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(toolshed_model, toolshed_util) {
     var View = Backbone.View.extend({
         defaults: {
             tool_sheds: [
@@ -23,11 +20,7 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
         el: "#center",
 
         render: function(options) {
-            this.options = _.defaults(
-                this.options || {},
-                options,
-                this.defaults
-            );
+            this.options = _.defaults(this.options || {}, options, this.defaults);
             var toolshed_list_template = this.templateToolshedList;
             this.$el.html(
                 toolshed_list_template({

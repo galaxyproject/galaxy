@@ -1,7 +1,4 @@
-define(["mvc/base-mvc", "utils/localization", "ui/editable-text"], function(
-    baseMVC,
-    _l
-) {
+define(["mvc/base-mvc", "utils/localization", "ui/editable-text"], function(baseMVC, _l) {
     // =============================================================================
     /** A view on any model that has a 'annotation' attribute
  */
@@ -36,16 +33,9 @@ define(["mvc/base-mvc", "utils/localization", "ui/editable-text"], function(
                     use_textarea: true,
                     on_finish: function(newAnnotation) {
                         view.$annotation().text(newAnnotation);
-                        view.model
-                            .save(
-                                { annotation: newAnnotation },
-                                { silent: true }
-                            )
-                            .fail(function() {
-                                view
-                                    .$annotation()
-                                    .text(view.model.previous("annotation"));
-                            });
+                        view.model.save({ annotation: newAnnotation }, { silent: true }).fail(function() {
+                            view.$annotation().text(view.model.previous("annotation"));
+                        });
                     }
                 });
                 return this;

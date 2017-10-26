@@ -18,10 +18,7 @@ define(["mvc/workflow/workflow-view-node"], function(NodeView) {
         },
         removeWorkflowOutput: function(outputName) {
             while (this.isWorkflowOutput(outputName)) {
-                this.workflow_outputs.splice(
-                    this.getWorkflowOutput(outputName),
-                    1
-                );
+                this.workflow_outputs.splice(this.getWorkflowOutput(outputName), 1);
             }
         },
         addWorkflowOutput: function(outputName, label) {
@@ -83,10 +80,7 @@ define(["mvc/workflow/workflow-view-node"], function(NodeView) {
             var inputTerminals = this.input_terminals;
             for (var inputName in inputTerminals) {
                 var inputTerminal = inputTerminals[inputName];
-                if (
-                    inputTerminal.connectors.length > 0 &&
-                    inputTerminal.isMappedOver()
-                ) {
+                if (inputTerminal.connectors.length > 0 && inputTerminal.isMappedOver()) {
                     return true;
                 }
             }
@@ -170,14 +164,10 @@ define(["mvc/workflow/workflow-view-node"], function(NodeView) {
             this.errors = data.errors;
             this.tooltip = data.tooltip ? data.tooltip : "";
             this.annotation = data.annotation;
-            this.post_job_actions = data.post_job_actions
-                ? data.post_job_actions
-                : {};
+            this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
             this.label = data.label;
             this.uuid = data.uuid;
-            this.workflow_outputs = data.workflow_outputs
-                ? data.workflow_outputs
-                : [];
+            this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
             var node = this;
             var nodeView = new NodeView({
                 el: this.element[0],
@@ -221,24 +211,17 @@ define(["mvc/workflow/workflow-view-node"], function(NodeView) {
 
             // Remove the unused outputs
             _.each(unused_outputs, function(unused_output) {
-                _.each(
-                    nodeView.outputViews[unused_output].terminalElement.terminal
-                        .connectors,
-                    function(x) {
-                        if (x) {
-                            x.destroy(); // Removes the noodle connectors
-                        }
+                _.each(nodeView.outputViews[unused_output].terminalElement.terminal.connectors, function(x) {
+                    if (x) {
+                        x.destroy(); // Removes the noodle connectors
                     }
-                );
+                });
                 nodeView.outputViews[unused_output].remove(); // removes the rendered output
                 delete nodeView.outputViews[unused_output]; // removes the reference to the output
                 delete node.output_terminals[unused_output]; // removes the output terminal
             });
             $.each(node.workflow_outputs, function(i, wf_output) {
-                if (
-                    wf_output &&
-                    !node.output_terminals[wf_output.output_name]
-                ) {
+                if (wf_output && !node.output_terminals[wf_output.output_name]) {
                     node.workflow_outputs.splice(i, 1); // removes output from list of workflow outputs
                 }
             });
@@ -248,11 +231,8 @@ define(["mvc/workflow/workflow-view-node"], function(NodeView) {
                 } else {
                     // the output already exists, but the output formats may have changed.
                     // Therefore we update the datatypes and destroy invalid connections.
-                    node.output_terminals[output.name].datatypes =
-                        output.extensions;
-                    node.output_terminals[
-                        output.name
-                    ].destroyInvalidConnections();
+                    node.output_terminals[output.name].datatypes = output.extensions;
+                    node.output_terminals[output.name].destroyInvalidConnections();
                 }
             });
             this.tool_state = data.tool_state;
@@ -276,33 +256,22 @@ define(["mvc/workflow/workflow-view-node"], function(NodeView) {
                 newTerminalViews[input.name] = terminalView;
             });
             // Cleanup any leftover terminals
-            _.each(
-                _.difference(
-                    _.values(nodeView.terminalViews),
-                    _.values(newTerminalViews)
-                ),
-                function(unusedView) {
-                    unusedView.el.terminal.destroy();
-                }
-            );
+            _.each(_.difference(_.values(nodeView.terminalViews), _.values(newTerminalViews)), function(unusedView) {
+                unusedView.el.terminal.destroy();
+            });
             nodeView.terminalViews = newTerminalViews;
             node.nodeView.render();
             // In general workflow editor assumes tool outputs don't change in # or
             // type (not really valid right?) but adding special logic here for
             // data collection input parameters that can have their collection
             // change.
-            if (
-                data.data_outputs.length == 1 &&
-                "collection_type" in data.data_outputs[0]
-            ) {
+            if (data.data_outputs.length == 1 && "collection_type" in data.data_outputs[0]) {
                 nodeView.updateDataOutput(data.data_outputs[0]);
             }
             old_body.replaceWith(new_body);
             if ("workflow_outputs" in data) {
                 // Won't be present in response for data inputs
-                this.workflow_outputs = workflow_outputs
-                    ? workflow_outputs
-                    : [];
+                this.workflow_outputs = workflow_outputs ? workflow_outputs : [];
             }
             // If active, reactivate with new config_form
             this.markChanged();
@@ -311,10 +280,7 @@ define(["mvc/workflow/workflow-view-node"], function(NodeView) {
         error: function(text) {
             var b = $(this.element).find(".toolFormBody");
             b.find("div").remove();
-            var tmp =
-                "<div style='color: red; text-style: italic;'>" +
-                text +
-                "</div>";
+            var tmp = "<div style='color: red; text-style: italic;'>" + text + "</div>";
             this.config_form = tmp;
             b.html(tmp);
             this.app.workflow.node_changed(this);

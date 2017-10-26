@@ -21,11 +21,7 @@ define(["mvc/ui/ui-frames"], function(Frames) {
                 },
                 onbeforeunload: function() {
                     if (self.frames.length() > 0) {
-                        return (
-                            "You opened " +
-                            self.frames.length() +
-                            " frame(s) which will be lost."
-                        );
+                        return "You opened " + self.frames.length() + " frame(s) which will be lost.";
                     }
                 }
             });
@@ -36,9 +32,7 @@ define(["mvc/ui/ui-frames"], function(Frames) {
                 show_note: true,
                 visible: false,
                 onclick: function(e) {
-                    self.frames.visible
-                        ? self.frames.hide()
-                        : self.frames.show();
+                    self.frames.visible ? self.frames.hide() : self.frames.show();
                 }
             });
             this.frames
@@ -71,23 +65,16 @@ define(["mvc/ui/ui-frames"], function(Frames) {
                 Galaxy.currHistoryPanel.collection.each(function(model) {
                     !model.get("deleted") &&
                         model.get("visible") &&
-                        self.history_cache[history_id].dataset_ids.push(
-                            model.get("id")
-                        );
+                        self.history_cache[history_id].dataset_ids.push(model.get("id"));
                 });
             }
             var _findDataset = function(dataset, offset) {
                 if (dataset) {
-                    var history_details =
-                        self.history_cache[dataset.get("history_id")];
+                    var history_details = self.history_cache[dataset.get("history_id")];
                     if (history_details && history_details.dataset_ids) {
                         var dataset_list = history_details.dataset_ids;
                         var pos = dataset_list.indexOf(dataset.get("id"));
-                        if (
-                            pos !== -1 &&
-                            pos + offset >= 0 &&
-                            pos + offset < dataset_list.length
-                        ) {
+                        if (pos !== -1 && pos + offset >= 0 && pos + offset < dataset_list.length) {
                             return dataset_list[pos + offset];
                         }
                     }
@@ -96,10 +83,7 @@ define(["mvc/ui/ui-frames"], function(Frames) {
             var _loadDatasetOffset = function(dataset, offset, frame) {
                 var new_dataset_id = _findDataset(dataset, offset);
                 if (new_dataset_id) {
-                    self._loadDataset(new_dataset_id, function(
-                        new_dataset,
-                        config
-                    ) {
+                    self._loadDataset(new_dataset_id, function(new_dataset, config) {
                         current_dataset = new_dataset;
                         frame.model.set(config);
                     });
@@ -117,34 +101,20 @@ define(["mvc/ui/ui-frames"], function(Frames) {
                                     icon: "fa fa-chevron-circle-left",
                                     tooltip: "Previous in History",
                                     onclick: function(frame) {
-                                        _loadDatasetOffset(
-                                            current_dataset,
-                                            -1,
-                                            frame
-                                        );
+                                        _loadDatasetOffset(current_dataset, -1, frame);
                                     },
                                     disabled: function() {
-                                        return !_findDataset(
-                                            current_dataset,
-                                            -1
-                                        );
+                                        return !_findDataset(current_dataset, -1);
                                     }
                                 },
                                 {
                                     icon: "fa fa-chevron-circle-right",
                                     tooltip: "Next in History",
                                     onclick: function(frame) {
-                                        _loadDatasetOffset(
-                                            current_dataset,
-                                            1,
-                                            frame
-                                        );
+                                        _loadDatasetOffset(current_dataset, 1, frame);
                                     },
                                     disabled: function() {
-                                        return !_findDataset(
-                                            current_dataset,
-                                            1
-                                        );
+                                        return !_findDataset(current_dataset, 1);
                                     }
                                 }
                             ]
@@ -160,16 +130,11 @@ define(["mvc/ui/ui-frames"], function(Frames) {
             require(["mvc/dataset/data"], function(DATA) {
                 var dataset = new DATA.Dataset({ id: dataset_id });
                 $.when(dataset.fetch()).then(function() {
-                    var is_tabular = _.find(["tabular", "interval"], function(
-                        data_type
-                    ) {
-                        return (
-                            dataset.get("data_type").indexOf(data_type) !== -1
-                        );
+                    var is_tabular = _.find(["tabular", "interval"], function(data_type) {
+                        return dataset.get("data_type").indexOf(data_type) !== -1;
                     });
                     var title = dataset.get("name");
-                    var history_details =
-                        self.history_cache[dataset.get("history_id")];
+                    var history_details = self.history_cache[dataset.get("history_id")];
                     if (history_details) {
                         title = history_details.name + ": " + title;
                     }
@@ -179,23 +144,15 @@ define(["mvc/ui/ui-frames"], function(Frames) {
                             ? {
                                   title: title,
                                   url: null,
-                                  content: DATA.createTabularDatasetChunkedView(
-                                      {
-                                          model: new DATA.TabularDataset(
-                                              dataset.toJSON()
-                                          ),
-                                          embedded: true,
-                                          height: "100%"
-                                      }
-                                  ).$el
+                                  content: DATA.createTabularDatasetChunkedView({
+                                      model: new DATA.TabularDataset(dataset.toJSON()),
+                                      embedded: true,
+                                      height: "100%"
+                                  }).$el
                               }
                             : {
                                   title: title,
-                                  url:
-                                      Galaxy.root +
-                                      "datasets/" +
-                                      dataset_id +
-                                      "/display/?preview=True",
+                                  url: Galaxy.root + "datasets/" + dataset_id + "/display/?preview=True",
                                   content: null
                               }
                     );
@@ -206,10 +163,7 @@ define(["mvc/ui/ui-frames"], function(Frames) {
         /** Add a trackster visualization to the frames. */
         addTrackster: function(viz_id) {
             var self = this;
-            require(["viz/visualization", "viz/trackster"], function(
-                visualization,
-                trackster
-            ) {
+            require(["viz/visualization", "viz/trackster"], function(visualization, trackster) {
                 var viz = new visualization.Visualization({ id: viz_id });
                 $.when(viz.fetch()).then(function() {
                     var ui = new trackster.TracksterUI(Galaxy.root);
@@ -229,8 +183,7 @@ define(["mvc/ui/ui-frames"], function(Frames) {
                                     stand_alone: false
                                 },
                                 latest_revision = viz.get("latest_revision"),
-                                drawables =
-                                    latest_revision.config.view.drawables;
+                                drawables = latest_revision.config.view.drawables;
 
                             // Set up datasets in drawables.
                             _.each(drawables, function(d) {
@@ -257,25 +210,14 @@ define(["mvc/ui/ui-frames"], function(Frames) {
         add: function(options) {
             if (options.target == "_blank") {
                 window.open(options.url);
-            } else if (
-                options.target == "_top" ||
-                options.target == "_parent" ||
-                options.target == "_self"
-            ) {
+            } else if (options.target == "_top" || options.target == "_parent" || options.target == "_self") {
                 window.location = options.url;
             } else if (!this.active || options.noscratchbook) {
-                var $galaxy_main = $(window.parent.document).find(
-                    "#galaxy_main"
-                );
-                if (
-                    options.target == "galaxy_main" ||
-                    options.target == "center"
-                ) {
+                var $galaxy_main = $(window.parent.document).find("#galaxy_main");
+                if (options.target == "galaxy_main" || options.target == "center") {
                     if ($galaxy_main.length === 0) {
                         window.location =
-                            options.url +
-                            (options.url.indexOf("?") == -1 ? "?" : "&") +
-                            "use_panels=True";
+                            options.url + (options.url.indexOf("?") == -1 ? "?" : "&") + "use_panels=True";
                     } else {
                         $galaxy_main.attr("src", options.url);
                     }

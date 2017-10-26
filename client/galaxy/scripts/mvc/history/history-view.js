@@ -116,13 +116,7 @@ TODO:
                     _super.prototype._setUpListeners.call(this);
                     this.on({
                         error: function(model, xhr, options, msg, details) {
-                            this.errorHandler(
-                                model,
-                                xhr,
-                                options,
-                                msg,
-                                details
-                            );
+                            this.errorHandler(model, xhr, options, msg, details);
                         },
                         "loading-done": function() {
                             var self = this;
@@ -132,9 +126,7 @@ TODO:
                                 self.model.contents.fetchCollectionCounts();
                             }, self.FETCH_COLLECTION_COUNTS_DELAY);
                         },
-                        "views:ready view:attached view:removed": function(
-                            view
-                        ) {
+                        "views:ready view:attached view:removed": function(view) {
                             this._renderSelectButton();
                         },
                         "view:attached": function(view) {
@@ -147,26 +139,17 @@ TODO:
                 // ------------------------------------------------------------------------ loading history/hda models
                 /** load the history with the given id then it's contents, sending ajax options to both */
                 loadHistory: function(historyId, options, contentsOptions) {
-                    contentsOptions = _.extend(
-                        contentsOptions || { silent: true }
-                    );
-                    this.info(
-                        "loadHistory:",
-                        historyId,
-                        options,
-                        contentsOptions
-                    );
+                    contentsOptions = _.extend(contentsOptions || { silent: true });
+                    this.info("loadHistory:", historyId, options, contentsOptions);
                     var self = this;
                     self.setModel(new HISTORY_MODEL.History({ id: historyId }));
 
                     contentsOptions.silent = true;
                     self.trigger("loading");
-                    return self.model
-                        .fetchWithContents(options, contentsOptions)
-                        .always(function() {
-                            self.render();
-                            self.trigger("loading-done");
-                        });
+                    return self.model.fetchWithContents(options, contentsOptions).always(function() {
+                        self.render();
+                        self.trigger("loading-done");
+                    });
                 },
 
                 /** convenience alias to the model. Updates the item list only (not the history) */
@@ -197,13 +180,7 @@ TODO:
                 /** hide the $el and display a loading indicator (in the $el's parent) when loading new data */
                 _showLoadingIndicator: function(msg, speed, callback) {
                     var $indicator = $('<div class="loading-indicator"/>');
-                    this.$el.html(
-                        $indicator
-                            .text(msg)
-                            .slideDown(
-                                !_.isUndefined(speed) ? speed : this.fxSpeed
-                            )
-                    );
+                    this.$el.html($indicator.text(msg).slideDown(!_.isUndefined(speed) ? speed : this.fxSpeed));
                 },
 
                 /** hide the loading indicator */
@@ -219,9 +196,7 @@ TODO:
 
                 /** In this override, add a btn to toggle the selectors */
                 _buildNewRender: function() {
-                    var $newRender = _super.prototype._buildNewRender.call(
-                        this
-                    );
+                    var $newRender = _super.prototype._buildNewRender.call(this);
                     this._renderSelectButton($newRender);
                     return $newRender;
                 },
@@ -236,15 +211,11 @@ TODO:
                     // do not render (and remove even) if nothing to select
                     if (!this.views.length) {
                         this.hideSelectors();
-                        $where
-                            .find(".controls .actions .show-selectors-btn")
-                            .remove();
+                        $where.find(".controls .actions .show-selectors-btn").remove();
                         return null;
                     }
                     // don't bother rendering if there's one already
-                    var $existing = $where.find(
-                        ".controls .actions .show-selectors-btn"
-                    );
+                    var $existing = $where.find(".controls .actions .show-selectors-btn");
                     if ($existing.length) {
                         return $existing;
                     }
@@ -267,11 +238,7 @@ TODO:
                             .empty()
                             .append(self.emptyMsg)
                             .show();
-                    } else if (
-                        self.searchFor &&
-                        self.model.contents.haveSearchDetails() &&
-                        !self.views.length
-                    ) {
+                    } else if (self.searchFor && self.model.contents.haveSearchDetails() && !self.views.length) {
                         return $emptyMsg
                             .empty()
                             .append(self.noneFoundMsg)
@@ -330,11 +297,8 @@ TODO:
 
                 /** render pagination controls if not searching and contents says we're paginating */
                 _renderPagination: function($whereTo) {
-                    var $paginationControls = $whereTo.find(
-                        "> .controls .list-pagination"
-                    );
-                    if (this.searchFor || !this.model.contents.shouldPaginate())
-                        return $paginationControls.empty();
+                    var $paginationControls = $whereTo.find("> .controls .list-pagination");
+                    if (this.searchFor || !this.model.contents.shouldPaginate()) return $paginationControls.empty();
 
                     $paginationControls.html(
                         this.templates.pagination(
@@ -371,8 +335,7 @@ TODO:
                     var contents = self.model.contents;
                     return (
                         (contents.includeHidden || !model.hidden()) &&
-                        (contents.includeDeleted ||
-                            !model.isDeletedOrPurged()) &&
+                        (contents.includeDeleted || !model.isDeletedOrPurged()) &&
                         _super.prototype._filterItem.call(self, model)
                     );
                 },
@@ -388,22 +351,15 @@ TODO:
                         case "dataset_collection":
                             return this.HDCAViewClass;
                     }
-                    throw new TypeError(
-                        "Unknown history_content_type: " + contentType
-                    );
+                    throw new TypeError("Unknown history_content_type: " + contentType);
                 },
 
                 /** in this override, add a linktarget, and expand if id is in web storage */
                 _getItemViewOptions: function(model) {
-                    var options = _super.prototype._getItemViewOptions.call(
-                        this,
-                        model
-                    );
+                    var options = _super.prototype._getItemViewOptions.call(this, model);
                     return _.extend(options, {
                         linkTarget: this.linkTarget,
-                        expanded: this.model.contents.storage.isExpanded(
-                            model.id
-                        ),
+                        expanded: this.model.contents.storage.isExpanded(model.id),
                         hasUser: this.model.ownedByCurrUser()
                     });
                 },
@@ -419,9 +375,7 @@ TODO:
                             panel.model.contents.storage.addExpanded(v.model);
                         },
                         collapsed: function(v) {
-                            panel.model.contents.storage.removeExpanded(
-                                v.model
-                            );
+                            panel.model.contents.storage.removeExpanded(v.model);
                         }
                     });
                 },
@@ -435,9 +389,7 @@ TODO:
                 // ------------------------------------------------------------------------ selection
                 /** Override to correctly set the historyId of the new collection */
                 getSelectedModels: function() {
-                    var collection = _super.prototype.getSelectedModels.call(
-                        this
-                    );
+                    var collection = _super.prototype.getSelectedModels.call(this);
                     collection.historyId = this.collection.historyId;
                     return collection;
                 },
@@ -473,10 +425,7 @@ TODO:
      * @returns {Boolean} new setting
      */
                 toggleShowDeleted: function(show, options) {
-                    show =
-                        show !== undefined
-                            ? show
-                            : !this.model.contents.includeDeleted;
+                    show = show !== undefined ? show : !this.model.contents.includeDeleted;
                     var self = this;
                     var contents = self.model.contents;
                     contents.setIncludeDeleted(show, options);
@@ -491,10 +440,7 @@ TODO:
      */
                 toggleShowHidden: function(show, store, options) {
                     // console.log( 'toggleShowHidden', show, store );
-                    show =
-                        show !== undefined
-                            ? show
-                            : !this.model.contents.includeHidden;
+                    show = show !== undefined ? show : !this.model.contents.includeHidden;
                     var self = this;
                     var contents = self.model.contents;
                     contents.setIncludeHidden(show, options);
@@ -524,16 +470,10 @@ TODO:
                         .progressivelyFetchDetails({ silent: true })
                         .progress(function(response, limit, offset) {
                             self.renderItems();
-                            self.trigger(
-                                "search:loading-progress",
-                                limit,
-                                offset
-                            );
+                            self.trigger("search:loading-progress", limit, offset);
                         })
                         .always(function() {
-                            self.$el
-                                .find(inputSelector)
-                                .searchInput("toggle-loading");
+                            self.$el.find(inputSelector).searchInput("toggle-loading");
                         })
                         .done(function() {
                             self.searchItems(searchFor, "force");
@@ -550,11 +490,9 @@ TODO:
                     self.$("> .controls .search-query").val("");
                     // NOTE: silent + render prevents collection update event with merge only
                     // - which causes an empty page due to event handler above
-                    self.model.contents
-                        .fetchCurrentPage({ silent: true })
-                        .done(function() {
-                            self.renderItems();
-                        });
+                    self.model.contents.fetchCurrentPage({ silent: true }).done(function() {
+                        self.renderItems();
+                    });
                     return self;
                 },
 
@@ -607,9 +545,7 @@ TODO:
      *  @returns {HistoryView} the panel
      */
                 scrollToHid: function(hid) {
-                    return this.scrollToItem(
-                        _.first(this.viewsWhereModel({ hid: hid }))
-                    );
+                    return this.scrollToItem(_.first(this.viewsWhereModel({ hid: hid })));
                 },
 
                 // ........................................................................ misc
@@ -630,11 +566,7 @@ TODO:
 
                 /** Return a string rep of the history */
                 toString: function() {
-                    return (
-                        "HistoryView(" +
-                        (this.model ? this.model.get("name") : "") +
-                        ")"
-                    );
+                    return "HistoryView(" + (this.model ? this.model.get("name") : "") + ")";
                 }
             }
         );
@@ -717,9 +649,7 @@ TODO:
                     '<button class="prev" <%- pages.current === 1 ? "disabled" : "" %>>previous</button>',
                     '<select class="pages form-control" ',
                     'title="',
-                    _l(
-                        "Click to open and select a page. Begin typing a page number to select it"
-                    ),
+                    _l("Click to open and select a page. Begin typing a page number to select it"),
                     '">',
                     "<% _.range( 1, pages.last + 1 ).forEach( function( i ){ %>",
                     '<option value="<%- i - 1 %>" <%- i === pages.current ? "selected" : "" %>>',

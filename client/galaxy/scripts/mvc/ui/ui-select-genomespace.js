@@ -1,9 +1,5 @@
 // dependencies
-define(["utils/utils", "mvc/ui/ui-misc", "mvc/tool/tool-genomespace"], function(
-    Utils,
-    Ui,
-    GenomespaceBrowser
-) {
+define(["utils/utils", "mvc/ui/ui-misc", "mvc/tool/tool-genomespace"], function(Utils, Ui, GenomespaceBrowser) {
     /**
  * GenomeSpace file selector
  */
@@ -76,9 +72,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/tool/tool-genomespace"], function(
 
         // get value
         _getValue: function() {
-            return (
-                this.filename_textbox.value() + "^" + this.token_textbox.value()
-            );
+            return this.filename_textbox.value() + "^" + this.token_textbox.value();
         },
 
         // set value

@@ -80,8 +80,7 @@ TODO:
 
                     // states/modes the panel can be in
                     /** is the panel currently showing the dataset selection controls? */
-                    this.annotationEditorShown =
-                        attributes.annotationEditorShown || false;
+                    this.annotationEditorShown = attributes.annotationEditorShown || false;
                     this.tagsEditorShown = attributes.tagsEditorShown || false;
                 },
 
@@ -106,11 +105,7 @@ TODO:
                 /** listening for history and HDA events */
                 _setUpModelListeners: function() {
                     _super.prototype._setUpModelListeners.call(this);
-                    this.listenTo(
-                        this.model,
-                        "change:size",
-                        this.updateHistoryDiskSize
-                    );
+                    this.listenTo(this.model, "change:size", this.updateHistoryDiskSize);
                     return this;
                 },
 
@@ -126,17 +121,12 @@ TODO:
                         },
                         // loading indicators for deleted/hidden
                         "fetching-deleted": function(collection) {
-                            this.$("> .controls .deleted-count").html(
-                                "<i>" + _l("loading...") + "</i>"
-                            );
+                            this.$("> .controls .deleted-count").html("<i>" + _l("loading...") + "</i>");
                         },
                         "fetching-hidden": function(collection) {
-                            this.$("> .controls .hidden-count").html(
-                                "<i>" + _l("loading...") + "</i>"
-                            );
+                            this.$("> .controls .hidden-count").html("<i>" + _l("loading...") + "</i>");
                         },
-                        "fetching-deleted-done fetching-hidden-done": this
-                            ._renderCounts
+                        "fetching-deleted-done fetching-hidden-done": this._renderCounts
                     });
                     return this;
                 },
@@ -145,19 +135,12 @@ TODO:
                 /** In this override, add tag and annotation editors and a btn to toggle the selectors */
                 _buildNewRender: function() {
                     // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
-                    var $newRender = _super.prototype._buildNewRender.call(
-                        this
-                    );
+                    var $newRender = _super.prototype._buildNewRender.call(this);
                     if (!this.model) {
                         return $newRender;
                     }
 
-                    if (
-                        Galaxy &&
-                        Galaxy.user &&
-                        Galaxy.user.id &&
-                        Galaxy.user.id === this.model.get("user_id")
-                    ) {
+                    if (Galaxy && Galaxy.user && Galaxy.user.id && Galaxy.user.id === this.model.get("user_id")) {
                         this._renderTags($newRender);
                         this._renderAnnotation($newRender);
                     }
@@ -171,10 +154,7 @@ TODO:
 
                 /** override to render counts when the items are rendered */
                 renderItems: function($whereTo) {
-                    var views = _super.prototype.renderItems.call(
-                        this,
-                        $whereTo
-                    );
+                    var views = _super.prototype.renderItems.call(this, $whereTo);
                     if (!this.searchFor) {
                         this._renderCounts($whereTo);
                     } else {
@@ -224,16 +204,10 @@ TODO:
                         },
                         // show hide sub-view view annotation editors when this is shown/hidden
                         onshow: function() {
-                            panel.toggleHDAAnnotationEditors(
-                                true,
-                                panel.fxSpeed
-                            );
+                            panel.toggleHDAAnnotationEditors(true, panel.fxSpeed);
                         },
                         onhide: function() {
-                            panel.toggleHDAAnnotationEditors(
-                                false,
-                                panel.fxSpeed
-                            );
+                            panel.toggleHDAAnnotationEditors(false, panel.fxSpeed);
                         },
                         $activator: faIconButton({
                             title: _l("Edit history annotation"),
@@ -254,11 +228,7 @@ TODO:
                     }
 
                     // anon users shouldn't have access to any of the following
-                    if (
-                        !Galaxy.user ||
-                        Galaxy.user.isAnonymous() ||
-                        Galaxy.user.id !== this.model.get("user_id")
-                    ) {
+                    if (!Galaxy.user || Galaxy.user.isAnonymous() || Galaxy.user.id !== this.model.get("user_id")) {
                         return;
                     }
 
@@ -273,19 +243,11 @@ TODO:
                                 var previousName = panel.model.get("name");
                                 if (newName && newName !== previousName) {
                                     panel.$el.find(nameSelector).text(newName);
-                                    panel.model
-                                        .save({ name: newName })
-                                        .fail(function() {
-                                            panel.$el
-                                                .find(nameSelector)
-                                                .text(
-                                                    panel.model.previous("name")
-                                                );
-                                        });
+                                    panel.model.save({ name: newName }).fail(function() {
+                                        panel.$el.find(nameSelector).text(panel.model.previous("name"));
+                                    });
                                 } else {
-                                    panel.$el
-                                        .find(nameSelector)
-                                        .text(previousName);
+                                    panel.$el.find(nameSelector).text(previousName);
                                 }
                             }
                         });
@@ -300,36 +262,28 @@ TODO:
                             {
                                 html: _l("Hide datasets"),
                                 func: function() {
-                                    var action =
-                                        HDA_MODEL.HistoryDatasetAssociation
-                                            .prototype.hide;
+                                    var action = HDA_MODEL.HistoryDatasetAssociation.prototype.hide;
                                     panel.getSelectedModels().ajaxQueue(action);
                                 }
                             },
                             {
                                 html: _l("Unhide datasets"),
                                 func: function() {
-                                    var action =
-                                        HDA_MODEL.HistoryDatasetAssociation
-                                            .prototype.unhide;
+                                    var action = HDA_MODEL.HistoryDatasetAssociation.prototype.unhide;
                                     panel.getSelectedModels().ajaxQueue(action);
                                 }
                             },
                             {
                                 html: _l("Delete datasets"),
                                 func: function() {
-                                    var action =
-                                        HDA_MODEL.HistoryDatasetAssociation
-                                            .prototype["delete"];
+                                    var action = HDA_MODEL.HistoryDatasetAssociation.prototype["delete"];
                                     panel.getSelectedModels().ajaxQueue(action);
                                 }
                             },
                             {
                                 html: _l("Undelete datasets"),
                                 func: function() {
-                                    var action =
-                                        HDA_MODEL.HistoryDatasetAssociation
-                                            .prototype.undelete;
+                                    var action = HDA_MODEL.HistoryDatasetAssociation.prototype.undelete;
                                     panel.getSelectedModels().ajaxQueue(action);
                                 }
                             }
@@ -339,15 +293,9 @@ TODO:
                             html: _l("Permanently delete datasets"),
                             func: function() {
                                 if (
-                                    confirm(
-                                        _l(
-                                            "This will permanently remove the data in your datasets. Are you sure?"
-                                        )
-                                    )
+                                    confirm(_l("This will permanently remove the data in your datasets. Are you sure?"))
                                 ) {
-                                    var action =
-                                        HDA_MODEL.HistoryDatasetAssociation
-                                            .prototype.purge;
+                                    var action = HDA_MODEL.HistoryDatasetAssociation.prototype.purge;
                                     panel.getSelectedModels().ajaxQueue(action);
                                 }
                             }
@@ -383,29 +331,19 @@ TODO:
                     ];
                 },
 
-                buildCollection: function(
-                    collectionType,
-                    selection,
-                    hideSourceItems
-                ) {
+                buildCollection: function(collectionType, selection, hideSourceItems) {
                     var panel = this;
                     var selection = selection || panel.getSelectedModels();
                     var hideSourceItems = hideSourceItems || false;
                     var createFunc;
                     if (collectionType == "list") {
-                        createFunc =
-                            LIST_COLLECTION_CREATOR.createListCollection;
+                        createFunc = LIST_COLLECTION_CREATOR.createListCollection;
                     } else if (collectionType == "paired") {
-                        createFunc =
-                            PAIR_COLLECTION_CREATOR.createPairCollection;
+                        createFunc = PAIR_COLLECTION_CREATOR.createPairCollection;
                     } else if (collectionType == "list:paired") {
-                        createFunc =
-                            LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection;
+                        createFunc = LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection;
                     } else {
-                        console.warn(
-                            "Unknown collectionType encountered " +
-                                collectionType
-                        );
+                        console.warn("Unknown collectionType encountered " + collectionType);
                     }
                     createFunc(selection, hideSourceItems).done(function() {
                         panel.model.refresh();
@@ -415,17 +353,11 @@ TODO:
                 // ------------------------------------------------------------------------ sub-views
                 /** In this override, add purgeAllowed and whether tags/annotation editors should be shown */
                 _getItemViewOptions: function(model) {
-                    var options = _super.prototype._getItemViewOptions.call(
-                        this,
-                        model
-                    );
+                    var options = _super.prototype._getItemViewOptions.call(this, model);
                     _.extend(options, {
                         purgeAllowed: this.purgeAllowed,
-                        tagsEditorShown:
-                            this.tagsEditor && !this.tagsEditor.hidden,
-                        annotationEditorShown:
-                            this.annotationEditor &&
-                            !this.annotationEditor.hidden
+                        tagsEditorShown: this.tagsEditor && !this.tagsEditor.hidden,
+                        annotationEditorShown: this.annotationEditor && !this.annotationEditor.hidden
                     });
                     return options;
                 },
@@ -526,14 +458,7 @@ TODO:
                 _renderSearchProgress: function(limit, offset) {
                     var stop = limit + offset;
                     return this.$("> .controls .subtitle").html(
-                        [
-                            "<i>",
-                            _l("Searching "),
-                            stop,
-                            "/",
-                            this.model.contentsShown(),
-                            "</i>"
-                        ].join("")
+                        ["<i>", _l("Searching "), stop, "/", this.model.contentsShown(), "</i>"].join("")
                     );
                 },
 
@@ -562,10 +487,7 @@ TODO:
                     };
 
                     var $dropTarget = this._renderDropTarget();
-                    this.$list().before([
-                        this._renderDropTargetHelp(),
-                        $dropTarget
-                    ]);
+                    this.$list().before([this._renderDropTargetHelp(), $dropTarget]);
                     for (var evName in dropHandlers) {
                         if (dropHandlers.hasOwnProperty(evName)) {
                             //console.debug( evName, dropHandlers[ evName ] );
@@ -586,11 +508,7 @@ TODO:
                     this.$(".history-drop-target-help").remove();
                     return $("<div/>")
                         .addClass("history-drop-target-help")
-                        .text(
-                            _l(
-                                "Drag datasets here to copy them to the current history"
-                            )
-                        );
+                        .text(_l("Drag datasets here to copy them to the current history"));
                 },
 
                 /** shut down drag and drop event handlers and remove drop target */
@@ -624,10 +542,7 @@ TODO:
                     //console.debug( 'dragenter:', this, ev );
                     ev.preventDefault();
                     ev.stopPropagation();
-                    this.$(".history-drop-target").css(
-                        "border",
-                        "2px solid black"
-                    );
+                    this.$(".history-drop-target").css("border", "2px solid black");
                 },
                 dragover: function(ev) {
                     ev.preventDefault();
@@ -637,10 +552,7 @@ TODO:
                     //console.debug( 'dragleave:', this, ev );
                     ev.preventDefault();
                     ev.stopPropagation();
-                    this.$(".history-drop-target").css(
-                        "border",
-                        "1px dashed black"
-                    );
+                    this.$(".history-drop-target").css("border", "1px dashed black");
                 },
                 /** when (text) is dropped try to parse as json and trigger an event */
                 drop: function(ev) {
@@ -666,11 +578,7 @@ TODO:
                 dataDropped: function(data) {
                     var self = this;
                     // HDA: dropping will copy it to the history
-                    if (
-                        _.isObject(data) &&
-                        data.model_class === "HistoryDatasetAssociation" &&
-                        data.id
-                    ) {
+                    if (_.isObject(data) && data.model_class === "HistoryDatasetAssociation" && data.id) {
                         if (self.contents.currentPage !== 0) {
                             return self.contents.fetchPage(0).then(function() {
                                 return self.model.contents.copy(data.id);
@@ -684,11 +592,7 @@ TODO:
                 // ........................................................................ misc
                 /** Return a string rep of the history */
                 toString: function() {
-                    return (
-                        "HistoryViewEdit(" +
-                        (this.model ? this.model.get("name") : "") +
-                        ")"
-                    );
+                    return "HistoryViewEdit(" + (this.model ? this.model.get("name") : "") + ")";
                 }
             }
         );

@@ -1,8 +1,4 @@
-define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
-    Utils,
-    Ui,
-    Select
-) {
+define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(Utils, Ui, Select) {
     /** Batch mode variations */
     var Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
 
@@ -141,8 +137,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
                     {
                         icon: "fa fa-chain-broken",
                         value: "true",
-                        tooltip:
-                            "Unlinked dataset inputs will be run against *all* other inputs."
+                        tooltip: "Unlinked dataset inputs will be run against *all* other inputs."
                     }
                 ]
             });
@@ -180,8 +175,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
                     e.preventDefault();
                 })
                 .on("dragleave", function(e) {
-                    this.lastenter === e.target &&
-                        self.$el.removeClass("ui-dragover");
+                    this.lastenter === e.target && self.$el.removeClass("ui-dragover");
                 })
                 .on("drop", function(e) {
                     self._handleDrop(e);
@@ -193,12 +187,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
             // add listeners
             this.listenTo(this.model, "change:data", this._changeData, this);
             this.listenTo(this.model, "change:wait", this._changeWait, this);
-            this.listenTo(
-                this.model,
-                "change:current",
-                this._changeCurrent,
-                this
-            );
+            this.listenTo(this.model, "change:current", this._changeCurrent, this);
             this.listenTo(this.model, "change:value", this._changeValue, this);
             this.listenTo(
                 this.model,
@@ -246,17 +235,13 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
                     if (id_list.length > 0) {
                         var result = this._batch({ values: [] });
                         for (var i in id_list) {
-                            var details = this.history[
-                                id_list[i] + "_" + this.config[current].src
-                            ];
+                            var details = this.history[id_list[i] + "_" + this.config[current].src];
                             if (details) {
                                 result.values.push(details);
                             } else {
                                 Galaxy.emit.debug(
                                     "ui-select-content::value()",
-                                    "Requested details not found for '" +
-                                        id_list[i] +
-                                        "'."
+                                    "Requested details not found for '" + id_list[i] + "'."
                                 );
                                 return null;
                             }
@@ -268,10 +253,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
                     }
                 }
             } else {
-                Galaxy.emit.debug(
-                    "ui-select-content::value()",
-                    "Invalid value/source '" + new_value + "'."
-                );
+                Galaxy.emit.debug("ui-select-content::value()", "Invalid value/source '" + new_value + "'.");
             }
             return null;
         },
@@ -283,9 +265,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
                 if (self.model.get("current") == i) {
                     field.$el.show();
                     _.each(self.$batch, function($batchfield, batchmode) {
-                        $batchfield[
-                            self.config[i].batch == batchmode ? "show" : "hide"
-                        ]();
+                        $batchfield[self.config[i].batch == batchmode ? "show" : "hide"]();
                     });
                     self.button_type.value(i);
                 } else {
@@ -300,9 +280,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
 
             // identify selector type identifier i.e. [ flavor ]_[ type ]_[ multiple ]
             var config_id =
-                (this.model.get("flavor")
-                    ? this.model.get("flavor") + "_"
-                    : "") +
+                (this.model.get("flavor") ? this.model.get("flavor") + "_" : "") +
                 String(this.model.get("type")) +
                 (this.model.get("multiple") ? "_multiple" : "");
             if (Configurations[config_id]) {
@@ -334,11 +312,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
                         optional: self.model.get("optional"),
                         multiple: c.multiple,
                         searchable:
-                            !c.multiple ||
-                            (data &&
-                                data[c.src] &&
-                                data[c.src].length >
-                                    self.model.get("pagelimit")),
+                            !c.multiple || (data && data[c.src] && data[c.src].length > self.model.get("pagelimit")),
                         individual: true,
                         error_text:
                             "No " +
@@ -371,9 +345,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
                 self.$el.append(field.$el.css({ "margin-left": button_width }));
             });
             _.each(this.$batch, function($batchfield, batchmode) {
-                self.$el.append(
-                    $batchfield.css({ "margin-left": button_width })
-                );
+                self.$el.append($batchfield.css({ "margin-left": button_width }));
             });
             this.model.set("current", 0);
             this._changeCurrent();
@@ -429,10 +401,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
                 for (var i = 0; i < this.config.length; i++) {
                     var field = this.fields[i];
                     var c = this.config[i];
-                    if (
-                        c.src == src &&
-                        [multiple, true].indexOf(c.multiple) !== -1
-                    ) {
+                    if (c.src == src && [multiple, true].indexOf(c.multiple) !== -1) {
                         this.model.set("current", i);
                         field.value(list);
                         break;
@@ -452,14 +421,9 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
                 var current = this.model.get("current");
                 var config = this.config[current];
                 var field = this.fields[current];
-                var drop_data = JSON.parse(
-                    ev.originalEvent.dataTransfer.getData("text")
-                )[0];
+                var drop_data = JSON.parse(ev.originalEvent.dataTransfer.getData("text"))[0];
                 var new_id = drop_data.id;
-                var new_src =
-                    drop_data.history_content_type == "dataset"
-                        ? "hda"
-                        : "hdca";
+                var new_src = drop_data.history_content_type == "dataset" ? "hda" : "hdca";
                 var new_value = { id: new_id, src: new_src };
                 if (data && _.findWhere(data[new_src], new_value)) {
                     if (config.src == new_src) {
@@ -490,9 +454,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
         /** Highlight drag result */
         _handleDropStatus: function(status) {
             var self = this;
-            this.$el
-                .removeClass("ui-dragover")
-                .addClass("ui-dragover-" + status);
+            this.$el.removeClass("ui-dragover").addClass("ui-dragover-" + status);
             setTimeout(function() {
                 self.$el.removeClass("ui-dragover-" + status);
             }, this.model.get("statustimer"));
@@ -511,10 +473,7 @@ define(["utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-default"], function(
             }
             if (config.batch == Batch.LINKED || config.batch == Batch.ENABLED) {
                 result["batch"] = true;
-                if (
-                    config.batch == Batch.ENABLED &&
-                    this.button_product.value() === "true"
-                ) {
+                if (config.batch == Batch.ENABLED && this.button_product.value() === "true") {
                     result["product"] = true;
                 }
             }

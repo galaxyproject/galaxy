@@ -1,21 +1,13 @@
-define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
-    toolshed_model,
-    toolshed_util
-) {
+define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(toolshed_model, toolshed_util) {
     var ToolShedRepoStatusView = Backbone.View.extend({
         el: "#center",
 
         initialize: function(options) {
             var self = this;
-            this.options = _.defaults(
-                this.options || [{}],
-                options,
-                this.defaults
-            );
+            this.options = _.defaults(this.options || [{}], options, this.defaults);
             this.model = new toolshed_model.RepoStatus();
             this.listenTo(this.model, "sync", this.render);
-            this.model.url +=
-                "?repositories=" + this.options.repositories.join("|");
+            this.model.url += "?repositories=" + this.options.repositories.join("|");
             this.model.fetch();
             this.timer = setInterval(
                 function(self) {
@@ -23,9 +15,7 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
                     var all_done = true;
                     _.some(self.model.models, function(repository) {
                         repo_id = repository.get("id");
-                        var repo_status = repository
-                            .get("status")
-                            .toLowerCase();
+                        var repo_status = repository.get("status").toLowerCase();
                         if (terminal_states.indexOf(repo_status) === -1) {
                             all_done = false;
                             return true;

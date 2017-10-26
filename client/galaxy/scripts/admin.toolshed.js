@@ -60,14 +60,7 @@ define(
 
         var GalaxyAdminToolshedApp = Backbone.View.extend({
             app_config: {
-                known_views: [
-                    "toolsheds",
-                    "queue",
-                    "status",
-                    "categories",
-                    "repositories",
-                    "repoository"
-                ]
+                known_views: ["toolsheds", "queue", "status", "categories", "repositories", "repoository"]
             },
 
             initialize: function() {
@@ -88,66 +81,52 @@ define(
                         Galaxy.admintoolshedapp.adminShedListView = new mod_shed_list_view.ShedListView();
                     }
                 });
-                this.admin_toolshed_router.on("route:categories", function(
-                    tool_shed
-                ) {
+                this.admin_toolshed_router.on("route:categories", function(tool_shed) {
                     if (Galaxy.admintoolshedapp.adminShedCategoriesView) {
                         Galaxy.admintoolshedapp.adminShedCategoriesView.reDraw({
                             tool_shed: tool_shed.replace(/\//g, "%2f")
                         });
                     } else {
-                        Galaxy.admintoolshedapp.adminShedCategoriesView = new mod_categories_view.CategoryView(
-                            { tool_shed: tool_shed.replace(/\//g, "%2f") }
-                        );
+                        Galaxy.admintoolshedapp.adminShedCategoriesView = new mod_categories_view.CategoryView({
+                            tool_shed: tool_shed.replace(/\//g, "%2f")
+                        });
                     }
                 });
-                this.admin_toolshed_router.on("route:repositories", function(
-                    tool_shed,
-                    category_id
-                ) {
+                this.admin_toolshed_router.on("route:repositories", function(tool_shed, category_id) {
                     if (Galaxy.admintoolshedapp.adminShedCategoryView) {
                         Galaxy.admintoolshedapp.adminShedCategoryView.reDraw({
                             tool_shed: tool_shed.replace(/\//g, "%2f"),
                             category_id: category_id
                         });
                     } else {
-                        Galaxy.admintoolshedapp.adminShedCategoryView = new mod_repositories_view.Category(
-                            {
-                                tool_shed: tool_shed.replace(/\//g, "%2f"),
-                                category_id: category_id
-                            }
-                        );
+                        Galaxy.admintoolshedapp.adminShedCategoryView = new mod_repositories_view.Category({
+                            tool_shed: tool_shed.replace(/\//g, "%2f"),
+                            category_id: category_id
+                        });
                     }
                 });
-                this.admin_toolshed_router.on("route:repository", function(
-                    tool_shed,
-                    repository_id
-                ) {
+                this.admin_toolshed_router.on("route:repository", function(tool_shed, repository_id) {
                     if (Galaxy.admintoolshedapp.adminRepositoryView) {
                         Galaxy.admintoolshedapp.adminRepositoryView.reDraw({
                             tool_shed: tool_shed.replace(/\//g, "%2f"),
                             repository_id: repository_id
                         });
                     } else {
-                        Galaxy.admintoolshedapp.adminRepositoryView = new mod_repository_view.RepoDetails(
-                            {
-                                tool_shed: tool_shed.replace(/\//g, "%2f"),
-                                repository_id: repository_id
-                            }
-                        );
+                        Galaxy.admintoolshedapp.adminRepositoryView = new mod_repository_view.RepoDetails({
+                            tool_shed: tool_shed.replace(/\//g, "%2f"),
+                            repository_id: repository_id
+                        });
                     }
                 });
-                this.admin_toolshed_router.on("route:status", function(
-                    repositories
-                ) {
+                this.admin_toolshed_router.on("route:status", function(repositories) {
                     if (Galaxy.admintoolshedapp.adminRepoStatusView) {
                         Galaxy.admintoolshedapp.adminRepoStatusView.reDraw({
                             repositories: repositories.split("|")
                         });
                     } else {
-                        Galaxy.admintoolshedapp.adminRepoStatusView = new mod_repo_status_view.RepoStatus(
-                            { repositories: repositories.split("|") }
-                        );
+                        Galaxy.admintoolshedapp.adminRepoStatusView = new mod_repo_status_view.RepoStatus({
+                            repositories: repositories.split("|")
+                        });
                     }
                 });
                 this.admin_toolshed_router.on("route:workflows", function() {

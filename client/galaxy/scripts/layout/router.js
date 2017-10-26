@@ -47,8 +47,7 @@ var Router = Backbone.Router.extend({
         this.page.display(
             new Ui.Message({
                 status: "danger",
-                message:
-                    "You must be logged in with proper credentials to make this request.",
+                message: "You must be logged in with proper credentials to make this request.",
                 persistent: true
             })
         );

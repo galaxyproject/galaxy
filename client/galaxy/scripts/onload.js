@@ -85,14 +85,10 @@ function init_refresh_on_change() {
             var select_field = $(this),
                 select_val = select_field.val(),
                 refresh = false,
-                ref_on_change_vals = select_field.attr(
-                    "refresh_on_change_values"
-                );
+                ref_on_change_vals = select_field.attr("refresh_on_change_values");
             if (ref_on_change_vals) {
                 ref_on_change_vals = ref_on_change_vals.split(",");
-                var last_selected_value = select_field.attr(
-                    "last_selected_value"
-                );
+                var last_selected_value = select_field.attr("last_selected_value");
                 if (
                     $.inArray(select_val, ref_on_change_vals) === -1 &&
                     $.inArray(last_selected_value, ref_on_change_vals) === -1
@@ -112,14 +108,10 @@ function init_refresh_on_change() {
             var select_field = $(this),
                 select_val = select_field.val(),
                 refresh = false,
-                ref_on_change_vals = select_field.attr(
-                    "refresh_on_change_values"
-                );
+                ref_on_change_vals = select_field.attr("refresh_on_change_values");
             if (ref_on_change_vals) {
                 ref_on_change_vals = ref_on_change_vals.split(",");
-                var last_selected_value = select_field.attr(
-                    "last_selected_value"
-                );
+                var last_selected_value = select_field.attr("last_selected_value");
                 if (
                     $.inArray(select_val, ref_on_change_vals) === -1 &&
                     $.inArray(last_selected_value, ref_on_change_vals) === -1
@@ -205,9 +197,7 @@ $(document).ready(function() {
     function onloadWebhooks() {
         if (Galaxy.root !== undefined) {
             // Load all webhooks with the type 'onload'
-            $.getJSON(Galaxy.root + "api/webhooks/onload/all", function(
-                webhooks
-            ) {
+            $.getJSON(Galaxy.root + "api/webhooks/onload/all", function(webhooks) {
                 _.each(webhooks, function(webhook) {
                     if (webhook.activate && webhook.script) {
                         $("<script/>", { type: "text/javascript" })

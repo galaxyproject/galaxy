@@ -7,14 +7,7 @@ define(
         "mvc/base-mvc",
         "utils/localization"
     ],
-    function(
-        HISTORY_CONTENTS,
-        HISTORY_PREFS,
-        CONTROLLED_FETCH_COLLECTION,
-        UTILS,
-        BASE_MVC,
-        _l
-    ) {
+    function(HISTORY_CONTENTS, HISTORY_PREFS, CONTROLLED_FETCH_COLLECTION, UTILS, BASE_MVC, _l) {
         "use strict";
 
         //==============================================================================
@@ -106,10 +99,7 @@ define(
                         // bubble up errors
                         return this.listenTo(this.contents, {
                             error: function() {
-                                this.trigger.apply(
-                                    this,
-                                    jQuery.makeArray(arguments)
-                                );
+                                this.trigger.apply(this, jQuery.makeArray(arguments));
                             }
                         });
                     },
@@ -119,31 +109,22 @@ define(
                     contentsShown: function() {
                         var contentsActive = this.get("contents_active");
                         var shown = contentsActive.active || 0;
-                        shown += this.contents.includeDeleted
-                            ? contentsActive.deleted
-                            : 0;
-                        shown += this.contents.includeHidden
-                            ? contentsActive.hidden
-                            : 0;
+                        shown += this.contents.includeDeleted ? contentsActive.deleted : 0;
+                        shown += this.contents.includeHidden ? contentsActive.hidden : 0;
                         return shown;
                     },
 
                     /** convert size in bytes to a more human readable version */
                     nice_size: function() {
                         var size = this.get("size");
-                        return size
-                            ? UTILS.bytesToString(size, true, 2)
-                            : _l("(empty)");
+                        return size ? UTILS.bytesToString(size, true, 2) : _l("(empty)");
                     },
 
                     /** override to add nice_size */
                     toJSON: function() {
-                        return _.extend(
-                            Backbone.Model.prototype.toJSON.call(this),
-                            {
-                                nice_size: this.nice_size()
-                            }
-                        );
+                        return _.extend(Backbone.Model.prototype.toJSON.call(this), {
+                            nice_size: this.nice_size()
+                        });
                     },
 
                     /** override to allow getting nice_size */
@@ -151,10 +132,7 @@ define(
                         if (key === "nice_size") {
                             return this.nice_size();
                         }
-                        return Backbone.Model.prototype.get.apply(
-                            this,
-                            arguments
-                        );
+                        return Backbone.Model.prototype.get.apply(this, arguments);
                     },
 
                     // ........................................................................ common queries
@@ -167,10 +145,7 @@ define(
                             return false;
                         }
                         // user is anon or history isn't owned
-                        if (
-                            Galaxy.user.isAnonymous() ||
-                            Galaxy.user.id !== this.get("user_id")
-                        ) {
+                        if (Galaxy.user.isAnonymous() || Galaxy.user.id !== this.get("user_id")) {
                             return false;
                         }
                         return true;
@@ -189,12 +164,7 @@ define(
 
                     // ........................................................................ updates
                     _fetchContentRelatedAttributes: function() {
-                        var contentRelatedAttrs = [
-                            "size",
-                            "non_ready_jobs",
-                            "contents_active",
-                            "hid_counter"
-                        ];
+                        var contentRelatedAttrs = ["size", "non_ready_jobs", "contents_active", "hid_counter"];
                         return this.fetch({
                             data: $.param({
                                 keys: contentRelatedAttrs.join(",")
@@ -215,25 +185,18 @@ define(
                         var fetchFn =
                             self.contents.currentPage !== 0
                                 ? function() {
-                                      return self.contents.fetchPage(
-                                          self.contents.currentPage
-                                      );
+                                      return self.contents.fetchPage(self.contents.currentPage);
                                   }
                                 : function() {
-                                      return self.contents.fetchUpdated(
-                                          lastUpdateTime
-                                      );
+                                      return self.contents.fetchUpdated(lastUpdateTime);
                                   };
                         // note: if there was no previous update time, all summary contents will be fetched
                         return fetchFn().done(function(response, status, xhr) {
                             var serverResponseDatetime;
                             try {
-                                serverResponseDatetime = new Date(
-                                    xhr.getResponseHeader("Date")
-                                );
+                                serverResponseDatetime = new Date(xhr.getResponseHeader("Date"));
                             } catch (err) {}
-                            self.lastUpdateTime =
-                                serverResponseDatetime || new Date();
+                            self.lastUpdateTime = serverResponseDatetime || new Date();
                             self.checkForUpdates(options);
                         });
                     },
@@ -265,17 +228,15 @@ define(
                             // no datasets are running, but currently runnning jobs may still produce new datasets
                             // see if the history has any running jobs and continue to update if so
                             // (also update the size for the user in either case)
-                            self
-                                ._fetchContentRelatedAttributes()
-                                .done(function(historyData) {
-                                    // console.log( 'non_ready_jobs:', historyData.non_ready_jobs );
-                                    if (self.numOfUnfinishedJobs() > 0) {
-                                        _delayThenUpdate();
-                                    } else {
-                                        // otherwise, let listeners know that all updates have stopped
-                                        self.trigger("ready");
-                                    }
-                                });
+                            self._fetchContentRelatedAttributes().done(function(historyData) {
+                                // console.log( 'non_ready_jobs:', historyData.non_ready_jobs );
+                                if (self.numOfUnfinishedJobs() > 0) {
+                                    _delayThenUpdate();
+                                } else {
+                                    // otherwise, let listeners know that all updates have stopped
+                                    self.trigger("ready");
+                                }
+                            });
                         }
                     },
 
@@ -290,11 +251,7 @@ define(
                     // ........................................................................ ajax
                     /** override to use actual Dates objects for create/update times */
                     parse: function(response, options) {
-                        var parsed = Backbone.Model.prototype.parse.call(
-                            this,
-                            response,
-                            options
-                        );
+                        var parsed = Backbone.Model.prototype.parse.call(this, response, options);
                         if (parsed.create_time) {
                             parsed.create_time = new Date(parsed.create_time);
                         }
@@ -314,9 +271,7 @@ define(
                         options.view = "dev-detailed";
 
                         // fetch history then use history data to fetch (paginated) contents
-                        return this.fetch(options).then(function getContents(
-                            history
-                        ) {
+                        return this.fetch(options).then(function getContents(history) {
                             self.contents.history = self;
                             self.contents.setHistoryId(history.id);
                             return self.fetchContents(contentsOptions);
@@ -345,10 +300,7 @@ define(
                         if (this.get("purged")) {
                             return jQuery.when();
                         }
-                        return this.save(
-                            { deleted: true, purged: true },
-                            options
-                        );
+                        return this.save({ deleted: true, purged: true }, options);
                     },
                     /** save this history, _Mark_ing it as undeleted */
                     undelete: function(options) {
@@ -367,9 +319,7 @@ define(
                     copy: function(current, name, allDatasets) {
                         current = current !== undefined ? current : true;
                         if (!this.id) {
-                            throw new Error(
-                                "You must set the history ID before copying it."
-                            );
+                            throw new Error("You must set the history ID before copying it.");
                         }
 
                         var postData = { history_id: this.id };
@@ -390,15 +340,9 @@ define(
                         if (current) {
                             return copy.then(function(response) {
                                 var newHistory = new History(response);
-                                return newHistory
-                                    .setAsCurrent()
-                                    .done(function() {
-                                        history.trigger(
-                                            "copied",
-                                            history,
-                                            response
-                                        );
-                                    });
+                                return newHistory.setAsCurrent().done(function() {
+                                    history.trigger("copied", history, response);
+                                });
                             });
                         }
                         return copy.done(function(response) {
@@ -408,11 +352,7 @@ define(
 
                     setAsCurrent: function() {
                         var history = this,
-                            xhr = jQuery.getJSON(
-                                Galaxy.root +
-                                    "history/set_as_current?id=" +
-                                    this.id
-                            );
+                            xhr = jQuery.getJSON(Galaxy.root + "history/set_as_current?id=" + this.id);
 
                         xhr.done(function() {
                             history.trigger("set-as-current", history);
@@ -422,231 +362,178 @@ define(
 
                     // ........................................................................ misc
                     toString: function() {
-                        return (
-                            "History(" +
-                            this.get("id") +
-                            "," +
-                            this.get("name") +
-                            ")"
-                        );
+                        return "History(" + this.get("id") + "," + this.get("name") + ")";
                     }
                 }
             )
         );
 
         //==============================================================================
-        var _collectionSuper =
-            CONTROLLED_FETCH_COLLECTION.InfinitelyScrollingCollection;
+        var _collectionSuper = CONTROLLED_FETCH_COLLECTION.InfinitelyScrollingCollection;
         /** @class A collection of histories (per user)
  *      that maintains the current history as the first in the collection.
  *  New or copied histories become the current history.
  */
-        var HistoryCollection = _collectionSuper
-            .extend(BASE_MVC.LoggableMixin)
-            .extend({
-                _logNamespace: "history",
+        var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
+            _logNamespace: "history",
 
-                model: History,
-                /** @type {String} initial order used by collection */
-                order: "update_time",
-                /** @type {Number} limit used for the first fetch (or a reset) */
-                limitOnFirstFetch: 10,
-                /** @type {Number} limit used for each subsequent fetch */
-                limitPerFetch: 10,
+            model: History,
+            /** @type {String} initial order used by collection */
+            order: "update_time",
+            /** @type {Number} limit used for the first fetch (or a reset) */
+            limitOnFirstFetch: 10,
+            /** @type {Number} limit used for each subsequent fetch */
+            limitPerFetch: 10,
 
-                initialize: function(models, options) {
-                    options = options || {};
-                    this.log("HistoryCollection.initialize", models, options);
-                    _collectionSuper.prototype.initialize.call(
-                        this,
-                        models,
-                        options
-                    );
+            initialize: function(models, options) {
+                options = options || {};
+                this.log("HistoryCollection.initialize", models, options);
+                _collectionSuper.prototype.initialize.call(this, models, options);
 
-                    /** @type {boolean} should deleted histories be included */
-                    this.includeDeleted = options.includeDeleted || false;
+                /** @type {boolean} should deleted histories be included */
+                this.includeDeleted = options.includeDeleted || false;
 
-                    /** @type {String} encoded id of the history that's current */
-                    this.currentHistoryId = options.currentHistoryId;
+                /** @type {String} encoded id of the history that's current */
+                this.currentHistoryId = options.currentHistoryId;
 
-                    this.setUpListeners();
-                    // note: models are sent to reset *after* this fn ends; up to this point
-                    // the collection *is empty*
-                },
+                this.setUpListeners();
+                // note: models are sent to reset *after* this fn ends; up to this point
+                // the collection *is empty*
+            },
 
-                urlRoot: Galaxy.root + "api/histories",
-                url: function() {
-                    return this.urlRoot;
-                },
+            urlRoot: Galaxy.root + "api/histories",
+            url: function() {
+                return this.urlRoot;
+            },
 
-                /** set up reflexive event handlers */
-                setUpListeners: function setUpListeners() {
-                    return this.on({
-                        // when a history is deleted, remove it from the collection (if optionally set to do so)
-                        "change:deleted": function(history) {
-                            // TODO: this becomes complicated when more filters are used
-                            this.debug(
-                                "change:deleted",
-                                this.includeDeleted,
-                                history.get("deleted")
-                            );
-                            if (
-                                !this.includeDeleted &&
-                                history.get("deleted")
-                            ) {
-                                this.remove(history);
-                            }
-                        },
-                        // listen for a history copy, setting it to current
-                        copied: function(original, newData) {
-                            this.setCurrent(new History(newData, []));
-                        },
-                        // when a history is made current, track the id in the collection
-                        "set-as-current": function(history) {
-                            var oldCurrentId = this.currentHistoryId;
-                            this.trigger("no-longer-current", oldCurrentId);
-                            this.currentHistoryId = history.id;
+            /** set up reflexive event handlers */
+            setUpListeners: function setUpListeners() {
+                return this.on({
+                    // when a history is deleted, remove it from the collection (if optionally set to do so)
+                    "change:deleted": function(history) {
+                        // TODO: this becomes complicated when more filters are used
+                        this.debug("change:deleted", this.includeDeleted, history.get("deleted"));
+                        if (!this.includeDeleted && history.get("deleted")) {
+                            this.remove(history);
+                        }
+                    },
+                    // listen for a history copy, setting it to current
+                    copied: function(original, newData) {
+                        this.setCurrent(new History(newData, []));
+                    },
+                    // when a history is made current, track the id in the collection
+                    "set-as-current": function(history) {
+                        var oldCurrentId = this.currentHistoryId;
+                        this.trigger("no-longer-current", oldCurrentId);
+                        this.currentHistoryId = history.id;
+                    }
+                });
+            },
+
+            /** override to change view */
+            _buildFetchData: function(options) {
+                return _.extend(_collectionSuper.prototype._buildFetchData.call(this, options), {
+                    view: "dev-detailed"
+                });
+            },
+
+            /** override to filter out deleted and purged */
+            _buildFetchFilters: function(options) {
+                var superFilters = _collectionSuper.prototype._buildFetchFilters.call(this, options) || {};
+                var filters = {};
+                if (!this.includeDeleted) {
+                    filters.deleted = false;
+                    filters.purged = false;
+                } else {
+                    // force API to return both deleted and non
+                    //TODO: when the API is updated, remove this
+                    filters.deleted = null;
+                }
+                return _.defaults(superFilters, filters);
+            },
+
+            /** override to fetch current as well (as it may be outside the first 10, etc.) */
+            fetchFirst: function(options) {
+                var self = this;
+                // TODO: batch?
+                var xhr = $.when();
+                if (this.currentHistoryId) {
+                    xhr = _collectionSuper.prototype.fetchFirst.call(self, {
+                        silent: true,
+                        limit: 1,
+                        filters: {
+                            // without these a deleted current history will return [] here and block the other xhr
+                            purged: "",
+                            deleted: "",
+                            "encoded_id-in": this.currentHistoryId
                         }
                     });
-                },
-
-                /** override to change view */
-                _buildFetchData: function(options) {
-                    return _.extend(
-                        _collectionSuper.prototype._buildFetchData.call(
-                            this,
-                            options
-                        ),
-                        {
-                            view: "dev-detailed"
-                        }
-                    );
-                },
-
-                /** override to filter out deleted and purged */
-                _buildFetchFilters: function(options) {
-                    var superFilters =
-                        _collectionSuper.prototype._buildFetchFilters.call(
-                            this,
-                            options
-                        ) || {};
-                    var filters = {};
-                    if (!this.includeDeleted) {
-                        filters.deleted = false;
-                        filters.purged = false;
-                    } else {
-                        // force API to return both deleted and non
-                        //TODO: when the API is updated, remove this
-                        filters.deleted = null;
-                    }
-                    return _.defaults(superFilters, filters);
-                },
-
-                /** override to fetch current as well (as it may be outside the first 10, etc.) */
-                fetchFirst: function(options) {
-                    var self = this;
-                    // TODO: batch?
-                    var xhr = $.when();
-                    if (this.currentHistoryId) {
-                        xhr = _collectionSuper.prototype.fetchFirst.call(self, {
-                            silent: true,
-                            limit: 1,
-                            filters: {
-                                // without these a deleted current history will return [] here and block the other xhr
-                                purged: "",
-                                deleted: "",
-                                "encoded_id-in": this.currentHistoryId
-                            }
-                        });
-                    }
-                    return xhr.then(function() {
-                        options = options || {};
-                        options.offset = 0;
-                        return self.fetchMore(options);
-                    });
-                },
-
-                /** @type {Object} map of collection available sorting orders containing comparator fns */
-                comparators: _.extend(
-                    _.clone(_collectionSuper.prototype.comparators),
-                    {
-                        name: BASE_MVC.buildComparator("name", {
-                            ascending: true
-                        }),
-                        "name-dsc": BASE_MVC.buildComparator("name", {
-                            ascending: false
-                        }),
-                        size: BASE_MVC.buildComparator("size", {
-                            ascending: false
-                        }),
-                        "size-asc": BASE_MVC.buildComparator("size", {
-                            ascending: true
-                        })
-                    }
-                ),
-
-                /** override to always have the current history first */
-                sort: function(options) {
+                }
+                return xhr.then(function() {
                     options = options || {};
-                    var silent = options.silent;
-                    var currentHistory = this.remove(
-                        this.get(this.currentHistoryId)
-                    );
-                    _collectionSuper.prototype.sort.call(
-                        this,
-                        _.defaults({ silent: true }, options)
-                    );
-                    this.unshift(currentHistory, { silent: true });
-                    if (!silent) {
-                        this.trigger("sort", this, options);
-                    }
-                    return this;
-                },
+                    options.offset = 0;
+                    return self.fetchMore(options);
+                });
+            },
 
-                /** create a new history and by default set it to be the current history */
-                create: function create(
-                    data,
-                    hdas,
-                    historyOptions,
-                    xhrOptions
-                ) {
-                    //TODO: .create is actually a collection function that's overridden here
-                    var collection = this,
-                        xhr = jQuery.getJSON(
-                            Galaxy.root + "history/create_new_current"
-                        );
-                    return xhr.done(function(newData) {
-                        collection.setCurrent(
-                            new History(newData, [], historyOptions || {})
-                        );
-                    });
-                },
+            /** @type {Object} map of collection available sorting orders containing comparator fns */
+            comparators: _.extend(_.clone(_collectionSuper.prototype.comparators), {
+                name: BASE_MVC.buildComparator("name", {
+                    ascending: true
+                }),
+                "name-dsc": BASE_MVC.buildComparator("name", {
+                    ascending: false
+                }),
+                size: BASE_MVC.buildComparator("size", {
+                    ascending: false
+                }),
+                "size-asc": BASE_MVC.buildComparator("size", {
+                    ascending: true
+                })
+            }),
 
-                /** set the current history to the given history, placing it first in the collection.
+            /** override to always have the current history first */
+            sort: function(options) {
+                options = options || {};
+                var silent = options.silent;
+                var currentHistory = this.remove(this.get(this.currentHistoryId));
+                _collectionSuper.prototype.sort.call(this, _.defaults({ silent: true }, options));
+                this.unshift(currentHistory, { silent: true });
+                if (!silent) {
+                    this.trigger("sort", this, options);
+                }
+                return this;
+            },
+
+            /** create a new history and by default set it to be the current history */
+            create: function create(data, hdas, historyOptions, xhrOptions) {
+                //TODO: .create is actually a collection function that's overridden here
+                var collection = this,
+                    xhr = jQuery.getJSON(Galaxy.root + "history/create_new_current");
+                return xhr.done(function(newData) {
+                    collection.setCurrent(new History(newData, [], historyOptions || {}));
+                });
+            },
+
+            /** set the current history to the given history, placing it first in the collection.
      *  Pass standard bbone options for use in unshift.
      *  @triggers new-current passed history and this collection
      */
-                setCurrent: function(history, options) {
-                    options = options || {};
-                    // new histories go in the front
-                    this.unshift(history, options);
-                    this.currentHistoryId = history.get("id");
-                    if (!options.silent) {
-                        this.trigger("new-current", history, this);
-                    }
-                    return this;
-                },
-
-                toString: function toString() {
-                    return (
-                        "HistoryCollection(" +
-                        this.length +
-                        ",current:" +
-                        this.currentHistoryId +
-                        ")"
-                    );
+            setCurrent: function(history, options) {
+                options = options || {};
+                // new histories go in the front
+                this.unshift(history, options);
+                this.currentHistoryId = history.get("id");
+                if (!options.silent) {
+                    this.trigger("new-current", history, this);
                 }
-            });
+                return this;
+            },
+
+            toString: function toString() {
+                return "HistoryCollection(" + this.length + ",current:" + this.currentHistoryId + ")";
+            }
+        });
 
         //==============================================================================
         return {

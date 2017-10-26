@@ -64,8 +64,7 @@ window.app = function app(options, bootstrapped) {
         show_repositories: function() {
             this.page.display(
                 new GridView({
-                    url_base:
-                        Galaxy.root + "admin_toolshed/browse_repositories",
+                    url_base: Galaxy.root + "admin_toolshed/browse_repositories",
                     url_data: Galaxy.params,
                     dict_format: true
                 })

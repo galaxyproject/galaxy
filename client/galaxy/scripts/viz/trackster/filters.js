@@ -70,10 +70,7 @@ define(["libs/underscore"], function(_) {
             container.click(function() {
                 var cur_value = span.text(),
                     max = parseFloat(slider.slider("option", "max")),
-                    input_size =
-                        max <= 1
-                            ? 4
-                            : max <= 1000000 ? max.toString().length : 6,
+                    input_size = max <= 1 ? 4 : max <= 1000000 ? max.toString().length : 6,
                     multi_value = false,
                     slider_row = $(this).parents(".slider-row");
 
@@ -115,52 +112,31 @@ define(["libs/underscore"], function(_) {
                             var slider_min = slider.slider("option", "min"),
                                 slider_max = slider.slider("option", "max"),
                                 invalid = function(a_val) {
-                                    return (
-                                        isNaN(a_val) ||
-                                        a_val > slider_max ||
-                                        a_val < slider_min
-                                    );
+                                    return isNaN(a_val) || a_val > slider_max || a_val < slider_min;
                                 },
                                 new_value = $(this).val();
                             if (!multi_value) {
                                 new_value = parseFloat(new_value);
                                 if (invalid(new_value)) {
                                     alert(
-                                        "Parameter value must be in the range [" +
-                                            slider_min +
-                                            "-" +
-                                            slider_max +
-                                            "]"
+                                        "Parameter value must be in the range [" + slider_min + "-" + slider_max + "]"
                                     );
                                     return $(this);
                                 }
                             } else {
                                 // Multi value.
                                 new_value = new_value.split("-");
-                                new_value = [
-                                    parseFloat(new_value[0]),
-                                    parseFloat(new_value[1])
-                                ];
-                                if (
-                                    invalid(new_value[0]) ||
-                                    invalid(new_value[1])
-                                ) {
+                                new_value = [parseFloat(new_value[0]), parseFloat(new_value[1])];
+                                if (invalid(new_value[0]) || invalid(new_value[1])) {
                                     alert(
-                                        "Parameter value must be in the range [" +
-                                            slider_min +
-                                            "-" +
-                                            slider_max +
-                                            "]"
+                                        "Parameter value must be in the range [" + slider_min + "-" + slider_max + "]"
                                     );
                                     return $(this);
                                 }
                             }
 
                             // Updating the slider also updates slider values and removes input.
-                            slider.slider(
-                                multi_value ? "values" : "value",
-                                new_value
-                            );
+                            slider.slider(multi_value ? "values" : "value", new_value);
                             slider_row.removeClass("input");
                         }
                     });
@@ -205,20 +181,14 @@ define(["libs/underscore"], function(_) {
                 filter.slide(event, ui);
             },
             change: function(event, ui) {
-                filter.control_element
-                    .slider("option", "slide")
-                    .call(filter.control_element, event, ui);
+                filter.control_element.slider("option", "slide").call(filter.control_element, event, ui);
             }
         });
         filter.slider = filter.control_element;
         filter.slider_label = values_span;
 
         // Enable users to edit slider values via text box.
-        edit_slider_values(
-            values_span_container,
-            values_span,
-            filter.control_element
-        );
+        edit_slider_values(values_span_container, values_span, filter.control_element);
 
         // Set up filter display controls.
         var display_controls_div = $("<div/>")
@@ -250,30 +220,26 @@ define(["libs/underscore"], function(_) {
         )
             .appendTo(display_controls_div)
             .hide();
-        this.height_icon = create_action_icon(
-            "Use filter for data height",
-            "arrow-resize-090",
-            function() {
-                if (filter.manager.height_filter !== filter) {
-                    // Setting this filter as the height filter.
-                    filter.manager.height_filter = filter;
-                    // Update UI for new filter.
-                    filter.manager.parent_div
-                        .find(".arrow-resize-090")
-                        .removeClass("active")
-                        .hide();
-                    filter.height_icon.addClass("active").show();
-                } else {
-                    // Clearing filter as alpha filter.
-                    filter.manager.height_filter = null;
-                    filter.height_icon.removeClass("active");
-                }
-                filter.manager.track.request_draw({
-                    force: true,
-                    clear_after: true
-                });
+        this.height_icon = create_action_icon("Use filter for data height", "arrow-resize-090", function() {
+            if (filter.manager.height_filter !== filter) {
+                // Setting this filter as the height filter.
+                filter.manager.height_filter = filter;
+                // Update UI for new filter.
+                filter.manager.parent_div
+                    .find(".arrow-resize-090")
+                    .removeClass("active")
+                    .hide();
+                filter.height_icon.addClass("active").show();
+            } else {
+                // Clearing filter as alpha filter.
+                filter.manager.height_filter = null;
+                filter.height_icon.removeClass("active");
             }
-        )
+            filter.manager.track.request_draw({
+                force: true,
+                clear_after: true
+            });
+        })
             .appendTo(display_controls_div)
             .hide();
         filter.parent_div.hover(
@@ -447,11 +413,7 @@ define(["libs/underscore"], function(_) {
                 // Update slider min, max, step.
                 this.slider.slider("option", "min", this.min);
                 this.slider.slider("option", "max", this.max);
-                this.slider.slider(
-                    "option",
-                    "step",
-                    this.get_slider_step(this.min, this.max)
-                );
+                this.slider.slider("option", "step", this.get_slider_step(this.min, this.max));
                 // Refresh slider:
                 // TODO: do we want to keep current values or reset to min/max?
                 // Currently we reset values:
@@ -502,10 +464,8 @@ define(["libs/underscore"], function(_) {
         //
         if (obj_dict && "filters" in obj_dict) {
             // Second condition needed for backward compatibility.
-            var alpha_filter_name =
-                    "alpha_filter" in obj_dict ? obj_dict.alpha_filter : null,
-                height_filter_name =
-                    "height_filter" in obj_dict ? obj_dict.height_filter : null,
+            var alpha_filter_name = "alpha_filter" in obj_dict ? obj_dict.alpha_filter : null,
+                height_filter_name = "height_filter" in obj_dict ? obj_dict.height_filter : null,
                 filters_dict = obj_dict.filters,
                 filter;
             for (var i = 0; i < filters_dict.length; i++) {
@@ -575,12 +535,8 @@ define(["libs/underscore"], function(_) {
             obj_dict.filters = filter_dicts;
 
             // Include transparency, height filters.
-            obj_dict.alpha_filter = this.alpha_filter
-                ? this.alpha_filter.name
-                : null;
-            obj_dict.height_filter = this.height_filter
-                ? this.height_filter.name
-                : null;
+            obj_dict.alpha_filter = this.alpha_filter ? this.alpha_filter.name : null;
+            obj_dict.height_filter = this.height_filter ? this.height_filter.name : null;
 
             // Include visibility.
             obj_dict.visible = this.parent_div.is(":visible");
@@ -628,10 +584,7 @@ define(["libs/underscore"], function(_) {
         clear_filters: function() {
             for (var i = 0; i < this.filters.length; i++) {
                 var filter = this.filters[i];
-                filter.slider.slider("option", "values", [
-                    filter.min,
-                    filter.max
-                ]);
+                filter.slider.slider("option", "values", [filter.min, filter.max]);
             }
             this.alpha_filter = null;
             this.height_filter = null;
@@ -661,20 +614,12 @@ define(["libs/underscore"], function(_) {
                 if (filter.tool_id) {
                     // Add filtering conditions if filter low/high are set.
                     if (filter.min !== filter.low) {
-                        tool_filter_conditions = get_or_create_dict_item(
-                            active_filters,
-                            filter.tool_id,
-                            []
-                        );
+                        tool_filter_conditions = get_or_create_dict_item(active_filters, filter.tool_id, []);
                         tool_filter_conditions[tool_filter_conditions.length] =
                             filter.tool_exp_name + " >= " + filter.low;
                     }
                     if (filter.max !== filter.high) {
-                        tool_filter_conditions = get_or_create_dict_item(
-                            active_filters,
-                            filter.tool_id,
-                            []
-                        );
+                        tool_filter_conditions = get_or_create_dict_item(active_filters, filter.tool_id, []);
                         tool_filter_conditions[tool_filter_conditions.length] =
                             filter.tool_exp_name + " <= " + filter.high;
                     }
@@ -688,10 +633,7 @@ define(["libs/underscore"], function(_) {
             // Create list of (tool_id, tool_filters) tuples.
             var active_filters_list = [];
             for (var tool_id in active_filters) {
-                active_filters_list[active_filters_list.length] = [
-                    tool_id,
-                    active_filters[tool_id]
-                ];
+                active_filters_list[active_filters_list.length] = [tool_id, active_filters[tool_id]];
             }
 
             // Invoke recursive function to run filters; this enables chaining of filters via
@@ -724,8 +666,7 @@ define(["libs/underscore"], function(_) {
                         // No more filters to run.
                         Galaxy.modal.show({
                             title: "Filtering Dataset",
-                            body:
-                                "Filter(s) are running on the complete dataset. Outputs are in dataset's history.",
+                            body: "Filter(s) are running on the complete dataset. Outputs are in dataset's history.",
                             buttons: { Close: Galaxy.modal.hide() }
                         });
                     } else {

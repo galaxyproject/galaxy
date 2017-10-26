@@ -33,13 +33,9 @@
             options.classes.join(" "),
             '"',
             options.title ? ' title="' + options.title + '"' : "",
-            !options.disabled && options.target
-                ? ' target="' + options.target + '"'
-                : "",
+            !options.disabled && options.target ? ' target="' + options.target + '"' : "",
             ' href="',
-            !options.disabled && options.href
-                ? options.href
-                : "javascript:void(0);",
+            !options.disabled && options.href ? options.href : "javascript:void(0);",
             '">',
             // could go with something less specific here - like 'html'
             '<span class="fa ',

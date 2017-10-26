@@ -13,18 +13,7 @@ define(
         "libs/toastr",
         "ui/editable-text"
     ],
-    function(
-        Utils,
-        Globals,
-        Workflow,
-        WorkflowCanvas,
-        Node,
-        WorkflowIcons,
-        FormWrappers,
-        Ui,
-        async_save_text,
-        Toastr
-    ) {
+    function(Utils, Globals, Workflow, WorkflowCanvas, Node, WorkflowIcons, FormWrappers, Ui, async_save_text, Toastr) {
         // Reset tool search to start state.
         function reset_tool_search(initValue) {
             // Function may be called in top frame or in tool_menu_frame;
@@ -53,9 +42,7 @@ define(
                 // Reset search input.
                 tool_menu_frame.find("#search-spinner").hide();
                 if (initValue) {
-                    var search_input = tool_menu_frame.find(
-                        "#tool-search-query"
-                    );
+                    var search_input = tool_menu_frame.find("#tool-search-query");
                     search_input.val("search tools");
                 }
             }
@@ -64,9 +51,7 @@ define(
         function add_node_icon($to_el, nodeType) {
             var iconStyle = WorkflowIcons[nodeType];
             if (iconStyle) {
-                var $icon = $('<i class="icon fa">&nbsp;</i>').addClass(
-                    iconStyle
-                );
+                var $icon = $('<i class="icon fa">&nbsp;</i>').addClass(iconStyle);
                 $to_el.before($icon);
             }
         }
@@ -101,10 +86,7 @@ define(
                         window.document.location = self.urls.workflow_index;
                     }
                 };
-                var save_current_workflow = function(
-                    eventObj,
-                    success_callback
-                ) {
+                var save_current_workflow = function(eventObj, success_callback) {
                     show_message("Saving workflow", "progress");
                     self.workflow.check_changes_in_active_form();
                     if (!self.workflow.has_changes) {
@@ -147,11 +129,7 @@ define(
                             }
                         },
                         error: function(response) {
-                            window.show_modal(
-                                "Saving workflow failed.",
-                                response.err_msg,
-                                { Ok: hide_modal }
-                            );
+                            window.show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
                         }
                     });
                 };
@@ -215,17 +193,12 @@ define(
                                                     .show();
                                             });
                                             // Hide labels that have no visible children.
-                                            $(
-                                                ".toolPanelLabel"
-                                            ).each(function() {
+                                            $(".toolPanelLabel").each(function() {
                                                 var this_label = $(this);
                                                 var next = this_label.next();
                                                 var no_visible_tools = true;
                                                 // Look through tools following label and, if none are visible, hide label.
-                                                while (
-                                                    next.length !== 0 &&
-                                                    next.hasClass("toolTitle")
-                                                ) {
+                                                while (next.length !== 0 && next.hasClass("toolTitle")) {
                                                     if (next.is(":visible")) {
                                                         no_visible_tools = false;
                                                         break;
@@ -332,10 +305,7 @@ define(
                         Save: save_current_workflow,
                         "Save As": workflow_save_as,
                         Run: function() {
-                            window.location =
-                                Galaxy.root +
-                                "workflow/run?id=" +
-                                self.options.id;
+                            window.location = Galaxy.root + "workflow/run?id=" + self.options.id;
                         },
                         "Edit Attributes": function() {
                             self.workflow.clear_active_node();
@@ -357,9 +327,7 @@ define(
                                     ? $("#workflow_rename").val()
                                     : "SavedAs_" + self.workflow.name;
                             var rename_annotation =
-                                $("#wf_annotation").val().length > 0
-                                    ? $("#wf_annotation").val()
-                                    : "";
+                                $("#wf_annotation").val().length > 0 ? $("#wf_annotation").val() : "";
                             $.ajax({
                                 url: self.urls.workflow_save_as,
                                 type: "POST",
@@ -367,25 +335,18 @@ define(
                                     workflow_name: rename_name,
                                     workflow_annotation: rename_annotation,
                                     workflow_data: function() {
-                                        return JSON.stringify(
-                                            self.workflow.to_simple()
-                                        );
+                                        return JSON.stringify(self.workflow.to_simple());
                                     }
                                 }
                             })
                                 .done(function(id) {
                                     window.onbeforeunload = undefined;
-                                    window.location =
-                                        Galaxy.root +
-                                        "workflow/editor?id=" +
-                                        id;
+                                    window.location = Galaxy.root + "workflow/editor?id=" + id;
                                     hide_modal();
                                 })
                                 .fail(function() {
                                     hide_modal();
-                                    alert(
-                                        "Saving this workflow failed. Please contact this site's administrator."
-                                    );
+                                    alert("Saving this workflow failed. Please contact this site's administrator.");
                                 });
                         },
                         Cancel: hide_modal
@@ -472,10 +433,7 @@ define(
                 $("#overview-border").bind("dragend", function(e, d) {
                     var op = $(this).offsetParent();
                     var opo = op.offset();
-                    var new_size = Math.max(
-                        op.width() - (d.offsetX - opo.left),
-                        op.height() - (d.offsetY - opo.top)
-                    );
+                    var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
                     $.jStorage.set("overview-size", new_size + "px");
                 });
 
@@ -531,12 +489,7 @@ define(
                 });
 
                 // Rename async.
-                async_save_text(
-                    "workflow-name",
-                    "workflow-name",
-                    self.urls.rename_async,
-                    "new_name"
-                );
+                async_save_text("workflow-name", "workflow-name", self.urls.rename_async, "new_name");
 
                 // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
                 $("#workflow-tag").click(function() {
@@ -575,28 +528,20 @@ define(
                             tooltip: "Copy and insert individual steps",
                             onclick: function() {
                                 if (workflow.step_count < 2) {
-                                    self.copy_into_workflow(
-                                        workflow.id,
-                                        workflow.name
-                                    );
+                                    self.copy_into_workflow(workflow.id, workflow.name);
                                 } else {
                                     // don't ruin the workflow by adding 50 steps unprompted.
                                     Galaxy.modal.show({
                                         title: "Warning",
                                         body:
-                                            "This will copy " +
-                                            workflow.step_count +
-                                            " new steps into your workflow.",
+                                            "This will copy " + workflow.step_count + " new steps into your workflow.",
                                         buttons: {
                                             Cancel: function() {
                                                 Galaxy.modal.hide();
                                             },
                                             Copy: function() {
                                                 Galaxy.modal.hide();
-                                                self.copy_into_workflow(
-                                                    workflow.id,
-                                                    workflow.name
-                                                );
+                                                self.copy_into_workflow(workflow.id, workflow.name);
                                             }
                                         }
                                     });
@@ -607,10 +552,7 @@ define(
                             .attr("href", "#")
                             .html(workflow.name)
                             .on("click", function() {
-                                self.add_node_for_subworkflow(
-                                    workflow.latest_id,
-                                    workflow.name
-                                );
+                                self.add_node_for_subworkflow(workflow.latest_id, workflow.name);
                             });
                         $section.find(".toolSectionBg").append(
                             $("<div/>")
@@ -633,11 +575,7 @@ define(
                         var upgrade_message = "";
                         $.each(data.upgrade_messages, function(k, v) {
                             upgrade_message +=
-                                "<li>Step " +
-                                (parseInt(k, 10) + 1) +
-                                ": " +
-                                self.workflow.nodes[k].name +
-                                "<ul>";
+                                "<li>Step " + (parseInt(k, 10) + 1) + ": " + self.workflow.nodes[k].name + "<ul>";
                             $.each(v, function(i, vv) {
                                 upgrade_message += "<li>" + vv + "</li>";
                             });
@@ -664,10 +602,7 @@ define(
             // Global state for the whole workflow
             reset: function() {
                 this.workflow && this.workflow.remove_all();
-                this.workflow = Globals.workflow = new Workflow(
-                    this,
-                    $("#canvas-container")
-                );
+                this.workflow = Globals.workflow = new Workflow(this, $("#canvas-container"));
             },
 
             scroll_to_nodes: function() {
@@ -742,9 +677,7 @@ define(
                 // DBTODO SANITIZE INPUTS.
                 var self = this;
                 $("#pja_container").append(get_pja_form(pja, node));
-                $(
-                    "#pja_container>.toolForm:last>.toolFormTitle>.buttons"
-                ).click(function() {
+                $("#pja_container>.toolForm:last>.toolFormTitle>.buttons").click(function() {
                     var action_to_rem = $(this)
                         .closest(".toolForm", ".action_tag")
                         .children(".action_tag:first")
@@ -752,8 +685,7 @@ define(
                     $(this)
                         .closest(".toolForm")
                         .remove();
-                    delete self
-                        .workflow.active_node.post_job_actions[action_to_rem];
+                    delete self.workflow.active_node.post_job_actions[action_to_rem];
                     self.workflow.active_form_has_changes = true;
                 });
             },
@@ -763,15 +695,9 @@ define(
             },
 
             display_file_list: function(node) {
-                var addlist =
-                    "<select id='node_data_list' name='node_data_list'>";
+                var addlist = "<select id='node_data_list' name='node_data_list'>";
                 for (var out_terminal in node.output_terminals) {
-                    addlist +=
-                        "<option value='" +
-                        out_terminal +
-                        "'>" +
-                        out_terminal +
-                        "</option>";
+                    addlist += "<option value='" + out_terminal + "'>" + out_terminal + "</option>";
                 }
                 addlist += "</select>";
                 return addlist;
@@ -817,13 +743,8 @@ define(
                     if (node.post_job_actions) {
                         $.each(node.post_job_actions, function(k, pja) {
                             if (pja.action_arguments) {
-                                $.each(pja.action_arguments, function(
-                                    k,
-                                    action_argument
-                                ) {
-                                    var arg_matches = action_argument.match(
-                                        parameter_re
-                                    );
+                                $.each(pja.action_arguments, function(k, action_argument) {
+                                    var arg_matches = action_argument.match(parameter_re);
                                     if (arg_matches) {
                                         matches = matches.concat(arg_matches);
                                     }
@@ -833,9 +754,7 @@ define(
                     }
                     if (matches) {
                         $.each(matches, function(k, element) {
-                            if (
-                                $.inArray(element, workflow_parameters) === -1
-                            ) {
+                            if ($.inArray(element, workflow_parameters) === -1) {
                                 workflow_parameters.push(element);
                             }
                         });
@@ -843,10 +762,7 @@ define(
                 });
                 if (workflow_parameters && workflow_parameters.length !== 0) {
                     $.each(workflow_parameters, function(k, element) {
-                        new_parameter_content +=
-                            "<div>" +
-                            element.substring(2, element.length - 1) +
-                            "</div>";
+                        new_parameter_content += "<div>" + element.substring(2, element.length - 1) + "</div>";
                     });
                     wf_parm_container.html(new_parameter_content);
                     wf_parm_box.show();
@@ -874,17 +790,11 @@ define(
                     content.icon = WorkflowIcons[node.type];
                     content.cls = "ui-portlet-narrow";
                     if (node) {
-                        var form_type =
-                            node.type == "tool" ? "Tool" : "Default";
-                        $el.append(
-                            new FormWrappers[form_type](content).form.$el
-                        );
+                        var form_type = node.type == "tool" ? "Tool" : "Default";
+                        $el.append(new FormWrappers[form_type](content).form.$el);
                         $container.append($el);
                     } else {
-                        Galaxy.emit.debug(
-                            "workflow-view::initialize()",
-                            "Node not found in workflow."
-                        );
+                        Galaxy.emit.debug("workflow-view::initialize()", "Node not found in workflow.");
                     }
                 }
                 $("." + cls).hide();
@@ -896,19 +806,14 @@ define(
             isSubType: function(child, parent) {
                 child = this.ext_to_type[child];
                 parent = this.ext_to_type[parent];
-                return (
-                    this.type_to_type[child] &&
-                    parent in this.type_to_type[child]
-                );
+                return this.type_to_type[child] && parent in this.type_to_type[child];
             },
 
             prebuildNode: function(type, title_text, content_id) {
                 var self = this;
                 var $f = $("<div class='toolForm toolFormInCanvas'/>");
                 var $title = $(
-                    "<div class='toolFormTitle unselectable'><span class='nodeTitle'>" +
-                        title_text +
-                        "</div></div>"
+                    "<div class='toolFormTitle unselectable'><span class='nodeTitle'>" + title_text + "</div></div>"
                 );
                 add_node_icon($title.find(".nodeTitle"), type);
                 $f.append($title);
@@ -925,9 +830,7 @@ define(
                 $f.find(".toolFormBody").append(tmp);
                 // Fix width to computed width
                 // Now add floats
-                var buttons = $(
-                    "<div class='buttons' style='float: right;'></div>"
-                );
+                var buttons = $("<div class='buttons' style='float: right;'></div>");
                 buttons.append(
                     $("<div/>")
                         .addClass("fa-icon-button fa fa-times")

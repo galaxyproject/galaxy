@@ -1,12 +1,6 @@
 /** Renders the default uploader rows */
 define(
-    [
-        "utils/utils",
-        "mvc/upload/upload-model",
-        "mvc/upload/upload-settings",
-        "mvc/ui/ui-popover",
-        "mvc/ui/ui-select"
-    ],
+    ["utils/utils", "mvc/upload/upload-model", "mvc/upload/upload-settings", "mvc/ui/ui-popover", "mvc/ui/ui-select"],
     function(Utils, UploadModel, UploadSettings, Popover, Select) {
         return Backbone.View.extend({
             /** Dictionary of upload states and associated icons */
@@ -163,9 +157,7 @@ define(
                             top: this.$el.height() - 8 + "px"
                         })
                         .show();
-                    this.$el.height(
-                        this.$el.height() - 8 + this.$text.height() + 16
-                    );
+                    this.$el.height(this.$el.height() - 8 + this.$text.height() + 16);
                     this.$mode.addClass("fa fa-edit");
                 } else if (options.file_mode == "local") {
                     this.$mode.addClass("fa fa-laptop");
@@ -188,9 +180,7 @@ define(
             _refreshInfo: function() {
                 var info = this.model.get("info");
                 if (info) {
-                    this.$info_text
-                        .html("<strong>Failed: </strong>" + info)
-                        .show();
+                    this.$info_text.html("<strong>Failed: </strong>" + info).show();
                 } else {
                     this.$info_text.hide();
                 }
@@ -200,11 +190,7 @@ define(
             _refreshPercentage: function() {
                 var percentage = parseInt(this.model.get("percentage"));
                 this.$progress_bar.css({ width: percentage + "%" });
-                this.$percentage.html(
-                    percentage != 100
-                        ? percentage + "%"
-                        : "Adding to history..."
-                );
+                this.$percentage.html(percentage != 100 ? percentage + "%" : "Adding to history...");
             },
 
             /** Refresh status */
@@ -236,18 +222,12 @@ define(
 
             /** Refresh file size */
             _refreshFileSize: function() {
-                this.$size.html(
-                    Utils.bytesToString(this.model.get("file_size"))
-                );
+                this.$size.html(Utils.bytesToString(this.model.get("file_size")));
             },
 
             /** Remove row */
             _removeRow: function() {
-                if (
-                    ["init", "success", "error"].indexOf(
-                        this.model.get("status")
-                    ) !== -1
-                ) {
+                if (["init", "success", "error"].indexOf(this.model.get("status")) !== -1) {
                     this.app.collection.remove(this.model);
                 }
             },

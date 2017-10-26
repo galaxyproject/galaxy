@@ -1,9 +1,5 @@
 define(
-    [
-        "mvc/workflow/workflow-globals",
-        "mvc/workflow/workflow-terminals",
-        "mvc/workflow/workflow-connector"
-    ],
+    ["mvc/workflow/workflow-globals", "mvc/workflow/workflow-terminals", "mvc/workflow/workflow-connector"],
     function(Globals, Terminals, Connector) {
         var TerminalMappingView = Backbone.View.extend({
             tagName: "div",
@@ -93,10 +89,7 @@ define(
                 var terminal = this.el.terminal;
                 // Accept a dragable if it is an output terminal and has a
                 // compatible type
-                return (
-                    $(d.drag).hasClass("output-terminal") &&
-                    terminal.canAccept(d.drag.terminal)
-                );
+                return $(d.drag).hasClass("output-terminal") && terminal.canAccept(d.drag.terminal);
             },
             onDropStart: function(e, d) {
                 if (d.proxy.terminal) {
@@ -126,10 +119,7 @@ define(
                                 $("<div/>")
                                     .addClass("fa-icon-button fa fa-times")
                                     .click(function() {
-                                        $.each(terminal.connectors, function(
-                                            _,
-                                            x
-                                        ) {
+                                        $.each(terminal.connectors, function(_, x) {
                                             if (x) {
                                                 x.destroy();
                                             }
@@ -215,9 +205,7 @@ define(
                 // Save PJAs in the case of change datatype actions.
                 Globals.workflow.check_changes_in_active_form();
                 // Drag proxy div
-                var h = $(
-                    '<div class="drag-terminal" style="position: absolute;"></div>'
-                )
+                var h = $('<div class="drag-terminal" style="position: absolute;"></div>')
                     .appendTo("#canvas-container")
                     .get(0);
                 // Terminal and connection to display noodle while dragging
