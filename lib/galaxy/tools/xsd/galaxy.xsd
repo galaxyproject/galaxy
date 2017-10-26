@@ -68,7 +68,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
         <xs:element name="environment_variables" type="EnvironmentVariables" minOccurs="0" maxOccurs="1"/>
         <xs:element name="command" type="Command"/>
-        <xs:element name="request_parameter_translation" type="RequestParameterTranslation" minOccurs="0"/>
+        <xs:element name="request_param_translation" type="RequestParameterTranslation" minOccurs="0"/>
         <xs:element name="configfiles" type="ConfigFiles" minOccurs="0"/>
         <xs:element name="outputs" type="Outputs" minOccurs="0"/>
         <xs:element name="inputs" type="Inputs" minOccurs="0"/>
@@ -4637,6 +4637,7 @@ Examples are included in the test tools directory including:
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="URL" />
+      <xs:enumeration value="URL_method" />
       <xs:enumeration value="dbkey" />
       <xs:enumeration value="organism" />
       <xs:enumeration value="table" />
