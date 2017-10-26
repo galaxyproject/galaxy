@@ -123,13 +123,19 @@ class SamplesAPIController(BaseAPIController):
         if not new_state:
             trans.response.status = 400
             return "Invalid sample state requested ( %s )." % new_state_name
-        requests_common_cntrller = trans.webapp.controllers['requests_common']
-        status, output = requests_common_cntrller.update_sample_state(trans=trans,
-                                                                      cntrller='api',
-                                                                      sample_ids=[encoded_sample_id],
-                                                                      new_state=new_state,
-                                                                      comment=comment)
-        return status, output
+        sample_ids=[encoded_sample_id]
+        for sample_id in sample_ids:
+            try:
+                sample = trans.sa_session.query(trans.model.Sample).get(trans.security.decode_id(sample_id))
+            except:
+                trans.response.status = 400
+                return "Invalid sample id ( %s ) specified, unable to decode." % str(sample_id)
+            if comment is None:
+                comment = 'Sample state set to %s' % str(new_state)
+            event = trans.model.SampleEvent(sample, new_state, comment)
+            trans.sa_session.add(event)
+            trans.sa_session.flush()
+        return 200, 'Done'
 
     def __update_sample_dataset_status(self, trans, **payload):
         # only admin user may transfer sample datasets in Galaxy sample tracking
