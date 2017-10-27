@@ -1,6 +1,6 @@
 #!/bin/sh
 
-THIS_DIRECTORY="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+THIS_DIRECTORY="$(dirname "$0")"
 ENVS=(flake8 flake8_imports)
 
 for env in "${ENVS[@]}"
