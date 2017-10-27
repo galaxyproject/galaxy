@@ -1,4 +1,4 @@
-define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
+define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util", "libs/jquery/jquery-ui"], function(
     toolshed_model,
     toolshed_util
 ) {
@@ -33,7 +33,6 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
 
         bindEvents: function() {
             var that = this;
-            require(["libs/jquery/jquery-ui"], function() {
                 $("#search_box").autocomplete({
                     source: function(request, response) {
                         var shed_url = that.model.tool_shed.replace(
@@ -64,7 +63,6 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
                         });
                     }
                 });
-            });
         },
 
         reDraw: function(options) {
