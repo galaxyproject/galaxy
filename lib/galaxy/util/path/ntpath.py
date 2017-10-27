@@ -2,7 +2,7 @@
 """
 from __future__ import absolute_import
 
-import ntpath  # noqa: I100 See https://github.com/PyCQA/flake8-import-order/pull/115
+import ntpath
 import sys
 
 from . import _build_self
