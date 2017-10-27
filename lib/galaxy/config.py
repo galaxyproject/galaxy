@@ -213,7 +213,7 @@ class Configuration(object):
                         self.hours_between_check = 12.0
             else:
                 self.hours_between_check = 12
-        except:
+        except Exception:
             self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get("update_integrated_tool_panel", True)
         self.enable_data_manager_user_view = string_as_bool(kwargs.get("enable_data_manager_user_view", "False"))
@@ -339,6 +339,9 @@ class Configuration(object):
         # Beta containers interface used by GIEs
         self.enable_beta_containers_interface = string_as_bool(kwargs.get('enable_beta_containers_interface', 'False'))
 
+        # Deprecated API for sample tracking
+        self.enable_legacy_sample_tracking_api = string_as_bool(kwargs.get('enable_legacy_sample_tracking_api', 'False'))
+
         # Certain modules such as the pause module will automatically cause
         # workflows to be scheduled in job handlers the way all workflows will
         # be someday - the following two properties can also be used to force this
@@ -396,6 +399,7 @@ class Configuration(object):
         self.genomespace_ui_url = kwargs.get('genomespace_ui_url', 'https://gsui.genomespace.org/jsui/')
         self.library_import_dir = kwargs.get('library_import_dir', None)
         self.user_library_import_dir = kwargs.get('user_library_import_dir', None)
+        self.user_library_import_symlink_whitelist = listify(kwargs.get('user_library_import_symlink_whitelist', []), do_strip=True)
         # Searching data libraries
         self.enable_lucene_library_search = string_as_bool(kwargs.get('enable_lucene_library_search', False))
         self.enable_whoosh_library_search = string_as_bool(kwargs.get('enable_whoosh_library_search', False))
@@ -794,7 +798,7 @@ class Configuration(object):
 
         try:
             port = config.getint('server:%s' % self.server_name, 'port')
-        except:
+        except Exception:
             # uWSGI galaxy installations don't use paster and only speak uWSGI not http
             port = None
         return port

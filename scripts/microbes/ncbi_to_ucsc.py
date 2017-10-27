@@ -16,7 +16,7 @@ def __main__():
     base_dir = os.path.join(os.getcwd(), "bacteria")
     try:
         base_dir = sys.argv[1]
-    except:
+    except IndexError:
         print("using default base_dir:", base_dir)
 
     organisms = {}
@@ -47,7 +47,7 @@ def __main__():
 
     try:
         page = urllib.urlopen(URL)
-    except:
+    except Exception:
         print("#Unable to open " + URL)
         print("?\tunspecified (?)")
         sys.exit(1)
@@ -55,7 +55,7 @@ def __main__():
     text = page.read()
     try:
         tree = ElementTree.fromstring(text)
-    except:
+    except Exception:
         print("#Invalid xml passed back from " + URL)
         print("?\tunspecified (?)")
         sys.exit(1)
@@ -66,7 +66,7 @@ def __main__():
         build = dsn.find("SOURCE").attrib['id']
         try:
             org_page = urllib.urlopen("http://archaea.ucsc.edu/cgi-bin/hgGateway?db=" + build).read().replace("\n", "").split("<table border=2 cellspacing=2 cellpadding=2>")[1].split("</table>")[0].split("</tr>")
-        except:
+        except Exception:
             print("NO CHROMS FOR", build)
             continue
         org_page.pop(0)

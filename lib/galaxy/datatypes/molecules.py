@@ -33,7 +33,7 @@ def count_special_lines(word, filename, invert=False):
         cmd.extend([word, filename])
         out = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
-    except:
+    except Exception:
         pass
     return 0
 
@@ -48,7 +48,7 @@ def count_lines(filename, non_empty=False):
         else:
             out = subprocess.Popen(['wc', '-l', filename], stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
-    except:
+    except Exception:
         pass
     return 0
 
@@ -427,7 +427,7 @@ class OBFS(Binary):
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "OpenBabel Fastsearch Index"
 
     def display_data(self, trans, data, preview=False, filename=None,
@@ -702,7 +702,7 @@ class SMILES(Tabular):
                     # if we have atoms, we have a molecule
                     if not len(pybel.readstring('smi', smiles).atoms) > 0:
                         return False
-                except:
+                except Exception:
                     # if convert fails its not a smiles string
                     return False
             return True

@@ -36,7 +36,7 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
         try:
             # Declare the database to be under a repository's version control
             db_schema = schema.ControlledSchema.create(engine, migrate_repository)
-        except:
+        except Exception:
             # The database is already under version control
             db_schema = schema.ControlledSchema(engine, migrate_repository)
         # Apply all scripts to get to current version

@@ -142,7 +142,7 @@ define(
                     '<div id="messagebox"/>',
                     '<div id="inactivebox" class="panel-warning-message" />',
                     '<div id="left" />',
-                    '<div id="center" class="inbound" />',
+                    '<div id="center" />',
                     '<div id="right" />',
                     "</div>",
                     '<div id="dd-helper" />'

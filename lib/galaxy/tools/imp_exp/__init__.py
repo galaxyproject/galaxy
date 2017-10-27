@@ -244,7 +244,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                     try:
                         imported_job.create_time = datetime.datetime.strptime(job_attrs["create_time"], "%Y-%m-%dT%H:%M:%S.%f")
                         imported_job.update_time = datetime.datetime.strptime(job_attrs["update_time"], "%Y-%m-%dT%H:%M:%S.%f")
-                    except:
+                    except Exception:
                         pass
                     self.sa_session.add(imported_job)
                     self.sa_session.flush()
@@ -485,7 +485,7 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
             # Get the job's parameters
             try:
                 params_objects = job.get_param_values(trans.app)
-            except:
+            except Exception:
                 # Could not get job params.
                 continue
 

@@ -28,7 +28,7 @@ parser.add_option('--ldda', dest='ldda_id', help='Display LibraryDatasetDatasetA
 
 try:
     assert options.encode_id or options.decode_id or options.hda_id or options.ldda_id
-except:
+except Exception:
     parser.print_help()
     sys.exit(1)
 
@@ -51,7 +51,7 @@ if options.decode_id:
 if options.hda_id:
     try:
         hda_id = int(options.hda_id)
-    except:
+    except Exception:
         hda_id = int(helper.decode_id(options.hda_id))
     hda = model.context.current.query(model.HistoryDatasetAssociation).get(hda_id)
     print('HDA "%s" is Dataset "%s" at: %s' % (hda.id, hda.dataset.id, hda.file_name))
@@ -59,7 +59,7 @@ if options.hda_id:
 if options.ldda_id:
     try:
         ldda_id = int(options.ldda_id)
-    except:
+    except Exception:
         ldda_id = int(helper.decode_id(options.ldda_id))
     ldda = model.context.current.query(model.HistoryDatasetAssociation).get(ldda_id)
     print('LDDA "%s" is Dataset "%s" at: %s' % (ldda.id, ldda.dataset.id, ldda.file_name))

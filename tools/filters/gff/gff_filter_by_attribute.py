@@ -179,7 +179,7 @@ def check_for_executable(text, description=''):
     for operand in operands:
         try:
             int(operand)
-        except:
+        except ValueError:
             if operand in secured:
                 stop_err("Illegal value '%s' in %s '%s'" % (operand, description, text))
 

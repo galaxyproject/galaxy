@@ -15,14 +15,14 @@ import requests
 def getbuilds(url):
     try:
         text = requests.get(url).text
-    except:
+    except Exception:
         print("#Unable to open " + url)
         print("?\tunspecified (?)")
         sys.exit(1)
 
     try:
         tree = ElementTree.fromstring(text)
-    except:
+    except Exception:
         print("#Invalid xml passed back from " + url)
         print("?\tunspecified (?)")
         sys.exit(1)

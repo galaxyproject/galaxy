@@ -16,7 +16,7 @@ except ImportError:
 
 try:
     from uwsgidecorators import postfork as uwsgi_postfork
-except:
+except (AttributeError, ImportError):
     uwsgi_postfork = lambda x: x    # noqa: E731
     if uwsgi is not None and hasattr(uwsgi, 'numproc'):
         print("WARNING: This is a uwsgi process but the uwsgidecorators library"

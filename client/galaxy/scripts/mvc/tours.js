@@ -9,16 +9,38 @@ define(["libs/bootstrap-tour"], function(BootstrapTour) {
     var tourpage_template = `<h2>Galaxy Tours</h2>
 <p>This page presents a list of interactive tours available on this Galaxy server.
 Select any tour to get started (and remember, you can click 'End Tour' at any time).</p>
-<ul>
-<% _.each(tours, function(tour) { %>
-    <li>
-        <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
-            <%- tour.attributes.name || tour.id %>
-        </a>
-         - <%- tour.attributes.description || "No description given." %>
-    </li>
-<% }); %>
-</ul>`;
+
+<div class="col-12 btn-group" role="group" aria-label="Tag selector">
+    <% _.each(tourtagorder, function(tag) { %>
+    <button class="btn btn-primary tag-selector-button" tag-selector-button="<%- tag %>">
+        <%- tag %>
+    </button>
+    <% }); %>
+</div>
+
+<% _.each(tourtagorder, function(tourtagkey) { %>
+<div tag="<%- tourtagkey %>" style="display: block;">
+    <% var tourtag = tourtags[tourtagkey]; %>
+    <h4>
+        <%- tourtag.name %>
+    </h4>
+    <ul class="list-group">
+    <% _.each(tourtag.tours, function(tour) { %>
+        <li class="list-group-item">
+            <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
+                <%- tour.name || tour.id %>
+            </a>
+             - <%- tour.attributes.description || \"No description given.\" %>
+             <% _.each(tour.attributes.tags, function(tag) { %>
+                <span class="label label-primary sm-label-pad">
+                    <%- tag.charAt(0).toUpperCase() + tag.slice(1) %>
+                </span>
+             <% }); %>
+        </li>
+    <% }); %>
+    </ul>
+</div>
+<% }); %>`;
 
     var tour_opts = {
         storage: window.sessionStorage,
@@ -111,11 +133,50 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
 
         render: function() {
             var tpl = _.template(tourpage_template);
+
+            var tourtags = {};
+            _.each(this.model.models, function(tour) {
+                if (tour.attributes.tags === null) {
+                    if (tourtags.Untagged === undefined) {
+                        tourtags.Untagged = { name: "Untagged", tours: [] };
+                    }
+                    tourtags.Untagged.tours.push(tour);
+                } else {
+                    _.each(tour.attributes.tags, function(tag) {
+                        tag = tag.charAt(0).toUpperCase() + tag.slice(1);
+                        if (tourtags[tag] === undefined) {
+                            tourtags[tag] = { name: tag, tours: [] };
+                        }
+                        tourtags[tag].tours.push(tour);
+                    });
+                }
+            });
+            var tourtagorder = Object.keys(tourtags).sort();
+
             this.$el
-                .html(tpl({ tours: this.model.models }))
+                .html(
+                    tpl({
+                        tours: this.model.models,
+                        tourtags: tourtags,
+                        tourtagorder: tourtagorder
+                    })
+                )
                 .on("click", ".tourItem", function(e) {
                     e.preventDefault();
                     giveTour($(this).data("tour.id"));
+                })
+                .on("click", ".tag-selector-button", function(e) {
+                    var elem = $(e.target);
+                    var display = "block";
+                    var tag = elem.attr("tag-selector-button");
+
+                    elem.toggleClass("btn-primary");
+                    elem.toggleClass("btn-secondary");
+
+                    if (elem.hasClass("btn-secondary")) {
+                        display = "none";
+                    }
+                    $("div[tag='" + tag + "']").css({ display: display });
                 });
         }
     });
