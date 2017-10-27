@@ -421,11 +421,11 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_model['messages'] = step.upgrade_messages
             step_models.append(step_model)
         return {
-            'id':                   trans.app.security.encode_id(stored.id),
-            'history_id':           trans.app.security.encode_id(trans.history.id) if trans.history else None,
-            'name':                 stored.name,
-            'workflow_options':     self._workflow_options_for_user(stored),
-            'steps':                step_models,
+            'id': trans.app.security.encode_id(stored.id),
+            'history_id': trans.app.security.encode_id(trans.history.id) if trans.history else None,
+            'name': stored.name,
+            'workflow_options': self._workflow_options_for_user(stored),
+            'steps': step_models,
             'step_version_changes': step_version_changes,
             'has_upgrade_messages': has_upgrade_messages
         }
