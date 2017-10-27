@@ -33,7 +33,9 @@ define(
                 "click .dataset_row": "selectClickedRow",
                 "click .folder_row": "selectClickedRow",
                 "click .sort-folder-name": "sortColumnClicked",
-                "click .sort-folder-datatype": "sortColumnClicked"
+                "click .sort-folder-file_ext": "sortColumnClicked",
+                "click .sort-folder-description": "sortColumnClicked",
+                "click .sort-folder-state": "sortColumnClicked"
             },
 
             collection: null,
@@ -325,18 +327,14 @@ define(
                 event.preventDefault();
                 this.current_sort_order =
                     this.current_sort_order === "asc" ? "desc" : "asc";
-                if (event.currentTarget.className === "sort-folder-name") {
-                    this.collection.sortFolder("name", this.current_sort_order);
-                    this.current_sort_key = "name";
-                } else if (
-                    event.currentTarget.className === "sort-folder-datatype"
-                ) {
-                    this.collection.sortFolder(
-                        "file_ext",
-                        this.current_sort_order
-                    );
-                    this.current_sort_key = "datatype";
-                }
+                this.current_sort_key = event.currentTarget.className.replace(
+                    "sort-folder-",
+                    ""
+                );
+                this.collection.sortFolder(
+                    this.current_sort_key,
+                    this.current_sort_order
+                );
                 this.renderSortIcon();
             },
 
@@ -461,11 +459,11 @@ define(
                         '<th class="button_heading"></th>',
                         '<th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>',
                         '<th><a class="sort-folder-name" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span></th>',
-                        '<th style="width:20%;">description</th>',
-                        '<th style="width:5%;"><a class="sort-folder-datatype" title="Click to reverse order" href="#">data type</a> <span title="Sorted alphabetically" class="sort-icon-datatype fa"></span></th>',
+                        '<th style="width:20%;"><a class="sort-folder-description" title="Click to reverse order" href="#">description</a> <span title="Sorted alphabetically" class="sort-icon-description fa"></span></th>',
+                        '<th style="width:5%;"><a class="sort-folder-file_ext" title="Click to reverse order" href="#">data type</a> <span title="Sorted alphabetically" class="sort-icon-file_ext fa"></span></th>',
                         '<th style="width:10%;">size</th>',
                         '<th style="width:160px;">time updated (UTC)</th>',
-                        '<th style="width:5%;">state</th> ',
+                        '<th style="width:5%;"><a class="sort-folder-state" title="Click to reverse order" href="#">state</a> <span title="Sorted alphabetically" class="sort-icon-state fa"></span></th>',
                         '<th style="width:150px;"></th> ',
                         "</thead>",
                         '<tbody id="folder_list_body">',

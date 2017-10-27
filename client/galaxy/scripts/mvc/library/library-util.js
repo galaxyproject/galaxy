@@ -9,13 +9,14 @@ define([], function() {
      */
     var generateFolderComparator = function(sort_key, sort_order) {
         return function(itemA, itemB) {
-            if (!itemA.has(sort_key)) {
-                itemA.set(sort_key, "");
-            }
-            if (!itemB.has(sort_key)) {
-                itemB.set(sort_key, "");
-            }
             if (itemA.get("type") === itemB.get("type")) {
+                if (!itemA.has(sort_key) && !itemB.has(sort_key)) {
+                    return 0;
+                } else if (!itemA.has(sort_key)) {
+                    return 1;
+                } else if (!itemB.has(sort_key)) {
+                    return -1;
+                }
                 if (
                     itemA.get(sort_key).toLowerCase() >
                     itemB.get(sort_key).toLowerCase()
@@ -32,9 +33,8 @@ define([], function() {
             } else {
                 if (itemA.get("type") === "folder") {
                     return -1; // folder is always before dataset
-                } else {
-                    return 1;
                 }
+                return 1;
             }
         };
     };
