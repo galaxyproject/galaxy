@@ -6,7 +6,7 @@ from galaxy import util
 from galaxy.model import tool_shed_install
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import grids, iff
-from tool_shed.util import repository_util, tool_dependency_util
+from tool_shed.util import repository_util
 
 log = logging.getLogger(__name__)
 
@@ -351,77 +351,4 @@ class RepositoryInstallationGrid(grids.Grid):
         tool_shed_repository_id = kwd.get('tool_shed_repository_id', None)
         if tool_shed_repository_id:
             return query.filter_by(tool_shed_repository_id=trans.security.decode_id(tool_shed_repository_id))
-        return query
-
-
-class ToolDependencyGrid(grids.Grid):
-
-    class NameColumn(grids.TextColumn):
-
-        def get_value(self, trans, grid, tool_dependency):
-            return tool_dependency.name
-
-    class VersionColumn(grids.TextColumn):
-
-        def get_value(self, trans, grid, tool_dependency):
-            return tool_dependency.version
-
-    class TypeColumn(grids.TextColumn):
-
-        def get_value(self, trans, grid, tool_dependency):
-            return tool_dependency.type
-
-    class StatusColumn(grids.TextColumn):
-
-        def get_value(self, trans, grid, tool_dependency):
-            if tool_dependency.status in [trans.install_model.ToolDependency.installation_status.INSTALLING]:
-                bgcolor = trans.install_model.ToolDependency.states.INSTALLING
-            elif tool_dependency.status in [trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                            trans.install_model.ToolDependency.installation_status.UNINSTALLED]:
-                bgcolor = trans.install_model.ToolDependency.states.UNINSTALLED
-            elif tool_dependency.status in [trans.install_model.ToolDependency.installation_status.ERROR]:
-                bgcolor = trans.install_model.ToolDependency.states.ERROR
-            elif tool_dependency.status in [trans.install_model.ToolDependency.installation_status.INSTALLED]:
-                bgcolor = trans.install_model.ToolDependency.states.OK
-            rval = '<div class="count-box state-color-%s" id="ToolDependencyStatus-%s">%s</div>' % \
-                (bgcolor, trans.security.encode_id(tool_dependency.id), tool_dependency.status)
-            return rval
-
-    title = "Tool Dependencies"
-    template = "admin/tool_shed_repository/tool_dependencies_grid.mako"
-    model_class = tool_shed_install.ToolDependency
-    default_sort_key = "-create_time"
-    num_rows_per_page = 50
-    preserve_state = True
-    use_paging = False
-    columns = [
-        NameColumn("Name",
-                   link=(lambda item: iff(item.status in [tool_shed_install.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                          tool_shed_install.ToolDependency.installation_status.INSTALLING,
-                                                          tool_shed_install.ToolDependency.installation_status.UNINSTALLED],
-                                          None,
-                                          dict(action="manage_tool_dependencies", operation='browse', id=item.id))),
-                   filterable="advanced"),
-        VersionColumn("Version",
-                      filterable="advanced"),
-        TypeColumn("Type",
-                   filterable="advanced"),
-        StatusColumn("Installation Status",
-                     filterable="advanced"),
-    ]
-
-    def build_initial_query(self, trans, **kwd):
-        tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids(as_string=False, **kwd)
-        if tool_dependency_ids:
-            clause_list = []
-            for tool_dependency_id in tool_dependency_ids:
-                clause_list.append(self.model_class.table.c.id == trans.security.decode_id(tool_dependency_id))
-            return trans.install_model.context.query(self.model_class) \
-                                              .filter(or_(*clause_list))
-        return trans.install_model.context.query(self.model_class)
-
-    def apply_query_filter(self, trans, query, **kwd):
-        tool_dependency_id = kwd.get('tool_dependency_id', None)
-        if tool_dependency_id:
-            return query.filter_by(tool_dependency_id=trans.security.decode_id(tool_dependency_id))
         return query

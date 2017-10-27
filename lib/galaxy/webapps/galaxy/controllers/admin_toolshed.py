@@ -45,7 +45,6 @@ class AdminToolshed(AdminGalaxy):
 
     installed_repository_grid = admin_toolshed_grids.InstalledRepositoryGrid()
     repository_installation_grid = admin_toolshed_grids.RepositoryInstallationGrid()
-    tool_dependency_grid = admin_toolshed_grids.ToolDependencyGrid()
 
     @web.expose
     @web.require_admin
@@ -784,15 +783,6 @@ class AdminToolshed(AdminGalaxy):
         status = kwd.get('status', 'done')
         tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids(as_string=False, **kwd)
         repository_id = kwd.get('repository_id', None)
-        if tool_dependency_ids:
-            # We need a tool_shed_repository, so get it from one of the tool_dependencies.
-            tool_dependency = tool_dependency_util.get_tool_dependency(trans.app, tool_dependency_ids[0])
-            tool_shed_repository = tool_dependency.tool_shed_repository
-        else:
-            # The user must be on the manage_repository_tool_dependencies page and clicked the button to either install or uninstall a
-            # tool dependency, but they didn't check any of the available tool dependencies on which to perform the action.
-            tool_shed_repository = repository_util.get_tool_shed_repository_by_id(trans.app, repository_id)
-        self.tool_dependency_grid.title = "Tool shed repository '%s' tool dependencies" % escape(tool_shed_repository.name)
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if not tool_dependency_ids:
@@ -828,9 +818,6 @@ class AdminToolshed(AdminGalaxy):
                     message += ' and restart your Galaxy server to install tool dependencies.'
                     kwd['message'] = message
                     kwd['status'] = 'error'
-        # Redirect if no tool dependencies are in the process of being installed.
-        if tool_shed_repository.tool_dependencies_being_installed:
-            return self.tool_dependency_grid(trans, **kwd)
         return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                         action='manage_repository_tool_dependencies',
                                                         tool_dependency_ids=tool_dependency_ids,
