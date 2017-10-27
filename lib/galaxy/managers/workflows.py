@@ -56,7 +56,7 @@ class WorkflowsManager(object):
                 filter(trans.app.model.StoredWorkflow.id == workflow_id)
         stored_workflow = workflow_query.options(joinedload('annotations'),
                                                  joinedload('tags'),
-                                                 subqueryload('workflows').joinedload('steps').joinedload('*')).first()
+                                                 subqueryload('latest_workflow').joinedload('steps').joinedload('*')).first()
         if stored_workflow is None:
             raise exceptions.ObjectNotFound("No such workflow found.")
         return stored_workflow

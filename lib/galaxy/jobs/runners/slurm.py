@@ -104,7 +104,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                     try:
                         self.queue_job(ajs.job_wrapper)
                         return
-                    except:
+                    except Exception:
                         ajs.fail_message = "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
                 elif slurm_state == 'CANCELLED':
                     # Check to see if the job was killed for exceeding memory consumption
@@ -164,7 +164,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                         return 'This job was terminated because it used more memory than it was allocated.'
                     elif any(_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS):
                         return 'This job was cancelled probably because it used more memory than it was allocated.'
-        except:
+        except Exception:
             log.exception('Error reading end of %s:', efile_path)
 
         return False

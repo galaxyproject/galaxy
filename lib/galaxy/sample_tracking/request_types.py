@@ -2,7 +2,8 @@
 RequestType
 """
 from galaxy.model import RequestType
-from sample import sample_state_factory
+
+from .sample import sample_state_factory
 
 RENAME_DATASET_OPTIONS = dict([(f_type.lower(), f_descript) for f_type, f_descript in RequestType.rename_dataset_options.items()])
 

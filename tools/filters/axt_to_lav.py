@@ -86,12 +86,12 @@ def main():
 
     try:
         (primaryFile, primary, primaryLengths) = parse_spec(primary)
-    except:
+    except Exception:
         usage("bad primary spec (must be seq_file[:species_name]:lengths_file")
 
     try:
         (secondaryFile, secondary, secondaryLengths) = parse_spec(secondary)
-    except:
+    except Exception:
         usage("bad secondary spec (must be seq_file[:species_name]:lengths_file")
 
     # read the lengths
@@ -163,7 +163,7 @@ def read_lengths(fileName):
         chrom = fields[0]
         try:
             length = int(fields[1])
-        except:
+        except Exception:
             raise Exception("bad lengths line (%s:%d): %s" % (fileName, lineNumber, line))
 
         if chrom in chromToLength:

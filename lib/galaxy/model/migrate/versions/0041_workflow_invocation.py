@@ -38,7 +38,7 @@ def upgrade(migrate_engine):
     for table in tables:
         try:
             table.create()
-        except:
+        except Exception:
             log.warning("Failed to create table '%s', ignoring (might result in wrong schema)" % table.name)
 
 
