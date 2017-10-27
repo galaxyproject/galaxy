@@ -393,18 +393,16 @@ define(
 
             /** Render Workflow Options */
             _renderWorkflowOptions: function() {
-                this.workflow_options_form = new Form({
-                    cls    : 'ui-portlet-narrow',
-                    title  : '<b>Workflow Options</b>',
-                    inputs : [{
-                        type    : 'select',
-                        name    : 'workflow_job_priority',
-                        label   : 'Workflow Job Priority',
-                        help    : 'What priority should the jobs in this workflow run at? (Overrides any declared job priority)',
-                        data    : this.model.get('workflow_options')
-                    }]
-                });
-                this._append( this.$steps, this.workflow_options_form.$el );
+                this.workflow_options_form = null;
+                if(!_.isEmpty(this.model.get('workflow_options'))){
+                    this.workflow_options_form = new Form({
+                        cls    : 'ui-portlet-narrow',
+                        title  : '<b>Workflow Options</b>',
+                        inputs : this.model.get('workflow_options')
+                    });
+
+                    this._append( this.$steps, this.workflow_options_form.$el );
+                }
             },
 
             /** Render step */

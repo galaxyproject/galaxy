@@ -5,6 +5,7 @@ from six import string_types
 from collections import namedtuple
 import logging
 import json
+import os.path
 import uuid
 
 from sqlalchemy import and_
@@ -420,16 +421,142 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_model['messages'] = step.upgrade_messages
             step_models.append(step_model)
         return {
-            'id'                    : trans.app.security.encode_id(stored.id),
-            'history_id'            : trans.app.security.encode_id(trans.history.id) if trans.history else None,
-            'name'                  : stored.name,
-            'workflow_options': [{'value': 'low', 'label': 'Low'},
-                                 {'value': 'med', 'label': 'Medium'},
-                                 {'value': 'high', 'label': 'High'}],  # TODO: Replace this with dict generated from xml
-            'steps'                 : step_models,
-            'step_version_changes'  : step_version_changes,
-            'has_upgrade_messages'  : has_upgrade_messages
+            'id':                   trans.app.security.encode_id(stored.id),
+            'history_id':           trans.app.security.encode_id(trans.history.id) if trans.history else None,
+            'name':                 stored.name,
+            'workflow_options':     self._workflow_options_for_user(stored),
+            'steps':                step_models,
+            'step_version_changes': step_version_changes,
+            'has_upgrade_messages': has_upgrade_messages
         }
+
+    def _workflow_options_for_user(self, stored):
+        # Finds which parameters the user can access based on the groups they are in.
+        def _get_user_permissions(group_definitions_root, user):
+            user_permission = {}
+            user_groups = []
+            for g in user.groups:
+                user_groups.append(g.group.name)
+            default_group = group_definitions_root.attrib['default']
+            for param_element in group_definitions_root.findall("group"):
+                group_name = param_element.attrib['name']
+                if group_name == default_group or group_name in user_groups:
+                    for param in param_element.getchildren():
+                        if param.tag not in user_permission:
+                            user_permission[param.tag] = {}
+                        if param.text is not None:
+                            for s in param.text.split(','):
+                                user_permission[param.tag][s] = {}
+            return user_permission
+
+        # Creates the data structure for the parameters that a set permissions can access.
+        def _get_param_list(param_definitions_root, user_permissions):
+            param_list = []
+            for param_elem in param_definitions_root.findall("param"):
+                attr = param_elem.attrib
+                if attr['name'] in user_permissions:
+                    # Allow 'select' type parameters to be used
+                    if attr['type'] == 'select':
+                        option_data = []
+                        reject_list = []
+                        for option_elem in param_elem.findall("option"):
+                            if option_elem.attrib['value'] in user_permissions[attr['name']]:
+                                option_data.append({
+                                    'label': option_elem.attrib['label'],
+                                    'value': option_elem.attrib['value']
+                                })
+                            else:
+                                reject_list.append(option_elem.attrib['label'])
+                        attr['data'] = option_data
+
+                        attr_help = ""
+                        if 'help' in attr:
+                            attr_help = attr['help']
+                        attr['help'] = _get_select_help_message(attr_help, reject_list)
+                    param_list.append(attr)
+            return param_list
+
+        # Creates the html text for a select message when parameters are not avaliable
+        def _get_select_help_message(help, reject_list):
+            if reject_list:
+                help += "<br/><br/>The following options are available but disabled.<br/>" + str(
+                    reject_list) + "<br/>If you believe this is a mistake, please contact your Galaxy admin."
+            return help
+
+        params = []
+        if self._workflow_options_xml_validation():
+            if os.path.exists(self.app.config.workflow_resource_params_file):
+                resource_param_file = self.app.config.workflow_resource_params_file
+                try:
+                    resource_definitions = util.parse_xml(resource_param_file)
+                except Exception as e:
+                    raise log.exception(e, resource_param_file)
+
+                permissions = _get_user_permissions(resource_definitions.getroot().find("groups"), stored.user)
+                params = _get_param_list(resource_definitions.getroot().find("parameters"), permissions)
+
+        return params
+
+    def _workflow_options_xml_validation(self):
+        valid = True
+        if os.path.exists(self.app.config.workflow_resource_params_file):
+            resource_param_file = self.app.config.workflow_resource_params_file
+            try:
+                resource_definitions = util.parse_xml(resource_param_file)
+
+                # Validate <parameters>
+
+                # used to validate that groups that specify options from a select parameter are using valid values
+                select_params = {}
+                all_params = []
+
+                param_definitions_root = resource_definitions.getroot().find("parameters")
+                for param_elem in param_definitions_root.findall("param"):
+                    attr = param_elem.attrib
+                    if 'name' not in attr:
+                        raise Exception("'param' Element is malformed! 'name' attribute not found!")
+                    if 'type' not in attr:
+                        raise Exception("'param' Element is malformed! 'type' attribute not found!")
+                    if attr['type'] == 'select':
+                        select_params[attr['name']] = []
+                        for option_elem in param_elem.findall("option"):
+                            if 'value' not in option_elem.attrib:
+                                raise Exception("'option' Element is malformed! 'value' attribute not found!")
+                            if 'label' not in option_elem.attrib:
+                                raise Exception("'option' Element is malformed! 'label' attribute not found!")
+                            select_params[attr['name']].append(option_elem.attrib['value'])
+                    all_params.append(attr['name'])
+
+                # Validate <groups>
+                group_definitions_root = resource_definitions.getroot().find("groups")
+                if 'default' not in group_definitions_root.attrib:
+                    raise Exception("'groups' Element is malformed! No 'default' specified!")
+                default_name = group_definitions_root.attrib['default']
+                has_default = False
+                for group in group_definitions_root.findall("group"):
+                    if 'name' not in group.attrib:
+                        raise Exception("'group' Element is malformed! 'name' attribute not found!")
+                    if group.attrib['name'] == default_name:
+                        has_default = True
+                    for child in group.getchildren():
+                        if child.tag not in all_params:
+                            raise Exception("'group' Element is malformed! "
+                                            "Child '" + child.tag + "' not found in <parameters>!")
+                        if child.tag in select_params:
+                            for att in child.text.split(","):
+                                if att not in select_params[child.tag]:
+                                    raise Exception("Child '" + child.tag + "' of group '" + group.attrib['name'] +
+                                                    "' is malformed! '" + att + "' not found as a param option!")
+                # make sure default is set correctly
+                if has_default is False:
+                    raise Exception("Defined default '" + default_name + "' not found!")
+
+            except Exception as e:
+                log.exception(e)
+                valid = False
+                pass
+
+        return valid
 
     def _workflow_to_dict_editor(self, trans, stored):
         workflow = stored.latest_workflow

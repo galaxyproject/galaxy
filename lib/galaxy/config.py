@@ -49,6 +49,7 @@ PATH_DEFAULTS = dict(
     error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
     dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
     job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
+    workflow_resource_params_file=['config/workflow_resource_params_conf.xml', 'workflow_resource_params_conf.xml'],
     migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
     object_store_config_file=['config/object_store_conf.xml', 'object_store_conf.xml'],
     openid_config_file=['config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample'],
