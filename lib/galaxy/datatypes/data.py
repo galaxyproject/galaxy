@@ -1032,6 +1032,11 @@ class MaximumLikelihoodDistanceMatrix(Text):
         """
         with open(filename, "r") as fio:
 
+            if b'\x00' in fio.read(512):
+                return False
+
+            fio.seek(0)
+
             header = fio.readline()
 
             try:
@@ -1040,8 +1045,14 @@ class MaximumLikelihoodDistanceMatrix(Text):
                 return False
 
             num_tokens = -1
+            num_lines = 0
 
             for line in fio:
+
+                num_lines += 1
+                if num_lines > 5000:
+                    break
+
                 line = line.splitlines()[0].strip()
 
                 if line == "":
@@ -1101,6 +1112,11 @@ class IQTree(Text):
         """
         with open(filename, 'r') as fio:
 
+            if b'\x00' in fio.read(512):
+                return False
+
+            fio.seek(0)
+
             found_line = {
                 'IQ-TREE' : False,
                 'REFERENCES': False,
@@ -1111,7 +1127,14 @@ class IQTree(Text):
                 'TIME STAMP': False
             }
 
+            num_lines = 0
+
             for line in fio:
+
+                num_lines += 1
+                if num_lines > 500:
+                    break
+
                 for wanted_line in found_line:
                     if line.startswith(wanted_line):
                         found_line[wanted_line] = True
