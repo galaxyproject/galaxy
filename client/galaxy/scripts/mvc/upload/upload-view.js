@@ -150,7 +150,7 @@ define(
                         $el: this.collection_view.$el
                     });
                     this.modal = new Modal.View({
-                        title: "Download from web or upload from disk",
+                        title: "Fetch data from web or upload from disk",
                         body: this.tabs.$el,
                         height: this.options.height,
                         width: this.options.width,
