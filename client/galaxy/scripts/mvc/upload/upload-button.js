@@ -7,7 +7,7 @@ define([], function() {
                 (options && options.model) ||
                 new Backbone.Model({
                     icon: "fa-upload",
-                    tooltip: "Download from URL or upload files from disk",
+                    tooltip: "Fetch data from web or upload from disk",
                     label: "Load Data",
                     percentage: 0,
                     status: "",
