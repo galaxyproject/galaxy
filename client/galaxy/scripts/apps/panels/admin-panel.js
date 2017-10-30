@@ -65,21 +65,21 @@ var AdminPanel = Backbone.View.extend({
                 enabled : self.config.allow_user_impersonation
             }]
         },{
-            title : "Tools and Tool Shed",
+            title : "Tool Management",
             items : [ {
-                title   : "Search Tool Shed",
+                title   : "Install new tools",
                 url     : "admin_toolshed/browse_tool_sheds",
                 enabled : self.settings.is_tool_shed_installed
             },{
-                title   : "Search Tool Shed (Beta)",
+                title   : "Install new tools (Beta)",
                 url     : "admin_toolshed/browse_toolsheds",
                 enabled : self.settings.is_tool_shed_installed && self.config.enable_beta_ts_api_install
             },{
-                title   : "Monitor installing repositories",
+                title   : "Monitor installation",
                 url     : "admin_toolshed/monitor_repository_installation",
                 enabled : self.settings.installing_repository_ids
             },{
-                title   : "Manage installed tools",
+                title   : "Manage tools",
                 url     : "admin/repositories",
                 enabled : self.settings.is_repo_installed,
                 target  : "__use_router__"
@@ -88,24 +88,24 @@ var AdminPanel = Backbone.View.extend({
                 url     : "admin_toolshed/reset_metadata_on_selected_installed_repositories",
                 enabled : self.settings.is_repo_installed
             },{
-                title   : "Download local tool",
-                url     : "admin/package_tool"
-            },{
-                title   : "Tool lineage",
+                title   : "View lineage",
                 url     : "admin/tool_versions",
                 target  : "__use_router__"
             },{
-                title   : "Review tool migration stages",
+                title   : "View migration stages",
                 url     : "admin/review_tool_migration_stages"
             },{
-                title   : "View Tool Error Logs",
+                title   : "View error logs",
                 url     : "admin/tool_errors"
             },{
-                title   : "Manage Display Whitelist",
+                title   : "Manage whitelist",
                 url     : "admin/sanitize_whitelist"
             },{
-                title   : "Manage Tool Dependencies",
+                title   : "Manage dependencies",
                 url     : "admin/manage_tool_dependencies"
+            },{
+                title   : "Downloads",
+                url     : "admin/package_tool"
             } ]
         }]);
         this.setElement( this._template() );
