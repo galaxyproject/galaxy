@@ -1,7 +1,13 @@
 FROM ubuntu:16.04
 MAINTAINER John Chilton <jmchilton@gmail.com>
 
-ENV MYSQL_MAJOR=5.7 \
+ARG CHROME_VERSION="google-chrome-stable"
+ARG CHROME_DRIVER_VERSION="latest"
+
+# TODO: merge with first ENV statement.
+ENV DEBIAN_FRONTEND=noninteractive \
+    DEBCONF_NONINTERACTIVE_SEEN=true \
+    MYSQL_MAJOR=5.7 \
     POSTGRES_MAJOR=9.5 \
     GALAXY_ROOT=/galaxy \
     GALAXY_VIRTUAL_ENV=/galaxy_venv
@@ -9,10 +15,12 @@ ENV MYSQL_MAJOR=5.7 \
 # Pre-install a bunch of packages to speed up ansible steps.
 RUN apt-get update -y && apt-get install -y software-properties-common apt-transport-https curl && \
     apt-add-repository -y ppa:ansible/ansible && \
+    curl -s https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
     curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
     curl -sL https://deb.nodesource.com/setup_8.x | bash -  && \
     apt-key adv --keyserver pool.sks-keyservers.net --recv-keys A4A9406876FCBD3C456770C88C718D3B5072E1F5 && \
     echo "deb http://repo.mysql.com/apt/ubuntu/ trusty mysql-${MYSQL_MAJOR}" > /etc/apt/sources.list.d/mysql.list && \
+    echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
     { \
 		echo mysql-community-server mysql-community-server/data-dir select ''; \
 		echo mysql-community-server mysql-community-server/root-pass password ''; \
@@ -35,6 +43,9 @@ RUN apt-get update -y && apt-get install -y software-properties-common apt-trans
             openjdk-8-jre-headless \
             tzdata \
             sudo \
+            locales \
+            xvfb \
+            ${CHROME_VERSION:-google-chrome-stable} \
             wget zlib1g-dev nodejs && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -101,6 +112,68 @@ RUN mkdir -p /tmp/install && \
     make && \
     make install && \
     cd && rm -rf /tmp/install
+
+#========================================
+# Add Selenium user with passwordless sudo
+#========================================
+RUN useradd seluser \
+         --shell /bin/bash  \
+         --create-home \
+  && usermod -a -G sudo seluser \
+  && echo 'ALL ALL = (ALL) NOPASSWD: ALL' >> /etc/sudoers \
+  && echo 'seluser:secret' | chpasswd
+
+USER seluser
+
+#==========
+# Selenium
+#==========
+RUN  sudo mkdir -p /opt/selenium \
+  && sudo chown seluser:seluser /opt/selenium \
+  && wget --no-verbose https://selenium-release.storage.googleapis.com/3.6/selenium-server-standalone-3.6.0.jar \
+    -O /opt/selenium/selenium-server-standalone.jar
+
+USER root
+
+#==============================
+# Scripts to run Selenium Node
+#==============================
+COPY selenium/entry_point.sh selenium/functions.sh selenium/wrap_chrome_binary selenium/generate_config /opt/bin/
+
+RUN /opt/bin/wrap_chrome_binary
+
+USER seluser
+
+RUN CD_VERSION=$(if [ ${CHROME_DRIVER_VERSION:-latest} = "latest" ]; then echo $(wget -qO- https://chromedriver.storage.googleapis.com/LATEST_RELEASE); else echo $CHROME_DRIVER_VERSION; fi) \
+  && echo "Using chromedriver version: "$CD_VERSION \
+  && wget --no-verbose -O /tmp/chromedriver_linux64.zip https://chromedriver.storage.googleapis.com/$CD_VERSION/chromedriver_linux64.zip \
+  && rm -rf /opt/selenium/chromedriver \
+  && unzip /tmp/chromedriver_linux64.zip -d /opt/selenium \
+  && rm /tmp/chromedriver_linux64.zip \
+  && mv /opt/selenium/chromedriver /opt/selenium/chromedriver-$CD_VERSION \
+  && chmod 755 /opt/selenium/chromedriver-$CD_VERSION \
+  && sudo ln -fs /opt/selenium/chromedriver-$CD_VERSION /usr/bin/chromedriver
+
+RUN /opt/bin/generate_config > /opt/selenium/config.json
+
+#============================
+# Some configuration options
+#============================
+ENV SCREEN_WIDTH=1360 \
+    SCREEN_HEIGHT=1020 \
+    SCREEN_DEPTH=24 \
+    DISPLAY=:99.0 \
+    NODE_MAX_INSTANCES=1 \
+    NODE_MAX_SESSION=1 \
+    NODE_PORT=5555 \
+    NODE_REGISTER_CYCLE=5000 \
+    NODE_POLLING=5000 \
+    NODE_UNREGISTER_IF_STILL_DOWN_AFTER=60000 \
+    NODE_DOWN_POLLING_LIMIT=2 \
+    NODE_APPLICATION_NAME="" \
+    DBUS_SESSION_BUS_ADDRESS=/dev/null
+
+USER root
 
 ADD run_test_wrapper.sh /usr/local/bin/run_test_wrapper.sh
 
