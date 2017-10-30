@@ -1245,13 +1245,18 @@ def map_tool_to_destination(
     # Priority coming from workflow invocation takes precedence over job specific priorities
     if workflow_params is not None:
         resource_params = json.loads(workflow_params)
-        if 'workflow_job_priority' in resource_params:
-            priority = resource_params['workflow_job_priority']
+        if 'priority' in resource_params:
+            priority = resource_params['priority']
     elif job_params is not None:
         resource_params = json.loads(job_params)
         if 'priority' in resource_params:
             priority = resource_params['priority']
             # TODO: Once workflow priority options are generated from xml, add validation against the same xml
+
+
+
+    #user_group_list = job.user.groups
+
 
     if config is not None:
         # get the users priority
