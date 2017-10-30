@@ -84,9 +84,15 @@ var AdminPanel = Backbone.View.extend({
                 enabled : self.settings.is_repo_installed,
                 target  : "__use_router__"
             },{
-                title   : "Reset metadata",
+                title   : "Manage metadata",
                 url     : "admin_toolshed/reset_metadata_on_selected_installed_repositories",
                 enabled : self.settings.is_repo_installed
+            },{
+                title   : "Manage whitelist",
+                url     : "admin/sanitize_whitelist"
+            },{
+                title   : "Manage dependencies",
+                url     : "admin/manage_tool_dependencies"
             },{
                 title   : "View lineage",
                 url     : "admin/tool_versions",
@@ -97,12 +103,6 @@ var AdminPanel = Backbone.View.extend({
             },{
                 title   : "View error logs",
                 url     : "admin/tool_errors"
-            },{
-                title   : "Manage whitelist",
-                url     : "admin/sanitize_whitelist"
-            },{
-                title   : "Manage dependencies",
-                url     : "admin/manage_tool_dependencies"
             } ]
         }]);
         this.setElement( this._template() );
