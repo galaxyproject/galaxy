@@ -1,5 +1,6 @@
 nose
 NoseHTML
 twill==0.9.1
+testfixtures
 mock
 selenium
