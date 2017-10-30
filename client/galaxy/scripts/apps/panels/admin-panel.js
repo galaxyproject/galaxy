@@ -124,7 +124,7 @@ var AdminPanel = Backbone.View.extend({
                         target: "__use_router__"
                     },
                     {
-                        title: 'Reload a tool"s configuration',
+                        title: "Reload a tool's configuration",
                         url: "admin/reload_tool"
                     },
                     {
