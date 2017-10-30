@@ -15,10 +15,10 @@ var AdminPanel = Backbone.View.extend({
         this.categories = new Backbone.Collection([{
             title : "Server",
             items : [ {
-                title   : "Data types registry",
+                title   : "Data types",
                 url     : "admin/view_datatypes_registry"
             },{
-                title   : "Data tables registry",
+                title   : "Data tables",
                 url     : "admin/view_tool_data_tables"
             },{
                 title   : "Data libraries",
