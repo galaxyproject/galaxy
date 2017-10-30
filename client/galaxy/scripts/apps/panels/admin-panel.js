@@ -103,9 +103,6 @@ var AdminPanel = Backbone.View.extend({
             },{
                 title   : "Manage dependencies",
                 url     : "admin/manage_tool_dependencies"
-            },{
-                title   : "Downloads",
-                url     : "admin/package_tool"
             } ]
         }]);
         this.setElement( this._template() );
