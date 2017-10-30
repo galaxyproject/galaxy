@@ -1,4 +1,5 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="*" />
 
 <%def name="javascripts()">
@@ -10,23 +11,29 @@
 
 <%def name="repository_installation_javascripts()">
     <script type="text/javascript">
-        $(document).ready(function( ){
-            initiate_repository_installation( "${initiate_repository_installation_ids}", "${encoded_kwd}", "${reinstalling}" );
-        });
+        %if context.get("initiate_repository_installation_ids"):
+            $(document).ready(function( ){
+                initiate_repository_installation( "${initiate_repository_installation_ids}", "${encoded_kwd}", "${reinstalling}" );
+            });
+        %endif
         var initiate_repository_installation = function ( iri_ids, encoded_kwd, reinstalling ) {
             // Make ajax call
             $.ajax( {
                 type: "POST",
-                url: "${h.url_for( controller='admin_toolshed', action='manage_repositories' )}",
+                url: "${h.url_for( controller='admin_toolshed', action='install_repositories' )}",
                 dataType: "html",
-                data: { operation: "install", tool_shed_repository_ids: iri_ids, encoded_kwd: encoded_kwd, reinstalling: reinstalling },
+                data: { tool_shed_repository_ids: iri_ids, encoded_kwd: encoded_kwd, reinstalling: reinstalling },
                 success : function ( data ) {
                     console.log( "Initializing repository installation succeeded" );
-                },
+                }
             });
         };
     </script>
 </%def>
+
+%if context.get("message"):
+    ${render_msg( message, status )}
+%endif
 
 %if tool_shed_repositories:
     <div class="toolForm">
@@ -68,4 +75,6 @@
             <br clear="left"/>
         </div>
     </div>
+%else:
+    ${render_msg("There is no repository being installed.", "info")}
 %endif
