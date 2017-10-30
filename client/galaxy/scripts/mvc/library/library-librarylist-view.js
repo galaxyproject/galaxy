@@ -251,12 +251,12 @@ define(
                     if (
                         Galaxy.libraries.preferences.get("sort_order") === "asc"
                     ) {
-                        this.collection.sortByNameAsc();
+                        this.collection.sortLibraries("name", "asc");
                     } else if (
                         Galaxy.libraries.preferences.get("sort_order") ===
                         "desc"
                     ) {
-                        this.collection.sortByNameDesc();
+                        this.collection.sortLibraries("name", "desc");
                     }
                 }
             },

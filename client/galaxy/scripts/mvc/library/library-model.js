@@ -1,4 +1,4 @@
-define([], function() {
+define(["mvc/library/library-util"], function(mod_util) {
     // ============================================================================
     // LIBRARY RELATED MODELS
 
@@ -21,10 +21,6 @@ define([], function() {
         urlRoot: Galaxy.root + "api/libraries",
 
         model: Library,
-
-        sort_key: "name", // default
-
-        sort_order: null, // default
 
         initialize: function(options) {
             options = options || {};
@@ -60,50 +56,12 @@ define([], function() {
             return filteredLibraries;
         },
 
-        /** Sort collection by library name (ascending) and return the sorted
-       *  collection
-       */
-        sortByNameAsc: function() {
-            this.comparator = function(libraryA, libraryB) {
-                if (
-                    libraryA.get("name").toLowerCase() >
-                    libraryB.get("name").toLowerCase()
-                ) {
-                    return 1; // after
-                }
-                if (
-                    libraryB.get("name").toLowerCase() >
-                    libraryA.get("name").toLowerCase()
-                ) {
-                    return -1; // before
-                }
-                return 0; // equal
-            };
+        sortLibraries: function(sort_key, sort_order) {
+            this.comparator = mod_util.generateLibraryComparator(
+                sort_key,
+                sort_order
+            );
             this.sort();
-            return this;
-        },
-
-        /** Sort collection by library name (descending) and return the sorted
-       *  collection
-       */
-        sortByNameDesc: function() {
-            this.comparator = function(libraryA, libraryB) {
-                if (
-                    libraryA.get("name").toLowerCase() >
-                    libraryB.get("name").toLowerCase()
-                ) {
-                    return -1; // before
-                }
-                if (
-                    libraryB.get("name").toLowerCase() >
-                    libraryA.get("name").toLowerCase()
-                ) {
-                    return 1; // after
-                }
-                return 0; // equal
-            };
-            this.sort();
-            return this;
         }
     });
 
@@ -123,66 +81,12 @@ define([], function() {
     var Folder = Backbone.Collection.extend({
         model: LibraryItem,
 
-        /** Sort collection by item name (ascending) and return the sorted
-       *  collection. Folders go before datasets.
-       */
-        sortByNameAsc: function() {
-            this.comparator = function(itemA, itemB) {
-                if (itemA.get("type") === itemB.get("type")) {
-                    if (
-                        itemA.get("name").toLowerCase() >
-                        itemB.get("name").toLowerCase()
-                    ) {
-                        return 1; // after
-                    }
-                    if (
-                        itemB.get("name").toLowerCase() >
-                        itemA.get("name").toLowerCase()
-                    ) {
-                        return -1; // before
-                    }
-                    return 0; // equal
-                } else {
-                    if (itemA.get("type") === "folder") {
-                        return -1; // folder is always before dataset
-                    } else {
-                        return 1;
-                    }
-                }
-            };
+        sortFolder: function(sort_key, sort_order) {
+            this.comparator = mod_util.generateFolderComparator(
+                sort_key,
+                sort_order
+            );
             this.sort();
-            return this;
-        },
-
-        /** Sort collection by item name (descending) and return the sorted
-       *  collection. Folders go before datasets.
-       */
-        sortByNameDesc: function() {
-            this.comparator = function(itemA, itemB) {
-                if (itemA.get("type") === itemB.get("type")) {
-                    if (
-                        itemA.get("name").toLowerCase() >
-                        itemB.get("name").toLowerCase()
-                    ) {
-                        return -1; // after
-                    }
-                    if (
-                        itemB.get("name").toLowerCase() >
-                        itemA.get("name").toLowerCase()
-                    ) {
-                        return 1; // before
-                    }
-                    return 0; // equal
-                } else {
-                    if (itemA.get("type") === "folder") {
-                        return -1; // folder is always before dataset
-                    } else {
-                        return 1;
-                    }
-                }
-            };
-            this.sort();
-            return this;
         }
     });
 
