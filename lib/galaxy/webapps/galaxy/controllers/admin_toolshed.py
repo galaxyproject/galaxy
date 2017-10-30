@@ -44,8 +44,6 @@ log = logging.getLogger(__name__)
 class AdminToolshed(AdminGalaxy):
 
     installed_repository_grid = admin_toolshed_grids.InstalledRepositoryGrid()
-    repository_installation_grid = admin_toolshed_grids.RepositoryInstallationGrid()
-    tool_dependency_grid = admin_toolshed_grids.ToolDependencyGrid()
 
     @web.expose
     @web.require_admin
@@ -560,72 +558,28 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def manage_repositories(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
-        api_installation = util.asbool(kwd.get('api', 'false'))
-        if api_installation:
-            tsr_ids = json.loads(kwd.get('tool_shed_repository_ids', '[]'))
-            kwd['tool_shed_repository_ids'] = tsr_ids
-            tsridslist = common_util.get_tool_shed_repository_ids(**kwd)
-        else:
-            tsridslist = common_util.get_tool_shed_repository_ids(**kwd)
-        if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if not tsridslist:
-                message = 'Select at least 1 tool shed repository to %s.' % operation
-                kwd['message'] = message
-                kwd['status'] = 'error'
-                del kwd['operation']
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='manage_repositories',
-                                                                **kwd))
-            if operation == 'browse':
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='browse_repository',
-                                                                **kwd))
-            elif operation == 'uninstall':
-                # TODO: I believe this block should be removed, but make sure..
-                repositories_for_uninstallation = []
-                for repository_id in tsridslist:
-                    repository = trans.install_model.context.query(trans.install_model.ToolShedRepository) \
-                                                            .get(trans.security.decode_id(repository_id))
-                    if repository.status in [trans.install_model.ToolShedRepository.installation_status.INSTALLED,
-                                             trans.install_model.ToolShedRepository.installation_status.ERROR]:
-                        repositories_for_uninstallation.append(repository)
-                if repositories_for_uninstallation:
-                    return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                    action='uninstall_repositories',
-                                                                    **kwd))
-                else:
-                    kwd['message'] = 'All selected tool shed repositories are already uninstalled.'
-                    kwd['status'] = 'error'
-            elif operation == "install":
-                irm = install_manager.InstallRepositoryManager(trans.app)
-                reinstalling = util.string_as_bool(kwd.get('reinstalling', False))
-                encoded_kwd = kwd['encoded_kwd']
-                decoded_kwd = encoding_util.tool_shed_decode(encoded_kwd)
-                install_resolver_dependencies = CheckboxField.is_checked(decoded_kwd.get('install_resolver_dependencies', ''))
-                install_tool_dependencies = CheckboxField.is_checked(decoded_kwd.get('install_tool_dependencies', ''))
-                tsr_ids = decoded_kwd['tool_shed_repository_ids']
-                decoded_kwd['install_resolver_dependencies'] = install_resolver_dependencies
-                decoded_kwd['install_tool_dependencies'] = install_tool_dependencies
-                try:
-                    tool_shed_repositories = irm.install_repositories(
-                        tsr_ids=tsr_ids,
-                        decoded_kwd=decoded_kwd,
-                        reinstalling=reinstalling,
-                    )
-                    tsr_ids_for_monitoring = [trans.security.encode_id(tsr.id) for tsr in tool_shed_repositories]
-                    if api_installation:
-                        return json.dumps(tsr_ids_for_monitoring)
-                    else:
-                        trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                 action='monitor_repository_installation',
-                                                                 tool_shed_repository_ids=tsr_ids_for_monitoring))
-                except install_manager.RepositoriesInstalledException as e:
-                    kwd['message'] = e.message
-                    kwd['status'] = 'error'
-        return self.repository_installation_grid(trans, **kwd)
+    def install_repositories(self, trans, **kwd):
+        reinstalling = util.string_as_bool(kwd.get('reinstalling', False))
+        encoded_kwd = kwd.get('encoded_kwd')
+        decoded_kwd = encoding_util.tool_shed_decode(encoded_kwd) if encoded_kwd else {}
+        install_resolver_dependencies = CheckboxField.is_checked(decoded_kwd.get('install_resolver_dependencies', ''))
+        install_tool_dependencies = CheckboxField.is_checked(decoded_kwd.get('install_tool_dependencies', ''))
+        decoded_kwd['install_resolver_dependencies'] = install_resolver_dependencies
+        decoded_kwd['install_tool_dependencies'] = install_tool_dependencies
+        tsr_ids = decoded_kwd.get('tool_shed_repository_ids')
+        if not tsr_ids:
+            return self.message_exception(trans, 'Repository ids missing.')
+        irm = install_manager.InstallRepositoryManager(trans.app)
+        try:
+            tool_shed_repositories = irm.install_repositories(
+                tsr_ids=tsr_ids,
+                decoded_kwd=decoded_kwd,
+                reinstalling=reinstalling,
+            )
+            tsr_ids_for_monitoring = [trans.security.encode_id(tsr.id) for tsr in tool_shed_repositories]
+            return json.dumps(tsr_ids_for_monitoring)
+        except install_manager.RepositoriesInstalledException as e:
+            return self.message_exception(trans, e.message)
 
     @web.expose
     @web.require_admin
@@ -784,15 +738,6 @@ class AdminToolshed(AdminGalaxy):
         status = kwd.get('status', 'done')
         tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids(as_string=False, **kwd)
         repository_id = kwd.get('repository_id', None)
-        if tool_dependency_ids:
-            # We need a tool_shed_repository, so get it from one of the tool_dependencies.
-            tool_dependency = tool_dependency_util.get_tool_dependency(trans.app, tool_dependency_ids[0])
-            tool_shed_repository = tool_dependency.tool_shed_repository
-        else:
-            # The user must be on the manage_repository_tool_dependencies page and clicked the button to either install or uninstall a
-            # tool dependency, but they didn't check any of the available tool dependencies on which to perform the action.
-            tool_shed_repository = repository_util.get_tool_shed_repository_by_id(trans.app, repository_id)
-        self.tool_dependency_grid.title = "Tool shed repository '%s' tool dependencies" % escape(tool_shed_repository.name)
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if not tool_dependency_ids:
@@ -828,9 +773,6 @@ class AdminToolshed(AdminGalaxy):
                     message += ' and restart your Galaxy server to install tool dependencies.'
                     kwd['message'] = message
                     kwd['status'] = 'error'
-        # Redirect if no tool dependencies are in the process of being installed.
-        if tool_shed_repository.tool_dependencies_being_installed:
-            return self.tool_dependency_grid(trans, **kwd)
         return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                         action='manage_repository_tool_dependencies',
                                                         tool_dependency_ids=tool_dependency_ids,
@@ -841,11 +783,23 @@ class AdminToolshed(AdminGalaxy):
     @web.expose
     @web.require_admin
     def monitor_repository_installation(self, trans, **kwd):
-        tsridslist = common_util.get_tool_shed_repository_ids(**kwd)
-        if not tsridslist:
-            tsridslist = repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=False)
-        kwd['tool_shed_repository_ids'] = tsridslist
-        return self.repository_installation_grid(trans, **kwd)
+        tsr_ids = common_util.get_tool_shed_repository_ids(**kwd)
+        if not tsr_ids:
+            tsr_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=False)
+        tsr_ids = [trans.security.decode_id(tsr_id) for tsr_id in tsr_ids]
+        tool_shed_repositories = []
+        for tsr_id in tsr_ids:
+            tsr = trans.install_model.context.query(trans.install_model.ToolShedRepository).get(tsr_id)
+            tool_shed_repositories.append(tsr)
+        clause_list = []
+        for tsr_id in tsr_ids:
+            clause_list.append(trans.install_model.ToolShedRepository.table.c.id == tsr_id)
+        query = trans.install_model.context.current.query(trans.install_model.ToolShedRepository).filter(or_(*clause_list))
+        return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
+                                   tool_shed_repositories=tool_shed_repositories,
+                                   query=query,
+                                   message=escape(kwd.get('message', '')),
+                                   status=kwd.get('status'))
 
     @web.json
     @web.require_admin
@@ -992,20 +946,19 @@ class AdminToolshed(AdminGalaxy):
                                          tool_panel_section_keys=tool_panel_section_keys,
                                          tool_path=tool_path,
                                          tool_shed_url=tool_shed_url)
-
                 encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
                     install_repository_manager.initiate_repository_installation(installation_dict)
-                return trans.fill_template('admin/tool_shed_repository/initiate_repository_installation.mako',
+                return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
                                            encoded_kwd=encoded_kwd,
                                            query=query,
                                            tool_shed_repositories=tool_shed_repositories,
                                            initiate_repository_installation_ids=encoded_repository_ids,
                                            reinstalling=False)
             else:
-                kwd['message'] = message
+                kwd['message'] = message if message else 'Repository has already been installed.'
                 kwd['status'] = status
                 return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='manage_repositories',
+                                                                action='monitor_repository_installation',
                                                                 **kwd))
         shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field(trans.app)
         tool_path = suc.get_tool_path_by_shed_tool_conf_filename(trans.app, shed_tool_conf)
@@ -1311,7 +1264,7 @@ class AdminToolshed(AdminGalaxy):
             clause_list.append(trans.install_model.ToolShedRepository.table.c.id == tsr_id)
         query = trans.install_model.context.current.query(trans.install_model.ToolShedRepository) \
                                            .filter(or_(*clause_list))
-        return trans.fill_template('admin/tool_shed_repository/initiate_repository_installation.mako',
+        return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
                                    encoded_kwd=encoded_kwd,
                                    query=query,
                                    tool_shed_repositories=tool_shed_repositories,

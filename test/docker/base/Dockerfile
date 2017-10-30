@@ -1,15 +1,16 @@
-FROM toolshed/requirements
+FROM ubuntu:16.04
 MAINTAINER John Chilton <jmchilton@gmail.com>
 
-ENV MYSQL_MAJOR=5.6
-ENV GALAXY_ROOT=/galaxy
-ENV GALAXY_VIRTUAL_ENV /galaxy_venv
+ENV MYSQL_MAJOR=5.7 \
+    POSTGRES_MAJOR=9.5 \
+    GALAXY_ROOT=/galaxy \
+    GALAXY_VIRTUAL_ENV=/galaxy_venv
 
 # Pre-install a bunch of packages to speed up ansible steps.
-RUN apt-get update -y && apt-get install -y software-properties-common curl && \
+RUN apt-get update -y && apt-get install -y software-properties-common apt-transport-https curl && \
     apt-add-repository -y ppa:ansible/ansible && \
     curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
-    echo 'deb https://deb.nodesource.com/node trusty main' > /etc/apt/sources.list.d/nodesource.list && \
+    curl -sL https://deb.nodesource.com/setup_8.x | bash -  && \
     apt-key adv --keyserver pool.sks-keyservers.net --recv-keys A4A9406876FCBD3C456770C88C718D3B5072E1F5 && \
     echo "deb http://repo.mysql.com/apt/ubuntu/ trusty mysql-${MYSQL_MAJOR}" > /etc/apt/sources.list.d/mysql.list && \
     { \
@@ -19,19 +20,25 @@ RUN apt-get update -y && apt-get install -y software-properties-common curl && \
 		echo mysql-community-server mysql-community-server/remove-test-db select false; \
 	} | debconf-set-selections && \
     apt-get update -y && \
-    apt-get install -y libpq-dev postgresql postgresql-client postgresql-plpython-9.3 \
-            ansible postgresql-server-dev-9.3 wget mysql-server="${MYSQL_MAJOR}"* libmysqlclient-dev="${MYSQL_MAJOR}"* \
+    apt-get install -y libpq-dev postgresql postgresql-client \
+            ansible wget mysql-server="${MYSQL_MAJOR}"* libmysqlclient-dev="${MYSQL_MAJOR}"* \
             slurm-llnl libmunge-dev slurm-drmaa-dev ant atop axel bioperl cmake curl \
             g++ gcc gfortran git-core htop iftop iotop ipython libffi-dev liblapack-dev \
             libncurses5-dev libopenblas-dev libpam0g-dev libpq-dev libsparsehash-dev make \
             mercurial nginx-extras nmon patch postgresql postgresql \
-            postgresql-client postgresql-plpython-9.3 python-boto python-dev \
+            postgresql-client python-boto python-dev \
             python-prettytable python-psycopg2 python-virtualenv python-pip \
-            postgresql-server-dev-9.3 rsync slurm-drmaa-dev swig sysstat unzip \
+            rsync slurm-drmaa-dev swig sysstat unzip \
+            autoconf automake build-essential libatlas-base-dev libblas-dev openssl \
+            bzip2 \
+            ca-certificates \
+            openjdk-8-jre-headless \
+            tzdata \
+            sudo \
             wget zlib1g-dev nodejs && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN npm install -g grunt-contrib-qunit grunt grunt-cli
+RUN npm install -g grunt grunt-cli
 
 RUN mkdir -p /tmp/ansible && \
     mkdir -p /opt/galaxy/db && \
@@ -70,7 +77,7 @@ RUN . $GALAXY_VIRTUAL_ENV/bin/activate && \
     pip install mysql && \
     cd $GALAXY_ROOT && \
     echo "Prepopulating postgres database" && \
-    su -c '/usr/lib/postgresql/9.3/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres && \
+    su -c '/usr/lib/postgresql/${POSTGRES_MAJOR}/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres && \
     sleep 3 && \
     GALAXY_CONFIG_DATABASE_CONNECTION="postgresql://root@localhost:5930/galaxy" bash create_db.sh && \
     echo "Prepopulating sqlite database" && \

@@ -136,7 +136,10 @@ define(
                         Galaxy.libraries.folderListView.collection.add(
                             updated_dataset
                         );
-                        Galaxy.libraries.folderListView.collection.sortByNameAsc();
+                        Galaxy.libraries.folderListView.collection.sortFolder(
+                            "name",
+                            "asc"
+                        );
                         mod_toastr.success(
                             "Dataset undeleted. Click this to see it.",
                             "",
@@ -190,7 +193,10 @@ define(
                         Galaxy.libraries.folderListView.collection.add(
                             updated_folder
                         );
-                        Galaxy.libraries.folderListView.collection.sortByNameAsc();
+                        Galaxy.libraries.folderListView.collection.sortFolder(
+                            "name",
+                            "asc"
+                        );
                         mod_toastr.success("Folder undeleted.");
                     },
                     error: function(model, response) {
@@ -306,12 +312,12 @@ define(
                         "<td>",
                         '<%- content_item.get("description") %>',
                         "</td>",
-                        "<td></td>",
                         "<% } else if(edit_mode){ %>",
                         '<td><textarea rows="4" class="form-control input_folder_name" placeholder="name" ><%- content_item.get("name") %></textarea></td>',
                         '<td><textarea rows="4" class="form-control input_folder_description" placeholder="description" ><%- content_item.get("description") %></textarea></td>',
                         "<% } %>",
                         "<td>folder</td>",
+                        "<td></td>",
                         "<td>",
                         '<%= _.escape(content_item.get("update_time")) %>',
                         "</td>",

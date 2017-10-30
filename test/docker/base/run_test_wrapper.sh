@@ -17,7 +17,7 @@ chown -R "$GALAXY_TEST_UID:$GALAXY_TEST_UID" /galaxy_venv
 : ${GALAXY_TEST_DATABASE_TYPE:-"postgres"}
 if [ "$GALAXY_TEST_DATABASE_TYPE" = "postgres" ];
 then
-    su -c '/usr/lib/postgresql/9.3/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres
+    su -c '/usr/lib/postgresql/9.5/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres
     sleep 3
     GALAXY_TEST_INSTALL_DB_MERGED="true"
     GALAXY_TEST_DBURI="postgres://root@localhost:5930/galaxy?client_encoding=utf8"

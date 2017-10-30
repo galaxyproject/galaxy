@@ -107,7 +107,7 @@ define(["mvc/toolshed/toolshed-model", "mvc/toolshed/util"], function(
                 var repositories = iri_params.repositories;
                 var new_route = "status/r/" + repositories.join("|");
                 $.post(
-                    Galaxy.root + "admin_toolshed/manage_repositories",
+                    Galaxy.root + "admin_toolshed/install_repositories",
                     iri_params,
                     function(data) {
                         console.log(

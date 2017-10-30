@@ -921,7 +921,7 @@ class ShedTwillTestCase(TwillTestCase):
             repository_ids = re.sub('[^a-fA-F0-9,]+', '', repository_ids)
             encoded_kwd = install_parameters.group(2)
             reinstalling = install_parameters.group(3)
-            url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
+            url = '/admin_toolshed/install_repositories?tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
                 (','.join(galaxy.util.listify(repository_ids)), encoded_kwd, reinstalling)
             self.visit_galaxy_url(url)
             return galaxy.util.listify(repository_ids)
