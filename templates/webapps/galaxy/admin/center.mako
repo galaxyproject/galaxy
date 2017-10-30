@@ -11,10 +11,10 @@ Please visit <a href="https://galaxyproject.org/admin" target="_blank">the Galax
         <h4>Server</h4>
             <ul>
                 <li>
-                    <strong>Data types registry</strong> - See all datatypes available in this Galaxy.
+                    <strong>Data types</strong> - See all datatypes available in this Galaxy.
                 </li>
                 <li>
-                    <strong>Data tables registry</strong> - See all data tables available in this Galaxy.
+                    <strong>Data tables</strong> - See all data tables available in this Galaxy.
                 </li>
                 <li>
                     <strong>Data libraries</strong> - Data libraries enable authorized Galaxy users to share datasets with other groups or users. Only administrators can create data libraries. See <a href="https://galaxyproject.org/data-libraries" target="_blank">wiki</a> for details.
@@ -48,7 +48,7 @@ Please visit <a href="https://galaxyproject.org/admin" target="_blank">the Galax
                     Also includes a view of the data library datasets that are associated with the role and the permissions applied to each dataset.
                 </li>
                 <li>
-                    <strong>Form definitions</strong> - Manage local form definitions.
+                    <strong>Forms</strong> - Manage local form definitions.
                 </li>
                 <li>
                     <strong>API keys</strong> - A view of all generated API keys with an option to re-generate.
@@ -60,37 +60,31 @@ Please visit <a href="https://galaxyproject.org/admin" target="_blank">the Galax
             %endif
             </ul>
 
-        <h4>Tools and Tool Shed</h4>
+        <h4>Tool Management</h4>
             <ul>
             %if trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds:
                 <li>
-                    <strong>Search Tool Shed</strong> - Search and install new tools and other Galaxy utilities from the Tool Shed. See <a href="https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial" target="_blank">the tutorial</a>.
+                    <strong>Install new tools</strong> - Search and install new tools and other Galaxy utilities from the Tool Shed. See <a href="https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial" target="_blank">the tutorial</a>.
                 </li>
             %endif
             %if tool_shed_repository_ids:
                 <li>
-                    <strong>Monitor installing repositories</strong> - View the status of tools that are being currently installed.
+                    <strong>Monitor installation</strong> - View the status of tools that are being currently installed.
                 </li>
             %endif
             %if is_repo_installed:
                 <li>
-                    <strong>Manage installed tools</strong> - View and administer installed tools and utilities on this Galaxy.
+                    <strong>Manage tools</strong> - View and administer installed tools and utilities on this Galaxy.
                 </li>
                 <li>
-                    <strong>Reset metadata</strong> - Select on which repositories you want to reset metadata.
+                    <strong>Manage metadata</strong> - Select on which repositories you want to reset metadata.
                 </li>
             %endif
                 <li>
-                    <strong>Download local tool</strong> - Download a tarball with a tool from this Galaxy.
+                    <strong>View lineage</strong> - A view of a version lineages for all installed tools. Useful for debugging.
                 </li>
                 <li>
-                    <strong>Tool lineage</strong> - A view of a version lineages for all installed tools. Useful for debugging.
-                </li>
-                <li>
-                    <strong>Reload a tool's configuration</strong> - Allows a new version of a tool to be loaded while the server is running.
-                </li>
-                <li>
-                    <strong>Review tool migration stages</strong> - See the list of migration stages that moved sets of tools from the distribution to the Tool Shed.
+                    <strong>View migration stages</strong> - See the list of migration stages that moved sets of tools from the distribution to the Tool Shed.
                 </li>
             </ul>
 %endif
