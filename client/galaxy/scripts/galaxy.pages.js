@@ -1,3 +1,8 @@
+import "libs/jquery/jquery.form";
+import "libs/jquery/jstorage";
+import "libs/jquery/jquery.wymeditor";
+import "libs/jquery/jquery.autocomplete";
+
 var CONTROLS = {
     // Item types.
     ITEM_HISTORY: "item_history",

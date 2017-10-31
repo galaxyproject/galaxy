@@ -11,12 +11,6 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js(
-        "libs/jquery/jquery.form",
-        "libs/jquery/jstorage",
-        "libs/jquery/jquery.wymeditor",
-        "libs/jquery/jquery.autocomplete",
-    )}
     <script type="text/javascript">
         // Define variables needed by galaxy.pages script.
         var page_id = "${trans.security.encode_id(page.id)}",
