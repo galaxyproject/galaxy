@@ -155,7 +155,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
         try:
             wrapped_class_name = value.__name__
             wrapped_class = value
-        except:
+        except Exception:
             wrapped_class_name = value.__class__.__name__
             wrapped_class = value.__class__
         value_mod = inspect.getmodule(value)

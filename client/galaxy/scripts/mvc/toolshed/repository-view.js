@@ -351,7 +351,8 @@ var ToolShedRepositoryView = Backbone.View.extend({
     },
 
     doInstall: function(params) {
-        var controller_url = Galaxy.root + "admin_toolshed/manage_repositories";
+        var controller_url =
+            Galaxy.root + "admin_toolshed/install_repositories";
         var repositories = params.repositories;
         var new_route = "status/r/" + repositories.join("|");
         $.post(controller_url, params, function(data) {

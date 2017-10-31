@@ -2,6 +2,9 @@ id: galaxy_ui
 name: Galaxy UI
 description: A gentle introduction to the Galaxy User Interface
 title_default: "Welcome to Galaxy"
+tags:
+  - "core"
+  - "UI"
 
 # A tour is made of several steps, each of them beginning with a dash '-'
 steps:

@@ -322,7 +322,7 @@ class UploadDataset(Group):
                 if not dataset_name and 'filename' in data_file:
                     dataset_name = get_file_name(data_file['filename'])
                 return Bunch(type='file', path=data_file['local_filename'], name=dataset_name, purge_source=purge)
-            except:
+            except Exception:
                 # The uploaded file should've been persisted by the upload tool action
                 return Bunch(type=None, path=None, name=None)
 
@@ -401,6 +401,7 @@ class UploadDataset(Group):
                     warnings.append("All FTP uploaded file selections were ignored.")
             elif ftp_files is not None and trans.user is not None:  # look for files uploaded via FTP
                 user_ftp_dir = trans.user_ftp_dir
+                assert not os.path.islink(user_ftp_dir), "User FTP directory cannot be a symbolic link"
                 for (dirpath, dirnames, filenames) in os.walk(user_ftp_dir):
                     for filename in filenames:
                         for ftp_filename in ftp_files:
@@ -486,6 +487,7 @@ class UploadDataset(Group):
                     # TODO: warning to the user (could happen if session has become invalid)
                 else:
                     user_ftp_dir = trans.user_ftp_dir
+                    assert not os.path.islink(user_ftp_dir), "User FTP directory cannot be a symbolic link"
                     for (dirpath, dirnames, filenames) in os.walk(user_ftp_dir):
                         for filename in filenames:
                             path = relpath(os.path.join(dirpath, filename), user_ftp_dir)

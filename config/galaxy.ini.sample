@@ -447,10 +447,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # -- Mail and notification
 
 # Galaxy sends mail for various things: subscribing users to the mailing list
-# if they request it, password resets, notifications from the Galaxy Sample
-# Tracking system, reporting dataset errors, and sending activation emails.
-# To do this, it needs to send mail through an SMTP server, which you may
-# define here (host:port).
+# if they request it, password resets, reporting dataset errors, and sending
+# activation emails. To do this, it needs to send mail through an SMTP server,
+# which you may define here (host:port).
 # Galaxy will automatically try STARTTLS but will continue upon failure.
 #smtp_server = None
 
@@ -912,6 +911,14 @@ use_interactive = True
 # sub-directories of files contained in their directory.
 #user_library_import_dir = None
 
+# For security reasons, users may not import any files that actually lie
+# outside of their `user_library_import_dir` (e.g. using symbolic links). A
+# list of directories can be allowed by setting the following option (the list
+# is comma-separated). Be aware that *any* user with library import permissions
+# can import from anywhere in these directories (assuming they are able to
+# create symlinks to them).
+#user_library_import_symlink_whitelist = None
+
 # Allow admins to paste filesystem paths during upload. For libraries this
 # adds an option to the admin library upload tool allowing admins to paste
 # filesystem paths to files and directories in a box, and these paths will be
@@ -1224,6 +1231,9 @@ use_interactive = True
 # Directory to store Data Manager based tool-data; defaults to tool_data_path.
 #galaxy_data_manager_data_path = tool-data
 
+# Enable the API for sample tracking
+#enable_legacy_sample_tracking_api = False
+
 # -- Job Execution
 
 # To increase performance of job execution and the web interface, you can
@@ -1325,16 +1335,16 @@ use_interactive = True
 #drmaa_external_killjob_script = sudo -E scripts/drmaa_external_killer.py
 #external_chown_script = sudo -E scripts/external_chown_script.py
 
-# For the job submission as the actual system user, Galaxy can extract 
-# the user name from the email address (actually the local-part before the @) 
-# or the username which are both stored in the Galaxy data base. 
-# The latter option is particularly useful for installations that get the 
+# For the job submission as the actual system user, Galaxy can extract
+# the user name from the email address (actually the local-part before the @)
+# or the username which are both stored in the Galaxy data base.
+# The latter option is particularly useful for installations that get the
 # authentication from LDAP.
-# Also, Galaxy can accept the name of a common system user (eg. galaxy_worker) 
-# who can run every job being submitted. This user should not be the same user 
-# running the galaxy system. 
+# Also, Galaxy can accept the name of a common system user (eg. galaxy_worker)
+# who can run every job being submitted. This user should not be the same user
+# running the galaxy system.
 # Possible values are user_email (default), username or <common_system_user>
-#real_system_username = user_email 
+#real_system_username = user_email
 
 # File to source to set up the environment when running jobs.  By default, the
 # environment in which the Galaxy server starts is used when running jobs

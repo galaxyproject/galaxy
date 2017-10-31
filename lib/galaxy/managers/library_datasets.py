@@ -195,17 +195,26 @@ class LibraryDatasetsManager(object):
         if len(expired_ldda_versions) > 0:
             rval['has_versions'] = True
             rval['expired_versions'] = expired_ldda_versions
+
+        ldda = ld.library_dataset_dataset_association
+        if ldda.creating_job_associations:
+            if ldda.creating_job_associations[0].job.stdout:
+                rval['job_stdout'] = ldda.creating_job_associations[0].job.stdout.strip()
+            if ldda.creating_job_associations[0].job.stderr:
+                rval['job_stderr'] = ldda.creating_job_associations[0].job.stderr.strip()
+        if ldda.dataset.uuid:
+            rval['uuid'] = str(ldda.dataset.uuid)
         rval['deleted'] = ld.deleted
         rval['folder_id'] = 'F' + rval['folder_id']
         rval['full_path'] = full_path
-        rval['file_size'] = util.nice_size(int(ld.library_dataset_dataset_association.get_size()))
-        rval['date_uploaded'] = ld.library_dataset_dataset_association.create_time.strftime("%Y-%m-%d %I:%M %p")
-        rval['can_user_modify'] = trans.app.security_agent.can_modify_library_item(current_user_roles, ld) or trans.user_is_admin()
-        rval['is_unrestricted'] = trans.app.security_agent.dataset_is_public(ld.library_dataset_dataset_association.dataset)
-        rval['tags'] = self.tag_manager.get_tags_str(ld.library_dataset_dataset_association.tags)
+        rval['file_size'] = util.nice_size(int(ldda.get_size()))
+        rval['date_uploaded'] = ldda.create_time.strftime("%Y-%m-%d %I:%M %p")
+        rval['can_user_modify'] = trans.user_is_admin() or trans.app.security_agent.can_modify_library_item(current_user_roles, ld)
+        rval['is_unrestricted'] = trans.app.security_agent.dataset_is_public(ldda.dataset)
+        rval['tags'] = self.tag_manager.get_tags_str(ldda.tags)
 
         #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
-        rval['can_user_manage'] = trans.app.security_agent.can_manage_dataset(current_user_roles, ld.library_dataset_dataset_association.dataset) or trans.user_is_admin()
+        rval['can_user_manage'] = trans.user_is_admin() or trans.app.security_agent.can_manage_dataset(current_user_roles, ldda.dataset)
         return rval
 
     def _build_path(self, trans, folder):

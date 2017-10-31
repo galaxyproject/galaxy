@@ -1,7 +1,7 @@
 from logging import getLogger
 try:
     import xml.etree.cElementTree as et
-except:
+except ImportError:
     import xml.etree.ElementTree as et
 
 try:

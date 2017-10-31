@@ -87,7 +87,7 @@ if not os.access(var_dir, os.F_OK):
 login_file = os.path.join(var_dir, "login")
 try:
     f = open(login_file, 'r')
-except:
+except Exception:
     message = """Please create the file:
 %s
 This should contain a username and password to log in to Galaxy with,

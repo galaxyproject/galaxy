@@ -655,7 +655,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
                 panel_dict[key] = workflow
             # Always load workflows into the integrated_panel_dict.
             integrated_panel_dict.update_or_append(index, key, workflow)
-        except:
+        except Exception:
             log.exception("Error loading workflow: %s", workflow_id)
 
     def _load_label_tag_set(self, item, panel_dict, integrated_panel_dict, load_panel_dict, index=None):

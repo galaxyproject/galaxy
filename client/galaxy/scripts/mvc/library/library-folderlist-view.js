@@ -13,13 +13,18 @@ var FolderListView = Backbone.View.extend({
 
     folderContainer: null,
 
-    sort: "asc",
+    current_sort_order: "asc",
+
+    current_sort_key: "name",
 
     events: {
         "click #select-all-checkboxes": "selectAll",
         "click .dataset_row": "selectClickedRow",
         "click .folder_row": "selectClickedRow",
-        "click .sort-folder-link": "sortColumnClicked"
+        "click .sort-folder-name": "sortColumnClicked",
+        "click .sort-folder-file_ext": "sortColumnClicked",
+        "click .sort-folder-description": "sortColumnClicked",
+        "click .sort-folder-state": "sortColumnClicked"
     },
 
     collection: null,
@@ -123,7 +128,7 @@ var FolderListView = Backbone.View.extend({
                     .parent_library_id,
                 id: this.options.id,
                 upper_folder_id: upper_folder_id,
-                order: this.sort
+                order: this.current_sort_order
             })
         );
 
@@ -202,7 +207,7 @@ var FolderListView = Backbone.View.extend({
     addAll: function(models) {
         _.each(models, function(model) {
             Galaxy.libraries.folderListView.collection.add(model, {
-                sort: false
+                current_sort_order: false
             });
         });
         $("#center [data-toggle]").tooltip();
@@ -289,35 +294,19 @@ var FolderListView = Backbone.View.extend({
         }
     },
 
-    /** User clicked the table heading = he wants to sort stuff */
     sortColumnClicked: function(event) {
         event.preventDefault();
-        if (this.sort === "asc") {
-            this.sortFolder("name", "desc");
-            this.sort = "desc";
-        } else {
-            this.sortFolder("name", "asc");
-            this.sort = "asc";
-        }
+        this.current_sort_order =
+            this.current_sort_order === "asc" ? "desc" : "asc";
+        this.current_sort_key = event.currentTarget.className.replace(
+            "sort-folder-",
+            ""
+        );
+        this.collection.sortFolder(
+            this.current_sort_key,
+            this.current_sort_order
+        );
         this.renderSortIcon();
-    },
-
-    /**
-     *  Sorts the underlying collection according to the parameters received.
-     *  Currently supports only sorting by name.
-     */
-    sortFolder: function(sort_by, order) {
-        // default to asc sort by name
-        if (sort_by === "undefined" && order === "undefined") {
-            return this.collection.sortByNameAsc();
-        }
-        if (sort_by === "name") {
-            if (order === "asc") {
-                return this.collection.sortByNameAsc();
-            } else if (order === "desc") {
-                return this.collection.sortByNameDesc();
-            }
-        }
     },
 
     /**
@@ -406,14 +395,17 @@ var FolderListView = Backbone.View.extend({
     },
 
     renderSortIcon: function() {
-        if (this.sort === "asc") {
-            $(".sort-icon")
+        if (this.current_sort_order === "asc") {
+            $('[class*="sort-icon"]')
                 .removeClass("fa-sort-alpha-desc")
-                .addClass("fa-sort-alpha-asc");
+                .removeClass("fa-sort-alpha-asc");
+            $(".sort-icon" + "-" + this.current_sort_key).addClass(
+                "fa-sort-alpha-asc"
+            );
         } else {
-            $(".sort-icon")
-                .removeClass("fa-sort-alpha-asc")
-                .addClass("fa-sort-alpha-desc");
+            $(".sort-icon" + "-" + this.current_sort_key).addClass(
+                "fa-sort-alpha-desc"
+            );
         }
     },
 
@@ -437,18 +429,20 @@ var FolderListView = Backbone.View.extend({
                 "<thead>",
                 '<th class="button_heading"></th>',
                 '<th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>',
-                '<th><a class="sort-folder-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="sort-icon fa fa-sort-alpha-<%- order %>"></span></th>',
-                '<th style="width:25%;">description</th>',
-                '<th style="width:5%;">data type</th>',
+                '<th><a class="sort-folder-name" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span></th>',
+                '<th style="width:20%;"><a class="sort-folder-description" title="Click to reverse order" href="#">description</a> <span title="Sorted alphabetically" class="sort-icon-description fa"></span></th>',
+                '<th style="width:5%;"><a class="sort-folder-file_ext" title="Click to reverse order" href="#">data type</a> <span title="Sorted alphabetically" class="sort-icon-file_ext fa"></span></th>',
                 '<th style="width:10%;">size</th>',
                 '<th style="width:160px;">time updated (UTC)</th>',
-                '<th style="width:10%;"></th> ',
+                '<th style="width:5%;"><a class="sort-folder-state" title="Click to reverse order" href="#">state</a> <span title="Sorted alphabetically" class="sort-icon-state fa"></span></th>',
+                '<th style="width:150px;"></th> ',
                 "</thead>",
                 '<tbody id="folder_list_body">',
                 '<tr id="first_folder_item">',
                 "<td>",
                 '<a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-default btn-xs">..<a>',
                 "</td>",
+                "<td></td>",
                 "<td></td>",
                 "<td></td>",
                 "<td></td>",

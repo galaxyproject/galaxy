@@ -43,7 +43,7 @@ def __main__():
                     line = line.rstrip('\n')
                 try:
                     fout.write("%s\n" % (re.sub(from_ch, '\t', line)))
-                except:
+                except Exception:
                     skipped += 1
 
     if skipped:

@@ -15,7 +15,7 @@ var LibraryToolbarView = Backbone.View.extend({
         "click #create_new_library_btn": "createLibraryFromModal",
         "click #include_deleted_chk": "includeDeletedChecked",
         "click #exclude_restricted_chk": "excludeRestrictedChecked",
-        "click #lib_page_size_prompt": "showPageSizePrompt",
+        "click .page_size_prompt": "showPageSizePrompt",
         "keyup .library-search-input": "searchLibraries"
     },
 
@@ -58,7 +58,10 @@ var LibraryToolbarView = Backbone.View.extend({
                 show_page: parseInt(this.options.show_page),
                 page_count: parseInt(this.options.page_count),
                 total_libraries_count: this.options.total_libraries_count,
-                libraries_shown: this.options.libraries_shown
+                libraries_shown: this.options.libraries_shown,
+                library_page_size: Galaxy.libraries.preferences.get(
+                    "library_page_size"
+                )
             })
         );
     },
@@ -120,7 +123,8 @@ var LibraryToolbarView = Backbone.View.extend({
     /**
    * Show user the propmpt to change the number of libs shown on page.
    */
-    showPageSizePrompt: function() {
+    showPageSizePrompt: function(e) {
+        e.preventDefault();
         var library_page_size = prompt(
             "How many libraries per page do you want to see?",
             Galaxy.libraries.preferences.get("library_page_size")
@@ -273,8 +277,11 @@ var LibraryToolbarView = Backbone.View.extend({
                 '<li class="disabled"><a href="#page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
                 "<% } %>",
                 "</ul>",
-                '<span id="lib_page_size_prompt">',
-                ' showing <a data-toggle="tooltip" data-placement="top" title="Click to change the number of libraries on page"><%- libraries_shown %></a> of <%- total_libraries_count %> libraries',
+                "<span>",
+                ' <%- libraries_shown %> libraries shown <a href="" data-toggle="tooltip" data-placement="top" title="currently <%- library_page_size %> per page" class="page_size_prompt">(change)</a>',
+                "</span>",
+                "<span>",
+                " <%- total_libraries_count %> total",
                 "</span>"
             ].join("")
         );

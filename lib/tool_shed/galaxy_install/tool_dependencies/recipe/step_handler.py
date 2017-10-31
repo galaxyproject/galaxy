@@ -1766,7 +1766,7 @@ class SetupVirtualEnv(Download, RecipeStep):
                 downloaded_filename = VIRTUALENV_URL.rsplit('/', 1)[-1]
                 try:
                     dir = self.url_download(work_dir, downloaded_filename, VIRTUALENV_URL)
-                except:
+                except Exception:
                     log.error("Failed to download virtualenv: url_download( '%s', '%s', '%s' ) threw an exception",
                               work_dir, downloaded_filename, VIRTUALENV_URL)
                     return False

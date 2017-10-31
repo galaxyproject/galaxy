@@ -860,7 +860,7 @@ def extract_reads_from_sff(config, sff_files):
         qual_fh = None
         try:
             os.remove(config['qual_fname'])
-        except:
+        except Exception:
             pass
     else:
         qual_fh = open(config['qual_fname'], openmode)
@@ -1101,7 +1101,7 @@ def tests_for_ssaha():
         subprocess.call(["ssaha2"], stdout=fh)
         fh.close()
         print("ok.")
-    except:
+    except Exception:
         print("nope? Uh oh ...\n\n")
         raise RuntimeError('Could not launch ssaha2. Have you installed it? Is it in your path?')
 
@@ -1137,7 +1137,7 @@ def launch_ssaha(linker_fname, query_fname, output_fh):
             raise RuntimeError('Ups.')
         else:
             print("ok.")
-    except:
+    except Exception:
         print("\n")
         raise RuntimeError('An error occured during the SSAHA2 execution, aborting.')
 

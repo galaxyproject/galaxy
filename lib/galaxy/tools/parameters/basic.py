@@ -153,7 +153,7 @@ class ToolParameter(object, Dictifiable):
         if ignore_errors:
             try:
                 return self.to_python(value, app)
-            except:
+            except Exception:
                 return value
         else:
             return self.to_python(value, app)
@@ -313,7 +313,7 @@ class IntegerToolParameter(TextToolParameter):
         if self.value:
             try:
                 int(self.value)
-            except:
+            except ValueError:
                 raise ValueError("An integer is required")
         elif self.value is None and not self.optional:
             raise ValueError("The settings for the field named '%s' require a 'value' setting and optionally a default value which must be an integer" % self.name)
@@ -322,12 +322,12 @@ class IntegerToolParameter(TextToolParameter):
         if self.min:
             try:
                 self.min = int(self.min)
-            except:
+            except ValueError:
                 raise ValueError("An integer is required")
         if self.max:
             try:
                 self.max = int(self.max)
-            except:
+            except ValueError:
                 raise ValueError("An integer is required")
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator(None, self.min, self.max))
@@ -335,7 +335,7 @@ class IntegerToolParameter(TextToolParameter):
     def from_json(self, value, trans, other_values={}):
         try:
             return int(value)
-        except:
+        except (TypeError, ValueError):
             if contains_workflow_parameter(value) and trans.workflow_building_mode is workflow_building_modes.ENABLED:
                 return value
             if not value and self.optional:
@@ -348,7 +348,7 @@ class IntegerToolParameter(TextToolParameter):
     def to_python(self, value, app):
         try:
             return int(value)
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             if contains_workflow_parameter(value):
                 return value
             if not value and self.optional:
@@ -391,19 +391,19 @@ class FloatToolParameter(TextToolParameter):
         if self.value:
             try:
                 float(self.value)
-            except:
+            except ValueError:
                 raise ValueError("A real number is required")
         elif self.value is None and not self.optional:
             raise ValueError("The settings for this field require a 'value' setting and optionally a default value which must be a real number")
         if self.min:
             try:
                 self.min = float(self.min)
-            except:
+            except ValueError:
                 raise ValueError("A real number is required")
         if self.max:
             try:
                 self.max = float(self.max)
-            except:
+            except ValueError:
                 raise ValueError("A real number is required")
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator(None, self.min, self.max))
@@ -411,7 +411,7 @@ class FloatToolParameter(TextToolParameter):
     def from_json(self, value, trans, other_values={}):
         try:
             return float(value)
-        except:
+        except (TypeError, ValueError):
             if contains_workflow_parameter(value) and trans.workflow_building_mode is workflow_building_modes.ENABLED:
                 return value
             if not value and self.optional:
@@ -424,7 +424,7 @@ class FloatToolParameter(TextToolParameter):
     def to_python(self, value, app):
         try:
             return float(value)
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             if contains_workflow_parameter(value):
                 return value
             if not value and self.optional:
@@ -434,7 +434,7 @@ class FloatToolParameter(TextToolParameter):
     def get_initial_value(self, trans, other_values):
         try:
             return float(self.value)
-        except:
+        except Exception:
             return None
 
 
@@ -542,7 +542,7 @@ class FileToolParameter(ToolParameter):
             # or should we jsonify?
             try:
                 return value['local_filename']
-            except:
+            except KeyError:
                 return None
         raise Exception("FileToolParameter cannot be persisted")
 
@@ -912,7 +912,7 @@ class SelectToolParameter(ToolParameter):
                 value = options[0][1]
             else:
                 value = None
-        elif len(value) == 1:
+        elif len(value) == 1 or not self.multiple:
             value = value[0]
         return value
 
@@ -1147,7 +1147,7 @@ class ColumnListParameter(SelectToolParameter):
                         if len(dataset.metadata.column_types) >= len(cnames):
                             numerics = [i for i, x in enumerate(dataset.metadata.column_types) if x in ['int', 'float']]
                             column_list = [column_list[i] for i in numerics]
-            except:
+            except Exception:
                 column_list = self.get_column_list(trans, other_values)
         else:
             column_list = self.get_column_list(trans, other_values)
@@ -1582,12 +1582,12 @@ class DataToolParameter(BaseDataToolParameter):
         if self.min:
             try:
                 self.min = int(self.min)
-            except:
+            except ValueError:
                 raise ValueError("An integer is required for min property.")
         if self.max:
             try:
                 self.max = int(self.max)
-            except:
+            except ValueError:
                 raise ValueError("An integer is required for max property.")
         if not self.multiple and (self.min is not None):
             raise ValueError("Cannot specify min property on single data parameter '%s'. Set multiple=\"true\" to enable this option." % self.name)
@@ -1696,7 +1696,7 @@ class DataToolParameter(BaseDataToolParameter):
         if value:
             try:
                 return ", ".join(["%s: %s" % (item.hid, item.name) for item in value])
-            except:
+            except Exception:
                 pass
         return "No dataset."
 

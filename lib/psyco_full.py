@@ -1,5 +1,5 @@
 try:
     import psyco
     psyco.full()
-except:
+except Exception:
     pass

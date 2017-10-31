@@ -44,7 +44,7 @@ def hmac_new(key, value):
 def is_hashable(value):
     try:
         hash(value)
-    except:
+    except Exception:
         return False
     return True
 

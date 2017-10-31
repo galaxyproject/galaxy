@@ -1,28 +1,34 @@
 """
 Base classes for job runner plugins.
 """
-
-import os
-import time
-import string
-import logging
 import datetime
-import threading
+import logging
+import os
+import string
 import subprocess
-
-from Queue import Queue, Empty
+import threading
+import time
+from Queue import (
+    Empty,
+    Queue
+)
 
 import galaxy.jobs
-from galaxy.jobs.command_factory import build_command
 from galaxy import model
-from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
-from galaxy.util import in_directory
-from galaxy.util import ParamsWithSpecs
-from galaxy.util import ExecutionTimer
-from galaxy.util.bunch import Bunch
-from galaxy.jobs.runners.util.job_script import write_script
-from galaxy.jobs.runners.util.job_script import job_script
+from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners.util.env import env_to_statement
+from galaxy.jobs.runners.util.job_script import (
+    job_script,
+    write_script
+)
+from galaxy.util import (
+    DATABASE_MAX_STRING_SIZE,
+    ExecutionTimer,
+    in_directory,
+    ParamsWithSpecs,
+    shrink_stream_by_size
+)
+from galaxy.util.bunch import Bunch
 
 from .state_handler_factory import build_state_handlers
 
@@ -94,15 +100,15 @@ class BaseJobRunner(object):
                 else:
                     # arg should be a JobWrapper/TaskWrapper
                     job_id = arg.get_id_tag()
-            except:
+            except Exception:
                 job_id = 'unknown'
             try:
                 name = method.__name__
-            except:
+            except Exception:
                 name = 'unknown'
             try:
                 method(arg)
-            except:
+            except Exception:
                 log.exception("(%s) Unhandled exception calling %s" % (job_id, name))
 
     # Causes a runner's `queue_job` method to be called from a worker thread
@@ -366,7 +372,7 @@ class BaseJobRunner(object):
                 handler(self.app, self, job_state)
                 if job_state.runner_state_handled:
                     break
-        except:
+        except Exception:
             log.exception('Caught exception in runner state handler')
 
     def fail_job(self, job_state, exception=False):
@@ -610,14 +616,14 @@ class AsynchronousJobRunner(BaseJobRunner):
         try:
             # This should be an 8-bit exit code, but read ahead anyway:
             exit_code_str = open(job_state.exit_code_file, "r").read(32)
-        except:
+        except Exception:
             # By default, the exit code is 0, which typically indicates success.
             exit_code_str = "0"
 
         try:
             # Decode the exit code. If it's bogus, then just use 0.
             exit_code = int(exit_code_str)
-        except:
+        except ValueError:
             log.warning("(%s/%s) Exit code '%s' invalid. Using 0." % (galaxy_id_tag, external_job_id, exit_code_str))
             exit_code = 0
 
@@ -628,7 +634,7 @@ class AsynchronousJobRunner(BaseJobRunner):
 
         try:
             job_state.job_wrapper.finish(stdout, stderr, exit_code)
-        except:
+        except Exception:
             log.exception("(%s/%s) Job wrapper finish method failed" % (galaxy_id_tag, external_job_id))
             job_state.job_wrapper.fail("Unable to finish job", exception=True)
 
