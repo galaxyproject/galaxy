@@ -60,7 +60,7 @@ return {
                 tmpl +=     '<li><a class="action-button" id="popup-global-actions" class="menubutton">Actions</a></li>' +
                             '<div popupmenu="popup-global-actions">';
             }
-            for (i in options.global_actions) {
+            for (var i in options.global_actions) {
                 var action = options.global_actions[i];
                 tmpl +=         '<li>' +
                                     '<a class="action-button use-target" target="' + action.target + '" href="' + action.url_args + '" onclick="return false;" >' + action.label + '</a>' +
@@ -158,7 +158,7 @@ return {
             }
             
             // Data columns
-            for (j in options.columns) {
+            for (var j in options.columns) {
                 var column = options.columns[j];
                 if (column.visible) {
                     // Nowrap
@@ -215,7 +215,7 @@ return {
         }
         return tmpl;
     },
-    
+
     // template
     footer: function(options) {
     
@@ -242,6 +242,7 @@ return {
             // Set max page.
             var max_range = page_link_range + min_offset;
             var max_page = cur_page_num + max_range;
+            var max_offset;
             if (max_page <= num_pages) {
                 // Max page is fine.
                 max_offset = 0;
@@ -304,10 +305,10 @@ return {
                         '<input type="hidden" id="operation" name="operation" value="">' +
                         '<td></td>' +
                         '<td colspan="100">' +
-                            'For <span class="grid-selected-count"></span> selected ' + options.get_class_plural + ': ';
+                            'For <span class="grid-selected-count"></span> selected items: ';
             
             // configure buttons for operations
-            for (i in options.operations) {
+            for (var i in options.operations) {
                 var operation = options.operations[i];
                 if (operation.allow_multiple) {
                     tmpl += '<input type="button" value="' + operation.label + '" class="operation-button action-button">&nbsp;';
@@ -355,8 +356,9 @@ return {
         
     // template
     message: function(options) {
+        var status = options.status == 'success' ? 'done' : options.status;
         return  '<p>' +
-                    '<div class="' + options.status + 'message transient-message">' + options.message + '</div>' +
+                    '<div class="' + status + 'message transient-message">' + _.escape( options.message ) + '</div>' +
                     '<div style="clear: both"></div>' +
                 '</p>';
     },
@@ -553,14 +555,14 @@ return {
             
             // add category filters
             var seperator = false;
-            for (cf_label in options.categorical_filters[column_key]) {
+            for (var cf_label in options.categorical_filters[column_key]) {
                 // get category filter
                 var cf = options.categorical_filters[column_key][cf_label];
                 
                 // each filter will have only a single argument, so get that single argument
                 var cf_key = '';
                 var cf_arg = '';
-                for (key in cf) {
+                for (var key in cf) {
                     cf_key = key;
                     cf_arg = cf[key];
                 }

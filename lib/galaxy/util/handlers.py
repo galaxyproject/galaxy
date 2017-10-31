@@ -3,12 +3,13 @@
 A 'handler' is a named Python process running the Galaxy application responsible
 for some activity such as queuing up jobs or scheduling workflows.
 """
+from __future__ import absolute_import
 
 import logging
 import os
 import random
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 class ConfiguresHandlers:
@@ -25,7 +26,7 @@ class ConfiguresHandlers:
                     self.handlers[handler_id] = (handler_id,)
                     self._parse_handler(handler_id, handler)
                     if handler.get('tags', None) is not None:
-                        for tag in [ x.strip() for x in handler.get('tags').split(',') ]:
+                        for tag in [x.strip() for x in handler.get('tags').split(',')]:
                             if tag in self.handlers:
                                 self.handlers[tag].append(handler_id)
                             else:

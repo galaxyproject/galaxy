@@ -10,13 +10,13 @@ from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import JSONType
 
-logging.basicConfig( level=logging.DEBUG )
-log = logging.getLogger( __name__ )
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
 PostJobAction_table = Table("post_job_action", metadata,
                             Column("id", Integer, primary_key=True),
-                            Column("workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True, nullable=False),
+                            Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
                             Column("action_type", String(255), nullable=False),
                             Column("output_name", String(255), nullable=True),
                             Column("action_arguments", JSONType, nullable=True))

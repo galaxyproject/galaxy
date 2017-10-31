@@ -7,15 +7,16 @@ import json
 import os
 import time
 import traceback
+import unittest
 
-from functools import wraps
+from functools import partial, wraps
 
 import requests
 
 from galaxy_selenium import (
     driver_factory,
 )
-from galaxy_selenium.navigates_galaxy import NavigatesGalaxy
+from galaxy_selenium.navigates_galaxy import NavigatesGalaxy, retry_during_transitions
 
 try:
     from pyvirtualdisplay import Display
@@ -26,7 +27,7 @@ from six.moves.urllib.parse import urljoin
 
 from base import populators
 from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address
-from base.twilltestcase import FunctionalTestCase
+from base.testcase import FunctionalTestCase
 from base.workflows_format_2 import (
     ImporterGalaxyInterface,
     convert_and_import_workflow,
@@ -71,6 +72,8 @@ def selenium_test(f):
     def func_wrapper(self, *args, **kwds):
         retry_attempts = 0
         while True:
+            if retry_attempts > 0:
+                self.reset_driver_and_session()
             try:
                 return f(self, *args, **kwds)
             except Exception:
@@ -89,6 +92,11 @@ def selenium_test(f):
                     write_file("page_source.txt", self.driver.page_source)
                     write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
                     write_file("stacktrace.txt", traceback.format_exc())
+                    for log_type in ["browser", "driver"]:
+                        try:
+                            write_file("%s.log.json" % log_type, json.dumps(self.driver.get_log(log_type)))
+                        except Exception:
+                            continue
                     iframes = self.driver.find_elements_by_css_selector("iframe")
                     for iframe in iframes:
                         pass
@@ -105,6 +113,9 @@ def selenium_test(f):
     return func_wrapper
 
 
+retry_assertion_during_transitions = partial(retry_during_transitions, exception_check=lambda e: isinstance(e, AssertionError))
+
+
 class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
 
     framework_tool_and_types = True
@@ -118,11 +129,7 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
             self.target_url_from_selenium = GALAXY_TEST_EXTERNAL_FROM_SELENIUM
         else:
             self.target_url_from_selenium = self.url
-        self.display = driver_factory.virtual_display_if_enabled(headless_selenium())
-        self.driver = get_driver()
-
-        if self.ensure_registered:
-            self.register()
+        self.setup_driver_and_session()
 
     def tearDown(self):
         exception = None
@@ -131,6 +138,30 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
         except Exception as e:
             exception = e
 
+        try:
+            self.tear_down_driver()
+        except Exception as e:
+            exception = e
+
+        if exception is not None:
+            raise exception
+
+    def reset_driver_and_session(self):
+        self.tear_down_driver()
+        self.setup_driver_and_session()
+
+    def setup_driver_and_session(self):
+        self.display = driver_factory.virtual_display_if_enabled(headless_selenium())
+        self.driver = get_driver()
+        # New workflow index page does not degrade well to smaller sizes, needed
+        # to increase this.
+        self.driver.set_window_size(1280, 900)
+
+        if self.ensure_registered:
+            self.register()
+
+    def tear_down_driver(self):
+        exception = None
         try:
             self.driver.close()
         except Exception as e:
@@ -188,6 +219,38 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
     @property
     def workflow_populator(self):
         return SeleniumSessionWorkflowPopulator(self)
+
+
+class SharedStateSeleniumTestCase(SeleniumTestCase):
+    """This describes a class Selenium tests that setup class state for all tests.
+
+    This is a bit hacky because we are simulating class level initialization
+    with instance level methods. The problem is that super.setUp() works at
+    instance level. It might be worth considering having two variants of
+    SeleniumTestCase - one that initializes with the class and the other that
+    initializes with the instance but all the helpers are instance helpers.
+    """
+
+    shared_state_initialized = False
+    shared_state_in_error = False
+
+    def setUp(self):
+        super(SharedStateSeleniumTestCase, self).setUp()
+        if not self.__class__.shared_state_initialized:
+            try:
+                self.setup_shared_state()
+                self.logout_if_needed()
+            except Exception:
+                self.__class__.shared_state_in_error = True
+                raise
+            finally:
+                self.__class__.shared_state_initialized = True
+        else:
+            if self.__class__.shared_state_in_error:
+                raise unittest.SkipTest("Skipping test, failed to initialize state previously.")
+
+    def setup_shared_state(self):
+        """Override this to setup shared data for tests that gets initialized only once."""
 
 
 class UsesHistoryItemAssertions:
@@ -316,7 +379,7 @@ class SeleniumSessionDatasetCollectionPopulator(populators.BaseDatasetCollection
         self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_test_case)
 
     def _create_collection(self, payload):
-        create_response = self._post( "dataset_collections", data=payload )
+        create_response = self._post("dataset_collections", data=payload)
         return create_response
 
 
@@ -341,4 +404,4 @@ class SeleniumSessionWorkflowPopulator(populators.BaseWorkflowPopulator, Seleniu
 
     def upload_yaml_workflow(self, has_yaml, **kwds):
         workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
-        return workflow[ "id" ]
+        return workflow["id"]

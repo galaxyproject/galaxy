@@ -99,7 +99,7 @@ function get_item_info( dialog_type )
 // Make an item importable.
 function make_item_importable( item_controller, item_id, item_type )
 {
-    ajax_url = set_accessible_url.replace( "ITEM_CONTROLLER", item_controller );
+    var ajax_url = set_accessible_url.replace( "ITEM_CONTROLLER", item_controller );
     $.ajax({
       type: "POST",
       url: ajax_url,
@@ -273,9 +273,9 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                               newCaption.innerHTML = sCaption;
 
                               //we create the rows and cells
-                              for(x=0; x<iRows; x++) {
+                              for(var x=0; x<iRows; x++) {
                                       newRow = table.insertRow(x);
-                                      for(y=0; y<iCols; y++) {newRow.insertCell(y);}
+                                      for(var y=0; y<iCols; y++) {newRow.insertCell(y);}
                               }
 
                       //set the summary attr
@@ -322,71 +322,63 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                 break;
         }
 
-        $.ajax(
-        {
-            url: item_info.list_ajax_url,
-            data: {},
-            error: function() { alert( "Failed to list "  + item_info.plural.toLowerCase() + " for selection"); },
-            success: function(table_html)
-            {
-                show_modal(
-                    "Insert Link to " + item_info.singular,
-                    table_html +
-                    "<div><input id='make-importable' type='checkbox' checked/>" +
-                    "Make the selected " + item_info.plural.toLowerCase() + " accessible so that they can viewed by everyone.</div>"
-                    ,
-                    {
-                        "Insert": function()
-                        {
-                            // Make selected items accessible (importable) ?
-                            var make_importable = false;
-                            if ( $('#make-importable:checked').val() !== null )
-                                make_importable = true;
+        require( [ 'mvc/grid/grid-view' ], function( GridView ) {
+            var grid = new GridView( { url_base: item_info.list_ajax_url, dict_format: true, embedded: true } );
+            Galaxy.modal.show({
+                title           : 'Insert Link to ' + item_info.singular,
+                body            : $( '<div/>' ).append( grid.$el )
+                                               .append( $( '<div/>' ).append( '<input id="make-importable" type="checkbox" checked/>' )
+                                                                     .append( 'Make the selected ' + item_info.plural.toLowerCase() + ' accessible so that they can viewed by everyone.' ) ),
+                closing_events  : true,
+                buttons         : {
+                    'Insert': function() {
+                        // Make selected items accessible (importable) ?
+                        var make_importable = false;
+                        if ( $('#make-importable:checked').val() != null )
+                            make_importable = true;
 
-                            // Insert links to history for each checked item.
-                            var item_ids = new Array();
-                            $('input[name=id]:checked').each(function() {
-                                var item_id = $(this).val();
+                        // Insert links to history for each checked item.
+                        var item_ids = new Array();
+                        grid.$('input[name=id]:checked').each(function() {
+                            var item_id = $(this).val();
 
-                                // Make item importable?
-                                if (make_importable)
-                                    make_item_importable(item_info.controller, item_id, item_info.singular);
+                            // Make item importable?
+                            if (make_importable)
+                                make_item_importable(item_info.controller, item_id, item_info.singular);
 
-                                // Insert link(s) to item(s). This is done by getting item info and then manipulating wym.
-                                url_template = get_name_and_link_url + item_id;
-                                ajax_url = url_template.replace( "ITEM_CONTROLLER", item_info.controller);
-                                $.getJSON( ajax_url, function( returned_item_info ) {
-                                    // Get link text.
-                                    wym._exec(WYMeditor.CREATE_LINK, sStamp);
-                                    var link_text = $("a[href=" + sStamp + "]", wym._doc.body).text();
+                            // Insert link(s) to item(s). This is done by getting item info and then manipulating wym.
+                            var url_template = get_name_and_link_url + item_id;
+                            var ajax_url = url_template.replace( "ITEM_CONTROLLER", item_info.controller);
+                            $.getJSON( ajax_url, function( returned_item_info ) {
+                                // Get link text.
+                                wym._exec(WYMeditor.CREATE_LINK, sStamp);
+                                var link_text = $("a[href=" + sStamp + "]", wym._doc.body).text();
 
-                                    // Insert link: need to do different actions depending on link text.
-                                    if (
-                                        link_text == "" // Firefox.
-                                        ||
-                                        link_text == sStamp // Safari
-                                        )
-                                    {
-                                        // User selected no text; create link from scratch and use default text.
-                                        wym.insert("<a href='" + returned_item_info.link + "'>" + item_info.singular + " '" + returned_item_info.name + "'</a>");
-                                    }
-                                    else
-                                    {
-                                        // Link created from selected text; add href and title.
-                                        $("a[href=" + sStamp + "]", wym._doc.body).attr(WYMeditor.HREF, returned_item_info.link).attr(WYMeditor.TITLE, item_info.singular + item_id);
-                                    }
-                                });
+                                // Insert link: need to do different actions depending on link text.
+                                if (
+                                    link_text == "" // Firefox.
+                                    ||
+                                    link_text == sStamp // Safari
+                                    )
+                                {
+                                    // User selected no text; create link from scratch and use default text.
+                                    wym.insert("<a href='" + returned_item_info.link + "'>" + item_info.singular + " '" + returned_item_info.name + "'</a>");
+                                }
+                                else
+                                {
+                                    // Link created from selected text; add href and title.
+                                    $("a[href=" + sStamp + "]", wym._doc.body).attr(WYMeditor.HREF, returned_item_info.link).attr(WYMeditor.TITLE, item_info.singular + item_id);
+                                }
                             });
+                        });
+                        Galaxy.modal.hide();
 
-                            hide_modal();
-                        },
-                        "Cancel": function()
-                        {
-                            hide_modal();
-                        }
+                    },
+                    'Close' : function() {
+                        Galaxy.modal.hide();
                     }
-                );
-            }
+                }
+            });
         });
     }
     // EMBED GALAXY OBJECT DIALOGS
@@ -412,67 +404,56 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                 break;
         }
 
-        $.ajax(
-        {
-            url: item_info.list_ajax_url,
-            data: {},
-            error: function() { alert( "Failed to list "  + item_info.plural.toLowerCase() + " for selection"); },
-            success: function(list_html)
-            {
-                // Can make histories, workflows importable; cannot make datasets importable.
-                if (dialogType == CONTROLS.DIALOG_EMBED_HISTORY || dialogType == CONTROLS.DIALOG_EMBED_WORKFLOW
-                    || dialogType == CONTROLS.DIALOG_EMBED_VISUALIZATION)
-                    list_html = list_html + "<div><input id='make-importable' type='checkbox' checked/>" +
-                                "Make the selected " + item_info.plural.toLowerCase() + " accessible so that they can viewed by everyone.</div>";
-                show_modal(
-                    "Embed " + item_info.plural,
-                    list_html,
-                    {
-                        "Embed": function()
-                        {
-                            // Make selected items accessible (importable) ?
-                            var make_importable = false;
-                            if ( $('#make-importable:checked').val() != null )
-                                make_importable = true;
+        require( [ 'mvc/grid/grid-view' ], function( GridView ) {
+            var grid = new GridView( { url_base: item_info.list_ajax_url, dict_format: true, embedded: true } );
+            Galaxy.modal.show({
+                title           : 'Insert Link to ' + item_info.singular,
+                body            : $( '<div/>' ).append( grid.$el )
+                                               .append( $( '<div/>' ).append( '<input id="make-importable" type="checkbox" checked/>' )
+                                                                     .append( 'Make the selected ' + item_info.plural.toLowerCase() + ' accessible so that they can viewed by everyone.' ) ),
+                closing_events  : true,
+                buttons         : {
+                    'Embed': function() {
+                        // Make selected items accessible (importable) ?
+                        var make_importable = false;
+                        if ( $('#make-importable:checked').val() != null )
+                            make_importable = true;
 
-                            $('input[name=id]:checked').each(function() {
-                                // Get item ID and name.
-                                var item_id = $(this).val();
-                                // Use ':first' because there are many labels in table; the first one is the item name.
-                                var item_name = $("label[for='" + item_id + "']:first").text();
+                        grid.$('input[name=id]:checked').each(function() {
+                            // Get item ID and name.
+                            var item_id = $(this).val();
+                            // Use ':first' because there are many labels in table; the first one is the item name.
+                            var item_name = $("label[for='" + item_id + "']:first").text();
 
-                                if (make_importable)
-                                    make_item_importable(item_info.controller, item_id, item_info.singular);
+                            if (make_importable)
+                                make_item_importable(item_info.controller, item_id, item_info.singular);
 
-                                // Embedded item HTML; item class is embedded in div container classes; this is necessary because the editor strips
-                                // all non-standard attributes when it returns its content (e.g. it will not return an element attribute of the form
-                                // item_class='History').
-                                var item_elt_id = item_info.iclass + "-"  + item_id;
-                                var item_embed_html = [
-                                    "<div id='", item_elt_id, "' class='embedded-item ",
-                                            item_info.singular.toLowerCase(), " placeholder'>",
-                                        "<p class='title'>",
-                                            "Embedded Galaxy ", item_info.singular, " '", item_name, "'",
-                                        "</p>",
-                                        "<p class='content'>",
-                                            "[Do not edit this block; Galaxy will fill it in with the annotated ",
-                                            item_info.singular.toLowerCase(), " when it is displayed.]",
-                                        "</p>",
-                                    "</div>" ].join( '' );
+                            // Embedded item HTML; item class is embedded in div container classes; this is necessary because the editor strips
+                            // all non-standard attributes when it returns its content (e.g. it will not return an element attribute of the form
+                            // item_class='History').
+                            var item_elt_id = item_info.iclass + "-"  + item_id;
+                            var item_embed_html = [
+                                "<div id='", item_elt_id, "' class='embedded-item ",
+                                        item_info.singular.toLowerCase(), " placeholder'>",
+                                    "<p class='title'>",
+                                        "Embedded Galaxy ", item_info.singular, " '", item_name, "'",
+                                    "</p>",
+                                    "<p class='content'>",
+                                        "[Do not edit this block; Galaxy will fill it in with the annotated ",
+                                        item_info.singular.toLowerCase(), " when it is displayed.]",
+                                    "</p>",
+                                "</div>" ].join( '' );
 
-                                // Insert embedded item into document.
-                                wym.insert(item_embed_html);
-
-                            });
-                            hide_modal();
-                        },
-                        "Cancel": function()
-                        {
-                            hide_modal();
-                        }
+                            // Insert embedded item into document.
+                            wym.insert(item_embed_html);
+                        });
+                        Galaxy.modal.hide();
+                    },
+                    'Close' : function() {
+                        Galaxy.modal.hide();
                     }
-                );
-            }
+                }
+            });
         });
     }
 };

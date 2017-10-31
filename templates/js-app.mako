@@ -9,7 +9,12 @@
         ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
-        <title>Galaxy</title>
+        <title>
+            Galaxy
+            %if app.config.brand:
+            | ${app.config.brand}
+            %endif
+        </title>
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
         ## TODO: use loaders to move everything but the essentials below the fold
@@ -42,10 +47,25 @@
 
         ## js libraries and bundled js app
         ${ h.js(
+            'libs/require',
             'bundled/libs.bundled',
             'bundled/' + js_app_name + '.bundled'
         )}
         <script type="text/javascript">
+            require.config({
+                baseUrl: "${h.url_for('/static/scripts') }",
+                shim: {
+                    "libs/underscore": {
+                        exports: "_"
+                    },
+                    "libs/backbone": {
+                        deps: [ 'jquery', 'libs/underscore' ],
+                        exports: "Backbone"
+                    }
+                },
+                // cache busting using time server was restarted
+                urlArgs: 'v=${app.server_starttime}',
+            });
             ${js_app_entry_fn}(
                 ${ h.dumps( options ) },
                 ${ h.dumps( bootstrapped ) }

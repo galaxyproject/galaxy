@@ -14,7 +14,7 @@ import six
 
 from . import exceptions
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 _TODO = """
 hooks into datatypes (define providers inside datatype modules) as factories
@@ -39,7 +39,7 @@ datasets API entry point:
 
 
 # ----------------------------------------------------------------------------- base classes
-class HasSettings( type ):
+class HasSettings(type):
     """
     Metaclass for data providers that allows defining and inheriting
     a dictionary named 'settings'.
@@ -48,24 +48,24 @@ class HasSettings( type ):
     passed to class `__init__` functions so they can be parsed from a query string.
     """
     # yeah - this is all too acrobatic
-    def __new__( cls, name, base_classes, attributes ):
+    def __new__(cls, name, base_classes, attributes):
         settings = {}
         # get settings defined in base classes
         for base_class in base_classes:
-            base_settings = getattr( base_class, 'settings', None )
+            base_settings = getattr(base_class, 'settings', None)
             if base_settings:
-                settings.update( base_settings )
+                settings.update(base_settings)
         # get settings defined in this class
-        new_settings = attributes.pop( 'settings', None )
+        new_settings = attributes.pop('settings', None)
         if new_settings:
-            settings.update( new_settings )
-        attributes[ 'settings' ] = settings
-        return type.__new__( cls, name, base_classes, attributes )
+            settings.update(new_settings)
+        attributes['settings'] = settings
+        return type.__new__(cls, name, base_classes, attributes)
 
 
 # ----------------------------------------------------------------------------- base classes
 @six.add_metaclass(HasSettings)
-class DataProvider( six.Iterator ):
+class DataProvider(six.Iterator):
     """
     Base class for all data providers. Data providers:
         (a) have a source (which must be another file-like object)
@@ -78,15 +78,15 @@ class DataProvider( six.Iterator ):
     #   empty in this base class
     settings = {}
 
-    def __init__( self, source, **kwargs ):
+    def __init__(self, source, **kwargs):
         """
         :param source: the source that this iterator will loop over.
             (Should implement the iterable interface and ideally have the
             context manager interface as well)
         """
-        self.source = self.validate_source( source )
+        self.source = self.validate_source(source)
 
-    def validate_source( self, source ):
+    def validate_source(self, source):
         """
         Is this a valid source for this provider?
 
@@ -94,76 +94,76 @@ class DataProvider( six.Iterator ):
 
         Meant to be overridden in subclasses.
         """
-        if not source or not hasattr( source, '__iter__' ):
+        if not source or not hasattr(source, '__iter__'):
             # that's by no means a thorough check
-            raise exceptions.InvalidDataProviderSource( source )
+            raise exceptions.InvalidDataProviderSource(source)
         return source
 
     # TODO: (this might cause problems later...)
     # TODO: some providers (such as chunk's seek and read) rely on this... remove
-    def __getattr__( self, name ):
+    def __getattr__(self, name):
         if name == 'source':
             # if we're inside this fn, source hasn't been set - provide some safety just for this attr
             return None
         # otherwise, try to get the attr from the source - allows us to get things like provider.encoding, etc.
-        if hasattr( self.source, name ):
-            return getattr( self.source, name )
+        if hasattr(self.source, name):
+            return getattr(self.source, name)
         # raise the proper error
-        return self.__getattribute__( name )
+        return self.__getattribute__(name)
 
     # write methods should not be allowed
-    def truncate( self, size ):
-        raise NotImplementedError( 'Write methods are purposely disabled' )
+    def truncate(self, size):
+        raise NotImplementedError('Write methods are purposely disabled')
 
-    def write( self, string ):
-        raise NotImplementedError( 'Write methods are purposely disabled' )
+    def write(self, string):
+        raise NotImplementedError('Write methods are purposely disabled')
 
-    def writelines( self, sequence ):
-        raise NotImplementedError( 'Write methods are purposely disabled' )
+    def writelines(self, sequence):
+        raise NotImplementedError('Write methods are purposely disabled')
 
     # TODO: route read methods through next?
     # def readline( self ):
     #    return self.next()
-    def readlines( self ):
-        return [ line for line in self ]
+    def readlines(self):
+        return [line for line in self]
 
     # iterator interface
-    def __iter__( self ):
+    def __iter__(self):
         # it's generators all the way up, Timmy
         with self:
             for datum in self.source:
                 yield datum
 
-    def __next__( self ):
+    def __next__(self):
         return next(self.source)
 
     # context manager interface
-    def __enter__( self ):
+    def __enter__(self):
         # make the source's context manager interface optional
-        if hasattr( self.source, '__enter__' ):
+        if hasattr(self.source, '__enter__'):
             self.source.__enter__()
         return self
 
-    def __exit__( self, *args ):
+    def __exit__(self, *args):
         # make the source's context manager interface optional, call on source if there
-        if hasattr( self.source, '__exit__' ):
-            self.source.__exit__( *args )
+        if hasattr(self.source, '__exit__'):
+            self.source.__exit__(*args)
         # alternately, call close()
-        elif hasattr( self.source, 'close' ):
+        elif hasattr(self.source, 'close'):
             self.source.close()
 
-    def __str__( self ):
+    def __str__(self):
         """
         String representation for easier debugging.
 
         Will call `__str__` on its source so this will display piped dataproviders.
         """
         # we need to protect against recursion (in __getattr__) if self.source hasn't been set
-        source_str = str( self.source ) if hasattr( self, 'source' ) else ''
-        return '%s(%s)' % ( self.__class__.__name__, str( source_str ) )
+        source_str = str(self.source) if hasattr(self, 'source') else ''
+        return '%s(%s)' % (self.__class__.__name__, str(source_str))
 
 
-class FilteredDataProvider( DataProvider ):
+class FilteredDataProvider(DataProvider):
     """
     Passes each datum through a filter function and yields it if that function
     returns a non-`None` value.
@@ -176,13 +176,13 @@ class FilteredDataProvider( DataProvider ):
     # not useful here - we don't want functions over the query string
     # settings.update({ 'filter_fn': 'function' })
 
-    def __init__( self, source, filter_fn=None, **kwargs ):
+    def __init__(self, source, filter_fn=None, **kwargs):
         """
         :param filter_fn: a lambda or function that will be passed a datum and
             return either the (optionally modified) datum or None.
         """
-        super( FilteredDataProvider, self ).__init__( source, **kwargs )
-        self.filter_fn = filter_fn if hasattr( filter_fn, '__call__' ) else None
+        super(FilteredDataProvider, self).__init__(source, **kwargs)
+        self.filter_fn = filter_fn if hasattr(filter_fn, '__call__') else None
         # count how many data we got from the source
         self.num_data_read = 0
         # how many valid data have we gotten from the source
@@ -191,18 +191,18 @@ class FilteredDataProvider( DataProvider ):
         # how many lines have been provided/output
         self.num_data_returned = 0
 
-    def __iter__( self ):
-        parent_gen = super( FilteredDataProvider, self ).__iter__()
+    def __iter__(self):
+        parent_gen = super(FilteredDataProvider, self).__iter__()
         for datum in parent_gen:
             self.num_data_read += 1
-            datum = self.filter( datum )
+            datum = self.filter(datum)
             if datum is not None:
                 self.num_valid_data_read += 1
                 self.num_data_returned += 1
                 yield datum
 
     # TODO: may want to squash this into DataProvider
-    def filter( self, datum ):
+    def filter(self, datum):
         """
         When given a datum from the provider's source, return None if the datum
         'does not pass' the filter or is invalid. Return the datum if it's valid.
@@ -213,12 +213,12 @@ class FilteredDataProvider( DataProvider ):
         Meant to be overridden.
         """
         if self.filter_fn:
-            return self.filter_fn( datum )
+            return self.filter_fn(datum)
         # also can be overriden entirely
         return datum
 
 
-class LimitedOffsetDataProvider( FilteredDataProvider ):
+class LimitedOffsetDataProvider(FilteredDataProvider):
     """
     A provider that uses the counters from FilteredDataProvider to limit the
     number of data and/or skip `offset` number of data before providing.
@@ -232,23 +232,23 @@ class LimitedOffsetDataProvider( FilteredDataProvider ):
     }
 
     # TODO: may want to squash this into DataProvider
-    def __init__( self, source, offset=0, limit=None, **kwargs ):
+    def __init__(self, source, offset=0, limit=None, **kwargs):
         """
         :param offset:  the number of data to skip before providing.
         :param limit:   the final number of data to provide.
         """
-        super( LimitedOffsetDataProvider, self ).__init__( source, **kwargs )
+        super(LimitedOffsetDataProvider, self).__init__(source, **kwargs)
 
         # how many valid data to skip before we start outputing data - must be positive
         #   (diff to support neg. indeces - must be pos.)
-        self.offset = max( offset, 0 )
+        self.offset = max(offset, 0)
 
         # how many valid data to return - must be positive (None indicates no limit)
         self.limit = limit
         if self.limit is not None:
-            self.limit = max( self.limit, 0 )
+            self.limit = max(self.limit, 0)
 
-    def __iter__( self ):
+    def __iter__(self):
         """
         Iterate over the source until `num_valid_data_read` is greater than
         `offset`, begin providing datat, and stop when `num_data_returned`
@@ -256,9 +256,8 @@ class LimitedOffsetDataProvider( FilteredDataProvider ):
         """
         if self.limit is not None and self.limit <= 0:
             return
-            yield
 
-        parent_gen = super( LimitedOffsetDataProvider, self ).__iter__()
+        parent_gen = super(LimitedOffsetDataProvider, self).__iter__()
         for datum in parent_gen:
             self.num_data_returned -= 1
             # print 'self.num_data_returned:', self.num_data_returned
@@ -284,20 +283,21 @@ class LimitedOffsetDataProvider( FilteredDataProvider ):
     #    self.curr_line_num = new_curr_line_num
 
 
-class MultiSourceDataProvider( DataProvider ):
+class MultiSourceDataProvider(DataProvider):
     """
     A provider that iterates over a list of given sources and provides data
     from one after another.
 
     An iterator over iterators.
     """
-    def __init__( self, source_list, **kwargs ):
+
+    def __init__(self, source_list, **kwargs):
         """
         :param source_list: an iterator of iterables
         """
-        self.source_list = deque( source_list )
+        self.source_list = deque(source_list)
 
-    def __iter__( self ):
+    def __iter__(self):
         """
         Iterate over the source_list, then iterate over the data in each source.
 
@@ -308,10 +308,10 @@ class MultiSourceDataProvider( DataProvider ):
             if not source:
                 continue
             try:
-                self.source = self.validate_source( source )
+                self.source = self.validate_source(source)
             except exceptions.InvalidDataProviderSource:
                 continue
 
-            parent_gen = super( MultiSourceDataProvider, self ).__iter__()
+            parent_gen = super(MultiSourceDataProvider, self).__iter__()
             for datum in parent_gen:
                 yield datum

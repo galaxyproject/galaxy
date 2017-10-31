@@ -8,13 +8,10 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             var self = this;
             this.deferred = new Deferred();
             FormBase.prototype.initialize.call( this, options );
-            if ( this.model.get( 'inputs' ) ) {
-                this._buildForm( this.model.attributes );
-            } else {
-                this.deferred.execute( function( process ) {
-                    self._buildModel( process, self.model.attributes, true );
-                });
-            }
+
+            // optional model update
+            this._update( this.model.get( 'initialmodel' ) );
+
             // listen to history panel
             if ( this.model.get( 'listen_to_history' ) && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
                 this.listenTo( parent.Galaxy.currHistoryPanel.collection, 'change', function() {
@@ -22,26 +19,41 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 });
             }
             // destroy dom elements
-            this.$el.on( 'remove', function() { self.remove() } );
+            this.$el.on( 'remove', function() { self._destroy() } );
+        },
+
+        /** Allows tool form variation to update tool model */
+        _update: function( callback ) {
+            var self = this;
+            callback = callback || this.model.get( 'buildmodel' );
+            if ( callback ) {
+                this.deferred.reset();
+                this.deferred.execute( function( process ) {
+                    callback( process, self );
+                    process.then( function() { self._render() } );
+                });
+            } else {
+                this._render();
+            }
         },
 
         /** Wait for deferred build processes before removal */
-        remove: function() {
+        _destroy: function() {
             var self = this;
-            this.$el.hide();
+            this.$el.off().hide();
             this.deferred.execute( function() {
                 FormBase.prototype.remove.call( self );
-                Galaxy.emit.debug( 'tool-form-base::remove()', 'Destroy view.' );
+                Galaxy.emit.debug( 'tool-form-base::_destroy()', 'Destroy view.' );
             });
         },
 
         /** Build form */
-        _buildForm: function( options ) {
+        _render: function() {
             var self = this;
-            this.model.set( options );
+            var options = this.model.attributes;
             this.model.set({
-                title       : options.title || '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
-                operations  : !this.model.get( 'hide_operations' ) && this._operations(),
+                title       : options.fixed_title || '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
+                operations  : !options.hide_operations && this._operations(),
                 onchange    : function() {
                     self.deferred.reset();
                     self.deferred.execute( function ( process ) {
@@ -49,76 +61,16 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     });
                 }
             });
-            this.model.get( 'customize' ) && this.model.get( 'customize' )( this );
             this.render();
             if ( !this.model.get( 'collapsible' ) ) {
                 this.$el.append( $( '<div/>' ).addClass( 'ui-margin-top-large' ).append( this._footer() ) );
             }
-        },
-
-        /** Builds a new model through api call and recreates the entire form */
-        _buildModel: function( process, new_options, hide_message ) {
-            var self = this;
-            var options = this.model.attributes;
-            options.version = new_options.version;
-            options.id = new_options.id;
-
-            // build request url
-            var build_url = '';
-            var build_data = {};
-            if ( new_options.job_id ) {
-                build_url = Galaxy.root + 'api/jobs/' + new_options.job_id + '/build_for_rerun';
-            } else {
-                build_url = Galaxy.root + 'api/tools/' + options.id + '/build';
-                build_data = $.extend( {}, Galaxy.params );
-                build_data[ 'tool_id' ] && ( delete build_data[ 'tool_id' ] );
-                options.version && ( build_data[ 'tool_version' ] = options.version );
-            }
-
-            // get initial model
-            Utils.get({
-                url     : build_url,
-                data    : build_data,
-                success : function( data ) {
-                    if( !data.display ) {
-                        window.location = Galaxy.root;
-                        return;
-                    }
-                    self._buildForm( data );
-                    !hide_message && self.message.update({
-                        status      : 'success',
-                        message     : 'Now you are using \'' + options.name + '\' version ' + options.version + ', id \'' + options.id + '\'.',
-                        persistent  : false
-                    });
-                    Galaxy.emit.debug('tool-form-base::_buildModel()', 'Initial tool model ready.', data);
-                    process.resolve();
-                },
-                error   : function( response, status ) {
-                    var error_message = ( response && response.err_msg ) || 'Uncaught error.';
-                    if ( status == 401 ) {
-                        window.location = Galaxy.root + 'user/login?' + $.param({ redirect : Galaxy.root + '?tool_id=' + options.id });
-                    } else if ( self.$el.is( ':empty' ) ) {
-                        self.$el.prepend( ( new Ui.Message({
-                            message     : error_message,
-                            status      : 'danger',
-                            persistent  : true,
-                            large       : true
-                        }) ).$el );
-                    } else {
-                        Galaxy.modal && Galaxy.modal.show({
-                            title   : 'Tool request failed',
-                            body    : error_message,
-                            buttons : {
-                                'Close' : function() {
-                                    Galaxy.modal.hide();
-                                }
-                            }
-                        });
-                    }
-                    Galaxy.emit.debug( 'tool-form-base::_buildModel()', 'Initial tool model request failed.', response );
-                    process.reject();
-                }
+            this.show_message && this.message.update({
+                status      : 'success',
+                message     : 'Now you are using \'' + options.name + '\' version ' + options.version + ', id \'' + options.id + '\'.',
+                persistent  : false
             });
+            this.show_message = true;
         },
 
         /** Create tool operation menu */
@@ -142,13 +94,9 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                             icon    : 'fa-cube',
                             onclick : function() {
                                 // here we update the tool version (some tools encode the version also in the id)
-                                var id = options.id.replace( options.version, this.version );
-                                var version = this.version;
-                                // queue model request
-                                self.deferred.reset();
-                                self.deferred.execute( function( process ) {
-                                    self._buildModel( process, { id : id, version : version } )
-                                });
+                                self.model.set( 'id', options.id.replace( options.version, this.version ) );
+                                self.model.set( 'version', this.version );
+                                self._update();
                             }
                         });
                     }
@@ -241,6 +189,22 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     }
                 });
             }
+
+            // add tool menu webhooks
+            $.getJSON('/api/webhooks/tool-menu/all', function(webhooks) {
+                _.each(webhooks, function(webhook) {
+                    if (webhook.activate && webhook.config.function) {
+                        menu_button.addMenu({
+                            icon    : webhook.config.icon,
+                            title   : webhook.config.title,
+                            onclick : function() {
+                                var func = new Function('options', webhook.config.function);
+                                func(options);
+                            }
+                        });
+                    }
+                });
+            });
 
             return {
                 menu        : menu_button,

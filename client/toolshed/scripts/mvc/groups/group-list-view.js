@@ -14,7 +14,7 @@ var GroupListView = Backbone.View.extend({
     defaults: {},
 
     /**
-     * Initialize and fetch the groups from server. 
+     * Initialize and fetch the groups from server.
      * Async render afterwards.
      * @param  {object} options an object with options
      */
@@ -32,18 +32,18 @@ var GroupListView = Backbone.View.extend({
               if ( typeof response.responseJSON !== "undefined" ){
                 mod_toastr.error( response.responseJSON.err_msg );
               } else {
-                mod_toastr.error( 'An error ocurred.' );
+                mod_toastr.error( 'An error occurred.' );
               }
           }
         });
-        
+
     },
 
     fetch: function(){
     },
 
-    /** 
-     * Render the groups table from the object's own collection. 
+    /**
+     * Render the groups table from the object's own collection.
      */
     render: function ( options ) {
         this.options = _.extend( this.options, options );
@@ -55,7 +55,7 @@ var GroupListView = Backbone.View.extend({
         $( "#center" ).css( 'overflow','auto' );
     },
 
-    /** 
+    /**
      * Render all given models as rows in the groups list
      * @param  {array} groups_to_render array of group models to render
      */
@@ -90,7 +90,7 @@ var GroupListView = Backbone.View.extend({
 
     /**
      * Sort the underlying collection according to the parameters received.
-     * Currently supports only sorting by name. 
+     * Currently supports only sorting by name.
      */
     // sortLibraries: function(){
     //     if (Galaxy.libraries.preferences.get('sort_by') === 'name'){
@@ -102,19 +102,12 @@ var GroupListView = Backbone.View.extend({
     //     }
     // },
 
-    // redirectToHome: function(){
-    //     window.location = '../';
-    // },
-    // redirectToLogin: function(){
-    //     window.location = '/user/login';
-    // },
-
 // MMMMMMMMMMMMMMMMMM
 // === TEMPLATES ====
 // MMMMMMMMMMMMMMMMMM
 
     templateGroupsList: function(){
-        tmpl_array = [];
+        var tmpl_array = [];
 
         tmpl_array.push('<div id="groups">');
         tmpl_array.push('</div>');

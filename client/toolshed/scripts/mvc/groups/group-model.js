@@ -4,11 +4,11 @@ define([], function() {
 // TS GROUP RELATED MODELS
 
     var Group = Backbone.Model.extend({
-      urlRoot: '/api/groups',
+      urlRoot: Galaxy.root + 'api/groups',
     });
 
     var Groups = Backbone.Collection.extend({
-      url: '/api/groups',
+      url: Galaxy.root + 'api/groups',
 
       model: Group,
 

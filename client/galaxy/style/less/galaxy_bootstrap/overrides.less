@@ -81,3 +81,24 @@ NOTE: these styles do not currently work.
 .nav-tabs {
   margin-bottom: 15px;
 }
+
+// Don't make blockquotes very large since they're often used in the toolform
+// and this does not look nice to have a quoted portion of a tool's help
+// documentation be rendered 150% larger.
+div.ui-form-help {
+  blockquote {
+    p {
+      font-size: inherit;
+      font-weight: inherit;
+      line-height: inherit;
+    }
+  }
+}
+
+// pre styling
+pre.code {
+  white-space: pre-wrap;
+  background: #1d1f21;
+  color: white;
+  padding: 1em;
+}

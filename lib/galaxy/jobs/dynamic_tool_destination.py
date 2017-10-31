@@ -1243,7 +1243,7 @@ def map_tool_to_destination(
                 if priority in config['default_destination']['priority']:
                     destination = config['default_destination']['priority'][priority]
                 else:
-                    destination = ( config['default_destination']['priority'][default_priority])
+                    destination = (config['default_destination']['priority'][default_priority])
             config = config['tools']
             if str(tool.old_id) in config:
                 if 'rules' in config[str(tool.old_id)]:

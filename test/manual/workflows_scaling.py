@@ -17,7 +17,7 @@ from uuid import uuid4
 from bioblend import galaxy
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
-sys.path[1:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
+sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
 from base.populators import (
     GiDatasetCollectionPopulator,
@@ -82,7 +82,7 @@ def _run(args, gi, workflow_id, uuid):
         contents = []
         for i in range(args.collection_size):
             contents.append("random dataset number #%d" % i)
-        hdca = dataset_collection_populator.create_list_in_history( history_id, contents=contents ).json()
+        hdca = dataset_collection_populator.create_list_in_history(history_id, contents=contents).json()
         label_map = {
             uuid: {"src": "hdca", "id": hdca["id"]},
         }
@@ -92,9 +92,9 @@ def _run(args, gi, workflow_id, uuid):
     workflow_request = dict(
         history="hist_id=%s" % history_id,
     )
-    workflow_request[ "inputs" ] = json.dumps( label_map )
-    url = "workflows/%s/usage" % ( workflow_id )
-    invoke_response = dataset_populator._post( url, data=workflow_request ).json()
+    workflow_request["inputs"] = json.dumps(label_map)
+    url = "workflows/%s/usage" % (workflow_id)
+    invoke_response = dataset_populator._post(url, data=workflow_request).json()
     invocation_id = invoke_response["id"]
     workflow_populator = GiWorkflowPopulator(gi)
     if args.schedule_only_test:
@@ -164,7 +164,7 @@ def _workflow_struct_wave(args, input_uuid):
         if step % 2 == 1:
             workflow_struct += [{"tool_id": "cat_list", "state": {"input1": _link(step - 1, "output")}}]
         else:
-            workflow_struct += [{"tool_id": "split", "state": {"input1": _link(step - 1, "out_file1") }}]
+            workflow_struct += [{"tool_id": "split", "state": {"input1": _link(step - 1, "out_file1")}}]
     return workflow_struct
 
 

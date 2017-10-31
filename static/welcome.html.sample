@@ -10,8 +10,8 @@
                 <h2>Hello, <strong>Galaxy</strong> is running!</h2>
                 To customize this page edit <code>static/welcome.html</code>
                 <br>
-                <a target="_blank" href="https://wiki.galaxyproject.org/Admin/Config" class="btn btn-primary btn-lg">Configuring Galaxy »</a>
-                <a target="_blank" href="https://wiki.galaxyproject.org/Admin/Tools/AddToolFromToolShedTutorial" class="btn btn-primary btn-lg">Installing Tools »</a>
+                <a target="_blank" href="https://galaxyproject.org/admin/config/" class="btn btn-primary btn-lg">Configuring Galaxy »</a>
+                <a target="_blank" href="https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/" class="btn btn-primary btn-lg">Installing Tools »</a>
             </div>
             <br>
             <div class="container">
@@ -26,7 +26,7 @@
             <p class="lead">
                 <a target="_blank" class="reference" href="http://galaxyproject.org/">
                 Galaxy</a> is an open platform for supporting data intensive
-                research. Galaxy is developed by <a target="_blank" class="reference" href="http://wiki.galaxyproject.org/GalaxyTeam">The Galaxy Team</a>
+                research. Galaxy is developed by <a target="_blank" class="reference" href="https://galaxyproject.org/galaxy-team/">The Galaxy Team</a>
                 with the support of  <a target="_blank" class="reference" href="https://github.com/galaxyproject/galaxy/blob/dev/CONTRIBUTORS.md">many contributors</a>.
             </p>
             <footer>

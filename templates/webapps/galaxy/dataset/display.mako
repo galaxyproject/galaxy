@@ -44,7 +44,7 @@
 </%def>
 
 <%def name="title()">
-    Galaxy | ${get_class_display_name( item.__class__ )} | ${get_item_name( item ) | h}
+    ${get_class_display_name( item.__class__ )} | ${get_item_name( item ) | h}
 </%def>
 
 <%def name="render_item_links( data )">

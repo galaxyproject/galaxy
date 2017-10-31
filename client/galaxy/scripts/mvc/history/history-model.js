@@ -1,4 +1,3 @@
-
 define([
     "mvc/history/history-contents",
     "mvc/history/history-preferences",

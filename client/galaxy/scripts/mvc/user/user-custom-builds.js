@@ -55,8 +55,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
             this.table.delAll();
             this.collection.sort();
             this.collection.each( function( model ) {
-                self.table.add( model.id );
                 self.table.add( model.get( 'name' ) );
+                self.table.add( model.id );
                 self.table.add( model.get( 'count' ) !== undefined ? model.get( 'count' ) : 'Processing...' );
                 self.table.add( ( new Ui.ButtonIcon({
                     icon    : 'fa-trash-o',
@@ -126,8 +126,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                         icon     : 'fa-save',
                         tooltip  : 'Create new Build',
                         title    : 'Save',
-                        cls      : 'ui-button btn btn-primary',
-                        floating : 'clear',
+                        cls      : 'btn btn-primary ui-clear-float',
                         onclick  : function() {
                             var data = form.data.create();
                             if ( !data.id || !data.name ) {

@@ -109,39 +109,40 @@ class YamlToolSource(ToolSource):
 
     def _parse_output(self, tool, name, output_dict):
         # TODO: handle filters, actions, change_format
-        output = ToolOutput( name )
+        output = ToolOutput(name)
         output.format = output_dict.get("format", "data")
         output.change_format = []
         output.format_source = output_dict.get("format_source", None)
+        output.default_identifier_source = output_dict.get("default_identifier_source", None)
         output.metadata_source = output_dict.get("metadata_source", "")
         output.parent = output_dict.get("parent", None)
-        output.label = output_dict.get( "label", None )
+        output.label = output_dict.get("label", None)
         output.count = output_dict.get("count", 1)
         output.filters = []
         output.tool = tool
         output.from_work_dir = output_dict.get("from_work_dir", None)
         output.hidden = output_dict.get("hidden", "")
         # TODO: implement tool output action group fixes
-        output.actions = ToolOutputActionGroup( output, None )
-        output.dataset_collector_descriptions = self._dataset_collector_descriptions( output_dict )
+        output.actions = ToolOutputActionGroup(output, None)
+        output.dataset_collector_descriptions = self._dataset_collector_descriptions(output_dict)
         return output
 
     def _parse_output_collection(self, tool, name, output_dict):
         name = output_dict.get("name")
         label = output_dict.get("label")
-        default_format = output_dict.get( "format", "data" )
-        collection_type = output_dict.get( "type", None )
-        collection_type_source = output_dict.get( "type_source", None )
-        structured_like = output_dict.get( "structured_like", None )
+        default_format = output_dict.get("format", "data")
+        collection_type = output_dict.get("type", None)
+        collection_type_source = output_dict.get("type_source", None)
+        structured_like = output_dict.get("structured_like", None)
         inherit_format = False
         inherit_metadata = False
         if structured_like:
-            inherit_format = output_dict.get( "inherit_format", None )
-            inherit_metadata = output_dict.get( "inherit_metadata", None )
-        default_format_source = output_dict.get( "format_source", None )
-        default_metadata_source = output_dict.get( "metadata_source", "" )
+            inherit_format = output_dict.get("inherit_format", None)
+            inherit_metadata = output_dict.get("inherit_metadata", None)
+        default_format_source = output_dict.get("format_source", None)
+        default_metadata_source = output_dict.get("metadata_source", "")
         filters = []
-        dataset_collector_descriptions = self._dataset_collector_descriptions( output_dict )
+        dataset_collector_descriptions = self._dataset_collector_descriptions(output_dict)
 
         structure = ToolOutputCollectionStructure(
             collection_type=collection_type,
@@ -164,8 +165,8 @@ class YamlToolSource(ToolSource):
 
     def _dataset_collector_descriptions(self, discover_datasets_dicts):
         if _is_dict(discover_datasets_dicts):
-            discover_datasets_dicts = [ discover_datasets_dicts ]
-        dataset_collector_descriptions = dataset_collector_descriptions_from_list( discover_datasets_dicts )
+            discover_datasets_dicts = [discover_datasets_dicts]
+        dataset_collector_descriptions = dataset_collector_descriptions_from_list(discover_datasets_dicts)
         return dataset_collector_descriptions
 
     def parse_tests_to_dict(self):
@@ -224,18 +225,18 @@ def _parse_test(i, test_dict):
         attributes["metadata"] = {}
         # TODO
         assert_list = []
-        assert_list = __to_test_assert_list( attributes.get("asserts", [] ) )
+        assert_list = __to_test_assert_list(attributes.get("asserts", []))
         attributes["assert_list"] = assert_list
         _ensure_has(attributes, defaults)
 
     test_dict["outputs"] = new_outputs
     # TODO: implement output collections for YAML tools.
     test_dict["output_collections"] = []
-    test_dict["command"] = __to_test_assert_list( test_dict.get( "command", [] ) )
-    test_dict["stdout"] = __to_test_assert_list( test_dict.get( "stdout", [] ) )
-    test_dict["stderr"] = __to_test_assert_list( test_dict.get( "stderr", [] ) )
-    test_dict["expect_exit_code"] = test_dict.get( "expect_exit_code", None )
-    test_dict["expect_failure"] = test_dict.get( "expect_exit_code", False )
+    test_dict["command"] = __to_test_assert_list(test_dict.get("command", []))
+    test_dict["stdout"] = __to_test_assert_list(test_dict.get("stdout", []))
+    test_dict["stderr"] = __to_test_assert_list(test_dict.get("stderr", []))
+    test_dict["expect_exit_code"] = test_dict.get("expect_exit_code", None)
+    test_dict["expect_failure"] = test_dict.get("expect_exit_code", False)
     return test_dict
 
 
@@ -251,7 +252,7 @@ def __to_test_assert_list(assertions):
         return new_value
 
     if _is_dict(assertions):
-        assertions = map(expand_dict_form, assertions.items() )
+        assertions = map(expand_dict_form, assertions.items())
 
     assert_list = []
     for assertion in assertions:
@@ -305,7 +306,7 @@ class YamlInputSource(InputSource):
         return YamlPageSource(self.input_dict["blocks"])
 
     def parse_test_input_source(self):
-        test_dict = self.input_dict.get( "test", None )
+        test_dict = self.input_dict.get("test", None)
         assert test_dict is not None, "conditional must contain a `test` definition"
         return YamlInputSource(test_dict)
 
@@ -321,7 +322,7 @@ class YamlInputSource(InputSource):
             else:
                 value = str(value)
 
-            # str here to loose type information like XML, needed?
+            # str here to lose type information like XML, needed?
             if not isinstance(block, list):
                 block = [block]
             case_page_source = YamlPageSource(block)
@@ -332,10 +333,10 @@ class YamlInputSource(InputSource):
         static_options = list()
         input_dict = self.input_dict
         for index, option in enumerate(input_dict.get("options", {})):
-            value = option.get( "value" )
-            label = option.get( "label", value )
-            selected = option.get( "selected", False )
-            static_options.append( ( label, value, selected ) )
+            value = option.get("value")
+            label = option.get("label", value)
+            selected = option.get("selected", False)
+            static_options.append((label, value, selected))
         return static_options
 
 

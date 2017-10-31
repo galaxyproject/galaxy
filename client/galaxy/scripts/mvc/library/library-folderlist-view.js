@@ -82,7 +82,7 @@ var FolderListView = Backbone.View.extend({
               if ( typeof response.responseJSON !== "undefined" ){
                 mod_toastr.error( response.responseJSON.err_msg + ' Click this to go back.', '', { onclick: function() { Galaxy.libraries.library_router.back(); } } );
               } else {
-                mod_toastr.error( 'An error ocurred. Click this to go back.', '', { onclick: function() { Galaxy.libraries.library_router.back(); } } );
+                mod_toastr.error( 'An error occurred. Click this to go back.', '', { onclick: function() { Galaxy.libraries.library_router.back(); } } );
               }
             }
         });
@@ -112,7 +112,7 @@ var FolderListView = Backbone.View.extend({
 
         // when dataset_id is present render its details too
         if ( this.options.dataset_id ){
-            row = _.findWhere( that.rowViews, { id: this.options.dataset_id } );
+            var row = _.findWhere( that.rowViews, { id: this.options.dataset_id } );
             if ( row ) {
               row.showDatasetDetails();
             } else {
@@ -277,7 +277,7 @@ var FolderListView = Backbone.View.extend({
          // Iterate each checkbox
          $(':checkbox', '#folder_list_body').each(function() {
             this.checked = selected;
-            $row = $(this.parentElement.parentElement);
+            var $row = $(this).closest('tr');
             // Change color of selected/unselected
             if (selected) {
               that.makeDarkRow($row);
@@ -295,12 +295,11 @@ var FolderListView = Backbone.View.extend({
         var checkbox = '';
         var $row;
         var source;
+        $row = $(event.target).closest('tr');
         if (event.target.localName === 'input'){
             checkbox = event.target;
-            $row = $(event.target.parentElement.parentElement);
             source = 'input';
         } else if (event.target.localName === 'td') {
-            $row = $(event.target.parentElement);
             checkbox = $row.find(':checkbox')[0];
             source = 'td';
         }
@@ -358,7 +357,7 @@ var FolderListView = Backbone.View.extend({
       '</ol>',
 
       // FOLDER CONTENT
-      '<table data-library-id="<%- parent_library_id  %>" id="folder_table" class="grid table table-condensed">',
+      '<table data-library-id="<%- parent_library_id  %>" class="grid table table-condensed">',
         '<thead>',
           '<th class="button_heading"></th>',
           '<th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>',

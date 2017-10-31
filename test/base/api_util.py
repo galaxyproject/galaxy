@@ -21,4 +21,4 @@ def get_user_api_key():
     API based testing - if not set master API key should be used to create a new
     user and API key for tests.
     """
-    return os.environ.get( "GALAXY_TEST_USER_API_KEY", DEFAULT_GALAXY_USER_API_KEY )
+    return os.environ.get("GALAXY_TEST_USER_API_KEY", DEFAULT_GALAXY_USER_API_KEY)

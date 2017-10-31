@@ -16,10 +16,10 @@ from pysam import ctabix
 def main():
     # Read options, args.
     parser = optparse.OptionParser()
-    parser.add_option( '-c', '--chr-col', type='int', dest='chrom_col' )
-    parser.add_option( '-s', '--start-col', type='int', dest='start_col' )
-    parser.add_option( '-e', '--end-col', type='int', dest='end_col' )
-    parser.add_option( '-P', '--preset', dest='preset' )
+    parser.add_option('-c', '--chr-col', type='int', dest='chrom_col')
+    parser.add_option('-s', '--start-col', type='int', dest='start_col')
+    parser.add_option('-e', '--end-col', type='int', dest='end_col')
+    parser.add_option('-P', '--preset', dest='preset')
     (options, args) = parser.parse_args()
     input_fname, index_fname, out_fname = args
 

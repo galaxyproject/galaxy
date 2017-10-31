@@ -14,8 +14,7 @@ function( Utils, Portlet, Ui ) {
                 icon    : 'fa-plus',
                 title   : 'Insert ' + this.options.title,
                 tooltip : 'Add new ' + this.options.title + ' block',
-                floating: 'clear',
-                cls     : 'ui-button-icon form-repeat-add',
+                cls     : 'ui-button-icon ui-clear-float form-repeat-add',
                 onclick : function() { options.onnew && options.onnew() }
             });
             this.setElement( $( '<div/>' ).append( this.$list = $( '<div/>' ) )

@@ -183,4 +183,22 @@ $(document).ready( function() {
             }
         }
     }
+
+    function onloadWebhooks() {
+        if (Galaxy.root !== undefined){
+            // Load all webhooks with the type 'onload'
+            $.getJSON( Galaxy.root + 'api/webhooks/onload/all', function(webhooks) {
+                _.each(webhooks, function(webhook) {
+                    if (webhook.activate && webhook.script) {
+                        $('<script/>', {type: 'text/javascript'}).text(webhook.script).appendTo('head');
+                        $('<style/>', {type: 'text/css'}).text(webhook.styles).appendTo('head');
+                    }
+                });
+            });
+        }
+        else {
+            setTimeout(onloadWebhooks, 100);
+        }
+    }
+    onloadWebhooks();
 });

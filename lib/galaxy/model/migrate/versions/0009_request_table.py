@@ -12,13 +12,13 @@ from sqlalchemy import Boolean, Column, MetaData, Table
 
 from galaxy.model.custom_types import TrimmedString
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler( sys.stdout )
+handler = logging.StreamHandler(sys.stdout)
 format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter( format )
-handler.setFormatter( formatter )
-log.addHandler( handler )
+formatter = logging.Formatter(format)
+handler.setFormatter(formatter)
+log.addHandler(handler)
 
 metadata = MetaData()
 
@@ -27,14 +27,14 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print(__doc__)
     # Load existing tables
-    Request_table = Table( "request", metadata, autoload=True )
-    Sample_table = Table( "sample", metadata, autoload=True )
+    Request_table = Table("request", metadata, autoload=True)
+    Sample_table = Table("sample", metadata, autoload=True)
     metadata.reflect()
     # Add 1 column to the request table
     if Request_table is not None:
         try:
-            col = Column( 'submitted', Boolean, default=False )
-            col.create( Request_table)
+            col = Column('submitted', Boolean, default=False)
+            col.create(Request_table)
             assert col is Request_table.c.submitted
         except Exception:
             log.exception("Adding column 'submitted' to request table failed.")
@@ -42,8 +42,8 @@ def upgrade(migrate_engine):
     # Add 1 column to the sample table
     if Sample_table is not None:
         try:
-            col = Column( "bar_code", TrimmedString( 255 ), index=True )
-            col.create( Sample_table, index_name='ix_sample_bar_code')
+            col = Column("bar_code", TrimmedString(255), index=True)
+            col.create(Sample_table, index_name='ix_sample_bar_code')
             assert col is Sample_table.c.bar_code
         except Exception:
             log.exception("Adding column 'bar_code' to sample table failed.")

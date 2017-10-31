@@ -209,8 +209,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Pass debug flag to conda commands.
 #conda_debug = False
 # conda channels to enable by default (http://conda.pydata.org/docs/custom-channels.html)
-# the recommended channel order is the one from BioConda (https://github.com/bioconda/bioconda-recipes/blob/master/config.yml#L8)
-#conda_ensure_channels = iuc,bioconda,r,defaults,conda-forge
+#conda_ensure_channels = iuc,bioconda,conda-forge,defaults,r
 # Set to True to instruct Galaxy to look for and install missing tool
 # dependencies before each job runs.
 #conda_auto_install = False
@@ -349,10 +348,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Interactive environment plugins root directory: where to look for interactive
 # environment plugins.  By default none will be loaded.  Set to
-# config/plugins/interactive_environments to load Galaxy's stock plugins
-# (currently just Jupyter).  These will require Docker to be configured and
-# have security considerations, so proceed with caution. The path is relative to the
-# Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a comma
+# config/plugins/interactive_environments to load Galaxy's stock plugins.
+# These will require Docker to be configured and have security considerations,
+# so proceed with caution. The path is relative to the Galaxy root dir.  To use
+# an absolute path begin the path with '/'.  This is a comma
 # separated list.
 #interactive_environment_plugins_directory =
 
@@ -633,6 +632,10 @@ nglims_config_file = tool-data/nglims.yaml
 # The URL linked by the "Videos" link in the "Help" menu.
 #screencasts_url = https://vimeo.com/galaxyproject
 
+# Points to the GenomeSpace UI service which will be used by
+# the GenomeSpace importer and exporter tools
+#genomespace_ui_url = https://gsui.genomespace.org/jsui/
+
 # The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
 # as on the user registration and login forms and in the activation emails.
 #terms_url = None
@@ -908,12 +911,22 @@ use_interactive = True
 # sub-directories of files contained in their directory.
 #user_library_import_dir = None
 
-# Add an option to the admin library upload tool allowing admins to paste
+# For security reasons, users may not import any files that actually lie
+# outside of their `user_library_import_dir` (e.g. using symbolic links). A
+# list of directories can be allowed by setting the following option (the list
+# is comma-separated). Be aware that *any* user with library import permissions
+# can import from anywhere in these directories (assuming they are able to
+# create symlinks to them).
+#user_library_import_symlink_whitelist = None
+
+# Allow admins to paste filesystem paths during upload. For libraries this
+# adds an option to the admin library upload tool allowing admins to paste
 # filesystem paths to files and directories in a box, and these paths will be
-# added to a library.  Set to True to enable.  Please note the security
+# added to a library.  For history uploads, this allows pasting in paths as URIs.
+# (i.e. prefixed with file://). Set to True to enable.  Please note the security
 # implication that this will give Galaxy Admins access to anything your Galaxy
 # user has access to.
-#allow_library_path_paste = False
+#allow_path_paste = False
 
 # Users may choose to download multiple files from a library in an archive.  By
 # default, Galaxy allows users to select from a few different archive formats
@@ -973,7 +986,7 @@ use_interactive = True
 # Galaxy encodes various internal values when these values will be output in
 # some format (for example, in a URL or cookie).  You should set a key to be
 # used by the algorithm that encodes and decodes these values.  It can be any
-# string.
+# string up to 448 bits long.
 # One simple way to generate a value for this is with the shell command:
 #   python -c 'import time; print time.time()' | md5sum | cut -f 1 -d ' '
 #id_secret = USING THE DEFAULT IS NOT SECURE!
@@ -1064,6 +1077,15 @@ use_interactive = True
 #expose_user_name = False
 #expose_user_email = False
 
+# Whitelist for local network addresses for "Upload from URL" dialog.
+# By default, Galaxy will deny access to the local network address space, to
+# prevent users making requests to services which the administrator did not
+# intend to expose. Previously, you could request any network service that
+# Galaxy might have had access to, even if the user could not normally access it.
+# It should be a comma separated list of IP addresses or IP address/mask, e.g.
+# 10.10.10.10,10.0.1.0/24,fd00::/8
+#fetch_url_whitelist=
+
 # -- Beta features
 
 # Enable new run workflow form
@@ -1077,7 +1099,7 @@ use_interactive = True
 
 # Enable the new interface for installing tools from Tool Shed
 # via the API. Admin menu will list both if enabled.
-#enable_beta_ts_api_install = False
+#enable_beta_ts_api_install = True
 
 # Enable the new container interface for Interactive Environments
 #enable_beta_containers_interface = False
@@ -1306,9 +1328,20 @@ use_interactive = True
 #
 # https://galaxyproject.org/admin/config/performance/cluster
 #
-#drmaa_external_runjob_script = scripts/drmaa_external_runner.py
-#drmaa_external_killjob_script = scripts/drmaa_external_killer.py
-#external_chown_script = scripts/external_chown_script.py
+#drmaa_external_runjob_script = sudo -E scripts/drmaa_external_runner.py --assign_all_groups
+#drmaa_external_killjob_script = sudo -E scripts/drmaa_external_killer.py
+#external_chown_script = sudo -E scripts/external_chown_script.py
+
+# For the job submission as the actual system user, Galaxy can extract 
+# the user name from the email address (actually the local-part before the @) 
+# or the username which are both stored in the Galaxy data base. 
+# The latter option is particularly useful for installations that get the 
+# authentication from LDAP.
+# Also, Galaxy can accept the name of a common system user (eg. galaxy_worker) 
+# who can run every job being submitted. This user should not be the same user 
+# running the galaxy system. 
+# Possible values are user_email (default), username or <common_system_user>
+#real_system_username = user_email 
 
 # File to source to set up the environment when running jobs.  By default, the
 # environment in which the Galaxy server starts is used when running jobs

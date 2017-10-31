@@ -134,7 +134,7 @@ class Uploader:
             # So that we can check if it really needs to be uploaded.
             already_uploaded = memo_key in self.memo_path.keys()
             fid = self.memoized_path(basepath, base_folder=self.folder_id)
-            print('[%s/%s] %s/%s uploaded=%' % (idx + 1, len(all_files), fid, fname, already_uploaded))
+            print('[%s/%s] %s/%s uploaded=%s' % (idx + 1, len(all_files), fid, fname, already_uploaded))
 
             if not already_uploaded:
                 if self.non_local:
@@ -154,15 +154,15 @@ class Uploader:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Upload a directory into a data library')
-    parser.add_argument( "-u", "--url", dest="url", required=True, help="Galaxy URL" )
-    parser.add_argument( "-a", "--api", dest="api", required=True, help="API Key" )
+    parser.add_argument("-u", "--url", dest="url", required=True, help="Galaxy URL")
+    parser.add_argument("-a", "--api", dest="api", required=True, help="API Key")
 
-    parser.add_argument( "-l", "--lib", dest="library_id", required=True, help="Library ID" )
-    parser.add_argument( "-f", "--folder", dest="folder_id", help="Folder ID. If not specified, will go to root of library." )
+    parser.add_argument("-l", "--lib", dest="library_id", required=True, help="Library ID")
+    parser.add_argument("-f", "--folder", dest="folder_id", help="Folder ID. If not specified, will go to root of library.")
 
-    parser.add_argument( "--nonlocal", dest="non_local", action="store_true", default=False,
-                        help="Set this flag if you are NOT running this script on your Galaxy head node with access to the full filesystem" )
-    parser.add_argument( "--link", dest="should_link", action="store_true", default=False,
+    parser.add_argument("--nonlocal", dest="non_local", action="store_true", default=False,
+                        help="Set this flag if you are NOT running this script on your Galaxy head node with access to the full filesystem")
+    parser.add_argument("--link", dest="should_link", action="store_true", default=False,
                         help="Link datasets only, do not upload to Galaxy. ONLY Avaialble if you run 'locally' relative to your Galaxy head node/filesystem ")
     args = parser.parse_args()
 

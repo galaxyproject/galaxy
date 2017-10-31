@@ -27,7 +27,7 @@ define( [ 'utils/utils' ], function( Utils ) {
             if ( ftp_files && ftp_files.length > 0 ) {
                 this.$( '.upload-ftp-content' ).html( $( this._templateTable() ) );
                 var size = 0;
-                for ( index in ftp_files ) {
+                for (var index in ftp_files ) {
                     this.rows.push( this._add( ftp_files[ index ] ) );
                     size += ftp_files[ index ].size;
                 }
@@ -39,7 +39,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                     this.$select_all = this.$( '.upload-selectall' ).addClass( this.options.class_add );
                     this.$select_all.on( 'click', function() {
                         var add = self.$select_all.hasClass( self.options.class_add );
-                        for ( index in ftp_files ) {
+                        for (var index in ftp_files ) {
                             var ftp_file = ftp_files[ index ];
                             var model_index = self._find( ftp_file );
                             if( !model_index && add || model_index && !add ) {

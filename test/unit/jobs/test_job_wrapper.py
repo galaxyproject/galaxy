@@ -162,6 +162,7 @@ class MockTool(object):
         self.version_string_cmd = TEST_VERSION_COMMAND
         self.tool_dir = "/path/to/tools"
         self.dependencies = []
+        self.requires_galaxy_python_environment = False
 
     def build_dependency_shell_commands(self, job_directory):
         return TEST_DEPENDENCIES_COMMANDS
@@ -176,7 +177,7 @@ class MockToolbox(object):
         assert tool_id == TEST_TOOL_ID
         return self.test_tool
 
-    def get_tool( self, tool_id, tool_version, exact=False ):
+    def get_tool(self, tool_id, tool_version, exact=False):
         tool = self.get(tool_id)
         return tool
 

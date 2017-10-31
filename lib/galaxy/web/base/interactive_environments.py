@@ -1,16 +1,18 @@
-import ConfigParser
 import json
 import logging
 import os
 import random
+import shlex
 import stat
+import string
 import tempfile
 import uuid
-
+from itertools import product
 from subprocess import PIPE, Popen
 from sys import platform as _platform
 
 import yaml
+from six.moves import configparser, shlex_quote
 
 from galaxy import model, web
 from galaxy.containers import build_container_interfaces
@@ -21,8 +23,14 @@ from galaxy.util.bunch import Bunch
 
 
 IS_OS_X = _platform == "darwin"
-
 CONTAINER_NAME_PREFIX = 'gie_'
+ENV_OVERRIDE_CAPITALIZE = frozenset([
+    'notebook_username',
+    'notebook_password',
+    'dataset_hid',
+    'dataset_filename',
+    'additional_ids',
+])
 
 log = logging.getLogger(__name__)
 
@@ -35,14 +43,14 @@ class InteractiveEnvironmentRequest(object):
 
         self.attr = Bunch()
         self.attr.viz_id = plugin.name
-        self.attr.history_id = trans.security.encode_id( trans.history.id )
+        self.attr.history_id = trans.security.encode_id(trans.history.id)
         self.attr.galaxy_config = trans.app.config
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
         self.attr.root = web.url_for("/")
         self.attr.app_root = self.attr.root + "plugins/interactive_environments/" + self.attr.viz_id + "/static/"
         self.attr.import_volume = True
 
-        plugin_path = os.path.abspath( plugin.path )
+        plugin_path = os.path.abspath(plugin.path)
 
         # Store our template and configuration path
         self.attr.our_config_dir = os.path.join(plugin_path, "config")
@@ -63,14 +71,14 @@ class InteractiveEnvironmentRequest(object):
         self.notebook_pw = self.generate_password(length=24)
 
         ie_parent_temp_dir = self.attr.viz_config.get("docker", "docker_galaxy_temp_dir") or None
-        self.temp_dir = os.path.abspath( tempfile.mkdtemp( dir=ie_parent_temp_dir ) )
+        self.temp_dir = os.path.abspath(tempfile.mkdtemp(dir=ie_parent_temp_dir))
 
         if self.attr.viz_config.getboolean("docker", "wx_tempdir"):
             # Ensure permissions are set
             try:
-                os.chmod( self.temp_dir, os.stat(self.temp_dir).st_mode | stat.S_IXOTH )
+                os.chmod(self.temp_dir, os.stat(self.temp_dir).st_mode | stat.S_IXOTH)
             except Exception:
-                log.error( "Could not change permissions of tmpdir %s" % self.temp_dir )
+                log.error("Could not change permissions of tmpdir %s" % self.temp_dir)
                 # continue anyway
 
         # This duplicates the logic in the proxy manager
@@ -112,7 +120,7 @@ class InteractiveEnvironmentRequest(object):
                 raise Exception("[{0}] Could not find allowed_images.yml, or image tag in {0}.ini file for ".format(self.attr.viz_id))
 
         with open(fn, 'r') as handle:
-            self.allowed_images = [x['image'] for x in yaml.load(handle)]
+            self.allowed_images = [x['image'] for x in yaml.safe_load(handle)]
 
             if len(self.allowed_images) == 0:
                 raise Exception("No allowed images specified for " + self.attr.viz_id)
@@ -121,23 +129,23 @@ class InteractiveEnvironmentRequest(object):
 
     def load_deploy_config(self, default_dict={}):
         # For backwards compat, any new variables added to the base .ini file
-        # will need to be recorded here. The ConfigParser doesn't provide a
+        # will need to be recorded here. The configparser doesn't provide a
         # .get() that will ignore missing sections, so we must make use of
         # their defaults dictionary instead.
         default_dict = {
             'container_interface': None,
-            'command': 'docker {docker_args}',
+            'command': 'docker',
             'command_inject': '-e DEBUG=false -e DEFAULT_CONTAINER_RUNTIME=120',
             'docker_hostname': 'localhost',
             'wx_tempdir': 'False',
             'docker_galaxy_temp_dir': None,
             'docker_connect_port': None,
         }
-        viz_config = ConfigParser.SafeConfigParser(default_dict)
-        conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
-        if not os.path.exists( conf_path ):
+        viz_config = configparser.SafeConfigParser(default_dict)
+        conf_path = os.path.join(self.attr.our_config_dir, self.attr.viz_id + ".ini")
+        if not os.path.exists(conf_path):
             conf_path = "%s.sample" % conf_path
-        viz_config.read( conf_path )
+        viz_config.read(conf_path)
         self.attr.viz_config = viz_config
 
         def _boolean_option(option, default=False):
@@ -178,7 +186,7 @@ class InteractiveEnvironmentRequest(object):
         """
         trans = self.trans
         request = trans.request
-        api_key = api_keys.ApiKeyManager( trans.app ).get_or_create_api_key( trans.user )
+        api_key = api_keys.ApiKeyManager(trans.app).get_or_create_api_key(trans.user)
         conf_file = {
             'history_id': self.attr.history_id,
             'api_key': api_key,
@@ -252,8 +260,12 @@ class InteractiveEnvironmentRequest(object):
         if env_override is None:
             env_override = {}
         conf = self.get_conf_dict()
-        conf.update(env_override)
-        return dict([(key.upper(), item) for key, item in conf.items()])
+        conf = dict([(key.upper(), item) for key, item in conf.items()])
+        for key, item in env_override.items():
+            if key in ENV_OVERRIDE_CAPITALIZE:
+                key = key.upper()
+            conf[key] = item
+        return conf
 
     def _get_import_volume_for_run(self):
         if self.use_volumes and self.attr.import_volume:
@@ -263,40 +275,40 @@ class InteractiveEnvironmentRequest(object):
     def _get_name_for_run(self):
         return CONTAINER_NAME_PREFIX + uuid.uuid4().hex
 
+    def base_docker_cmd(self, subcmd=None):
+        # This is the basic docker command such as "sudo -u docker docker" or just "docker"
+        # Previously, {docker_args} was required to be in the string, this is no longer the case
+        base = shlex.split(self.attr.viz_config.get("docker", "command").format(docker_args='').strip())
+        if subcmd:
+            base.append(subcmd)
+        return base
+
     def docker_cmd(self, image, env_override=None, volumes=None):
         """
             Generate and return the docker command to execute
         """
-        if volumes is None:
-            volumes = []
-        env = self._get_env_for_run(env_override)
-        import_volume_def = self._get_import_volume_for_run()
-        env_str = ' '.join(['-e "%s=%s"' % (key, item) for key, item in env.items()])
-        volume_str = ' '.join(['-v "%s"' % volume for volume in volumes]) if self.use_volumes else ''
-        import_volume_str = '-v "{import_volume}"'.format(import_volume=import_volume_def) if import_volume_def else ''
-        name = None
-        # This is the basic docker command such as "sudo -u docker docker {docker_args}"
-        # or just "docker {docker_args}"
-        command = self.attr.viz_config.get("docker", "command")
-        # Then we format in the entire docker command in place of
-        # {docker_args}, so as to let the admin not worry about which args are
-        # getting passed
+        def _flag_opts(flag, opts):
+            return [arg for pair in product((flag,), opts) for arg in pair]
+
         command_inject = self.attr.viz_config.get("docker", "command_inject")
         # --name should really not be set, but we'll try to honor it anyway
-        if '--name' not in command_inject:
-            name = self._get_name_for_run()
-        command = command.format(docker_args='run {command_inject} {name} {environment} -d -P {import_volume_str} {volume_str} {image}')
+        name = ['--name=%s' % self._get_name_for_run()] if '--name' not in command_inject else []
+        env = self._get_env_for_run(env_override)
+        import_volume_def = self._get_import_volume_for_run()
+        if volumes is None:
+            volumes = []
+        if import_volume_def:
+            volumes.insert(0, import_volume_def)
 
-        # Once that's available, we format again with all of our arguments
-        command = command.format(
-            command_inject=command_inject,
-            name='--name=%s' % name if name is not None else '',
-            environment=env_str,
-            import_volume_str=import_volume_str,
-            volume_str=volume_str,
-            image=image,
+        return (
+            self.base_docker_cmd('run') +
+            shlex.split(command_inject) +
+            name +
+            _flag_opts('-e', ['='.join(map(str, t)) for t in env.items()]) +
+            ['-d', '-P'] +
+            _flag_opts('-v', map(str, volumes)) +
+            [image]
         )
-        return command
 
     @property
     def use_volumes(self):
@@ -307,15 +319,35 @@ class InteractiveEnvironmentRequest(object):
         else:
             return True
 
+    def _get_command_inject_env(self):
+        """For the containers interface, parse any -e/--env flags from `command_inject`.
+        """
+        # using a list ensures that later vars override earlier ones with the
+        # same name, which is how `docker run` works on the command line
+        envsets = []
+        command_inject = self.attr.viz_config.get("docker", "command_inject").strip().split()
+        for i, item in enumerate(command_inject):
+            if item.startswith('-e=') or item.startswith('--env='):
+                envsets.append(item.split('=', 1)[1])
+            elif item == ('-e') or item == ('--env'):
+                envsets.append(command_inject[i + 1])
+            elif item.startswith('-e'):
+                envsets.append(item[2:])
+            elif item.startswith('--env'):
+                envsets.append(item[5:])
+        return dict(map(lambda s: string.split(s, '=', 1), envsets))
+
     def container_run_args(self, image, env_override=None, volumes=None):
         if volumes is None:
             volumes = []
         import_volume_def = self._get_import_volume_for_run()
         if import_volume_def:
             volumes.append(import_volume_def)
+        env = self._get_command_inject_env()
+        env.update(self._get_env_for_run(env_override))
         args = {
             'image': image,
-            'environment': self._get_env_for_run(env_override),
+            'environment': env,
             'volumes': volumes,
             'name': self._get_name_for_run(),
             'detach': True,
@@ -368,21 +400,21 @@ class InteractiveEnvironmentRequest(object):
 
         log.info("Starting docker container for IE {0} with command [{1}]".format(
             self.attr.viz_id,
-            raw_cmd
+            ' '.join([shlex_quote(x) for x in raw_cmd])
         ))
-        p = Popen( raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+        p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
-            log.error( "%s\n%s" % (stdout, stderr) )
+            log.error("%s\n%s" % (stdout, stderr))
             return None
         else:
             container_id = stdout.strip()
-            log.debug( "Container id: %s" % container_id)
+            log.debug("Container id: %s" % container_id)
             inspect_data = self.inspect_container(container_id)
             port_mappings = self.get_container_port_mapping(inspect_data)
             self.attr.docker_hostname = self.get_container_host(inspect_data)
             host_port = self._find_port_mapping(port_mappings)[-1]
-            log.debug( "Container host/port: %s:%s", self.attr.docker_hostname, host_port )
+            log.debug("Container host/port: %s:%s", self.attr.docker_hostname, host_port)
 
             # Now we configure our proxy_requst object and we manually specify
             # the port to map to and ensure the proxy is available.
@@ -395,7 +427,7 @@ class InteractiveEnvironmentRequest(object):
                 container_ids=[container_id],
             )
             # These variables then become available for use in templating URLs
-            self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
+            self.attr.proxy_url = self.attr.proxy_request['proxy_url']
             # Commented out because it needs to be documented and visible that
             # this variable was moved here. Usually would remove commented
             # code, but again, needs to be clear where this went. Remove at a
@@ -421,7 +453,7 @@ class InteractiveEnvironmentRequest(object):
             container_ids=[container.id],
             container_interface=self.attr.container_interface.key
         )
-        self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
+        self.attr.proxy_url = self.attr.proxy_request['proxy_url']
 
     def launch(self, image=None, additional_ids=None, env_override=None, volumes=None):
         """Launch a docker image.
@@ -474,17 +506,16 @@ class InteractiveEnvironmentRequest(object):
 
         :returns: inspect_data, a dict of docker inspect output
         """
-        command = self.attr.viz_config.get("docker", "command")
-        command = command.format(docker_args="inspect %s" % container_id)
+        raw_cmd = self.base_docker_cmd('inspect') + [container_id]
         log.info("Inspecting docker container {0} with command [{1}]".format(
             container_id,
-            command
+            ' '.join([shlex_quote(x) for x in raw_cmd])
         ))
 
-        p = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+        p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
-            log.error( "%s\n%s" % (stdout, stderr) )
+            log.error("%s\n%s" % (stdout, stderr))
             return None
 
         inspect_data = json.loads(stdout)

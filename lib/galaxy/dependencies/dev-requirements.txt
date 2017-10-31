@@ -1,10 +1,16 @@
+# For tests
 nose
 NoseHTML
 twill==0.9.1
+testfixtures
 mock
 selenium
+watchdog
 
-# Documentation requirements
+# For relase process
+pygithub3
+
+# For documentation building
 sphinx
 sphinx_rtd_theme
 lxml

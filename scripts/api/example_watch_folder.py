@@ -69,7 +69,7 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
                         wf_data['ds_map'] = {}
                         for step_id, ds_in in workflow['inputs'].items():
                             wf_data['ds_map'][step_id] = {'src': 'ld', 'id': ds['id']}
-                        res = submit( api_key, api_url + 'workflows', wf_data, return_formatted=False)
+                        res = submit(api_key, api_url + 'workflows', wf_data, return_formatted=False)
                         if res:
                             print(res)
                             # Successful workflow execution, safe to move dataset.
@@ -86,6 +86,6 @@ if __name__ == '__main__':
         data_library = sys.argv[5]
         workflow = sys.argv[6]
     except IndexError:
-        print('usage: %s key url in_folder out_folder data_library workflow' % os.path.basename( sys.argv[0] ))
-        sys.exit( 1 )
-    main(api_key, api_url, in_folder, out_folder, data_library, workflow )
+        print('usage: %s key url in_folder out_folder data_library workflow' % os.path.basename(sys.argv[0]))
+        sys.exit(1)
+    main(api_key, api_url, in_folder, out_folder, data_library, workflow)
