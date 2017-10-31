@@ -133,6 +133,7 @@ class Configuration(object):
         self.database_create_tables = string_as_bool(kwargs.get("database_create_tables", "True"))
         self.database_query_profiling_proxy = string_as_bool(kwargs.get("database_query_profiling_proxy", "False"))
         self.database_template = kwargs.get("database_template", None)
+        self.database_encoding = kwargs.get("database_encoding", None)  # Create new databases with this encoding.
         self.slow_query_log_threshold = float(kwargs.get("slow_query_log_threshold", 0))
 
         # Don't set this to true for production databases, but probably should
