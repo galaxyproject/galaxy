@@ -263,7 +263,7 @@ ensure_grunt_for_qunit() {
 }
 
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.01.3'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.01.4'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"

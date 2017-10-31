@@ -60,7 +60,6 @@ ADD start_mysql.sh /opt/galaxy/start_mysql.sh
 ADD ansible_vars.yml /tmp/ansible/ansible_vars.yml
 ADD provision.yml /tmp/ansible/provision.yml
 
-
 RUN mkdir /etc/galaxy && cd /tmp/ansible && mkdir roles && \
     mkdir roles/galaxyprojectdotorg.galaxy-os && \
     wget --quiet -O- https://github.com/galaxyproject/ansible-galaxy-os/archive/master.tar.gz | tar -xzf- --strip-components=1 -C roles/galaxyprojectdotorg.galaxy-os && \
