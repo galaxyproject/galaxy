@@ -202,3 +202,14 @@ libraries:
 published_grids:
   selectors:
     search: '#input-free-text-search-filter'
+
+tool_form:
+  selectors:
+    citations: '.citations-formatted'
+    show_bibtex: 'button.citations-to-bibtex'
+    bibtex_area: '.citations-bibtex textarea'
+
+charts:
+  selectors:
+    visualize_button: '.ui-portlet .button i.fa-line-chart'  # without icon - it waits on other buttons that aren't visible, need more specific class
+    viewport_canvas: 'svg.charts-viewport-canvas'
