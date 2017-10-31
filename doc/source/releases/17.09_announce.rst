@@ -63,6 +63,7 @@ Deprecation Notices
 * The deprecated admin-only interface for Galaxy Data Libraries is staged to be removed in the next release.
 * Workflows API: When exposing WorkflowInvocationSteps ``state`` will no longer be available.
 * The ``refresh_on_change`` attribute of a ``<param>`` tag in the tool syntax can no longer be set to a value of another parameter. Use boolean instead (e.g.``refresh_on_change="True"``). `Details <https://github.com/galaxyproject/galaxy/issues/4810>`__
+* The endpoint ``/api/configuration/toolbox`` is now deprecated and will be removed in the future. All tools are now watched for changes and this feature became obsolete.
 
 
 Release Notes
