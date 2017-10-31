@@ -853,6 +853,11 @@ nglims_config_file = tool-data/nglims.yaml
 # public site.  Enabled in the sample config for development.
 use_interactive = True
 
+# When stopping Galaxy cleanly, how much time to give various monitoring/polling
+# threads to finish before giving up on joining them. Set to 0 to disable this and
+# restore the pre-18.01 default behavior.
+#monitor_thread_join_timeout = 5
+
 # Write thread status periodically to 'heartbeat.log',  (careful, uses disk
 # space rapidly!).  Useful to determine why your processes may be consuming a
 # lot of CPU.
