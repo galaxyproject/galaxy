@@ -105,6 +105,22 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         assert latest_hda["hid"] == 3
         assert latest_hda["name"] == "Select first on data 1"
 
+    @selenium_test
+    def test_bibtex_rendering(self):
+        self.home()
+        self.tool_open("bibtex")
+        self.components.tool_form.citations.wait_for_visible()
+        references = self.components.tool_form.reference.all()
+        assert len(references) == 26, len(references)
+        doi_resolved_citation = references[0]
+        assert "Galaxy: A platform for interactive" in doi_resolved_citation.text
+        self.screenshot("tool_form_citations_formatted")
+
+        self.components.tool_form.show_bibtex.wait_for_and_click()
+        textarea = self.components.tool_form.bibtex_area.wait_for_visible()
+        assert "Galaxy: A platform for interactive" in textarea.get_attribute("value")
+        self.screenshot("tool_form_citations_bibtex")
+
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
         self.hda_click_primary_action_button(hid, "info")
 
