@@ -553,7 +553,7 @@ WYMeditor.editor.prototype.dialog = function(
     }
 };
 
-$(function() {
+export default function editor_onload() {
     // Generic error handling
     $(document).ajaxError(function(e, x) {
         // console.log( e, x );
@@ -746,4 +746,4 @@ $(function() {
         //    editor.dialog(CONTROLS.DIALOG_EMBED_PAGE);
         //}
     });
-});
+}
