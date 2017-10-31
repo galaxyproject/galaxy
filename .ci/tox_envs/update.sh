@@ -1,9 +1,10 @@
 #!/bin/sh
 
-THIS_DIRECTORY="$(dirname "$0")"
-ENVS=(flake8 flake8_imports)
+THIS_DIRECTORY="$(cd "$(dirname "$0")" > /dev/null && pwd)"
+ENVS="flake8
+flake8_imports"
 
-for env in "${ENVS[@]}"
+for env in $ENVS
 do
         cd "$THIS_DIRECTORY/$env"
         pipenv lock
