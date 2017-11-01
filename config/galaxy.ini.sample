@@ -118,6 +118,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # 'galaxy.model.orm.logging_connection_proxy'
 #database_query_profiling_proxy = False
 
+# If auto-creating a postgres database on startup - it can be based on an existing
+# template database. This will set that. This is probably only useful for testing but
+# documentation is included here for completeness.
+#database_template = None
+
 # Slow query logging.  Queries slower than the threshold indicated below will
 # be logged to debug.  A value of '0' is disabled.  For example, you would set
 # this to .005 to log all queries taking longer than 5 milliseconds.

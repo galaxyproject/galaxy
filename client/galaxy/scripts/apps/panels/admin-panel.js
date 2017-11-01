@@ -12,97 +12,129 @@ var AdminPanel = Backbone.View.extend({
         this.model = new Backbone.Model({
             title: _l("Administration")
         });
-        this.categories = new Backbone.Collection([{
-            title : "Server",
-            items : [ {
-                title   : "Data types",
-                url     : "admin/view_datatypes_registry"
-            },{
-                title   : "Data tables",
-                url     : "admin/view_tool_data_tables"
-            },{
-                title   : "Display applications",
-                url     : "admin/display_applications"
-            },{
-                title   : "Manage jobs",
-                url     : "admin/jobs"
-            },{
-                title   : "Local data",
-                url     : "data_manager"
-            } ]
-        },{
-            title : "User Management",
-            items : [ {
-                title   : "Users",
-                url     : "admin/users",
-                target  : "__use_router__"
-            },{
-                title   : "Quotas",
-                url     : "admin/quotas",
-                target  : "__use_router__",
-                enabled : self.config.enable_quotas
-            },{
-                title   : "Groups",
-                url     : "admin/groups",
-                target  : "__use_router__"
-            },{
-                title   : "Roles",
-                url     : "admin/roles",
-                target  : "__use_router__"
-            },{
-                title   : "Forms",
-                url     : "admin/forms",
-                target  : "__use_router__"
-            },{
-                title   : "API keys",
-                url     : "userskeys/all_users"
-            },{
-                title   : "Impersonate a user",
-                url     : "admin/impersonate",
-                enabled : self.config.allow_user_impersonation
-            }]
-        },{
-            title : "Tool Management",
-            items : [ {
-                title   : "Install new tools",
-                url     : "admin_toolshed/browse_tool_sheds",
-                enabled : self.settings.is_tool_shed_installed
-            },{
-                title   : "Install new tools (Beta)",
-                url     : "admin_toolshed/browse_toolsheds",
-                enabled : self.settings.is_tool_shed_installed && self.config.enable_beta_ts_api_install
-            },{
-                title   : "Monitor installation",
-                url     : "admin_toolshed/monitor_repository_installation",
-                enabled : self.settings.installing_repository_ids
-            },{
-                title   : "Manage tools",
-                url     : "admin/repositories",
-                enabled : self.settings.is_repo_installed,
-                target  : "__use_router__"
-            },{
-                title   : "Manage metadata",
-                url     : "admin_toolshed/reset_metadata_on_selected_installed_repositories",
-                enabled : self.settings.is_repo_installed
-            },{
-                title   : "Manage whitelist",
-                url     : "admin/sanitize_whitelist"
-            },{
-                title   : "Manage dependencies",
-                url     : "admin/manage_tool_dependencies"
-            },{
-                title   : "View lineage",
-                url     : "admin/tool_versions",
-                target  : "__use_router__"
-            },{
-                title   : "View migration stages",
-                url     : "admin/review_tool_migration_stages"
-            },{
-                title   : "View error logs",
-                url     : "admin/tool_errors"
-            } ]
-        }]);
-        this.setElement( this._template() );
+        this.categories = new Backbone.Collection([
+            {
+                title: "Server",
+                items: [
+                    {
+                        title: "Data types",
+                        url: "admin/view_datatypes_registry"
+                    },
+                    {
+                        title: "Data tables",
+                        url: "admin/view_tool_data_tables"
+                    },
+                    {
+                        title: "Display applications",
+                        url: "admin/display_applications"
+                    },
+                    {
+                        title: "Manage jobs",
+                        url: "admin/jobs"
+                    },
+                    {
+                        title: "Local data",
+                        url: "data_manager"
+                    }
+                ]
+            },
+            {
+                title: "User Management",
+                items: [
+                    {
+                        title: "Users",
+                        url: "admin/users",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: "Quotas",
+                        url: "admin/quotas",
+                        target: "__use_router__",
+                        enabled: self.config.enable_quotas
+                    },
+                    {
+                        title: "Groups",
+                        url: "admin/groups",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: "Roles",
+                        url: "admin/roles",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: "Forms",
+                        url: "admin/forms",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: "API keys",
+                        url: "userskeys/all_users"
+                    },
+                    {
+                        title: "Impersonate a user",
+                        url: "admin/impersonate",
+                        enabled: self.config.allow_user_impersonation
+                    }
+                ]
+            },
+            {
+                title: "Tool Management",
+                items: [
+                    {
+                        title: "Install new tools",
+                        url: "admin_toolshed/browse_tool_sheds",
+                        enabled: self.settings.is_tool_shed_installed
+                    },
+                    {
+                        title: "Install new tools (Beta)",
+                        url: "admin_toolshed/browse_toolsheds",
+                        enabled:
+                            self.settings.is_tool_shed_installed &&
+                            self.config.enable_beta_ts_api_install
+                    },
+                    {
+                        title: "Monitor installation",
+                        url: "admin_toolshed/monitor_repository_installation",
+                        enabled: self.settings.installing_repository_ids
+                    },
+                    {
+                        title: "Manage tools",
+                        url: "admin/repositories",
+                        enabled: self.settings.is_repo_installed,
+                        target: "__use_router__"
+                    },
+                    {
+                        title: "Manage metadata",
+                        url:
+                            "admin_toolshed/reset_metadata_on_selected_installed_repositories",
+                        enabled: self.settings.is_repo_installed
+                    },
+                    {
+                        title: "Manage whitelist",
+                        url: "admin/sanitize_whitelist"
+                    },
+                    {
+                        title: "Manage dependencies",
+                        url: "admin/manage_tool_dependencies"
+                    },
+                    {
+                        title: "View lineage",
+                        url: "admin/tool_versions",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: "View migration stages",
+                        url: "admin/review_tool_migration_stages"
+                    },
+                    {
+                        title: "View error logs",
+                        url: "admin/tool_errors"
+                    }
+                ]
+            }
+        ]);
+        this.setElement(this._template());
     },
 
     render: function() {
