@@ -7,6 +7,8 @@ var gulp = require('gulp');
 var babel = require('gulp-babel');
 var sourcemaps = require('gulp-sourcemaps');
 var uglify = require('gulp-uglify');
+var beautify = require('gulp-beautify');
+var gulpif = require('gulp-if');
 var cached = require('gulp-cached');
 var plumber = require('gulp-plumber');
 
@@ -36,6 +38,10 @@ var paths = {
     libs: ['galaxy/scripts/libs/**/*.js']
 };
 
+var nopack_mode = function(){
+    return process.env.GXY_NOPACK || false;
+};
+
 gulp.task('scripts', function() {
   return gulp.src(paths.scripts)
     .pipe(plumber())
@@ -44,7 +50,7 @@ gulp.task('scripts', function() {
     .pipe(babel({
         plugins: ['transform-es2015-modules-amd']
     }))
-    .pipe(uglify())
+    .pipe(gulpif(nopack_mode, beautify(), uglify()))
     .pipe(sourcemaps.write('../maps/'))
     .pipe(gulp.dest('../static/scripts/'));
 });
