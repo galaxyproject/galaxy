@@ -42,7 +42,6 @@ PATH_DEFAULTS = dict(
     data_manager_config_file=['config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample'],
     datatypes_config_file=['config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample'],
     build_sites_config_file=['config/build_sites.yml', 'config/build_sites.yml.sample'],
-    external_service_type_config_file=['config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample'],
     job_config_file=['config/job_conf.xml', 'job_conf.xml'],
     tool_destinations_config_file=['config/tool_destinations.yml', 'config/tool_destinations.yml.sample'],
     job_metrics_config_file=['config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample'],
@@ -314,8 +313,6 @@ class Configuration(object):
         self.persistent_communication_rooms = listify(kwargs.get("persistent_communication_rooms", []), do_strip=True)
         self.enable_openid = string_as_bool(kwargs.get('enable_openid', 'False'))
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', 'False'))
-        # External Service types used in sample tracking
-        self.external_service_type_path = resolve_path(kwargs.get('external_service_type_path', 'external_service_types'), self.root)
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool(kwargs.get('use_tasked_jobs', False))
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
