@@ -15,7 +15,7 @@ function addLogging(obj, namespace) {
     // }
 
     // give the object each
-    LOGGING_FNS.forEach(function(logFn) {
+    LOGGING_FNS.forEach(logFn => {
         addTo[logFn] = function() {
             if (!this.logger) {
                 return undefined;

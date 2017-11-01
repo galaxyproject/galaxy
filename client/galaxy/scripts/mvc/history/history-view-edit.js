@@ -240,13 +240,11 @@ var HistoryViewEdit = _super.extend(
                         var previousName = panel.model.get("name");
                         if (newName && newName !== previousName) {
                             panel.$el.find(nameSelector).text(newName);
-                            panel.model
-                                .save({ name: newName })
-                                .fail(function() {
-                                    panel.$el
-                                        .find(nameSelector)
-                                        .text(panel.model.previous("name"));
-                                });
+                            panel.model.save({ name: newName }).fail(() => {
+                                panel.$el
+                                    .find(nameSelector)
+                                    .text(panel.model.previous("name"));
+                            });
                         } else {
                             panel.$el.find(nameSelector).text(previousName);
                         }
@@ -365,7 +363,7 @@ var HistoryViewEdit = _super.extend(
                     "Unknown collectionType encountered " + collectionType
                 );
             }
-            createFunc(selection, hideSourceItems).done(function() {
+            createFunc(selection, hideSourceItems).done(() => {
                 panel.model.refresh();
             });
         },
@@ -450,7 +448,7 @@ var HistoryViewEdit = _super.extend(
 
         /** toggle the visibility of each content's tagsEditor applying all the args sent to this function */
         toggleHDATagEditors: function(showOrHide, speed) {
-            _.each(this.views, function(view) {
+            _.each(this.views, view => {
                 if (view.tagsEditor) {
                     view.tagsEditor.toggle(showOrHide, speed);
                 }
@@ -459,7 +457,7 @@ var HistoryViewEdit = _super.extend(
 
         /** toggle the visibility of each content's annotationEditor applying all the args sent to this function */
         toggleHDAAnnotationEditors: function(showOrHide, speed) {
-            _.each(this.views, function(view) {
+            _.each(this.views, view => {
                 if (view.annotationEditor) {
                     view.annotationEditor.toggle(showOrHide, speed);
                 }
@@ -617,9 +615,9 @@ var HistoryViewEdit = _super.extend(
                 data.id
             ) {
                 if (self.contents.currentPage !== 0) {
-                    return self.contents.fetchPage(0).then(function() {
-                        return self.model.contents.copy(data.id);
-                    });
+                    return self.contents
+                        .fetchPage(0)
+                        .then(() => self.model.contents.copy(data.id));
                 }
                 return self.model.contents.copy(data.id);
             }
@@ -639,7 +637,7 @@ var HistoryViewEdit = _super.extend(
 );
 
 //------------------------------------------------------------------------------ TEMPLATES
-HistoryViewEdit.prototype.templates = (function() {
+HistoryViewEdit.prototype.templates = (() => {
     var countsTemplate = BASE_MVC.wrapTemplate(
         [
             "<% var shown = Math.max( view.views.length, history.contents_active.active ) %>",

@@ -98,9 +98,7 @@ var SelectToolParameter = ToolParameter.extend({
      * Returns tool options.
      */
     get_samples: function() {
-        return _.map(this.get("options"), function(option) {
-            return option[0];
-        });
+        return _.map(this.get("options"), option => option[0]);
     }
 });
 
@@ -133,7 +131,7 @@ var Tool = Backbone.Model.extend({
         this.set(
             "inputs",
             new ToolParameterCollection(
-                _.map(options.inputs, function(p) {
+                _.map(options.inputs, p => {
                     var p_class =
                         ToolParameter.subModelTypes[p.type] || ToolParameter;
                     return new p_class(p);
@@ -149,9 +147,7 @@ var Tool = Backbone.Model.extend({
         var rval = Backbone.Model.prototype.toJSON.call(this);
 
         // Convert inputs to JSON manually.
-        rval.inputs = this.get("inputs").map(function(i) {
-            return i.toJSON();
-        });
+        rval.inputs = this.get("inputs").map(i => i.toJSON());
         return rval;
     },
 
@@ -162,9 +158,9 @@ var Tool = Backbone.Model.extend({
     remove_inputs: function(types) {
         var tool = this;
 
-        var incompatible_inputs = tool.get("inputs").filter(function(input) {
-            return types.indexOf(input.get("type")) !== -1;
-        });
+        var incompatible_inputs = tool
+            .get("inputs")
+            .filter(input => types.indexOf(input.get("type")) !== -1);
 
         tool.get("inputs").remove(incompatible_inputs);
     },
@@ -178,7 +174,7 @@ var Tool = Backbone.Model.extend({
         // Return only samplable inputs if flag is set.
         if (only_samplable_inputs) {
             var valid_inputs = new Backbone.Collection();
-            copy.get("inputs").each(function(input) {
+            copy.get("inputs").each(input => {
                 if (input.get_samples()) {
                     valid_inputs.push(input);
                 }
@@ -201,9 +197,7 @@ var Tool = Backbone.Model.extend({
      */
     set_input_value: function(name, value) {
         this.get("inputs")
-            .find(function(input) {
-                return input.get("name") === name;
-            })
+            .find(input => input.get("name") === name)
             .set("value", value);
     },
 
@@ -212,7 +206,7 @@ var Tool = Backbone.Model.extend({
      */
     set_input_values: function(inputs_dict) {
         var self = this;
-        _.each(_.keys(inputs_dict), function(input_name) {
+        _.each(_.keys(inputs_dict), input_name => {
             self.set_input_value(input_name, inputs_dict[input_name]);
         });
     },
@@ -240,7 +234,7 @@ var Tool = Backbone.Model.extend({
      */
     get_inputs_dict: function() {
         var input_dict = {};
-        this.get("inputs").each(function(input) {
+        this.get("inputs").each(input => {
             input_dict[input.get("name")] = input.get("value");
         });
         return input_dict;
@@ -280,7 +274,7 @@ var Tool = Backbone.Model.extend({
         });
 
         // Run job and resolve run_deferred to tool outputs.
-        $.when(ss_deferred.go()).then(function(result) {
+        $.when(ss_deferred.go()).then(result => {
             run_deferred.resolve(new data.DatasetCollection(result));
         });
         return run_deferred;
@@ -315,7 +309,7 @@ var ToolSection = Backbone.Model.extend({
     },
 
     clear_search_results: function() {
-        _.each(this.attributes.elems, function(elt) {
+        _.each(this.attributes.elems, elt => {
             elt.show();
         });
 
@@ -326,7 +320,7 @@ var ToolSection = Backbone.Model.extend({
     apply_search_results: function(results) {
         var all_hidden = true;
         var cur_label;
-        _.each(this.attributes.elems, function(elt) {
+        _.each(this.attributes.elems, elt => {
             if (elt instanceof ToolSectionLabel) {
                 cur_label = elt;
                 cur_label.hide();
@@ -395,7 +389,7 @@ var ToolSearch = Backbone.Model.extend({
         $("#search-clear-btn").hide();
         $("#search-spinner").show();
         var self = this;
-        this.timer = setTimeout(function() {
+        this.timer = setTimeout(() => {
             // log the search to analytics if present
             if (typeof ga !== "undefined") {
                 ga("send", "pageview", Galaxy.root + "?q=" + q);
@@ -403,7 +397,7 @@ var ToolSearch = Backbone.Model.extend({
             $.get(
                 self.urlRoot,
                 { q: q },
-                function(data) {
+                data => {
                     self.set("results", data);
                     $("#search-spinner").hide();
                     $("#search-clear-btn").show();
@@ -445,7 +439,7 @@ var ToolPanel = Backbone.Model.extend({
         var self = this;
 
         var // Helper to recursively parse tool panel.
-        parse_elt = function(elt_dict) {
+        parse_elt = elt_dict => {
             var type = elt_dict.model_class;
             // There are many types of tools; for now, anything that ends in 'Tool'
             // is treated as a generic tool.
@@ -465,7 +459,7 @@ var ToolPanel = Backbone.Model.extend({
     },
 
     clear_search_results: function() {
-        this.get("layout").each(function(panel_elt) {
+        this.get("layout").each(panel_elt => {
             if (panel_elt instanceof ToolSection) {
                 panel_elt.clear_search_results();
             } else {
@@ -483,7 +477,7 @@ var ToolPanel = Backbone.Model.extend({
         }
 
         var cur_label = null;
-        this.get("layout").each(function(panel_elt) {
+        this.get("layout").each(panel_elt => {
             if (panel_elt instanceof ToolSectionLabel) {
                 cur_label = panel_elt;
                 cur_label.hide();
@@ -537,14 +531,14 @@ var ToolLinkView = BaseView.extend({
         var formStyle = this.model.get("form_style", null);
         // open upload dialog for upload tool
         if (this.model.id === "upload1") {
-            $link.find("a").on("click", function(e) {
+            $link.find("a").on("click", e => {
                 e.preventDefault();
                 Galaxy.upload.show();
             });
         } else if (formStyle === "regular") {
             // regular tools
             var self = this;
-            $link.find("a").on("click", function(e) {
+            $link.find("a").on("click", e => {
                 e.preventDefault();
                 Galaxy.router.push("/", {
                     tool_id: self.model.id,
@@ -590,7 +584,7 @@ var ToolSectionView = BaseView.extend({
 
         // Add tools to section.
         var section_body = this.$el.find(".toolSectionBody");
-        _.each(this.model.attributes.elems, function(elt) {
+        _.each(this.model.attributes.elems, elt => {
             if (elt instanceof Tool) {
                 var tool_view = new ToolLinkView({
                     model: elt,
@@ -714,7 +708,7 @@ var ToolPanelView = Backbone.View.extend({
         self.$el.append(search_view.$el);
 
         // Render panel.
-        this.model.get("layout").each(function(panel_elt) {
+        this.model.get("layout").each(panel_elt => {
             if (panel_elt instanceof ToolSection) {
                 var section_title_view = new ToolSectionView({
                     model: panel_elt
@@ -799,7 +793,7 @@ var IntegratedToolMenuAndView = Backbone.View.extend({
 
         // On tool link click, show tool.
         var self = this;
-        this.tool_panel_view.on("tool_link_click", function(e, tool) {
+        this.tool_panel_view.on("tool_link_click", (e, tool) => {
             // Prevents click from activating link:
             e.preventDefault();
             // Show tool that was clicked on:
@@ -812,7 +806,7 @@ var IntegratedToolMenuAndView = Backbone.View.extend({
      */
     show_tool: function(tool) {
         var self = this;
-        tool.fetch().done(function() {
+        tool.fetch().done(() => {
             self.tool_form_view.model = tool;
             self.tool_form_view.render();
             self.tool_form_view.$el.show();

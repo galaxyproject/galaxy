@@ -27,7 +27,7 @@ var View = Backbone.View.extend({
                 individual: false,
                 pagesize: 20
             }).set(options);
-        this.on("change", function() {
+        this.on("change", () => {
             self.model.get("onchange") &&
                 self.model.get("onchange")(self.value());
         });
@@ -63,7 +63,7 @@ var View = Backbone.View.extend({
             .addClass("select")
             .attr("id", this.model.get("id") + "_select")
             .prop("multiple", this.model.get("multiple"))
-            .on("change", function() {
+            .on("change", () => {
                 self.value(self._getValue());
                 self.trigger("change");
             });
@@ -97,13 +97,13 @@ var View = Backbone.View.extend({
                 .addClass("icon-resize")
                 .show()
                 .off("mousedown")
-                .on("mousedown", function(event) {
+                .on("mousedown", event => {
                     var currentY = event.pageY;
                     var currentHeight = self.$select.height();
                     self.minHeight = self.minHeight || currentHeight;
                     $("#dd-helper")
                         .show()
-                        .on("mousemove", function(event) {
+                        .on("mousemove", event => {
                             self.$select.height(
                                 Math.max(
                                     currentHeight + (event.pageY - currentY),
@@ -111,7 +111,7 @@ var View = Backbone.View.extend({
                                 )
                             );
                         })
-                        .on("mouseup mouseleave", function() {
+                        .on("mouseup mouseleave", () => {
                             $("#dd-helper")
                                 .hide()
                                 .off();
@@ -132,7 +132,7 @@ var View = Backbone.View.extend({
             .append((this.$dropdown = $("<div/>")));
         this.$dropdown.hide();
         if (!this.model.get("multiple")) {
-            this.$dropdown.show().on("click", function() {
+            this.$dropdown.show().on("click", () => {
                 self.$select.select2 && self.$select.select2("open");
             });
         }
@@ -146,7 +146,7 @@ var View = Backbone.View.extend({
                 onclick: function() {
                     var new_value = [];
                     self.all_button.value() !== 0 &&
-                        _.each(self.model.get("data"), function(option) {
+                        _.each(self.model.get("data"), option => {
                             new_value.push(option.value);
                         });
                     self.value(new_value);
@@ -178,7 +178,7 @@ var View = Backbone.View.extend({
                 label: self.model.get("empty_text")
             });
         }
-        _.each(this.model.get("data"), function(option) {
+        _.each(this.model.get("data"), option => {
             self.data.push(option);
         });
         if (this.length() == 0) {
@@ -189,7 +189,7 @@ var View = Backbone.View.extend({
         }
         if (this.model.get("searchable")) {
             this.data2 = [];
-            _.each(this.data, function(option, index) {
+            _.each(this.data, (option, index) => {
                 self.data2.push({
                     order: index,
                     id: option.value,
@@ -206,9 +206,9 @@ var View = Backbone.View.extend({
                 query: function(q) {
                     self.matched_tags = {};
                     var pagesize = self.model.get("pagesize");
-                    var results = _.filter(self.data2, function(e) {
+                    var results = _.filter(self.data2, e => {
                         var found = false;
-                        _.each(e.tags, function(tag) {
+                        _.each(e.tags, tag => {
                             if (self._match(q.term, tag)) {
                                 found = self.matched_tags[tag] = true;
                             }
@@ -229,7 +229,7 @@ var View = Backbone.View.extend({
                         '<div class="ui-tags">' +
                         _.reduce(
                             result.tags,
-                            function(memo, tag) {
+                            (memo, tag) => {
                                 if (self.matched_tags[tag]) {
                                     return (
                                         memo +
@@ -250,7 +250,7 @@ var View = Backbone.View.extend({
             this.$(".select2-container .select2-search input").off("blur");
         } else {
             this.$select.find("option").remove();
-            _.each(this.data, function(option) {
+            _.each(this.data, option => {
                 self.$select.append(
                     $("<option/>")
                         .attr("value", option.value)
@@ -368,7 +368,7 @@ var View = Backbone.View.extend({
 
     /** Update all available options at once */
     add: function(options, sorter) {
-        _.each(this.model.get("data"), function(v) {
+        _.each(this.model.get("data"), v => {
             v.keep &&
                 !_.findWhere(options, { value: v.value }) &&
                 options.push(v);
@@ -412,7 +412,7 @@ var View = Backbone.View.extend({
         if (this.model.get("searchable")) {
             if ($.isArray(new_value)) {
                 var val = [];
-                _.each(new_value, function(v) {
+                _.each(new_value, v => {
                     var d = _.findWhere(self.data2, { id: v });
                     d && val.push(d);
                 });
@@ -435,10 +435,8 @@ var View = Backbone.View.extend({
             if (selected) {
                 if ($.isArray(selected)) {
                     val = [];
-                    selected.sort(function(a, b) {
-                        return a.order - b.order;
-                    });
-                    _.each(selected, function(v) {
+                    selected.sort((a, b) => a.order - b.order);
+                    _.each(selected, v => {
                         val.push(v.id);
                     });
                 } else {

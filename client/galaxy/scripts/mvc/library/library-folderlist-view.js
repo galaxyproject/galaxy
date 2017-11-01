@@ -205,7 +205,7 @@ var FolderListView = Backbone.View.extend({
      *  be added to the view's collection.
      */
     addAll: function(models) {
-        _.each(models, function(model) {
+        _.each(models, model => {
             Galaxy.libraries.folderListView.collection.add(model, {
                 current_sort_order: false
             });
@@ -236,7 +236,7 @@ var FolderListView = Backbone.View.extend({
      */
     renderAll: function() {
         var that = this;
-        _.each(this.collection.models.reverse(), function(model) {
+        _.each(this.collection.models.reverse(), model => {
             that.renderOne(model);
         });
         this.postRender();

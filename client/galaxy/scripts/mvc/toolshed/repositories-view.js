@@ -40,7 +40,7 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
                     term: request.term,
                     tool_shed_url: shed_url
                 };
-                $.post(base_url, params, function(data) {
+                $.post(base_url, params, data => {
                     var result_list = toolshed_util.shedParser(data);
                     response(result_list);
                 });

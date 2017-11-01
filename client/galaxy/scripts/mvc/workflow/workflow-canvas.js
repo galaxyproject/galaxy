@@ -11,7 +11,7 @@ function CanvasManager(app, canvas_viewport, overview) {
 $.extend(CanvasManager.prototype, {
     init_drag: function() {
         var self = this;
-        var move = function(x, y) {
+        var move = (x, y) => {
             x = Math.min(x, self.cv.width() / 2);
             x = Math.max(x, -self.cc.width() + self.cv.width() / 2);
             y = Math.min(y, self.cv.height() / 2);
@@ -39,14 +39,14 @@ $.extend(CanvasManager.prototype, {
                 y_adjust = p.top - o.top;
                 x_adjust = p.left - o.left;
             })
-            .bind("drag", function(e, d) {
+            .bind("drag", (e, d) => {
                 move(d.offsetX + x_adjust, d.offsetY + y_adjust);
             })
-            .bind("dragend", function() {
+            .bind("dragend", () => {
                 self.app.workflow.fit_canvas_to_nodes();
                 self.draw_overview();
             });
-        this.overview.click(function(e) {
+        this.overview.click(e => {
             if (self.overview.hasClass("blockaclick")) {
                 self.overview.removeClass("blockaclick");
             } else {
@@ -71,7 +71,7 @@ $.extend(CanvasManager.prototype, {
         });
         // Dragging for overview pane
         this.ov
-            .bind("drag", function(e, d) {
+            .bind("drag", (e, d) => {
                 var in_w = self.cc.width();
                 var in_h = self.cc.height();
                 var o_w = self.oc.width();
@@ -83,7 +83,7 @@ $.extend(CanvasManager.prototype, {
                     -(new_y_offset / o_h * in_h)
                 );
             })
-            .bind("dragend", function() {
+            .bind("dragend", () => {
                 self.overview.addClass("blockaclick");
                 self.app.workflow.fit_canvas_to_nodes();
                 self.draw_overview();
@@ -105,7 +105,7 @@ $.extend(CanvasManager.prototype, {
 
         /*  Disable dragging for child element of the panel so that resizing can
                 only be done by dragging the borders */
-        $("#overview-border div").bind("drag", function() {});
+        $("#overview-border div").bind("drag", () => {});
     },
     update_viewport_overlay: function() {
         var cc = this.cc;
@@ -171,7 +171,7 @@ $.extend(CanvasManager.prototype, {
         canvas_el.attr("width", o_w);
         canvas_el.attr("height", o_h);
         // Draw overview
-        $.each(this.app.workflow.nodes, function(id, node) {
+        $.each(this.app.workflow.nodes, (id, node) => {
             c.fillStyle = "#D2C099";
             c.strokeStyle = "#D8B365";
             c.lineWidth = 1;
@@ -272,7 +272,7 @@ $.extend(ScrollPanel.prototype, {
             // Keep moving even if mouse doesn't move
             onmove();
             var panel = this;
-            this.timeout = setTimeout(function() {
+            this.timeout = setTimeout(() => {
                 panel.test(e, onmove);
             }, 50);
         }

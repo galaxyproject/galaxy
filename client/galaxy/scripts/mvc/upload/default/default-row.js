@@ -71,34 +71,34 @@ export default Backbone.View.extend({
         });
 
         // handle click event
-        this.$symbol.on("click", function() {
+        this.$symbol.on("click", () => {
             self._removeRow();
         });
 
         // handle extension info popover
         this.$(".upload-extension-info")
-            .on("click", function(e) {
+            .on("click", e => {
                 self.app.showExtensionInfo({
                     $el: $(e.target),
                     title: self.select_extension.text(),
                     extension: self.select_extension.value()
                 });
             })
-            .on("mousedown", function(e) {
+            .on("mousedown", e => {
                 e.preventDefault();
             });
 
         // handle settings popover
         this.$settings
-            .on("click", function(e) {
+            .on("click", e => {
                 self._showSettings();
             })
-            .on("mousedown", function(e) {
+            .on("mousedown", e => {
                 e.preventDefault();
             });
 
         // handle text editing event
-        this.$text_content.on("change input", function(e) {
+        this.$text_content.on("change input", e => {
             self.model.set({
                 url_paste: $(e.target).val(),
                 file_size: $(e.target).val().length
@@ -106,22 +106,22 @@ export default Backbone.View.extend({
         });
 
         // model events
-        this.listenTo(this.model, "change:percentage", function() {
+        this.listenTo(this.model, "change:percentage", () => {
             self._refreshPercentage();
         });
-        this.listenTo(this.model, "change:status", function() {
+        this.listenTo(this.model, "change:status", () => {
             self._refreshStatus();
         });
-        this.listenTo(this.model, "change:info", function() {
+        this.listenTo(this.model, "change:info", () => {
             self._refreshInfo();
         });
-        this.listenTo(this.model, "change:genome", function() {
+        this.listenTo(this.model, "change:genome", () => {
             self._refreshGenome();
         });
-        this.listenTo(this.model, "change:extension", function() {
+        this.listenTo(this.model, "change:extension", () => {
             self._refreshExtension();
         });
-        this.listenTo(this.model, "change:file_size", function() {
+        this.listenTo(this.model, "change:file_size", () => {
             self._refreshFileSize();
         });
     },

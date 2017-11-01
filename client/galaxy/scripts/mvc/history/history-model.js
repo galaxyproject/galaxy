@@ -193,16 +193,11 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 this.contents.allFetched = false;
                 var fetchFn =
                     self.contents.currentPage !== 0
-                        ? function() {
-                              return self.contents.fetchPage(
-                                  self.contents.currentPage
-                              );
-                          }
-                        : function() {
-                              return self.contents.fetchUpdated(lastUpdateTime);
-                          };
+                        ? () =>
+                              self.contents.fetchPage(self.contents.currentPage)
+                        : () => self.contents.fetchUpdated(lastUpdateTime);
                 // note: if there was no previous update time, all summary contents will be fetched
-                return fetchFn().done(function(response, status, xhr) {
+                return fetchFn().done((response, status, xhr) => {
                     var serverResponseDatetime;
                     try {
                         serverResponseDatetime = new Date(
@@ -227,7 +222,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 function _delayThenUpdate() {
                     // prevent buildup of updater timeouts by clearing previous if any, then set new and cache id
                     self.clearUpdateTimeout();
-                    self.updateTimeoutId = setTimeout(function() {
+                    self.updateTimeoutId = setTimeout(() => {
                         self.refresh(options);
                     }, delay);
                 }
@@ -241,17 +236,15 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     // no datasets are running, but currently runnning jobs may still produce new datasets
                     // see if the history has any running jobs and continue to update if so
                     // (also update the size for the user in either case)
-                    self
-                        ._fetchContentRelatedAttributes()
-                        .done(function(historyData) {
-                            // console.log( 'non_ready_jobs:', historyData.non_ready_jobs );
-                            if (self.numOfUnfinishedJobs() > 0) {
-                                _delayThenUpdate();
-                            } else {
-                                // otherwise, let listeners know that all updates have stopped
-                                self.trigger("ready");
-                            }
-                        });
+                    self._fetchContentRelatedAttributes().done(historyData => {
+                        // console.log( 'non_ready_jobs:', historyData.non_ready_jobs );
+                        if (self.numOfUnfinishedJobs() > 0) {
+                            _delayThenUpdate();
+                        } else {
+                            // otherwise, let listeners know that all updates have stopped
+                            self.trigger("ready");
+                        }
+                    });
                 }
             },
 
@@ -359,14 +352,14 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 var copy = jQuery.post(this.urlRoot, postData);
                 // if current - queue to setAsCurrent before firing 'copied'
                 if (current) {
-                    return copy.then(function(response) {
+                    return copy.then(response => {
                         var newHistory = new History(response);
-                        return newHistory.setAsCurrent().done(function() {
+                        return newHistory.setAsCurrent().done(() => {
                             history.trigger("copied", history, response);
                         });
                     });
                 }
-                return copy.done(function(response) {
+                return copy.done(response => {
                     history.trigger("copied", history, response);
                 });
             },
@@ -378,7 +371,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     Galaxy.root + "history/set_as_current?id=" + this.id
                 );
 
-                xhr.done(function() {
+                xhr.done(() => {
                     history.trigger("set-as-current", history);
                 });
                 return xhr;
@@ -505,7 +498,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
                 }
             });
         }
-        return xhr.then(function() {
+        return xhr.then(() => {
             options = options || {};
             options.offset = 0;
             return self.fetchMore(options);
@@ -550,7 +543,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
         var collection = this;
 
         var xhr = jQuery.getJSON(Galaxy.root + "history/create_new_current");
-        return xhr.done(function(newData) {
+        return xhr.done(newData => {
             collection.setCurrent(
                 new History(newData, [], historyOptions || {})
             );

@@ -18,7 +18,7 @@ export default Backbone.View.extend({
         this.dict_format = grid_config.dict_format;
         this.title = grid_config.title;
         var self = this;
-        window.add_tag_to_grid_filter = function(tag_name, tag_value) {
+        window.add_tag_to_grid_filter = (tag_name, tag_value) => {
             // Put tag name and value together.
             var tag =
                 tag_name +
@@ -38,7 +38,7 @@ export default Backbone.View.extend({
             this.setElement("<div/>");
             if (grid_config.url_base && !grid_config.items) {
                 var url_data = grid_config.url_data || {};
-                _.each(grid_config.filters, function(v, k) {
+                _.each(grid_config.filters, (v, k) => {
                     url_data["f-" + k] = v;
                 });
                 $.ajax({
@@ -108,7 +108,7 @@ export default Backbone.View.extend({
             this.$el.find("#grid-message").html(Templates.message(options));
             var self = this;
             if (options.use_hide_message) {
-                setTimeout(function() {
+                setTimeout(() => {
                     self.$el.find("#grid-message").html("");
                 }, 5000);
             }
@@ -206,7 +206,7 @@ export default Backbone.View.extend({
         // Initialize standard, advanced search toggles.
         this.$el.find(".advanced-search-toggle").each(function() {
             $(this).off();
-            $(this).click(function() {
+            $(this).click(() => {
                 self.$el.find("#standard-search").slideToggle("fast");
                 self.$el.find("#advanced-search").slideToggle("fast");
                 return false;
@@ -215,7 +215,7 @@ export default Backbone.View.extend({
 
         // Add event to check all box
         this.$el.find("#check_all").off();
-        this.$el.find("#check_all").on("click", function() {
+        this.$el.find("#check_all").on("click", () => {
             self.check_all_items();
         });
     },
@@ -226,7 +226,7 @@ export default Backbone.View.extend({
         this.$el.find(".grid").each(function() {
             var checkboxes = $(this).find("input.grid-row-select-checkbox");
             var check_count = $(this).find("span.grid-selected-count");
-            var update_checked = function() {
+            var update_checked = () => {
                 check_count.text($(checkboxes).filter(":checked").length);
             };
 
@@ -274,10 +274,10 @@ export default Backbone.View.extend({
         }
 
         // add operation popup menus
-        _.each(options.items, function(item, index) {
+        _.each(options.items, (item, index) => {
             var button = self.$("#grid-" + index + "-popup").off();
             var popup = new PopupMenu(button);
-            _.each(options["operations"], function(operation) {
+            _.each(options["operations"], operation => {
                 self._add_operation(popup, operation, item);
             });
         });
@@ -397,7 +397,7 @@ export default Backbone.View.extend({
                 // this element has a single child, a hyperlink/anchor.
                 $(this).empty();
                 var t = $('<a href="#">' + text + "</a>");
-                t.click(function() {
+                t.click(() => {
                     self.set_categorical_filter(name, filter_value);
                 });
                 $(this).removeClass("current-filter");
@@ -439,7 +439,7 @@ export default Backbone.View.extend({
                 $(this).empty();
                 $(this).removeClass("inactive-link");
                 var t = $('<a href="#">' + text + "</a>");
-                t.click(function() {
+                t.click(() => {
                     self.set_page(page_num);
                 });
                 $(this).append(t);
@@ -499,7 +499,7 @@ export default Backbone.View.extend({
     check_all_items: function() {
         var check = this.$(".grid-row-select-checkbox");
         var state = this.$("#check_all").prop("checked");
-        _.each(check, function(c) {
+        _.each(check, c => {
             $(c).prop("checked", state);
         });
         this.init_grid_elements();

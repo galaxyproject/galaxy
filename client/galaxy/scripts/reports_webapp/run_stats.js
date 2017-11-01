@@ -122,13 +122,13 @@ function create_chart(inp_data, name, time, title) {
         .data(data)
         .enter()
         .append("g")
-        .attr("transform", function(d, i) {
+        .attr("transform", (d, i) => {
             // Place the bar in the correct place
             var curr_margin = +margin.left;
             curr_margin += +(i * barWidth);
             return "translate(" + curr_margin + "," + margin.top + ")";
         })
-        .on("mouseenter", function(d) {
+        .on("mouseenter", d => {
             // Show tool tip
             var i = 1;
             var size = d;
@@ -172,7 +172,7 @@ function create_chart(inp_data, name, time, title) {
                 .attr("height", "15px")
                 .attr("fill", "#ebd9b2");
         })
-        .on("mouseleave", function(d) {
+        .on("mouseleave", d => {
             // Remove tool tip
             d3
                 .select(d3.event.path[1])
@@ -196,9 +196,7 @@ function create_chart(inp_data, name, time, title) {
         .append("text")
         .attr("class", "title")
         .attr("text-anchor", "end")
-        .attr("transform", function(e) {
-            return "translate( " + width + ",15 )";
-        })
+        .attr("transform", e => "translate( " + width + ",15 )")
         .text(title);
 
     // Add an x axis line to the chart
@@ -207,7 +205,7 @@ function create_chart(inp_data, name, time, title) {
         .attr("class", "axis")
         .append("path")
         .attr("class", "x")
-        .attr("d", function(d) {
+        .attr("d", d => {
             var m_x = margin.left;
             var m_y = +margin.top + height;
             var l_x = m_x + width;
@@ -224,9 +222,7 @@ function create_chart(inp_data, name, time, title) {
         .axis()
         .scale(y)
         .orient("left")
-        .tickFormat(function(d) {
-            return d3.round(d * d3.max(data), 0);
-        });
+        .tickFormat(d => d3.round(d * d3.max(data), 0));
 
     // Put the y axis on the chart
     chart
@@ -243,7 +239,7 @@ function create_chart(inp_data, name, time, title) {
         .append("g")
         .append("text")
         .attr("class", "ax_title")
-        .attr("transform", function(e) {
+        .attr("transform", e => {
             var axis = d3.select("#y_" + name).node();
             var left_pad =
                 +margin.left - axis.getBoundingClientRect().width - 5;
@@ -259,12 +255,8 @@ function create_chart(inp_data, name, time, title) {
     // Add color to the chart's bars
     bar
         .append("rect")
-        .attr("y", function(d) {
-            return height - d * zoom;
-        })
-        .attr("height", function(d) {
-            return d * zoom;
-        })
+        .attr("y", d => height - d * zoom)
+        .attr("height", d => d * zoom)
         .attr("width", barWidth - 1);
 
     // Append x axis
@@ -279,16 +271,17 @@ function create_chart(inp_data, name, time, title) {
             .attr("stroke", "black")
             .attr("stroke-width", 1)
             .attr("pointer-events", "none")
-            .attr("transform", function(d, i) {
-                return "translate( " + barWidth / 2 + ", " + height + ")";
-            });
+            .attr(
+                "transform",
+                (d, i) => "translate( " + barWidth / 2 + ", " + height + ")"
+            );
 
         // Append hour numbers
         bar
             .append("text")
             .attr("fill", "rgb(0,0,0)")
             .attr("transform", "translate( 10, " + (height + 10) + " )")
-            .text(function(d, i) {
+            .text((d, i) => {
                 var time = "0000";
 
                 if (hours_array[i].getHours() < 10) {
@@ -308,7 +301,7 @@ function create_chart(inp_data, name, time, title) {
             .attr("x1", 0)
             .attr("y1", 0)
             .attr("x2", 0)
-            .attr("y2", function(d, i) {
+            .attr("y2", (d, i) => {
                 var _y2 = 0;
 
                 if (hours_array[i].getDate() != curr_day) {
@@ -327,9 +320,7 @@ function create_chart(inp_data, name, time, title) {
             .attr("stroke", "black")
             .attr("stroke-width", 1)
             .attr("pointer-events", "none")
-            .attr("transform", function(d, i) {
-                return "translate( 0, " + height + ")";
-            });
+            .attr("transform", (d, i) => "translate( 0, " + height + ")");
 
         // Append day numbers
         curr_day = "";
@@ -339,7 +330,7 @@ function create_chart(inp_data, name, time, title) {
             .append("text")
             .attr("fill", "rgb(0,0,0)")
             .attr("pointer-events", "none")
-            .text(function(d, i) {
+            .text((d, i) => {
                 var time = "";
                 var locale = "en-us";
 
@@ -387,16 +378,17 @@ function create_chart(inp_data, name, time, title) {
             .attr("stroke", "black")
             .attr("stroke-width", 1)
             .attr("pointer-events", "none")
-            .attr("transform", function(d, i) {
-                return "translate( " + barWidth / 2 + ", " + height + ")";
-            });
+            .attr(
+                "transform",
+                (d, i) => "translate( " + barWidth / 2 + ", " + height + ")"
+            );
 
         // Append day numbers
         bar
             .append("text")
             .attr("fill", "rgb(0,0,0)")
             .attr("transform", "translate( 9, " + (height + 10) + " )")
-            .text(function(d, i) {
+            .text((d, i) => {
                 var time = "0000";
 
                 if (days_array[i].getDate() < 10) {
@@ -416,7 +408,7 @@ function create_chart(inp_data, name, time, title) {
             .attr("x1", 0)
             .attr("y1", 0)
             .attr("x2", 0)
-            .attr("y2", function(d, i) {
+            .attr("y2", (d, i) => {
                 var _y2 = 0;
 
                 if (days_array[i].getMonth() != curr_month) {
@@ -435,9 +427,7 @@ function create_chart(inp_data, name, time, title) {
             .attr("stroke", "black")
             .attr("stroke-width", 1)
             .attr("pointer-events", "none")
-            .attr("transform", function(d, i) {
-                return "translate( 0, " + height + ")";
-            });
+            .attr("transform", (d, i) => "translate( 0, " + height + ")");
 
         // Append month numbers
         curr_month = "";
@@ -447,7 +437,7 @@ function create_chart(inp_data, name, time, title) {
             .append("text")
             .attr("fill", "rgb(0,100,0)")
             .attr("pointer-events", "none")
-            .text(function(d, i) {
+            .text((d, i) => {
                 var time = "";
                 var locale = "en-us";
 
@@ -546,12 +536,7 @@ function create_histogram(inp_data, name, title) {
     // Used for y axis and bar initialization
     var y = d3.scale
         .linear()
-        .domain([
-            0,
-            d3.max(data, function(d) {
-                return d.y;
-            })
-        ])
+        .domain([0, d3.max(data, d => d.y)])
         .range([height, 0]);
 
     // Function for zooming in and out of charts
@@ -577,7 +562,7 @@ function create_histogram(inp_data, name, title) {
     }
 
     // Formatter for x axis times (converting minutes to HH:MM).
-    var formatMinutes = function(d) {
+    var formatMinutes = d => {
         var hours = Math.floor(d / 60);
         var minutes = Math.floor(d - hours * 60);
 
@@ -605,9 +590,7 @@ function create_histogram(inp_data, name, title) {
         .append("g")
         .append("text")
         .attr("class", "title")
-        .attr("transform", function(e) {
-            return "translate( " + width + ",15 )";
-        })
+        .attr("transform", e => "translate( " + width + ",15 )")
         .text(title);
 
     // Put bars on chart
@@ -617,16 +600,16 @@ function create_histogram(inp_data, name, title) {
         .enter()
         .append("g")
         .attr("class", "bar")
-        .attr("transform", function(d) {
-            return (
+        .attr(
+            "transform",
+            d =>
                 "translate(" +
                 (+x(d.x) + +margin.left) +
                 "," +
                 (+y(d.y) + +margin.top) +
                 ")"
-            );
-        })
-        .on("mouseenter", function(d) {
+        )
+        .on("mouseenter", d => {
             // Show tool tip
             var i = 0;
 
@@ -670,7 +653,7 @@ function create_histogram(inp_data, name, title) {
                 .attr("height", "15px")
                 .attr("fill", "#ebd9b2");
         })
-        .on("mouseleave", function(d) {
+        .on("mouseleave", d => {
             // Remove tool tip
             d3
                 .select(d3.event.path[1])
@@ -700,9 +683,7 @@ function create_histogram(inp_data, name, title) {
         .append("rect")
         .attr("x", 1)
         .attr("width", bar_x - 1)
-        .attr("height", function(d) {
-            return height - y(d.y);
-        });
+        .attr("height", d => height - y(d.y));
 
     // Create x axis
     var xAxis = d3.svg
@@ -727,7 +708,7 @@ function create_histogram(inp_data, name, title) {
         .append("g")
         .append("text")
         .attr("class", "ax_title")
-        .attr("transform", function(e) {
+        .attr("transform", e => {
             var axis = d3.select("#x_" + name).node();
             var left_pad =
                 +margin.left + axis.getBoundingClientRect().width / 2 + 30;
@@ -758,7 +739,7 @@ function create_histogram(inp_data, name, title) {
         .append("g")
         .append("text")
         .attr("class", "ax_title")
-        .attr("transform", function(e) {
+        .attr("transform", e => {
             var axis = d3.select("#y_" + name).node();
             var left_pad =
                 +margin.left - axis.getBoundingClientRect().width - 5;

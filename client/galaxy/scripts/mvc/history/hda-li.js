@@ -28,7 +28,7 @@ var HDAListItemView = _super.extend(
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-HDAListItemView.prototype.templates = (function() {
+HDAListItemView.prototype.templates = (() => {
     var titleBarTemplate = BASE_MVC.wrapTemplate(
         [
             // adding the hid display to the title

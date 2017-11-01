@@ -16,7 +16,7 @@ export default {
         successCalBack = options["successCallback"];
         window.addEventListener(
             "message",
-            function(e) {
+            e => {
                 successCalBack(e.data);
             },
             false

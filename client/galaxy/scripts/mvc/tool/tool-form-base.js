@@ -25,13 +25,13 @@ export default FormBase.extend({
             this.listenTo(
                 parent.Galaxy.currHistoryPanel.collection,
                 "change",
-                function() {
+                () => {
                     self.model.get("onchange")();
                 }
             );
         }
         // destroy dom elements
-        this.$el.on("remove", function() {
+        this.$el.on("remove", () => {
             self._destroy();
         });
     },
@@ -42,9 +42,9 @@ export default FormBase.extend({
         callback = callback || this.model.get("buildmodel");
         if (callback) {
             this.deferred.reset();
-            this.deferred.execute(function(process) {
+            this.deferred.execute(process => {
                 callback(process, self);
-                process.then(function() {
+                process.then(() => {
                     self._render();
                 });
             });
@@ -57,7 +57,7 @@ export default FormBase.extend({
     _destroy: function() {
         var self = this;
         this.$el.off().hide();
-        this.deferred.execute(function() {
+        this.deferred.execute(() => {
             FormBase.prototype.remove.call(self);
             Galaxy.emit.debug("tool-form-base::_destroy()", "Destroy view.");
         });
@@ -80,7 +80,7 @@ export default FormBase.extend({
             operations: !options.hide_operations && this._operations(),
             onchange: function() {
                 self.deferred.reset();
-                self.deferred.execute(function(process) {
+                self.deferred.execute(process => {
                     self.model.get("postchange")(process, self);
                 });
             }
@@ -261,8 +261,8 @@ export default FormBase.extend({
         }
 
         // add tool menu webhooks
-        $.getJSON("/api/webhooks/tool-menu/all", function(webhooks) {
-            _.each(webhooks, function(webhook) {
+        $.getJSON("/api/webhooks/tool-menu/all", webhooks => {
+            _.each(webhooks, webhook => {
                 if (webhook.activate && webhook.config.function) {
                     menu_button.addMenu({
                         icon: webhook.config.icon,
@@ -317,7 +317,7 @@ export default FormBase.extend({
         var nreq = options.requirements.length;
         if (nreq > 0) {
             var requirements_message = "This tool requires ";
-            _.each(options.requirements, function(req, i) {
+            _.each(options.requirements, (req, i) => {
                 requirements_message +=
                     req.name +
                     (req.version ? " (Version " + req.version + ")" : "") +

@@ -124,8 +124,8 @@ var BaseInputTerminalView = TerminalView.extend({
                     $("<div class='button'></div>").append(
                         $("<div/>")
                             .addClass("fa-icon-button fa fa-times")
-                            .click(function() {
-                                $.each(terminal.connectors, function(_, x) {
+                            .click(() => {
+                                $.each(terminal.connectors, (_, x) => {
                                     if (x) {
                                         x.destroy();
                                     }
@@ -190,7 +190,7 @@ var BaseOutputTerminalView = TerminalView.extend({
         dragend: "onDragEnd"
     },
     onDrag: function(e, d) {
-        var onmove = function() {
+        var onmove = () => {
             var po = $(d.proxy)
                 .offsetParent()
                 .offset();

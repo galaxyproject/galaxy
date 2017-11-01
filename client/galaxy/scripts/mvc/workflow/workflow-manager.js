@@ -78,7 +78,7 @@ $.extend(Workflow.prototype, {
     },
     remove_all: function() {
         var wf = this;
-        $.each(this.nodes, function(k, v) {
+        $.each(this.nodes, (k, v) => {
             v.destroy();
             wf.remove_node(v);
         });
@@ -87,11 +87,11 @@ $.extend(Workflow.prototype, {
         // Find out if we're using workflow_outputs or not.
         var using_workflow_outputs = false;
         var has_existing_pjas = false;
-        $.each(this.nodes, function(k, node) {
+        $.each(this.nodes, (k, node) => {
             if (node.workflow_outputs && node.workflow_outputs.length > 0) {
                 using_workflow_outputs = true;
             }
-            $.each(node.post_job_actions, function(pja_id, pja) {
+            $.each(node.post_job_actions, (pja_id, pja) => {
                 if (pja.action_type === "HideDatasetAction") {
                     has_existing_pjas = true;
                 }
@@ -100,7 +100,7 @@ $.extend(Workflow.prototype, {
         if (using_workflow_outputs !== false || has_existing_pjas !== false) {
             // Using workflow outputs, or has existing pjas.  Remove all PJAs and recreate based on outputs.
             var self = this;
-            $.each(this.nodes, function(k, node) {
+            $.each(this.nodes, (k, node) => {
                 if (node.type === "tool") {
                     var node_changed = false;
                     if (node.post_job_actions === null) {
@@ -108,19 +108,19 @@ $.extend(Workflow.prototype, {
                         node_changed = true;
                     }
                     var pjas_to_rem = [];
-                    $.each(node.post_job_actions, function(pja_id, pja) {
+                    $.each(node.post_job_actions, (pja_id, pja) => {
                         if (pja.action_type == "HideDatasetAction") {
                             pjas_to_rem.push(pja_id);
                         }
                     });
                     if (pjas_to_rem.length > 0) {
-                        $.each(pjas_to_rem, function(i, pja_name) {
+                        $.each(pjas_to_rem, (i, pja_name) => {
                             node_changed = true;
                             delete node.post_job_actions[pja_name];
                         });
                     }
                     if (using_workflow_outputs) {
-                        $.each(node.output_terminals, function(ot_id, ot) {
+                        $.each(node.output_terminals, (ot_id, ot) => {
                             var create_pja = !node.isWorkflowOutput(ot.name);
                             if (create_pja === true) {
                                 node_changed = true;
@@ -148,14 +148,14 @@ $.extend(Workflow.prototype, {
     },
     to_simple: function() {
         var nodes = {};
-        $.each(this.nodes, function(i, node) {
+        $.each(this.nodes, (i, node) => {
             var input_connections = {};
-            $.each(node.input_terminals, function(k, t) {
+            $.each(node.input_terminals, (k, t) => {
                 input_connections[t.name] = null;
                 // There should only be 0 or 1 connectors, so this is
                 // really a sneaky if statement
                 var cons = [];
-                $.each(t.connectors, function(i, c) {
+                $.each(t.connectors, (i, c) => {
                     if (c.handle1) {
                         var con_dict = {
                             id: c.handle1.node.id,
@@ -175,7 +175,7 @@ $.extend(Workflow.prototype, {
             });
             var post_job_actions = {};
             if (node.post_job_actions) {
-                $.each(node.post_job_actions, function(i, act) {
+                $.each(node.post_job_actions, (i, act) => {
                     var pja = {
                         action_type: act.action_type,
                         output_name: act.output_name,
@@ -221,7 +221,7 @@ $.extend(Workflow.prototype, {
         var max_id = offset;
         // First pass, nodes
         var using_workflow_outputs = false;
-        $.each(data.steps, function(id, step) {
+        $.each(data.steps, (id, step) => {
             var node = wf.app.prebuildNode(
                 step.type,
                 step.name,
@@ -231,7 +231,7 @@ $.extend(Workflow.prototype, {
             // Galaxy assign new ones.
             if (!initialImport) {
                 step.uuid = null;
-                $.each(step.workflow_outputs, function(name, workflow_output) {
+                $.each(step.workflow_outputs, (name, workflow_output) => {
                     workflow_output.uuid = null;
                 });
             }
@@ -251,7 +251,7 @@ $.extend(Workflow.prototype, {
                 if (node.workflow_outputs.length > 0) {
                     using_workflow_outputs = true;
                 } else {
-                    $.each(node.post_job_actions || [], function(pja_id, pja) {
+                    $.each(node.post_job_actions || [], (pja_id, pja) => {
                         if (pja.action_type === "HideDatasetAction") {
                             using_workflow_outputs = true;
                         }
@@ -261,14 +261,14 @@ $.extend(Workflow.prototype, {
         });
         wf.id_counter = max_id + 1;
         // Second pass, connections
-        $.each(data.steps, function(id, step) {
+        $.each(data.steps, (id, step) => {
             var node = wf.nodes[parseInt(id) + offset];
-            $.each(step.input_connections, function(k, v) {
+            $.each(step.input_connections, (k, v) => {
                 if (v) {
                     if (!$.isArray(v)) {
                         v = [v];
                     }
-                    $.each(v, function(l, x) {
+                    $.each(v, (l, x) => {
                         var other_node = wf.nodes[parseInt(x.id) + offset];
                         var c = new Connector();
                         c.connect(
@@ -281,7 +281,7 @@ $.extend(Workflow.prototype, {
             });
             if (using_workflow_outputs) {
                 // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
-                $.each(node.output_terminals, function(ot_id, ot) {
+                $.each(node.output_terminals, (ot_id, ot) => {
                     if (
                         node.post_job_actions["HideDatasetAction" + ot.name] ===
                         undefined
@@ -353,7 +353,7 @@ $.extend(Workflow.prototype, {
         var n_pred = {};
         var successors = {};
         // First pass to initialize arrays even for nodes with no connections
-        $.each(this.nodes, function(id, node) {
+        $.each(this.nodes, (id, node) => {
             if (n_pred[id] === undefined) {
                 n_pred[id] = 0;
             }
@@ -362,9 +362,9 @@ $.extend(Workflow.prototype, {
             }
         });
         // Second pass to count predecessors and successors
-        $.each(this.nodes, function(id, node) {
-            $.each(node.input_terminals, function(j, t) {
-                $.each(t.connectors, function(k, c) {
+        $.each(this.nodes, (id, node) => {
+            $.each(node.input_terminals, (j, t) => {
+                $.each(t.connectors, (k, c) => {
                     // A connection exists from `other` to `node`
                     var other = c.handle1.node;
                     // node gains a predecessor
@@ -407,19 +407,18 @@ $.extend(Workflow.prototype, {
         var h_pad = 80;
         var v_pad = 30;
         var left = h_pad;
-        $.each(node_ids_by_level, function(i, ids) {
+        $.each(node_ids_by_level, (i, ids) => {
             // We keep nodes in the same order in a level to give the user
             // some control over ordering
-            ids.sort(function(a, b) {
-                return (
+            ids.sort(
+                (a, b) =>
                     $(all_nodes[a].element).position().top -
                     $(all_nodes[b].element).position().top
-                );
-            });
+            );
             // Position each node
             var max_width = 0;
             var top = v_pad;
-            $.each(ids, function(j, id) {
+            $.each(ids, (j, id) => {
                 var node = all_nodes[id];
                 var element = $(node.element);
                 $(element).css({ top: top, left: left });
@@ -429,7 +428,7 @@ $.extend(Workflow.prototype, {
             left += max_width + h_pad;
         });
         // Need to redraw all connectors
-        $.each(all_nodes, function(_, node) {
+        $.each(all_nodes, (_, node) => {
             node.redraw();
         });
     },
@@ -439,7 +438,7 @@ $.extend(Workflow.prototype, {
         var ymin = Infinity;
         var ymax = -Infinity;
         var p;
-        $.each(this.nodes, function(id, node) {
+        $.each(this.nodes, (id, node) => {
             var e = $(node.element);
             p = e.position();
             xmin = Math.min(xmin, p.left);

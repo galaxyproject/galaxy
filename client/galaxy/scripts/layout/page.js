@@ -19,7 +19,7 @@ var View = Backbone.View.extend({
 
         // attach global objects, build mastheads
         Galaxy.modal = this.modal = new Modal.View();
-        Galaxy.display = this.display = function(view) {
+        Galaxy.display = this.display = view => {
             if (view.title) {
                 Utils.setWindowTitle(view.title);
                 view.allow_title_display = false;
@@ -46,7 +46,7 @@ var View = Backbone.View.extend({
 
         // build panels
         this.panels = {};
-        _.each(this._panelids, function(panel_id) {
+        _.each(this._panelids, panel_id => {
             var panel_class_name =
                 panel_id.charAt(0).toUpperCase() + panel_id.slice(1);
             var panel_class = options[panel_class_name];
@@ -122,7 +122,7 @@ var View = Backbone.View.extend({
     /** Render panels */
     renderPanels: function() {
         var self = this;
-        _.each(this._panelids, function(panel_id) {
+        _.each(this._panelids, panel_id => {
             var panel = self.panels[panel_id];
             if (panel) {
                 panel.render();
@@ -169,7 +169,7 @@ var View = Backbone.View.extend({
             $.ajax({
                 url: host + ":" + port
             })
-                .success(function(data) {
+                .success(data => {
                     // enable communication only when a user is logged in
                     if (window.Galaxy.user.id !== null) {
                         if ($chat_icon_element.css("visibility") === "hidden") {
@@ -177,7 +177,7 @@ var View = Backbone.View.extend({
                         }
                     }
                 })
-                .error(function(data) {
+                .error(data => {
                     // hide the communication icon if the communication server is not available
                     $chat_icon_element.css("visibility", "hidden");
                 });

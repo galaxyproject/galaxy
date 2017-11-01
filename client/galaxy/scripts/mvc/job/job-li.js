@@ -62,7 +62,7 @@ var JobListItemView = _super.extend(
             var params = this.model.get("params");
 
             var labelParamMap = {};
-            _.each(this.tool.inputs, function(i) {
+            _.each(this.tool.inputs, i => {
                 //console.debug( i.label, i.model_class );
                 if (i.label && i.model_class !== "DataToolParameter") {
                     labelParamMap[i.label] = params[i.name];
@@ -76,7 +76,7 @@ var JobListItemView = _super.extend(
             var view = this;
 
             var labelInputMap = {};
-            _.each(this.jobData.inputs, function(input) {
+            _.each(this.jobData.inputs, input => {
                 var toolInput = view._findToolInput(input.name);
                 if (toolInput) {
                     labelInputMap[toolInput.label] = input;
@@ -101,16 +101,18 @@ var JobListItemView = _super.extend(
         _findRepeatToolInput: function(name, toolInputs) {
             //ADAPTER
             toolInputs = toolInputs || this.tool.inputs;
-            var partialMatch = _.find(toolInputs, function(i) {
-                return name.indexOf(i.name) === 0;
-            });
+            var partialMatch = _.find(
+                toolInputs,
+                i => name.indexOf(i.name) === 0
+            );
             if (!partialMatch) {
                 return undefined;
             }
 
-            var subMatch = _.find(partialMatch.inputs, function(i) {
-                return name.indexOf(i.name) !== -1;
-            });
+            var subMatch = _.find(
+                partialMatch.inputs,
+                i => name.indexOf(i.name) !== -1
+            );
             return subMatch;
         },
 
@@ -124,7 +126,7 @@ var JobListItemView = _super.extend(
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-JobListItemView.prototype.templates = (function() {
+JobListItemView.prototype.templates = (() => {
     //TODO: move to require text! plugin
 
     var elTemplate = BASE_MVC.wrapTemplate([

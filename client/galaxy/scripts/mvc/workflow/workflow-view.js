@@ -60,10 +60,10 @@ export default Backbone.View.extend({
         var self = (window.workflow_globals.app = this);
         this.options = options;
         this.urls = (options && options.urls) || {};
-        var close_editor = function() {
+        var close_editor = () => {
             self.workflow.check_changes_in_active_form();
             if (workflow && self.workflow.has_changes) {
-                var do_close = function() {
+                var do_close = () => {
                     window.onbeforeunload = undefined;
                     window.document.location = self.urls.workflow_index;
                 };
@@ -84,7 +84,7 @@ export default Backbone.View.extend({
                 window.document.location = self.urls.workflow_index;
             }
         };
-        var save_current_workflow = function(eventObj, success_callback) {
+        var save_current_workflow = (eventObj, success_callback) => {
             show_message("Saving workflow", "progress");
             self.workflow.check_changes_in_active_form();
             if (!self.workflow.has_changes) {
@@ -104,7 +104,7 @@ export default Backbone.View.extend({
                     if (data.errors) {
                         body.addClass("warningmark");
                         var errlist = $("<ul/>");
-                        $.each(data.errors, function(i, v) {
+                        $.each(data.errors, (i, v) => {
                             $("<li/>")
                                 .text(v)
                                 .appendTo(errlist);
@@ -160,11 +160,11 @@ export default Backbone.View.extend({
                     }
                     // Start a new ajax-request in X ms
                     $("#search-spinner").show();
-                    this.timer = setTimeout(function() {
+                    this.timer = setTimeout(() => {
                         $.get(
                             self.urls.tool_search,
                             { q: q },
-                            function(data) {
+                            data => {
                                 // input.removeClass(config.loadingClass);
                                 // Show live-search if results and search-term aren't empty
                                 $("#search-no-results").hide();
@@ -176,11 +176,9 @@ export default Backbone.View.extend({
                                     .hide();
                                 if (data.length != 0) {
                                     // Map tool ids to element ids and join them.
-                                    var s = $.map(data, function(n, i) {
-                                        return "link-" + n;
-                                    });
+                                    var s = $.map(data, (n, i) => "link-" + n);
                                     // First pass to show matching tools and their parents.
-                                    $(s).each(function(index, id) {
+                                    $(s).each((index, id) => {
                                         // Add class to denote match.
                                         $("[id='" + id + "']")
                                             .parent()
@@ -268,12 +266,12 @@ export default Backbone.View.extend({
                 self.canvas_manager.draw_overview();
                 // Determine if any parameters were 'upgraded' and provide message
                 var upgrade_message = "";
-                _.each(data.steps, function(step, step_id) {
+                _.each(data.steps, (step, step_id) => {
                     var details = "";
                     if (step.errors) {
                         details += "<li>" + step.errors + "</li>";
                     }
-                    _.each(data.upgrade_messages[step_id], function(m) {
+                    _.each(data.upgrade_messages[step_id], m => {
                         details += "<li>" + m + "</li>";
                     });
                     if (details) {
@@ -349,13 +347,13 @@ export default Backbone.View.extend({
                             }
                         }
                     })
-                        .done(function(id) {
+                        .done(id => {
                             window.onbeforeunload = undefined;
                             window.location =
                                 Galaxy.root + "workflow/editor?id=" + id;
                             hide_modal();
                         })
-                        .fail(function() {
+                        .fail(() => {
                             hide_modal();
                             alert(
                                 "Saving this workflow failed. Please contact this site's administrator."
@@ -466,7 +464,7 @@ export default Backbone.View.extend({
         }
 
         // Lets the overview be toggled visible and invisible, adjusting the arrows accordingly
-        $("#close-viewport").click(function() {
+        $("#close-viewport").click(() => {
             if ($("#overview-border").css("right") === "0px") {
                 hide_overview();
             } else {
@@ -475,7 +473,7 @@ export default Backbone.View.extend({
         });
 
         // Unload handler
-        window.onbeforeunload = function() {
+        window.onbeforeunload = () => {
             if (workflow && self.workflow.has_changes) {
                 return "There are unsaved changes to your workflow which will be lost.";
             }
@@ -492,7 +490,7 @@ export default Backbone.View.extend({
         var last_expanded = null;
         $("div.toolSectionTitle").each(function() {
             var body = $(this).next("div.toolSectionBody");
-            $(this).click(function() {
+            $(this).click(() => {
                 if (body.is(":hidden")) {
                     if (last_expanded) last_expanded.slideUp("fast");
                     last_expanded = body;
@@ -513,7 +511,7 @@ export default Backbone.View.extend({
         );
 
         // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
-        $("#workflow-tag").click(function() {
+        $("#workflow-tag").click(() => {
             $(".tag-area").click();
             return false;
         });
@@ -541,7 +539,7 @@ export default Backbone.View.extend({
                 "</div>" +
                 "</div>"
         );
-        _.each(this.options.workflows, function(workflow) {
+        _.each(this.options.workflows, workflow => {
             if (workflow.id !== self.options.id) {
                 var copy = new Ui.ButtonIcon({
                     icon: "fa fa-copy",
@@ -577,7 +575,7 @@ export default Backbone.View.extend({
                 var $add = $("<a/>")
                     .attr("href", "#")
                     .html(workflow.name)
-                    .on("click", function() {
+                    .on("click", () => {
                         self.add_node_for_subworkflow(
                             workflow.latest_id,
                             workflow.name
@@ -602,14 +600,14 @@ export default Backbone.View.extend({
                 self.workflow.from_simple(data, false);
                 // Determine if any parameters were 'upgraded' and provide message
                 var upgrade_message = "";
-                $.each(data.upgrade_messages, function(k, v) {
+                $.each(data.upgrade_messages, (k, v) => {
                     upgrade_message +=
                         "<li>Step " +
                         (parseInt(k, 10) + 1) +
                         ": " +
                         self.workflow.nodes[k].name +
                         "<ul>";
-                    $.each(v, function(i, vv) {
+                    $.each(v, (i, vv) => {
                         upgrade_message += "<li>" + vv + "</li>";
                     });
                     upgrade_message += "</ul></li>";
@@ -773,9 +771,9 @@ export default Backbone.View.extend({
         var wf_parm_box = $("#workflow-parameters-box");
         var new_parameter_content = "";
         var matches = [];
-        $.each(this.workflow.nodes, function(k, node) {
+        $.each(this.workflow.nodes, (k, node) => {
             if (node.config_form && node.config_form.inputs) {
-                Utils.deepeach(node.config_form.inputs, function(d) {
+                Utils.deepeach(node.config_form.inputs, d => {
                     if (typeof d.value == "string") {
                         var form_matches = d.value.match(parameter_re);
                         if (form_matches) {
@@ -785,12 +783,9 @@ export default Backbone.View.extend({
                 });
             }
             if (node.post_job_actions) {
-                $.each(node.post_job_actions, function(k, pja) {
+                $.each(node.post_job_actions, (k, pja) => {
                     if (pja.action_arguments) {
-                        $.each(pja.action_arguments, function(
-                            k,
-                            action_argument
-                        ) {
+                        $.each(pja.action_arguments, (k, action_argument) => {
                             var arg_matches = action_argument.match(
                                 parameter_re
                             );
@@ -802,7 +797,7 @@ export default Backbone.View.extend({
                 });
             }
             if (matches) {
-                $.each(matches, function(k, element) {
+                $.each(matches, (k, element) => {
                     if ($.inArray(element, workflow_parameters) === -1) {
                         workflow_parameters.push(element);
                     }
@@ -810,7 +805,7 @@ export default Backbone.View.extend({
             }
         });
         if (workflow_parameters && workflow_parameters.length !== 0) {
-            $.each(workflow_parameters, function(k, element) {
+            $.each(workflow_parameters, (k, element) => {
                 new_parameter_content +=
                     "<div>" +
                     element.substring(2, element.length - 1) +
@@ -891,7 +886,7 @@ export default Backbone.View.extend({
         buttons.append(
             $("<div/>")
                 .addClass("fa-icon-button fa fa-times")
-                .click(function(e) {
+                .click(e => {
                     node.destroy();
                 })
         );
@@ -910,7 +905,7 @@ export default Backbone.View.extend({
         width += buttons.width() + 10;
         $f.css("width", width);
         $f
-            .bind("dragstart", function() {
+            .bind("dragstart", () => {
                 self.workflow.activate_node(node);
             })
             .bind("dragend", function() {
@@ -918,7 +913,7 @@ export default Backbone.View.extend({
                 self.workflow.fit_canvas_to_nodes();
                 self.canvas_manager.draw_overview();
             })
-            .bind("dragclickonly", function() {
+            .bind("dragclickonly", () => {
                 self.workflow.activate_node(node);
             })
             .bind("drag", function(e, d) {

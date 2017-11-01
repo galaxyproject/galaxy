@@ -71,7 +71,7 @@ function _errorModal(message, title, details) {
                 "</button>"
         )
             .appendTo(Galaxy.modal.$(".buttons"))
-            .click(function() {
+            .click(() => {
                 Galaxy.modal.$(".error-details").toggle();
             });
     }

@@ -200,7 +200,7 @@ window.app = function app(options, bootstrapped) {
                 !historyPanel.model ||
                 !historyPanel.model.id
             ) {
-                window.setTimeout(function() {
+                window.setTimeout(() => {
                     self.show_custom_builds();
                 }, 500);
                 return;
@@ -283,7 +283,7 @@ window.app = function app(options, bootstrapped) {
     });
 
     // render and start the router
-    $(function() {
+    $(() => {
         Galaxy.page = new Page.View(
             _.extend(options, {
                 Left: ToolPanel,

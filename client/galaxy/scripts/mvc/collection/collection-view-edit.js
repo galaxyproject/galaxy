@@ -63,13 +63,11 @@ var CollectionViewEdit = _super.extend(
                         var previousName = panel.model.get("name");
                         if (newName && newName !== previousName) {
                             panel.$el.find(nameSelector).text(newName);
-                            panel.model
-                                .save({ name: newName })
-                                .fail(function() {
-                                    panel.$el
-                                        .find(nameSelector)
-                                        .text(panel.model.previous("name"));
-                                });
+                            panel.model.save({ name: newName }).fail(() => {
+                                panel.$el
+                                    .find(nameSelector)
+                                    .text(panel.model.previous("name"));
+                            });
                         } else {
                             panel.$el.find(nameSelector).text(previousName);
                         }

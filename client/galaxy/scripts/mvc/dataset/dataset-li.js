@@ -56,7 +56,7 @@ var DatasetListItemView = _super.extend(
                         // normally, will render automatically (due to fetch -> change),
                         // but! setting_metadata sometimes doesn't cause any other changes besides state
                         // so, not rendering causes it to seem frozen in setting_metadata state
-                        self.model.fetch({ silent: true }).done(function() {
+                        self.model.fetch({ silent: true }).done(() => {
                             self.render();
                         });
                     } else {
@@ -96,7 +96,7 @@ var DatasetListItemView = _super.extend(
         remove: function(speed, callback) {
             var view = this;
             speed = speed || this.fxSpeed;
-            this.$el.fadeOut(speed, function() {
+            this.$el.fadeOut(speed, () => {
                 Backbone.View.prototype.remove.call(view);
                 if (callback) {
                     callback.call(view);
@@ -172,7 +172,7 @@ var DatasetListItemView = _super.extend(
 
                 // add frame manager option onclick event
                 var self = this;
-                displayBtnData.onclick = function(ev) {
+                displayBtnData.onclick = ev => {
                     if (Galaxy.frame && Galaxy.frame.active) {
                         // Add dataset to frames.
                         Galaxy.frame.addDataset(self.model.get("id"));
@@ -228,7 +228,7 @@ var DatasetListItemView = _super.extend(
             var $warnings = $('<div class="detail-messages"></div>');
             var json = view.model.toJSON();
             //TODO:! unordered (map)
-            _.each(view.templates.detailMessages, function(templateFn) {
+            _.each(view.templates.detailMessages, templateFn => {
                 $warnings.append($(templateFn(json, view)));
             });
             return $warnings;
@@ -335,8 +335,8 @@ var DatasetListItemView = _super.extend(
                     '<li><a href="' + urls.download + '" download>',
                     _l("Download dataset"),
                     "</a></li>",
-                    _.map(this.model.get("meta_files"), function(meta_file) {
-                        return [
+                    _.map(this.model.get("meta_files"), meta_file =>
+                        [
                             '<li><a href="',
                             urls.meta_download + meta_file.file_type,
                             '">',
@@ -344,8 +344,8 @@ var DatasetListItemView = _super.extend(
                             " ",
                             meta_file.file_type,
                             "</a></li>"
-                        ].join("");
-                    }).join("\n"),
+                        ].join("")
+                    ).join("\n"),
                     "</ul>",
                     "</div>"
                 ].join("\n")
@@ -389,7 +389,7 @@ var DatasetListItemView = _super.extend(
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-DatasetListItemView.prototype.templates = (function() {
+DatasetListItemView.prototype.templates = (() => {
     //TODO: move to require text! plugin
 
     var warnings = _.extend({}, _super.prototype.templates.warnings, {

@@ -41,12 +41,12 @@ var View = Backbone.View.extend({
             this.$el.fadeIn("fast");
             if (this.options.closing_events) {
                 var self = this;
-                $(document).on("keyup.ui-modal", function(e) {
+                $(document).on("keyup.ui-modal", e => {
                     if (e.keyCode == 27) {
                         self.hide(true);
                     }
                 });
-                this.$backdrop.on("click", function() {
+                this.$backdrop.on("click", () => {
                     self.hide(true);
                 });
             }
@@ -102,7 +102,7 @@ var View = Backbone.View.extend({
         this.buttonList = {};
         if (this.options.buttons) {
             var counter = 0;
-            $.each(this.options.buttons, function(name, callback) {
+            $.each(this.options.buttons, (name, callback) => {
                 var $button = $("<button/>")
                     .attr("id", "button-" + counter++)
                     .text(name)

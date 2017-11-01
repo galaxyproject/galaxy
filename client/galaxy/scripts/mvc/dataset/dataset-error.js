@@ -180,7 +180,7 @@ var View = Backbone.View.extend({
                 // Clear out the div
                 self.$el.empty().append(self._templateHeader());
                 // And display the messages.
-                response.messages.forEach(function(message) {
+                response.messages.forEach(message => {
                     self.display_message(
                         {
                             status: message[1],

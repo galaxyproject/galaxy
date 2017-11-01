@@ -157,7 +157,7 @@ var SessionStorageModel = Backbone.Model.extend({
         return "SessionStorageModel(" + this.id + ")";
     }
 });
-(function() {
+(() => {
     SessionStorageModel.prototype = _.omit(
         SessionStorageModel.prototype,
         "url",
@@ -230,14 +230,14 @@ var SearchableModelMixin = {
         //precondition: searchFor has already been validated as non-empty string
         //precondition: assumes only 1 level array
         //TODO: could possibly break up searchFor more (CSV...)
-        return _.any(array, function(elem) {
-            return (
+        return _.any(
+            array,
+            elem =>
                 elem
                     .toString()
                     .toLowerCase()
                     .indexOf(searchFor.toLowerCase()) !== -1
-            );
-        });
+        );
     },
 
     /** search all searchAttributes for the string searchFor,
@@ -245,9 +245,9 @@ var SearchableModelMixin = {
      */
     search: function(searchFor) {
         var model = this;
-        return _.filter(this.searchAttributes, function(key) {
-            return model.searchAttribute(key, searchFor);
-        });
+        return _.filter(this.searchAttributes, key =>
+            model.searchAttribute(key, searchFor)
+        );
     },
 
     /** alias of search, but returns a boolean; accepts attribute specifiers where
@@ -280,10 +280,8 @@ var SearchableModelMixin = {
     matchesAll: function(terms) {
         var model = this;
         // break the terms up by whitespace and filter out the empty strings
-        terms = terms.match(/(".*"|\w*=".*"|\S*)/g).filter(function(s) {
-            return !!s;
-        });
-        return _.all(terms, function(term) {
+        terms = terms.match(/(".*"|\w*=".*"|\S*)/g).filter(s => !!s);
+        return _.all(terms, term => {
             term = term.replace(/"/g, "");
             return model.matches(term);
         });
@@ -329,7 +327,7 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */ {
 
         if ($activator) {
             var mixin = this;
-            $activator.on("click", function(ev) {
+            $activator.on("click", ev => {
                 mixin.toggle(mixin.HUAVOptions.showSpeed);
             });
         }
@@ -589,7 +587,7 @@ var SelectableViewMixin = {
 function wrapTemplate(template, jsonNamespace) {
     jsonNamespace = jsonNamespace || "model";
     var templateFn = _.template(template.join(""));
-    return function(json, view) {
+    return (json, view) => {
         var templateVars = { view: view || {}, _l: _l };
         templateVars[jsonNamespace] = json || {};
         return templateFn(templateVars);

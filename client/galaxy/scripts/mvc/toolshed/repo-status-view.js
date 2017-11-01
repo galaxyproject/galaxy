@@ -12,10 +12,10 @@ var ToolShedRepoStatusView = Backbone.View.extend({
             "?repositories=" + this.options.repositories.join("|");
         this.model.fetch();
         this.timer = setInterval(
-            function(self) {
+            self => {
                 var terminal_states = ["installed", "error"];
                 var all_done = true;
-                _.some(self.model.models, function(repository) {
+                _.some(self.model.models, repository => {
                     repo_id = repository.get("id");
                     var repo_status = repository.get("status").toLowerCase();
                     if (terminal_states.indexOf(repo_status) === -1) {

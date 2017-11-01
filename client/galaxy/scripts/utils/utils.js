@@ -186,7 +186,7 @@ function request(options) {
 
     // make request
     $.ajax(ajaxConfig)
-        .done(function(response) {
+        .done(response => {
             if (typeof response === "string") {
                 try {
                     response = response.replace("Infinity,", '"Infinity",');
@@ -197,7 +197,7 @@ function request(options) {
             }
             options.success && options.success(response);
         })
-        .fail(function(response) {
+        .fail(response => {
             var response_text = null;
             try {
                 response_text = jQuery.parseJSON(response.responseText);
@@ -206,7 +206,7 @@ function request(options) {
             }
             options.error && options.error(response_text, response.status);
         })
-        .always(function() {
+        .always(() => {
             options.complete && options.complete();
         });
 }

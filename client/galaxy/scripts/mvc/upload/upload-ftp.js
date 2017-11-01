@@ -59,7 +59,7 @@ export default Backbone.View.extend({
         if (ftp_files && ftp_files.length > 0) {
             this.$body.empty();
             var size = 0;
-            _.each(ftp_files, function(ftp_file) {
+            _.each(ftp_files, ftp_file => {
                 self.rows.push(self._renderRow(ftp_file));
                 size += ftp_file.size;
             });
@@ -70,7 +70,7 @@ export default Backbone.View.extend({
                 this.$select
                     .addClass(this.model.get("class_add"))
                     .off()
-                    .on("click", function() {
+                    .on("click", () => {
                         self._all();
                     });
                 this._refresh();
@@ -97,12 +97,12 @@ export default Backbone.View.extend({
                     ? options.class_add
                     : options.class_remove
             );
-            $it.on("click", function() {
+            $it.on("click", () => {
                 self._switch($icon, ftp_file);
                 self._refresh();
             });
         } else {
-            $it.on("click", function() {
+            $it.on("click", () => {
                 options.onchange(ftp_file);
             });
         }
@@ -114,7 +114,7 @@ export default Backbone.View.extend({
         var self = this;
         this.ftp_index = {};
         this.collection &&
-            this.collection.each(function(model) {
+            this.collection.each(model => {
                 if (model.get("file_mode") == "ftp") {
                     self.ftp_index[model.get("file_path")] = model.id;
                 }
@@ -159,7 +159,7 @@ export default Backbone.View.extend({
     _refresh: function() {
         var counts = _.reduce(
             this.ftp_index,
-            function(memo, element) {
+            (memo, element) => {
                 element !== undefined && memo++;
                 return memo;
             },

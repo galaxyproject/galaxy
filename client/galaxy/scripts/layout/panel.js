@@ -27,7 +27,7 @@ var SidePanel = Backbone.View.extend({
         var panel = this.view;
         var components = this.view.model.attributes || {};
         this.$el.html(this._templatePanel(this.id));
-        _.each(components.buttons, function(button) {
+        _.each(components.buttons, button => {
             self.$(".panel-header-buttons").append(button.$el);
         });
         this.$el.addClass(components.cls);
@@ -128,7 +128,7 @@ var SidePanel = Backbone.View.extend({
         self.$el
             .css(whichSide, -this.saved_size)
             .show()
-            .animate(animation, "fast", function() {
+            .animate(animation, "fast", () => {
                 self.resize(self.saved_size);
             });
         self.hidden = false;

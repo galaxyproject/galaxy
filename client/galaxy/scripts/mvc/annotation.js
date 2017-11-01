@@ -37,7 +37,7 @@ var AnnotationEditor = Backbone.View
                     view.$annotation().text(newAnnotation);
                     view.model
                         .save({ annotation: newAnnotation }, { silent: true })
-                        .fail(function() {
+                        .fail(() => {
                             view
                                 .$annotation()
                                 .text(view.model.previous("annotation"));

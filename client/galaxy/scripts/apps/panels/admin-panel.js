@@ -152,16 +152,16 @@ var AdminPanel = Backbone.View.extend({
     render: function() {
         var self = this;
         this.$el.empty();
-        this.categories.each(function(category) {
+        this.categories.each(category => {
             var $section = $(self._templateSection(category.attributes));
             var $entries = $section.find(".ui-side-section-body");
-            _.each(category.get("items"), function(item) {
+            _.each(category.get("items"), item => {
                 if (item.enabled === undefined || item.enabled) {
                     var $link = $("<a/>")
                         .attr({ href: self.root + item.url })
                         .text(_l(item.title));
                     if (item.target == "__use_router__") {
-                        $link.on("click", function(e) {
+                        $link.on("click", e => {
                             e.preventDefault();
                             self.page.router.push(item.url);
                         });

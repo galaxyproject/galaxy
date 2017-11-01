@@ -186,9 +186,9 @@ GraphSearch.prototype._searchTree = function __searchTree(search) {
     var self = this;
     return new Graph(true, {
         edges: search.edges,
-        vertices: Object.keys(search.discovered).map(function(key) {
-            return self.graph.vertices[key].toJSON();
-        })
+        vertices: Object.keys(search.discovered).map(key =>
+            self.graph.vertices[key].toJSON()
+        )
     });
 };
 
@@ -357,12 +357,12 @@ Graph.prototype.readNodesAndLinks = function(data) {
     //console.debug( 'readNodesAndLinks:', data );
     //console.debug( 'data:\n' + JSON.stringify( data, null, '  ' ) );
     var self = this;
-    data.nodes.forEach(function(node) {
+    data.nodes.forEach(node => {
         self.createVertex(node.name, node.data);
     });
     //console.debug( JSON.stringify( self.vertices, null, '  ' ) );
 
-    (data.links || []).forEach(function(edge, i) {
+    (data.links || []).forEach((edge, i) => {
         var sourceName = data.nodes[edge.source].name;
         var targetName = data.nodes[edge.target].name;
         self.createEdge(sourceName, targetName, self.directed);
@@ -380,12 +380,12 @@ Graph.prototype.readVerticesAndEdges = function(data) {
     //console.debug( 'readVerticesAndEdges:', data );
     //console.debug( 'data:\n' + JSON.stringify( data, null, '  ' ) );
     var self = this;
-    data.vertices.forEach(function(node) {
+    data.vertices.forEach(node => {
         self.createVertex(node.name, node.data);
     });
     //console.debug( JSON.stringify( self.vertices, null, '  ' ) );
 
-    (data.edges || []).forEach(function(edge, i) {
+    (data.edges || []).forEach((edge, i) => {
         self.createEdge(edge.source, edge.target, self.directed);
     });
     //self.print();
@@ -443,9 +443,7 @@ Graph.prototype.createEdge = function(sourceName, targetName, directed, data) {
 Graph.prototype.edges = function(propsOrFn) {
     return Array.prototype.concat.apply(
         [],
-        this.eachVertex(function(vertex) {
-            return vertex.eachEdge(propsOrFn);
-        })
+        this.eachVertex(vertex => vertex.eachEdge(propsOrFn))
     );
 };
 
@@ -457,15 +455,13 @@ Graph.prototype.eachVertex = function(propsOrFn) {
 /** Return a list of the vertices adjacent to vertex */
 Graph.prototype.adjacent = function(vertex) {
     var self = this;
-    return iterate(vertex.edges, function(edge) {
-        return self.vertices[edge.target];
-    });
+    return iterate(vertex.edges, edge => self.vertices[edge.target]);
 };
 
 /** Call fn on each vertex adjacent to vertex */
 Graph.prototype.eachAdjacent = function(vertex, fn) {
     var self = this;
-    return iterate(vertex.edges, function(edge) {
+    return iterate(vertex.edges, edge => {
         var adj = self.vertices[edge.target];
         return fn.call(vertex, adj, edge);
     });
@@ -475,9 +471,9 @@ Graph.prototype.eachAdjacent = function(vertex, fn) {
 Graph.prototype.print = function() {
     var self = this;
     console.log("Graph has " + Object.keys(self.vertices).length + " vertices");
-    self.eachVertex(function(vertex) {
+    self.eachVertex(vertex => {
         console.log(vertex.toString());
-        vertex.eachEdge(function(edge) {
+        vertex.eachEdge(edge => {
             console.log("\t " + edge);
         });
     });
@@ -489,7 +485,7 @@ Graph.prototype.toDOT = function() {
     var self = this;
     var strings = [];
     strings.push("graph bler {");
-    self.edges(function(edge) {
+    self.edges(edge => {
         strings.push("\t" + edge.from + " -- " + edge.to + ";");
     });
     strings.push("}");
@@ -501,11 +497,11 @@ Graph.prototype.toNodesAndLinks = function() {
     var self = this;
     var indeces = {};
     return {
-        nodes: self.eachVertex(function(vertex, key, i) {
+        nodes: self.eachVertex((vertex, key, i) => {
             indeces[vertex.name] = i;
             return vertex.toJSON();
         }),
-        links: self.edges(function(edge) {
+        links: self.edges(edge => {
             var json = edge.toJSON();
             json.source = indeces[edge.source];
             json.target = indeces[edge.target];
@@ -518,12 +514,8 @@ Graph.prototype.toNodesAndLinks = function() {
 Graph.prototype.toVerticesAndEdges = function() {
     var self = this;
     return {
-        vertices: self.eachVertex(function(vertex, key) {
-            return vertex.toJSON();
-        }),
-        edges: self.edges(function(edge) {
-            return edge.toJSON();
-        })
+        vertices: self.eachVertex((vertex, key) => vertex.toJSON()),
+        edges: self.edges(edge => edge.toJSON())
     };
 };
 
@@ -576,15 +568,15 @@ Graph.prototype.weakComponents = function() {
         );
 
         // remove curr discovered from undiscovered
-        undiscovered = undiscovered.filter(function(name) {
-            return !(name in search.discovered);
-        });
+        undiscovered = undiscovered.filter(
+            name => !(name in search.discovered)
+        );
 
         return {
-            vertices: Object.keys(search.discovered).map(function(vertexName) {
-                return self.vertices[vertexName].toJSON();
-            }),
-            edges: search.edges.map(function(edge) {
+            vertices: Object.keys(search.discovered).map(vertexName =>
+                self.vertices[vertexName].toJSON()
+            ),
+            edges: search.edges.map(edge => {
                 // restore any reversed edges
                 var hasBeenReversed =
                     self.vertices[edge.target].edges[edge.source] !== undefined;
@@ -619,12 +611,14 @@ Graph.prototype.weakComponentGraph = function() {
     //note: although this can often look like the original graph - edges can be lost
     var components = this.weakComponents();
     return new Graph(this.directed, {
-        vertices: components.reduce(function(reduction, curr) {
-            return reduction.concat(curr.vertices);
-        }, []),
-        edges: components.reduce(function(reduction, curr) {
-            return reduction.concat(curr.edges);
-        }, [])
+        vertices: components.reduce(
+            (reduction, curr) => reduction.concat(curr.vertices),
+            []
+        ),
+        edges: components.reduce(
+            (reduction, curr) => reduction.concat(curr.edges),
+            []
+        )
     });
 };
 
@@ -632,9 +626,9 @@ Graph.prototype.weakComponentGraph = function() {
 Graph.prototype.weakComponentGraphArray = function() {
     //note: although this can often look like the original graph - edges can be lost
     var graph = this;
-    return this.weakComponents().map(function(component) {
-        return new Graph(graph.directed, component);
-    });
+    return this.weakComponents().map(
+        component => new Graph(graph.directed, component)
+    );
 };
 
 // ============================================================================

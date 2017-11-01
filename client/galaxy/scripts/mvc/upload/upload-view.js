@@ -63,7 +63,7 @@ export default Backbone.View.extend({
                         composite_files: datatypes[key].composite_files
                     });
                 }
-                self.list_extensions.sort(function(a, b) {
+                self.list_extensions.sort((a, b) => {
                     var a_text = a.text && a.text.toLowerCase();
                     var b_text = b.text && b.text.toLowerCase();
                     return a_text > b_text ? 1 : a_text < b_text ? -1 : 0;
@@ -84,7 +84,7 @@ export default Backbone.View.extend({
                         text: genomes[key][0]
                     });
                 }
-                self.list_genomes.sort(function(a, b) {
+                self.list_genomes.sort((a, b) => {
                     if (a.id == self.options.default_genome) {
                         return -1;
                     }
@@ -101,7 +101,7 @@ export default Backbone.View.extend({
     show: function() {
         var self = this;
         if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
-            window.setTimeout(function() {
+            window.setTimeout(() => {
                 self.show();
             }, 500);
             return;

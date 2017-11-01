@@ -98,9 +98,7 @@ var ConfigSetting = Backbone.Model.extend({
                     default_value: true
                 }
             ],
-            function(s) {
-                return s.key === key;
-            }
+            s => s.key === key
         );
         if (defaults) {
             this.set(_.extend({}, defaults, options));
@@ -152,7 +150,7 @@ var ConfigSettingCollection = Backbone.Collection.extend(
      */
         to_key_value_dict: function() {
             var rval = {};
-            this.each(function(setting) {
+            this.each(setting => {
                 rval[setting.get("key")] = setting.get("value");
             });
 
@@ -203,9 +201,9 @@ var ConfigSettingCollection = Backbone.Collection.extend(
         from_models_and_saved_values: function(models, saved_values) {
             // If there are saved values, copy models and update with saved values.
             if (saved_values) {
-                models = _.map(models, function(m) {
-                    return _.extend({}, m, { value: saved_values[m.key] });
-                });
+                models = _.map(models, m =>
+                    _.extend({}, m, { value: saved_values[m.key] })
+                );
             }
 
             return new ConfigSettingCollection(models);
@@ -225,7 +223,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
     render: function() {
         var container = this.$el;
 
-        this.collection.each(function(param, index) {
+        this.collection.each((param, index) => {
             // Hidden params have no representation in the form
             if (param.get("hidden")) {
                 return;
@@ -263,7 +261,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
             } else if (type === "select") {
                 // Draw parameter as select area
                 var select = $("<select />").attr("id", id);
-                _.each(param.get("options"), function(option) {
+                _.each(param.get("options"), option => {
                     $("<option/>")
                         .text(option.label)
                         .attr("value", option.value)
@@ -307,12 +305,12 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                         // Click management:
 
                         // Keep showing tip if clicking in tip.
-                        tip.click(function(e) {
+                        tip.click(e => {
                             e.stopPropagation();
                         });
 
                         // Hide tip if clicking outside of tip.
-                        $(document).bind("click.color-picker", function() {
+                        $(document).bind("click.color-picker", () => {
                             tip.hide();
                             $(document).unbind("click.color-picker");
                         });
@@ -355,8 +353,8 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                 container_div.append($("<div/>").css("clear", "both"));
 
                 // Use function to fix farb_obj value.
-                (function(fixed_farb_obj) {
-                    new_color_icon.click(function() {
+                (fixed_farb_obj => {
+                    new_color_icon.click(() => {
                         fixed_farb_obj.setColor(util_mod.get_random_color());
                     });
                 })(farb_obj);
@@ -384,18 +382,18 @@ var ConfigSettingCollectionView = Backbone.View.extend({
         // Set up handlers for cancel, ok button and for handling esc key.
         var self = this;
 
-        var cancel_fn = function() {
+        var cancel_fn = () => {
             Galaxy.modal.hide();
             $(window).unbind("keypress.check_enter_esc");
         };
 
-        var ok_fn = function() {
+        var ok_fn = () => {
             Galaxy.modal.hide();
             $(window).unbind("keypress.check_enter_esc");
             self.update_from_form();
         };
 
-        var check_enter_esc = function(e) {
+        var check_enter_esc = e => {
             if ((e.keyCode || e.which) === 27) {
                 // Escape key
                 cancel_fn();
@@ -427,7 +425,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
      */
     update_from_form: function() {
         var self = this;
-        this.collection.each(function(setting, index) {
+        this.collection.each((setting, index) => {
             if (!setting.get("hidden")) {
                 // Set value from view.
                 var id = "param_" + index;

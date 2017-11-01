@@ -34,7 +34,7 @@ $.extend(Modal.prototype, {
         this.$footer.hide();
         var $buttons = this.$footer.find(".buttons").html("");
         if (options.buttons) {
-            $.each(options.buttons, function(name, value) {
+            $.each(options.buttons, (name, value) => {
                 $buttons
                     .append(
                         $("<button></button> ")
@@ -47,7 +47,7 @@ $.extend(Modal.prototype, {
         }
         var $extraButtons = this.$footer.find(".extra_buttons").html("");
         if (options.extra_buttons) {
-            $.each(options.extra_buttons, function(name, value) {
+            $.each(options.extra_buttons, (name, value) => {
                 $extraButtons
                     .append(
                         $("<button></button>")
@@ -97,7 +97,7 @@ $.extend(Modal.prototype, {
     },
     hide: function() {
         var modal = this;
-        modal.$dialog.fadeOut(function() {
+        modal.$dialog.fadeOut(() => {
             modal.$overlay.hide();
             modal.$backdrop.removeClass("in");
             modal.$body.children().remove();
@@ -109,7 +109,7 @@ $.extend(Modal.prototype, {
 
 var modal;
 
-$(function() {
+$(() => {
     modal = new Modal({
         overlay: $("#top-modal"),
         dialog: $("#top-modal-dialog"),
@@ -146,7 +146,7 @@ function show_in_overlay(options) {
     var width = options.width || "600";
     var height = options.height || "400";
     var scroll = options.scroll || "auto";
-    $("#overlay-background").bind("click.overlay", function() {
+    $("#overlay-background").bind("click.overlay", () => {
         hide_modal();
         $("#overlay-background").unbind("click.overlay");
     });

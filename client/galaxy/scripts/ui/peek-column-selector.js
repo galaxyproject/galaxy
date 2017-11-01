@@ -230,9 +230,7 @@ function buildMultiSelectCell(control, columnIndex) {
             var selectedColumnIndeces = $cell
                 .parent()
                 .find("." + SELECTED_CLASS)
-                .map(function(i, e) {
-                    return $(e).data(COLUMN_INDEX_DATA_KEY);
-                });
+                .map((i, e) => $(e).data(COLUMN_INDEX_DATA_KEY));
 
             // fire the event from the table itself, passing the id and index of selected
             var eventData = {};
@@ -369,7 +367,7 @@ function peekColumnSelector(options) {
     }
 
     // build a row for each control
-    options.controls.forEach(function(control, i) {
+    options.controls.forEach((control, i) => {
         validateControl(control);
         var $controlRow = buildControlRow(
             columnCount,

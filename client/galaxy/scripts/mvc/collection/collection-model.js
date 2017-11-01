@@ -249,7 +249,7 @@ var DatasetCollection = Backbone.Model
                 var elements = this.get("elements") || [];
                 this.unset("elements", { silent: true });
                 var self = this;
-                _.each(elements, function(element, index) {
+                _.each(elements, (element, index) => {
                     _.extend(element, {
                         parent_hdca_id: self.get("id")
                     });

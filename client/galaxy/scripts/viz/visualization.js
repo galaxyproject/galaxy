@@ -16,7 +16,7 @@ var CustomToJSON = {
     toJSON: function() {
         var self = this;
         var json = {};
-        _.each(self.constructor.to_json_keys, function(k) {
+        _.each(self.constructor.to_json_keys, k => {
             var val = self.get(k);
             if (k in self.constructor.to_json_mappers) {
                 val = self.constructor.to_json_mappers[k](val, self);
@@ -40,7 +40,7 @@ var CustomToJSON = {
  * track definitions are obtained from the server and the success_fn is called with the list of
  * definitions for selected datasets.
  */
-var select_datasets = function(filters, success_fn) {
+var select_datasets = (filters, success_fn) => {
     // history dataset selection tab
     var history_grid = new GridView({
         url_base: Galaxy.root + "visualization/list_history_datasets",
@@ -104,9 +104,7 @@ var select_datasets = function(filters, success_fn) {
                     // map arguments to track definitions.
                     var track_defs =
                         arguments[0] instanceof Array
-                            ? $.map(arguments, function(arg) {
-                                  return arg[0];
-                              })
+                            ? $.map(arguments, arg => arg[0])
                             : [arguments[0]];
                     success_fn(track_defs);
                 });
@@ -151,7 +149,7 @@ _.extend(CanvasManager.prototype, {
         var dummy_context = this.dummy_context;
         var image = new Image();
         image.src = Galaxy.root + "static/images" + path;
-        image.onload = function() {
+        image.onload = () => {
             patterns[key] = dummy_context.createPattern(image, "repeat");
         };
     },
@@ -191,9 +189,7 @@ var Cache = Backbone.Model.extend({
         var key_ary = this.attributes.key_ary;
         var key_str = key.toString();
 
-        var index = _.indexOf(key_ary, function(k) {
-            return k.toString() === key_str;
-        });
+        var index = _.indexOf(key_ary, k => k.toString() === key_str);
 
         // Update cache.
         if (index !== -1) {
@@ -314,7 +310,7 @@ var GenomeDataManager = Cache.extend({
 
         // Put data into manager.
         var self = this;
-        _.each(entries, function(entry) {
+        _.each(entries, entry => {
             self.set_data(entry.region, entry);
         });
     },
@@ -351,7 +347,7 @@ var GenomeDataManager = Cache.extend({
             }
         });
 
-        $.when(ss_deferred.go()).then(function(response) {
+        $.when(ss_deferred.go()).then(response => {
             ready_deferred.resolve(response === "ok" || response === "data");
         });
         return ready_deferred;
@@ -407,7 +403,7 @@ var GenomeDataManager = Cache.extend({
         // Do request.
         var manager = this;
 
-        var entry = $.getJSON(dataset.url(), params, function(result) {
+        var entry = $.getJSON(dataset.url(), params, result => {
             // Add region to the result.
             result.region = region;
             manager.set_data(region, result);
@@ -572,7 +568,7 @@ var GenomeDataManager = Cache.extend({
         // load_data sets cache to new_data_request, but use custom deferred object so that signal and data
         // is all data, not just new data.
         this.set_data(region, new_data_available);
-        $.when(new_data_request).then(function(result) {
+        $.when(new_data_request).then(result => {
             // Update data and message.
             if (result.data) {
                 result.data = cur_data.data.concat(result.data);
@@ -665,9 +661,7 @@ var GenomeDataManager = Cache.extend({
         var all_data_available = true;
 
         var //  Map chromosome info into genome data.
-        gw_data = _.map(genome.get("chroms_info").chrom_info, function(
-            chrom_info
-        ) {
+        gw_data = _.map(genome.get("chroms_info").chrom_info, chrom_info => {
             var chrom_data = self.get_elt(
                 new GenomeRegion({
                     chrom: chrom_info.chrom,
@@ -695,7 +689,7 @@ var GenomeDataManager = Cache.extend({
         $.getJSON(
             this.get("dataset").url(),
             { data_type: "genome_data" },
-            function(genome_wide_data) {
+            genome_wide_data => {
                 self.add_data(genome_wide_data.data);
                 deferred.resolve(genome_wide_data.data);
             }
@@ -711,12 +705,12 @@ var GenomeDataManager = Cache.extend({
         // Dictionary from entry type to function for subsetting data.
         var subset_fns = {
             bigwig: function(data, subregion) {
-                return _.filter(data, function(data_point) {
-                    return (
+                return _.filter(
+                    data,
+                    data_point =>
                         data_point[0] >= subregion.get("start") &&
                         data_point[0] <= subregion.get("end")
-                    );
-                });
+                );
             },
             refseq: function(data, subregion) {
                 var seq_start =
@@ -794,9 +788,10 @@ var Genome = Backbone.Model.extend({
      */
     get_chrom_region: function(chr_name) {
         // FIXME: use findWhere in underscore 1.4
-        var chrom_info = _.find(this.get_chroms_info(), function(chrom_info) {
-            return chrom_info.chrom === chr_name;
-        });
+        var chrom_info = _.find(
+            this.get_chroms_info(),
+            chrom_info => chrom_info.chrom === chr_name
+        );
         return new GenomeRegion({
             chrom: chrom_info.chrom,
             end: chrom_info.len
@@ -806,9 +801,10 @@ var Genome = Backbone.Model.extend({
     /** Returns the length of a chromosome. */
     get_chrom_len: function(chr_name) {
         // FIXME: use findWhere in underscore 1.4
-        return _.find(this.get_chroms_info(), function(chrom_info) {
-            return chrom_info.chrom === chr_name;
-        }).len;
+        return _.find(
+            this.get_chroms_info(),
+            chrom_info => chrom_info.chrom === chr_name
+        ).len;
     }
 });
 
@@ -1186,7 +1182,7 @@ var GenomeVisualization = Visualization.extend(CustomToJSON).extend(
 
             // Clear track and data definitions to avoid storing large objects.
             this.unset("tracks");
-            this.get("drawables").each(function(d) {
+            this.get("drawables").each(d => {
                 d.unset("preloaded_data");
             });
         },
@@ -1235,7 +1231,7 @@ var TrackBrowserRouter = Backbone.Router.extend({
 
         // Handle navigate events from view.
         var self = this;
-        self.view.on("navigate", function(new_loc) {
+        self.view.on("navigate", new_loc => {
             self.navigate(new_loc);
         });
     },

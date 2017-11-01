@@ -65,7 +65,7 @@ var HDCAListItemView = _super.extend(
 );
 
 /** underscore templates */
-HDCAListItemView.prototype.templates = (function() {
+HDCAListItemView.prototype.templates = (() => {
     var warnings = _.extend({}, _super.prototype.templates.warnings, {
         hidden: BASE_MVC.wrapTemplate(
             [

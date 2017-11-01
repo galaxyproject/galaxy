@@ -31,7 +31,7 @@ function AjaxQueue(initialFunctions) {
 /** add all fns in initialFunctions (if any) to the queue */
 AjaxQueue.prototype.init = function init(initialFunctions) {
     var self = this;
-    initialFunctions.forEach(function(fn) {
+    initialFunctions.forEach(fn => {
         self.add(fn);
     });
 };
@@ -44,11 +44,11 @@ AjaxQueue.prototype.add = function add(fn) {
     var index = this.queue.length;
     this.numToProcess += 1;
 
-    this.queue.push(function() {
+    this.queue.push(() => {
         var fnIndex = index;
         var xhr = fn();
         // if successful, notify using the deferred to allow tracking progress
-        xhr.done(function(response) {
+        xhr.done(response => {
             self.deferred.notify({
                 curr: fnIndex,
                 total: self.numToProcess,
@@ -57,7 +57,7 @@ AjaxQueue.prototype.add = function add(fn) {
         });
         // (regardless of previous error or success) if not last ajax call, shift and call the next
         //  if last fn, resolve deferred
-        xhr.always(function(response) {
+        xhr.always(response => {
             self.responses.push(response);
             if (self.queue.length) {
                 self.queue.shift()();

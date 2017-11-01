@@ -37,7 +37,7 @@ window.app = function app(options, bootstrapped) {
         }
     });
 
-    $(function() {
+    $(() => {
         Galaxy.page = new Page.View(
             _.extend(options, {
                 Right: LoginPage

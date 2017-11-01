@@ -124,7 +124,7 @@ JobDAG.prototype.preprocessHistoryContents = function _preprocessHistoryContents
     var self = this;
     self._historyContentsMap = {};
 
-    historyContents.forEach(function(content, i) {
+    historyContents.forEach((content, i) => {
         self._historyContentsMap[content.id] = _.clone(content);
     });
     return self;
@@ -136,7 +136,7 @@ JobDAG.prototype.preprocessTools = function _preprocessTools(tools) {
     var self = this;
     self._toolMap = {};
 
-    _.each(tools, function(tool, id) {
+    _.each(tools, (tool, id) => {
         self._toolMap[id] = _.clone(tool);
     });
     return self;
@@ -148,9 +148,9 @@ JobDAG.prototype.preprocessJobs = function _preprocessJobs(jobs) {
     var self = this;
     self._outputIdToJobMap = {};
 
-    self._jobsData = self.sort(jobs).map(function(job) {
-        return self.preprocessJob(_.clone(job));
-    });
+    self._jobsData = self
+        .sort(jobs)
+        .map(job => self.preprocessJob(_.clone(job)));
     //console.debug( JSON.stringify( self._jobsData, null, '    ' ) );
     //console.debug( JSON.stringify( self._outputIdToJobMap, null, '    ' ) );
     return self;
@@ -198,7 +198,7 @@ JobDAG.prototype._processInputs = function __processInputs(job) {
     var self = this;
     var inputs = job.inputs;
     var inputMap = {};
-    _.each(inputs, function(input, nameInJob) {
+    _.each(inputs, (input, nameInJob) => {
         input = _.clone(self._validateInputOutput(input));
         input.name = nameInJob;
         // since this is a DAG and we're processing in order of create time,
@@ -237,7 +237,7 @@ JobDAG.prototype._processOutputs = function __processOutputs(job) {
     var self = this;
     var outputs = job.outputs;
     var outputMap = {};
-    _.each(outputs, function(output, nameInJob) {
+    _.each(outputs, (output, nameInJob) => {
         output = _.clone(self._validateInputOutput(output));
         output.name = nameInJob;
         // add dataset content to jobData
@@ -252,9 +252,7 @@ JobDAG.prototype._processOutputs = function __processOutputs(job) {
 /**  */
 JobDAG.prototype._filterJobs = function __filterJobs() {
     var self = this;
-    return self._jobsData.filter(function(j, i) {
-        return self._filterJob(j, i);
-    });
+    return self._jobsData.filter((j, i) => self._filterJob(j, i));
 };
 
 /**
@@ -284,14 +282,14 @@ JobDAG.prototype.createGraph = function _createGraph(jobsData) {
     self.debug("connections:");
     //console.debug( jobsData );
 
-    _.each(jobsData, function(jobData) {
+    _.each(jobsData, jobData => {
         var id = jobData.job.id;
         self.debug("\t", id, jobData);
         self.createVertex(id, jobData);
     });
-    _.each(jobsData, function(jobData) {
+    _.each(jobsData, jobData => {
         var targetId = jobData.job.id;
-        _.each(jobData.inputs, function(input, inputId) {
+        _.each(jobData.inputs, (input, inputId) => {
             //console.debug( '\t\t target input:', inputId, input );
             var sourceId = self._outputIdToJobMap[inputId];
             //console.debug( '\t\t source job id:', sourceId );
@@ -331,7 +329,7 @@ JobDAG.prototype.createJobLessVertex = function _createJobLessVertex(
 /** Override to re-sort (ugh) jobs in each component by update time */
 JobDAG.prototype.weakComponentGraphArray = function() {
     var dag = this;
-    return this.weakComponents().map(function(component) {
+    return this.weakComponents().map(component => {
         //TODO: this seems to belong above (in sort) - why isn't it preserved?
         // note: using create_time (as opposed to update_time)
         //  since update_time for jobless/copied datasets is changes more often
@@ -358,7 +356,7 @@ JobDAG.prototype.weakComponentGraphArray = function() {
 
 JobDAG.prototype._jobsDataMap = function() {
     var jobsDataMap = {};
-    this._jobsData.forEach(function(jobData) {
+    this._jobsData.forEach(jobData => {
         jobsDataMap[jobData.job.id] = jobData;
     });
     return jobsDataMap;

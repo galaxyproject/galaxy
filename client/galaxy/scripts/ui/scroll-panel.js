@@ -96,7 +96,7 @@ $.ui.plugin.add("draggable", "scrollPanel", {
         // Keep moving even if mouse doesn't move
         if (moved) {
             instance.old_e = e;
-            instance.timeout = setTimeout(function() {
+            instance.timeout = setTimeout(() => {
                 instance.mouseMove(e);
             }, 50);
         }

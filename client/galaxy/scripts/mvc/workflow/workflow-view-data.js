@@ -60,10 +60,10 @@ var DataOutputView = Backbone.View.extend({
             this.calloutView = calloutView;
             this.$el.append(calloutView.el);
             this.$el.hover(
-                function() {
+                () => {
                     calloutView.hoverImage();
                 },
-                function() {
+                () => {
                     calloutView.resetImage();
                 }
             );
@@ -113,7 +113,7 @@ var OutputCalloutView = Backbone.View.extend({
                             Galaxy.root +
                                 "static/images/fugue/asterisk-small-outline.png"
                         )
-                        .click(function() {
+                        .click(() => {
                             var outputName = view.output.name;
                             if (node.isWorkflowOutput(outputName)) {
                                 node.removeWorkflowOutput(outputName);

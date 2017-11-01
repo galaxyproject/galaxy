@@ -15,7 +15,7 @@ var View = Backbone.View.extend({
         this.setElement($(this._template()));
         this.$nav = this.$(".tab-navigation");
         this.$content = this.$(".tab-content");
-        this.$el.on("click", function() {
+        this.$el.on("click", () => {
             $(".tooltip").hide();
         });
         this.render();
@@ -112,7 +112,7 @@ var View = Backbone.View.extend({
                     placement: "bottom",
                     container: self.$el
                 })
-                .on("click", function(e) {
+                .on("click", e => {
                     e.preventDefault();
                     self.show(options.id);
                 })

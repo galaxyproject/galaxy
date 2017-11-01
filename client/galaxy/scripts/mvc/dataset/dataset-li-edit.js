@@ -152,7 +152,7 @@ var DatasetListItemEdit = _super.extend(
             var jobID = this.model.attributes.creating_job;
             var self = this;
 
-            var parseToolBuild = function(data) {
+            var parseToolBuild = data => {
                 var helpString =
                     '<div id="thdiv-' + datasetID + '" class="toolhelp">';
                 if (data.name && data.help) {
@@ -166,14 +166,14 @@ var DatasetListItemEdit = _super.extend(
                 helpString += "</div>";
                 self.$el.find(".details").append($.parseHTML(helpString));
             };
-            var parseToolID = function(data) {
+            var parseToolID = data => {
                 $.ajax({
                     url: Galaxy.root + "api/tools/" + data.tool_id + "/build"
                 })
-                    .done(function(data) {
+                    .done(data => {
                         parseToolBuild(data);
                     })
-                    .fail(function() {
+                    .fail(() => {
                         parseToolBuild({});
                     });
             };
@@ -193,10 +193,10 @@ var DatasetListItemEdit = _super.extend(
                         $.ajax({
                             url: Galaxy.root + "api/jobs/" + jobID
                         })
-                            .done(function(data) {
+                            .done(data => {
                                 parseToolID(data);
                             })
-                            .fail(function() {
+                            .fail(() => {
                                 console.log(
                                     'Failed at recovering job information from the  Galaxy API for job id "' +
                                         jobID +
@@ -461,7 +461,7 @@ var DatasetListItemEdit = _super.extend(
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-DatasetListItemEdit.prototype.templates = (function() {
+DatasetListItemEdit.prototype.templates = (() => {
     var warnings = _.extend({}, _super.prototype.templates.warnings, {
         failed_metadata: BASE_MVC.wrapTemplate(
             [

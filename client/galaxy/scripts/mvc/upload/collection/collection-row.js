@@ -42,12 +42,12 @@ export default Backbone.View.extend({
         var default_extension = this.app.select_extension.value();
 
         // handle click event
-        this.$symbol.on("click", function() {
+        this.$symbol.on("click", () => {
             self._removeRow();
         });
 
         // handle text editing event
-        this.$text_content.on("change input", function(e) {
+        this.$text_content.on("change input", e => {
             self.model.set({
                 url_paste: $(e.target).val(),
                 file_size: $(e.target).val().length
@@ -55,22 +55,22 @@ export default Backbone.View.extend({
         });
 
         // model events
-        this.listenTo(this.model, "change:percentage", function() {
+        this.listenTo(this.model, "change:percentage", () => {
             self._refreshPercentage();
         });
-        this.listenTo(this.model, "change:status", function() {
+        this.listenTo(this.model, "change:status", () => {
             self._refreshStatus();
         });
-        this.listenTo(this.model, "change:info", function() {
+        this.listenTo(this.model, "change:info", () => {
             self._refreshInfo();
         });
-        this.listenTo(this.model, "change:file_size", function() {
+        this.listenTo(this.model, "change:file_size", () => {
             self._refreshFileSize();
         });
-        this.listenTo(this.model, "remove", function() {
+        this.listenTo(this.model, "remove", () => {
             self.remove();
         });
-        this.app.collection.on("reset", function() {
+        this.app.collection.on("reset", () => {
             self.remove();
         });
     },

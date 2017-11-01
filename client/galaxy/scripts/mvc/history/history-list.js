@@ -18,9 +18,9 @@ var View = Backbone.View.extend({
                 $.param(Galaxy.params),
             success: function(response) {
                 response["dict_format"] = true;
-                _.each(response["operations"], function(operation) {
+                _.each(response["operations"], operation => {
                     if (operation.label == "Copy") {
-                        operation.onclick = function(id) {
+                        operation.onclick = id => {
                             self._showCopyDialog(id);
                         };
                     }
@@ -40,13 +40,13 @@ var View = Backbone.View.extend({
         var history = new HistoryModel.History({ id: id });
         history
             .fetch()
-            .fail(function() {
+            .fail(() => {
                 alert(
                     "History could not be fetched. Please contact an administrator"
                 );
             })
-            .done(function() {
-                historyCopyDialog(history, {}).done(function() {
+            .done(() => {
+                historyCopyDialog(history, {}).done(() => {
                     if (
                         window.parent &&
                         window.parent.Galaxy &&

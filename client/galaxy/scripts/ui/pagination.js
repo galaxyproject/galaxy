@@ -103,7 +103,7 @@ Pagination.prototype._renderPrevNext = function __renderPrevNext() {
     if (this.currPage === 0) {
         $prev.addClass("disabled");
     } else {
-        $prev.click(function() {
+        $prev.click(() => {
             pagination.prevPage();
         });
     }
@@ -114,7 +114,7 @@ Pagination.prototype._renderPrevNext = function __renderPrevNext() {
     ) {
         $next.addClass("disabled");
     } else {
-        $next.click(function() {
+        $next.click(() => {
             pagination.nextPage();
         });
     }

@@ -106,7 +106,7 @@ var CollectionCreatorMixin = {
         var $footer = this.$(".footer")
             .empty()
             .html(this.templates.footer());
-        _.each(this.footerSettings, function(property, selector) {
+        _.each(this.footerSettings, (property, selector) => {
             self.$(selector).prop("checked", self[property]);
         });
         if (typeof this.oncancel === "function") {

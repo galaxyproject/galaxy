@@ -18,9 +18,9 @@ var View = Options.BaseIcons.extend({
         ) {
             var self = this;
             var values = $.isArray(new_value) ? new_value : [new_value];
-            _.each(values, function(v) {
+            _.each(values, v => {
                 var list = self.header_index[v];
-                _.each(list, function(element) {
+                _.each(list, element => {
                     self._setState(element, true);
                 });
             });
@@ -49,7 +49,7 @@ var View = Options.BaseIcons.extend({
         // attach event handler
         function attach($el, header_id) {
             var $button = $el.find(".button-" + header_id);
-            $button.on("click", function() {
+            $button.on("click", () => {
                 self._setState(header_id, !$button.data("is_expanded"));
             });
         }

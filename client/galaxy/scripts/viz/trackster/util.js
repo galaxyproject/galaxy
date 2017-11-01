@@ -13,9 +13,7 @@ function commatize(number) {
 /**
  * Helper to determine if object is jQuery deferred.
  */
-var is_deferred = function(d) {
-    return "promise" in d;
-};
+var is_deferred = d => "promise" in d;
 
 /**
  * Implementation of a server-state based deferred. Server is repeatedly polled, and when
@@ -40,8 +38,8 @@ var ServerStateDeferred = Backbone.Model.extend({
         var success_fn = self.get("success_fn");
         var interval = self.get("interval");
 
-        var _go = function() {
-            $.ajax(ajax_settings).success(function(result) {
+        var _go = () => {
+            $.ajax(ajax_settings).success(result => {
                 if (success_fn(result)) {
                     // Result is good, so resolve.
                     deferred.resolve(result);
@@ -62,7 +60,7 @@ var ServerStateDeferred = Backbone.Model.extend({
  * or set of colors.
  * @param colors a color or list of colors in the format '#RRGGBB'
  */
-var get_random_color = function(colors) {
+var get_random_color = colors => {
     // Default for colors is white.
     if (!colors) {
         colors = "#ffffff";
@@ -82,19 +80,14 @@ var get_random_color = function(colors) {
     // -- http://www.w3.org/WAI/ER/WD-AERT/#color-contrast
 
     // Compute perceived color brightness (based on RGB-YIQ transformation):
-    var brightness = function(r, g, b) {
-        return (r * 299 + g * 587 + b * 114) / 1000;
-    };
+    var brightness = (r, g, b) => (r * 299 + g * 587 + b * 114) / 1000;
 
     // Compute color difference:
-    var difference = function(r1, g1, b1, r2, g2, b2) {
-        return (
-            Math.max(r1, r2) -
-            Math.min(r1, r2) +
-            (Math.max(g1, g2) - Math.min(g1, g2)) +
-            (Math.max(b1, b2) - Math.min(b1, b2))
-        );
-    };
+    var difference = (r1, g1, b1, r2, g2, b2) =>
+        Math.max(r1, r2) -
+        Math.min(r1, r2) +
+        (Math.max(g1, g2) - Math.min(g1, g2)) +
+        (Math.max(b1, b2) - Math.min(b1, b2));
 
     // Create new random color.
     var new_color;

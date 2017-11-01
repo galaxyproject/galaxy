@@ -101,7 +101,7 @@ var CurrentHistoryView = _super.extend(
 
             var panel = this;
             // reset scroll position when there's a new history
-            this.on("new-model", function() {
+            this.on("new-model", () => {
                 panel.preferences.set("scrollPosition", 0);
             });
         },
@@ -262,7 +262,7 @@ var CurrentHistoryView = _super.extend(
             panel.listenTo(
                 panel.tagsEditor,
                 "hiddenUntilActivated:shown hiddenUntilActivated:hidden",
-                function(tagsEditor) {
+                tagsEditor => {
                     panel.preferences.set("tagsEditorShown", tagsEditor.hidden);
                 }
             );
@@ -280,7 +280,7 @@ var CurrentHistoryView = _super.extend(
             panel.listenTo(
                 panel.annotationEditor,
                 "hiddenUntilActivated:shown hiddenUntilActivated:hidden",
-                function(annotationEditor) {
+                annotationEditor => {
                     panel.preferences.set(
                         "annotationEditorShown",
                         annotationEditor.hidden
@@ -293,7 +293,7 @@ var CurrentHistoryView = _super.extend(
         _swapNewRender: function($newRender) {
             _super.prototype._swapNewRender.call(this, $newRender);
             var panel = this;
-            _.delay(function() {
+            _.delay(() => {
                 var pos = panel.preferences.get("scrollPosition");
                 if (pos) {
                     panel.scrollTo(pos, 0);
@@ -423,7 +423,7 @@ var CurrentHistoryView = _super.extend(
                         // no great way to do this here? (leave it in the dataset event handlers above?)
                         // 'visualization' : 'visualization',
                     };
-                    _.find(useToURLRegexMap, function(regex, use) {
+                    _.find(useToURLRegexMap, (regex, use) => {
                         // grab the more specific match result (1), save, and use it as the find flag
                         hdaId = _.result(pathToMatch.match(regex), 1);
                         return hdaId;
@@ -501,7 +501,7 @@ var CurrentHistoryView = _super.extend(
                         { visible: false, deleted: "", purged: "" },
                         { visible: true }
                     )
-                    .done(function() {
+                    .done(() => {
                         // TODO: would be better to render these as they're unhidden instead of all at once
                         if (!self.model.contents.includeHidden) {
                             self.renderItems();
@@ -537,7 +537,7 @@ var CurrentHistoryView = _super.extend(
 );
 
 //------------------------------------------------------------------------------ TEMPLATES
-CurrentHistoryView.prototype.templates = (function() {
+CurrentHistoryView.prototype.templates = (() => {
     var quotaMsgTemplate = BASE_MVC.wrapTemplate(
         [
             '<div class="quota-message errormessage">',

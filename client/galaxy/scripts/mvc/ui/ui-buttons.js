@@ -41,7 +41,7 @@ var ButtonDefault = Backbone.View.extend({
             .attr("id", options.id)
             .attr("disabled", options.disabled)
             .off("click")
-            .on("click", function() {
+            .on("click", () => {
                 $(".tooltip").hide();
                 options.onclick && !self.disabled && options.onclick();
             })
@@ -134,7 +134,7 @@ var ButtonLink = ButtonDefault.extend({
             })
             .tooltip({ placement: "bottom" })
             .off("click")
-            .on("click", function() {
+            .on("click", () => {
                 options.onclick && !options.disabled && options.onclick();
             });
         this.$icon.removeClass().addClass(options.icon);
@@ -172,7 +172,7 @@ var ButtonCheck = Backbone.View.extend({
         this.$el
             .addClass("ui-button-check")
             .off("click")
-            .on("click", function() {
+            .on("click", () => {
                 self.model.set(
                     "value",
                     (self.model.get("value") === 0 && 2) || 0
@@ -237,7 +237,7 @@ var ButtonIcon = ButtonDefault.extend({
             .attr("disabled", options.disabled)
             .attr("id", options.id)
             .off("click")
-            .on("click", function() {
+            .on("click", () => {
                 $(".tooltip").hide();
                 !options.disabled && options.onclick && options.onclick();
             });
@@ -311,7 +311,7 @@ var ButtonMenu = ButtonDefault.extend({
             .attr("data-toggle", "dropdown")
             .tooltip({ title: options.tooltip, placement: "bottom" })
             .off("click")
-            .on("click", function(e) {
+            .on("click", e => {
                 $(".tooltip").hide();
                 e.preventDefault();
                 options.onclick && options.onclick();
@@ -333,7 +333,7 @@ var ButtonMenu = ButtonDefault.extend({
                 .attr("role", "menu");
             this.$el.append(this.$menu);
         }
-        this.collection.each(function(submodel) {
+        this.collection.each(submodel => {
             var suboptions = submodel.attributes;
             if (suboptions.visible) {
                 var $link = $("<a/>")
@@ -352,7 +352,7 @@ var ButtonMenu = ButtonDefault.extend({
                             )
                     )
                     .append(suboptions.title)
-                    .on("click", function(e) {
+                    .on("click", e => {
                         if (suboptions.onclick) {
                             e.preventDefault();
                             suboptions.onclick();

@@ -222,7 +222,7 @@ var FolderToolbarView = Backbone.View.extend({
             this.histories = new mod_library_model.GalaxyHistories();
             this.histories
                 .fetch()
-                .done(function() {
+                .done(() => {
                     var template = that.templateBulkImportInModal();
                     that.modal = Galaxy.modal;
                     that.modal.show({
@@ -241,7 +241,7 @@ var FolderToolbarView = Backbone.View.extend({
                         }
                     });
                 })
-                .fail(function(model, response) {
+                .fail((model, response) => {
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(response.responseJSON.err_msg);
                     } else {
@@ -262,17 +262,17 @@ var FolderToolbarView = Backbone.View.extend({
             $.post(Galaxy.root + "api/histories", {
                 name: new_history_name
             })
-                .done(function(new_history) {
+                .done(new_history => {
                     that.options.last_used_history_id = new_history.id;
                     that.processImportToHistory(
                         new_history.id,
                         new_history.name
                     );
                 })
-                .fail(function(xhr, status, error) {
+                .fail((xhr, status, error) => {
                     mod_toastr.error("An error occurred.");
                 })
-                .always(function() {
+                .always(() => {
                     that.modal.enableButton("Import");
                 });
         } else {
@@ -413,7 +413,7 @@ var FolderToolbarView = Backbone.View.extend({
         var self = this;
         this.histories
             .fetch()
-            .done(function() {
+            .done(() => {
                 self.modal = Galaxy.modal;
                 var template_modal = self.templateAddFilesFromHistory();
                 self.modal.show({
@@ -440,11 +440,11 @@ var FolderToolbarView = Backbone.View.extend({
                 self.fetchAndDisplayHistoryContents(
                     self.histories.models[0].id
                 );
-                $("#dataset_add_bulk").change(function(event) {
+                $("#dataset_add_bulk").change(event => {
                     self.fetchAndDisplayHistoryContents(event.target.value);
                 });
             })
-            .fail(function(model, response) {
+            .fail((model, response) => {
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(response.responseJSON.err_msg);
                 } else {
@@ -501,9 +501,9 @@ var FolderToolbarView = Backbone.View.extend({
                         description_url: datatypes[key].description_url
                     });
                 }
-                that.list_extensions.sort(function(a, b) {
-                    return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
-                });
+                that.list_extensions.sort(
+                    (a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0)
+                );
                 that.list_extensions.unshift(that.auto);
             },
             cache: true
@@ -518,9 +518,9 @@ var FolderToolbarView = Backbone.View.extend({
                         text: genomes[key][0]
                     });
                 }
-                that.list_genomes.sort(function(a, b) {
-                    return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
-                });
+                that.list_genomes.sort(
+                    (a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0)
+                );
             },
             cache: true
         });
@@ -574,10 +574,10 @@ var FolderToolbarView = Backbone.View.extend({
             }
         });
 
-        $(".libimport-select-all").bind("click", function() {
+        $(".libimport-select-all").bind("click", () => {
             $("#jstree_browser").jstree("check_all");
         });
-        $(".libimport-select-none").bind("click", function() {
+        $(".libimport-select-none").bind("click", () => {
             $("#jstree_browser").jstree("uncheck_all");
         });
 
@@ -585,7 +585,7 @@ var FolderToolbarView = Backbone.View.extend({
         options.disabled_jstree_element = "folders";
         this.renderJstree(options);
 
-        $("input[type=radio]").change(function(event) {
+        $("input[type=radio]").change(event => {
             if (event.target.value === "jstree-disable-folders") {
                 options.disabled_jstree_element = "folders";
                 that.renderJstree(options);
@@ -760,9 +760,10 @@ var FolderToolbarView = Backbone.View.extend({
             .jstree()
             .get_selected(true);
         // remove the disabled elements that could have been trigerred with the 'select all'
-        var selected_nodes = _.filter(all_nodes, function(node) {
-            return node.state.disabled == false;
-        });
+        var selected_nodes = _.filter(
+            all_nodes,
+            node => node.state.disabled == false
+        );
         var preserve_dirs = this.modal.$el
             .find(".preserve-checkbox")
             .is(":checked");
@@ -840,7 +841,7 @@ var FolderToolbarView = Backbone.View.extend({
                 );
                 self.modal.$el
                     .find(".history-import-select-all")
-                    .bind("click", function() {
+                    .bind("click", () => {
                         $("#selected_history_content [type=checkbox]").prop(
                             "checked",
                             true
@@ -848,7 +849,7 @@ var FolderToolbarView = Backbone.View.extend({
                     });
                 self.modal.$el
                     .find(".history-import-unselect-all")
-                    .bind("click", function() {
+                    .bind("click", () => {
                         $("#selected_history_content [type=checkbox]").prop(
                             "checked",
                             false
@@ -966,14 +967,14 @@ var FolderToolbarView = Backbone.View.extend({
         );
 
         promise
-            .done(function() {
+            .done(() => {
                 self.updateProgress();
                 self.chainCallImportingIntoHistory(
                     history_item_set,
                     history_name
                 );
             })
-            .fail(function() {
+            .fail(() => {
                 self.options.chain_call_control.failed_number += 1;
                 self.updateProgress();
                 self.chainCallImportingIntoHistory(
@@ -1027,11 +1028,11 @@ var FolderToolbarView = Backbone.View.extend({
             )
         );
         promise
-            .done(function(response) {
+            .done(response => {
                 that.updateProgress();
                 that.chainCallImportingUserdirFiles(options);
             })
-            .fail(function() {
+            .fail(() => {
                 that.options.chain_call_control.failed_number += 1;
                 that.updateProgress();
                 that.chainCallImportingUserdirFiles(options);
@@ -1092,11 +1093,11 @@ var FolderToolbarView = Backbone.View.extend({
             )
         );
         promise
-            .done(function(response) {
+            .done(response => {
                 that.updateProgress();
                 that.chainCallImportingFolders(options);
             })
-            .fail(function() {
+            .fail(() => {
                 that.options.chain_call_control.failed_number += 1;
                 that.updateProgress();
                 that.chainCallImportingFolders(options);
@@ -1142,12 +1143,12 @@ var FolderToolbarView = Backbone.View.extend({
         );
 
         promise
-            .done(function(model) {
+            .done(model => {
                 Galaxy.libraries.folderListView.collection.add(model);
                 self.updateProgress();
                 self.chainCallAddingHdas(hdas_set);
             })
-            .fail(function() {
+            .fail(() => {
                 self.options.chain_call_control.failed_number += 1;
                 self.updateProgress();
                 self.chainCallAddingHdas(hdas_set);
@@ -1186,7 +1187,7 @@ var FolderToolbarView = Backbone.View.extend({
         }
         item_to_delete
             .destroy()
-            .done(function(item) {
+            .done(item => {
                 Galaxy.libraries.folderListView.collection.remove(
                     item_to_delete.id
                 );
@@ -1222,7 +1223,7 @@ var FolderToolbarView = Backbone.View.extend({
                 }
                 self.chainCallDeletingItems(items_to_delete);
             })
-            .fail(function() {
+            .fail(() => {
                 self.options.chain_call_control.failed_number += 1;
                 self.updateProgress();
                 self.chainCallDeletingItems(items_to_delete);

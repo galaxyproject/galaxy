@@ -24,7 +24,7 @@ export default Backbone.View.extend({
     /** Update available options */
     update: function(new_model) {
         var self = this;
-        this.data.matchModel(new_model, function(node, input_id) {
+        this.data.matchModel(new_model, (node, input_id) => {
             var input = self.input_list[input_id];
             if (input && input.options) {
                 if (!_.isEqual(input.options, node.options)) {
@@ -135,7 +135,7 @@ export default Backbone.View.extend({
         this.model.get("initial_errors") && this.errors(this.model.attributes);
         // add listener which triggers on checksum change, and reset the form input wrappers
         var current_check = this.data.checksum();
-        this.on("change", function(input_id) {
+        this.on("change", input_id => {
             var input = self.input_list[input_id];
             if (
                 !input ||
@@ -149,8 +149,8 @@ export default Backbone.View.extend({
                 }
             }
         });
-        this.on("reset", function() {
-            _.each(self.element_list, function(input_element) {
+        this.on("reset", () => {
+            _.each(self.element_list, input_element => {
                 input_element.reset();
             });
         });

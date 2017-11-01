@@ -57,7 +57,7 @@ var View = Backbone.View.extend({
             .attr("id", options.id);
         this.$header[options.title ? "show" : "hide"]();
         this.$title_text.html(options.title);
-        _.each([this.$content, this.$body], function($el) {
+        _.each([this.$content, this.$body], $el => {
             $el[options.nopadding ? "addClass" : "removeClass"]("no-padding");
         });
 
@@ -79,7 +79,7 @@ var View = Backbone.View.extend({
             )
             .off();
         if (options.collapsible) {
-            this.$title_text.on("click", function() {
+            this.$title_text.on("click", () => {
                 self[self.collapsed ? "expand" : "collapse"]();
             });
             options.collapsed ? this.collapse() : this.expand();
@@ -97,7 +97,7 @@ var View = Backbone.View.extend({
         // render buttons
         if (options.buttons) {
             this.$buttons.empty().show();
-            $.each(this.model.get("buttons"), function(name, item) {
+            $.each(this.model.get("buttons"), (name, item) => {
                 item.$el.prop("id", name);
                 self.$buttons.append(item.$el);
             });
@@ -111,7 +111,7 @@ var View = Backbone.View.extend({
             this.$operations.append(this.collapsible_button.$el);
         }
         if (options.operations) {
-            $.each(options.operations, function(name, item) {
+            $.each(options.operations, (name, item) => {
                 item.$el.prop("id", name);
                 self.$operations.append(item.$el);
             });

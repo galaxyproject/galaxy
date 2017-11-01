@@ -104,7 +104,7 @@ var HistoryView = _super.extend(
                 "loading-done": function() {
                     var self = this;
                     // after the initial load, decorate with more time consuming fields (like HDCA element_counts)
-                    self.detailedFetchTimeoutId = _.delay(function() {
+                    self.detailedFetchTimeoutId = _.delay(() => {
                         self.detailedFetchTimeoutId = null;
                         self.model.contents.fetchCollectionCounts();
                     }, self.FETCH_COLLECTION_COUNTS_DELAY);
@@ -131,7 +131,7 @@ var HistoryView = _super.extend(
             self.trigger("loading");
             return self.model
                 .fetchWithContents(options, contentsOptions)
-                .always(function() {
+                .always(() => {
                     self.render();
                     self.trigger("loading-done");
                 });
@@ -317,7 +317,7 @@ var HistoryView = _super.extend(
             var self = this;
             var views = [];
             $list.append(
-                models.map(function(m) {
+                models.map(m => {
                     var view = self._createItemView(m);
                     views.push(view);
                     return self._renderItemView$el(view);
@@ -471,14 +471,14 @@ var HistoryView = _super.extend(
             self.searchFor = searchFor;
             var xhr = self.model.contents
                 .progressivelyFetchDetails({ silent: true })
-                .progress(function(response, limit, offset) {
+                .progress((response, limit, offset) => {
                     self.renderItems();
                     self.trigger("search:loading-progress", limit, offset);
                 })
-                .always(function() {
+                .always(() => {
                     self.$el.find(inputSelector).searchInput("toggle-loading");
                 })
-                .done(function() {
+                .done(() => {
                     self.searchItems(searchFor, "force");
                 });
         },
@@ -493,11 +493,9 @@ var HistoryView = _super.extend(
             self.$("> .controls .search-query").val("");
             // NOTE: silent + render prevents collection update event with merge only
             // - which causes an empty page due to event handler above
-            self.model.contents
-                .fetchCurrentPage({ silent: true })
-                .done(function() {
-                    self.renderItems();
-                });
+            self.model.contents.fetchCurrentPage({ silent: true }).done(() => {
+                self.renderItems();
+            });
             return self;
         },
 
@@ -583,7 +581,7 @@ var HistoryView = _super.extend(
 );
 
 //------------------------------------------------------------------------------ TEMPLATES
-HistoryView.prototype.templates = (function() {
+HistoryView.prototype.templates = (() => {
     var mainTemplate = BASE_MVC.wrapTemplate([
         // temp container
         "<div>",

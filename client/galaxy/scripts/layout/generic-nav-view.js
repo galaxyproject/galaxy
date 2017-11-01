@@ -66,11 +66,11 @@ var GenericNavView = Backbone.View.extend({
         $el_chat_modal_header.removeAttr("min-height padding border");
         $el_chat_modal_header.append(header_template);
         // click event of the close button for chat
-        $(".close-modal").click(function(e) {
+        $(".close-modal").click(e => {
             $(".chat-modal").css("display", "none");
         });
         // click event of expand and compress icon
-        $(".expand-compress-modal").click(function(e) {
+        $(".expand-compress-modal").click(e => {
             if ($(".expand-compress-modal").hasClass("fa-expand")) {
                 $(".chat-modal .modal-dialog").width("1000px");
                 $(".chat-modal .modal-body").height("575px");

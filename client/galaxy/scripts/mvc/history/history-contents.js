@@ -138,21 +138,18 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
 
     /** Get every model in this collection not in a 'ready' state (running). */
     running: function() {
-        return this.filter(function(c) {
-            return !c.inReadyState();
-        });
+        return this.filter(c => !c.inReadyState());
     },
 
     /** return contents that are not ready and not deleted/hidden */
     runningAndActive: function() {
-        return this.filter(function(c) {
-            return (
+        return this.filter(
+            c =>
                 !c.inReadyState() &&
                 c.get("visible") &&
                 // TODO: deletedOrPurged?
                 !c.get("deleted")
-            );
-        });
+        );
     },
 
     /** Get the model with the given hid
@@ -166,35 +163,28 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
 
     /** return true if all contents have details */
     haveDetails: function() {
-        return this.all(function(c) {
-            return c.hasDetails();
-        });
+        return this.all(c => c.hasDetails());
     },
 
     // ........................................................................ hidden / deleted
     /** return a new contents collection of only hidden items */
     hidden: function() {
-        return this.filter(function(c) {
-            return c.hidden();
-        });
+        return this.filter(c => c.hidden());
     },
 
     /** return a new contents collection of only hidden items */
     deleted: function() {
-        return this.filter(function(c) {
-            return c.get("deleted");
-        });
+        return this.filter(c => c.get("deleted"));
     },
 
     /** return a new contents collection of only hidden items */
     visibleAndUndeleted: function() {
-        return this.filter(function(c) {
-            return (
+        return this.filter(
+            c =>
                 c.get("visible") &&
                 // TODO: deletedOrPurged?
                 !c.get("deleted")
-            );
-        });
+        );
     },
 
     /** create a setter in order to publish the change */
@@ -300,7 +290,7 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         options.remove = false;
 
         self.trigger("fetching-deleted", self);
-        return self.fetch(options).always(function() {
+        return self.fetch(options).always(() => {
             self.trigger("fetching-deleted-done", self);
         });
     },
@@ -315,7 +305,7 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         options.remove = false;
 
         self.trigger("fetching-hidden", self);
-        return self.fetch(options).always(function() {
+        return self.fetch(options).always(() => {
             self.trigger("fetching-hidden-done", self);
         });
     },
@@ -349,9 +339,9 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
 
         return self
             .fetch({ filters: filterParams, remove: false })
-            .then(function(fetched) {
+            .then(fetched => {
                 // convert filtered json array to model array
-                fetched = fetched.reduce(function(modelArray, currJson, i) {
+                fetched = fetched.reduce((modelArray, currJson, i) => {
                     var model = self.get(currJson[idAttribute]);
                     return model ? modelArray.concat(model) : modelArray;
                 }, []);
@@ -366,11 +356,9 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
             collection
                 .slice()
                 .reverse()
-                .map(function(content, i) {
+                .map((content, i) => {
                     var fn = _.isString(ajaxFn) ? content[ajaxFn] : ajaxFn;
-                    return function() {
-                        return fn.apply(content, args);
-                    };
+                    return () => fn.apply(content, args);
                 })
         ).deferred;
     },
@@ -397,11 +385,11 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                 remove: false
             });
 
-            _.defer(function() {
+            _.defer(() => {
                 self.fetch
                     .call(self, _options)
                     .fail(deferred.reject)
-                    .done(function(response) {
+                    .done(response => {
                         deferred.notify(response, limit, offset);
                         if (response.length !== limit) {
                             self.allFetched = true;
@@ -462,10 +450,10 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                     type: type
                 })
             })
-            .done(function(response) {
+            .done(response => {
                 collection.add([response], { parse: true });
             })
-            .fail(function(error, status, message) {
+            .fail((error, status, message) => {
                 collection.trigger(
                     "error",
                     collection,
@@ -509,20 +497,19 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     haveSearchDetails: function() {
         return (
             this.allFetched &&
-            this.all(function(content) {
-                // null (which is a valid returned annotation value)
+            this.all((
+                content // null (which is a valid returned annotation value)
+            ) =>
                 // will return false when using content.has( 'annotation' )
                 //TODO: a bit hacky - formalize
-                return _.has(content.attributes, "annotation");
-            })
+                _.has(content.attributes, "annotation")
+            )
         );
     },
 
     /** return a new collection of contents whose attributes contain the substring matchesWhat */
     matches: function(matchesWhat) {
-        return this.filter(function(content) {
-            return content.matches(matchesWhat);
-        });
+        return this.filter(content => content.matches(matchesWhat));
     },
 
     // ........................................................................ misc

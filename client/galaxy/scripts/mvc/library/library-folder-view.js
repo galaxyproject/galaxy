@@ -76,12 +76,12 @@ var FolderView = Backbone.View.extend({
                 self.id +
                 "/permissions?scope=current"
         )
-            .done(function(fetched_permissions) {
+            .done(fetched_permissions => {
                 self.prepareSelectBoxes({
                     fetched_permissions: fetched_permissions
                 });
             })
-            .fail(function() {
+            .fail(() => {
                 mod_toastr.error(
                     "An error occurred while attempting to fetch folder permissions."
                 );
@@ -234,13 +234,13 @@ var FolderView = Backbone.View.extend({
                 "modify_ids[]": modify_ids
             }
         )
-            .done(function(fetched_permissions) {
+            .done(fetched_permissions => {
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
                 mod_toastr.success("Permissions saved.");
             })
-            .fail(function() {
+            .fail(() => {
                 mod_toastr.error(
                     "An error occurred while attempting to set folder permissions."
                 );

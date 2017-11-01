@@ -39,7 +39,7 @@ var Job = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             /** override to treat param values as json */
             parseParams: function(params) {
                 var newParams = {};
-                _.each(params, function(value, key) {
+                _.each(params, (value, key) => {
                     newParams[key] = JSON.parse(value);
                 });
                 return newParams;
@@ -142,25 +142,19 @@ var JobCollection = Backbone.Collection.extend(BASE_MVC.LoggableMixin).extend(
      *  @returns array of encoded ids
      */
         ids: function() {
-            return this.map(function(item) {
-                return item.get("id");
-            });
+            return this.map(item => item.get("id"));
         },
 
         /** Get jobs that are not ready
      *  @returns array of content models
      */
         notReady: function() {
-            return this.filter(function(job) {
-                return !job.inReadyState();
-            });
+            return this.filter(job => !job.inReadyState());
         },
 
         /** return true if any jobs don't have details */
         haveDetails: function() {
-            return this.all(function(job) {
-                return job.hasDetails();
-            });
+            return this.all(job => job.hasDetails());
         },
 
         // ........................................................................ ajax
@@ -169,14 +163,10 @@ var JobCollection = Backbone.Collection.extend(BASE_MVC.LoggableMixin).extend(
             var collection = this;
 
             var queue = new AJAX_QUEUE.AjaxQueue(
-                this.map(function(job) {
-                    return function() {
-                        return job.fetch({ silent: true });
-                    };
-                })
+                this.map(job => () => job.fetch({ silent: true }))
             );
 
-            queue.done(function() {
+            queue.done(() => {
                 collection.trigger("details-loaded");
             });
             return queue;
@@ -189,9 +179,7 @@ var JobCollection = Backbone.Collection.extend(BASE_MVC.LoggableMixin).extend(
         // ........................................................................ sorting/filtering
         /** return a new collection of jobs whose attributes contain the substring matchesWhat */
         matches: function(matchesWhat) {
-            return this.filter(function(job) {
-                return job.matches(matchesWhat);
-            });
+            return this.filter(job => job.matches(matchesWhat));
         },
 
         // ........................................................................ misc
@@ -208,11 +196,9 @@ var JobCollection = Backbone.Collection.extend(BASE_MVC.LoggableMixin).extend(
             console.debug(this);
             var Collection = this;
             var collection = new Collection([]);
-            collection
-                .fetch({ data: { history_id: historyId } })
-                .done(function() {
-                    window.queue = collection.queueDetailFetching();
-                });
+            collection.fetch({ data: { history_id: historyId } }).done(() => {
+                window.queue = collection.queueDetailFetching();
+            });
             return collection;
         }
     }

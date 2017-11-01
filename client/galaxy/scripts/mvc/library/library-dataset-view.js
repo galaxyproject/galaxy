@@ -199,7 +199,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     importIntoHistory: function() {
-        this.refreshUserHistoriesList(function(self) {
+        this.refreshUserHistoriesList(self => {
             var template = self.templateBulkImportInModal();
             self.modal = Galaxy.modal;
             self.modal.show({
@@ -255,13 +255,13 @@ var LibraryDatasetView = Backbone.View.extend({
             $.post(Galaxy.root + "api/histories", {
                 name: new_history_name
             })
-                .done(function(new_history) {
+                .done(new_history => {
                     that.processImportToHistory(new_history.id);
                 })
-                .fail(function(xhr, status, error) {
+                .fail((xhr, status, error) => {
                     mod_toastr.error("An error occurred.");
                 })
-                .always(function() {
+                .always(() => {
                     that.modal.enableButton("Import");
                 });
         } else {
@@ -338,13 +338,13 @@ var LibraryDatasetView = Backbone.View.extend({
                 self.id +
                 "/permissions?scope=current"
         )
-            .done(function(fetched_permissions) {
+            .done(fetched_permissions => {
                 self.prepareSelectBoxes({
                     fetched_permissions: fetched_permissions,
                     is_admin: Galaxy.config.is_admin_user
                 });
             })
-            .fail(function() {
+            .fail(() => {
                 mod_toastr.error(
                     "An error occurred while attempting to fetch dataset permissions."
                 );
@@ -529,14 +529,14 @@ var LibraryDatasetView = Backbone.View.extend({
                 self.id +
                 "/permissions?action=make_private"
         )
-            .done(function(fetched_permissions) {
+            .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: false });
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
                 mod_toastr.success("The dataset is now private to you.");
             })
-            .fail(function() {
+            .fail(() => {
                 mod_toastr.error(
                     "An error occurred while attempting to make dataset private."
                 );
@@ -551,7 +551,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 self.id +
                 "/permissions?action=remove_restrictions"
         )
-            .done(function(fetched_permissions) {
+            .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: true });
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
@@ -560,7 +560,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     "Access to this dataset is now unrestricted."
                 );
             })
-            .fail(function() {
+            .fail(() => {
                 mod_toastr.error(
                     "An error occurred while attempting to make dataset unrestricted."
                 );
@@ -603,13 +603,13 @@ var LibraryDatasetView = Backbone.View.extend({
                 "modify_ids[]": modify_ids
             }
         )
-            .done(function(fetched_permissions) {
+            .done(fetched_permissions => {
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
                 mod_toastr.success("Permissions saved.");
             })
-            .fail(function() {
+            .fail(() => {
                 mod_toastr.error(
                     "An error occurred while attempting to set dataset permissions."
                 );
@@ -634,9 +634,9 @@ var LibraryDatasetView = Backbone.View.extend({
                             description_url: datatypes[key].description_url
                         });
                     }
-                    that.list_extensions.sort(function(a, b) {
-                        return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
-                    });
+                    that.list_extensions.sort(
+                        (a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0)
+                    );
                     that.list_extensions.unshift(that.auto);
                 }
             });
@@ -651,9 +651,9 @@ var LibraryDatasetView = Backbone.View.extend({
                             text: genomes[key][0]
                         });
                     }
-                    that.list_genomes.sort(function(a, b) {
-                        return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
-                    });
+                    that.list_genomes.sort(
+                        (a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0)
+                    );
                 }
             });
         }

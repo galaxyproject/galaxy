@@ -86,12 +86,12 @@ var LibraryView = Backbone.View.extend({
                 self.id +
                 "/permissions?scope=current"
         )
-            .done(function(fetched_permissions) {
+            .done(fetched_permissions => {
                 self.prepareSelectBoxes({
                     fetched_permissions: fetched_permissions
                 });
             })
-            .fail(function() {
+            .fail(() => {
                 mod_toastr.error(
                     "An error occurred while attempting to fetch library permissions."
                 );
@@ -231,14 +231,14 @@ var LibraryView = Backbone.View.extend({
                 self.id +
                 "/permissions?action=make_private"
         )
-            .done(function(fetched_permissions) {
+            .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: false });
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
                 mod_toastr.success("The dataset is now private to you.");
             })
-            .fail(function() {
+            .fail(() => {
                 mod_toastr.error(
                     "An error occurred while attempting to make dataset private."
                 );
@@ -253,7 +253,7 @@ var LibraryView = Backbone.View.extend({
                 self.id +
                 "/permissions?action=remove_restrictions"
         )
-            .done(function(fetched_permissions) {
+            .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: true });
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
@@ -262,7 +262,7 @@ var LibraryView = Backbone.View.extend({
                     "Access to this dataset is now unrestricted."
                 );
             })
-            .fail(function() {
+            .fail(() => {
                 mod_toastr.error(
                     "An error occurred while attempting to make dataset unrestricted."
                 );
@@ -304,14 +304,14 @@ var LibraryView = Backbone.View.extend({
                 "modify_ids[]": modify_ids
             }
         )
-            .done(function(fetched_permissions) {
+            .done(fetched_permissions => {
                 //fetch dataset again
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
                 mod_toastr.success("Permissions saved.");
             })
-            .fail(function() {
+            .fail(() => {
                 mod_toastr.error(
                     "An error occurred while attempting to set library permissions."
                 );

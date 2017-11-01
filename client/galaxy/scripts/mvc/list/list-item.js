@@ -63,17 +63,17 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
             view.trigger("rendered", view);
         } else {
             $(view).queue("fx", [
-                function(next) {
+                next => {
                     view.$el.fadeOut(speed, next);
                 },
-                function(next) {
+                next => {
                     view._swapNewRender($newRender);
                     next();
                 },
-                function(next) {
+                next => {
                     view.$el.fadeIn(speed, next);
                 },
-                function(next) {
+                next => {
                     view.trigger("rendered", view);
                     next();
                 }
@@ -136,7 +136,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
      */
     expand: function() {
         var view = this;
-        return view._fetchModelDetails().always(function() {
+        return view._fetchModelDetails().always(() => {
             view._expand();
         });
     },
@@ -158,7 +158,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
         view.$details().replaceWith($newDetails);
         // needs to be set after the above or the slide will not show
         view.expanded = true;
-        view.$details().slideDown(view.fxSpeed, function() {
+        view.$details().slideDown(view.fxSpeed, () => {
             view.trigger("expanded", view);
         });
     },
@@ -170,7 +170,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
         this.debug(this + "(ExpandableView).collapse");
         var view = this;
         view.expanded = false;
-        this.$details().slideUp(view.fxSpeed, function() {
+        this.$details().slideUp(view.fxSpeed, () => {
             view.trigger("collapsed", view);
         });
     }
@@ -257,7 +257,7 @@ var ListItemView = ExpandableView.extend(
             var $warnings = $('<div class="warnings"></div>');
             var json = view.model.toJSON();
             //TODO:! unordered (map)
-            _.each(view.templates.warnings, function(templateFn) {
+            _.each(view.templates.warnings, templateFn => {
                 $warnings.append($(templateFn(json, view)));
             });
             return $warnings;
@@ -331,7 +331,7 @@ var ListItemView = ExpandableView.extend(
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-ListItemView.prototype.templates = (function() {
+ListItemView.prototype.templates = (() => {
     var elTemplato = BASE_MVC.wrapTemplate([
         '<div class="list-element">',
         // errors, messages, etc.
@@ -472,7 +472,7 @@ var FoldoutListItemView = ListItemView.extend({
     /** In this override, branch on foldoutStyle to show expanded */
     expand: function() {
         var view = this;
-        return view._fetchModelDetails().always(function() {
+        return view._fetchModelDetails().always(() => {
             if (view.foldoutStyle === "foldout") {
                 view._expand();
             } else if (view.foldoutStyle === "drilldown") {
@@ -488,7 +488,7 @@ var FoldoutListItemView = ListItemView.extend({
     _expandByDrilldown: function() {
         var view = this;
         // attachment and rendering done by listener
-        view.listenTo(view.foldout, "close", function() {
+        view.listenTo(view.foldout, "close", () => {
             view.trigger("collapsed:drilldown", view, view.foldout);
         });
         view.trigger("expanded:drilldown", view, view.foldout);
@@ -497,7 +497,7 @@ var FoldoutListItemView = ListItemView.extend({
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-FoldoutListItemView.prototype.templates = (function() {
+FoldoutListItemView.prototype.templates = (() => {
     var detailsTemplate = BASE_MVC.wrapTemplate(
         [
             '<div class="details">',

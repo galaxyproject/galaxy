@@ -269,10 +269,10 @@ MetricsLogger.prototype._postCache = function _postCache(options) {
     self._sending = true;
     return jQuery
         .post(self.options.postUrl, postData)
-        .always(function() {
+        .always(() => {
             self._sending = false;
         })
-        .fail(function(xhr, status, message) {
+        .fail((xhr, status, message) => {
             // if we failed the previous time, set the next post target to the max num of entries
             self._postSize = self.options.maxCacheSize;
             //TODO:??
@@ -286,7 +286,7 @@ MetricsLogger.prototype._postCache = function _postCache(options) {
             //TODO: still doesn't solve the problem that when cache == max, post will be tried on every emit
             //TODO: see _delayPost
         })
-        .done(function(response) {
+        .done(response => {
             if (typeof self.options.onServerResponse === "function") {
                 self.options.onServerResponse(response);
             }
@@ -303,7 +303,7 @@ MetricsLogger.prototype._postCache = function _postCache(options) {
 MetricsLogger.prototype._delayPost = function _delayPost() {
     //TODO: this won't work between pages
     var self = this;
-    self._waiting = setTimeout(function() {
+    self._waiting = setTimeout(() => {
         self._waiting = null;
     }, self.options.delayPostInMs);
 };

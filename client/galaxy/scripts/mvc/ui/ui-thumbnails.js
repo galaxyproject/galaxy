@@ -35,7 +35,7 @@ var View = Backbone.View.extend({
         var index = [];
         var title_length = 20;
         var $el = $("<div/>").addClass("ui-thumbnails-grid");
-        this.collection.each(function(model) {
+        this.collection.each(model => {
             if (model.get("keywords").indexOf("default") !== -1) {
                 var title = model.get("title");
                 $el.append(
@@ -70,7 +70,7 @@ var View = Backbone.View.extend({
         if (this.collection.length > 0) {
             this.first = this.first || this.collection.first().id;
             var $el = $("<div/>").addClass("ui-thumbnails-grid");
-            this.collection.each(function(model) {
+            this.collection.each(model => {
                 $el.append(self._templateRegularItem(model.attributes));
             });
             this.tabs.add({

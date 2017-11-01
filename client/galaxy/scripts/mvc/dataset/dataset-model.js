@@ -78,7 +78,7 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                         id +
                         "&metadata_name="
                 };
-                _.each(urls, function(value, key) {
+                _.each(urls, (value, key) => {
                     urls[key] = Galaxy.root + value;
                 });
                 this.urls = urls;
@@ -154,7 +154,7 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 var dataset = this;
                 return Backbone.Model.prototype.fetch
                     .call(this, options)
-                    .always(function() {
+                    .always(() => {
                         dataset._generateUrls();
                     });
             },
@@ -214,10 +214,10 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 var hda = this;
 
                 var xhr = jQuery.ajax(options);
-                xhr.done(function(message, status, responseObj) {
+                xhr.done((message, status, responseObj) => {
                     hda.set({ deleted: true, purged: true });
                 });
-                xhr.fail(function(xhr, status, message) {
+                xhr.fail((xhr, status, message) => {
                     // Exception messages are hidden within error page including:  '...not allowed in this Galaxy instance.'
                     // unbury and re-add to xhr
                     var error = _l("Unable to purge dataset");
@@ -304,25 +304,19 @@ var DatasetAssociationCollection = Backbone.Collection
      *  @returns array of encoded ids
      */
             ids: function() {
-                return this.map(function(item) {
-                    return item.get("id");
-                });
+                return this.map(item => item.get("id"));
             },
 
             /** Get contents that are not ready
      *  @returns array of content models
      */
             notReady: function() {
-                return this.filter(function(content) {
-                    return !content.inReadyState();
-                });
+                return this.filter(content => !content.inReadyState());
             },
 
             /** return true if any datasets don't have details */
             haveDetails: function() {
-                return this.all(function(dataset) {
-                    return dataset.hasDetails();
-                });
+                return this.all(dataset => dataset.hasDetails());
             },
 
             // ........................................................................ ajax
@@ -340,29 +334,27 @@ var DatasetAssociationCollection = Backbone.Collection
                 // use reverse order (stylistic choice)
                 var ajaxFns = this.chain()
                     .reverse()
-                    .map(function(dataset, i) {
-                        return function() {
-                            var xhr = ajaxFn.call(dataset, options);
-                            // if successful, notify using the deferred to allow tracking progress
-                            xhr.done(function(response) {
-                                deferred.notify({
-                                    curr: i,
-                                    total: startingLength,
-                                    response: response,
-                                    model: dataset
-                                });
+                    .map((dataset, i) => () => {
+                        var xhr = ajaxFn.call(dataset, options);
+                        // if successful, notify using the deferred to allow tracking progress
+                        xhr.done(response => {
+                            deferred.notify({
+                                curr: i,
+                                total: startingLength,
+                                response: response,
+                                model: dataset
                             });
-                            // (regardless of previous error or success) if not last ajax call, shift and call the next
-                            //  if last fn, resolve deferred
-                            xhr.always(function(response) {
-                                responses.push(response);
-                                if (ajaxFns.length) {
-                                    ajaxFns.shift()();
-                                } else {
-                                    deferred.resolve(responses);
-                                }
-                            });
-                        };
+                        });
+                        // (regardless of previous error or success) if not last ajax call, shift and call the next
+                        //  if last fn, resolve deferred
+                        xhr.always(response => {
+                            responses.push(response);
+                            if (ajaxFns.length) {
+                                ajaxFns.shift()();
+                            } else {
+                                deferred.resolve(responses);
+                            }
+                        });
                     })
                     .value();
                 // start the queue
@@ -374,9 +366,7 @@ var DatasetAssociationCollection = Backbone.Collection
             // ........................................................................ sorting/filtering
             /** return a new collection of datasets whose attributes contain the substring matchesWhat */
             matches: function(matchesWhat) {
-                return this.filter(function(dataset) {
-                    return dataset.matches(matchesWhat);
-                });
+                return this.filter(dataset => dataset.matches(matchesWhat));
             },
 
             /** String representation. */

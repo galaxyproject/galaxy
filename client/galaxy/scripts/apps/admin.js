@@ -174,7 +174,7 @@ window.app = function app(options, bootstrapped) {
         }
     });
 
-    $(function() {
+    $(() => {
         _.extend(options.config, { active_view: "admin" });
         Utils.setWindowTitle("Administration");
         Galaxy.page = new Page.View(

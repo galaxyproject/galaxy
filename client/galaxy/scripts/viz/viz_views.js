@@ -26,7 +26,7 @@ var TrackHeaderView = Backbone.View.extend({
         this.render_action_icons();
 
         // Suppress double clicks in header so that they do not impact viz under header.
-        this.$el.dblclick(function(e) {
+        this.$el.dblclick(e => {
             e.stopPropagation();
         });
 
@@ -44,7 +44,7 @@ var TrackHeaderView = Backbone.View.extend({
             .addClass("track-icons")
             .hide()
             .appendTo(this.$el);
-        _.each(this.model.action_icons_def, function(icon_dict) {
+        _.each(this.model.action_icons_def, icon_dict => {
             self.add_action_icon(
                 icon_dict.name,
                 icon_dict.title,
@@ -76,7 +76,7 @@ var TrackHeaderView = Backbone.View.extend({
             .addClass("icon-button")
             .addClass(css_class)
             .tooltip()
-            .click(function() {
+            .click(() => {
                 on_click_fn(self.model);
             })
             .appendTo(this.icons_div);
@@ -114,14 +114,12 @@ var TrackHeaderView = Backbone.View.extend({
         var mode_mapping = {};
         for (var i = 0, len = track.display_modes.length; i < len; i++) {
             var mode = track.display_modes[i];
-            mode_mapping[mode] = (function(mode) {
-                return function() {
-                    track.change_mode(mode);
-                    // HACK: the popup menu messes with the track's hover event, so manually show/hide
-                    // icons div for now.
-                    //self.icons_div.show();
-                    //track.container_div.mouseleave(function() { track.icons_div.hide(); } );
-                };
+            mode_mapping[mode] = (mode => () => {
+                track.change_mode(mode);
+                // HACK: the popup menu messes with the track's hover event, so manually show/hide
+                // icons div for now.
+                //self.icons_div.show();
+                //track.container_div.mouseleave(function() { track.icons_div.hide(); } );
             })(mode);
         }
 

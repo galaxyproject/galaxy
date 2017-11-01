@@ -80,7 +80,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
                 }
             };
         } else {
-            after_toggle_fn = function() {
+            after_toggle_fn = () => {
                 tag_area.blur();
             };
         }
@@ -178,13 +178,13 @@ jQuery.fn.autocomplete_tagging = function(options) {
     });
 
     // Add autocomplete to input.
-    var format_item_func = function(
+    var format_item_func = (
         key,
         row_position,
         num_rows,
         value,
         search_term
-    ) {
+    ) => {
         var tag_name_and_value = value.split(":");
         return tag_name_and_value.length === 1
             ? tag_name_and_value[0]
@@ -223,7 +223,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
     //
     if (settings.editable) {
         // When the tag area blurs, go to "view tag" mode.
-        tag_area.bind("blur", function(e) {
+        tag_area.bind("blur", e => {
             if (_.size(settings.tags) > 0) {
                 add_tag_button.show();
                 tag_input_field.hide();
@@ -260,7 +260,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
 
             // Add handler to document that will call blur when the tag area is blurred;
             // a tag area is blurred when a user clicks on an element outside the area.
-            var handle_document_click = function(e) {
+            var handle_document_click = e => {
                 var check_click = function(tag_area, target) {
                     var tag_area_id = tag_area.attr("id");
                     // Blur the tag area if the element clicked on is not in the tag area.
@@ -376,7 +376,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
         var tag_name_elt = $("<span>")
             .text(tag_str)
             .addClass("tag-name");
-        tag_name_elt.click(function() {
+        tag_name_elt.click(() => {
             var tag_name_and_value = tag_str.split(":");
             settings.tag_click_fn(tag_name_and_value[0], tag_name_and_value[1]);
             return true;

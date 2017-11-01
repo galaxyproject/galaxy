@@ -17,16 +17,16 @@ var View = Backbone.View.extend({
         // build tabs
         this.collection = new Menu.Collection();
         this.collection
-            .on("add", function(model) {
+            .on("add", model => {
                 self.$navbarTabs.append(
                     new Menu.Tab({ model: model }).render().$el
                 );
             })
-            .on("reset", function() {
+            .on("reset", () => {
                 self.$navbarTabs.empty();
             })
-            .on("dispatch", function(callback) {
-                self.collection.each(function(m) {
+            .on("dispatch", callback => {
+                self.collection.each(m => {
                     callback(m);
                 });
             })
@@ -46,7 +46,7 @@ var View = Backbone.View.extend({
 
         // loop through beforeunload functions if the user attempts to unload the page
         $(window)
-            .on("click", function(e) {
+            .on("click", e => {
                 var $download_link = $(e.target).closest("a[download]");
                 if ($download_link.length == 1) {
                     if ($("iframe[id=download]").length === 0) {
@@ -63,9 +63,9 @@ var View = Backbone.View.extend({
                     e.preventDefault();
                 }
             })
-            .on("beforeunload", function() {
+            .on("beforeunload", () => {
                 var text = "";
-                self.collection.each(function(model) {
+                self.collection.each(model => {
                     var q =
                         model.get("onbeforeunload") &&
                         model.get("onbeforeunload")();

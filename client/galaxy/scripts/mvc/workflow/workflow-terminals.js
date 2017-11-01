@@ -152,17 +152,17 @@ var Terminal = Backbone.Model.extend({
         }
     },
     redraw: function() {
-        $.each(this.connectors, function(_, c) {
+        $.each(this.connectors, (_, c) => {
             c.redraw();
         });
     },
     destroy: function() {
-        $.each(this.connectors.slice(), function(_, c) {
+        $.each(this.connectors.slice(), (_, c) => {
             c.destroy();
         });
     },
     destroyInvalidConnections: function() {
-        _.each(this.connectors, function(connector) {
+        _.each(this.connectors, connector => {
             connector && connector.destroyIfInvalid();
         });
     },
@@ -173,7 +173,7 @@ var Terminal = Backbone.Model.extend({
 
         if (!this.mapOver().equal(val)) {
             this.terminalMapping.setMapOver(val);
-            _.each(this.node.output_terminals, function(outputTerminal) {
+            _.each(this.node.output_terminals, outputTerminal => {
                 outputTerminal.setMapOver(val);
             });
         }
@@ -210,7 +210,7 @@ var OutputTerminal = Terminal.extend({
             !this.node.hasConnectedOutputTerminals() &&
             !this.node.hasConnectedMappedInputTerminals()
         ) {
-            _.each(this.node.mappedInputTerminals(), function(mappedInput) {
+            _.each(this.node.mappedInputTerminals(), mappedInput => {
                 mappedInput.resetMappingIfNeeded();
             });
         }
@@ -223,7 +223,7 @@ var OutputTerminal = Terminal.extend({
 
     resetMapping: function() {
         this.terminalMapping.disableMapOver();
-        _.each(this.connectors, function(connector) {
+        _.each(this.connectors, connector => {
             var connectedInput = connector.handle2;
             if (connectedInput) {
                 // Not exactly right because this is still connected.
@@ -266,7 +266,7 @@ var BaseInputTerminal = Terminal.extend({
     resetMapping: function() {
         this.terminalMapping.disableMapOver();
         if (!this.node.hasMappedOverInputTerminals()) {
-            _.each(this.node.output_terminals, function(terminal) {
+            _.each(this.node.output_terminals, terminal => {
                 // This shouldn't be called if there are mapped over
                 // outputs.
                 terminal.resetMapping();
@@ -328,9 +328,7 @@ var BaseInputTerminal = Terminal.extend({
 
         var constraints = [];
         if (!this.node.hasConnectedOutputTerminals()) {
-            _.each(this.node.connectedMappedInputTerminals(), function(
-                inputTerminal
-            ) {
+            _.each(this.node.connectedMappedInputTerminals(), inputTerminal => {
                 constraints.push(inputTerminal.mapOver());
             });
         } else {
@@ -466,7 +464,7 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
         this.datatypes = input.extensions;
         var collectionTypes = [];
         if (input.collection_types) {
-            _.each(input.collection_types, function(collectionType) {
+            _.each(input.collection_types, collectionType => {
                 collectionTypes.push(
                     new CollectionTypeDescription(collectionType)
                 );
@@ -489,9 +487,9 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
     _effectiveMapOver: function(other) {
         var collectionTypes = this.collectionTypes;
         var otherCollectionType = this._otherCollectionType(other);
-        var canMatch = _.some(collectionTypes, function(collectionType) {
-            return collectionType.canMatch(otherCollectionType);
-        });
+        var canMatch = _.some(collectionTypes, collectionType =>
+            collectionType.canMatch(otherCollectionType)
+        );
 
         if (!canMatch) {
             for (var collectionTypeIndex in collectionTypes) {
@@ -510,20 +508,18 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
     },
     _effectiveCollectionTypes: function() {
         var thisMapOver = this.mapOver();
-        return _.map(this.collectionTypes, function(t) {
-            return thisMapOver.append(t);
-        });
+        return _.map(this.collectionTypes, t => thisMapOver.append(t));
     },
     attachable: function(other) {
         var otherCollectionType = this._otherCollectionType(other);
         if (otherCollectionType.isCollection) {
             var effectiveCollectionTypes = this._effectiveCollectionTypes();
             var thisMapOver = this.mapOver();
-            var canMatch = _.some(effectiveCollectionTypes, function(
-                effectiveCollectionType
-            ) {
-                return effectiveCollectionType.canMatch(otherCollectionType);
-            });
+            var canMatch = _.some(
+                effectiveCollectionTypes,
+                effectiveCollectionType =>
+                    effectiveCollectionType.canMatch(otherCollectionType)
+            );
             if (canMatch) {
                 // Only way a direct match...
                 return this._producesAcceptableDatatype(other);
@@ -532,9 +528,9 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
                 // In this case, mapOver already set and we didn't match skipping...
                 return false;
             } else if (
-                _.some(this.collectionTypes, function(collectionType) {
-                    return otherCollectionType.canMapOver(collectionType);
-                })
+                _.some(this.collectionTypes, collectionType =>
+                    otherCollectionType.canMapOver(collectionType)
+                )
             ) {
                 var effectiveMapOver = this._effectiveMapOver(other);
                 if (!effectiveMapOver.isCollection) {
@@ -590,7 +586,7 @@ var OutputCollectionTerminal = Terminal.extend({
             newCollectionType.collectionType !=
             this.collectionType.collectionType
         ) {
-            _.each(this.connectors, function(connector) {
+            _.each(this.connectors, connector => {
                 // TODO: consider checking if connection valid before removing...
                 connector.destroy();
             });

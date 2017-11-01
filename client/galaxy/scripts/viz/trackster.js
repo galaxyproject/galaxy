@@ -96,7 +96,7 @@ var TracksterUI = Base.extend({
                 vis_json: JSON.stringify(viz_config)
             }
         })
-            .success(function(vis_info) {
+            .success(vis_info => {
                 Galaxy.modal.hide();
                 view.vis_id = vis_info.vis_id;
                 view.has_changes = false;
@@ -108,7 +108,7 @@ var TracksterUI = Base.extend({
                     vis_info.url + window.location.hash
                 );
             })
-            .error(function() {
+            .error(() => {
                 // show dialog
                 Galaxy.modal.show({
                     title: "Could Not Save",
@@ -137,8 +137,8 @@ var TracksterUI = Base.extend({
                     on_click: function() {
                         visualization.select_datasets(
                             { dbkey: view.dbkey },
-                            function(new_tracks) {
-                                _.each(new_tracks, function(track) {
+                            new_tracks => {
+                                _.each(new_tracks, track => {
                                     view.add_drawable(
                                         tracks.object_from_template(
                                             track,
@@ -226,7 +226,7 @@ var TracksterUI = Base.extend({
         var position_link = $("<a href=''/>")
             .text(position)
             .appendTo(position_div)
-            .click(function() {
+            .click(() => {
                 view.go_to(position);
                 return false;
             });
@@ -240,7 +240,7 @@ var TracksterUI = Base.extend({
             var delete_icon_container = $("<div/>")
                 .addClass("delete-icon-container")
                 .prependTo(new_bookmark)
-                .click(function() {
+                .click(() => {
                     // Remove bookmark.
                     new_bookmark.slideUp("fast");
                     new_bookmark.remove();
@@ -283,7 +283,7 @@ var TracksterUI = Base.extend({
         );
 
         view.editor = true;
-        $.when(view.load_chroms_deferred).then(function(chrom_info) {
+        $.when(view.load_chroms_deferred).then(chrom_info => {
             // Viewport config.
             if (viewport_config) {
                 var chrom = viewport_config.chrom;
@@ -368,7 +368,7 @@ var TracksterUI = Base.extend({
      */
     init_keyboard_nav: function(view) {
         // Keyboard navigation. Scroll ~7% of height when scrolling up/down.
-        $(document).keyup(function(e) {
+        $(document).keyup(e => {
             // Do not navigate if arrow keys used in input element.
             if ($(e.srcElement).is(":input")) {
                 return;
@@ -421,7 +421,7 @@ var TracksterUI = Base.extend({
                         window.location = Galaxy.root + "visualization";
                     },
                     Save: function() {
-                        $.when(self.save_viz()).then(function() {
+                        $.when(self.save_viz()).then(() => {
                             window.location = Galaxy.root + "visualization";
                         });
                     }
@@ -455,7 +455,7 @@ var TracksterView = Backbone.View.extend({
         );
 
         // resize view when showing/hiding right panel (bookmarks for now).
-        $("#right-border").click(function() {
+        $("#right-border").click(() => {
             view.resize_window();
         });
 
@@ -598,9 +598,7 @@ var TracksterView = Backbone.View.extend({
                 });
 
                 // select default
-                var dbkeys_in_genomes = response.map(function(r) {
-                    return r[1];
-                });
+                var dbkeys_in_genomes = response.map(r => r[1]);
                 if (
                     galaxy_config.app.default_dbkey &&
                     _.contains(
@@ -710,7 +708,7 @@ var TracksterView = Backbone.View.extend({
             });
 
         // initialize icons
-        $("#add-bookmark-button").click(function() {
+        $("#add-bookmark-button").click(() => {
             // add new bookmark.
             var position = view.chrom + ":" + view.low + "-" + view.high;
 
@@ -721,7 +719,7 @@ var TracksterView = Backbone.View.extend({
         // initialize keyboard
         ui.init_keyboard_nav(view);
 
-        $(window).on("beforeunload", function() {
+        $(window).on("beforeunload", () => {
             if (view.has_changes) {
                 return "There are unsaved changes to your visualization that will be lost if you leave this page.";
             }

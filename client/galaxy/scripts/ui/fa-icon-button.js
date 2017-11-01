@@ -14,7 +14,7 @@ var $ = jQuery;
      *          faIcon          : which font awesome icon to use
      *          onclick         : function to call when the button is clicked
      */
-var faIconButton = function(options) {
+var faIconButton = options => {
     options = options || {};
     options.tooltipConfig = options.tooltipConfig || {
         placement: "bottom"

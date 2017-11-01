@@ -96,14 +96,14 @@ var View = Backbone.View.extend({
                         name: options.name
                     })
                 );
-                $el.on("click", function() {
+                $el.on("click", () => {
                     $el.remove();
                     self._refresh();
                 });
-                $el.on("mouseover", function() {
+                $el.on("mouseover", () => {
                     $el.addClass("portlet-highlight");
                 });
-                $el.on("mouseout", function() {
+                $el.on("mouseout", () => {
                     $el.removeClass("portlet-highlight");
                 });
                 this.portlet.append($el);

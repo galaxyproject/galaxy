@@ -117,7 +117,7 @@ var View = Backbone.View.extend({
     render: function() {
         var self = this;
         var config = Galaxy.config;
-        $.getJSON(Galaxy.root + "api/users/" + Galaxy.user.id, function(data) {
+        $.getJSON(Galaxy.root + "api/users/" + Galaxy.user.id, data => {
             self.$preferences = $("<div/>")
                 .addClass("ui-panel")
                 .append($("<h2/>").append("User preferences"))
@@ -167,7 +167,7 @@ var View = Backbone.View.extend({
         var $row = $(this._templateLink(options));
         var $a = $row.find("a");
         if (options.onclick) {
-            $a.on("click", function() {
+            $a.on("click", () => {
                 options.onclick();
             });
         } else {

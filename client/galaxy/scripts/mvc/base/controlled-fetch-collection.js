@@ -96,7 +96,7 @@ var ControlledFetchCollection = Backbone.Collection.extend({
             q: [],
             qv: []
         };
-        _.each(filters, function(v, k) {
+        _.each(filters, (v, k) => {
             // don't send if filter value is empty
             if (v === undefined || v === "") {
                 return;
@@ -221,7 +221,7 @@ var PaginatedCollection = ControlledFetchCollection.extend({
         options = _.defaults(options || {}, self.getPageLimitOffset(pageNum));
 
         self.trigger("fetching-more");
-        return self.fetch(options).always(function() {
+        return self.fetch(options).always(() => {
             self.trigger("fetching-more-done");
         });
     },
@@ -317,7 +317,7 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
         return (
             collection
                 .fetch(options)
-                .always(function() {
+                .always(() => {
                     collection.trigger("fetching-more-done");
                 })
                 // maintain allFetched flag and trigger if all were fetched this time
@@ -347,7 +347,7 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
         var self = this;
         options = _.pick(options, "silent");
         options.filters = {};
-        return self.fetch(options).done(function() {
+        return self.fetch(options).done(() => {
             self.allFetched = true;
             self.trigger("all-fetched", self);
         });

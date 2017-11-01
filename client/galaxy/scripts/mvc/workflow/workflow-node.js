@@ -55,7 +55,7 @@ var Node = Backbone.Model.extend({
     },
     _connectedTerminals: function(terminals) {
         var connectedTerminals = [];
-        $.each(terminals, function(_, t) {
+        $.each(terminals, (_, t) => {
             if (t.connectors.length > 0) {
                 connectedTerminals.push(t);
             }
@@ -91,7 +91,7 @@ var Node = Backbone.Model.extend({
     },
     _connectedMappedTerminals: function(terminals) {
         var mapped_outputs = [];
-        $.each(terminals, function(_, t) {
+        $.each(terminals, (_, t) => {
             var mapOver = t.mapOver();
             if (mapOver.isCollection) {
                 if (t.connectors.length > 0) {
@@ -106,7 +106,7 @@ var Node = Backbone.Model.extend({
     },
     _mappedTerminals: function(terminals) {
         var mappedTerminals = [];
-        $.each(terminals, function(_, t) {
+        $.each(terminals, (_, t) => {
             var mapOver = t.mapOver();
             if (mapOver.isCollection) {
                 mappedTerminals.push(t);
@@ -116,7 +116,7 @@ var Node = Backbone.Model.extend({
     },
     hasMappedOverInputTerminals: function() {
         var found = false;
-        _.each(this.input_terminals, function(t) {
+        _.each(this.input_terminals, t => {
             var mapOver = t.mapOver();
             if (mapOver.isCollection) {
                 found = true;
@@ -125,18 +125,18 @@ var Node = Backbone.Model.extend({
         return found;
     },
     redraw: function() {
-        $.each(this.input_terminals, function(_, t) {
+        $.each(this.input_terminals, (_, t) => {
             t.redraw();
         });
-        $.each(this.output_terminals, function(_, t) {
+        $.each(this.output_terminals, (_, t) => {
             t.redraw();
         });
     },
     destroy: function() {
-        $.each(this.input_terminals, function(k, t) {
+        $.each(this.input_terminals, (k, t) => {
             t.destroy();
         });
-        $.each(this.output_terminals, function(k, t) {
+        $.each(this.output_terminals, (k, t) => {
             t.destroy();
         });
         this.app.workflow.remove_node(this);
@@ -149,7 +149,7 @@ var Node = Backbone.Model.extend({
         // Keep inactive nodes stacked from most to least recently active
         // by moving element to the end of parent's node list
         var element = this.element.get(0);
-        (function(p) {
+        (p => {
             p.removeChild(element);
             p.appendChild(element);
         })(element.parentNode);
@@ -181,13 +181,13 @@ var Node = Backbone.Model.extend({
             node: node
         });
         node.nodeView = nodeView;
-        $.each(data.data_inputs, function(i, input) {
+        $.each(data.data_inputs, (i, input) => {
             nodeView.addDataInput(input);
         });
         if (data.data_inputs.length > 0 && data.data_outputs.length > 0) {
             nodeView.addRule();
         }
-        $.each(data.data_outputs, function(i, output) {
+        $.each(data.data_outputs, (i, output) => {
             nodeView.addDataOutput(output);
         });
         nodeView.render();
@@ -202,11 +202,11 @@ var Node = Backbone.Model.extend({
         // nodeView.outputViews contains pre-existing outputs,
         // while data.data_output contains what should be displayed.
         // Now we gather the unused outputs
-        $.each(nodeView.outputViews, function(i, output_view) {
+        $.each(nodeView.outputViews, (i, output_view) => {
             var cur_name = output_view.output.name;
             var data_names = data.data_outputs;
             var cur_name_in_data_outputs = false;
-            _.each(data_names, function(data_name) {
+            _.each(data_names, data_name => {
                 if (data_name.name == cur_name) {
                     cur_name_in_data_outputs = true;
                 }
@@ -217,11 +217,11 @@ var Node = Backbone.Model.extend({
         });
 
         // Remove the unused outputs
-        _.each(unused_outputs, function(unused_output) {
+        _.each(unused_outputs, unused_output => {
             _.each(
                 nodeView.outputViews[unused_output].terminalElement.terminal
                     .connectors,
-                function(x) {
+                x => {
                     if (x) {
                         x.destroy(); // Removes the noodle connectors
                     }
@@ -231,12 +231,12 @@ var Node = Backbone.Model.extend({
             delete nodeView.outputViews[unused_output]; // removes the reference to the output
             delete node.output_terminals[unused_output]; // removes the output terminal
         });
-        $.each(node.workflow_outputs, function(i, wf_output) {
+        $.each(node.workflow_outputs, (i, wf_output) => {
             if (wf_output && !node.output_terminals[wf_output.output_name]) {
                 node.workflow_outputs.splice(i, 1); // removes output from list of workflow outputs
             }
         });
-        $.each(data.data_outputs, function(i, output) {
+        $.each(data.data_outputs, (i, output) => {
             if (!nodeView.outputViews[output.name]) {
                 nodeView.addDataOutput(output); // add data output if it does not yet exist
             } else {
@@ -263,7 +263,7 @@ var Node = Backbone.Model.extend({
         var old_body = nodeView.$("div.inputs");
         var new_body = nodeView.newInputsDiv();
         var newTerminalViews = {};
-        _.each(data.data_inputs, function(input) {
+        _.each(data.data_inputs, input => {
             var terminalView = node.nodeView.addDataInput(input, new_body);
             newTerminalViews[input.name] = terminalView;
         });
@@ -273,7 +273,7 @@ var Node = Backbone.Model.extend({
                 _.values(nodeView.terminalViews),
                 _.values(newTerminalViews)
             ),
-            function(unusedView) {
+            unusedView => {
                 unusedView.el.terminal.destroy();
             }
         );

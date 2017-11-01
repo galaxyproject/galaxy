@@ -35,7 +35,7 @@ var Libraries = Backbone.Collection.extend({
          */
         if (search_term == "") return this;
         var lowercase_term = search_term.toLowerCase();
-        return this.filter(function(data) {
+        return this.filter(data => {
             var lowercase_name = data.get("name").toLowerCase();
             return lowercase_name.indexOf(lowercase_term) !== -1;
         });
@@ -48,9 +48,7 @@ var Libraries = Backbone.Collection.extend({
     getVisible: function(show_deleted, filters) {
         filters = filters || [];
         var filteredLibraries = new Libraries(
-            this.filter(function(item) {
-                return item.isVisible(show_deleted);
-            })
+            this.filter(item => item.isVisible(show_deleted))
         );
 
         return filteredLibraries;

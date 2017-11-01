@@ -13,7 +13,7 @@ var OVERLAP_START = 1003;
 var OVERLAP_END = 1004;
 var CONTAINED_BY = 1005;
 var AFTER = 1006;
-var compute_overlap = function(first_region, second_region) {
+var compute_overlap = (first_region, second_region) => {
     var first_start = first_region[0];
     var first_end = first_region[1];
     var second_start = second_region[0];
@@ -45,7 +45,7 @@ var compute_overlap = function(first_region, second_region) {
 /**
  * Returns true if regions overlap.
  */
-var is_overlap = function(first_region, second_region) {
+var is_overlap = (first_region, second_region) => {
     var overlap = compute_overlap(first_region, second_region);
     return overlap !== BEFORE && overlap !== AFTER;
 };
@@ -56,7 +56,7 @@ var is_overlap = function(first_region, second_region) {
  * However, that approach uses lines, which don't seem to render as well, so use
  * rectangles instead.
  */
-var dashedLine = function(ctx, x1, y1, x2, y2, dashLen) {
+var dashedLine = (ctx, x1, y1, x2, y2, dashLen) => {
     if (dashLen === undefined) {
         dashLen = 4;
     }
@@ -146,7 +146,7 @@ Painter.prototype.default_prefs = {};
 /**
  * Draw on the context using a rectangle of width x height using scale w_scale.
  */
-Painter.prototype.draw = function(ctx, width, height, w_scale) {};
+Painter.prototype.draw = (ctx, width, height, w_scale) => {};
 
 /**
  * Get starting drawing position, which is offset a half-base left of coordinate.
@@ -220,9 +220,9 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
     var y;
     var delta_x_pxs;
     if (data.length > 1) {
-        delta_x_pxs = _.map(data.slice(0, -1), function(d, i) {
-            return Math.ceil((data[i + 1][0] - data[i][0]) * w_scale);
-        });
+        delta_x_pxs = _.map(data.slice(0, -1), (d, i) =>
+            Math.ceil((data[i + 1][0] - data[i][0]) * w_scale)
+        );
     } else {
         delta_x_pxs = [10];
     }
@@ -1006,9 +1006,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
         var base_pos = 0;
 
         var // Parse cigar operations out and update/create blocks as needed.
-        parsed_cigar = _.map(cigar_str.match(/[0-9]+[MIDNSHP=X]/g), function(
-            op
-        ) {
+        parsed_cigar = _.map(cigar_str.match(/[0-9]+[MIDNSHP=X]/g), op => {
             // Get operation length, character.
             var op_len = parseInt(op.slice(0, -1), 10),
                 op_char = op.slice(-1);
@@ -1053,14 +1051,14 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
         read_seq
     ) {
         // Helper function to update base and sequnence offsets.
-        var update_base_offset = function(offset, cig_op, cig_len) {
+        var update_base_offset = (offset, cig_op, cig_len) => {
             if ("M=NXD".indexOf(cig_op) !== -1) {
                 offset += cig_len;
             }
             return offset;
         };
 
-        var update_seq_offset = function(offset, cig_op, cig_len) {
+        var update_seq_offset = (offset, cig_op, cig_len) => {
             if ("IX".indexOf(cig_op) !== -1) {
                 offset += cig_len;
             }
@@ -1068,12 +1066,12 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
         };
 
         var // Gets drawing coordinate for a sequence coordinate. Assumes closure variables w_scale and tile_low.
-        get_draw_coord = function(sequence_coord) {
-            // -0.5 to offset sequence between bases.
-            return Math.floor(
+        get_draw_coord = (
+            sequence_coord // -0.5 to offset sequence between bases.
+        ) =>
+            Math.floor(
                 Math.max(0, (sequence_coord - tile_low - 0.5) * w_scale)
             );
-        };
 
         ctx.textAlign = "center";
         var tile_region = [tile_low, tile_high];
@@ -1653,20 +1651,14 @@ var Color = function(rgb, a) {
     if (Array.isArray(rgb)) {
         this.rgb = rgb;
     } else if (rgb.length == 6) {
-        this.rgb = rgb.match(/.{2}/g).map(function(c) {
-            return parseInt(c, 16);
-        });
+        this.rgb = rgb.match(/.{2}/g).map(c => parseInt(c, 16));
     } else if (rgb.length == 7) {
         this.rgb = rgb
             .substring(1, 7)
             .match(/.{2}/g)
-            .map(function(c) {
-                return parseInt(c, 16);
-            });
+            .map(c => parseInt(c, 16));
     } else {
-        this.rgb = rgb.split("").map(function(c) {
-            return parseInt(c + c, 16);
-        });
+        this.rgb = rgb.split("").map(c => parseInt(c + c, 16));
     }
     this.alpha = typeof a === "number" ? a : 1;
 };
@@ -1686,9 +1678,7 @@ Color.prototype = {
             return (
                 "rgba(" +
                 this.rgb
-                    .map(function(c) {
-                        return Math.round(c);
-                    })
+                    .map(c => Math.round(c))
                     .concat(this.alpha)
                     .join(", ") +
                 ")"
@@ -1697,7 +1687,7 @@ Color.prototype = {
             return (
                 "#" +
                 this.rgb
-                    .map(function(i) {
+                    .map(i => {
                         i = Math.round(i);
                         i = (i > 255 ? 255 : i < 0 ? 0 : i).toString(16);
                         return i.length === 1 ? "0" + i : i;
@@ -1745,7 +1735,7 @@ Color.prototype = {
         return (
             "#" +
             argb
-                .map(function(i) {
+                .map(i => {
                     i = Math.round(i);
                     i = (i > 255 ? 255 : i < 0 ? 0 : i).toString(16);
                     return i.length === 1 ? "0" + i : i;
@@ -1883,9 +1873,7 @@ DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
     var e2;
     var value;
 
-    var scale = function(p) {
-        return (p - view_start) * w_scale;
-    };
+    var scale = p => (p - view_start) * w_scale;
 
     ctx.save();
 
@@ -2000,7 +1988,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
          *    -start: where the deletion starts relative to reference start
          *    -len: how long the deletion is
          */
-        get_indel_info = function(ref, alt) {
+        get_indel_info = (ref, alt) => {
             var ref_len = ref.length;
             var alt_len = alt.length;
             var start = 0;
@@ -2103,7 +2091,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
             allele_counts = locus_data.slice(8);
 
             // Process alterate values to derive information about each alt.
-            alt = _.map(_.flatten(alt), function(a) {
+            alt = _.map(_.flatten(alt), a => {
                 var alt_info = {
                     type: "snp",
                     value: a,

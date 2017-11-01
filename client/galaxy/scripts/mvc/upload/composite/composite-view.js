@@ -32,7 +32,7 @@ export default Backbone.View.extend({
         });
 
         // append buttons to dom
-        _.each([this.btnStart, this.btnClose], function(button) {
+        _.each([this.btnStart, this.btnClose], button => {
             self.$(".upload-buttons").prepend(button.$el);
         });
 
@@ -40,16 +40,14 @@ export default Backbone.View.extend({
         this.select_extension = new Select.View({
             css: "upload-footer-selection",
             container: this.$(".upload-footer-extension"),
-            data: _.filter(this.list_extensions, function(ext) {
-                return ext.composite_files;
-            }),
+            data: _.filter(this.list_extensions, ext => ext.composite_files),
             onchange: function(extension) {
                 self.collection.reset();
                 var details = _.findWhere(self.list_extensions, {
                     id: extension
                 });
                 if (details && details.composite_files) {
-                    _.each(details.composite_files, function(item) {
+                    _.each(details.composite_files, item => {
                         self.collection.add({
                             id: self.collection.size(),
                             file_desc: item.description || item.name
@@ -61,7 +59,7 @@ export default Backbone.View.extend({
 
         // handle extension info popover
         this.$(".upload-footer-extension-info")
-            .on("click", function(e) {
+            .on("click", e => {
                 new UploadExtension({
                     $el: $(e.target),
                     title: self.select_extension.text(),
@@ -70,7 +68,7 @@ export default Backbone.View.extend({
                     placement: "top"
                 });
             })
-            .on("mousedown", function(e) {
+            .on("mousedown", e => {
                 e.preventDefault();
             });
 
@@ -83,10 +81,10 @@ export default Backbone.View.extend({
         });
 
         // listener for collection triggers on change in composite datatype and extension selection
-        this.listenTo(this.collection, "add", function(model) {
+        this.listenTo(this.collection, "add", model => {
             self._eventAnnounce(model);
         });
-        this.listenTo(this.collection, "change add", function() {
+        this.listenTo(this.collection, "change add", () => {
             self.render();
         });
         this.select_extension.options.onchange(this.select_extension.value());
@@ -131,7 +129,7 @@ export default Backbone.View.extend({
     /** Start upload process */
     _eventStart: function() {
         var self = this;
-        this.collection.each(function(model) {
+        this.collection.each(model => {
             model.set({
                 genome: self.select_genome.value(),
                 extension: self.select_extension.value()
@@ -154,14 +152,14 @@ export default Backbone.View.extend({
 
     /** Refresh progress state */
     _eventProgress: function(percentage) {
-        this.collection.each(function(it) {
+        this.collection.each(it => {
             it.set("percentage", percentage);
         });
     },
 
     /** Refresh success state */
     _eventSuccess: function(message) {
-        this.collection.each(function(it) {
+        this.collection.each(it => {
             it.set("status", "success");
         });
         Galaxy.currHistoryPanel.refreshContents();
@@ -169,7 +167,7 @@ export default Backbone.View.extend({
 
     /** Refresh error state */
     _eventError: function(message) {
-        this.collection.each(function(it) {
+        this.collection.each(it => {
             it.set({ status: "error", info: message });
         });
     },

@@ -1,14 +1,14 @@
 /*
     galaxy upload plugins - requires FormData and XMLHttpRequest
 */
-(function($) {
+($ => {
     // add event properties
     jQuery.event.props.push("dataTransfer");
 
     /**
         Posts file data to the API
     */
-    $.uploadpost = function(config) {
+    $.uploadpost = config => {
         // parse options
         var cnf = $.extend(
             {},
@@ -64,7 +64,7 @@
         xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
 
         // captures state changes
-        xhr.onreadystatechange = function() {
+        xhr.onreadystatechange = () => {
             // check for request completed, server connection closed
             if (xhr.readyState == xhr.DONE) {
                 // parse response
@@ -99,7 +99,7 @@
         // prepare upload progress
         xhr.upload.addEventListener(
             "progress",
-            function(e) {
+            e => {
                 if (e.lengthComputable) {
                     cnf.progress(Math.round(e.loaded * 100 / e.total));
                 }
@@ -147,18 +147,18 @@
         );
 
         // drag/drop events
-        el.on("drop", function(e) {
+        el.on("drop", e => {
             opts.ondragleave(e);
             if (e.dataTransfer) {
                 opts.onchange(e.dataTransfer.files);
                 e.preventDefault();
             }
         });
-        el.on("dragover", function(e) {
+        el.on("dragover", e => {
             e.preventDefault();
             opts.ondragover(e);
         });
-        el.on("dragleave", function(e) {
+        el.on("dragleave", e => {
             e.stopPropagation();
             opts.ondragleave(e);
         });
@@ -218,17 +218,18 @@
         function add(files) {
             if (files && files.length && !queue_running) {
                 var index = undefined;
-                _.each(files, function(file, key) {
+                _.each(files, (file, key) => {
                     if (
                         file.mode !== "new" &&
-                        _.filter(queue, function(f) {
-                            return f.name === file.name && f.size === file.size;
-                        }).length
+                        _.filter(
+                            queue,
+                            f => f.name === file.name && f.size === file.size
+                        ).length
                     ) {
                         file.duplicate = true;
                     }
                 });
-                _.each(files, function(file) {
+                _.each(files, file => {
                     if (!file.duplicate) {
                         index = String(queue_index++);
                         queue[index] = file;

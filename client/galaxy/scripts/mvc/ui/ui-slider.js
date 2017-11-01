@@ -27,7 +27,7 @@ var View = Backbone.View.extend({
             .on("change", function() {
                 self.value($(this).val());
             })
-            .on("keyup", function(e) {
+            .on("keyup", e => {
                 pressed[e.which] = false;
             })
             .on("keydown", function(e) {
@@ -79,7 +79,7 @@ var View = Backbone.View.extend({
             this.$text.addClass("ui-form-slider-left");
             this.$slider
                 .slider({ min: opts.min, max: opts.max, step: step })
-                .on("slide", function(event, ui) {
+                .on("slide", (event, ui) => {
                     self.value(ui.value);
                 });
         } else {

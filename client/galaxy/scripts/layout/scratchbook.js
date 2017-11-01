@@ -70,7 +70,7 @@ export default Backbone.View.extend({
                 name: Galaxy.currHistoryPanel.model.get("name"),
                 dataset_ids: []
             };
-            Galaxy.currHistoryPanel.collection.each(function(model) {
+            Galaxy.currHistoryPanel.collection.each(model => {
                 !model.get("deleted") &&
                     model.get("visible") &&
                     self.history_cache[history_id].dataset_ids.push(
@@ -78,7 +78,7 @@ export default Backbone.View.extend({
                     );
             });
         }
-        var _findDataset = function(dataset, offset) {
+        var _findDataset = (dataset, offset) => {
             if (dataset) {
                 var history_details =
                     self.history_cache[dataset.get("history_id")];
@@ -95,13 +95,10 @@ export default Backbone.View.extend({
                 }
             }
         };
-        var _loadDatasetOffset = function(dataset, offset, frame) {
+        var _loadDatasetOffset = (dataset, offset, frame) => {
             var new_dataset_id = _findDataset(dataset, offset);
             if (new_dataset_id) {
-                self._loadDataset(new_dataset_id, function(
-                    new_dataset,
-                    config
-                ) {
+                self._loadDataset(new_dataset_id, (new_dataset, config) => {
                     current_dataset = new_dataset;
                     frame.model.set(config);
                 });
@@ -109,7 +106,7 @@ export default Backbone.View.extend({
                 frame.model.trigger("change");
             }
         };
-        this._loadDataset(dataset_id, function(dataset, config) {
+        this._loadDataset(dataset_id, (dataset, config) => {
             current_dataset = dataset;
             self.add(
                 _.extend(
@@ -154,12 +151,11 @@ export default Backbone.View.extend({
     _loadDataset: function(dataset_id, callback) {
         var self = this;
         var dataset = new DATA.Dataset({ id: dataset_id });
-        $.when(dataset.fetch()).then(function() {
-            var is_tabular = _.find(["tabular", "interval"], function(
-                data_type
-            ) {
-                return dataset.get("data_type").indexOf(data_type) !== -1;
-            });
+        $.when(dataset.fetch()).then(() => {
+            var is_tabular = _.find(
+                ["tabular", "interval"],
+                data_type => dataset.get("data_type").indexOf(data_type) !== -1
+            );
             var title = dataset.get("name");
             var history_details = self.history_cache[dataset.get("history_id")];
             if (history_details) {
@@ -194,7 +190,7 @@ export default Backbone.View.extend({
     addTrackster: function(viz_id) {
         var self = this;
         var viz = new visualization.Visualization({ id: viz_id });
-        $.when(viz.fetch()).then(function() {
+        $.when(viz.fetch()).then(() => {
             var ui = new trackster.TracksterUI(Galaxy.root);
 
             // Construct frame config based on dataset's type.
@@ -216,7 +212,7 @@ export default Backbone.View.extend({
                     var drawables = latest_revision.config.view.drawables;
 
                     // Set up datasets in drawables.
-                    _.each(drawables, function(d) {
+                    _.each(drawables, d => {
                         d.dataset = {
                             hda_ldda: d.hda_ldda,
                             id: d.dataset_id

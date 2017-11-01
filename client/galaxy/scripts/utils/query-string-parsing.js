@@ -6,11 +6,9 @@ function get(key, queryString) {
     if (!matches || !matches.length) {
         return undefined;
     }
-    matches = _.map(matches, function(match) {
-        return decodeURIComponent(
-            match.substr(key.length + 1).replace(/\+/g, " ")
-        );
-    });
+    matches = _.map(matches, match =>
+        decodeURIComponent(match.substr(key.length + 1).replace(/\+/g, " "))
+    );
     if (matches.length === 1) {
         return matches[0];
     }
@@ -23,7 +21,7 @@ function parse(queryString) {
     }
     var parsed = {};
     var split = queryString.split("&");
-    split.forEach(function(pairString) {
+    split.forEach(pairString => {
         var pair = pairString.split("=");
         parsed[pair[0]] = decodeURI(pair[1]);
     });

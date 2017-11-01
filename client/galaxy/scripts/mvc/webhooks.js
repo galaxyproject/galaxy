@@ -49,7 +49,7 @@ var WebhookView = Backbone.View.extend({
     }
 });
 
-var add = function(options) {
+var add = options => {
     var webhooks = new Webhooks();
 
     webhooks.url = Galaxy.root + options.url;

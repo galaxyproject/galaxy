@@ -163,7 +163,7 @@ var View = Backbone.View.extend({
             onclick: function() {
                 execute_button.wait();
                 form.portlet.disable();
-                self.submit(options, function() {
+                self.submit(options, () => {
                     execute_button.unwait();
                     form.portlet.enable();
                 });
@@ -213,7 +213,7 @@ var View = Backbone.View.extend({
                 method: options.method,
                 enctype: options.enctype
             });
-            _.each(job_def.inputs, function(value, key) {
+            _.each(job_def.inputs, (value, key) => {
                 $f.append($("<input/>").attr({ name: key, value: value }));
             });
             $f
@@ -353,7 +353,7 @@ var View = Backbone.View.extend({
                             " been successfully added to the queue - resulting in the following datasets:"
                     )
                 );
-            _.each(response.outputs, function(output) {
+            _.each(response.outputs, output => {
                 $message.append(
                     $("<p/>")
                         .addClass("messagerow")

@@ -103,7 +103,7 @@ export default Backbone.View.extend({
     },
 
     redrawWorkflowOutputs: function() {
-        _.each(this.outputViews, function(outputView) {
+        _.each(this.outputViews, outputView => {
             outputView.redrawWorkflowOutput();
         });
     },

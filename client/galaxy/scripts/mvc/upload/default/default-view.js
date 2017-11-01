@@ -104,7 +104,7 @@ export default Backbone.View.extend({
                 this.btnStart,
                 this.btnClose
             ],
-            function(button) {
+            button => {
                 self.$(".upload-buttons").prepend(button.$el);
             }
         );
@@ -151,9 +151,7 @@ export default Backbone.View.extend({
         this.select_extension = new Select.View({
             css: "upload-footer-selection",
             container: this.$(".upload-footer-extension"),
-            data: _.filter(this.list_extensions, function(ext) {
-                return !ext.composite_files;
-            }),
+            data: _.filter(this.list_extensions, ext => !ext.composite_files),
             value: this.options.default_extension,
             onchange: function(extension) {
                 self._changeExtension(extension);
@@ -162,7 +160,7 @@ export default Backbone.View.extend({
 
         // handle extension info popover
         this.$(".upload-footer-extension-info")
-            .on("click", function(e) {
+            .on("click", e => {
                 new UploadExtension({
                     $el: $(e.target),
                     title: self.select_extension.text(),
@@ -171,7 +169,7 @@ export default Backbone.View.extend({
                     placement: "top"
                 });
             })
-            .on("mousedown", function(e) {
+            .on("mousedown", e => {
                 e.preventDefault();
             });
 
@@ -199,7 +197,7 @@ export default Backbone.View.extend({
         });
 
         // events
-        this.collection.on("remove", function(model) {
+        this.collection.on("remove", model => {
             self._eventRemove(model);
         });
         this.render();
@@ -310,7 +308,7 @@ export default Backbone.View.extend({
 
     /** Queue is done */
     _eventComplete: function() {
-        this.collection.each(function(model) {
+        this.collection.each(model => {
             model.get("status") == "queued" && model.set("status", "init");
         });
         this.counter.running = 0;
@@ -377,7 +375,7 @@ export default Backbone.View.extend({
             var self = this;
             this.upload_size = 0;
             this.upload_completed = 0;
-            this.collection.each(function(model) {
+            this.collection.each(model => {
                 if (model.get("status") == "init") {
                     model.set("status", "queued");
                     self.upload_size += model.get("file_size");
@@ -427,7 +425,7 @@ export default Backbone.View.extend({
     /** Update extension for all models */
     _changeExtension: function(extension, defaults_only) {
         var self = this;
-        this.collection.each(function(model) {
+        this.collection.each(model => {
             if (
                 model.get("status") == "init" &&
                 (model.get("extension") == self.options.default_extension ||
@@ -441,7 +439,7 @@ export default Backbone.View.extend({
     /** Update genome for all models */
     _changeGenome: function(genome, defaults_only) {
         var self = this;
-        this.collection.each(function(model) {
+        this.collection.each(model => {
             if (
                 model.get("status") == "init" &&
                 (model.get("genome") == self.options.default_genome ||
@@ -456,7 +454,7 @@ export default Backbone.View.extend({
     _uploadFtp: function() {
         var self = this;
         var list = [];
-        this.collection.each(function(model) {
+        this.collection.each(model => {
             if (
                 model.get("status") == "queued" &&
                 model.get("file_mode") == "ftp"
@@ -470,12 +468,12 @@ export default Backbone.View.extend({
                 data: this.app.toData(list),
                 url: this.app.options.nginx_upload_path,
                 success: function(message) {
-                    _.each(list, function(model) {
+                    _.each(list, model => {
                         self._eventSuccess(model.id);
                     });
                 },
                 error: function(message) {
-                    _.each(list, function(model) {
+                    _.each(list, model => {
                         self._eventError(model.id, message);
                     });
                 }

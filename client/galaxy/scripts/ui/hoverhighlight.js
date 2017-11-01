@@ -17,12 +17,12 @@ jQuery.fn.extend({
 
             if (targetSelector) {
                 $this
-                    .mouseover(function(ev) {
+                    .mouseover(ev => {
                         $(targetSelector, scope).css({
                             background: color
                         });
                     })
-                    .mouseout(function(ev) {
+                    .mouseout(ev => {
                         $(targetSelector).css({
                             background: ""
                         });

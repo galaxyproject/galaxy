@@ -3,7 +3,7 @@
     and polyfill for non-standard features.
  */
 
-(function() {
+(() => {
     /* TODO: move to modernizr or something besides us doing this...
      * These are across all of our apps (reports, tool shed), but:
      *     these should be configurable via options because they all need different things.
@@ -37,10 +37,10 @@
     }
 
     if (!window.requestAnimationFrame)
-        window.requestAnimationFrame = function(callback, element) {
+        window.requestAnimationFrame = (callback, element) => {
             var currTime = new Date().getTime();
             var timeToCall = Math.max(0, 16 - (currTime - lastTime));
-            var id = window.setTimeout(function() {
+            var id = window.setTimeout(() => {
                 callback(currTime + timeToCall);
             }, timeToCall);
             lastTime = currTime + timeToCall;
@@ -48,7 +48,7 @@
         };
 
     if (!window.cancelAnimationFrame)
-        window.cancelAnimationFrame = function(id) {
+        window.cancelAnimationFrame = id => {
             clearTimeout(id);
         };
 
@@ -72,12 +72,8 @@
     ];
     // build a list of feature names for features that were not found
     var incompatibilities = features
-        .filter(function(feature) {
-            return !feature.compatible();
-        })
-        .map(function(feature) {
-            return feature.name;
-        });
+        .filter(feature => !feature.compatible())
+        .map(feature => feature.name);
 
     // if there are needed features missing, follow the index link to the static incompat warning
     if (!!incompatibilities.length) {

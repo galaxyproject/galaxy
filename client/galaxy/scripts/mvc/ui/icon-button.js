@@ -116,7 +116,7 @@ var IconButtonMenuView = Backbone.View.extend({
     render: function() {
         // initialize icon buttons
         var self = this;
-        this.collection.each(function(button) {
+        this.collection.each(button => {
             // create and add icon button to menu
             var elt = $("<a/>")
                 .attr("href", "javascript:void(0)")
@@ -149,15 +149,17 @@ var IconButtonMenuView = Backbone.View.extend({
  * defines an icon button. Each dictionary must have the following
  * elements: icon_class, title, and on_click.
  */
-var create_icon_buttons_menu = function(config, global_config) {
+var create_icon_buttons_menu = (config, global_config) => {
     // initialize global configuration
     if (!global_config) global_config = {};
 
     // create and initialize menu
     var buttons = new IconButtonCollection(
-        _.map(config, function(button_config) {
-            return new IconButton(_.extend(button_config, global_config));
-        })
+        _.map(
+            config,
+            button_config =>
+                new IconButton(_.extend(button_config, global_config))
+        )
     );
 
     // return menu

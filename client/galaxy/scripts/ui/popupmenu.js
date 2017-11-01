@@ -23,12 +23,12 @@ function make_popupmenu(button_element, initial_options) {
         return;
     }
 
-    button_element.bind("click.show_popup", function(e) {
+    button_element.bind("click.show_popup", e => {
         // Close existing visible menus
         $(".popmenu-wrapper").remove();
 
         // Need setTimeouts so clicks don't interfere with each other
-        setTimeout(function() {
+        setTimeout(() => {
             // Dynamically generate the wrapper holding all the selectable options of the menu.
             var menu_element = $(
                 "<ul class='dropdown-menu' id='" +
@@ -39,7 +39,7 @@ function make_popupmenu(button_element, initial_options) {
             if (_.size(options) <= 0) {
                 $("<li>No Options.</li>").appendTo(menu_element);
             }
-            $.each(options, function(k, v) {
+            $.each(options, (k, v) => {
                 if (v) {
                     // Action can be either an anonymous function and a mapped dict.
                     var action = v.action || v;
@@ -81,11 +81,11 @@ function make_popupmenu(button_element, initial_options) {
             });
         }, 10);
 
-        setTimeout(function() {
+        setTimeout(() => {
             // Bind click event to current window and all frames to remove any visible menus
             // Bind to document object instead of window object for IE compat
-            var close_popup = function(el) {
-                $(el).bind("click.close_popup", function() {
+            var close_popup = el => {
+                $(el).bind("click.close_popup", () => {
                     $(".popmenu-wrapper").remove();
                     el.unbind("click.close_popup");
                 });
@@ -162,7 +162,7 @@ function make_popup_menus(parent) {
 
             // For menus with clickable link text, make clicking on the link go through instead
             // of activating the popup menu
-            box.find("a").bind("click", function(e) {
+            box.find("a").bind("click", e => {
                 e.stopPropagation(); // Stop bubbling so clicking on the link goes through
                 return true;
             });

@@ -87,7 +87,7 @@ var View = Backbone.View.extend({
     /** Hides add/del options */
     hideOptions: function() {
         this.button_new.$el.hide();
-        _.each(this.list, function(portlet) {
+        _.each(this.list, portlet => {
             portlet.hideOperation("button_delete");
         });
         _.isEmpty(this.list) &&

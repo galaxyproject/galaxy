@@ -16,7 +16,7 @@ var View = Backbone.View.extend({
             url: Galaxy.root + this.url,
             type: "GET"
         })
-            .done(function(response) {
+            .done(response => {
                 var options = $.extend({}, self.model.attributes, response);
                 var form = new Form({
                     title: options.title,
@@ -38,7 +38,7 @@ var View = Backbone.View.extend({
                 });
                 self.$el.empty().append(form.$el);
             })
-            .fail(function(response) {
+            .fail(response => {
                 self.$el.empty().append(
                     new Ui.Message({
                         message: "Failed to load resource " + self.url + ".",
@@ -57,7 +57,7 @@ var View = Backbone.View.extend({
             type: "PUT",
             contentType: "application/json"
         })
-            .done(function(response) {
+            .done(response => {
                 var success_message = {
                     message: response.message,
                     status: "success",
@@ -70,13 +70,13 @@ var View = Backbone.View.extend({
                         "?" +
                         $.param(success_message);
                 } else {
-                    form.data.matchModel(response, function(input, input_id) {
+                    form.data.matchModel(response, (input, input_id) => {
                         form.field_list[input_id].value(input.value);
                     });
                     self._showMessage(form, success_message);
                 }
             })
-            .fail(function(response) {
+            .fail(response => {
                 self._showMessage(form, {
                     message: response.responseJSON.err_msg,
                     status: "danger",

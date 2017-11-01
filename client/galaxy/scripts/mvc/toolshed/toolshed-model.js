@@ -53,7 +53,7 @@ var RepoQueueCollection = Backbone.Collection.extend({
         var repositories = Array();
         var repositories_enc = JSON.parse(localStorage.repositories);
         var queue_keys = Object.keys(repositories_enc);
-        _.each(queue_keys, function(key) {
+        _.each(queue_keys, key => {
             var repo = repositories_enc[key];
             repo.queue_key = key;
             repositories.push(repo);

@@ -39,13 +39,13 @@ function dropDownSelect(options, selected) {
         $select.append(
             [
                 '<ul class="dropdown-menu" role="menu">',
-                _.map(options, function(option) {
-                    return [
+                _.map(options, option =>
+                    [
                         '<li><a href="javascript:void(0)">',
                         option,
                         "</a></li>"
-                    ].join("");
-                }).join("\n"),
+                    ].join("")
+                ).join("\n"),
                 "</ul>"
             ].join("\n")
         );
@@ -122,12 +122,10 @@ FilterControl.prototype.render = function _render() {
 /** render the key dropDownSelect, bind a change event to it, and return it */
 FilterControl.prototype._renderKeySelect = function __renderKeySelect() {
     var filterControl = this;
-    var keys = this.options.filters.map(function(filter) {
-        return filter.key;
-    });
+    var keys = this.options.filters.map(filter => filter.key);
     this.$keySelect = dropDownSelect(keys, this.currFilter.key)
         .addClass("filter-control-key")
-        .on("change.dropdown-select", function(event, selection) {
+        .on("change.dropdown-select", (event, selection) => {
             filterControl.currFilter = _.findWhere(
                 filterControl.options.filters,
                 { key: selection }
@@ -145,7 +143,7 @@ FilterControl.prototype._renderOpSelect = function __renderOpSelect() {
     //TODO: search for currOp in avail. ops: use that for selected if there; otherwise: first op
     this.$opSelect = dropDownSelect(ops, ops[0])
         .addClass("filter-control-op")
-        .on("change.dropdown-select", function(event, selection) {
+        .on("change.dropdown-select", (event, selection) => {
             filterControl._triggerChange();
         });
     return this.$opSelect;
@@ -159,14 +157,14 @@ FilterControl.prototype._renderValueInput = function __renderValueInput() {
         this.$valueSelect = dropDownSelect(
             this.currFilter.values,
             this.currFilter.values[0]
-        ).on("change.dropdown-select", function(event, selection) {
+        ).on("change.dropdown-select", (event, selection) => {
             filterControl._triggerChange();
         });
     } else {
         //TODO: allow setting a value type (mainly for which html5 input to use: range, number, etc.)
         this.$valueSelect = $("<input/>")
             .addClass("form-control")
-            .on("change", function(event, value) {
+            .on("change", (event, value) => {
                 filterControl._triggerChange();
             });
     }

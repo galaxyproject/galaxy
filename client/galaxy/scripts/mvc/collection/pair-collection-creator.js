@@ -94,7 +94,7 @@ var PairCollectionCreator = _super.extend({
         var $list = creator.$list();
 
         // lose the original views, create the new, append all at once, then call their renders
-        _.each(this.elementViews, function(view) {
+        _.each(this.elementViews, view => {
             view.destroy();
             creator.removeElementView(view);
         });

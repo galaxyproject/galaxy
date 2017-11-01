@@ -61,7 +61,7 @@ function LoadingIndicator($where, options) {
         return $indicator;
     }
 
-    self.show = function(msg, speed, callback) {
+    self.show = (msg, speed, callback) => {
         msg = msg || "loading...";
         speed = speed || "fast";
         // remove previous
@@ -76,14 +76,14 @@ function LoadingIndicator($where, options) {
         return self;
     };
 
-    self.message = function(msg) {
+    self.message = msg => {
         self.$indicator.find("i").text(msg);
     };
 
-    self.hide = function(speed, callback) {
+    self.hide = (speed, callback) => {
         speed = speed || "fast";
         if (self.$indicator && self.$indicator.length) {
-            self.$indicator.fadeOut(speed, function() {
+            self.$indicator.fadeOut(speed, () => {
                 self.$indicator.remove();
                 if (callback) {
                     callback();

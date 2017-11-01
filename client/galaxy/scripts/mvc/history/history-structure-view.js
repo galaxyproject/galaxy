@@ -124,7 +124,7 @@ var HistoryStructureComponent = Backbone.View
 
         _createVertexItems: function() {
             var view = this;
-            view.component.eachVertex(function(vertex) {
+            view.component.eachVertex(vertex => {
                 //TODO: hack
                 var type = vertex.data.job ? "job" : "copy";
 
@@ -146,11 +146,12 @@ var HistoryStructureComponent = Backbone.View
             var job = new JOB.Job(jobData.job);
 
             // get the models of the outputs for this job from the history
-            var outputModels = _.map(job.get("outputs"), function(output) {
-                //note: output is { src: 'hda/dataset_collection', id: <some id> }
+            var outputModels = _.map(job.get("outputs"), (
+                output //note: output is { src: 'hda/dataset_collection', id: <some id> }
+            ) =>
                 // job output doesn't *quite* match up to normal typeId
-                return view.model.contents.get(output.type_id);
-            });
+                view.model.contents.get(output.type_id)
+            );
             // set the collection (HistoryContents) for the job to that json (setting historyId for proper ajax urls)
             job.outputCollection.reset(outputModels);
             job.outputCollection.historyId = view.model.id;
@@ -211,12 +212,12 @@ var HistoryStructureComponent = Backbone.View
                 svg: { width: 0, height: 0 }
             });
 
-            vertices.forEach(function(v, j) {
+            vertices.forEach((v, j) => {
                 var node = { name: v.name, x: 0, y: 0 };
                 layout.nodeMap[v.name] = node;
             });
 
-            view.component.edges(function(e) {
+            view.component.edges(e => {
                 var link = {
                     source: e.source,
                     target: e.target
@@ -240,7 +241,7 @@ var HistoryStructureComponent = Backbone.View
             );
 
             var $graph = view.$graph();
-            view.component.eachVertex(function(vertex) {
+            view.component.eachVertex(vertex => {
                 view._liMap[vertex.name]
                     .render(0)
                     .$el.appendTo($graph)
@@ -280,7 +281,7 @@ var HistoryStructureComponent = Backbone.View
                 view.renderSVG();
 
                 // position the job views accrd. to the layout
-                view.component.eachVertex(function(v) {
+                view.component.eachVertex(v => {
                     //TODO:?? liMap needed - can't we attach to vertex?
                     var li = view._liMap[v.name];
 
@@ -314,7 +315,7 @@ var HistoryStructureComponent = Backbone.View
             var x = 0;
 
             var y = layout.linkHeight;
-            _.each(layout.nodeMap, function(node, jobId) {
+            _.each(layout.nodeMap, (node, jobId) => {
                 //this.debug( node, jobId );
                 node.x = x;
                 node.y = y;
@@ -324,7 +325,7 @@ var HistoryStructureComponent = Backbone.View
 
             // layout the links - connecting each job by it's main coords (currently)
             //TODO: somehow adjust the svg height based on the largest distance the longest connection needs
-            layout.links.forEach(function(link) {
+            layout.links.forEach(link => {
                 var source = layout.nodeMap[link.source];
                 var target = layout.nodeMap[link.target];
                 link.x1 = source.x + layout.linkAdjX;
@@ -369,15 +370,11 @@ var HistoryStructureComponent = Backbone.View
                 .enter()
                 .append("path")
                 .attr("class", "connection")
-                .attr("id", function(d) {
-                    return [d.source, d.target].join(view._LINK_ID_SEP);
-                })
+                .attr("id", d => [d.source, d.target].join(view._LINK_ID_SEP))
                 .on("mouseover", highlightConnect)
                 .on("mouseout", unhighlightConnect);
 
-            connections.attr("d", function(d) {
-                return view._connectionPath(d);
-            });
+            connections.attr("d", d => view._connectionPath(d));
 
             return svg.node();
         },
@@ -439,7 +436,7 @@ var HistoryStructureComponent = Backbone.View
             var id = $hoverTarget.data(view._VERTEX_NAME_DATA_KEY);
 
             // immed. ancestors
-            component.edges({ target: id }).forEach(function(edge) {
+            component.edges({ target: id }).forEach(edge => {
                 var ancestorId = edge.source;
                 var ancestorLi = view._liMap[ancestorId];
                 //view.debug( '\t ancestor:', ancestorId, ancestorLi );
@@ -449,7 +446,7 @@ var HistoryStructureComponent = Backbone.View
                     .attr("class", connectionClass);
             });
             // descendants
-            component.vertices[id].eachEdge(function(edge) {
+            component.vertices[id].eachEdge(edge => {
                 var descendantId = edge.target;
                 var descendantLi = view._liMap[descendantId];
                 //view.debug( '\t descendant:', descendantId, descendantLi );
@@ -507,7 +504,7 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
         var x = layout.linkWidth;
 
         var y = 0;
-        _.each(layout.nodeMap, function(node, nodeId) {
+        _.each(layout.nodeMap, (node, nodeId) => {
             node.x = x;
             node.y = y;
             var li = view._liMap[nodeId];
@@ -516,7 +513,7 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
         layout.linkHeight = layout.svg.height = Math.max(layout.svg.height, y);
 
         // layout the links - connecting each job by it's main coords (currently)
-        layout.links.forEach(function(link) {
+        layout.links.forEach(link => {
             var source = layout.nodeMap[link.source];
             var target = layout.nodeMap[link.target];
             link.x1 = source.x + layout.linkAdjX;
@@ -625,9 +622,7 @@ var HistoryStructureView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
 
         structure.componentViews = structure.dag
             .weakComponentGraphArray()
-            .map(function(componentGraph) {
-                return structure._createComponent(componentGraph);
-            });
+            .map(componentGraph => structure._createComponent(componentGraph));
         return structure.componentViews;
     },
 
@@ -653,7 +648,7 @@ var HistoryStructureView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
                 ].join("")
             );
 
-        structure.componentViews.forEach(function(component) {
+        structure.componentViews.forEach(component => {
             component.render().$el.appendTo(structure.$components());
         });
         return structure;

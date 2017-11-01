@@ -90,7 +90,7 @@ var WorkflowItemView = Backbone.View.extend({
         var oldName = this.model.get("name");
         $.getJSON(
             this.model.urlRoot + "/" + this.model.id + "/download",
-            function(wfJson) {
+            wfJson => {
                 var newName = "Copy of " + oldName;
                 var currentOwner = self.model.get("owner");
                 if (currentOwner != Galaxy.user.attributes.username) {
@@ -116,7 +116,7 @@ var WorkflowItemView = Backbone.View.extend({
                     }
                 });
             }
-        ).error(function(jqXHR, textStatus, errorThrown) {
+        ).error((jqXHR, textStatus, errorThrown) => {
             mod_toastr.error(jqXHR.responseJSON.err_msg);
         });
     },
@@ -277,7 +277,7 @@ var WorkflowListView = Backbone.View.extend({
     readWorkflowFiles: function(f) {
         var self = this;
         var reader = new FileReader();
-        reader.onload = function(theFile) {
+        reader.onload = theFile => {
             var wf_json;
             try {
                 wf_json = JSON.parse(reader.result);
@@ -309,7 +309,7 @@ var WorkflowListView = Backbone.View.extend({
         reader.readAsText(f, "utf-8");
     },
 
-    _showArgErrors: _.once(function() {
+    _showArgErrors: _.once(() => {
         // Parse args out of params, display if there's a message.
         var msg_text = QueryStringParsing.get("message");
         var msg_status = QueryStringParsing.get("status");
@@ -333,7 +333,7 @@ var WorkflowListView = Backbone.View.extend({
         var tableTemplate = this._templateWorkflowTable();
         this.$el.html(header + templateActions + tableTemplate);
         var self = this;
-        _(this.collection.models).each(function(item) {
+        _(this.collection.models).each(item => {
             // in case collection is not empty
             self.appendItem(item);
             self.confirmDelete(item);
@@ -361,13 +361,13 @@ var WorkflowListView = Backbone.View.extend({
     /** Add confirm box before removing/unsharing workflow */
     confirmDelete: function(workflow) {
         var $el_shared_wf_link = this.$(".link-confirm-shared-" + workflow.id);
-        $el_shared_wf_link.click(function() {
-            return window.confirm(
+        $el_shared_wf_link.click(() =>
+            window.confirm(
                 "Are you sure you want to remove the shared workflow '" +
                     workflow.attributes.name +
                     "'?"
-            );
-        });
+            )
+        );
     },
 
     /** Implement client side workflow search/filtering */
@@ -472,9 +472,7 @@ var ImportWorkflowView = Backbone.View.extend({
     /** Open page to import workflow */
     render: function() {
         var self = this;
-        $.getJSON(Galaxy.root + "workflow/upload_import_workflow", function(
-            options
-        ) {
+        $.getJSON(Galaxy.root + "workflow/upload_import_workflow", options => {
             self.$el.empty().append(self._mainTemplate(options));
         });
     },

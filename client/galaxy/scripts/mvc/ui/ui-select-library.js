@@ -13,7 +13,7 @@ var LibraryDatasets = Backbone.Collection.extend({
     initialize: function() {
         var self = this;
         this.config = new Backbone.Model({ library_id: null });
-        this.config.on("change", function() {
+        this.config.on("change", () => {
             self.fetch({ reset: true });
         });
     },
@@ -60,9 +60,9 @@ var View = Backbone.View.extend({
         });
 
         // add reset handler for fetched libraries
-        this.libraries.on("reset", function() {
+        this.libraries.on("reset", () => {
             var data = [];
-            self.libraries.each(function(model) {
+            self.libraries.each(model => {
                 data.push({
                     value: model.id,
                     label: model.get("name")
@@ -72,11 +72,11 @@ var View = Backbone.View.extend({
         });
 
         // add reset handler for fetched library datasets
-        this.datasets.on("reset", function() {
+        this.datasets.on("reset", () => {
             var data = [];
             var library_current = self.library_select.text();
             if (library_current !== null) {
-                self.datasets.each(function(model) {
+                self.datasets.each(model => {
                     if (model.get("type") === "file") {
                         data.push({
                             value: model.id,
@@ -89,7 +89,7 @@ var View = Backbone.View.extend({
         });
 
         // add change event. fires on trigger
-        this.on("change", function() {
+        this.on("change", () => {
             options.onchange && options.onchange(self.value());
         });
 

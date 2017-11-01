@@ -100,7 +100,7 @@ var TabularDataset = Dataset.extend({
         var next_chunk = $.Deferred();
         $.getJSON(this.attributes.chunk_url, {
             offset: self.attributes.offset
-        }).success(function(chunk) {
+        }).success(chunk => {
             var rval;
             if (chunk.ck_data !== "") {
                 // Found chunk.
@@ -154,7 +154,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         if (!this.loading_chunk && this.scrolled_to_bottom()) {
             this.loading_chunk = true;
             this.loading_indicator.show();
-            $.when(self.model.get_next_chunk()).then(function(result) {
+            $.when(self.model.get_next_chunk()).then(result => {
                 if (result) {
                     self._renderChunk(result);
                     self.loading_chunk = false;
@@ -198,7 +198,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             this._renderChunk(first_chunk);
         } else {
             // No bootstrapping, so get first chunk and then render.
-            $.when(self.model.get_next_chunk()).then(function(result) {
+            $.when(self.model.get_next_chunk()).then(result => {
                 self._renderChunk(result);
             });
         }
@@ -206,7 +206,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         // -- Show new chunks during scrolling. --
 
         // Set up chunk loading when scrolling using the scrolling element.
-        this.scroll_elt.scroll(function() {
+        this.scroll_elt.scroll(() => {
             self.attempt_to_fetch();
         });
     },
@@ -287,7 +287,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
                 },
                 this
             );
-            _.each(_.range(num_columns - cells.length), function() {
+            _.each(_.range(num_columns - cells.length), () => {
                 row.append($("<td>"));
             });
         }
@@ -319,9 +319,10 @@ var TopLevelTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
         TabularDatasetChunkedView.prototype.initialize.call(this, options);
 
         // Scrolling happens in top-level elements.
-        var scroll_elt = _.find(this.$el.parents(), function(p) {
-            return $(p).css("overflow") === "auto";
-        });
+        var scroll_elt = _.find(
+            this.$el.parents(),
+            p => $(p).css("overflow") === "auto"
+        );
 
         // If no scrolling element found, use window.
         if (!scroll_elt) {
@@ -575,7 +576,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
                 left: left + "px"
             });
             $("#btn_viz").off("click");
-            $("#btn_viz").click(function() {
+            $("#btn_viz").click(() => {
                 self.frame.add({
                     title: "Trackster",
                     url: self.url_viz + "/trackster?" + $.param(btn_viz_pars)
@@ -601,7 +602,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
 /**
  * Create a model, attach it to a view, render view, and attach it to a parent element.
  */
-var createModelAndView = function(model, view, model_config, parent_elt) {
+var createModelAndView = (model, view, model_config, parent_elt) => {
     // Create model, view.
     var a_view = new view({
         model: new model(model_config)
@@ -620,7 +621,7 @@ var createModelAndView = function(model, view, model_config, parent_elt) {
  * Create a tabular dataset chunked view (and requisite tabular dataset model)
  * and appends to parent_elt.
  */
-var createTabularDatasetChunkedView = function(options) {
+var createTabularDatasetChunkedView = options => {
     // If no model, create and set model from dataset config.
     if (!options.model) {
         options.model = new TabularDataset(options.dataset_config);

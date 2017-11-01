@@ -150,7 +150,7 @@ function init_refresh_on_change() {
 // used globally in grid-view
 window.init_refresh_on_change = init_refresh_on_change;
 
-$(document).ready(function() {
+$(document).ready(() => {
     // Refresh events for form fields.
     init_refresh_on_change();
 
@@ -214,10 +214,8 @@ $(document).ready(function() {
     function onloadWebhooks() {
         if (Galaxy.root !== undefined) {
             // Load all webhooks with the type 'onload'
-            $.getJSON(Galaxy.root + "api/webhooks/onload/all", function(
-                webhooks
-            ) {
-                _.each(webhooks, function(webhook) {
+            $.getJSON(Galaxy.root + "api/webhooks/onload/all", webhooks => {
+                _.each(webhooks, webhook => {
                     if (webhook.activate && webhook.script) {
                         $("<script/>", { type: "text/javascript" })
                             .text(webhook.script)

@@ -76,7 +76,7 @@ var DCListItemView = FoldoutListItemView.extend(
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-DCListItemView.prototype.templates = (function() {
+DCListItemView.prototype.templates = (() => {
     var warnings = _.extend(
         {},
         FoldoutListItemView.prototype.templates.warnings,
@@ -176,7 +176,7 @@ var DCEListItemView = ListItemView.extend(
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-DCEListItemView.prototype.templates = (function() {
+DCEListItemView.prototype.templates = (() => {
     // use the element identifier here - since that will persist and the user will need it
     var titleBarTemplate = BASE_MVC.wrapTemplate(
         [
@@ -239,7 +239,7 @@ var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend(
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-DatasetDCEListItemView.prototype.templates = (function() {
+DatasetDCEListItemView.prototype.templates = (() => {
     // use the element identifier here and not the dataset name
     //TODO:?? can we steal the DCE titlebar?
     var titleBarTemplate = BASE_MVC.wrapTemplate(

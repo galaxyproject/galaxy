@@ -102,7 +102,7 @@ function spin(
     error_callback,
     spin_state
 ) {
-    var spinner = function() {
+    var spinner = () => {
         var ajax_params = {
             url: url,
             xhrFields: {
@@ -153,7 +153,7 @@ function spin_until(
     spin_state
 ) {
     var warn_at = 40; // ~2 mins
-    var message_once = function(message, spin_state) {
+    var message_once = (message, spin_state) => {
         if (spin_state.count == 1) {
             display_spinner();
             toastr.info(message, null, {
@@ -164,7 +164,7 @@ function spin_until(
             });
         }
     };
-    var wrapped_success = function(data) {
+    var wrapped_success = data => {
         if (!bool_response || (bool_response && data == true)) {
             console.log(messages["success"]);
             clear_main_area();
@@ -182,7 +182,7 @@ function spin_until(
         }
         return true; // stop spinning
     };
-    var timeout_error = function(jqxhr, status, error) {
+    var timeout_error = (jqxhr, status, error) => {
         message_once(messages["waiting"], spin_state);
         if (spin_state.count == warn_at) {
             toastr.warning(messages["wait_warn"], "Warning", {

@@ -2,18 +2,16 @@ var searchShed = function(request, response) {
     var that = this;
     var shed_url = this.shed_url;
     var base_url = Galaxy.root + "api/tool_shed/search";
-    $.get(base_url, { term: request.term, tool_shed_url: shed_url }, function(
-        data
-    ) {
+    $.get(base_url, { term: request.term, tool_shed_url: shed_url }, data => {
         var result_list = that.shedParser(data);
         response(result_list);
     });
 };
 
-var shedParser = function(jsondata) {
+var shedParser = jsondata => {
     var results = [];
     var hits = jsondata.hits;
-    $.each(hits, function(hit) {
+    $.each(hits, hit => {
         var record = hits[hit];
         var label =
             record.repository.name +
@@ -27,7 +25,7 @@ var shedParser = function(jsondata) {
     return results;
 };
 
-var addToQueue = function(metadata) {
+var addToQueue = metadata => {
     if (metadata.tool_shed_url.substr(-1) == "/") {
         metadata.tool_shed_url = metadata.tool_shed_url.substr(
             0,
@@ -48,7 +46,7 @@ var addToQueue = function(metadata) {
     localStorage.repositories = JSON.stringify(queued_repos);
 };
 
-var queueLength = function() {
+var queueLength = () => {
     if (localStorage.hasOwnProperty("repositories")) {
         var repo_queue = JSON.parse(localStorage.repositories);
         var queue_length = Object.keys(repo_queue).length;

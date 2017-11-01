@@ -154,7 +154,7 @@ GalaxyApp.prototype._initLogger = function _initLogger(loggerOptions) {
 
     self.logger = new metricsLogger.MetricsLogger(loggerOptions);
     self.emit = {};
-    ["log", "debug", "info", "warn", "error", "metric"].map(function(i) {
+    ["log", "debug", "info", "warn", "error", "metric"].map(i => {
         self.emit[i] = function(data) {
             self.logger.emit(
                 i,
@@ -198,7 +198,7 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners() {
     // hook to jq beforeSend to record the most recent ajax call and cache some data about it
     /** cached info about the last ajax call made through jQuery */
     self.lastAjax = {};
-    $(document).bind("ajaxSend", function(ev, xhr, options) {
+    $(document).bind("ajaxSend", (ev, xhr, options) => {
         var data = options.data;
         try {
             data = JSON.parse(data);

@@ -35,7 +35,7 @@ function _filterDatasetJSON(datasetJSON, where, datasetsOnly) {
         return true;
     }
 
-    return datasetJSON.filter(function(json) {
+    return datasetJSON.filter(json => {
         console.debug(json);
         return (
             !json.deleted &&
@@ -81,7 +81,7 @@ function _filterDatasetJSON(datasetJSON, where, datasetsOnly) {
  *          }
  *      });
  */
-var DatasetChoiceModal = function(datasetJSON, options) {
+var DatasetChoiceModal = (datasetJSON, options) => {
     // option defaults
     options = _.defaults(options || {}, {
         // show datasets or datasets and collections
@@ -114,11 +114,7 @@ var DatasetChoiceModal = function(datasetJSON, options) {
 
     // resolve the returned promise with the json of the selected datasets
     function resolveWithSelected() {
-        promise.resolve(
-            list.getSelectedModels().map(function(model) {
-                return model.toJSON();
-            })
-        );
+        promise.resolve(list.getSelectedModels().map(model => model.toJSON()));
     }
     // if multiselect - add a button for the user to complete the changes
     if (options.multiselect) {
@@ -158,24 +154,24 @@ var DatasetChoiceModal = function(datasetJSON, options) {
     });
 
     // when the list is rendered, show the modal (also add a specifying class for css)
-    list.once("rendered:initial", function() {
+    list.once("rendered:initial", () => {
         modal.show();
         modal.$el.addClass("dataset-choice-modal");
     });
     if (!options.multiselect) {
         // if single select, remove the all/none list actions from the panel
-        list.on("rendered", function() {
+        list.on("rendered", () => {
             list.$(".list-actions").hide();
         });
         // if single select, immediately resolve on a single selection
-        list.on("view:selected", function(view) {
+        list.on("view:selected", view => {
             promise.resolve([view.model.toJSON()]);
         });
     }
     list.render(0);
 
     // return the promise, and on any resolution close the modal
-    return promise.always(function() {
+    return promise.always(() => {
         modal.hide();
     });
 };
@@ -296,11 +292,11 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
             label: chooser.label,
             datasets: chooser.datasetJSON,
             selected: _.compact(
-                _.map(chooser.selected, function(id) {
-                    return _.findWhere(chooser.datasetJSON, {
+                _.map(chooser.selected, id =>
+                    _.findWhere(chooser.datasetJSON, {
                         id: id
-                    });
-                })
+                    })
+                )
             )
         };
     },
@@ -322,7 +318,7 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
         var chooser = this;
 
         return this._createModal()
-            .done(function(json) {
+            .done(json => {
                 if (json) {
                     chooser.selected = _.pluck(json, "id");
                     chooser.trigger("selected", chooser, json);

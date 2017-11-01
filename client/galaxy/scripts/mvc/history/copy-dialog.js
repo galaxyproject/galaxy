@@ -126,7 +126,7 @@ var CopyDialog = {
             dialog._showAjaxIndicator();
             history
                 .copy(true, name, copyAllDatasets)
-                .done(function(response) {
+                .done(response => {
                     deferred.resolve(response);
                 })
                 .fail(function(xhr, status, message) {
@@ -142,7 +142,7 @@ var CopyDialog = {
                     );
                     deferred.rejectWith(deferred, arguments);
                 })
-                .done(function() {
+                .done(() => {
                     if (autoClose) {
                         modal.hide();
                     }
@@ -167,7 +167,7 @@ var CopyDialog = {
                 buttons: _.object([
                     [
                         _l("Cancel"),
-                        function() {
+                        () => {
                             modal.hide();
                         }
                     ],
@@ -191,7 +191,7 @@ var CopyDialog = {
             .$("#copy-modal-title")
             .focus()
             .select();
-        modal.$("#copy-modal-title").on("keydown", function(ev) {
+        modal.$("#copy-modal-title").on("keydown", ev => {
             if (ev.keyCode === 13) {
                 ev.preventDefault();
                 checkNameAndCopy();
@@ -237,7 +237,7 @@ var ImportDialog = _.extend({}, CopyDialog, {
  *                          only non-deleted datasets
  *     {String} allDatasets default initial checked radio button: 'copy-all' or 'copy-non-deleted',
  */
-var historyCopyDialog = function(history, options) {
+var historyCopyDialog = (history, options) => {
     options = options || {};
     // create our own modal if Galaxy doesn't have one (mako tab without use_panels)
     var modal = window.parent.Galaxy.modal || new MODAL.View({});

@@ -90,15 +90,10 @@ var DatasetDCEListItemEdit = DATASET_LI_EDIT.DatasetListItemEdit.extend(
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-DatasetDCEListItemEdit.prototype.templates = (function() {
-    return _.extend(
-        {},
-        DATASET_LI_EDIT.DatasetListItemEdit.prototype.templates,
-        {
-            titleBar: DC_LI.DatasetDCEListItemView.prototype.templates.titleBar
-        }
-    );
-})();
+DatasetDCEListItemEdit.prototype.templates = (() =>
+    _.extend({}, DATASET_LI_EDIT.DatasetListItemEdit.prototype.templates, {
+        titleBar: DC_LI.DatasetDCEListItemView.prototype.templates.titleBar
+    }))();
 
 //==============================================================================
 /** @class Read only view for a DatasetCollectionElement that is also a DatasetCollection

@@ -36,7 +36,7 @@ var menu = [
     {
         html: _l("Copy History"),
         func: function() {
-            historyCopyDialog(Galaxy.currHistoryPanel.model).done(function() {
+            historyCopyDialog(Galaxy.currHistoryPanel.model).done(() => {
                 Galaxy.currHistoryPanel.loadCurrentHistory();
             });
         }
@@ -63,7 +63,7 @@ var menu = [
                 Galaxy.currHistoryPanel &&
                 confirm(_l("Really delete the current history?"))
             ) {
-                Galaxy.currHistoryPanel.model._delete().done(function() {
+                Galaxy.currHistoryPanel.model._delete().done(() => {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 });
             }
@@ -83,7 +83,7 @@ var menu = [
                     )
                 )
             ) {
-                Galaxy.currHistoryPanel.model.purge().done(function() {
+                Galaxy.currHistoryPanel.model.purge().done(() => {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 });
             }
@@ -136,7 +136,7 @@ var menu = [
                 $.post(
                     Galaxy.root + "history/adjust_hidden",
                     { user_action: "unhide" },
-                    function() {
+                    () => {
                         Galaxy.currHistoryPanel.loadCurrentHistory();
                     }
                 );
@@ -156,7 +156,7 @@ var menu = [
                 $.post(
                     Galaxy.root + "history/adjust_hidden",
                     { user_action: "delete" },
-                    function() {
+                    () => {
                         Galaxy.currHistoryPanel.loadCurrentHistory();
                     }
                 );
@@ -205,7 +205,7 @@ Webhooks.add({
     callback: function(webhooks) {
         var webhooks_menu = [];
 
-        $.each(webhooks.models, function(index, model) {
+        $.each(webhooks.models, (index, model) => {
             var webhook = model.toJSON();
             if (webhook.activate) {
                 webhooks_menu.push({
@@ -227,7 +227,7 @@ Webhooks.add({
 });
 
 function buildMenu(isAnon, purgeAllowed, urlRoot) {
-    return _.clone(menu).filter(function(menuOption) {
+    return _.clone(menu).filter(menuOption => {
         if (isAnon && !menuOption.anon) {
             return false;
         }
@@ -242,7 +242,7 @@ function buildMenu(isAnon, purgeAllowed, urlRoot) {
         }
 
         if (menuOption.confirm) {
-            menuOption.func = function() {
+            menuOption.func = () => {
                 if (confirm(menuOption.confirm)) {
                     galaxy_main.location = menuOption.href;
                 }
@@ -252,7 +252,7 @@ function buildMenu(isAnon, purgeAllowed, urlRoot) {
     });
 }
 
-var create = function($button, options) {
+var create = ($button, options) => {
     options = options || {};
     var isAnon = options.anonymous === undefined ? true : options.anonymous;
     var purgeAllowed = options.purgeAllowed || false;

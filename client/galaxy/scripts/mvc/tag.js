@@ -110,7 +110,7 @@ var TagsEditor = Backbone.View
             var tags = this.model.get("tags");
             var addButton = "static/images/fugue/tag--plus.png";
             var renderedArray = [];
-            _.each(tags, function(tag) {
+            _.each(tags, tag => {
                 tag = tag.indexOf("name:") == 0 ? tag.slice(5) : tag;
                 var renderString =
                     '<span class="label label-info">' + tag + "</span>";
@@ -135,9 +135,7 @@ var TagsEditor = Backbone.View
                 return "";
             }
             return tagsArray
-                .map(function(tag) {
-                    return _.escape(self._nameToHash(tag));
-                })
+                .map(tag => _.escape(self._nameToHash(tag)))
                 .sort()
                 .join(",");
         },
@@ -157,7 +155,7 @@ var TagsEditor = Backbone.View
         /** set up any event listeners on the view's DOM (mostly handled by select2) */
         _setUpBehaviors: function() {
             var self = this;
-            this.$input().on("change", function(event) {
+            this.$input().on("change", event => {
                 // Modify any 'hashtag' 'nametags'
                 event.val = _.map(event.val, self._hashToName);
                 // save the model's tags in either remove or added event

@@ -106,7 +106,7 @@ export default Backbone.View.extend({
             self.value($(this).css("background-color"));
             self.$header.trigger("click");
         });
-        this.$header.on("click", function() {
+        this.$header.on("click", () => {
             self.visible = !self.visible;
             if (self.visible) {
                 self.$view.fadeIn("fast");

@@ -74,16 +74,12 @@ var DatasetCollectionElementView = Backbone.View
         discard: function() {
             var view = this;
             var parentWidth = this.$el.parent().width();
-            this.$el.animate(
-                { "margin-right": parentWidth },
-                "fast",
-                function() {
-                    view.trigger("discard", {
-                        source: view
-                    });
-                    view.destroy();
-                }
-            );
+            this.$el.animate({ "margin-right": parentWidth }, "fast", () => {
+                view.trigger("discard", {
+                    source: view
+                });
+                view.destroy();
+            });
         },
 
         /** remove the DOM and any listeners */
@@ -213,7 +209,7 @@ var ListCollectionCreator = Backbone.View
         initialize: function(attributes) {
             this.metric("ListCollectionCreator.initialize", attributes);
             var creator = this;
-            _.each(this.defaultAttributes, function(value, key) {
+            _.each(this.defaultAttributes, (value, key) => {
                 value = attributes[key] || value;
                 creator[key] = value;
             });
@@ -259,7 +255,7 @@ var ListCollectionCreator = Backbone.View
 
         /** add ids to dataset objs in initial list if none */
         _ensureElementIds: function() {
-            this.workingElements.forEach(function(element) {
+            this.workingElements.forEach(element => {
                 if (!element.hasOwnProperty("id")) {
                     element.id = _.uniqueId();
                 }
@@ -273,9 +269,7 @@ var ListCollectionCreator = Backbone.View
             var existingNames = {};
             creator.invalidElements = [];
 
-            this.workingElements = this.workingElements.filter(function(
-                element
-            ) {
+            this.workingElements = this.workingElements.filter(element => {
                 var problem = creator._isElementInvalid(element);
                 if (problem) {
                     creator.invalidElements.push({
@@ -310,7 +304,7 @@ var ListCollectionCreator = Backbone.View
             var SAFETY = 900;
             var counter = 1;
             var existingNames = {};
-            this.workingElements.forEach(function(element) {
+            this.workingElements.forEach(element => {
                 var currName = element.name;
                 while (existingNames.hasOwnProperty(currName)) {
                     currName = element.name + " (" + counter + ")";
@@ -447,7 +441,7 @@ var ListCollectionCreator = Backbone.View
             var $tmp = jQuery("<div/>");
             var $list = creator.$list();
 
-            _.each(this.elementViews, function(view) {
+            _.each(this.elementViews, view => {
                 view.destroy();
                 creator.removeElementView(view);
             });
@@ -457,7 +451,7 @@ var ListCollectionCreator = Backbone.View
             //     return;
             // }
 
-            creator.workingElements.forEach(function(element) {
+            creator.workingElements.forEach(element => {
                 var elementView = creator._createElementView(element);
                 $tmp.append(elementView.$el);
             });
@@ -564,17 +558,17 @@ var ListCollectionCreator = Backbone.View
 
             var creator = this;
 
-            var elements = this.workingElements.map(function(element) {
-                return creator._elementToJSON(element);
-            });
+            var elements = this.workingElements.map(element =>
+                creator._elementToJSON(element)
+            );
 
             creator.blocking = true;
             return creator
                 .creationFn(elements, name, creator.hideOriginals)
-                .always(function() {
+                .always(() => {
                     creator.blocking = false;
                 })
-                .fail(function(xhr, status, message) {
+                .fail((xhr, status, message) => {
                     creator.trigger("error", {
                         xhr: xhr,
                         status: status,
@@ -1135,17 +1129,13 @@ function createListCollection(contents, defaultHideSourceItems) {
     var promise = listCollectionCreatorModal(elements, {
         defaultHideSourceItems: defaultHideSourceItems,
         creationFn: function(elements, name, hideSourceItems) {
-            elements = elements.map(function(element) {
-                return {
-                    id: element.id,
-                    name: element.name,
-                    //TODO: this allows for list:list even if the filter above does not - reconcile
-                    src:
-                        element.history_content_type === "dataset"
-                            ? "hda"
-                            : "hdca"
-                };
-            });
+            elements = elements.map(element => ({
+                id: element.id,
+                name: element.name,
+
+                //TODO: this allows for list:list even if the filter above does not - reconcile
+                src: element.history_content_type === "dataset" ? "hda" : "hdca"
+            }));
             return contents.createHDCA(elements, "list", name, hideSourceItems);
         }
     });

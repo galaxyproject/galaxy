@@ -33,9 +33,9 @@ var Citation = Backbone.Model.extend(baseMVC.LoggableMixin).extend({
         // bibtex returns successfully parsed in .entries and any parsing errors in .errors
         if (parsed.errors.length) {
             // the gen. form of these errors seems to be [ line, col, char, error message ]
-            var errors = parsed.errors.reduce(function(all, current) {
-                return all + "; " + current;
-            });
+            var errors = parsed.errors.reduce(
+                (all, current) => all + "; " + current
+            );
             // throw new Error( 'Error parsing bibtex: ' + errors );
             this.log("Error parsing bibtex: " + errors);
         }

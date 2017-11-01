@@ -68,7 +68,7 @@ var HistoryPanel = Backbone.View.extend({
         this.historyView.loadCurrentHistory();
 
         // fetch to update the quota meter adding 'current' for any anon-user's id
-        Galaxy.listenTo(this.historyView, "history-size-change", function() {
+        Galaxy.listenTo(this.historyView, "history-size-change", () => {
             Galaxy.user.fetch({
                 url: Galaxy.user.urlRoot() + "/" + (Galaxy.user.id || "current")
             });

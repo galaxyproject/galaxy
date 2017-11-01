@@ -78,10 +78,10 @@ var View = Backbone.View.extend({
                         )
                 )
         );
-        this.listenTo(this.collection, "add remove reset", function() {
+        this.listenTo(this.collection, "add remove reset", () => {
             self._renderTable();
         });
-        this.listenTo(this.model, "change", function() {
+        this.listenTo(this.model, "change", () => {
             self._renderForm();
         });
         this.collection.fetch();
@@ -97,7 +97,7 @@ var View = Backbone.View.extend({
         var self = this;
         this.table.delAll();
         this.collection.sort();
-        this.collection.each(function(model) {
+        this.collection.each(model => {
             self.table.add(model.get("name"));
             self.table.add(model.id);
             self.table.add(

@@ -99,7 +99,7 @@ var Tool = Backbone.View.extend({
 
     _customize: function(form) {
         var options = form.model.attributes;
-        Utils.deepeach(options.inputs, function(input) {
+        Utils.deepeach(options.inputs, input => {
             if (input.type) {
                 if (["data", "data_collection"].indexOf(input.type) != -1) {
                     input.type = "hidden";
@@ -120,7 +120,7 @@ var Tool = Backbone.View.extend({
                 }
             }
         });
-        Utils.deepeach(options.inputs, function(input) {
+        Utils.deepeach(options.inputs, input => {
             input.type == "conditional" &&
                 (input.test_param.collapsible_value = undefined);
         });
@@ -231,9 +231,9 @@ function _addSections(form) {
         for (key in node.input_terminals) {
             input_terminal_names.push(node.input_terminals[key].name);
         }
-        extensions.sort(function(a, b) {
-            return a.label > b.label ? 1 : a.label < b.label ? -1 : 0;
-        });
+        extensions.sort(
+            (a, b) => (a.label > b.label ? 1 : a.label < b.label ? -1 : 0)
+        );
         extensions.unshift({
             0: "Sequences",
             1: "Sequences"

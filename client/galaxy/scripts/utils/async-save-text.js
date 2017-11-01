@@ -26,7 +26,7 @@ function async_save_text(
     }
 
     // Set up input element.
-    $("#" + click_to_edit_elt).click(function() {
+    $("#" + click_to_edit_elt).click(() => {
         // Check if this is already active
         if ($("#renaming-active").length > 0) {
             return;

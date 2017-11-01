@@ -109,7 +109,7 @@ var VisualizationCollection = Backbone.Collection.extend(
             //  and overwrite existing data on the client
             // see Backbone.Collection.set and _prepareModel
             var collection = this;
-            models = _.map(models, function(model) {
+            models = _.map(models, model => {
                 var existing = collection.get(model.id);
                 if (!existing) {
                     return model;

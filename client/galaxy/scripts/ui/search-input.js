@@ -2,11 +2,7 @@ import jQuery from "jquery";
 ("use_strict");
 
 var $ = jQuery;
-var _l =
-    window._l ||
-    function(s) {
-        return s;
-    };
+var _l = window._l || (s => s);
 
 //TODO: consolidate with tool menu functionality, use there
 

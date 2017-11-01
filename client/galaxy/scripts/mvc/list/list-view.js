@@ -267,17 +267,17 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             panel.log("_queueNewRender:", $newRender, speed);
 
             $(panel).queue("fx", [
-                function(next) {
+                next => {
                     panel.$el.fadeOut(speed, next);
                 },
-                function(next) {
+                next => {
                     panel._swapNewRender($newRender);
                     next();
                 },
-                function(next) {
+                next => {
                     panel.$el.fadeIn(speed, next);
                 },
-                function(next) {
+                next => {
                     panel.trigger("rendered", panel);
                     next();
                 }
@@ -330,13 +330,13 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
                     "</div>"
                 ].join("")
             );
-            var $actions = actions.map(function(action) {
+            var $actions = actions.map(action => {
                 var html = [
                     '<li><a href="javascript:void(0);">',
                     action.html,
                     "</a></li>"
                 ].join("");
-                return $(html).click(function(ev) {
+                return $(html).click(ev => {
                     ev.preventDefault();
                     return action.func(ev);
                 });
@@ -392,7 +392,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             var shownModels = panel._filterCollection();
             // console.log( 'models filtered:', shownModels );
 
-            panel.views = shownModels.map(function(itemModel) {
+            panel.views = shownModels.map(itemModel => {
                 var view = panel._createItemView(itemModel);
                 return view;
             });
@@ -424,11 +424,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             // override this
             var panel = this;
             return (
-                _.every(
-                    panel.filters.map(function(fn) {
-                        return fn.call(model);
-                    })
-                ) &&
+                _.every(panel.filters.map(fn => fn.call(model))) &&
                 (!panel.searchFor || model.matchesAll(panel.searchFor))
             );
         },
@@ -452,7 +448,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         _destroyItemViews: function(view) {
             var self = this;
-            self.views.forEach(function(v) {
+            self.views.forEach(v => {
                 self.stopListening(v);
             });
             self.views = [];
@@ -522,9 +518,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             // console.log( '_attachItems:', $whereTo, this.$list( $whereTo ) );
             //ASSUMES: $list has been emptied
             this.$list($whereTo).append(
-                this.views.map(function(view) {
-                    return self._renderItemView$el(view);
-                })
+                this.views.map(view => self._renderItemView$el(view))
             );
             return this;
         },
@@ -544,14 +538,14 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         /** expand all item views */
         expandAll: function() {
-            _.each(this.views, function(view) {
+            _.each(this.views, view => {
                 view.expand();
             });
         },
 
         /** collapse all item views */
         collapseAll: function() {
-            _.each(this.views, function(view) {
+            _.each(this.views, view => {
                 view.collapse();
             });
         },
@@ -572,7 +566,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             // console.log( 'adding and rendering:', modelIndex, view.toString() );
 
             $(view).queue("fx", [
-                function(next) {
+                next => {
                     // hide the empty message first if only view
                     if (panel.$emptyMessage().is(":visible")) {
                         panel.$emptyMessage().fadeOut(panel.fxSpeed, next);
@@ -580,7 +574,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
                         next();
                     }
                 },
-                function(next) {
+                next => {
                     panel._attachView(view, modelIndex);
                     next();
                 }
@@ -604,7 +598,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
             panel.trigger("view:attached", view);
             if (useFx) {
-                view.$el.slideDown(panel.fxSpeed, function() {
+                view.$el.slideDown(panel.fxSpeed, () => {
                     panel.trigger("view:attached:rendered");
                 });
             } else {
@@ -632,9 +626,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
         /** Remove a view from the panel (if found) */
         removeItemView: function(model, collection, options) {
             var panel = this;
-            var view = _.find(panel.views, function(v) {
-                return v.model === model;
-            });
+            var view = _.find(panel.views, v => v.model === model);
             if (!view) {
                 return undefined;
             }
@@ -644,10 +636,10 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             // potentially show the empty message if no views left
             // use anonymous queue here - since remove can happen multiple times
             $({}).queue("fx", [
-                function(next) {
+                next => {
                     view.$el.fadeOut(panel.fxSpeed, next);
                 },
-                function(next) {
+                next => {
                     view.remove();
                     panel.trigger("view:removed:rendered");
                     if (!panel.views.length) {
@@ -662,9 +654,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         /** get views based on model.id */
         viewFromModelId: function(id) {
-            return _.find(this.views, function(v) {
-                return v.model.id === id;
-            });
+            return _.find(this.views, v => v.model.id === id);
         },
 
         /** get views based on model */
@@ -674,9 +664,9 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         /** get views based on model properties */
         viewsWhereModel: function(properties) {
-            return this.views.filter(function(view) {
-                return _.isMatch(view.model.attributes, properties);
-            });
+            return this.views.filter(view =>
+                _.isMatch(view.model.attributes, properties)
+            );
         },
 
         /** A range of views between (and including) viewA and viewB */
@@ -765,7 +755,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             this.$(".list-actions").slideDown(speed);
             speed =
                 this.views.length >= this.THROTTLE_SELECTOR_FX_AT ? 0 : speed;
-            _.each(this.views, function(view) {
+            _.each(this.views, view => {
                 view.showSelector(speed);
             });
             //this.selected = [];
@@ -779,7 +769,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             this.$(".list-actions").slideUp(speed);
             speed =
                 this.views.length >= this.THROTTLE_SELECTOR_FX_AT ? 0 : speed;
-            _.each(this.views, function(view) {
+            _.each(this.views, view => {
                 view.hideSelector(speed);
             });
             this.selected = [];
@@ -797,7 +787,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         /** select all visible items */
         selectAll: function(event) {
-            _.each(this.views, function(view) {
+            _.each(this.views, view => {
                 view.select(event);
             });
         },
@@ -805,7 +795,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
         /** deselect all visible items */
         deselectAll: function(event) {
             this.lastSelected = null;
-            _.each(this.views, function(view) {
+            _.each(this.views, view => {
                 view.deselect(event);
             });
         },
@@ -813,7 +803,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
         /** select a range of datasets between A and B */
         selectRange: function(viewA, viewB) {
             var range = this.viewRange(viewA, viewB);
-            _.each(range, function(view) {
+            _.each(range, view => {
                 view.select();
             });
             return range;
@@ -821,18 +811,14 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         /** return an array of all currently selected itemViews */
         getSelectedViews: function() {
-            return _.filter(this.views, function(v) {
-                return v.selected;
-            });
+            return _.filter(this.views, v => v.selected);
         },
 
         /** return a collection of the models of all currenly selected items */
         getSelectedModels: function() {
             // console.log( '(getSelectedModels)' );
             return new this.collection.constructor(
-                _.map(this.getSelectedViews(), function(view) {
-                    return view.model;
-                })
+                _.map(this.getSelectedViews(), view => view.model)
             );
         },
 
@@ -921,7 +907,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-ListPanel.prototype.templates = (function() {
+ListPanel.prototype.templates = (() => {
     var elTemplate = BASE_MVC.wrapTemplate([
         // temp container
         "<div>",
@@ -1084,7 +1070,7 @@ var ModelListPanel = ListPanel.extend({
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-ModelListPanel.prototype.templates = (function() {
+ModelListPanel.prototype.templates = (() => {
     var controlsTemplate = BASE_MVC.wrapTemplate([
         '<div class="controls">',
         '<div class="title">',

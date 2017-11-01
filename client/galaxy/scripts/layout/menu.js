@@ -108,8 +108,8 @@ var Collection = Backbone.Collection.extend({
         Webhooks.add({
             url: "api/webhooks/masthead/all",
             callback: function(webhooks) {
-                $(document).ready(function() {
-                    $.each(webhooks.models, function(index, model) {
+                $(document).ready(() => {
+                    $.each(webhooks.models, (index, model) => {
                         var webhook = model.toJSON();
                         if (webhook.activate) {
                             var obj = {
@@ -359,7 +359,7 @@ var Tab = Backbone.View.extend({
             $("#dd-helper")
                 .show()
                 .off()
-                .on("click", function() {
+                .on("click", () => {
                     $("#dd-helper").hide();
                     self.model.set("show_menu", false);
                 });
@@ -369,7 +369,7 @@ var Tab = Backbone.View.extend({
         }
         this.$menu.empty().removeClass("dropdown-menu");
         if (this.model.get("menu")) {
-            _.each(this.model.get("menu"), function(menuItem) {
+            _.each(this.model.get("menu"), menuItem => {
                 self.$menu.append(self._buildMenuItem(menuItem));
                 menuItem.divider &&
                     self.$menu.append($("<li/>").addClass("divider"));
@@ -395,7 +395,7 @@ var Tab = Backbone.View.extend({
                 .attr("href", options.url)
                 .attr("target", options.target)
                 .html(options.title)
-                .on("click", function(e) {
+                .on("click", e => {
                     e.preventDefault();
                     self.model.set("show_menu", false);
                     if (options.onclick) {
@@ -413,7 +413,7 @@ var Tab = Backbone.View.extend({
         var model = this.model;
         e.preventDefault();
         $(".tooltip").hide();
-        model.trigger("dispatch", function(m) {
+        model.trigger("dispatch", m => {
             model.id !== m.id && m.get("menu") && m.set("show_menu", false);
         });
         if (!model.get("disabled")) {
@@ -447,7 +447,7 @@ var Tab = Backbone.View.extend({
                         " to use this feature."
                 })
                 .popover("show");
-            setTimeout(function() {
+            setTimeout(() => {
                 self.$toggle.popover("destroy");
             }, 5000);
         }

@@ -58,7 +58,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
 
     bindEvents: function() {
         var that = this;
-        $("#changeset").on("change", function() {
+        $("#changeset").on("change", () => {
             that.options.current_changeset = $("#changeset")
                 .find("option:selected")
                 .text();
@@ -69,10 +69,10 @@ var ToolShedRepositoryView = Backbone.View.extend({
             that.checkInstalled(that.options.current_metadata);
             that.reDraw();
         });
-        $("#tool_panel_section_select").on("change", function() {
+        $("#tool_panel_section_select").on("change", () => {
             that.tpsSelection();
         });
-        $("#install_repository").on("click", function(ev) {
+        $("#install_repository").on("click", ev => {
             var form = $("#repository_installation");
             ev.preventDefault();
             var params = {};
@@ -110,7 +110,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
             var url = $("#repository_installation").attr("action");
             that.prepareInstall(params, url);
         });
-        $("#queue_install").on("click", function(ev) {
+        $("#queue_install").on("click", ev => {
             that.options.current_changeset = $("#changeset")
                 .find("option:selected")
                 .text();
@@ -120,7 +120,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 ];
             var changeset = that.options.current_changeset;
             var repository_metadata = {};
-            _.each(Object.keys(that.options.current_metadata), function(key) {
+            _.each(Object.keys(that.options.current_metadata), key => {
                 if (!repository_metadata[key]) {
                     repository_metadata[key] =
                         that.options.current_metadata[key];
@@ -166,7 +166,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 $(this).removeAttr("default");
             }
         });
-        $(function() {
+        $(() => {
             $("#repository_dependencies").jstree();
         });
         $(".tool_form").on("click", function() {
@@ -186,10 +186,10 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 tsr_id: tsr_id,
                 changeset: changeset
             };
-            $.get(api_url, params, function(data) {
+            $.get(api_url, params, data => {
                 data.cls = "ui-portlet-plain";
                 var toolform = new FormView(data);
-                Utils.deepeach(data.inputs, function(input) {
+                Utils.deepeach(data.inputs, input => {
                     if (input.type) {
                         if (
                             ["data", "data_collection"].indexOf(input.type) !=
@@ -226,9 +226,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         var params = { name: metadata.name, owner: metadata.owner };
         var already_installed = false;
         var queued = that.repoQueued(metadata);
-        $.get(Galaxy.root + "api/tool_shed_repositories", params, function(
-            data
-        ) {
+        $.get(Galaxy.root + "api/tool_shed_repositories", params, data => {
             for (var index = 0; index < data.length; index++) {
                 var repository = data[index];
                 var installed = !repository.deleted && !repository.uninstalled;
@@ -344,7 +342,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
 
     prepareInstall: function(params, api_url) {
         var that = this;
-        $.post(api_url, params, function(data) {
+        $.post(api_url, params, data => {
             var iri_parameters = JSON.parse(data);
             that.doInstall(iri_parameters);
         });
@@ -355,7 +353,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
             Galaxy.root + "admin_toolshed/install_repositories";
         var repositories = params.repositories;
         var new_route = "status/r/" + repositories.join("|");
-        $.post(controller_url, params, function(data) {
+        $.post(controller_url, params, data => {
             console.log("Initializing repository installation succeeded");
         });
         Backbone.history.navigate(new_route, {

@@ -37,7 +37,7 @@ var FrameView = Backbone.View.extend({
         var options = this.model.attributes;
         this.$title.html(options.title || "");
         this.$header.find(".f-icon-left").remove();
-        _.each(options.menu, function(option) {
+        _.each(options.menu, option => {
             var $option = $("<div/>")
                 .addClass("f-icon-left")
                 .addClass(option.icon);
@@ -45,7 +45,7 @@ var FrameView = Backbone.View.extend({
                 $option.attr("disabled", true);
             } else {
                 $option
-                    .on("click", function() {
+                    .on("click", () => {
                         option.onclick(self);
                     })
                     .tooltip({
@@ -136,7 +136,7 @@ var View = Backbone.View.extend({
         // initialize panel
         this.visible ? this.show() : this.hide();
         this._panelRefresh();
-        $(window).resize(function() {
+        $(window).resize(() => {
             self.visible && self._panelRefresh();
         });
     },
@@ -222,7 +222,7 @@ var View = Backbone.View.extend({
     del: function(frame) {
         var self = this;
         var $frame = frame.$el;
-        $frame.fadeOut("fast", function() {
+        $frame.fadeOut("fast", () => {
             $frame.remove();
             delete self.frame_list[frame.id];
             self.frame_counter--;
@@ -528,7 +528,7 @@ var View = Backbone.View.extend({
         var self = this;
         $(".frame")
             .promise()
-            .done(function() {
+            .done(() => {
                 self._panelScroll(0, true);
             });
     },
@@ -575,20 +575,18 @@ var View = Backbone.View.extend({
             frame.grid_location = null;
             place_list.push([frame, this._locationRank(new_loc)]);
         }
-        _.each(this.frame_list, function(f) {
+        _.each(this.frame_list, f => {
             if (f.grid_location !== null) {
                 f.grid_location = null;
                 place_list.push([f, f.grid_rank]);
             }
         });
-        place_list.sort(function(a, b) {
-            return a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0;
-        });
-        _.each(place_list, function(place) {
+        place_list.sort((a, b) => (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0));
+        _.each(place_list, place => {
             self._framePlace(place[0], animate);
         });
         this.top_max = 0;
-        _.each(this.frame_list, function(f) {
+        _.each(this.frame_list, f => {
             if (f.grid_location !== null) {
                 self.top_max = Math.max(
                     self.top_max,
@@ -641,7 +639,7 @@ var View = Backbone.View.extend({
         if (animate) {
             this._frameFocus(frame, true);
             var self = this;
-            frame.$el.animate({ top: p.top, left: p.left }, "fast", function() {
+            frame.$el.animate({ top: p.top, left: p.left }, "fast", () => {
                 self._frameFocus(frame, false);
             });
         } else {

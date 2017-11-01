@@ -68,7 +68,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
             var userFn = options.success;
 
             /** @ignore */
-            options.success = function(newModel, response) {
+            options.success = (newModel, response) => {
                 model.trigger("loaded", newModel, response);
                 if (userFn) {
                     userFn(newModel, response);
@@ -112,7 +112,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
 User.CURRENT_ID_STR = "current";
 
 // class method to load the current user via the api and return that model
-User.getCurrentUserFromApi = function(options) {
+User.getCurrentUserFromApi = options => {
     var currentUser = new User();
     currentUser.loadFromApi(User.CURRENT_ID_STR, options);
     return currentUser;

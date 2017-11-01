@@ -20,7 +20,7 @@ var View = Backbone.View.extend({
     render: function() {
         var self = this;
         this.$el.empty();
-        _.each(this.inputs, function(input) {
+        _.each(this.inputs, input => {
             self.add(input);
         });
     },
@@ -55,7 +55,7 @@ var View = Backbone.View.extend({
 
         // set onchange event for test parameter
         field.model &&
-            field.model.set("onchange", function(value) {
+            field.model.set("onchange", value => {
                 var selectedCase = self.app.data.matchCase(input_def, value);
                 for (var i in input_def.cases) {
                     var case_def = input_def.cases[i];
@@ -166,7 +166,7 @@ var View = Backbone.View.extend({
                 .addClass("ui-form-info")
                 .html(input_def.help)
         );
-        this.app.on("expand", function(input_id) {
+        this.app.on("expand", input_id => {
             portlet.$("#" + input_id).length > 0 && portlet.expand();
         });
         this._append(portlet.$el, input_def.id);
@@ -178,9 +178,9 @@ var View = Backbone.View.extend({
         var id = input_def.id;
         input_def.onchange =
             input_def.onchange ||
-            function() {
+            (() => {
                 self.app.trigger("change", id);
-            };
+            });
         var field = this.parameters.create(input_def);
         this.app.field_list[id] = field;
         var input_element = new InputElement(this.app, {

@@ -20,7 +20,7 @@ var Base = Backbone.View.extend({
         this.listenTo(this.model, "change:wait", this._changeWait, this);
         this.listenTo(this.model, "change:data", this._changeData, this);
         this.listenTo(this.model, "change:visible", this._changeVisible, this);
-        this.on("change", function() {
+        this.on("change", () => {
             self.model.get("onchange")(self.value());
         });
         this.render();
@@ -68,7 +68,7 @@ var Base = Backbone.View.extend({
         if (this._templateOptions) {
             this.$options.append(this._templateOptions(this.model.get("data")));
         } else {
-            _.each(this.model.get("data"), function(option) {
+            _.each(this.model.get("data"), option => {
                 self.$options.append(
                     $(self._templateOption(option))
                         .addClass("ui-option")
@@ -80,7 +80,7 @@ var Base = Backbone.View.extend({
             });
         }
         var self = this;
-        this.$("input").on("change", function() {
+        this.$("input").on("change", () => {
             self.value(self._getValue());
             self.trigger("change");
         });
@@ -162,7 +162,7 @@ var Base = Backbone.View.extend({
             this.$("input").prop("checked", false);
             if (new_value !== null) {
                 var values = $.isArray(new_value) ? new_value : [new_value];
-                _.each(values, function(v) {
+                _.each(values, v => {
                     self
                         .$('input[value="' + v + '"]')
                         .first()

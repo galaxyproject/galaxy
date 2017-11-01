@@ -108,7 +108,7 @@ export default Backbone.View.extend({
         });
 
         // handle text editing event
-        this.$text_content.on("change input", function(e) {
+        this.$text_content.on("change input", e => {
             self.model.set({
                 url_paste: $(e.target).val(),
                 file_size: $(e.target).val().length
@@ -118,36 +118,36 @@ export default Backbone.View.extend({
 
         // handle settings popover
         this.$settings
-            .on("click", function(e) {
+            .on("click", e => {
                 self._showSettings();
             })
-            .on("mousedown", function(e) {
+            .on("mousedown", e => {
                 e.preventDefault();
             });
 
         // model events
-        this.listenTo(this.model, "change:percentage", function() {
+        this.listenTo(this.model, "change:percentage", () => {
             self._refreshPercentage();
         });
-        this.listenTo(this.model, "change:status", function() {
+        this.listenTo(this.model, "change:status", () => {
             self._refreshStatus();
         });
-        this.listenTo(this.model, "change:info", function() {
+        this.listenTo(this.model, "change:info", () => {
             self._refreshInfo();
         });
-        this.listenTo(this.model, "change:file_name", function() {
+        this.listenTo(this.model, "change:file_name", () => {
             self._refreshFileName();
         });
-        this.listenTo(this.model, "change:file_mode", function() {
+        this.listenTo(this.model, "change:file_mode", () => {
             self._refreshMode();
         });
-        this.listenTo(this.model, "change:file_size", function() {
+        this.listenTo(this.model, "change:file_size", () => {
             self._refreshFileSize();
         });
-        this.listenTo(this.model, "remove", function() {
+        this.listenTo(this.model, "remove", () => {
             self.remove();
         });
-        this.app.collection.on("reset", function() {
+        this.app.collection.on("reset", () => {
             self.remove();
         });
     },
@@ -172,7 +172,7 @@ export default Backbone.View.extend({
 
     /** Refresh ready or not states */
     _refreshReady: function() {
-        this.app.collection.each(function(model) {
+        this.app.collection.each(model => {
             model.set(
                 "status",
                 (model.get("file_size") > 0 && "ready") || "init"

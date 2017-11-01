@@ -48,7 +48,7 @@ var View = Backbone.View.extend({
                     "</tr>" +
                     "</table>"
             );
-            _.each(options.shared_by_others, function(it, index) {
+            _.each(options.shared_by_others, (it, index) => {
                 var display_url =
                     Galaxy.root +
                     self.item +

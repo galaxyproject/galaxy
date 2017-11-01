@@ -52,9 +52,7 @@ var LibraryListView = Backbone.View.extend({
         var template = this.templateLibraryList();
         var libraries_to_render = null;
         var models = null;
-        var is_public = function(model) {
-            return model.get("public") === true;
-        };
+        var is_public = model => model.get("public") === true;
         $(".tooltip").hide();
         if (typeof options !== "undefined") {
             models =
@@ -76,9 +74,7 @@ var LibraryListView = Backbone.View.extend({
             if (Galaxy.libraries.preferences.get("with_deleted")) {
                 libraries_to_render = models;
             } else {
-                var is_deleted = function(model) {
-                    return model.get("deleted") === false;
-                };
+                var is_deleted = model => model.get("deleted") === false;
                 libraries_to_render = _.filter(models, is_deleted);
             }
             if (Galaxy.libraries.preferences.get("without_restricted")) {

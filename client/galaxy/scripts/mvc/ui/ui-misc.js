@@ -73,7 +73,7 @@ var Message = Backbone.View.extend({
             this.timeout && window.clearTimeout(this.timeout);
             if (!this.model.get("persistent")) {
                 var self = this;
-                this.timeout = window.setTimeout(function() {
+                this.timeout = window.setTimeout(() => {
                     self.model.set("message", "");
                 }, 3000);
             }
@@ -148,7 +148,7 @@ var Input = Backbone.View.extend({
         if (this.model.get("value") !== this.$el.val()) {
             this.$el.val(this.model.get("value"));
         }
-        _.each(["readonly", "disabled"], function(attr_name) {
+        _.each(["readonly", "disabled"], attr_name => {
             self.model.get(attr_name)
                 ? self.$el.attr(attr_name, true)
                 : self.$el.removeAttr(attr_name);
@@ -212,7 +212,7 @@ var Upload = Backbone.View.extend({
                 )
         );
         this.listenTo(this.model, "change", this.render, this);
-        this.$file.on("change", function(e) {
+        this.$file.on("change", e => {
             self._readFile(e);
         });
         this.render();

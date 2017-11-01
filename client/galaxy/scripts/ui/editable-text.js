@@ -32,7 +32,7 @@ $.fn.make_text_editable = function(config_dict) {
         container.removeClass("editable-text");
 
         // Handler for setting element text.
-        var set_text = function(new_text) {
+        var set_text = new_text => {
             container.find(":input").remove();
 
             if (new_text !== "") {
@@ -59,7 +59,7 @@ $.fn.make_text_editable = function(config_dict) {
             input_elt = $("<textarea/>")
                 .attr({ rows: num_rows, cols: num_cols })
                 .text($.trim(cur_text))
-                .keyup(function(e) {
+                .keyup(e => {
                     if (e.keyCode === 27) {
                         // Escape key.
                         set_text(cur_text);
@@ -67,7 +67,7 @@ $.fn.make_text_editable = function(config_dict) {
                 });
             button_elt = $("<button/>")
                 .text("Done")
-                .click(function() {
+                .click(() => {
                     set_text(input_elt.val());
                     // Return false so that click does not propogate to container.
                     return false;
@@ -75,7 +75,7 @@ $.fn.make_text_editable = function(config_dict) {
         } else {
             input_elt = $("<input type='text'/>")
                 .attr({ value: $.trim(cur_text), size: num_cols })
-                .blur(function() {
+                .blur(() => {
                     set_text(cur_text);
                 })
                 .keyup(function(e) {

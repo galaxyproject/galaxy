@@ -36,7 +36,7 @@ export default Backbone.Model.extend({
         });
 
         // deferred queue
-        $.when(this.last).always(function() {
+        $.when(this.last).always(() => {
             if (self.active[id]) {
                 has_deferred &&
                     Galaxy.emit.debug("deferred::execute()", "Running " + id);

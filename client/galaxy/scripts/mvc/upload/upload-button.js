@@ -18,9 +18,7 @@ var View = Backbone.View.extend({
         this.$progress = this.$(".progress-bar");
         this.listenTo(this.model, "change", this.render, this);
         this.render();
-        $(window).on("beforeunload", function() {
-            return self.model.get("onunload")();
-        });
+        $(window).on("beforeunload", () => self.model.get("onunload")());
     },
 
     render: function() {
@@ -28,7 +26,7 @@ var View = Backbone.View.extend({
         var options = this.model.attributes;
         this.$el
             .off("click")
-            .on("click", function(e) {
+            .on("click", e => {
                 options.onclick(e);
             })
             .tooltip({

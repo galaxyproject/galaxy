@@ -408,7 +408,7 @@ WYMeditor.editor.prototype.dialog = function(
                             "ITEM_CONTROLLER",
                             item_info.controller
                         );
-                        $.getJSON(ajax_url, function(returned_item_info) {
+                        $.getJSON(ajax_url, returned_item_info => {
                             // Get link text.
                             wym._exec(WYMeditor.CREATE_LINK, sStamp);
                             var link_text = $(
@@ -564,7 +564,7 @@ WYMeditor.editor.prototype.dialog = function(
 
 export default function editor_onload() {
     // Generic error handling
-    $(document).ajaxError(function(e, x) {
+    $(document).ajaxError((e, x) => {
         // console.log( e, x );
         var message =
             x.responseText || x.statusText || "Could not connect to server";
@@ -624,7 +624,7 @@ export default function editor_onload() {
     });
     // Get the editor object
     var editor = $.wymeditors(0);
-    var save = function(callback) {
+    var save = callback => {
         show_modal("Saving page", "progress");
 
         // Do save.
@@ -644,18 +644,18 @@ export default function editor_onload() {
         });
     };
     // Save button
-    $("#save-button").click(function() {
-        save(function() {
+    $("#save-button").click(() => {
+        save(() => {
             hide_modal();
         });
     });
     // Close button
-    $("#close-button").click(function() {
+    $("#close-button").click(() => {
         // var new_content = editor.xhtml();
         // var changed = ( initial_content != new_content );
         var changed = false;
         if (changed) {
-            var do_close = function() {
+            var do_close = () => {
                 window.onbeforeunload = undefined;
                 window.document.location = page_list_url;
             };
@@ -690,9 +690,9 @@ export default function editor_onload() {
 
     // Add menu options.
     var items = {};
-    $.each(editor._options.containersItems, function(k, v) {
+    $.each(editor._options.containersItems, (k, v) => {
         var tagname = v.name;
-        items[v.title.replace("_", " ")] = function() {
+        items[v.title.replace("_", " ")] = () => {
             editor.container(tagname);
         };
     });

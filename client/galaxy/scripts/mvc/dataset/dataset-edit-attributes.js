@@ -31,7 +31,7 @@ var View = Backbone.View.extend({
             success: function(response) {
                 !self.initial_message && self.message.update(response);
                 self.initial_message = true;
-                _.each(self.forms, function(form, key) {
+                _.each(self.forms, (form, key) => {
                     form.model.set("inputs", response[key + "_inputs"]);
                     form.model.set(
                         "hide_operations",

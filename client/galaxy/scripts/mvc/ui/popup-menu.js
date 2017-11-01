@@ -18,7 +18,7 @@ var PopupMenu = Backbone.View.extend({
 
         // set up button click -> open menu behavior
         var menu = this;
-        this.$button.click(function(event) {
+        this.$button.click(event => {
             // if there's already a menu open, remove it
             $(".popmenu-wrapper").remove();
             menu._renderAndShow(event);
@@ -57,7 +57,7 @@ var PopupMenu = Backbone.View.extend({
                 if (option.func) {
                     $(this)
                         .children("a.popupmenu-option")
-                        .click(function(event) {
+                        .click(event => {
                             option.func.call(menu, event, option);
                             // We must preventDefault otherwise clicking "cancel"
                             // on a purge or something still navigates and causes
@@ -85,7 +85,7 @@ var PopupMenu = Backbone.View.extend({
         if (!options.length) {
             return "<li>(no options)</li>";
         }
-        return _.map(options, function(option) {
+        return _.map(options, option => {
             if (option.divider) {
                 return '<li class="divider"></li>';
             } else if (option.header) {
@@ -227,9 +227,9 @@ PopupMenu.create = function _create($button, options) {
  *      key is option text, value is fn to call when option is clicked
  *  @returns {PopupMenu} the PopupMenu created
  */
-PopupMenu.make_popupmenu = function(button_element, initial_options) {
+PopupMenu.make_popupmenu = (button_element, initial_options) => {
     var convertedOptions = [];
-    _.each(initial_options, function(optionVal, optionKey) {
+    _.each(initial_options, (optionVal, optionKey) => {
         var newOption = { html: optionKey };
 
         // keys with null values indicate: header
@@ -254,11 +254,11 @@ PopupMenu.make_popupmenu = function(button_element, initial_options) {
  *  @returns {Object[]} the options array to initialize a PopupMenu
  */
 //TODO: lose parent and selector, pass in array of links, use map to return options
-PopupMenu.convertLinksToOptions = function($parent, selector) {
+PopupMenu.convertLinksToOptions = ($parent, selector) => {
     $parent = $($parent);
     selector = selector || "a";
     var options = [];
-    $parent.find(selector).each(function(elem, i) {
+    $parent.find(selector).each((elem, i) => {
         var option = {};
         var $link = $(elem);
 
@@ -269,7 +269,7 @@ PopupMenu.convertLinksToOptions = function($parent, selector) {
             var linkTarget = $link.attr("target");
             var confirmText = $link.attr("confirm");
 
-            option.func = function() {
+            option.func = () => {
                 // if there's a "confirm" attribute, throw up a confirmation dialog, and
                 //  if the user cancels - do nothing
                 if (confirmText && !confirm(confirmText)) {
@@ -305,11 +305,11 @@ PopupMenu.convertLinksToOptions = function($parent, selector) {
  *  @param {String} menuElementLinkSelector jq selector string used to find anchors to be made into menu options
  *  @returns {PopupMenu} the PopupMenu (Backbone View) that can render, control the menu
  */
-PopupMenu.fromExistingDom = function(
+PopupMenu.fromExistingDom = (
     $buttonElement,
     $menuElement,
     menuElementLinkSelector
-) {
+) => {
     $buttonElement = $($buttonElement);
     $menuElement = $($menuElement);
     var options = PopupMenu.convertLinksToOptions(
@@ -329,11 +329,7 @@ PopupMenu.fromExistingDom = function(
  *      (Defaults to return '#' + $menuElement.attr( 'popupmenu' ); )
  *  @returns {PopupMenu[]} array of popupmenus created
  */
-PopupMenu.make_popup_menus = function(
-    parent,
-    menuSelector,
-    buttonSelectorBuildFn
-) {
+PopupMenu.make_popup_menus = (parent, menuSelector, buttonSelectorBuildFn) => {
     parent = parent || document;
     // orig. Glx popupmenu menus have a (non-std) attribute 'popupmenu'
     //  which contains the id of the button that activates the menu
@@ -341,9 +337,7 @@ PopupMenu.make_popup_menus = function(
     // default to (orig. Glx) matching button to menu by using the popupmenu attr of the menu as the id of the button
     buttonSelectorBuildFn =
         buttonSelectorBuildFn ||
-        function($menuElement, parent) {
-            return "#" + $menuElement.attr("popupmenu");
-        };
+        (($menuElement, parent) => "#" + $menuElement.attr("popupmenu"));
 
     // aggregate and return all PopupMenus
     var popupMenusCreated = [];

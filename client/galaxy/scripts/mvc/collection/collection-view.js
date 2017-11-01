@@ -153,7 +153,7 @@ var CollectionView = _super.extend(
 );
 
 //------------------------------------------------------------------------------ TEMPLATES
-CollectionView.prototype.templates = (function() {
+CollectionView.prototype.templates = (() => {
     var controlsTemplate = BASE_MVC.wrapTemplate(
         [
             '<div class="controls">',

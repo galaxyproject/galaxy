@@ -49,10 +49,10 @@ var View = Backbone.View.extend({
             }
             localStorage.repositories = JSON.stringify(repo_queue);
         });
-        $("#clear_queue").on("click", function() {
+        $("#clear_queue").on("click", () => {
             localStorage.repositories = "{}";
         });
-        $("#from_workflow").on("click", function() {
+        $("#from_workflow").on("click", () => {
             Backbone.history.navigate("workflows", {
                 trigger: true,
                 replace: true
@@ -95,14 +95,14 @@ var View = Backbone.View.extend({
             }
         }
 
-        $.post(url, params, function(data) {
+        $.post(url, params, data => {
             var iri_params = JSON.parse(data);
             var repositories = iri_params.repositories;
             var new_route = "status/r/" + repositories.join("|");
             $.post(
                 Galaxy.root + "admin_toolshed/install_repositories",
                 iri_params,
-                function(data) {
+                data => {
                     console.log(
                         "Initializing repository installation succeeded"
                     );

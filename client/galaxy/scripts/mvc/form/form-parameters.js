@@ -84,7 +84,7 @@ export default Backbone.Model.extend({
         var data = input_def.data;
         if (!data) {
             data = [];
-            _.each(input_def.options, function(option) {
+            _.each(input_def.options, option => {
                 data.push({ label: option[0], value: option[1] });
             });
         }

@@ -108,7 +108,7 @@ export default Backbone.View.extend({
                 this.btnBuild,
                 this.btnClose
             ],
-            function(button) {
+            button => {
                 self.$(".upload-buttons").prepend(button.$el);
             }
         );
@@ -155,9 +155,7 @@ export default Backbone.View.extend({
         this.select_extension = new Select.View({
             css: "upload-footer-selection-compressed",
             container: this.$(".upload-footer-extension"),
-            data: _.filter(this.list_extensions, function(ext) {
-                return !ext.composite_files;
-            }),
+            data: _.filter(this.list_extensions, ext => !ext.composite_files),
             value: this.options.default_extension,
             onchange: function(extension) {
                 self.updateExtension(extension);
@@ -181,7 +179,7 @@ export default Backbone.View.extend({
 
         // handle extension info popover
         this.$(".upload-footer-extension-info")
-            .on("click", function(e) {
+            .on("click", e => {
                 new UploadExtension({
                     $el: $(e.target),
                     title: self.select_extension.text(),
@@ -190,7 +188,7 @@ export default Backbone.View.extend({
                     placement: "top"
                 });
             })
-            .on("mousedown", function(e) {
+            .on("mousedown", e => {
                 e.preventDefault();
             });
 
@@ -206,7 +204,7 @@ export default Backbone.View.extend({
         });
 
         // events
-        this.collection.on("remove", function(model) {
+        this.collection.on("remove", model => {
             self._eventRemove(model);
         });
         this._updateScreen();
@@ -275,7 +273,7 @@ export default Backbone.View.extend({
 
     /** Queue is done */
     _eventComplete: function() {
-        this.collection.each(function(model) {
+        this.collection.each(model => {
             model.get("status") == "queued" && model.set("status", "init");
         });
         this.counter.running = 0;
@@ -284,12 +282,12 @@ export default Backbone.View.extend({
 
     _eventBuild: function() {
         var allHids = [];
-        _.forEach(this.collection.models, function(upload) {
+        _.forEach(this.collection.models, upload => {
             allHids.push.apply(allHids, upload.get("hids"));
         });
-        var models = _.map(allHids, function(hid) {
-            return Galaxy.currHistoryPanel.collection.getByHid(hid);
-        });
+        var models = _.map(allHids, hid =>
+            Galaxy.currHistoryPanel.collection.getByHid(hid)
+        );
         var selection = new Galaxy.currHistoryPanel.collection.constructor(
             models
         );
@@ -367,7 +365,7 @@ export default Backbone.View.extend({
         var self = this;
         this.upload_size = 0;
         this.upload_completed = 0;
-        this.collection.each(function(model) {
+        this.collection.each(model => {
             if (model.get("status") == "init") {
                 model.set("status", "queued");
                 self.upload_size += model.get("file_size");
@@ -407,7 +405,7 @@ export default Backbone.View.extend({
     /** Update extension for all models */
     updateExtension: function(extension, defaults_only) {
         var self = this;
-        this.collection.each(function(model) {
+        this.collection.each(model => {
             if (
                 model.get("status") == "init" &&
                 (model.get("extension") == self.options.default_extension ||
@@ -427,7 +425,7 @@ export default Backbone.View.extend({
     /** Update genome for all models */
     updateGenome: function(genome, defaults_only) {
         var self = this;
-        this.collection.each(function(model) {
+        this.collection.each(model => {
             if (
                 model.get("status") == "init" &&
                 (model.get("genome") == self.options.default_genome ||

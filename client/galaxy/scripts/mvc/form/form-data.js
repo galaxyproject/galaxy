@@ -73,9 +73,7 @@ var Manager = Backbone.Model.extend({
                                     }
                                 }
                             }
-                            block_indices.sort(function(a, b) {
-                                return a - b;
-                            });
+                            block_indices.sort((a, b) => a - b);
                             var index = 0;
                             for (var i in block_indices) {
                                 convert(
@@ -153,7 +151,7 @@ var Manager = Backbone.Model.extend({
         */
     matchModel: function(model, callback) {
         var self = this;
-        visitInputs(model.inputs, function(input, name) {
+        visitInputs(model.inputs, (input, name) => {
             self.flat_dict[name] && callback(input, self.flat_dict[name]);
         });
     },
@@ -208,7 +206,7 @@ var Manager = Backbone.Model.extend({
      * @param{dict}   input     - Definition of conditional input parameter
      * @param{dict}   value     - Current value
      */
-var matchCase = function(input, value) {
+var matchCase = (input, value) => {
     if (input.test_param.type == "boolean") {
         if (value == "true") {
             value = input.test_param.truevalue || "true";
@@ -228,9 +226,9 @@ var matchCase = function(input, value) {
      * @param{dict}   inputs    - Nested dictionary of input elements
      * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
      */
-var visitInputs = function(inputs, callback, prefix, context) {
+var visitInputs = (inputs, callback, prefix, context) => {
     context = $.extend(true, {}, context);
-    _.each(inputs, function(input) {
+    _.each(inputs, input => {
         if (input && input.type && input.name) {
             context[input.name] = input;
         }
@@ -241,7 +239,7 @@ var visitInputs = function(inputs, callback, prefix, context) {
         var name = prefix ? prefix + "|" + node.name : node.name;
         switch (node.type) {
             case "repeat":
-                _.each(node.cache, function(cache, j) {
+                _.each(node.cache, (cache, j) => {
                     visitInputs(cache, callback, name + "_" + j, context);
                 });
                 break;

@@ -51,19 +51,19 @@ var tour_opts = {
     orphan: true
 };
 
-var hooked_tour_from_data = function(data) {
-    _.each(data.steps, function(step) {
+var hooked_tour_from_data = data => {
+    _.each(data.steps, step => {
         if (step.preclick) {
-            step.onShow = function() {
-                _.each(step.preclick, function(preclick) {
+            step.onShow = () => {
+                _.each(step.preclick, preclick => {
                     // TODO: click delay between clicks
                     $(preclick).click();
                 });
             };
         }
         if (step.postclick) {
-            step.onHide = function() {
-                _.each(step.postclick, function(postclick) {
+            step.onHide = () => {
+                _.each(step.postclick, postclick => {
                     // TODO: click delay between clicks
                     $(postclick).click();
                 });
@@ -73,7 +73,7 @@ var hooked_tour_from_data = function(data) {
             // Have to manually trigger a change here, for some
             // elements which have additional logic, like the
             // upload input box
-            step.onShown = function() {
+            step.onShown = () => {
                 $(step.element)
                     .val(step.textinsert)
                     .trigger("change");
@@ -92,9 +92,9 @@ var Tours = Backbone.Collection.extend({
     model: TourItem
 });
 
-var giveTour = function(tour_id) {
+var giveTour = tour_id => {
     var url = gxy_root + "api/tours/" + tour_id;
-    $.getJSON(url, function(data) {
+    $.getJSON(url, data => {
         // Set hooks for additional click and data entry actions.
         var tourdata = hooked_tour_from_data(data);
         sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
@@ -136,14 +136,14 @@ var ToursView = Backbone.View.extend({
         var tpl = _.template(tourpage_template);
 
         var tourtags = {};
-        _.each(this.model.models, function(tour) {
+        _.each(this.model.models, tour => {
             if (tour.attributes.tags === null) {
                 if (tourtags.Untagged === undefined) {
                     tourtags.Untagged = { name: "Untagged", tours: [] };
                 }
                 tourtags.Untagged.tours.push(tour);
             } else {
-                _.each(tour.attributes.tags, function(tag) {
+                _.each(tour.attributes.tags, tag => {
                     tag = tag.charAt(0).toUpperCase() + tag.slice(1);
                     if (tourtags[tag] === undefined) {
                         tourtags[tag] = { name: tag, tours: [] };
@@ -166,7 +166,7 @@ var ToursView = Backbone.View.extend({
                 e.preventDefault();
                 giveTour($(this).data("tour.id"));
             })
-            .on("click", ".tag-selector-button", function(e) {
+            .on("click", ".tag-selector-button", e => {
                 var elem = $(e.target);
                 var display = "block";
                 var tag = elem.attr("tag-selector-button");

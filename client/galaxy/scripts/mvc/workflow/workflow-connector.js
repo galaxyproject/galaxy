@@ -45,12 +45,10 @@ $.extend(Connector.prototype, {
                 this.canvas.style.zIndex = "300";
             }
         }
-        var relativeLeft = function(e) {
-            return $(e).offset().left - canvas_container.offset().left;
-        };
-        var relativeTop = function(e) {
-            return $(e).offset().top - canvas_container.offset().top;
-        };
+        var relativeLeft = e =>
+            $(e).offset().left - canvas_container.offset().left;
+        var relativeTop = e =>
+            $(e).offset().top - canvas_container.offset().top;
         if (!this.handle1 || !this.handle2) {
             return;
         }

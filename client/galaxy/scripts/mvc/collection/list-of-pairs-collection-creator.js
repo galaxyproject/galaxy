@@ -341,15 +341,13 @@ var PairedCollectionCreator = Backbone.View
         /** sort a list of datasets */
         _sortDatasetList: function(list) {
             // currently only natural sort by name
-            list.sort(function(a, b) {
-                return naturalSort(a.name, b.name);
-            });
+            list.sort((a, b) => naturalSort(a.name, b.name));
             return list;
         },
 
         /** add ids to dataset objs in initial list if none */
         _ensureIds: function() {
-            this.initialList.forEach(function(dataset) {
+            this.initialList.forEach(dataset => {
                 if (!dataset.hasOwnProperty("id")) {
                     dataset.id = _.uniqueId();
                 }
@@ -359,9 +357,9 @@ var PairedCollectionCreator = Backbone.View
 
         /** split initial list into two lists, those that pass forward filters & those passing reverse */
         _splitByFilters: function() {
-            var regexFilters = this.filters.map(function(stringFilter) {
-                return new RegExp(stringFilter);
-            });
+            var regexFilters = this.filters.map(
+                stringFilter => new RegExp(stringFilter)
+            );
 
             var split = [[], []];
 
@@ -373,7 +371,7 @@ var PairedCollectionCreator = Backbone.View
                 // 90% of the time this seems to work, but:
                 //TODO: this treats *all* strings as regex which may confuse people - possibly check for // surrounding?
                 //  would need explanation in help as well
-                regexFilters.forEach(function(filter, i) {
+                regexFilters.forEach((filter, i) => {
                     if (_filter(unpaired, filter)) {
                         split[i].push(unpaired);
                     }
@@ -385,7 +383,7 @@ var PairedCollectionCreator = Backbone.View
         /** add a dataset to the unpaired list in it's proper order */
         _addToUnpaired: function(dataset) {
             // currently, unpaired is natural sorted by name, use binary search to find insertion point
-            var binSearchSortedIndex = function(low, hi) {
+            var binSearchSortedIndex = (low, hi) => {
                 if (low === hi) {
                     return low;
                 }
@@ -410,7 +408,7 @@ var PairedCollectionCreator = Backbone.View
                     mid++;
                 }
                 return mid;
-            }.bind(this);
+            };
 
             this.unpaired.splice(
                 binSearchSortedIndex(0, this.unpaired.length),
@@ -675,9 +673,9 @@ var PairedCollectionCreator = Backbone.View
                 collection_type: "list:paired",
                 hide_source_items: creator.hideOriginals || false,
                 name: _.escape(name || creator.$(".collection-name").val()),
-                element_identifiers: creator.paired.map(function(pair) {
-                    return creator._pairToJSON(pair);
-                })
+                element_identifiers: creator.paired.map(pair =>
+                    creator._pairToJSON(pair)
+                )
             };
             //this.debug( JSON.stringify( ajaxData ) );
             creator.blocking = true;
@@ -688,10 +686,10 @@ var PairedCollectionCreator = Backbone.View
                     dataType: "json",
                     data: JSON.stringify(ajaxData)
                 })
-                .always(function() {
+                .always(() => {
                     creator.blocking = false;
                 })
-                .fail(function(xhr, status, message) {
+                .fail((xhr, status, message) => {
                     creator._ajaxErrHandler(xhr, status, message);
                 })
                 .done(function(response, message, xhr) {
@@ -824,16 +822,16 @@ var PairedCollectionCreator = Backbone.View
             }
 
             // create the dataset dom arrays
-            $rev = split[1].map(function(dataset, i) {
+            $rev = split[1].map((dataset, i) => {
                 // if there'll be a fwd dataset across the way, add a button to pair the row
                 if (split[0][i] !== undefined && split[0][i] !== dataset) {
                     $prd.push(creator._renderPairButton());
                 }
                 return creator._renderUnpairedDataset(dataset);
             });
-            $fwd = split[0].map(function(dataset) {
-                return creator._renderUnpairedDataset(dataset);
-            });
+            $fwd = split[0].map(dataset =>
+                creator._renderUnpairedDataset(dataset)
+            );
 
             if (!$fwd.length && !$rev.length) {
                 this._renderUnpairedNotShown();
@@ -958,7 +956,7 @@ var PairedCollectionCreator = Backbone.View
 
             this.$(".paired-columns .column-datasets").empty();
             var creator = this;
-            this.paired.forEach(function(pair, i) {
+            this.paired.forEach((pair, i) => {
                 //TODO: cache these?
                 var pairView = new PairView({ pair: pair });
                 creator
@@ -1030,9 +1028,9 @@ var PairedCollectionCreator = Backbone.View
                         ),
                         ":</div>",
                         _.values(this.commonFilters)
-                            .map(function(filterSet) {
-                                return filterChoice(filterSet[0], filterSet[1]);
-                            })
+                            .map(filterSet =>
+                                filterChoice(filterSet[0], filterSet[1])
+                            )
                             .join(""),
                         "</div>"
                     ].join("")
@@ -1334,7 +1332,7 @@ var PairedCollectionCreator = Backbone.View
             fwds.length = revs.length = Math.min(fwds.length, revs.length);
             //this.debug( fwds );
             //this.debug( revs );
-            fwds.forEach(function(fwd, i) {
+            fwds.forEach((fwd, i) => {
                 try {
                     pairs.push(creator._pair(fwd, revs[i], { silent: true }));
                 } catch (err) {
@@ -1362,7 +1360,7 @@ var PairedCollectionCreator = Backbone.View
                 var creator = this;
                 var $startTarget = $(ev.target).addClass("selected");
 
-                var moveListener = function(ev) {
+                var moveListener = ev => {
                     creator
                         .$(ev.target)
                         .filter(".dataset")
@@ -1372,7 +1370,7 @@ var PairedCollectionCreator = Backbone.View
                 $startTarget.parent().on("mousemove", moveListener);
 
                 // on any mouseup, stop listening to the move and try to pair any selected
-                $(document).one("mouseup", function(ev) {
+                $(document).one("mouseup", ev => {
                     $startTarget.parent().off("mousemove", moveListener);
                     creator.pairAllSelected();
                 });
@@ -1631,7 +1629,7 @@ var PairedCollectionCreator = Backbone.View
             creator.removeExtensions =
                 force !== undefined ? force : !creator.removeExtensions;
 
-            _.each(creator.paired, function(pair) {
+            _.each(creator.paired, pair => {
                 // don't overwrite custom names
                 if (pair.customizedName) {
                     return;
@@ -1650,7 +1648,7 @@ var PairedCollectionCreator = Backbone.View
         /** debug a dataset list */
         _printList: function(list) {
             var creator = this;
-            _.each(list, function(e) {
+            _.each(list, e => {
                 if (list === creator.paired) {
                     creator._printPair(e);
                 } else {

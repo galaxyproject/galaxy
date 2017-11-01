@@ -26,7 +26,7 @@ export default Backbone.View.extend({
 
     /** Remove all content */
     _reset: function() {
-        _.each(this.content_list, function(content) {
+        _.each(this.content_list, content => {
             content.remove();
         });
         this.content_list = {};

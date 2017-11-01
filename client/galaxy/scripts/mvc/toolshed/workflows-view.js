@@ -36,7 +36,7 @@ var View = Backbone.View.extend({
             var toolshed = $(this).attr("data-shed");
             var api_url = Galaxy.root + "api/tool_shed/repository";
             var params = { tool_ids: tool_ids };
-            $.get(api_url, params, function(data) {
+            $.get(api_url, params, data => {
                 repository_id = data.repository.id;
                 var new_route =
                     "repository/s/" +
@@ -55,13 +55,13 @@ var View = Backbone.View.extend({
             var toolshed = elem.attr("data-shed");
             var api_url = Galaxy.root + "api/tool_shed/repository";
             var params = { tool_ids: tool_ids };
-            $.get(api_url, params, function(data) {
+            $.get(api_url, params, data => {
                 repository_id = data.repository.id;
                 params = {
                     tool_shed_url: toolshed,
                     repository_id: repository_id
                 };
-                $.get(api_url, params, function(data) {
+                $.get(api_url, params, data => {
                     var changesets = Object.keys(data.repository.metadata);
                     var current_changeset = changesets[0];
                     var current_metadata =

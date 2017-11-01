@@ -47,7 +47,7 @@ export default Backbone.View.extend({
 
         // add click handler
         var self = this;
-        this.$collapsible.on("click", function() {
+        this.$collapsible.on("click", () => {
             self.field.collapsed = !self.field.collapsed;
             app.trigger && app.trigger("change");
             self.render();
@@ -55,7 +55,7 @@ export default Backbone.View.extend({
 
         // hide error on value change
         if (this.field.model && !this.model.get("always_refresh")) {
-            this.listenTo(this.field.model, "change:value", function() {
+            this.listenTo(this.field.model, "change:value", () => {
                 self.reset();
             });
         }
