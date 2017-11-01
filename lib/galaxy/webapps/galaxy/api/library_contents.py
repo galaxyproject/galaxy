@@ -325,7 +325,6 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 widgets = replace_dataset.library_dataset_dataset_association.get_template_widgets(trans)
             # The name is stored - by the time the new ldda is created, replace_dataset.name
             # will point to the new ldda, not the one it's replacing.
-            replace_dataset_name = replace_dataset.name
             if not last_used_build:
                 last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
         else:
