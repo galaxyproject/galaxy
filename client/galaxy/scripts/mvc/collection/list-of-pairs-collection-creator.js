@@ -41,17 +41,20 @@ var PairView = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     ),
 
     render: function() {
-        this.$el
+        this.dragStartHandler = _.bind(this._dragstart, this);
+        this.dragEndHandler = _.bind(this._dragend, this);
+        var handle = this.$el
             .attr("draggable", true)
             .data("pair", this.pair)
             .html(this.template({ pair: this.pair }))
-            .addClass("flex-column-container");
+            .addClass("flex-column-container")
+            .get(0);
+        handle.addEventListener("dragstart", this.dragStartHandler, false);
+        handle.addEventListener("dragend", this.dragEndHandler, false);
         return this;
     },
 
     events: {
-        dragstart: "_dragstart",
-        dragend: "_dragend",
         dragover: "_sendToParent",
         drop: "_sendToParent"
     },
