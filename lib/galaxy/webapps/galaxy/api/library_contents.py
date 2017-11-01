@@ -31,10 +31,6 @@ from galaxy.util.path import (
     unsafe_walk
 )
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.web.form_builder import (
-    AddressField,
-    CheckboxField,
-)
 from galaxy.web.base.controller import (
     BaseAPIController,
     HTTPBadRequest,
@@ -42,6 +38,10 @@ from galaxy.web.base.controller import (
     UsesFormDefinitionsMixin,
     UsesLibraryMixin,
     UsesLibraryMixinItems
+)
+from galaxy.web.form_builder import (
+    AddressField,
+    CheckboxField,
 )
 
 log = logging.getLogger(__name__)
