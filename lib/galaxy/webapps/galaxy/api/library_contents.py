@@ -284,9 +284,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return rval
 
     def _create_folder(self, trans, parent_id, library_id, **kwd):
-        show_deleted = util.string_as_bool(kwd.get('show_deleted', False))
-        use_panels = util.string_as_bool(kwd.get('use_panels', False))
-        is_admin = trans.user_is_admin() and cntrller in ('library_admin', 'api')
+        is_admin = trans.user_is_admin()
         current_user_roles = trans.get_current_user_roles()
         try:
             parent_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(parent_id))
@@ -294,8 +292,8 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             parent_folder = None
         # Check the library which actually contains the user-supplied parent folder, not the user-supplied
         # library, which could be anything.
-        self._check_access(trans, cntrller, is_admin, parent_folder, current_user_roles, use_panels, library_id, show_deleted)
-        self._check_add(trans, cntrller, is_admin, parent_folder, current_user_roles, use_panels, library_id, show_deleted)
+        self._check_access(trans, is_admin, parent_folder, current_user_roles)
+        self._check_add(trans, is_admin, parent_folder, current_user_roles)
         new_folder = trans.app.model.LibraryFolder(name=kwd.get('name', ''),
                                                    description=kwd.get('description', ''))
         # We are associating the last used genome build with folders, so we will always
@@ -308,6 +306,39 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         # New folders default to having the same permissions as their parent folder
         trans.app.security_agent.copy_library_permissions(trans, parent_folder, new_folder)
         return 200, dict(created=new_folder)
+
+    def _check_access(self, trans, is_admin, item, current_user_roles):
+        can_access = True
+        if isinstance(item, trans.model.HistoryDatasetAssociation):
+            # Make sure the user has the DATASET_ACCESS permission on the history_dataset_association.
+            if not item:
+                message = "Invalid history dataset (%s) specified." % escape(str(item))
+                can_access = False
+            elif not trans.app.security_agent.can_access_dataset(current_user_roles, item.dataset) and item.history.user == trans.user:
+                message = "You do not have permission to access the history dataset with id (%s)." % str(item.id)
+                can_access = False
+        else:
+            # Make sure the user has the LIBRARY_ACCESS permission on the library item.
+            if not item:
+                message = "Invalid library item (%s) specified." % escape(str(item))
+                can_access = False
+            elif not (is_admin or trans.app.security_agent.can_access_library_item(current_user_roles, item, trans.user)):
+                if isinstance(item, trans.model.Library):
+                    item_type = 'data library'
+                elif isinstance(item, trans.model.LibraryFolder):
+                    item_type = 'folder'
+                else:
+                    item_type = '(unknown item type)'
+                message = "You do not have permission to access the %s with id (%s)." % (escape(item_type), str(item.id))
+                can_access = False
+        if not can_access:
+            return 400, message
+
+    def _check_add(self, trans, is_admin, item, current_user_roles):
+        # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
+        if not (is_admin or trans.app.security_agent.can_add_library_item(current_user_roles, item)):
+            message = "You are not authorized to add an item to (%s)." % escape(item.name)
+            return 403, message
 
     def _scan_json_block(self, meta, prefix=""):
         """
