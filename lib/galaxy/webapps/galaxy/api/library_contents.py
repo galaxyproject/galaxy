@@ -7,7 +7,6 @@ import json
 import os.path
 from markupsafe import escape
 
-from galaxy import util, web
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.path import (
@@ -15,12 +14,7 @@ from galaxy.util.path import (
     safe_relpath,
     unsafe_walk
 )
-from galaxy.web.base.controller import (
-    BaseUIController,
-    UsesExtendedMetadataMixin,
-    UsesFormDefinitionsMixin,
-    UsesLibraryMixinItems
-)
+
 from galaxy.web.form_builder import (
     AddressField,
     CheckboxField,
@@ -49,13 +43,14 @@ from galaxy.web.base.controller import (
     HTTPBadRequest,
     url_for,
     UsesLibraryMixin,
-    UsesLibraryMixinItems
+    UsesLibraryMixinItems,
+    UsesFormDefinitionsMixin
 )
 
 log = logging.getLogger(__name__)
 
 
-class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
+class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesFormDefinitionsMixin):
 
     def __init__(self, app):
         super(LibraryContentsController, self).__init__(app)
