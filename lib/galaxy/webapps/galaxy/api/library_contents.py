@@ -246,7 +246,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         if create_type == 'file':
             status, output = trans.webapp.controllers['library_common'].upload_library_dataset(trans, 'api', library_id, real_folder_id, **payload)
         elif create_type == 'folder':
-            status, output = trans.webapp.controllers['library_common'].create_folder(trans, 'api', real_folder_id, library_id, **payload)
+            status, output = self.create_folder(trans, real_folder_id, library_id, **payload)
         elif create_type == 'collection':
             # Not delegating to library_common, so need to check access to parent
             # folder here.
@@ -282,6 +282,32 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                                  name=v.name,
                                  url=url_for('library_content', library_id=library_id, id=encoded_id)))
             return rval
+
+    def _create_folder(self, trans, parent_id, library_id, **kwd):
+        show_deleted = util.string_as_bool(kwd.get('show_deleted', False))
+        use_panels = util.string_as_bool(kwd.get('use_panels', False))
+        is_admin = trans.user_is_admin() and cntrller in ('library_admin', 'api')
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            parent_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(parent_id))
+        except Exception:
+            parent_folder = None
+        # Check the library which actually contains the user-supplied parent folder, not the user-supplied
+        # library, which could be anything.
+        self._check_access(trans, cntrller, is_admin, parent_folder, current_user_roles, use_panels, library_id, show_deleted)
+        self._check_add(trans, cntrller, is_admin, parent_folder, current_user_roles, use_panels, library_id, show_deleted)
+        new_folder = trans.app.model.LibraryFolder(name=kwd.get('name', ''),
+                                                   description=kwd.get('description', ''))
+        # We are associating the last used genome build with folders, so we will always
+        # initialize a new folder with the first dbkey in genome builds list which is currently
+        # ?    unspecified (?)
+        new_folder.genome_build = trans.app.genome_builds.default_value
+        parent_folder.add_folder(new_folder)
+        trans.sa_session.add(new_folder)
+        trans.sa_session.flush()
+        # New folders default to having the same permissions as their parent folder
+        trans.app.security_agent.copy_library_permissions(trans, parent_folder, new_folder)
+        return 200, dict(created=new_folder)
 
     def _scan_json_block(self, meta, prefix=""):
         """
