@@ -8,7 +8,7 @@ from __future__ import print_function
 import os
 import sys
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 BUFFER = 1048576
 
@@ -46,7 +46,7 @@ inp_name = os.path.join('database', 'import', fname)
 
 try:
     inp = open(inp_name, 'rt')
-except:
+except Exception:
     print('Could not find file %s' % inp_name)
     sys.exit()
 

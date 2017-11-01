@@ -1,5 +1,4 @@
 from galaxy.tools.toolbox.filters import FilterFactory
-
 from galaxy.util.bunch import Bunch
 
 
@@ -50,7 +49,7 @@ def filter_factory(config_dict=None):
             tool_label_filters=["filtermod:filter_label_1", "filtermod:filter_label_2"],
         )
     config = Bunch(**config_dict)
-    config.toolbox_filter_base_modules = "galaxy.tools.filters,tools.filter_modules"
+    config.toolbox_filter_base_modules = "galaxy.tools.filters,unit.tools.filter_modules"
     app = Bunch(config=config)
     toolbox = Bunch(app=app)
     return FilterFactory(toolbox)

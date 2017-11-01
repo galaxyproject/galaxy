@@ -212,6 +212,7 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         log.info("Galaxy app startup finished %s" % self.startup_timer)
 
     def shutdown(self):
+        self.watchers.shutdown()
         self.workflow_scheduling_manager.shutdown()
         self.job_manager.shutdown()
         self.object_store.shutdown()
@@ -226,7 +227,7 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
 
     def configure_fluent_log(self):
         if self.config.fluent_log:
-            from galaxy.util.log.fluent_log import FluentTraceLogger
+            from galaxy.util.logging.fluent_log import FluentTraceLogger
             self.trace_logger = FluentTraceLogger('galaxy', self.config.fluent_host, self.config.fluent_port)
         else:
             self.trace_logger = None

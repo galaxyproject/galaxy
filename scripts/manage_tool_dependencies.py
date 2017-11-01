@@ -4,7 +4,6 @@ import sys
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
-from galaxy.util.properties import find_config_file, load_app_properties
 from galaxy.config import (
     configure_logging,
     find_path,
@@ -12,6 +11,7 @@ from galaxy.config import (
     parse_dependency_options,
 )
 from galaxy.tools.deps import CachedDependencyManager, DependencyManager, NullDependencyManager
+from galaxy.util.properties import find_config_file, load_app_properties
 
 DESCRIPTION = "Script to manage tool dependencies (with focus on a Conda environments)."
 

@@ -36,7 +36,7 @@ class Filter(object):
         self.elem = elem
 
     def get_dependency_name(self):
-        """Returns the name of any depedencies, otherwise None"""
+        """Returns the name of any dependencies, otherwise None"""
         return None
 
     def filter_options(self, options, trans, other_values):
@@ -72,7 +72,7 @@ class StaticValueFilter(Filter):
         filter_value = self.value
         try:
             filter_value = User.expand_user_properties(trans.user, filter_value)
-        except:
+        except Exception:
             pass
         for fields in options:
             if (self.keep and fields[self.column] == filter_value) or (not self.keep and fields[self.column] != filter_value):

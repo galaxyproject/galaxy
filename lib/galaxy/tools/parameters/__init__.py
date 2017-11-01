@@ -1,6 +1,8 @@
 """
 Classes encapsulating Galaxy tool parameters.
 """
+from __future__ import print_function
+
 import re
 from json import dumps
 
@@ -31,34 +33,34 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     >>> from galaxy.util.odict import odict
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
     >>> from galaxy.tools.parameters.grouping import Repeat
-    >>> a = TextToolParameter( None, XML( '<param name="a"/>' ) )
+    >>> a = TextToolParameter(None, XML('<param name="a"/>'))
     >>> b = Repeat()
-    >>> c = TextToolParameter( None, XML( '<param name="c"/>' ) )
+    >>> c = TextToolParameter(None, XML('<param name="c"/>'))
     >>> d = Repeat()
-    >>> e = TextToolParameter( None, XML( '<param name="e"/>' ) )
+    >>> e = TextToolParameter(None, XML('<param name="e"/>'))
     >>> f = Conditional()
-    >>> g = BooleanToolParameter( None, XML( '<param name="g"/>' ) )
-    >>> h = TextToolParameter( None, XML( '<param name="h"/>' ) )
-    >>> i = TextToolParameter( None, XML( '<param name="i"/>' ) )
+    >>> g = BooleanToolParameter(None, XML('<param name="g"/>'))
+    >>> h = TextToolParameter(None, XML('<param name="h"/>'))
+    >>> i = TextToolParameter(None, XML('<param name="i"/>'))
     >>> b.name = 'b'
-    >>> b.inputs = odict([ ('c', c), ('d', d) ])
+    >>> b.inputs = odict([('c', c), ('d', d)])
     >>> d.name = 'd'
-    >>> d.inputs = odict([ ('e', e), ('f', f) ])
+    >>> d.inputs = odict([('e', e), ('f', f)])
     >>> f.test_param = g
     >>> f.name = 'f'
-    >>> f.cases = [ Bunch( value='true', inputs= { 'h': h } ), Bunch( value='false', inputs= { 'i': i } ) ]
+    >>> f.cases = [Bunch(value='true', inputs= { 'h': h }), Bunch(value='false', inputs= { 'i': i })]
     >>>
-    >>> def visitor( input, value, prefix, prefixed_name, **kwargs ):
-    ...     print 'name=%s, prefix=%s, prefixed_name=%s, value=%s' % ( input.name, prefix, prefixed_name, value )
+    >>> def visitor(input, value, prefix, prefixed_name, **kwargs):
+    ...     print('name=%s, prefix=%s, prefixed_name=%s, value=%s' % (input.name, prefix, prefixed_name, value))
     >>> inputs = odict([('a',a),('b',b)])
-    >>> nested = odict([ ('a', 1), ('b', [ odict([('c', 3), ( 'd', [odict([ ('e', 5), ('f', odict([ ('g', True), ('h', 7) ])) ]) ])]) ]) ])
-    >>> visit_input_values( inputs, nested, visitor )
+    >>> nested = odict([('a', 1), ('b', [odict([('c', 3), ('d', [odict([('e', 5), ('f', odict([('g', True), ('h', 7)]))])])])])])
+    >>> visit_input_values(inputs, nested, visitor)
     name=a, prefix=, prefixed_name=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, value=3
     name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, value=5
     name=g, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|g, value=True
     name=h, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|h, value=7
-    >>> params_from_strings( inputs, params_to_strings( inputs, nested, None ), None )[ 'b' ][ 0 ][ 'd' ][ 0 ][ 'f' ][ 'g' ] is True
+    >>> params_from_strings(inputs, params_to_strings(inputs, nested, None), None)['b'][0]['d'][0]['f']['g'] is True
     True
     """
     def callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None):
@@ -98,7 +100,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
             case_error = None
             try:
                 input.get_current_case(values[input.test_param.name])
-            except:
+            except Exception:
                 case_error = 'The selected case is unavailable/invalid.'
                 pass
             callback_helper(input.test_param, values, new_name_prefix, label_prefix, parent_prefix=name_prefix, context=context, error=case_error)
@@ -224,38 +226,38 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
     >>> from galaxy.util.odict import odict
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
     >>> from galaxy.tools.parameters.grouping import Repeat
-    >>> trans = Bunch( workflow_building_mode=False )
-    >>> a = TextToolParameter( None, XML( '<param name="a"/>' ) )
+    >>> trans = Bunch(workflow_building_mode=False)
+    >>> a = TextToolParameter(None, XML('<param name="a"/>'))
     >>> b = Repeat()
     >>> b.min = 0
     >>> b.max = 1
-    >>> c = TextToolParameter( None, XML( '<param name="c"/>' ) )
+    >>> c = TextToolParameter(None, XML('<param name="c"/>'))
     >>> d = Repeat()
     >>> d.min = 0
     >>> d.max = 1
-    >>> e = TextToolParameter( None, XML( '<param name="e"/>' ) )
+    >>> e = TextToolParameter(None, XML('<param name="e"/>'))
     >>> f = Conditional()
-    >>> g = BooleanToolParameter( None, XML( '<param name="g"/>' ) )
-    >>> h = TextToolParameter( None, XML( '<param name="h"/>' ) )
-    >>> i = TextToolParameter( None, XML( '<param name="i"/>' ) )
+    >>> g = BooleanToolParameter(None, XML('<param name="g"/>'))
+    >>> h = TextToolParameter(None, XML('<param name="h"/>'))
+    >>> i = TextToolParameter(None, XML('<param name="i"/>'))
     >>> b.name = 'b'
-    >>> b.inputs = odict([ ('c', c), ('d', d) ])
+    >>> b.inputs = odict([('c', c), ('d', d)])
     >>> d.name = 'd'
-    >>> d.inputs = odict([ ('e', e), ('f', f) ])
+    >>> d.inputs = odict([('e', e), ('f', f)])
     >>> f.test_param = g
     >>> f.name = 'f'
-    >>> f.cases = [ Bunch( value='true', inputs= { 'h': h } ), Bunch( value='false', inputs= { 'i': i } ) ]
+    >>> f.cases = [Bunch(value='true', inputs= { 'h': h }), Bunch(value='false', inputs= { 'i': i })]
     >>> inputs = odict([('a',a),('b',b)])
-    >>> flat = odict([ ('a', 1 ), ( 'b_0|c', 2 ), ( 'b_0|d_0|e', 3 ), ( 'b_0|d_0|f|h', 4 ), ( 'b_0|d_0|f|g', True ) ])
+    >>> flat = odict([('a', 1), ('b_0|c', 2), ('b_0|d_0|e', 3), ('b_0|d_0|f|h', 4), ('b_0|d_0|f|g', True)])
     >>> state = odict()
-    >>> populate_state( trans, inputs, flat, state, check=False )
-    >>> print state[ 'a' ]
+    >>> populate_state(trans, inputs, flat, state, check=False)
+    >>> print(state['a'])
     1
-    >>> print state[ 'b' ][ 0 ][ 'c' ]
+    >>> print(state['b'][0]['c'])
     2
-    >>> print state[ 'b' ][ 0 ][ 'd' ][ 0 ][ 'e' ]
+    >>> print(state['b'][0]['d'][0]['e'])
     3
-    >>> print state[ 'b' ][ 0 ][ 'd' ][ 0 ][ 'f' ][ 'h' ]
+    >>> print(state['b'][0]['d'][0]['f']['h'])
     4
     """
     context = ExpressionContext(state, context)
@@ -298,11 +300,10 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
         elif input.type == 'section':
             populate_state(request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check)
         elif input.type == 'upload_dataset':
-            d_type = input.get_datatype(request_context, context=context)
-            writable_files = d_type.writable_files
-            while len(group_state) > len(writable_files):
+            file_count = input.get_file_count(request_context, context)
+            while len(group_state) > file_count:
                 del group_state[-1]
-            while len(writable_files) > len(group_state):
+            while file_count > len(group_state):
                 new_state = {'__index__' : len(group_state)}
                 for upload_item in input.inputs.values():
                     new_state[upload_item.name] = upload_item.get_initial_value(request_context, context)

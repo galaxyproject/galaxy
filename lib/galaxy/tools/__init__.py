@@ -1,7 +1,6 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
-import glob
 import json
 import logging
 import os
@@ -381,7 +380,7 @@ class Tool(object, Dictifiable):
     tool_type = 'default'
     requires_setting_metadata = True
     default_tool_action = DefaultToolAction
-    dict_collection_visible_keys = ('id', 'name', 'version', 'description', 'labels')
+    dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
 
     def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True):
         """Load a tool from the config named by `config_file`"""
@@ -720,6 +719,8 @@ class Tool(object, Dictifiable):
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible(tool_source)
         self.__parse_trackster_conf(tool_source)
+        # Record macro paths so we can reload a tool if any of its macro has changes
+        self._macro_paths = tool_source._macro_paths
 
     def __parse_legacy_features(self, tool_source):
         self.code_namespace = dict()
@@ -793,7 +794,7 @@ class Tool(object, Dictifiable):
             if tests_source:
                 try:
                     self.__tests = parse_tests(self, tests_source)
-                except:
+                except Exception:
                     self.__tests = None
                     log.exception("Failed to parse tool tests")
             else:
@@ -1010,7 +1011,7 @@ class Tool(object, Dictifiable):
                         group.cases.append(case)
                         try:
                             possible_cases.remove(case.value)
-                        except:
+                        except Exception:
                             log.warning("Tool %s: a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." %
                                         (self.id, group.name, group.test_param.name, case.value))
                     for unspecified_case in possible_cases:
@@ -1130,8 +1131,8 @@ class Tool(object, Dictifiable):
                 self.__help = Template(rst_to_html(help_text), input_encoding='utf-8',
                                        output_encoding='utf-8', default_filters=['decode.utf8'],
                                        encoding_errors='replace')
-            except:
-                log.exception("error in help for tool %s", self.name)
+            except Exception:
+                log.exception("Exception while parsing help for tool with id '%s'", self.id)
 
             # Handle deprecated multi-page help text in XML case.
             if hasattr(tool_source, "root"):
@@ -1150,8 +1151,8 @@ class Tool(object, Dictifiable):
                                                     default_filters=['decode.utf8'],
                                                     encoding_errors='replace')
                                            for x in self.__help_by_page]
-                except:
-                    log.exception("error in multi-page help for tool %s", self.name)
+                except Exception:
+                    log.exception("Exception while parsing multi-page help for tool with id '%s'", self.id)
         # Pad out help pages to match npages ... could this be done better?
         while len(self.__help_by_page) < self.npages:
             self.__help_by_page.append(self.__help)
@@ -1233,14 +1234,7 @@ class Tool(object, Dictifiable):
         if self.check_values:
             visit_input_values(self.inputs, values, callback)
 
-    def handle_input(self, trans, incoming, history=None):
-        """
-        Process incoming parameters for this tool from the dict `incoming`,
-        update the tool state (or create if none existed), and either return
-        to the form or execute the tool (only if 'execute' was clicked and
-        there were no errors).
-        """
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history or trans.history)
+    def expand_incoming(self, trans, incoming, request_context):
         rerun_remap_job_id = None
         if 'rerun_remap_job_id' in incoming:
             try:
@@ -1258,7 +1252,8 @@ class Tool(object, Dictifiable):
         # Remapping a single job to many jobs doesn't make sense, so disable
         # remap if multi-runs of tools are being used.
         if rerun_remap_job_id and len(expanded_incomings) > 1:
-            raise exceptions.MessageException('Failure executing tool (cannot create multiple jobs when remapping existing job).')
+            raise exceptions.MessageException(
+                'Failure executing tool (cannot create multiple jobs when remapping existing job).')
 
         # Process incoming data
         validation_timer = ExecutionTimer()
@@ -1286,6 +1281,17 @@ class Tool(object, Dictifiable):
             all_errors.append(errors)
             all_params.append(params)
         log.debug('Validated and populated state for tool request %s' % validation_timer)
+        return all_params, all_errors, rerun_remap_job_id, collection_info
+
+    def handle_input(self, trans, incoming, history=None):
+        """
+        Process incoming parameters for this tool from the dict `incoming`,
+        update the tool state (or create if none existed), and either return
+        to the form or execute the tool (only if 'execute' was clicked and
+        there were no errors).
+        """
+        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history or trans.history)
+        all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(trans=trans, incoming=incoming, request_context=request_context)
         # If there were errors, we stay on the same page and display them
         if any(all_errors):
             err_data = {key: value for d in all_errors for (key, value) in d.items()}
@@ -1390,8 +1396,8 @@ class Tool(object, Dictifiable):
         """
         return self.tool_action.execute(self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs)
 
-    def params_to_strings(self, params, app):
-        return params_to_strings(self.inputs, params, app)
+    def params_to_strings(self, params, app, nested=False):
+        return params_to_strings(self.inputs, params, app, nested)
 
     def params_from_strings(self, params, app, ignore_errors=False):
         return params_from_strings(self.inputs, params, app, ignore_errors)
@@ -1416,7 +1422,7 @@ class Tool(object, Dictifiable):
                         if not prefixed_name.startswith('__'):
                             messages[prefixed_name] = error if previous_value == value else '%s Using default: \'%s\'.' % (error, value)
                         parent[input.name] = value
-                    except:
+                    except Exception:
                         messages[prefixed_name] = 'Attempt to replace invalid value for \'%s\' failed.' % (prefixed_label)
                 else:
                     messages[prefixed_name] = error
@@ -1552,73 +1558,6 @@ class Tool(object, Dictifiable):
         Called when a job has failed
         """
         pass
-
-    def collect_child_datasets(self, output, job_working_directory):
-        """
-        Look for child dataset files, create HDA and attach to parent.
-        """
-        children = {}
-        # Loop through output file names, looking for generated children in
-        # form of 'child_parentId_designation_visibility_extension'
-        for name, outdata in output.items():
-            filenames = []
-            if 'new_file_path' in self.app.config.collect_outputs_from:
-                filenames.extend(glob.glob(os.path.join(self.app.config.new_file_path, "child_%i_*" % outdata.id)))
-            if 'job_working_directory' in self.app.config.collect_outputs_from:
-                filenames.extend(glob.glob(os.path.join(job_working_directory, "child_%i_*" % outdata.id)))
-            for filename in filenames:
-                if name not in children:
-                    children[name] = {}
-                fields = os.path.basename(filename).split("_")
-                designation = fields[2]
-                visible = fields[3].lower()
-                if visible == "visible":
-                    visible = True
-                else:
-                    visible = False
-                ext = fields[4].lower()
-                child_dataset = self.app.model.HistoryDatasetAssociation(extension=ext,
-                                                                         parent_id=outdata.id,
-                                                                         designation=designation,
-                                                                         visible=visible,
-                                                                         dbkey=outdata.dbkey,
-                                                                         create_dataset=True,
-                                                                         sa_session=self.sa_session)
-                self.app.security_agent.copy_dataset_permissions(outdata.dataset, child_dataset.dataset)
-                # Move data from temp location to dataset location
-                self.app.object_store.update_from_file(child_dataset.dataset, file_name=filename, create=True)
-                self.sa_session.add(child_dataset)
-                self.sa_session.flush()
-                child_dataset.set_size()
-                child_dataset.name = "Secondary Dataset (%s)" % (designation)
-                child_dataset.init_meta()
-                child_dataset.set_meta()
-                child_dataset.set_peek()
-                # Associate new dataset with job
-                job = None
-                for assoc in outdata.creating_job_associations:
-                    job = assoc.job
-                    break
-                if job:
-                    assoc = self.app.model.JobToOutputDatasetAssociation('__new_child_file_%s|%s__' % (name, designation), child_dataset)
-                    assoc.job = job
-                    self.sa_session.add(assoc)
-                    self.sa_session.flush()
-                child_dataset.state = outdata.state
-                self.sa_session.add(child_dataset)
-                self.sa_session.flush()
-                # Add child to return dict
-                children[name][designation] = child_dataset
-                # Need to update all associated output hdas, i.e. history was
-                # shared with job running
-                for dataset in outdata.dataset.history_associations:
-                    if outdata == dataset:
-                        continue
-                    # Create new child dataset
-                    child_data = child_dataset.copy(parent_id=dataset.id)
-                    self.sa_session.add(child_data)
-                    self.sa_session.flush()
-        return children
 
     def collect_primary_datasets(self, output, tool_provided_metadata, job_working_directory, input_ext, input_dbkey="?"):
         """

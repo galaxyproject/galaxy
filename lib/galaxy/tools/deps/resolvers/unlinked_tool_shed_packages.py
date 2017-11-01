@@ -54,7 +54,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
             else:
                 # Pick the preferred one
                 return self._select_preferred_dependency(possibles).dependency
-        except:
+        except Exception:
             log.exception("Unexpected error hunting for dependency '%s' '%s''%s'", name, version, type)
             return NullDependency(version=version, name=name)
 
@@ -126,7 +126,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
             else:
                 #Pick the preferred one
                 return self._select_preferred_dependency(possibles, by_owner=False).dependency
-        except:
+        except Exception:
             log.exception("Unexpected error hunting for dependency '%s' default '%s'", name, type)
             return NullDependency(version=None, name=name)
     """

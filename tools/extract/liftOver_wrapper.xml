@@ -1,13 +1,16 @@
-<tool id="liftOver1" name="Convert genome coordinates" version="1.0.4">
+<tool id="liftOver1" name="Convert genome coordinates" version="1.0.5">
   <description> between assemblies and genomes</description>
-  <command interpreter="python">
-  liftOver_wrapper.py
-  $input
-  "$out_file1"
-  "$out_file2"
-  $dbkey
-  $to_dbkey
-  #if isinstance( $input.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__) or isinstance( $input.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gtf').__class__):
+  <requirements>
+    <requirement type="package">ucsc_tools</requirement>
+  </requirements>
+  <command>
+  python $__tool_directory__/liftOver_wrapper.py
+  '$input'
+  '$out_file1'
+  '$out_file2'
+  '$dbkey'
+  '$to_dbkey'
+  #if $input.is_of_type('gff') or $input.is_of_type('gtf'):
         "gff"
   #else:
         "interval"
@@ -17,7 +20,7 @@
   <inputs>
     <param format="interval,gff,gtf" name="input" type="data" label="Convert coordinates of">
       <validator type="unspecified_build" />
-      <validator type="dataset_metadata_in_file" filename="liftOver.loc" metadata_name="dbkey" metadata_column="0" message="Liftover mappings are currently not available for the specified build." />
+      <validator type="dataset_metadata_in_data_table" table_name="liftOver" metadata_name="dbkey" metadata_column="0" message="Liftover mappings are currently not available for the specified build." />
     </param>
     <param name="to_dbkey" type="select" label="To">
       <options from_data_table="liftOver">
@@ -43,21 +46,18 @@
     </conditional>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" label="${tool.name} on ${on_string} [ MAPPED COORDINATES ]">
+    <data format_source="input" name="out_file1" label="${tool.name} on ${on_string} [ MAPPED COORDINATES ]">
       <actions>
         <action type="metadata" name="dbkey">
-          <option type="from_data_table" name="liftOver" key="name" column="1" offset="0">
+          <option type="from_data_table" name="liftOver" column="1" offset="0">
             <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
             <filter type="param_value" ref="to_dbkey" column="2"/>
           </option>
         </action>
       </actions>
     </data>
-    <data format="input" name="out_file2" label="${tool.name} on ${on_string} [ UNMAPPED COORDINATES ]" />
+    <data format_source="input" name="out_file2" label="${tool.name} on ${on_string} [ UNMAPPED COORDINATES ]" />
   </outputs>
-  <requirements>
-    <requirement type="package">ucsc_tools</requirement>
-  </requirements>
   <tests>
     <!--
     <test>

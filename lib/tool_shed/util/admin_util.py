@@ -261,7 +261,7 @@ class Admin(object):
                         library_dataset_actions[library] = {}
                     try:
                         library_dataset_actions[library][folder_path].append(dp.action)
-                    except:
+                    except Exception:
                         library_dataset_actions[library][folder_path] = [dp.action]
         else:
             message = "Not showing associated datasets, there are too many."

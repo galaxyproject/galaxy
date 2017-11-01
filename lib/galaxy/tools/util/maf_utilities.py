@@ -19,7 +19,7 @@ import bx.interval_index_file
 import bx.intervals
 from six.moves import xrange
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 log = logging.getLogger(__name__)
 
@@ -168,7 +168,7 @@ class RegionAlignment(object):
         for name in skip:
             try:
                 names.remove(name)
-            except:
+            except ValueError:
                 pass
         return names
 
@@ -295,7 +295,7 @@ def maf_index_by_uid(maf_uid, index_location_file):
                     return bx.align.maf.MultiIndexed(maf_files, keep_open=True, parse_e_rows=False)
                 except Exception as e:
                     raise Exception('MAF UID (%s) found, but configuration appears to be malformed: %s' % (maf_uid, e))
-        except:
+        except Exception:
             pass
     return None
 
@@ -304,7 +304,7 @@ def maf_index_by_uid(maf_uid, index_location_file):
 def open_or_build_maf_index(maf_file, index_filename, species=None):
     try:
         return (bx.align.maf.Indexed(maf_file, index_filename=index_filename, keep_open=True, parse_e_rows=False), None)
-    except:
+    except Exception:
         return build_maf_index(maf_file, species=species)
 
 
@@ -675,7 +675,7 @@ def parse_species_option(species):
 def remove_temp_index_file(index_filename):
     try:
         os.unlink(index_filename)
-    except:
+    except Exception:
         pass
 
 # Below are methods to deal with FASTA files
@@ -713,7 +713,7 @@ def get_attributes_from_fasta_header(header):
         region = region[1].lstrip(':').split('-')
         attributes['start'] = int(region[0])
         attributes['end'] = int(region[1])
-    except:
+    except Exception:
         # fields 0 is not a region coordinate
         pass
     if len(fields) > 2:

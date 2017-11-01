@@ -40,10 +40,11 @@ class XmlToolSource(ToolSource):
     """ Responsible for parsing a tool from classic Galaxy representation.
     """
 
-    def __init__(self, xml_tree, source_path=None):
+    def __init__(self, xml_tree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree
         self.root = xml_tree.getroot()
         self._source_path = source_path
+        self._macro_paths = macro_paths or []
         self.legacy_defaults = self.parse_profile() == "16.01"
 
     def parse_version(self):
@@ -725,7 +726,7 @@ class StdioParser(object):
                 else:
                     try:
                         exit_code.range_start = int(code_range)
-                    except:
+                    except Exception:
                         log.error(code_range)
                         log.warning("Invalid range start for tool's exit_code %s: exit_code ignored" % code_range)
                         continue

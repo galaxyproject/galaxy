@@ -96,7 +96,7 @@ class Heartbeat(threading.Thread):
             self.file.write("End dump\n\n")
             self.file.flush()
             self.print_nonsleeping(threads)
-        except:
+        except Exception:
             self.file.write("Caught exception attempting to dump thread states:")
             traceback.print_exc(None, self.file)
             self.file.write("\n")

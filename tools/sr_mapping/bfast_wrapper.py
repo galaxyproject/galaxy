@@ -104,7 +104,7 @@ def __main__():
             sys.stdout.write('%s\n' % stdout)
         else:
             raise Exception
-    except:
+    except Exception:
         sys.stdout.write('Could not determine BFAST version\n')
 
     buffsize = 1048576

@@ -9,21 +9,20 @@ from __future__ import print_function
 import sys
 import xml.etree.ElementTree as ElementTree
 
-from six.moves.urllib.request import urlopen
+import requests
 
 
 def getbuilds(url):
     try:
-        page = urlopen(url)
-    except:
+        text = requests.get(url).text
+    except Exception:
         print("#Unable to open " + url)
         print("?\tunspecified (?)")
         sys.exit(1)
 
-    text = page.read()
     try:
         tree = ElementTree.fromstring(text)
-    except:
+    except Exception:
         print("#Invalid xml passed back from " + url)
         print("?\tunspecified (?)")
         sys.exit(1)

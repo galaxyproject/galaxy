@@ -1,2 +1,0 @@
-define([],function(){return{error:function(a){return $("<div>").append($("<p/>").text("The server could not complete the request. Please contact the Galaxy Team if this error persists.")).append($("<textarea/>").addClass("ui-textarea").css({color:"black",height:"300px !important"}).text(JSON.stringify(a,void 0,4)))}}});
-//# sourceMappingURL=../../../maps/mvc/tool/tool-template.js.map

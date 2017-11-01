@@ -179,7 +179,7 @@ class GalaxyRBACAgent(RBACAgent):
         # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
         # only to provide stable sorting, but mainly to eliminate comparison of objects
         # (which can be expensive or prohibited) in case of equal attribute values.
-        intermed = map(None, (getattr(_, attr) for _ in seq), range(len(seq)), seq)
+        intermed = [(getattr(v, attr), i, v) for i, v in enumerate(seq)]
         intermed.sort()
         return [_[-1] for _ in intermed]
 
@@ -885,7 +885,7 @@ class GalaxyRBACAgent(RBACAgent):
                 has_dataset_manage_permissions = True
                 break
         if not has_dataset_manage_permissions:
-            return "At least 1 role must be associated with the <b>manage permissions</b> permission on this dataset."
+            return "At least 1 role must be associated with manage permissions on this dataset."
         flush_needed = False
         # Delete all of the current permissions on the dataset
         if not new:

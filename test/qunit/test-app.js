@@ -1,7 +1,7 @@
 /** Creates a generic/global Galaxy environment, loads shared libraries and a fake server */
 define([
     "jquery",
-    "sinon-qunit",
+    "sinon",
     "libs/bootstrap",
     "test-data/bootstrapped",
     "test-data/fakeserver",

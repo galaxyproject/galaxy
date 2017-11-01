@@ -5,7 +5,7 @@ import os
 import sys
 import tempfile
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def __main__():
@@ -49,7 +49,7 @@ def __main__():
                 # GTF format: chrom source, name, chromStart, chromEnd, score, strand, frame, attributes.
                 # BedGraph format: chrom, chromStart, chromEnd, value
                 out.write("%s\t%s\t%s\t%s\n" % (elems[0], start, elems[4], value))
-            except:
+            except Exception:
                 skipped_lines += 1
                 if not first_skipped_line:
                     first_skipped_line = i + 1

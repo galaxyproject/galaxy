@@ -2,10 +2,12 @@
 API operations on RequestType objects.
 """
 import logging
-from galaxy.web.base.controller import BaseAPIController, url_for
+
+from xml.etree.ElementTree import XML
+
 from galaxy import web
 from galaxy.sample_tracking.request_types import request_type_factory
-from xml.etree.ElementTree import XML
+from galaxy.web.base.controller import BaseAPIController, url_for
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +41,7 @@ class RequestTypeAPIController(BaseAPIController):
             return "Malformed request type id ( %s ) specified, unable to decode." % str(request_type_id)
         try:
             request_type = trans.sa_session.query(trans.app.model.RequestType).get(decoded_request_type_id)
-        except:
+        except Exception:
             request_type = None
         if not request_type:  # or not trans.user_is_admin():
             trans.response.status = 400

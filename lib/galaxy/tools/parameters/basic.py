@@ -1,6 +1,8 @@
 """
 Basic tool parameters.
 """
+from __future__ import print_function
+
 import logging
 import os
 import os.path
@@ -68,7 +70,7 @@ class ToolParameter(object, Dictifiable):
     moment but in the future should encapsulate more complex parameters (lists
     of valid choices, validation logic, ...)
     """
-    dict_collection_visible_keys = ('name', 'argument', 'type', 'label', 'help', 'refresh_on_change')
+    dict_collection_visible_keys = ['name', 'argument', 'type', 'label', 'help', 'refresh_on_change']
 
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
@@ -151,7 +153,7 @@ class ToolParameter(object, Dictifiable):
         if ignore_errors:
             try:
                 return self.to_python(value, app)
-            except:
+            except Exception:
                 return value
         else:
             return self.to_python(value, app)
@@ -165,18 +167,18 @@ class ToolParameter(object, Dictifiable):
         """
         Convert a value to a text representation suitable for displaying to
         the user
-        >>> p = ToolParameter( None, XML( '<param name="_name" />' ) )
-        >>> print p.to_text( None )
+        >>> p = ToolParameter(None, XML('<param name="_name" />'))
+        >>> print(p.to_text(None))
         Not available.
-        >>> print p.to_text( '' )
+        >>> print(p.to_text(''))
         Empty.
-        >>> print p.to_text( 'text' )
+        >>> print(p.to_text('text'))
         text
-        >>> print p.to_text( True )
+        >>> print(p.to_text(True))
         True
-        >>> print p.to_text( False )
+        >>> print(p.to_text(False))
         False
-        >>> print p.to_text( 0 )
+        >>> print(p.to_text(0))
         0
         """
         if value is not None:
@@ -244,11 +246,11 @@ class TextToolParameter(ToolParameter):
     Parameter that can take on any text value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( app=None )
-    >>> p = TextToolParameter( None, XML( '<param name="_name" type="text" value="default" />' ) )
-    >>> print p.name
+    >>> trans = Bunch(app=None)
+    >>> p = TextToolParameter(None, XML('<param name="_name" type="text" value="default" />'))
+    >>> print(p.name)
     _name
-    >>> sorted( p.to_dict( trans ).items() )
+    >>> sorted(p.to_dict(trans).items())
     [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
     """
 
@@ -289,21 +291,21 @@ class IntegerToolParameter(TextToolParameter):
     Parameter that takes an integer value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( app=None, history=Bunch(), workflow_building_mode=True )
-    >>> p = IntegerToolParameter( None, XML( '<param name="_name" type="integer" value="10" />' ) )
-    >>> print p.name
+    >>> trans = Bunch(app=None, history=Bunch(), workflow_building_mode=True)
+    >>> p = IntegerToolParameter(None, XML('<param name="_name" type="integer" value="10" />'))
+    >>> print(p.name)
     _name
-    >>> sorted( p.to_dict( trans ).items() )
+    >>> sorted(p.to_dict(trans).items())
     [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', '10')]
-    >>> type( p.from_json( "10", trans ) )
+    >>> type(p.from_json("10", trans))
     <type 'int'>
-    >>> type( p.from_json( "_string", trans ) )
+    >>> type(p.from_json("_string", trans))
     Traceback (most recent call last):
         ...
     ValueError: An integer or workflow parameter e.g. ${name} is required
     """
 
-    dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ('min', 'max')
+    dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ['min', 'max']
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
@@ -311,7 +313,7 @@ class IntegerToolParameter(TextToolParameter):
         if self.value:
             try:
                 int(self.value)
-            except:
+            except ValueError:
                 raise ValueError("An integer is required")
         elif self.value is None and not self.optional:
             raise ValueError("The settings for the field named '%s' require a 'value' setting and optionally a default value which must be an integer" % self.name)
@@ -320,12 +322,12 @@ class IntegerToolParameter(TextToolParameter):
         if self.min:
             try:
                 self.min = int(self.min)
-            except:
+            except ValueError:
                 raise ValueError("An integer is required")
         if self.max:
             try:
                 self.max = int(self.max)
-            except:
+            except ValueError:
                 raise ValueError("An integer is required")
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator(None, self.min, self.max))
@@ -333,7 +335,7 @@ class IntegerToolParameter(TextToolParameter):
     def from_json(self, value, trans, other_values={}):
         try:
             return int(value)
-        except:
+        except (TypeError, ValueError):
             if contains_workflow_parameter(value) and trans.workflow_building_mode is workflow_building_modes.ENABLED:
                 return value
             if not value and self.optional:
@@ -346,7 +348,7 @@ class IntegerToolParameter(TextToolParameter):
     def to_python(self, value, app):
         try:
             return int(value)
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             if contains_workflow_parameter(value):
                 return value
             if not value and self.optional:
@@ -365,21 +367,21 @@ class FloatToolParameter(TextToolParameter):
     Parameter that takes a real number value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( app=None, history=Bunch(), workflow_building_mode=True )
-    >>> p = FloatToolParameter( None, XML( '<param name="_name" type="float" value="3.141592" />' ) )
-    >>> print p.name
+    >>> trans = Bunch(app=None, history=Bunch(), workflow_building_mode=True)
+    >>> p = FloatToolParameter(None, XML('<param name="_name" type="float" value="3.141592" />'))
+    >>> print(p.name)
     _name
-    >>> sorted( p.to_dict( trans ).items() )
+    >>> sorted(p.to_dict(trans).items())
     [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', '3.141592')]
-    >>> type( p.from_json( "36.1", trans ) )
+    >>> type(p.from_json("36.1", trans))
     <type 'float'>
-    >>> type( p.from_json( "_string", trans ) )
+    >>> type(p.from_json("_string", trans))
     Traceback (most recent call last):
         ...
     ValueError: A real number or workflow parameter e.g. ${name} is required
     """
 
-    dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ('min', 'max')
+    dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ['min', 'max']
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
@@ -389,19 +391,19 @@ class FloatToolParameter(TextToolParameter):
         if self.value:
             try:
                 float(self.value)
-            except:
+            except ValueError:
                 raise ValueError("A real number is required")
         elif self.value is None and not self.optional:
             raise ValueError("The settings for this field require a 'value' setting and optionally a default value which must be a real number")
         if self.min:
             try:
                 self.min = float(self.min)
-            except:
+            except ValueError:
                 raise ValueError("A real number is required")
         if self.max:
             try:
                 self.max = float(self.max)
-            except:
+            except ValueError:
                 raise ValueError("A real number is required")
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator(None, self.min, self.max))
@@ -409,7 +411,7 @@ class FloatToolParameter(TextToolParameter):
     def from_json(self, value, trans, other_values={}):
         try:
             return float(value)
-        except:
+        except (TypeError, ValueError):
             if contains_workflow_parameter(value) and trans.workflow_building_mode is workflow_building_modes.ENABLED:
                 return value
             if not value and self.optional:
@@ -422,7 +424,7 @@ class FloatToolParameter(TextToolParameter):
     def to_python(self, value, app):
         try:
             return float(value)
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             if contains_workflow_parameter(value):
                 return value
             if not value and self.optional:
@@ -432,7 +434,7 @@ class FloatToolParameter(TextToolParameter):
     def get_initial_value(self, trans, other_values):
         try:
             return float(self.value)
-        except:
+        except Exception:
             return None
 
 
@@ -441,19 +443,19 @@ class BooleanToolParameter(ToolParameter):
     Parameter that takes one of two values.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( app=None, history=Bunch() )
-    >>> p = BooleanToolParameter( None, XML( '<param name="_name" type="boolean" checked="yes" truevalue="_truevalue" falsevalue="_falsevalue" />' ) )
-    >>> print p.name
+    >>> trans = Bunch(app=None, history=Bunch())
+    >>> p = BooleanToolParameter(None, XML('<param name="_name" type="boolean" checked="yes" truevalue="_truevalue" falsevalue="_falsevalue" />'))
+    >>> print(p.name)
     _name
-    >>> sorted( p.to_dict( trans ).items() )
+    >>> sorted(p.to_dict(trans).items())
     [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', 'true')]
-    >>> print p.from_json( 'true' )
+    >>> print(p.from_json('true'))
     True
-    >>> print p.to_param_dict_string( True )
+    >>> print(p.to_param_dict_string(True))
     _truevalue
-    >>> print p.from_json( 'false' )
+    >>> print(p.from_json('false'))
     False
-    >>> print p.to_param_dict_string( False )
+    >>> print(p.to_param_dict_string(False))
     _falsevalue
     """
 
@@ -501,11 +503,11 @@ class FileToolParameter(ToolParameter):
     Parameter that takes an uploaded file as a value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( app=None, history=Bunch() )
-    >>> p = FileToolParameter( None, XML( '<param name="_name" type="file"/>' ) )
-    >>> print p.name
+    >>> trans = Bunch(app=None, history=Bunch())
+    >>> p = FileToolParameter(None, XML('<param name="_name" type="file"/>'))
+    >>> print(p.name)
     _name
-    >>> sorted( p.to_dict( trans ).items() )
+    >>> sorted(p.to_dict(trans).items())
     [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FileToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'file'), ('value', None)]
     """
 
@@ -540,7 +542,7 @@ class FileToolParameter(ToolParameter):
             # or should we jsonify?
             try:
                 return value['local_filename']
-            except:
+            except KeyError:
                 return None
         raise Exception("FileToolParameter cannot be persisted")
 
@@ -558,11 +560,11 @@ class FTPFileToolParameter(ToolParameter):
     Parameter that takes a file uploaded via FTP as a value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( app=None, history=Bunch(), user=None )
-    >>> p = FTPFileToolParameter( None, XML( '<param name="_name" type="ftpfile"/>' ) )
-    >>> print p.name
+    >>> trans = Bunch(app=None, history=Bunch(), user=None)
+    >>> p = FTPFileToolParameter(None, XML('<param name="_name" type="ftpfile"/>'))
+    >>> print(p.name)
     _name
-    >>> sorted( p.to_dict( trans ).items() )
+    >>> sorted(p.to_dict(trans).items())
     [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FTPFileToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'ftpfile'), ('value', None)]
     """
 
@@ -645,11 +647,11 @@ class HiddenToolParameter(ToolParameter):
     Parameter that takes one of two values.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( app=None, history=Bunch() )
-    >>> p = HiddenToolParameter( None, XML( '<param name="_name" type="hidden" value="_value"/>' ) )
-    >>> print p.name
+    >>> trans = Bunch(app=None, history=Bunch())
+    >>> p = HiddenToolParameter(None, XML('<param name="_name" type="hidden" value="_value"/>'))
+    >>> print(p.name)
     _name
-    >>> sorted( p.to_dict( trans ).items() )
+    >>> sorted(p.to_dict(trans).items())
     [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'HiddenToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'hidden'), ('value', u'_value')]
     """
 
@@ -671,18 +673,18 @@ class ColorToolParameter(ToolParameter):
     Parameter that stores a color.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( app=None, history=Bunch() )
-    >>> p = ColorToolParameter( None, XML( '<param name="_name" type="color" value="#ffffff"/>' ) )
-    >>> print p.name
+    >>> trans = Bunch(app=None, history=Bunch())
+    >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff"/>'))
+    >>> print(p.name)
     _name
-    >>> print p.to_param_dict_string( "#fdeada" )
+    >>> print(p.to_param_dict_string("#fdeada"))
     #fdeada
-    >>> sorted( p.to_dict( trans ).items() )
+    >>> sorted(p.to_dict(trans).items())
     [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', u'#ffffff')]
-    >>> p = ColorToolParameter( None, XML( '<param name="_name" type="color" value="#ffffff" rgb="True"/>' ) )
-    >>> print p.to_param_dict_string( "#fdeada" )
+    >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff" rgb="True"/>'))
+    >>> print(p.to_param_dict_string("#fdeada"))
     (253, 234, 218)
-    >>> print p.to_param_dict_string( None )
+    >>> print(p.to_param_dict_string(None))
     Traceback (most recent call last):
         ...
     ValueError: Failed to convert 'None' to RGB.
@@ -712,11 +714,11 @@ class BaseURLToolParameter(HiddenToolParameter):
     current server base url. Used in all redirects.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( app=None, history=Bunch() )
-    >>> p = BaseURLToolParameter( None, XML( '<param name="_name" type="base_url" value="_value"/>' ) )
-    >>> print p.name
+    >>> trans = Bunch(app=None, history=Bunch())
+    >>> p = BaseURLToolParameter(None, XML('<param name="_name" type="base_url" value="_value"/>'))
+    >>> print(p.name)
     _name
-    >>> sorted( p.to_dict( trans ).items() )
+    >>> sorted(p.to_dict(trans).items())
     [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'BaseURLToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'base_url'), ('value', u'_value')]
     """
 
@@ -748,32 +750,32 @@ class SelectToolParameter(ToolParameter):
     Parameter that takes on one (or many) or a specific set of values.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( app=None, history=Bunch() )
-    >>> p = SelectToolParameter( None, XML(
+    >>> trans = Bunch(app=None, history=Bunch())
+    >>> p = SelectToolParameter(None, XML(
     ... '''
     ... <param name="_name" type="select">
     ...     <option value="x">x_label</option>
     ...     <option value="y" selected="true">y_label</option>
     ...     <option value="z">z_label</option>
     ... </param>
-    ... ''' ) )
-    >>> print p.name
+    ... '''))
+    >>> print(p.name)
     _name
-    >>> sorted( p.to_dict( trans ).items() )
+    >>> sorted(p.to_dict(trans).items())
     [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', False), ('name', '_name'), ('optional', False), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', False)]), ('refresh_on_change', False), ('type', 'select'), ('value', 'y')]
-    >>> p = SelectToolParameter( None, XML(
+    >>> p = SelectToolParameter(None, XML(
     ... '''
     ... <param name="_name" type="select" multiple="true">
     ...     <option value="x">x_label</option>
     ...     <option value="y" selected="true">y_label</option>
     ...     <option value="z" selected="true">z_label</option>
     ... </param>
-    ... ''' ) )
-    >>> print p.name
+    ... '''))
+    >>> print(p.name)
     _name
-    >>> sorted( p.to_dict( trans ).items() )
+    >>> sorted(p.to_dict(trans).items())
     [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]), ('refresh_on_change', False), ('type', 'select'), ('value', ['y', 'z'])]
-    >>> print p.to_param_dict_string( ["y", "z"] )
+    >>> print(p.to_param_dict_string(["y", "z"]))
     y,z
     """
 
@@ -910,7 +912,7 @@ class SelectToolParameter(ToolParameter):
                 value = options[0][1]
             else:
                 value = None
-        elif len(value) == 1:
+        elif len(value) == 1 or not self.multiple:
             value = value[0]
         return value
 
@@ -957,15 +959,15 @@ class GenomeBuildParameter(SelectToolParameter):
 
     >>> # Create a mock transaction with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( app=None, history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
-    >>> p = GenomeBuildParameter( None, XML( '<param name="_name" type="genomebuild" value="hg17" />' ) )
-    >>> print p.name
+    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=util.read_dbnames(None))
+    >>> p = GenomeBuildParameter(None, XML('<param name="_name" type="genomebuild" value="hg17" />'))
+    >>> print(p.name)
     _name
-    >>> d = p.to_dict( trans )
-    >>> o = d[ 'options' ]
-    >>> [ i for i in o if i[ 2 ] == True ]
+    >>> d = p.to_dict(trans)
+    >>> o = d['options']
+    >>> [i for i in o if i[2] == True]
     [('Human May 2004 (NCBI35/hg17) (hg17)', 'hg17', True)]
-    >>> [ i for i in o if i[ 1 ] == 'hg18' ]
+    >>> [i for i in o if i[1] == 'hg18']
     [('Human Mar. 2006 (NCBI36/hg18) (hg18)', 'hg18', False)]
     """
 
@@ -1024,16 +1026,16 @@ class ColumnListParameter(SelectToolParameter):
     >>> from galaxy.model import History, HistoryDatasetAssociation
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.model.mapping import init
-    >>> sa_session = init( "/tmp", "sqlite:///:memory:", create_tables=True ).session
+    >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add( hist )
+    >>> sa_session.add(hist)
     >>> sa_session.flush()
-    >>> hda = hist.add_dataset( HistoryDatasetAssociation( id=1, extension='interval', create_dataset=True, sa_session=sa_session ) )
-    >>> dtp =  DataToolParameter( None, XML( '<param name="blah" type="data" format="interval"/>' ) )
-    >>> print dtp.name
+    >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
+    >>> dtp =  DataToolParameter(None, XML('<param name="blah" type="data" format="interval"/>'))
+    >>> print(dtp.name)
     blah
-    >>> clp = ColumnListParameter ( None, XML( '<param name="numerical_column" type="data_column" data_ref="blah" numerical="true"/>' ) )
-    >>> print clp.name
+    >>> clp = ColumnListParameter(None, XML('<param name="numerical_column" type="data_column" data_ref="blah" numerical="true"/>'))
+    >>> print(clp.name)
     numerical_column
     """
 
@@ -1145,7 +1147,7 @@ class ColumnListParameter(SelectToolParameter):
                         if len(dataset.metadata.column_types) >= len(cnames):
                             numerics = [i for i, x in enumerate(dataset.metadata.column_types) if x in ['int', 'float']]
                             column_list = [column_list[i] for i in numerics]
-            except:
+            except Exception:
                 column_list = self.get_column_list(trans, other_values)
         else:
             column_list = self.get_column_list(trans, other_values)
@@ -1182,8 +1184,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     Creating a hierarchical select menu, which allows users to 'drill down' a tree-like set of options.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( app=None, history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
-    >>> p = DrillDownSelectToolParameter( None, XML(
+    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=util.read_dbnames(None))
+    >>> p = DrillDownSelectToolParameter(None, XML(
     ... '''
     ... <param name="_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
     ...   <options>
@@ -1198,26 +1200,26 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     ...    <option name="Option 5" value="option5"/>
     ...   </options>
     ... </param>
-    ... ''' ) )
-    >>> print p.name
+    ... '''))
+    >>> print(p.name)
     _name
-    >>> d = p.to_dict( trans )
-    >>> assert d[ 'multiple' ] == True
-    >>> assert d[ 'display' ] == 'checkbox'
-    >>> assert d[ 'options' ][ 0 ][ 'name' ] == 'Heading 1'
-    >>> assert d[ 'options' ][ 0 ][ 'value' ] == 'heading1'
-    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 0 ][ 'name' ] == 'Option 1'
-    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 0 ][ 'value' ] == 'option1'
-    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 1 ][ 'name' ] == 'Option 2'
-    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 1 ][ 'value' ] == 'option2'
-    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 2 ][ 'name' ] == 'Heading 2'
-    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 2 ][ 'value' ] == 'heading2'
-    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 2 ][ 'options' ][ 0 ][ 'name' ] == 'Option 3'
-    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 2 ][ 'options' ][ 0 ][ 'value' ] == 'option3'
-    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 2 ][ 'options' ][ 1 ][ 'name' ] == 'Option 4'
-    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 2 ][ 'options' ][ 1 ][ 'value' ] == 'option4'
-    >>> assert d[ 'options' ][ 1 ][ 'name' ] == 'Option 5'
-    >>> assert d[ 'options' ][ 1 ][ 'value' ] == 'option5'
+    >>> d = p.to_dict(trans)
+    >>> assert d['multiple'] == True
+    >>> assert d['display'] == 'checkbox'
+    >>> assert d['options'][0]['name'] == 'Heading 1'
+    >>> assert d['options'][0]['value'] == 'heading1'
+    >>> assert d['options'][0]['options'][0]['name'] == 'Option 1'
+    >>> assert d['options'][0]['options'][0]['value'] == 'option1'
+    >>> assert d['options'][0]['options'][1]['name'] == 'Option 2'
+    >>> assert d['options'][0]['options'][1]['value'] == 'option2'
+    >>> assert d['options'][0]['options'][2]['name'] == 'Heading 2'
+    >>> assert d['options'][0]['options'][2]['value'] == 'heading2'
+    >>> assert d['options'][0]['options'][2]['options'][0]['name'] == 'Option 3'
+    >>> assert d['options'][0]['options'][2]['options'][0]['value'] == 'option3'
+    >>> assert d['options'][0]['options'][2]['options'][1]['name'] == 'Option 4'
+    >>> assert d['options'][0]['options'][2]['options'][1]['value'] == 'option4'
+    >>> assert d['options'][1]['name'] == 'Option 5'
+    >>> assert d['options'][1]['value'] == 'option5'
     """
 
     def __init__(self, tool, input_source, context=None):
@@ -1280,7 +1282,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                 options = []
             for filter_key, filter_value in self.filtered.items():
                 dataset = other_values.get(filter_key)
-                if dataset.__class__.__name__.endswith("DatasetFilenameWrapper"):  # this is a bad way to check for this, but problems importing class ( due to circular imports? )
+                if dataset.__class__.__name__.endswith("DatasetFilenameWrapper"):  # this is a bad way to check for this, but problems importing class (due to circular imports?)
                     dataset = dataset.dataset
                 if dataset:
                     for meta_key, meta_dict in filter_value.items():
@@ -1563,7 +1565,7 @@ class DataToolParameter(BaseDataToolParameter):
           displayed as radio buttons and multiple selects as a set of checkboxes
 
     TODO: The following must be fixed to test correctly for the new security_check tag in
-    the DataToolParameter ( the last test below is broken ) Nate's next pass at the dataset
+    the DataToolParameter (the last test below is broken) Nate's next pass at the dataset
     security stuff will dramatically alter this anyway.
     """
 
@@ -1580,12 +1582,12 @@ class DataToolParameter(BaseDataToolParameter):
         if self.min:
             try:
                 self.min = int(self.min)
-            except:
+            except ValueError:
                 raise ValueError("An integer is required for min property.")
         if self.max:
             try:
                 self.max = int(self.max)
-            except:
+            except ValueError:
                 raise ValueError("An integer is required for max property.")
         if not self.multiple and (self.min is not None):
             raise ValueError("Cannot specify min property on single data parameter '%s'. Set multiple=\"true\" to enable this option." % self.name)
@@ -1694,7 +1696,7 @@ class DataToolParameter(BaseDataToolParameter):
         if value:
             try:
                 return ", ".join(["%s: %s" % (item.hid, item.name) for item in value])
-            except:
+            except Exception:
                 pass
         return "No dataset."
 

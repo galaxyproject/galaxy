@@ -5,44 +5,42 @@ from __future__ import print_function
 import datetime
 import json
 import os
-import time
 import traceback
 import unittest
-
 from functools import partial, wraps
 
 import requests
-
-from galaxy_selenium import (
-    driver_factory,
-)
-from galaxy_selenium.navigates_galaxy import NavigatesGalaxy, retry_during_transitions
-
 try:
     from pyvirtualdisplay import Display
 except ImportError:
     Display = None
-
 from six.moves.urllib.parse import urljoin
 
-from base import populators
-from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address
-from base.testcase import FunctionalTestCase
-from base.workflows_format_2 import (
-    ImporterGalaxyInterface,
+from base import populators  # noqa: I100
+from base.api import UsesApiTestCaseMixin  # noqa: I100
+from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address  # noqa: I100
+from base.testcase import FunctionalTestCase  # noqa: I100
+from base.workflows_format_2 import (  # noqa: I100
     convert_and_import_workflow,
+    ImporterGalaxyInterface,
 )
-
+from galaxy_selenium import (  # noqa: I100
+    driver_factory,
+)
+from galaxy_selenium.navigates_galaxy import NavigatesGalaxy, retry_during_transitions  # noqa: I100
 from galaxy.util import asbool
 
-DEFAULT_WAIT_TIMEOUT = 60
+DEFAULT_TIMEOUT_MULTIPLIER = 1
 DEFAULT_TEST_ERRORS_DIRECTORY = os.path.abspath("database/test_errors")
 DEFAULT_SELENIUM_BROWSER = "auto"
 DEFAULT_SELENIUM_REMOTE = False
 DEFAULT_SELENIUM_REMOTE_PORT = "4444"
 DEFAULT_SELENIUM_REMOTE_HOST = "127.0.0.1"
 DEFAULT_SELENIUM_HEADLESS = "auto"
+DEFAULT_ADMIN_USER = "test@bx.psu.edu"
+DEFAULT_ADMIN_PASSWORD = "testpass"
 
+TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
 # Test browser can be ["CHROME", "FIREFOX", "OPERA", "PHANTOMJS"]
 GALAXY_TEST_SELENIUM_BROWSER = os.environ.get("GALAXY_TEST_SELENIUM_BROWSER", DEFAULT_SELENIUM_BROWSER)
@@ -54,15 +52,72 @@ GALAXY_TEST_EXTERNAL_FROM_SELENIUM = os.environ.get("GALAXY_TEST_EXTERNAL_FROM_S
 # Auto-retry selenium tests this many times.
 GALAXY_TEST_SELENIUM_RETRIES = int(os.environ.get("GALAXY_TEST_SELENIUM_RETRIES", "0"))
 
-# Test case data
-DEFAULT_PASSWORD = '123456'
-
+GALAXY_TEST_SELENIUM_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_USER_EMAIL", None)
+GALAXY_TEST_SELENIUM_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_USER_PASSWORD", None)
+GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL", DEFAULT_ADMIN_USER)
+GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD", DEFAULT_ADMIN_PASSWORD)
 
 try:
     from nose.tools import nottest
 except ImportError:
     def nottest(x):
         return x
+
+
+def managed_history(f):
+    """Ensure a Selenium test has a distinct, named history.
+
+    Cleanup the history after the job is complete as well unless
+    GALAXY_TEST_NO_CLEANUP is set in the environment.
+    """
+
+    @wraps(f)
+    def func_wrapper(self, *args, **kwds):
+        self.home()
+        history_name = f.__name__ + datetime.datetime.now().strftime("%Y%m%d%H%M%s")
+        self.history_panel_create_new_with_name(history_name)
+        try:
+            f(self, *args, **kwds)
+        finally:
+            if "GALAXY_TEST_NO_CLEANUP" not in os.environ:
+                current_history_id = self.current_history_id()
+                self.api_delete("histories/%s" % current_history_id)
+
+    return func_wrapper
+
+
+def dump_test_information(self, name_prefix):
+    if GALAXY_TEST_ERRORS_DIRECTORY and GALAXY_TEST_ERRORS_DIRECTORY != "0":
+        if not os.path.exists(GALAXY_TEST_ERRORS_DIRECTORY):
+            os.makedirs(GALAXY_TEST_ERRORS_DIRECTORY)
+        result_name = name_prefix + datetime.datetime.now().strftime("%Y%m%d%H%M%s")
+        target_directory = os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, result_name)
+
+        def write_file(name, content, raw=False):
+            with open(os.path.join(target_directory, name), "wb") as buf:
+                buf.write(content.encode("utf-8") if not raw else content)
+
+        os.makedirs(target_directory)
+        self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
+        write_file("page_source.txt", self.driver.page_source)
+        write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
+        write_file("stacktrace.txt", traceback.format_exc())
+
+        for snapshot in getattr(self, "snapshots", []):
+            snapshot.write_to_error_directory(write_file)
+
+        for log_type in ["browser", "driver"]:
+            try:
+                write_file("%s.log.json" % log_type, json.dumps(self.driver.get_log(log_type)))
+            except Exception:
+                continue
+        iframes = self.driver.find_elements_by_css_selector("iframe")
+        for iframe in iframes:
+            pass
+            # TODO: Dump content out for debugging in the future.
+            # iframe_id = iframe.get_attribute("id")
+            # if iframe_id:
+            #     write_file("iframe_%s" % iframe_id, "My content")
 
 
 @nottest
@@ -77,34 +132,7 @@ def selenium_test(f):
             try:
                 return f(self, *args, **kwds)
             except Exception:
-                if GALAXY_TEST_ERRORS_DIRECTORY and GALAXY_TEST_ERRORS_DIRECTORY != "0":
-                    if not os.path.exists(GALAXY_TEST_ERRORS_DIRECTORY):
-                        os.makedirs(GALAXY_TEST_ERRORS_DIRECTORY)
-                    result_name = f.__name__ + datetime.datetime.now().strftime("%Y%m%d%H%M%s")
-                    target_directory = os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, result_name)
-
-                    def write_file(name, content):
-                        with open(os.path.join(target_directory, name), "wb") as buf:
-                            buf.write(content.encode("utf-8"))
-
-                    os.makedirs(target_directory)
-                    self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
-                    write_file("page_source.txt", self.driver.page_source)
-                    write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
-                    write_file("stacktrace.txt", traceback.format_exc())
-                    for log_type in ["browser", "driver"]:
-                        try:
-                            write_file("%s.log.json" % log_type, json.dumps(self.driver.get_log(log_type)))
-                        except Exception:
-                            continue
-                    iframes = self.driver.find_elements_by_css_selector("iframe")
-                    for iframe in iframes:
-                        pass
-                        # TODO: Dump content out for debugging in the future.
-                        # iframe_id = iframe.get_attribute("id")
-                        # if iframe_id:
-                        #     write_file("iframe_%s" % iframe_id, "My content")
-
+                dump_test_information(self, f.__name__)
                 if retry_attempts < GALAXY_TEST_SELENIUM_RETRIES:
                     retry_attempts += 1
                 else:
@@ -116,10 +144,33 @@ def selenium_test(f):
 retry_assertion_during_transitions = partial(retry_during_transitions, exception_check=lambda e: isinstance(e, AssertionError))
 
 
-class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
+class TestSnapshot(object):
 
+    def __init__(self, driver, index, description):
+        self.screenshot_binary = driver.get_screenshot_as_png()
+        self.description = description
+        self.index = index
+        self.exc = traceback.format_exc()
+        self.stack = traceback.format_stack()
+
+    def write_to_error_directory(self, write_file_func):
+        prefix = "%d-%s" % (self.index, self.description)
+        write_file_func("%s-screenshot.png" % prefix, self.screenshot_binary, raw=True)
+        write_file_func("%s-traceback.txt" % prefix, self.exc)
+        write_file_func("%s-stack.txt" % prefix, str(self.stack))
+
+
+class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin):
+    # If run one-off via nosetests, the next line ensures test
+    # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
+
+    # Override this in subclasses to ensure a user is logged in
+    # before each test. If GALAXY_TEST_SELENIUM_USER_EMAIL and
+    # GALAXY_TEST_SELENIUM_USER_PASSWORD are set these values
+    # will be used to login.
     ensure_registered = False
+    requires_admin = False
 
     def setUp(self):
         super(SeleniumTestCase, self).setUp()
@@ -129,7 +180,23 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
             self.target_url_from_selenium = GALAXY_TEST_EXTERNAL_FROM_SELENIUM
         else:
             self.target_url_from_selenium = self.url
+        self.snapshots = []
         self.setup_driver_and_session()
+        if self.requires_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
+            self._setup_interactor()
+            self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
+        try:
+            self.setup_with_driver()
+        except Exception:
+            dump_test_information(self, self.__class__.__name__ + "_setup")
+            raise
+
+    def setup_with_driver(self):
+        """Override point that allows setting up data using self.driver and Selenium connection.
+
+        Using this instead of overriding will ensure debug data such as screenshots and stack traces
+        are dumped if there are problems with the setup.
+        """
 
     def tearDown(self):
         exception = None
@@ -146,6 +213,9 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
         if exception is not None:
             raise exception
 
+    def snapshot(self, description):
+        self.snapshots.append(TestSnapshot(self.driver, len(self.snapshots), description))
+
     def reset_driver_and_session(self):
         self.tear_down_driver()
         self.setup_driver_and_session()
@@ -158,6 +228,18 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
         self.driver.set_window_size(1280, 900)
 
         if self.ensure_registered:
+            self.login()
+
+    def login(self):
+        if GALAXY_TEST_SELENIUM_USER_EMAIL:
+            assert GALAXY_TEST_SELENIUM_USER_PASSWORD, "If GALAXY_TEST_SELENIUM_USER_EMAIL is set, a password must be set also with GALAXY_TEST_SELENIUM_USER_PASSWORD"
+            self.home()
+            self.submit_login(
+                email=GALAXY_TEST_SELENIUM_USER_EMAIL,
+                password=GALAXY_TEST_SELENIUM_USER_PASSWORD,
+                assert_valid=True,
+            )
+        else:
             self.register()
 
     def tear_down_driver(self):
@@ -180,8 +262,8 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
         return default_web_host_for_selenium_tests()
 
     @property
-    def default_timeout(self):
-        return DEFAULT_WAIT_TIMEOUT
+    def timeout_multiplier(self):
+        return TIMEOUT_MULTIPLIER
 
     def build_url(self, url, for_selenium=True):
         if for_selenium:
@@ -190,35 +272,42 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
             base = self.url
         return urljoin(base, url)
 
-    @property
-    def test_data(self):
-        return self.navigation_data
-
     def assert_initial_history_panel_state_correct(self):
         # Move into a TestsHistoryPanel mixin
-        unnamed_name = self.test_data["historyPanel"]["text"]["history"]["newName"]
+        unnamed_name = self.components.history_panel.new_name.text
 
         name_element = self.history_panel_name_element()
         assert name_element.is_displayed()
         assert unnamed_name in name_element.text
 
-        size_selector = self.test_data["historyPanel"]["selectors"]["history"]["size"]
-        initial_size_str = self.test_data["historyPanel"]["text"]["history"]["newSize"]
+        initial_size_str = self.components.history_panel.new_size.text
+        size_selector = self.components.history_panel.size
+        size_text = size_selector.wait_for_text()
+        assert initial_size_str in size_text, "%s not in %s" % (initial_size_str, size_text)
 
-        size_element = self.wait_for_selector(size_selector)
-        assert size_element.is_displayed()
-        assert initial_size_str in size_element.text, "%s not in %s" % (initial_size_str, size_element.text)
+        self.components.history_panel.empty_message.wait_for_visible()
 
-        empty_msg_selector = self.test_data["historyPanel"]["selectors"]["history"]["emptyMsg"]
-        empty_msg_str = self.test_data["historyPanel"]["text"]["history"]["emptyMsg"]
-
-        empty_msg_element = self.wait_for_selector(empty_msg_selector)
-        assert empty_msg_element.is_displayed()
-        assert empty_msg_str in empty_msg_element.text
+    def admin_login(self):
+        self.home()
+        self.submit_login(
+            GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL,
+            GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD
+        )
+        with self.main_panel():
+            self.assert_no_error_message()
 
     @property
     def workflow_populator(self):
         return SeleniumSessionWorkflowPopulator(self)
+
+    def ensure_visualization_available(self, hid, visualization_name):
+        """Skip or fail a test if visualization for file doesn't appear.
+
+        Precondition: viz menu has been opened with history_panel_item_click_visualization_menu.
+        """
+        visualization_names = self.history_panel_item_available_visualizations(hid)
+        if visualization_name not in visualization_names:
+            raise unittest.SkipTest("Skipping test, visualization [%s] doesn't appear to be configured." % visualization_name)
 
 
 class SharedStateSeleniumTestCase(SeleniumTestCase):
@@ -234,8 +323,7 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
     shared_state_initialized = False
     shared_state_in_error = False
 
-    def setUp(self):
-        super(SharedStateSeleniumTestCase, self).setUp()
+    def setup_with_driver(self):
         if not self.__class__.shared_state_initialized:
             try:
                 self.setup_shared_state()
@@ -256,50 +344,35 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
 class UsesHistoryItemAssertions:
 
     def assert_item_peek_includes(self, hid, expected):
-        item_body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
-        peek_selector = item_body_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["peek"]
-        peek_selector = self.wait_for_selector_visible(peek_selector)
+        item_body = self.history_panel_item_component(hid=hid)
+        peek_text = item_body.peek.wait_for_text()
+        assert expected in peek_text
 
     def assert_item_info_includes(self, hid, expected):
-        item_body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
-        info_selector = item_body_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["info"]
-        info_element = self.wait_for_selector_visible(info_selector)
-        text = info_element.text
-        assert expected in text, "Failed to find expected info text [%s] in info [%s]" % (expected, text)
+        item_body = self.history_panel_item_component(hid=hid)
+        info_text = item_body.info.wait_for_text()
+        assert expected in info_text, "Failed to find expected info text [%s] in info [%s]" % (expected, info_text)
 
     def assert_item_dbkey_displayed_as(self, hid, dbkey):
-        item_body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
-        dbkey_selector = item_body_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["dbkey"]
-        dbkey_element = self.wait_for_selector_visible(dbkey_selector)
-        assert dbkey in dbkey_element.text
+        item_body = self.history_panel_item_component(hid=hid)
+        dbkey_text = item_body.dbkey.wait_for_text()
+        assert dbkey in dbkey_text
 
     def assert_item_summary_includes(self, hid, expected_text):
-        item_body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
-        summary_selector = "%s %s" % (item_body_selector, self.test_data["historyPanel"]["selectors"]["hda"]["summary"])
-        summary_element = self.wait_for_selector_visible(summary_selector)
-        text = summary_element.text
-        assert expected_text in text, "Expected summary [%s] not found in [%s]." % (expected_text, text)
+        item_body = self.history_panel_item_component(hid=hid)
+        summary_text = item_body.summary.wait_for_text()
+        assert expected_text in summary_text, "Expected summary [%s] not found in [%s]." % (expected_text, summary_text)
 
-    def assert_item_name(self, hid, name):
-        item_selector = self.history_panel_item_selector(hid, wait=True)
-        title_selector = item_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["name"]
-        title_element = self.wait_for_selector_visible(title_selector)
-        assert title_element.text == name, title_element.text
+    def assert_item_name(self, hid, expected_name):
+        item_body = self.history_panel_item_component(hid=hid)
+        name = item_body.name.wait_for_text()
+        assert name == expected_name, name
 
     def assert_item_hid_text(self, hid):
         # Check the text HID matches HID returned from API.
-        item_selector = self.history_panel_item_selector(hid, wait=True)
-        hid_selector = item_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["hid"]
-        hid_element = self.wait_for_selector_visible(hid_selector)
-        assert hid_element.text == str(hid), hid_element.text
-
-    def _assert_item_button(self, buttons_area, expected_button, button_def):
-        selector = button_def["selector"]
-        # Let old tooltip expire, etc...
-        time.sleep(1)
-        button_item = self.wait_for_selector_visible("%s %s" % (buttons_area, selector))
-        expected_tooltip = button_def.get("tooltip")
-        self.assert_tooltip_text(button_item, expected_tooltip)
+        item_body = self.history_panel_item_component(hid=hid)
+        hid_text = item_body.hid.wait_for_text()
+        assert hid_text == str(hid), hid_text
 
 
 def default_web_host_for_selenium_tests():

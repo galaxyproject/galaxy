@@ -87,8 +87,8 @@ def set_datatypes_registry(d_registry):
 
 
 class HasTags(object):
-    dict_collection_visible_keys = ('tags',)
-    dict_element_visible_keys = ('tags',)
+    dict_collection_visible_keys = ['tags']
+    dict_element_visible_keys = ['tags']
 
     def to_dict(self, *args, **kwargs):
         rval = super(HasTags, self).to_dict(*args, **kwargs)
@@ -174,9 +174,9 @@ class User(object, Dictifiable):
     histories, credentials, and roles.
     """
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
-    dict_collection_visible_keys = ('id', 'email', 'username', 'deleted', 'active', 'last_password_change')
+    dict_collection_visible_keys = ['id', 'email', 'username', 'deleted', 'active', 'last_password_change']
     # attributes that will be accessed and returned when calling to_dict( view='element' )
-    dict_element_visible_keys = ('id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'deleted', 'active', 'last_password_change')
+    dict_element_visible_keys = ['id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'deleted', 'active', 'last_password_change']
 
     def __init__(self, email=None, password=None):
         self.email = email
@@ -1172,7 +1172,7 @@ class DeferredJob(object):
     def set_last_check(self, seconds):
         try:
             self._last_check = int(seconds)
-        except:
+        except ValueError:
             self._last_check = time.time()
     last_check = property(get_last_check, set_last_check)
 
@@ -1187,8 +1187,8 @@ class DeferredJob(object):
 
 
 class Group(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'name')
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'name']
 
     def __init__(self, name=None):
         self.name = name
@@ -1207,9 +1207,9 @@ def is_hda(d):
 
 class History(HasTags, Dictifiable, UsesAnnotations, HasName):
 
-    dict_collection_visible_keys = ('id', 'name', 'published', 'deleted')
-    dict_element_visible_keys = ('id', 'name', 'genome_build', 'deleted', 'purged', 'update_time',
-                                 'published', 'importable', 'slug', 'empty')
+    dict_collection_visible_keys = ['id', 'name', 'published', 'deleted']
+    dict_element_visible_keys = ['id', 'name', 'genome_build', 'deleted', 'purged', 'update_time',
+                                 'published', 'importable', 'slug', 'empty']
     default_name = 'Unnamed history'
 
     def __init__(self, id=None, name=None, user=None):
@@ -1351,7 +1351,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             hdas = self.active_datasets
         for hda in hdas:
             # Copy HDA.
-            new_hda = hda.copy(copy_children=True)
+            new_hda = hda.copy()
             new_history.add_dataset(new_hda, set_hid=False, quota=applies_to_quota)
             db_session.add(new_hda)
             db_session.flush()
@@ -1441,7 +1441,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             HistoryDatasetAssociation.table.c.dataset_id == Dataset.table.c.id)
         distinct_datasets = (
             select([
-                # use labels here to better accrss from the query above
+                # use labels here to better access from the query above
                 HistoryDatasetAssociation.table.c.history_id.label('history_id'),
                 Dataset.total_size.label('dataset_size'),
                 Dataset.id.label('dataset_id')
@@ -1558,8 +1558,8 @@ class GroupRoleAssociation(object):
 
 
 class Role(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'name', 'description', 'type')
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'name', 'description', 'type']
     private_id = None
     types = Bunch(
         PRIVATE='private',
@@ -1577,7 +1577,7 @@ class Role(object, Dictifiable):
 
 
 class UserQuotaAssociation(object, Dictifiable):
-    dict_element_visible_keys = ('user', )
+    dict_element_visible_keys = ['user']
 
     def __init__(self, user, quota):
         self.user = user
@@ -1585,7 +1585,7 @@ class UserQuotaAssociation(object, Dictifiable):
 
 
 class GroupQuotaAssociation(object, Dictifiable):
-    dict_element_visible_keys = ('group', )
+    dict_element_visible_keys = ['group']
 
     def __init__(self, group, quota):
         self.group = group
@@ -1593,8 +1593,8 @@ class GroupQuotaAssociation(object, Dictifiable):
 
 
 class Quota(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups')
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups']
     valid_operations = ('+', '-', '=')
 
     def __init__(self, name="", description="", amount=0, operation="="):
@@ -1627,7 +1627,7 @@ class Quota(object, Dictifiable):
 
 
 class DefaultQuotaAssociation(Quota, Dictifiable):
-    dict_element_visible_keys = ('type', )
+    dict_element_visible_keys = ['type']
     types = Bunch(
         UNREGISTERED='unregistered',
         REGISTERED='registered'
@@ -1856,7 +1856,7 @@ class Dataset(StorableObject):
         """Detects whether there is any data"""
         return self.get_size() > 0
 
-    def mark_deleted(self, include_children=True):
+    def mark_deleted(self):
         self.deleted = True
 
     def is_multi_byte(self):
@@ -2189,12 +2189,6 @@ class DatasetInstance(object):
     def clear_associated_files(self, metadata_safe=False, purge=False):
         raise Exception("Unimplemented")
 
-    def get_child_by_designation(self, designation):
-        for child in self.children:
-            if child.designation == designation:
-                return child
-        return None
-
     def get_converter_types(self):
         return self.datatype.get_converter_types(self, _get_datatypes_registry())
 
@@ -2211,23 +2205,14 @@ class DatasetInstance(object):
     def extend_validation_errors(self, validation_errors):
         self.validation_errors.extend(validation_errors)
 
-    def mark_deleted(self, include_children=True):
+    def mark_deleted(self):
         self.deleted = True
-        if include_children:
-            for child in self.children:
-                child.mark_deleted()
 
-    def mark_undeleted(self, include_children=True):
+    def mark_undeleted(self):
         self.deleted = False
-        if include_children:
-            for child in self.children:
-                child.mark_undeleted()
 
-    def mark_unhidden(self, include_children=True):
+    def mark_unhidden(self):
         self.visible = True
-        if include_children:
-            for child in self.children:
-                child.mark_unhidden()
 
     def undeletable(self):
         if self.purged:
@@ -2390,7 +2375,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
 
-    def copy(self, copy_children=False, parent_id=None):
+    def copy(self, parent_id=None):
         """
         Create a copy of this HDA.
         """
@@ -2415,9 +2400,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         hda.set_size()
         # Need to set after flushed, as MetadataFiles require dataset.id
         hda.metadata = self.metadata
-        if copy_children:
-            for child in self.children:
-                child.copy(copy_children=copy_children, parent_id=hda.id)
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             hda.set_peek()
@@ -2481,12 +2463,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         library_dataset.library_dataset_dataset_association_id = ldda.id
         object_session(self).add(library_dataset)
         object_session(self).flush()
-        for child in self.children:
-            child.to_library_dataset_dataset_association(trans,
-                                                         target_folder=target_folder,
-                                                         replace_dataset=replace_dataset,
-                                                         parent_id=ldda.id,
-                                                         user=ldda.user)
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             ldda.set_peek()
@@ -2520,7 +2496,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         # Anon users are handled just by their single history size.
         if not user:
             return rval
-        # Gets an HDA and its children's disk usage, if the user does not already
+        # Gets an HDA disk usage, if the user does not already
         #   have an association of the same dataset
         if not self.dataset.library_associations and not self.purged and not self.dataset.purged:
             for hda in self.dataset.history_associations:
@@ -2530,8 +2506,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     break
             else:
                 rval += self.get_total_size()
-        for child in self.children:
-            rval += child.get_disk_usage(user)
         return rval
 
     def to_dict(self, view='collection', expose_dataset_path=False):
@@ -2632,8 +2606,8 @@ class HistoryDatasetAssociationSubset(object):
 
 class Library(object, Dictifiable, HasName):
     permitted_actions = get_permitted_actions(filter='LIBRARY')
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id', 'create_time')
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id', 'create_time']
 
     def __init__(self, name=None, description=None, synopsis=None, root_folder=None):
         self.name = name or "Unnamed library"
@@ -2664,7 +2638,7 @@ class Library(object, Dictifiable, HasName):
             # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
             # only to provide stable sorting, but mainly to eliminate comparison of objects
             # (which can be expensive or prohibited) in case of equal attribute values.
-            intermed = map(None, (getattr(_, attr) for _ in seq), range(len(seq)), seq)
+            intermed = [(getattr(v, attr), i, v) for i, v in enumerate(seq)]
             intermed.sort()
             return [_[-1] for _ in intermed]
         if folders is None:
@@ -2708,7 +2682,7 @@ class Library(object, Dictifiable, HasName):
 
 
 class LibraryFolder(object, Dictifiable, HasName):
-    dict_element_visible_keys = ('id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time', 'deleted')
+    dict_element_visible_keys = ['id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time', 'deleted']
 
     def __init__(self, name=None, description=None, item_count=0, order_id=None):
         self.name = name or "Unnamed folder"
@@ -2946,14 +2920,12 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName):
         hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
         if add_to_history and target_history:
             target_history.add_dataset(hda)
-        for child in self.children:
-            child.to_history_dataset_association(target_history=target_history, parent_id=hda.id, add_to_history=False)
         if not self.datatype.copy_safe_peek:
             hda.set_peek()  # in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         sa_session.flush()
         return hda
 
-    def copy(self, copy_children=False, parent_id=None, target_folder=None):
+    def copy(self, parent_id=None, target_folder=None):
         sa_session = object_session(self)
         ldda = LibraryDatasetDatasetAssociation(name=self.name,
                                                 info=self.info,
@@ -2977,9 +2949,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName):
         sa_session.flush()
         # Need to set after flushed, as MetadataFiles require dataset.id
         ldda.metadata = self.metadata
-        if copy_children:
-            for child in self.children:
-                child.copy(copy_children=copy_children, parent_id=ldda.id)
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             ldda.set_peek()
@@ -3200,8 +3169,8 @@ DEFAULT_COLLECTION_NAME = "Unnamed Collection"
 class DatasetCollection(object, Dictifiable, UsesAnnotations):
     """
     """
-    dict_collection_visible_keys = ('id', 'collection_type')
-    dict_element_visible_keys = ('id', 'collection_type')
+    dict_collection_visible_keys = ['id', 'collection_type']
+    dict_element_visible_keys = ['id', 'collection_type']
     populated_states = Bunch(
         NEW='new',  # New dataset collection, unpopulated elements
         OK='ok',  # Collection elements populated (HDAs may or may not have errors)
@@ -3504,8 +3473,8 @@ class LibraryDatasetCollectionAssociation(DatasetCollectionInstance):
 class DatasetCollectionElement(object, Dictifiable):
     """ Associates a DatasetInstance (hda or ldda) with a DatasetCollection. """
     # actionable dataset id needs to be available via API...
-    dict_collection_visible_keys = ('id', 'element_type', 'element_index', 'element_identifier')
-    dict_element_visible_keys = ('id', 'element_type', 'element_index', 'element_identifier')
+    dict_collection_visible_keys = ['id', 'element_type', 'element_index', 'element_identifier']
+    dict_element_visible_keys = ['id', 'element_type', 'element_index', 'element_identifier']
 
     def __init__(
         self,
@@ -3591,7 +3560,7 @@ class DatasetCollectionElement(object, Dictifiable):
                     element_destination=element_destination
                 )
             else:
-                new_element_object = element_object.copy(copy_children=True)
+                new_element_object = element_object.copy()
                 if destination is not None and element_object.hidden_beneath_collection_instance:
                     new_element_object.hidden_beneath_collection_instance = destination
                 # Ideally we would not need to give the following
@@ -3672,8 +3641,8 @@ class UCI(object):
 
 class StoredWorkflow(HasTags, Dictifiable):
 
-    dict_collection_visible_keys = ('id', 'name', 'published', 'deleted')
-    dict_element_visible_keys = ('id', 'name', 'published', 'deleted')
+    dict_collection_visible_keys = ['id', 'name', 'published', 'deleted']
+    dict_element_visible_keys = ['id', 'name', 'published', 'deleted']
 
     def __init__(self):
         self.id = None
@@ -3698,8 +3667,8 @@ class StoredWorkflow(HasTags, Dictifiable):
 
 class Workflow(object, Dictifiable):
 
-    dict_collection_visible_keys = ('name', 'has_cycles', 'has_errors')
-    dict_element_visible_keys = ('name', 'has_cycles', 'has_errors')
+    dict_collection_visible_keys = ['name', 'has_cycles', 'has_errors']
+    dict_element_visible_keys = ['name', 'has_cycles', 'has_errors']
     input_step_types = ['data_input', 'data_collection_input', 'parameter_input']
 
     def __init__(self, uuid=None):
@@ -3985,8 +3954,8 @@ class StoredWorkflowMenuEntry(object):
 
 
 class WorkflowInvocation(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state')
-    dict_element_visible_keys = ('id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state')
+    dict_collection_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
+    dict_element_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
     states = Bunch(
         NEW='new',  # Brand new workflow invocation... maybe this should be same as READY
         READY='ready',  # Workflow ready for another iteration of scheduling.
@@ -4160,13 +4129,13 @@ class WorkflowInvocation(object, Dictifiable):
 
 
 class WorkflowInvocationToSubworkflowInvocationAssociation(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id')
-    dict_element_visible_keys = ('id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id')
+    dict_collection_visible_keys = ['id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id']
+    dict_element_visible_keys = ['id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id']
 
 
 class WorkflowInvocationStep(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'update_time', 'job_id', 'workflow_step_id', 'action')
-    dict_element_visible_keys = ('id', 'update_time', 'job_id', 'workflow_step_id', 'action')
+    dict_collection_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'action']
+    dict_element_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'action']
 
     def update(self):
         self.workflow_invocation.update()
@@ -4273,7 +4242,6 @@ class MetadataFile(StorableObject):
             return path
         except AttributeError:
             # In case we're not working with the history_dataset
-            # print "Caught AttributeError"
             path = os.path.join(Dataset.file_path, '_metadata_files', *directory_hash_id(self.id))
             # Create directory if it does not exist
             try:
@@ -4295,8 +4263,8 @@ class FormDefinition(object, Dictifiable):
                   RUN_DETAILS_TEMPLATE='Sample run details template',
                   LIBRARY_INFO_TEMPLATE='Library information template',
                   USER_INFO='User Information')
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout')
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout']
 
     def __init__(self, name=None, desc=None, fields=[], form_definition_current=None, form_type=None, layout=None):
         self.name = name
@@ -4356,7 +4324,7 @@ class FormDefinition(object, Dictifiable):
                 try:
                     # This field has a saved value.
                     value = str(contents[field['name']])
-                except:
+                except Exception:
                     # If there was an error getting the saved value, we'll still
                     # display the widget, but it will be empty.
                     if field_type == 'AddressField':
@@ -4439,7 +4407,7 @@ class Request(object, Dictifiable):
                    SUBMITTED='In Progress',
                    REJECTED='Rejected',
                    COMPLETE='Complete')
-    dict_collection_visible_keys = ('id', 'name', 'state')
+    dict_collection_visible_keys = ['id', 'name', 'state']
 
     def __init__(self, name=None, desc=None, request_type=None, user=None, form_values=None, notification=None):
         self.name = name
@@ -4650,8 +4618,8 @@ class ExternalService(object):
 
 
 class RequestType(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name', 'desc')
-    dict_element_visible_keys = ('id', 'name', 'desc', 'request_form_id', 'sample_form_id')
+    dict_collection_visible_keys = ['id', 'name', 'desc']
+    dict_element_visible_keys = ['id', 'name', 'desc', 'request_form_id', 'sample_form_id']
     rename_dataset_options = Bunch(NO='Do not rename',
                                    SAMPLE_NAME='Preprend sample name',
                                    EXPERIMENT_NAME='Prepend experiment name',
@@ -4752,7 +4720,7 @@ class Sample(object, Dictifiable):
     supported_field_types = [CheckboxField, SelectField, TextField, WorkflowField, WorkflowMappingField, HistoryField]
     bulk_operations = Bunch(CHANGE_STATE='Change state',
                             SELECT_LIBRARY='Select data library and folder')
-    dict_collection_visible_keys = ('id', 'name')
+    dict_collection_visible_keys = ['id', 'name']
 
     def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None, library=None, folder=None, workflow=None, history=None):
         self.name = name
@@ -5124,7 +5092,7 @@ class Tag (object):
 
 
 class ItemTagAssociation (object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'user_tname', 'user_value')
+    dict_collection_visible_keys = ['id', 'user_tname', 'user_value']
     dict_element_visible_keys = dict_collection_visible_keys
 
     def __init__(self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None):

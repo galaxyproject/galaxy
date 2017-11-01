@@ -114,7 +114,7 @@ To update an existing Galaxy repository run:
 
       $$ git checkout release_${release} && git pull --ff-only origin release_${release}
 
-See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
 Release Notes
 ===========================================================
@@ -160,7 +160,6 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
           make release-create-rc RELEASE_CURR=${version} RELEASE_NEXT=${next_version}
 
     - [ ] Open PRs from your fork of branch ``version-${version}`` to upstream ``release_${version}`` and of ``version-${next_version}.dev`` to ``dev``.
-    - [ ] Open PR against ``release_${version}`` branch to pin flake8 deps in tox.ini to the latest available version. See [example](https://github.com/galaxyproject/galaxy/pull/3476).
     - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `${next_version}` so it properly tags new PRs.
     - [ ] Set the ``release_${version}`` branch in GitHub [settings](https://github.com/galaxyproject/galaxy/settings/branches) as protected.
 
@@ -221,8 +220,8 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
     - [ ] Verify release included in https://docs.galaxyproject.org/en/master/releases/index.html
     - [ ] Review announcement in https://github.com/galaxyproject/galaxy/blob/dev/doc/source/releases/${version}_announce.rst
-    - [ ] Stage annoucement content (Wiki, Biostars, Bit.ly link) on annouce date to capture date tags. Note: all final content does not need to be completed to do this.
-    - [ ] Create wiki *highlights* and post to http://galaxyproject.org News (w/ RSS) and NewsBriefs. [An Example](https://galaxyproject.org/news/2016-04-galaxy-release).
+    - [ ] Stage annoucement content (Hub, Biostars, Bit.ly link) on annouce date to capture date tags. Note: all final content does not need to be completed to do this.
+    - [ ] Create hub *highlights* and post to http://galaxyproject.org News (w/ RSS) and NewsBriefs. [An Example](https://galaxyproject.org/news/2016-04-galaxy-release).
     - [ ] Tweet docs news *highlights* via bit.ly link to https://twitter.com/galaxyproject/ (As user ``galaxyproject``, password in Galaxy password store under ``twitter.com / galaxyproject`` ). [An Example](https://twitter.com/galaxyproject/status/733029921316986881).
     - [ ] Post *highlights* type News to Galaxy Biostars https://biostar.usegalaxy.org. [An Example](https://biostar.usegalaxy.org/p/17712/).
     - [ ] Email *highlights* to [galaxy-dev](http://dev.list.galaxyproject.org/) and [galaxy-announce](http://announce.list.galaxyproject.org/) @lists.galaxyproject.org. [An Example](http://dev.list.galaxyproject.org/The-Galaxy-release-16-04-is-out-tp4669419.html)

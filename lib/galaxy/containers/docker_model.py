@@ -374,7 +374,7 @@ class DockerNode(object):
 
     @property
     def labels(self):
-        labels = self.inspect[0]['Spec'].get('Labels', {})
+        labels = self.inspect[0]['Spec'].get('Labels', {}) or {}
         return DockerNodeLabels.from_label_dictionary(labels)
 
     def label_add(self, label, value):

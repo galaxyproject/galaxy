@@ -1,4 +1,6 @@
 """Migration script to change repository.type column value from generic to unrestricted."""
+from __future__ import print_function
+
 import logging
 import sys
 
@@ -16,7 +18,7 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     # Update the type column to have the default unrestricted value.

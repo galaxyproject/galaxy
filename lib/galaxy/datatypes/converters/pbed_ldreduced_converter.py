@@ -41,15 +41,14 @@ def pruneLD(plinktasks=[], cd='./', vclbase=[]):
     for task in plinktasks:  # each is a list
         vcl = vclbase + task
         with open(plog, 'w') as sto:
-            x = subprocess.Popen(' '.join(vcl), shell=True, stdout=sto, stderr=sto, cwd=cd)
-            x.wait()
+            subprocess.check_call(vcl, stdout=sto, stderr=sto, cwd=cd)
         try:
             lplog = open(plog, 'r').readlines()
             lplog = [elem for elem in lplog if elem.find('Pruning SNP') == -1]
             alog += lplog
             alog.append('\n')
             os.unlink(plog)  # no longer needed
-        except:
+        except Exception:
             alog.append('### %s Strange - no std out from plink when running command line\n%s\n' % (timenow(), ' '.join(vcl)))
     return alog
 
@@ -93,7 +92,7 @@ def main():
     outfilepath = sys.argv[6]
     try:
         os.makedirs(outfilepath)
-    except:
+    except Exception:
         pass
     plink = sys.argv[7]
     makeLDreduced(base_name, infpath=inpedfilepath, outfpath=outfilepath, plinke=plink, forcerebuild=False, returnFname=False,

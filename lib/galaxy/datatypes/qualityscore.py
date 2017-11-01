@@ -56,7 +56,7 @@ class QualityScoreSOLiD (QualityScore):
                             if not(readlen):
                                 readlen = len(line.split())
                             assert len(line.split()) == readlen  # SOLiD reads should be of the same length
-                        except:
+                        except Exception:
                             break
                         goodblock += 1
                         if goodblock > 10:
@@ -64,7 +64,7 @@ class QualityScoreSOLiD (QualityScore):
                     else:
                         break  # we found a non-empty line, but it's not a header
             fh.close()
-        except:
+        except Exception:
             pass
         return False
 
@@ -106,13 +106,13 @@ class QualityScore454 (QualityScore):
                             break
                         try:
                             [int(x) for x in line.split()]
-                        except:
+                        except Exception:
                             break
                         return True
                     else:
                         break  # we found a non-empty line, but it's not a header
             fh.close()
-        except:
+        except Exception:
             pass
         return False
 

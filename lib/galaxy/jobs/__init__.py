@@ -43,6 +43,7 @@ log = logging.getLogger(__name__)
 # that import Galaxy internals - but it shouldn't be used in Galaxy's code
 # itself.
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
+TOOL_PROVIDED_JOB_METADATA_KEYS = ['name', 'info', 'dbkey']
 
 # Override with config.default_job_shell.
 DEFAULT_JOB_SHELL = '/bin/bash'
@@ -1165,7 +1166,7 @@ class JobWrapper(object, HasResourceParameters):
         # TODO: After failing here, consider returning from the function.
         try:
             self.reclaim_ownership()
-        except:
+        except Exception:
             log.exception('(%s) Failed to change ownership of %s, failing' % (job.id, self.working_directory))
             return self.fail(job.info, stdout=stdout, stderr=stderr, exit_code=tool_exit_code)
 
@@ -1315,19 +1316,22 @@ class JobWrapper(object, HasResourceParameters):
                             dataset.set_peek(line_count=context['line_count'], is_multi_byte=True)
                         else:
                             dataset.set_peek(line_count=context['line_count'])
-                    except:
+                    except Exception:
                         if (not dataset.datatype.composite_type and dataset.dataset.is_multi_byte()) or self.tool.is_multi_byte:
                             dataset.set_peek(is_multi_byte=True)
                         else:
                             dataset.set_peek()
-                    for context_key in ['name', 'info', 'dbkey']:
-                        if context_key in context:
-                            context_value = context[context_key]
-                            setattr(dataset, context_key, context_value)
                 else:
+                    # Handle an empty dataset.
                     dataset.blurb = "empty"
                     if dataset.ext == 'auto':
-                        dataset.extension = 'txt'
+                        dataset.extension = context.get('ext', 'txt')
+
+                for context_key in TOOL_PROVIDED_JOB_METADATA_KEYS:
+                    if context_key in context:
+                        context_value = context[context_key]
+                        setattr(dataset, context_key, context_value)
+
                 self.sa_session.add(dataset)
             if job.states.ERROR == final_job_state:
                 log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
@@ -1388,7 +1392,6 @@ class JobWrapper(object, HasResourceParameters):
             # Maybe this is a legacy job, use the job working directory instead
             tool_working_directory = self.working_directory
         collected_datasets = {
-            'children': self.tool.collect_child_datasets(out_data, tool_working_directory),
             'primary': self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
         }
         self.tool.collect_dynamic_collections(
@@ -1464,7 +1467,7 @@ class JobWrapper(object, HasResourceParameters):
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             if delete_files:
                 self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
-        except:
+        except Exception:
             log.exception("Unable to cleanup job %d", self.job_id)
 
     def _collect_extra_files(self, dataset, job_working_directory):
@@ -1762,7 +1765,7 @@ class JobWrapper(object, HasResourceParameters):
         if external_chown_script and job.user is not None:
             try:
                 self._change_ownership(self.user_system_pwent[0], str(self.user_system_pwent[3]))
-            except:
+            except Exception:
                 log.exception('(%s) Failed to change ownership of %s, making world-writable instead' % (job.id, self.working_directory))
                 os.chmod(self.working_directory, 0o777)
 

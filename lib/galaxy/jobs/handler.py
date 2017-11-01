@@ -1,20 +1,33 @@
 """
 Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 """
-
 import datetime
-import os
-import time
 import logging
+import os
 import threading
-from Queue import Queue, Empty
+import time
+from Queue import (
+    Empty,
+    Queue
+)
 
-from sqlalchemy.sql.expression import and_, or_, select, func, true, null
+from sqlalchemy.sql.expression import (
+    and_,
+    func,
+    null,
+    or_,
+    select,
+    true
+)
 
 from galaxy import model
-from galaxy.util.sleeper import Sleeper
-from galaxy.jobs import JobWrapper, TaskWrapper, JobDestination
+from galaxy.jobs import (
+    JobDestination,
+    JobWrapper,
+    TaskWrapper
+)
 from galaxy.jobs.mapper import JobNotReadyException
+from galaxy.util.sleeper import Sleeper
 
 log = logging.getLogger(__name__)
 
@@ -94,6 +107,19 @@ class JobHandlerQueue(object):
         job = self.sa_session.query(model.Job).get(id)
         return job, self.job_wrapper(job, use_persisted_destination=True)
 
+    def __write_registry_file_if_absent(self, job):
+        # TODO: remove this and the one place it is called in late 2018, this
+        # hack attempts to minimize the job failures due to upgrades from 17.05
+        # Galaxies.
+        job_wrapper = self.job_wrapper(job)
+        cwd = job_wrapper.working_directory
+        datatypes_config = os.path.join(cwd, "registry.xml")
+        if not os.path.exists(datatypes_config):
+            try:
+                self.app.datatypes_registry.to_xml_file(path=datatypes_config)
+            except OSError:
+                pass
+
     def __check_jobs_at_startup(self):
         """
         Checks all jobs that are in the 'new', 'queued' or 'running' state in
@@ -121,6 +147,7 @@ class JobHandlerQueue(object):
                         (model.Job.handler == self.app.config.server_name)).all()
 
         for job in jobs_at_startup:
+            self.__write_registry_file_if_absent(job)
             if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
                 log.warning("(%s) Tool '%s' removed from tool config, unable to recover job" % (job.id, job.tool_id))
                 self.job_wrapper(job).fail('This tool was disabled before the job completed.  Please contact your Galaxy administrator.')
@@ -182,7 +209,7 @@ class JobHandlerQueue(object):
                 # to the sleep.
                 if not self.app.job_manager.job_lock:
                     self.__monitor_step()
-            except:
+            except Exception:
                 log.exception("Exception in monitor_step")
             # Sleep
             self.sleeper.sleep(1)
@@ -689,7 +716,7 @@ class JobHandlerStopQueue(object):
         while self.running:
             try:
                 self.monitor_step()
-            except:
+            except Exception:
                 log.exception("Exception in monitor_step")
             # Sleep
             self.sleeper.sleep(1)

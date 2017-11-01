@@ -49,7 +49,7 @@ def file_err(msg, dataset, json_file):
         return
     try:
         os.remove(dataset.path)
-    except:
+    except Exception:
         pass
 
 
@@ -408,7 +408,7 @@ def __main__():
         dataset = util.bunch.Bunch(**safe_dict(dataset))
         try:
             output_path = output_paths[int(dataset.dataset_id)][0]
-        except:
+        except Exception:
             print('Output path for dataset %s not found on command line' % dataset.dataset_id, file=sys.stderr)
             sys.exit(1)
         if dataset.type == 'composite':
@@ -422,7 +422,7 @@ def __main__():
     # parent directory is writable by the user.
     try:
         os.remove(sys.argv[3])
-    except:
+    except Exception:
         pass
 
 
