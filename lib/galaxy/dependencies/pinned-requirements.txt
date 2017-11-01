@@ -25,19 +25,18 @@ WebOb==1.4.1
 WebHelpers==1.3
 Mako==1.0.2
 pytz==2015.4
-Babel==2.4.0
+Babel==2.5.1
 Beaker==1.7.0
 dictobj==0.3.1
 nose==1.3.7
 Parsley==1.3
 six==1.10.0
 Whoosh==2.7.4
-testfixtures==4.10.0
 galaxy_sequence_utils==1.0.2
 h5py==2.7.1
 
 # pykwalify and dependencies
-pykwalify==1.5.1
+pykwalify==1.6.0
 python-dateutil==2.5.3
 docopt==0.6.2
 
@@ -45,11 +44,18 @@ docopt==0.6.2
 Cheetah==2.4.4
 Markdown==2.6.3
 
+# Requests and dependencies
+requests==2.18.4
+certifi==2017.7.27.1
+urllib3==1.22
+chardet==3.0.4
+idna==2.6
+
 # BioBlend and dependencies
 bioblend==0.7.0
 boto==2.38.0
-requests==2.10.0
-requests-toolbelt==0.4.0
+requests-toolbelt==0.8.0
+
 
 # kombu and dependencies
 kombu==3.0.30

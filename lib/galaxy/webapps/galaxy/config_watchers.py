@@ -32,6 +32,12 @@ class ConfigWatchers(object):
         [self.data_manager_config_watcher.watch_file(config) for config in self.data_manager_configs]
         [self.tool_data_watcher.watch_directory(tool_data_path) for tool_data_path in self.tool_data_paths]
 
+    def shutdown(self):
+        self.tool_config_watcher.shutdown()
+        self.data_manager_config_watcher.shutdown()
+        self.tool_data_watcher.shutdown()
+        self.tool_watcher.shutdown()
+
     def update_watch_data_table_paths(self):
         if hasattr(self.tool_data_watcher, 'monitored_dirs'):
             for tool_data_table_path in self.tool_data_paths:

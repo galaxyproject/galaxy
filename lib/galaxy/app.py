@@ -207,6 +207,7 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         log.info("Galaxy app startup finished %s" % self.startup_timer)
 
     def shutdown(self):
+        self.watchers.shutdown()
         self.workflow_scheduling_manager.shutdown()
         self.job_manager.shutdown()
         self.object_store.shutdown()
