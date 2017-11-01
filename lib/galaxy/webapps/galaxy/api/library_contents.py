@@ -1,24 +1,10 @@
 """
 API operations on the contents of a data library.
 """
-import logging
-
 import json
+import logging
 import os.path
 from markupsafe import escape
-
-from galaxy.tools.actions import upload_common
-from galaxy.tools.parameters import populate_state
-from galaxy.util.path import (
-    safe_contains,
-    safe_relpath,
-    unsafe_walk
-)
-
-from galaxy.web.form_builder import (
-    AddressField,
-    CheckboxField,
-)
 from sqlalchemy.orm.exc import (
     MultipleResultsFound,
     NoResultFound,
@@ -37,14 +23,25 @@ from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex
 )
+from galaxy.tools.actions import upload_common
+from galaxy.tools.parameters import populate_state
+from galaxy.util.path import (
+    safe_contains,
+    safe_relpath,
+    unsafe_walk
+)
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.web.form_builder import (
+    AddressField,
+    CheckboxField,
+)
 from galaxy.web.base.controller import (
     BaseAPIController,
     HTTPBadRequest,
     url_for,
+    UsesFormDefinitionsMixin,
     UsesLibraryMixin,
-    UsesLibraryMixinItems,
-    UsesFormDefinitionsMixin
+    UsesLibraryMixinItems
 )
 
 log = logging.getLogger(__name__)
