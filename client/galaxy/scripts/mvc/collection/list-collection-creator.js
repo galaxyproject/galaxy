@@ -40,10 +40,23 @@ TODO:
                 },
 
                 render: function() {
-                    this.$el
+                    this.dragStartHandler = _.bind(this._dragstart, this);
+                    this.dragEndHandler = _.bind(this._dragend, this);
+                    var handle = this.$el
                         .attr("data-element-id", this.element.id)
                         .attr("draggable", true)
-                        .html(this.template({ element: this.element }));
+                        .html(this.template({ element: this.element }))
+                        .get(0);
+                    handle.addEventListener(
+                        "dragstart",
+                        this.dragStartHandler,
+                        false
+                    );
+                    handle.addEventListener(
+                        "dragend",
+                        this.dragEndHandler,
+                        false
+                    );
                     if (this.selected) {
                         this.$el.addClass("selected");
                     }
@@ -102,8 +115,6 @@ TODO:
                     "click .name": "_clickName",
                     "click .discard": "_clickDiscard",
 
-                    dragstart: "_dragstart",
-                    dragend: "_dragend",
                     dragover: "_sendToParent",
                     drop: "_sendToParent"
                 },
