@@ -58,7 +58,7 @@
         var HISTORY = require( 'mvc/history/history-model' );
         var HISTORY_CONTENTS = require( 'mvc/history/history-contents' );
 
-        var HistoryContentsWithAnnotations = HISTORY_CONTENTS.HistoryContents.extend({
+        var HistoryContentsWithAnnotations = HISTORY_CONTENTS.default.HistoryContents.extend({
             _buildFetchData : function( options ){
                 console.log( '_buildFetchData:' );
                 options = options || {};
@@ -66,10 +66,10 @@
                     options.view = 'summary';
                     options.keys = 'annotation,tags';
                 }
-                return HISTORY_CONTENTS.HistoryContents.prototype._buildFetchData.call( this, options );
+                return HISTORY_CONTENTS.default.HistoryContents.prototype._buildFetchData.call( this, options );
             }
         });
-        var HistoryWithAnnotations = HISTORY.History.extend({
+        var HistoryWithAnnotations = HISTORY.default.History.extend({
             contentsClass : HistoryContentsWithAnnotations
         });
 
@@ -78,16 +78,16 @@
         });
 
         $( '.history-copy-link' ).click( function( ev ){
-            historyCopyDialog( historyModel, { useImport: true, allowAll: false })
+            historyCopyDialog.default( historyModel, { useImport: true, allowAll: false })
                 .done( function(){
                     var mainWindow = ( window && ( window !== window.parent ) )? window.top : window;
                     mainWindow.location.href = Galaxy.root;
                 });
         });
 
-        window.historyView = new panelMod.AnnotatedHistoryView({
+        window.historyView = new panelMod.default.AnnotatedHistoryView({
             el              : $( "#history-" + historyJSON.id ),
-            className       : panelMod.AnnotatedHistoryView.prototype.className + ' wide',
+            className       : panelMod.default.AnnotatedHistoryView.prototype.className + ' wide',
             model           : historyModel,
             show_deleted    : false,
             show_hidden     : false,
