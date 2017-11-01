@@ -4,10 +4,6 @@ from .framework import selenium_test, SeleniumTestCase
 
 
 class ToolDescribingToursTestCase(SeleniumTestCase):
-    """
-    export GALAXY_CONFIG_OVERRIDE_WEBHOOKS_DIR=$GALAXY_DIRECTORY/config/plugins/webhooks/demo
-    """
-
     def setUp(self):
         super(ToolDescribingToursTestCase, self).setUp()
         self.home()

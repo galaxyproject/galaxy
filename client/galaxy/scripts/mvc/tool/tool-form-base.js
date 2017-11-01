@@ -160,6 +160,7 @@ define(
 
                 // button for options e.g. search, help
                 var menu_button = new Ui.ButtonMenu({
+                    id: "options",
                     icon: "fa-caret-down",
                     title: (!options.narrow && "Options") || null,
                     tooltip: "View available options"
