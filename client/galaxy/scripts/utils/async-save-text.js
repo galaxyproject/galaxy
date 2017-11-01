@@ -26,12 +26,12 @@ function async_save_text(
     }
 
     // Set up input element.
-    $("#" + click_to_edit_elt).click(() => {
+    $(`#${click_to_edit_elt}`).click(() => {
         // Check if this is already active
         if ($("#renaming-active").length > 0) {
             return;
         }
-        var text_elt = $("#" + text_elt_id);
+        var text_elt = $(`#${text_elt_id}`);
         var old_text = text_elt.text();
         var t;
 
@@ -66,9 +66,7 @@ function async_save_text(
                     url: save_url,
                     data: ajax_data,
                     error: function() {
-                        alert(
-                            "Text editing for elt " + text_elt_id + " failed"
-                        );
+                        alert(`Text editing for elt ${text_elt_id} failed`);
                         // TODO: call finish or no? For now, let's not because error occurred.
                     },
                     success: function(processed_text) {

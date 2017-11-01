@@ -211,7 +211,7 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
 
     /** set up defaults, options, and listeners */
     initialize: function(attributes) {
-        this.debug(this + "(DatasetChoice).initialize:", attributes);
+        this.debug(`${this}(DatasetChoice).initialize:`, attributes);
 
         this.label = attributes.label !== undefined ? _l(attributes.label) : "";
         this.where = attributes.where;
@@ -265,7 +265,7 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
                         '<span class="subtitle">',
                         "<i><%- selected.misc_blurb %></i>",
                         "<i>",
-                        _l("format") + ": ",
+                        `${_l("format")}: `,
                         "<%- selected.file_ext %></i>",
                         "<i><%- selected.misc_info %></i>",
                         "</span>",
@@ -354,7 +354,7 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     // ------------------------------------------------------------------------ misc
     /** string rep */
     toString: function() {
-        return "DatasetChoice(" + this.selected + ")";
+        return `DatasetChoice(${this.selected})`;
     }
 });
 
@@ -370,7 +370,7 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
  *          (e.g. { file_ext: _l( 'Format' ) }) - defaults are listed below
  */
 var MultiDatasetChoice = DatasetChoice.extend({
-    className: DatasetChoice.prototype.className + " multi",
+    className: `${DatasetChoice.prototype.className} multi`,
 
     /** default (dataset attribute key -> table header text) map of what cells to display in the table */
     cells: {
@@ -449,7 +449,7 @@ var MultiDatasetChoice = DatasetChoice.extend({
     // ------------------------------------------------------------------------ misc
     /** string rep */
     toString: function() {
-        return "DatasetChoice(" + this.selected + ")";
+        return `DatasetChoice(${this.selected})`;
     }
 });
 

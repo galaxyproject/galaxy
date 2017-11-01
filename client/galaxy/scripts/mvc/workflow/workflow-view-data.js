@@ -47,7 +47,7 @@ var DataOutputView = Backbone.View.extend({
             output.extensions.indexOf("input") >= 0 ||
             output.extensions.indexOf("input_collection") >= 0;
         if (!isInput) {
-            label = label + " (" + output.extensions.join(", ") + ")";
+            label = `${label} (${output.extensions.join(", ")})`;
         }
         this.$el.html(label);
         this.calloutView = null;
@@ -103,15 +103,14 @@ var OutputCalloutView = Backbone.View.extend({
         var view = this;
         var node = this.node;
         this.$el
-            .attr("class", "callout " + this.label)
+            .attr("class", `callout ${this.label}`)
             .css({ display: "none" })
             .append(
                 $("<div class='buttons'></div>").append(
                     $("<img/>")
                         .attr(
                             "src",
-                            Galaxy.root +
-                                "static/images/fugue/asterisk-small-outline.png"
+                            `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`
                         )
                         .click(() => {
                             var outputName = view.output.name;
@@ -121,8 +120,7 @@ var OutputCalloutView = Backbone.View.extend({
                                     .$("img")
                                     .attr(
                                         "src",
-                                        Galaxy.root +
-                                            "static/images/fugue/asterisk-small-outline.png"
+                                        `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`
                                     );
                             } else {
                                 node.addWorkflowOutput(outputName);
@@ -130,8 +128,7 @@ var OutputCalloutView = Backbone.View.extend({
                                     .$("img")
                                     .attr(
                                         "src",
-                                        Galaxy.root +
-                                            "static/images/fugue/asterisk-small.png"
+                                        `${Galaxy.root}static/images/fugue/asterisk-small.png`
                                     );
                             }
                             window.workflow_globals.workflow.has_changes = true;
@@ -158,12 +155,12 @@ var OutputCalloutView = Backbone.View.extend({
         if (!this.node.isWorkflowOutput(this.output.name)) {
             this.$("img").attr(
                 "src",
-                Galaxy.root + "static/images/fugue/asterisk-small-outline.png"
+                `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`
             );
         } else {
             this.$("img").attr(
                 "src",
-                Galaxy.root + "static/images/fugue/asterisk-small.png"
+                `${Galaxy.root}static/images/fugue/asterisk-small.png`
             );
         }
     },
@@ -171,7 +168,7 @@ var OutputCalloutView = Backbone.View.extend({
     hoverImage: function() {
         this.$("img").attr(
             "src",
-            Galaxy.root + "static/images/fugue/asterisk-small-yellow.png"
+            `${Galaxy.root}static/images/fugue/asterisk-small-yellow.png`
         );
     }
 });

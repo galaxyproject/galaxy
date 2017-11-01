@@ -76,7 +76,7 @@ var AnnotationEditor = Backbone.View
 
         /** string rep */
         toString: function() {
-            return ["AnnotationEditor(", this.model + "", ")"].join("");
+            return ["AnnotationEditor(", `${this.model}`, ")"].join("");
         }
     });
 // =============================================================================

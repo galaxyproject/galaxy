@@ -45,7 +45,7 @@ var moveable = (element, handle_class, container_selector, element_js_obj) => {
 
     // Need to provide selector for handle, not class.
     element
-        .bind("drag", { handle: "." + handle_class, relative: true }, function(
+        .bind("drag", { handle: `.${handle_class}`, relative: true }, function(
             e,
             d
         ) {
@@ -631,7 +631,7 @@ var DrawableGroup = function(view, container, obj_dict) {
     // store elements). Group can be moved.
     this.content_div = $("<div/>")
         .addClass("content-div")
-        .attr("id", "group_" + this.id + "_content_div")
+        .attr("id", `group_${this.id}_content_div`)
         .appendTo(this.container_div);
     is_container(this.container_div, this);
     is_container(this.content_div, this);
@@ -714,7 +714,7 @@ extend(
         build_container_div: function() {
             var container_div = $("<div/>")
                 .addClass("group")
-                .attr("id", "group_" + this.id);
+                .attr("id", `group_${this.id}`);
             if (this.container) {
                 this.container.content_div.append(container_div);
             }
@@ -1140,7 +1140,7 @@ var TracksterView = Backbone.View.extend({
         this.location_span.click(() => {
             view.location_span.hide();
             view.chrom_select.hide();
-            view.nav_input.val(view.chrom + ":" + view.low + "-" + view.high);
+            view.nav_input.val(`${view.chrom}:${view.low}-${view.high}`);
             view.nav_input.css("display", "inline-block");
             view.nav_input.select();
             view.nav_input.focus();
@@ -1388,7 +1388,7 @@ var TracksterView = Backbone.View.extend({
 
     get_base_color: function(base) {
         return (
-            this.config.get_value(base.toLowerCase() + "_color") ||
+            this.config.get_value(`${base.toLowerCase()}_color`) ||
             this.config.get_value("n_color")
         );
     }
@@ -1420,25 +1420,19 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
             // location has stabilized.
             var self = this;
             this.timer = setTimeout(() => {
-                self.trigger(
-                    "navigate",
-                    new_chrom + ":" + new_low + "-" + new_high
-                );
+                self.trigger("navigate", `${new_chrom}:${new_low}-${new_high}`);
             }, 500);
         } else {
-            view.trigger(
-                "navigate",
-                new_chrom + ":" + new_low + "-" + new_high
-            );
+            view.trigger("navigate", `${new_chrom}:${new_low}-${new_high}`);
         }
     },
 
     update_location: function(low, high) {
         this.location_span.text(
-            util.commatize(low) + " - " + util.commatize(high)
+            `${util.commatize(low)} - ${util.commatize(high)}`
         );
         this.nav_input.val(
-            this.chrom + ":" + util.commatize(low) + "-" + util.commatize(high)
+            `${this.chrom}:${util.commatize(low)}-${util.commatize(high)}`
         );
 
         // Update location. Only update when there is a valid chrom; when loading vis, there may
@@ -1459,7 +1453,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         var view = this;
         var chrom_data = $.Deferred();
         $.ajax({
-            url: Galaxy.root + "api/genomes/" + this.dbkey,
+            url: `${Galaxy.root}api/genomes/${this.dbkey}`,
             data: url_parms,
             dataType: "json",
             success: function(result) {
@@ -1491,18 +1485,14 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
                 if (result.prev_chroms) {
                     view.chrom_select.append(
                         $(
-                            '<option value="previous">Previous ' +
-                                MAX_CHROMS_SELECTABLE +
-                                "</option>"
+                            `<option value="previous">Previous ${MAX_CHROMS_SELECTABLE}</option>`
                         )
                     );
                 }
                 if (result.next_chroms) {
                     view.chrom_select.append(
                         $(
-                            '<option value="next">Next ' +
-                                MAX_CHROMS_SELECTABLE +
-                                "</option>"
+                            `<option value="next">Next ${MAX_CHROMS_SELECTABLE}</option>`
                         )
                     );
                 }
@@ -1511,7 +1501,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
                 chrom_data.resolve(result.chrom_info);
             },
             error: function() {
-                alert("Could not load chroms for this dbkey: " + view.dbkey);
+                alert(`Could not load chroms for this dbkey: ${view.dbkey}`);
             }
         });
         return chrom_data;
@@ -2105,10 +2095,10 @@ var TracksterToolView = Backbone.View.extend({
             null,
             track_data => {
                 Galaxy.modal.show({
-                    title: tool.get("name") + " is Running",
-                    body:
-                        tool.get("name") +
-                        " is running on the complete dataset. Tool outputs are in dataset's history.",
+                    title: `${tool.get("name")} is Running`,
+                    body: `${tool.get(
+                        "name"
+                    )} is running on the complete dataset. Tool outputs are in dataset's history.`,
                     buttons: {
                         Close: function() {
                             Galaxy.modal.hide();
@@ -2212,7 +2202,7 @@ var TracksterToolView = Backbone.View.extend({
         url_params.inputs = this.model.get_inputs_dict();
         var ss_deferred = new util.ServerStateDeferred({
             ajax_settings: {
-                url: Galaxy.root + "api/tools",
+                url: `${Galaxy.root}api/tools`,
                 data: JSON.stringify(url_params),
                 dataType: "json",
                 contentType: "application/json",
@@ -2622,18 +2612,11 @@ extend(Track.prototype, Drawable.prototype, {
             title: "Tool parameter space visualization",
             css_class: "arrow-split",
             on_click_fn: function(track) {
-                var html =
-                    "<strong>Tool</strong>:" +
-                    track.tool.get("name") +
-                    "<br/>" +
-                    "<strong>Dataset</strong>:" +
-                    track.config.get_value("name") +
-                    "<br/>" +
-                    '<strong>Region(s)</strong>: <select name="regions">' +
-                    '<option value="cur">current viewing area</option>' +
-                    '<option value="bookmarks">bookmarks</option>' +
-                    '<option value="both">current viewing area and bookmarks</option>' +
-                    "</select>";
+                var html = `<strong>Tool</strong>:${track.tool.get(
+                    "name"
+                )}<br/><strong>Dataset</strong>:${track.config.get_value(
+                    "name"
+                )}<br/><strong>Region(s)</strong>: <select name="regions"><option value="cur">current viewing area</option><option value="bookmarks">bookmarks</option><option value="both">current viewing area and bookmarks</option></select>`;
 
                 var cancel_fn = () => {
                     Galaxy.modal.hide();
@@ -2675,17 +2658,15 @@ extend(Track.prototype, Drawable.prototype, {
                     Galaxy.modal.hide();
 
                     // Go to visualization.
-                    window.location.href =
-                        Galaxy.root +
-                        "visualization/sweepster" +
-                        "?" +
-                        $.param({
+                    window.location.href = `${Galaxy.root}visualization/sweepster?${$.param(
+                        {
                             dataset_id: track.dataset.id,
                             hda_ldda: track.dataset.get("hda_ldda"),
                             regions: JSON.stringify(
                                 new Backbone.Collection(regions).toJSON()
                             )
-                        });
+                        }
+                    )}`;
                 };
 
                 var check_enter_esc = e => {
@@ -2718,7 +2699,7 @@ extend(Track.prototype, Drawable.prototype, {
     build_container_div: function() {
         return $("<div/>")
             .addClass("track")
-            .attr("id", "track_" + this.id);
+            .attr("id", `track_${this.id}`);
     },
 
     /**
@@ -2898,7 +2879,7 @@ extend(Track.prototype, Drawable.prototype, {
                             .click(() => {
                                 Galaxy.modal.show({
                                     title: "Trackster Error",
-                                    body: "<pre>" + result.message + "</pre>",
+                                    body: `<pre>${result.message}</pre>`,
                                     buttons: {
                                         Close: function() {
                                             Galaxy.modal.hide();
@@ -2943,7 +2924,7 @@ extend(Track.prototype, Drawable.prototype, {
                     track.tiles_div.text("");
                     track.tiles_div.css(
                         "height",
-                        track.visible_height_px + "px"
+                        `${track.visible_height_px}px`
                     );
                     track.enabled = true;
                     // predraw_init may be asynchronous, wait for it and then draw
@@ -3202,7 +3183,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         track.request_draw({ clear_tile_cache: true });
         this.action_icons.mode_icon.attr(
             "title",
-            "Set display mode (now: " + track.mode + ")"
+            `Set display mode (now: ${track.mode})`
         );
         return track;
     },
@@ -3230,7 +3211,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * TODO: create a TileCache object (like DataCache) and generate key internally.
      */
     _gen_tile_cache_key: function(w_scale, tile_region) {
-        return w_scale + "_" + tile_region;
+        return `${w_scale}_${tile_region}`;
     },
 
     /**
@@ -3356,7 +3337,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var css_class = type === "max" ? "top" : "bottom";
         var text = type === "max" ? "max" : "min";
         var pref_name = type === "max" ? "max_value" : "min_value";
-        var label = this.container_div.find(".yaxislabel." + css_class);
+        var label = this.container_div.find(`.yaxislabel.${css_class}`);
         var value = round(track.config.get_value(pref_name), 1);
 
         // Default action for on_change is to redraw track.
@@ -3380,9 +3361,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                         track.config.set_value(pref_name, round(new_val, 1));
                         on_change();
                     },
-                    help_text: "Set " + text + " value"
+                    help_text: `Set ${text} value`
                 })
-                .addClass("yaxislabel " + css_class)
+                .addClass(`yaxislabel ${css_class}`)
                 .css("color", this.config.get_value("label_color"));
             this.container_div.prepend(label);
         }
@@ -3734,14 +3715,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         tile_element
             .parent()
             .children()
-            .css("height", this.max_height_px + "px");
+            .css("height", `${this.max_height_px}px`);
 
         // Update track height based on max height and visible height.
         var track_height = this.max_height_px;
         if (this.visible_height_px !== 0) {
             track_height = Math.min(this.max_height_px, this.visible_height_px);
         }
-        this.tiles_div.css("height", track_height + "px");
+        this.tiles_div.css("height", `${track_height}px`);
     },
 
     /**
@@ -3751,7 +3732,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var track = this;
         var region_str = region !== undefined ? region.toString() : "all";
         var param_str = _.values(track.tool.get_inputs_dict()).join(", ");
-        return " - region=[" + region_str + "], parameters=[" + param_str + "]";
+        return ` - region=[${region_str}], parameters=[${param_str}]`;
     },
 
     /**
@@ -4164,7 +4145,7 @@ var ReferenceTrack = function(view) {
     // Use offset to ensure that bases at tile edges are drawn.
     this.left_offset = view.canvas_manager.char_width_px;
     this.container_div.addClass("reference-track");
-    this.data_url = Galaxy.root + "api/genomes/" + this.view.dbkey;
+    this.data_url = `${Galaxy.root}api/genomes/${this.view.dbkey}`;
     this.data_url_extra_params = { reference: true };
     this.data_manager = new visualization.GenomeReferenceDataManager({
         data_url: this.data_url,
@@ -4269,9 +4250,7 @@ var LineTrack = function(view, container, obj_dict) {
     // FIXME: there should be a flag to wait for this check to complete before loading the track.
     var self = this;
     $.when(
-        supportsByteRanges(
-            Galaxy.root + "datasets/" + this.dataset.id + "/display"
-        )
+        supportsByteRanges(`${Galaxy.root}datasets/${this.dataset.id}/display`)
     ).then(supportsByteRanges => {
         if (supportsByteRanges) {
             self.data_manager = new bbi.BBIDataManager({
@@ -4732,7 +4711,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             }
             this.action_icons.mode_icon.attr(
                 "title",
-                "Set display mode (now: Auto/" + mode + ")"
+                `Set display mode (now: Auto/${mode})`
             );
         }
     },
@@ -5120,12 +5099,10 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                         .text("Summary")
                         .addClass("yaxislabel variant top")
                         .css({
-                            "font-size": font_size + "px",
-                            top:
-                                (this.config.get_value("summary_height") -
-                                    font_size) /
-                                    2 +
-                                "px"
+                            "font-size": `${font_size}px`,
+                            top: `${(this.config.get_value("summary_height") -
+                                font_size) /
+                                2}px`
                         })
                 );
 
@@ -5147,7 +5124,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             // Style labels.
 
             // Match sample font size to mode.
-            font_size = (this.mode === "Squish" ? 5 : 10) + "px";
+            font_size = `${this.mode === "Squish" ? 5 : 10}px`;
             $(this.tiles_div)
                 .find(".sample")
                 .css({

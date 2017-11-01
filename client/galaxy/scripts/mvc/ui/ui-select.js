@@ -200,9 +200,7 @@ var View = Backbone.View.extend({
 
     // element
     _template: function(options) {
-        return (
-            '<input type="hidden" value="' + this.options.initialData + '"/>'
-        );
+        return `<input type="hidden" value="${this.options.initialData}"/>`;
     }
 });
 

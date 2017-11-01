@@ -32,7 +32,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 contents_states: {}
             },
 
-            urlRoot: Galaxy.root + "api/histories",
+            urlRoot: `${Galaxy.root}api/histories`,
 
             contentsClass: HISTORY_CONTENTS.HistoryContents,
 
@@ -53,7 +53,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             initialize: function(historyJSON, options) {
                 options = options || {};
                 this.logger = options.logger || null;
-                this.log(this + ".initialize:", historyJSON, options);
+                this.log(`${this}.initialize:`, historyJSON, options);
 
                 /** HistoryContents collection of the HDAs contained in this history. */
                 this.contents = new this.contentsClass([], {
@@ -368,7 +368,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 var history = this;
 
                 var xhr = jQuery.getJSON(
-                    Galaxy.root + "history/set_as_current?id=" + this.id
+                    `${Galaxy.root}history/set_as_current?id=${this.id}`
                 );
 
                 xhr.done(() => {
@@ -379,9 +379,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             // ........................................................................ misc
             toString: function() {
-                return (
-                    "History(" + this.get("id") + "," + this.get("name") + ")"
-                );
+                return `History(${this.get("id")},${this.get("name")})`;
             }
         }
     )
@@ -421,7 +419,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
         // the collection *is empty*
     },
 
-    urlRoot: Galaxy.root + "api/histories",
+    urlRoot: `${Galaxy.root}api/histories`,
     url: function() {
         return this.urlRoot;
     },
@@ -542,7 +540,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
         //TODO: .create is actually a collection function that's overridden here
         var collection = this;
 
-        var xhr = jQuery.getJSON(Galaxy.root + "history/create_new_current");
+        var xhr = jQuery.getJSON(`${Galaxy.root}history/create_new_current`);
         return xhr.done(newData => {
             collection.setCurrent(
                 new History(newData, [], historyOptions || {})
@@ -566,13 +564,8 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     toString: function toString() {
-        return (
-            "HistoryCollection(" +
-            this.length +
-            ",current:" +
-            this.currentHistoryId +
-            ")"
-        );
+        return `HistoryCollection(${this.length},current:${this
+            .currentHistoryId})`;
     }
 });
 

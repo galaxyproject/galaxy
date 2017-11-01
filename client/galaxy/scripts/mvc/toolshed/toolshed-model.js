@@ -3,41 +3,41 @@ var ToolShedModel = Backbone.Model.extend({
         url: "https://toolshed.g2.bx.psu.edu/",
         name: "Galaxy Main Tool Shed"
     },
-    urlRoot: Galaxy.root + "api/tool_shed"
+    urlRoot: `${Galaxy.root}api/tool_shed`
 });
 
 var ToolShedsCollection = Backbone.Collection.extend({
-    url: Galaxy.root + "api/tool_shed",
+    url: `${Galaxy.root}api/tool_shed`,
     model: ToolShedModel
 });
 
 var ToolShedCategoriesModel = Backbone.Model.extend({
     defaults: [{}],
-    urlRoot: Galaxy.root + "api/tool_shed/contents"
+    urlRoot: `${Galaxy.root}api/tool_shed/contents`
 });
 
 var ToolShedCategoriesCollection = Backbone.Collection.extend({
-    url: Galaxy.root + "api/tool_shed/contents",
+    url: `${Galaxy.root}api/tool_shed/contents`,
     model: ToolShedCategoriesModel
 });
 
 var ToolShedCategoryModel = Backbone.Model.extend({
     defaults: [{}],
-    urlRoot: Galaxy.root + "api/tool_shed/category"
+    urlRoot: `${Galaxy.root}api/tool_shed/category`
 });
 
 var ToolShedCategoryCollection = Backbone.Collection.extend({
-    url: Galaxy.root + "api/tool_shed/category",
+    url: `${Galaxy.root}api/tool_shed/category`,
     model: ToolShedCategoryModel
 });
 
 var ToolShedRepositoryModel = Backbone.Model.extend({
     defaults: [{}],
-    urlRoot: Galaxy.root + "api/tool_shed/repository"
+    urlRoot: `${Galaxy.root}api/tool_shed/repository`
 });
 
 var ToolShedRepositoryCollection = Backbone.Collection.extend({
-    url: Galaxy.root + "api/tool_shed/repository",
+    url: `${Galaxy.root}api/tool_shed/repository`,
     model: ToolShedRepositoryModel
 });
 
@@ -65,21 +65,21 @@ var RepoQueueCollection = Backbone.Collection.extend({
 
 var RepoStatusModel = Backbone.Model.extend({
     defaults: [{}],
-    urlRoot: Galaxy.root + "api/tool_shed/status"
+    urlRoot: `${Galaxy.root}api/tool_shed/status`
 });
 
 var RepoStatusCollection = Backbone.Collection.extend({
-    url: Galaxy.root + "api/tool_shed/status",
+    url: `${Galaxy.root}api/tool_shed/status`,
     model: RepoStatusModel
 });
 
 var WorkflowToolsModel = Backbone.Model.extend({
     defaults: [{}],
-    urlRoot: Galaxy.root + "api/workflows?missing_tools=True"
+    urlRoot: `${Galaxy.root}api/workflows?missing_tools=True`
 });
 
 var WorkflowToolsCollection = Backbone.Collection.extend({
-    url: Galaxy.root + "api/workflows?missing_tools=True",
+    url: `${Galaxy.root}api/workflows?missing_tools=True`,
     model: WorkflowToolsModel
 });
 

@@ -24,18 +24,17 @@ var View = Backbone.View.extend({
     render: function() {
         var self = this;
         $.ajax({
-            url:
-                Galaxy.root +
-                "dataset/get_edit?dataset_id=" +
-                self.model.get("dataset_id"),
+            url: `${Galaxy.root}dataset/get_edit?dataset_id=${self.model.get(
+                "dataset_id"
+            )}`,
             success: function(response) {
                 !self.initial_message && self.message.update(response);
                 self.initial_message = true;
                 _.each(self.forms, (form, key) => {
-                    form.model.set("inputs", response[key + "_inputs"]);
+                    form.model.set("inputs", response[`${key}_inputs`]);
                     form.model.set(
                         "hide_operations",
-                        response[key + "_disable"]
+                        response[`${key}_disable`]
                     );
                     form.render();
                 });
@@ -61,7 +60,7 @@ var View = Backbone.View.extend({
         data.operation = operation;
         $.ajax({
             type: "PUT",
-            url: Galaxy.root + "dataset/set_edit",
+            url: `${Galaxy.root}dataset/set_edit`,
             data: data,
             success: function(response) {
                 self.message.update(response);

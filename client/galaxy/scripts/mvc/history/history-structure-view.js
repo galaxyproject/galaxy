@@ -109,7 +109,7 @@ var HistoryStructureComponent = Backbone.View
 
         initialize: function(attributes) {
             this.log(
-                this + "(HistoryStructureComponent).initialize:",
+                `${this}(HistoryStructureComponent).initialize:`,
                 attributes
             );
             this.component = attributes.component;
@@ -229,7 +229,7 @@ var HistoryStructureComponent = Backbone.View
         },
 
         render: function(options) {
-            this.debug(this + ".render:", options);
+            this.debug(`${this}.render:`, options);
             var view = this;
             view.$el.html(
                 [
@@ -257,7 +257,7 @@ var HistoryStructureComponent = Backbone.View
         },
 
         renderGraph: function(options) {
-            this.debug(this + ".renderGraph:", options);
+            this.debug(`${this}.renderGraph:`, options);
             var view = this;
 
             function _render() {
@@ -300,7 +300,7 @@ var HistoryStructureComponent = Backbone.View
         },
 
         _updateLayout: function() {
-            this.debug(this + "._updateLayout:");
+            this.debug(`${this}._updateLayout:`);
             var view = this;
             var layout = view.layout;
 
@@ -339,7 +339,7 @@ var HistoryStructureComponent = Backbone.View
         },
 
         renderSVG: function() {
-            this.debug(this + ".renderSVG:");
+            this.debug(`${this}.renderSVG:`);
             var view = this;
             var layout = view.layout;
 
@@ -442,7 +442,7 @@ var HistoryStructureComponent = Backbone.View
                 //view.debug( '\t ancestor:', ancestorId, ancestorLi );
                 jobClassFn.call(ancestorLi.$el, "highlighted");
                 view
-                    .$("#" + ancestorId + view._LINK_ID_SEP + id)
+                    .$(`#${ancestorId}${view._LINK_ID_SEP}${id}`)
                     .attr("class", connectionClass);
             });
             // descendants
@@ -452,7 +452,7 @@ var HistoryStructureComponent = Backbone.View
                 //view.debug( '\t descendant:', descendantId, descendantLi );
                 jobClassFn.call(descendantLi.$el, "highlighted");
                 view
-                    .$("#" + id + view._LINK_ID_SEP + descendantId)
+                    .$(`#${id}${view._LINK_ID_SEP}${descendantId}`)
                     .attr("class", connectionClass);
             });
         },
@@ -466,7 +466,7 @@ var HistoryStructureComponent = Backbone.View
         },
 
         toString: function() {
-            return "HistoryStructureComponent(" + this.model.id + ")";
+            return `HistoryStructureComponent(${this.model.id})`;
         }
     });
 
@@ -477,7 +477,7 @@ var HistoryStructureComponent = Backbone.View
 var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
     //logger : console,
 
-    className: HistoryStructureComponent.prototype.className + " vertical",
+    className: `${HistoryStructureComponent.prototype.className} vertical`,
 
     layoutDefaults: _.extend(
         _.clone(HistoryStructureComponent.prototype.layoutDefaults),
@@ -489,7 +489,7 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
 
     //TODO: how can we use the dom height of the job li's - they're not visible when this is called?
     _updateLayout: function() {
-        this.debug(this + "._updateLayout:");
+        this.debug(`${this}._updateLayout:`);
         var view = this;
         var layout = view.layout;
         //this.info( this.cid, '_updateLayout' )
@@ -555,7 +555,7 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
     },
 
     toString: function() {
-        return "VerticalHistoryStructureComponent(" + this.model.id + ")";
+        return `VerticalHistoryStructureComponent(${this.model.id})`;
     }
 });
 
@@ -583,7 +583,7 @@ var HistoryStructureView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
             ? attributes.layout
             : this._DEFAULT_LAYOUT;
         this.log(
-            this + "(HistoryStructureView).initialize:",
+            `${this}(HistoryStructureView).initialize:`,
             attributes,
             this.model
         );
@@ -612,12 +612,12 @@ var HistoryStructureView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
             excludeSetMetadata: true,
             excludeErroredJobs: true
         });
-        this.debug(this + ".dag:", this.dag);
+        this.debug(`${this}.dag:`, this.dag);
         this._createComponents();
     },
 
     _createComponents: function() {
-        this.log(this + "._createComponents");
+        this.log(`${this}._createComponents`);
         var structure = this;
 
         structure.componentViews = structure.dag
@@ -627,7 +627,7 @@ var HistoryStructureView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     _createComponent: function(component) {
-        this.log(this + "._createComponent:", component);
+        this.log(`${this}._createComponent:`, component);
         var ComponentClass = this._layoutToComponentClass[this.layout];
         return new ComponentClass({
             model: this.model,
@@ -636,7 +636,7 @@ var HistoryStructureView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     render: function(options) {
-        this.log(this + ".render:", options);
+        this.log(`${this}.render:`, options);
         var structure = this;
 
         structure.$el
@@ -660,7 +660,7 @@ var HistoryStructureView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
 
     changeLayout: function(layout) {
         if (!(layout in this._layoutToComponentClass)) {
-            throw new Error(this + ": unknown layout: " + layout);
+            throw new Error(`${this}: unknown layout: ${layout}`);
         }
         this.layout = layout;
         this._createComponents();
@@ -668,7 +668,7 @@ var HistoryStructureView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     toString: function() {
-        return "HistoryStructureView(" + this.model.id + ")";
+        return `HistoryStructureView(${this.model.id})`;
     }
 });
 

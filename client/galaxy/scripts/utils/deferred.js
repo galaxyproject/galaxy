@@ -26,12 +26,9 @@ export default Backbone.Model.extend({
             has_deferred &&
                 Galaxy.emit.debug(
                     "deferred::execute()",
-                    this.state()
+                    `${this.state()
                         .charAt(0)
-                        .toUpperCase() +
-                        this.state().slice(1) +
-                        " " +
-                        id
+                        .toUpperCase() + this.state().slice(1)} ${id}`
                 );
         });
 
@@ -39,7 +36,7 @@ export default Backbone.Model.extend({
         $.when(this.last).always(() => {
             if (self.active[id]) {
                 has_deferred &&
-                    Galaxy.emit.debug("deferred::execute()", "Running " + id);
+                    Galaxy.emit.debug("deferred::execute()", `Running ${id}`);
                 callback(process);
                 !has_deferred && process.resolve();
             } else {

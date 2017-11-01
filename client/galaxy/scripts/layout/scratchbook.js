@@ -25,11 +25,7 @@ export default Backbone.View.extend({
             },
             onbeforeunload: function() {
                 if (self.frames.length() > 0) {
-                    return (
-                        "You opened " +
-                        self.frames.length() +
-                        " frame(s) which will be lost."
-                    );
+                    return `You opened ${self.frames.length()} frame(s) which will be lost.`;
                 }
             }
         });
@@ -159,7 +155,7 @@ export default Backbone.View.extend({
             var title = dataset.get("name");
             var history_details = self.history_cache[dataset.get("history_id")];
             if (history_details) {
-                title = history_details.name + ": " + title;
+                title = `${history_details.name}: ${title}`;
             }
             callback(
                 dataset,
@@ -175,11 +171,7 @@ export default Backbone.View.extend({
                       }
                     : {
                           title: title,
-                          url:
-                              Galaxy.root +
-                              "datasets/" +
-                              dataset_id +
-                              "/display/?preview=True",
+                          url: `${Galaxy.root}datasets/${dataset_id}/display/?preview=True`,
                           content: null
                       }
             );
@@ -245,10 +237,10 @@ export default Backbone.View.extend({
             var $galaxy_main = $(window.parent.document).find("#galaxy_main");
             if (options.target == "galaxy_main" || options.target == "center") {
                 if ($galaxy_main.length === 0) {
-                    window.location =
-                        options.url +
-                        (options.url.indexOf("?") == -1 ? "?" : "&") +
-                        "use_panels=True";
+                    window.location = `${options.url +
+                        (options.url.indexOf("?") == -1
+                            ? "?"
+                            : "&")}use_panels=True`;
                 } else {
                     $galaxy_main.attr("src", options.url);
                 }

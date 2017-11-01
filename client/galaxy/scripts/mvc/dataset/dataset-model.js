@@ -41,7 +41,7 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             /** instance vars and listeners */
             initialize: function(attributes, options) {
-                this.debug(this + "(Dataset).initialize", attributes, options);
+                this.debug(`${this}(Dataset).initialize`, attributes, options);
 
                 //!! this state is not in trans.app.model.Dataset.states - set it here -
                 if (!this.get("accessible")) {
@@ -61,22 +61,15 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     return {};
                 }
                 var urls = {
-                    purge: "datasets/" + id + "/purge_async",
-                    display: "datasets/" + id + "/display/?preview=True",
-                    edit: "datasets/edit?dataset_id=" + id,
-                    download:
-                        "datasets/" +
-                        id +
-                        "/display" +
-                        this._downloadQueryParameters(),
-                    report_error: "dataset/errors?id=" + id,
-                    rerun: "tool_runner/rerun?id=" + id,
-                    show_params: "datasets/" + id + "/show_params",
+                    purge: `datasets/${id}/purge_async`,
+                    display: `datasets/${id}/display/?preview=True`,
+                    edit: `datasets/edit?dataset_id=${id}`,
+                    download: `datasets/${id}/display${this._downloadQueryParameters()}`,
+                    report_error: `dataset/errors?id=${id}`,
+                    rerun: `tool_runner/rerun?id=${id}`,
+                    show_params: `datasets/${id}/show_params`,
                     visualization: "visualization",
-                    meta_download:
-                        "dataset/get_metadata_file?hda_id=" +
-                        id +
-                        "&metadata_name="
+                    meta_download: `dataset/get_metadata_file?hda_id=${id}&metadata_name=`
                 };
                 _.each(urls, (value, key) => {
                     urls[key] = Galaxy.root + value;
@@ -86,7 +79,7 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             _downloadQueryParameters: function() {
-                return "?to_ext=" + this.get("file_ext");
+                return `?to_ext=${this.get("file_ext")}`;
             },
 
             /** set up any event listeners
@@ -95,7 +88,7 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             _setUpListeners: function() {
                 // if the state has changed and the new state is a ready state, fire an event
                 this.on("change:state", function(currModel, newState) {
-                    this.log(this + " has changed state:", currModel, newState);
+                    this.log(`${this} has changed state:`, currModel, newState);
                     if (this.inReadyState()) {
                         this.trigger(
                             "state:ready",
@@ -272,9 +265,9 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             toString: function() {
                 var nameAndId = this.get("id") || "";
                 if (this.get("name")) {
-                    nameAndId = '"' + this.get("name") + '",' + nameAndId;
+                    nameAndId = `"${this.get("name")}",${nameAndId}`;
                 }
-                return "Dataset(" + nameAndId + ")";
+                return `Dataset(${nameAndId})`;
             }
         }
     )
@@ -292,7 +285,7 @@ var DatasetAssociationCollection = Backbone.Collection
             model: DatasetAssociation,
 
             /** root api url */
-            urlRoot: Galaxy.root + "api/datasets",
+            urlRoot: `${Galaxy.root}api/datasets`,
 
             /** url fn */
             url: function() {

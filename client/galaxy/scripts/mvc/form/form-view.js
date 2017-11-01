@@ -53,7 +53,7 @@ export default Backbone.View.extend({
                         field.trigger("change");
                         Galaxy.emit.debug(
                             "form-view::update()",
-                            "Updating options for " + input_id
+                            `Updating options for ${input_id}`
                         );
                     }
                 }

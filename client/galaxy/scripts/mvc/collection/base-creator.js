@@ -14,7 +14,7 @@ var CollectionCreatorMixin = {
                 .select();
         }
         if (clear) {
-            what = what || this.$("." + VALIDATION_CLASS);
+            what = what || this.$(`.${VALIDATION_CLASS}`);
             what.removeClass(VALIDATION_CLASS);
         } else {
             what.addClass(VALIDATION_CLASS);

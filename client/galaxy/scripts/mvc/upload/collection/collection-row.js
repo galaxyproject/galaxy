@@ -86,8 +86,8 @@ export default Backbone.View.extend({
         if (options.file_mode == "new") {
             this.$text
                 .css({
-                    width: this.$el.width() - 16 + "px",
-                    top: this.$el.height() - 8 + "px"
+                    width: `${this.$el.width() - 16}px`,
+                    top: `${this.$el.height() - 8}px`
                 })
                 .show();
             this.$el.height(this.$el.height() - 8 + this.$text.height() + 16);
@@ -103,7 +103,7 @@ export default Backbone.View.extend({
     _refreshInfo: function() {
         var info = this.model.get("info");
         if (info) {
-            this.$info_text.html("<strong>Failed: </strong>" + info).show();
+            this.$info_text.html(`<strong>Failed: </strong>${info}`).show();
         } else {
             this.$info_text.hide();
         }
@@ -112,9 +112,9 @@ export default Backbone.View.extend({
     /** Refresh percentage status */
     _refreshPercentage: function() {
         var percentage = parseInt(this.model.get("percentage"));
-        this.$progress_bar.css({ width: percentage + "%" });
+        this.$progress_bar.css({ width: `${percentage}%` });
         this.$percentage.html(
-            percentage != 100 ? percentage + "%" : "Adding to history..."
+            percentage != 100 ? `${percentage}%` : "Adding to history..."
         );
     },
 
@@ -166,38 +166,7 @@ export default Backbone.View.extend({
 
     /** View template */
     _template: function(options) {
-        return (
-            '<tr id="upload-row-' +
-            options.id +
-            '" class="upload-row">' +
-            "<td>" +
-            '<div class="upload-text-column">' +
-            '<div class="upload-mode"/>' +
-            '<div class="upload-title-extended"/>' +
-            '<div class="upload-text">' +
-            '<div class="upload-text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>' +
-            '<textarea class="upload-text-content form-control"/>' +
-            "</div>" +
-            "</div>" +
-            "</td>" +
-            "<td>" +
-            '<div class="upload-size"/>' +
-            "</td>" +
-            "<td>" +
-            '<div class="upload-info">' +
-            '<div class="upload-info-text"/>' +
-            '<div class="upload-info-progress progress">' +
-            '<div class="upload-progress-bar progress-bar progress-bar-success"/>' +
-            '<div class="upload-percentage">0%</div>' +
-            "</div>" +
-            "</div>" +
-            "</td>" +
-            "<td>" +
-            '<div class="upload-symbol ' +
-            this.status_classes.init +
-            '"/>' +
-            "</td>" +
-            "</tr>"
-        );
+        return `<tr id="upload-row-${options.id}" class="upload-row"><td><div class="upload-text-column"><div class="upload-mode"/><div class="upload-title-extended"/><div class="upload-text"><div class="upload-text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div><textarea class="upload-text-content form-control"/></div></div></td><td><div class="upload-size"/></td><td><div class="upload-info"><div class="upload-info-text"/><div class="upload-info-progress progress"><div class="upload-progress-bar progress-bar progress-bar-success"/><div class="upload-percentage">0%</div></div></div></td><td><div class="upload-symbol ${this
+            .status_classes.init}"/></td></tr>`;
     }
 });

@@ -81,11 +81,8 @@ export default Backbone.View.extend({
         $(".tooltip").hide();
         var help_text = this.model.get("help", "");
         var help_argument = this.model.get("argument");
-        if (
-            help_argument &&
-            help_text.indexOf("(" + help_argument + ")") == -1
-        ) {
-            help_text += " (" + help_argument + ")";
+        if (help_argument && help_text.indexOf(`(${help_argument})`) == -1) {
+            help_text += ` (${help_argument})`;
         }
         this.$info.html(help_text);
         // render visibility
@@ -129,10 +126,10 @@ export default Backbone.View.extend({
             this.$collapsible_icon
                 .removeClass()
                 .addClass("icon")
-                .addClass(this.model.get("cls_" + collapsible_state))
+                .addClass(this.model.get(`cls_${collapsible_state}`))
                 .attr(
                     "data-original-title",
-                    this.model.get("text_" + collapsible_state)
+                    this.model.get(`text_${collapsible_state}`)
                 )
                 .tooltip({ placement: "bottom" });
         } else {

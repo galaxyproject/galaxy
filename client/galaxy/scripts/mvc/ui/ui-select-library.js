@@ -5,7 +5,7 @@ import Table from "mvc/ui/ui-table";
 import List from "mvc/ui/ui-list";
 // collection of libraries
 var Libraries = Backbone.Collection.extend({
-    url: Galaxy.root + "api/libraries?deleted=false"
+    url: `${Galaxy.root}api/libraries?deleted=false`
 });
 
 // collection of dataset
@@ -18,12 +18,9 @@ var LibraryDatasets = Backbone.Collection.extend({
         });
     },
     url: function() {
-        return (
-            Galaxy.root +
-            "api/libraries/" +
-            this.config.get("library_id") +
-            "/contents"
-        );
+        return `${Galaxy.root}api/libraries/${this.config.get(
+            "library_id"
+        )}/contents`;
     }
 });
 

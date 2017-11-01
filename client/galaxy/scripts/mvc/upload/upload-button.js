@@ -37,8 +37,8 @@ var View = Backbone.View.extend({
             .removeClass()
             .addClass("progress-bar")
             .addClass("progress-bar-notransition")
-            .addClass(options.status != "" && "progress-bar-" + options.status)
-            .css({ width: options.percentage + "%" });
+            .addClass(options.status != "" && `progress-bar-${options.status}`)
+            .css({ width: `${options.percentage}%` });
     },
 
     /** Template */

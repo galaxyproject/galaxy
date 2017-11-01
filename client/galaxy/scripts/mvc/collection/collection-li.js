@@ -11,8 +11,8 @@ var ListItemView = LIST_ITEM.ListItemView;
  */
 var DCListItemView = FoldoutListItemView.extend(
     /** @lends DCListItemView.prototype */ {
-        className:
-            FoldoutListItemView.prototype.className + " dataset-collection",
+        className: `${FoldoutListItemView.prototype
+            .className} dataset-collection`,
         id: function() {
             return ["dataset_collection", this.model.get("id")].join("-");
         },
@@ -68,8 +68,8 @@ var DCListItemView = FoldoutListItemView.extend(
         // ......................................................................... misc
         /** String representation */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "DCListItemView(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `DCListItemView(${modelString})`;
         }
     }
 );
@@ -153,8 +153,8 @@ DCListItemView.prototype.templates = (() => {
 var DCEListItemView = ListItemView.extend(
     /** @lends DCEListItemView.prototype */ {
         /** add the DCE class to the list item */
-        className:
-            ListItemView.prototype.className + " dataset-collection-element",
+        className: `${ListItemView.prototype
+            .className} dataset-collection-element`,
 
         /** set up */
         initialize: function(attributes) {
@@ -168,8 +168,8 @@ var DCEListItemView = ListItemView.extend(
         // ......................................................................... misc
         /** String representation */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "DCEListItemView(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `DCEListItemView(${modelString})`;
         }
     }
 );
@@ -201,9 +201,8 @@ DCEListItemView.prototype.templates = (() => {
  */
 var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend(
     /** @lends DatasetDCEListItemView.prototype */ {
-        className:
-            DATASET_LI.DatasetListItemView.prototype.className +
-            " dataset-collection-element",
+        className: `${DATASET_LI.DatasetListItemView.prototype
+            .className} dataset-collection-element`,
 
         /** set up */
         initialize: function(attributes) {
@@ -231,8 +230,8 @@ var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend(
         // ......................................................................... misc
         /** String representation */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "DatasetDCEListItemView(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `DatasetDCEListItemView(${modelString})`;
         }
     }
 );
@@ -265,22 +264,22 @@ DatasetDCEListItemView.prototype.templates = (() => {
  */
 var NestedDCDCEListItemView = DCListItemView.extend(
     /** @lends NestedDCDCEListItemView.prototype */ {
-        className:
-            DCListItemView.prototype.className + " dataset-collection-element",
+        className: `${DCListItemView.prototype
+            .className} dataset-collection-element`,
 
         /** In this override, add the state as a class for use with state-based CSS */
         _swapNewRender: function($newRender) {
             DCListItemView.prototype._swapNewRender.call(this, $newRender);
             var state = this.model.get("state") || "ok";
-            this.$el.addClass("state-" + state);
+            this.$el.addClass(`state-${state}`);
             return this.$el;
         },
 
         // ......................................................................... misc
         /** String representation */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "NestedDCDCEListItemView(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `NestedDCDCEListItemView(${modelString})`;
         }
     }
 );

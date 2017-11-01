@@ -70,13 +70,7 @@ export default FormBase.extend({
         this.model.set({
             title:
                 options.fixed_title ||
-                "<b>" +
-                    options.name +
-                    "</b> " +
-                    options.description +
-                    " (Galaxy Version " +
-                    options.version +
-                    ")",
+                `<b>${options.name}</b> ${options.description} (Galaxy Version ${options.version})`,
             operations: !options.hide_operations && this._operations(),
             onchange: function() {
                 self.deferred.reset();
@@ -96,14 +90,7 @@ export default FormBase.extend({
         this.show_message &&
             this.message.update({
                 status: "success",
-                message:
-                    "Now you are using '" +
-                    options.name +
-                    "' version " +
-                    options.version +
-                    ", id '" +
-                    options.id +
-                    "'.",
+                message: `Now you are using '${options.name}' version ${options.version}, id '${options.id}'.`,
                 persistent: false
             });
         this.show_message = true;
@@ -129,7 +116,7 @@ export default FormBase.extend({
                 var version = options.versions[i];
                 if (version != options.version) {
                     versions_button.addMenu({
-                        title: "Switch to " + version,
+                        title: `Switch to ${version}`,
                         version: version,
                         icon: "fa-cube",
                         onclick: function() {
@@ -162,7 +149,7 @@ export default FormBase.extend({
                 icon: "fa-question-circle",
                 title: "Question?",
                 onclick: function() {
-                    window.open(options.biostar_url + "/p/new/post/");
+                    window.open(`${options.biostar_url}/p/new/post/`);
                 }
             });
             menu_button.addMenu({
@@ -170,9 +157,7 @@ export default FormBase.extend({
                 title: "Search",
                 onclick: function() {
                     window.open(
-                        options.biostar_url +
-                            "/local/search/page/?q=" +
-                            options.name
+                        `${options.biostar_url}/local/search/page/?q=${options.name}`
                     );
                 }
             });
@@ -183,10 +168,8 @@ export default FormBase.extend({
             onclick: function() {
                 prompt(
                     "Copy to clipboard: Ctrl+C, Enter",
-                    window.location.origin +
-                        Galaxy.root +
-                        "root?tool_id=" +
-                        options.id
+                    `${window.location.origin +
+                        Galaxy.root}root?tool_id=${options.id}`
                 );
             }
         });
@@ -197,8 +180,7 @@ export default FormBase.extend({
                 icon: "fa-download",
                 title: "Download",
                 onclick: function() {
-                    window.location.href =
-                        Galaxy.root + "api/tools/" + options.id + "/download";
+                    window.location.href = `${Galaxy.root}api/tools/${options.id}/download`;
                 }
             });
             menu_button.addMenu({
@@ -206,8 +188,7 @@ export default FormBase.extend({
                 title: "Reload XML",
                 onclick: function() {
                     Utils.get({
-                        url:
-                            Galaxy.root + "api/tools/" + options.id + "/reload",
+                        url: `${Galaxy.root}api/tools/${options.id}/reload`,
                         success: function(response) {
                             self.message.update({
                                 persistent: false,
@@ -320,7 +301,7 @@ export default FormBase.extend({
             _.each(options.requirements, (req, i) => {
                 requirements_message +=
                     req.name +
-                    (req.version ? " (Version " + req.version + ")" : "") +
+                    (req.version ? ` (Version ${req.version})` : "") +
                     (i < nreq - 2 ? ", " : i == nreq - 2 ? " and " : "");
             });
             var requirements_link = $("<a/>")
@@ -328,7 +309,7 @@ export default FormBase.extend({
                 .attr("href", "https://galaxyproject.org/tools/requirements/")
                 .text("here");
             return $("<span/>")
-                .append(requirements_message + ". Click ")
+                .append(`${requirements_message}. Click `)
                 .append(requirements_link)
                 .append(" for more information.");
         }

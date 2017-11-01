@@ -104,8 +104,8 @@ var menu = [
         func: function() {
             if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
                 Galaxy.router.push(
-                    "/histories/permissions?id=" +
-                        Galaxy.currHistoryPanel.model.id
+                    `/histories/permissions?id=${Galaxy.currHistoryPanel.model
+                        .id}`
                 );
             }
         }
@@ -134,7 +134,7 @@ var menu = [
                 confirm(_l("Really unhide all hidden datasets?"))
             ) {
                 $.post(
-                    Galaxy.root + "history/adjust_hidden",
+                    `${Galaxy.root}history/adjust_hidden`,
                     { user_action: "unhide" },
                     () => {
                         Galaxy.currHistoryPanel.loadCurrentHistory();
@@ -154,7 +154,7 @@ var menu = [
                 confirm(_l("Really delete all hidden datasets?"))
             ) {
                 $.post(
-                    Galaxy.root + "history/adjust_hidden",
+                    `${Galaxy.root}history/adjust_hidden`,
                     { user_action: "delete" },
                     () => {
                         Galaxy.currHistoryPanel.loadCurrentHistory();

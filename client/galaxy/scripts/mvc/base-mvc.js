@@ -154,7 +154,7 @@ var SessionStorageModel = Backbone.Model.extend({
         return JSON.stringify(this.toJSON(), null, "  ");
     },
     toString: function() {
-        return "SessionStorageModel(" + this.id + ")";
+        return `SessionStorageModel(${this.id})`;
     }
 });
 (() => {

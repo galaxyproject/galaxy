@@ -50,17 +50,13 @@ var HistoryContentMixin = {
     // ........................................................................ ajax
     //TODO?: these are probably better done on the leaf classes
     /** history content goes through the 'api/histories' API */
-    urlRoot: Galaxy.root + "api/histories/",
+    urlRoot: `${Galaxy.root}api/histories/`,
 
     /** full url spec. for this content */
     url: function() {
-        var url =
-            this.urlRoot +
-            this.get("history_id") +
-            "/contents/" +
-            this.get("history_content_type") +
-            "s/" +
-            this.get("id");
+        var url = `${this.urlRoot + this.get("history_id")}/contents/${this.get(
+            "history_content_type"
+        )}s/${this.get("id")}`;
         return url;
     },
 

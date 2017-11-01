@@ -37,7 +37,7 @@ export default Backbone.View.extend({
         this.$table.empty();
         _.each(this.options.parameters, parameter => {
             var $checkbox = $("<div/>")
-                .addClass("upload-" + parameter.id + " upload-icon-button fa")
+                .addClass(`upload-${parameter.id} upload-icon-button fa`)
                 .addClass(
                     (self.model.get(parameter.id) &&
                         self.options.class_check) ||

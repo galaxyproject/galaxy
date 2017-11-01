@@ -45,7 +45,7 @@ var View = Backbone.View.extend({
             if (repo_queue.hasOwnProperty(queue_key)) {
                 var repository_id = repo_queue[queue_key].repository.id;
                 delete repo_queue[queue_key];
-                $("#queued_repository_" + repository_id).remove();
+                $(`#queued_repository_${repository_id}`).remove();
             }
             localStorage.repositories = JSON.stringify(repo_queue);
         });
@@ -82,8 +82,8 @@ var View = Backbone.View.extend({
         ]);
         params.tool_shed_url = queue_key.split("|")[0];
         params.changeset = repository_metadata.changeset_revision;
-        var url = Galaxy.root + "api/tool_shed_repositories/install?async=True";
-        $("#queued_repository_" + repository_metadata.repository.id).remove();
+        var url = `${Galaxy.root}api/tool_shed_repositories/install?async=True`;
+        $(`#queued_repository_${repository_metadata.repository.id}`).remove();
         if (localStorage.repositories) {
             if (queue_key === undefined) {
                 queue_key = toolshed_util.queueKey(repository_metadata);
@@ -98,9 +98,9 @@ var View = Backbone.View.extend({
         $.post(url, params, data => {
             var iri_params = JSON.parse(data);
             var repositories = iri_params.repositories;
-            var new_route = "status/r/" + repositories.join("|");
+            var new_route = `status/r/${repositories.join("|")}`;
             $.post(
-                Galaxy.root + "admin_toolshed/install_repositories",
+                `${Galaxy.root}admin_toolshed/install_repositories`,
                 iri_params,
                 data => {
                     console.log(

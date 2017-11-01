@@ -22,7 +22,7 @@ function dropDownSelect(options, selected) {
         [
             '<div class="dropdown-select btn-group">',
             '<button type="button" class="btn btn-default">',
-            '<span class="dropdown-select-selected">' + selected + "</span>",
+            `<span class="dropdown-select-selected">${selected}</span>`,
             "</button>",
             "</div>"
         ].join("\n")

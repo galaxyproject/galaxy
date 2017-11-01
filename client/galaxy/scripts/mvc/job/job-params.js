@@ -7,8 +7,8 @@ function build_messages(self) {
     var message = Utils.getQueryString("message");
 
     if (message && message !== "") {
-        $el_message.addClass(status + "message");
-        $el_message.html("<p>" + _.escape(message) + "</p>");
+        $el_message.addClass(`${status}message`);
+        $el_message.html(`<p>${_.escape(message)}</p>`);
     } else {
         $el_message.html("");
     }

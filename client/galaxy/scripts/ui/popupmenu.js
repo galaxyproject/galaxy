@@ -31,9 +31,9 @@ function make_popupmenu(button_element, initial_options) {
         setTimeout(() => {
             // Dynamically generate the wrapper holding all the selectable options of the menu.
             var menu_element = $(
-                "<ul class='dropdown-menu' id='" +
-                    button_element.attr("id") +
-                    "-menu'></ul>"
+                `<ul class='dropdown-menu' id='${button_element.attr(
+                    "id"
+                )}-menu'></ul>`
             );
             var options = button_element.data("menu_options");
             if (_.size(options) <= 0) {
@@ -158,7 +158,7 @@ function make_popup_menus(parent) {
                 }
             });
             // locate the element with the id corresponding to the menu's popupmenu attr
-            var box = $(parent).find("#" + menu.attr("popupmenu"));
+            var box = $(parent).find(`#${menu.attr("popupmenu")}`);
 
             // For menus with clickable link text, make clicking on the link go through instead
             // of activating the popup menu

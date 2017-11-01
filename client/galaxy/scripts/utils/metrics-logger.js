@@ -150,7 +150,7 @@ MetricsLogger.prototype._parseLevel = function _parseLevel(level) {
             return MetricsLogger[upper];
         }
     }
-    throw new Error("Unknown log level: " + level);
+    throw new Error(`Unknown log level: ${level}`);
 };
 
 //----------------------------------------------------------------------------- main entry point

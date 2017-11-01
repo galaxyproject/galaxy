@@ -6,8 +6,8 @@ function naturalSort(a, b) {
     var x = a.toString().toLowerCase() || "";
     var y = b.toString().toLowerCase() || "";
     var nC = String.fromCharCode(0);
-    var xN = x.replace(re, nC + "$1" + nC).split(nC);
-    var yN = y.replace(re, nC + "$1" + nC).split(nC);
+    var xN = x.replace(re, `${nC}$1${nC}`).split(nC);
+    var yN = y.replace(re, `${nC}$1${nC}`).split(nC);
     var xD = new Date(x).getTime();
     var yD = xD ? new Date(y).getTime() : null;
     // natural sorting of dates

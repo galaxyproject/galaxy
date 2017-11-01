@@ -293,8 +293,8 @@ var SweepsterTrack = Backbone.Model.extend({
             // FIXME: find a better way to deal with needed URLs:
             var track_config = _.extend(
                 {
-                    data_url: Galaxy.root + "dummy1",
-                    converted_datasets_state_url: Galaxy.root + "dummy2"
+                    data_url: `${Galaxy.root}dummy1`,
+                    converted_datasets_state_url: `${Galaxy.root}dummy2`
                 },
                 options.track
             );
@@ -380,10 +380,9 @@ var SweepsterVisualization = visualization.Visualization.extend({
     toJSON: function() {
         return {
             id: this.get("id"),
-            title:
-                "Parameter exploration for dataset '" +
-                this.get("dataset").get("name") +
-                "'",
+            title: `Parameter exploration for dataset '${this.get(
+                "dataset"
+            ).get("name")}'`,
             type: "sweepster",
             dataset_id: this.get("dataset").id,
             tool_id: this.get("tool").id,
@@ -435,7 +434,7 @@ var SweepsterTrackView = Backbone.View.extend({
         );
         settings.get("inputs").each(input => {
             settings_div.append(
-                input.get("label") + ": " + values[input.get("name")] + "<br/>"
+                `${input.get("label")}: ${values[input.get("name")]}<br/>`
             );
         });
         var self = this;
@@ -476,7 +475,7 @@ var SweepsterTrackView = Backbone.View.extend({
                     .html(
                         $("<img/>").attr(
                             "src",
-                            Galaxy.root + "images/loading_large_white_bg.gif"
+                            `${Galaxy.root}images/loading_large_white_bg.gif`
                         )
                     )
             );
@@ -631,7 +630,7 @@ var ToolInputValOrSweepView = Backbone.View.extend({
 
         // Update input's min, max, number of samples as values change.
         _.each(["min", "max", "num_samples"], attr => {
-            sweep_inputs_row.find("." + attr).change(function() {
+            sweep_inputs_row.find(`.${attr}`).change(function() {
                 input.set(attr, parseFloat($(this).val()));
             });
         });
@@ -741,7 +740,7 @@ var ToolParameterTreeView = Backbone.View.extend({
             .enter()
             .append("g")
             .attr("class", "node")
-            .attr("transform", d => "translate(" + d.y + "," + d.x + ")")
+            .attr("transform", d => `translate(${d.y},${d.x})`)
             .on("mouseover", a_node => {
                 var connected_node_ids = _.pluck(
                     self.model.get_connected_nodes(a_node),
@@ -976,7 +975,7 @@ var SweepsterVisualizationView = Backbone.View.extend({
 
     get_base_color: function(base) {
         return (
-            this.config.get_value(base.toLowerCase() + "_color") ||
+            this.config.get_value(`${base.toLowerCase()}_color`) ||
             this.config.get_value("n_color")
         );
     },
@@ -991,11 +990,10 @@ var SweepsterVisualizationView = Backbone.View.extend({
         });
 
         show_modal(
-            "Running " + tool_name + " on complete dataset",
-            tool_name +
-                " is running on dataset '" +
-                dataset.get("name") +
-                "'. Outputs are in the dataset's history.",
+            `Running ${tool_name} on complete dataset`,
+            `${tool_name} is running on dataset '${dataset.get(
+                "name"
+            )}'. Outputs are in the dataset's history.`,
             {
                 Ok: function() {
                     hide_modal();
@@ -1078,11 +1076,11 @@ var SweepsterVisualizationView = Backbone.View.extend({
             if (all_settings.length >= 10) {
                 show_modal(
                     "Whoa there cowboy!",
-                    "You clicked on a node to try " +
-                        self.model.get("tool").get("name") +
-                        " with " +
-                        all_settings.length +
-                        " different combinations of settings. You can only run 10 jobs at a time.",
+                    `You clicked on a node to try ${self.model
+                        .get("tool")
+                        .get(
+                            "name"
+                        )} with ${all_settings.length} different combinations of settings. You can only run 10 jobs at a time.`,
                     {
                         Ok: function() {
                             hide_modal();

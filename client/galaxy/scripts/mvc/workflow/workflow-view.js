@@ -96,7 +96,7 @@ export default Backbone.View.extend({
             }
             self.workflow.rectify_workflow_outputs();
             Utils.request({
-                url: Galaxy.root + "api/workflows/" + self.options.id,
+                url: `${Galaxy.root}api/workflows/${self.options.id}`,
                 type: "PUT",
                 data: { workflow: self.workflow.to_simple() },
                 success: function(data) {
@@ -176,14 +176,14 @@ export default Backbone.View.extend({
                                     .hide();
                                 if (data.length != 0) {
                                     // Map tool ids to element ids and join them.
-                                    var s = $.map(data, (n, i) => "link-" + n);
+                                    var s = $.map(data, (n, i) => `link-${n}`);
                                     // First pass to show matching tools and their parents.
                                     $(s).each((index, id) => {
                                         // Add class to denote match.
-                                        $("[id='" + id + "']")
+                                        $(`[id='${id}']`)
                                             .parent()
                                             .addClass("search_match");
-                                        $("[id='" + id + "']")
+                                        $(`[id='${id}']`)
                                             .parent()
                                             .show()
                                             .parent()
@@ -238,7 +238,7 @@ export default Backbone.View.extend({
         // get available datatypes for post job action options
         this.datatypes = JSON.parse(
             $.ajax({
-                url: Galaxy.root + "api/datatypes",
+                url: `${Galaxy.root}api/datatypes`,
                 async: false
             }).responseText
         );
@@ -246,7 +246,7 @@ export default Backbone.View.extend({
         // get datatype mapping options
         this.datatypes_mapping = JSON.parse(
             $.ajax({
-                url: Galaxy.root + "api/datatypes/mapping",
+                url: `${Galaxy.root}api/datatypes/mapping`,
                 async: false
             }).responseText
         );
@@ -269,28 +269,21 @@ export default Backbone.View.extend({
                 _.each(data.steps, (step, step_id) => {
                     var details = "";
                     if (step.errors) {
-                        details += "<li>" + step.errors + "</li>";
+                        details += `<li>${step.errors}</li>`;
                     }
                     _.each(data.upgrade_messages[step_id], m => {
-                        details += "<li>" + m + "</li>";
+                        details += `<li>${m}</li>`;
                     });
                     if (details) {
-                        upgrade_message +=
-                            "<li>Step " +
-                            (parseInt(step_id, 10) + 1) +
-                            ": " +
-                            self.workflow.nodes[step_id].name +
-                            "<ul>" +
-                            details +
-                            "</ul></li>";
+                        upgrade_message += `<li>Step ${parseInt(step_id, 10) +
+                            1}: ${self.workflow.nodes[step_id]
+                            .name}<ul>${details}</ul></li>`;
                     }
                 });
                 if (upgrade_message) {
                     window.show_modal(
                         "Issues loading this workflow",
-                        "Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>" +
-                            upgrade_message +
-                            "</ul></p>",
+                        `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${upgrade_message}</ul></p>`,
                         { Continue: hide_modal }
                     );
                 } else {
@@ -308,8 +301,8 @@ export default Backbone.View.extend({
                 Save: save_current_workflow,
                 "Save As": workflow_save_as,
                 Run: function() {
-                    window.location =
-                        Galaxy.root + "workflow/run?id=" + self.options.id;
+                    window.location = `${Galaxy.root}workflow/run?id=${self
+                        .options.id}`;
                 },
                 "Edit Attributes": function() {
                     self.workflow.clear_active_node();
@@ -329,7 +322,7 @@ export default Backbone.View.extend({
                     var rename_name =
                         $("#workflow_rename").val().length > 0
                             ? $("#workflow_rename").val()
-                            : "SavedAs_" + self.workflow.name;
+                            : `SavedAs_${self.workflow.name}`;
                     var rename_annotation =
                         $("#wf_annotation").val().length > 0
                             ? $("#wf_annotation").val()
@@ -349,8 +342,7 @@ export default Backbone.View.extend({
                     })
                         .done(id => {
                             window.onbeforeunload = undefined;
-                            window.location =
-                                Galaxy.root + "workflow/editor?id=" + id;
+                            window.location = `${Galaxy.root}workflow/editor?id=${id}`;
                             hide_modal();
                         })
                         .fail(() => {
@@ -371,32 +363,13 @@ export default Backbone.View.extend({
             for (var node_key in self.workflow.nodes) {
                 var node = self.workflow.nodes[node_key];
                 if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
-                    new_content +=
-                        "<div class='toolForm' style='margin-bottom:5px;'><div class='toolFormTitle'>Step " +
-                        node.id +
-                        " - " +
-                        node.name +
-                        "</div>";
+                    new_content += `<div class='toolForm' style='margin-bottom:5px;'><div class='toolFormTitle'>Step ${node.id} - ${node.name}</div>`;
                     for (var ot_key in node.output_terminals) {
                         var output = node.output_terminals[ot_key];
                         if (node.isWorkflowOutput(output.name)) {
-                            new_content +=
-                                "<p>" +
-                                output.name +
-                                "<input type='checkbox' name='" +
-                                node.id +
-                                "|" +
-                                output.name +
-                                "' checked /></p>";
+                            new_content += `<p>${output.name}<input type='checkbox' name='${node.id}|${output.name}' checked /></p>`;
                         } else {
-                            new_content +=
-                                "<p>" +
-                                output.name +
-                                "<input type='checkbox' name='" +
-                                node.id +
-                                "|" +
-                                output.name +
-                                "' /></p>";
+                            new_content += `<p>${output.name}<input type='checkbox' name='${node.id}|${output.name}' /></p>`;
                         }
                     }
                     new_content += "</div>";
@@ -448,7 +421,7 @@ export default Backbone.View.extend({
                 op.width() - (d.offsetX - opo.left),
                 op.height() - (d.offsetY - opo.top)
             );
-            $.jStorage.set("overview-size", new_size + "px");
+            $.jStorage.set("overview-size", `${new_size}px`);
         });
 
         function show_overview() {
@@ -552,10 +525,7 @@ export default Backbone.View.extend({
                             // don't ruin the workflow by adding 50 steps unprompted.
                             Galaxy.modal.show({
                                 title: "Warning",
-                                body:
-                                    "This will copy " +
-                                    workflow.step_count +
-                                    " new steps into your workflow.",
+                                body: `This will copy ${workflow.step_count} new steps into your workflow.`,
                                 buttons: {
                                     Cancel: function() {
                                         Galaxy.modal.hide();
@@ -601,23 +571,17 @@ export default Backbone.View.extend({
                 // Determine if any parameters were 'upgraded' and provide message
                 var upgrade_message = "";
                 $.each(data.upgrade_messages, (k, v) => {
-                    upgrade_message +=
-                        "<li>Step " +
-                        (parseInt(k, 10) + 1) +
-                        ": " +
-                        self.workflow.nodes[k].name +
-                        "<ul>";
+                    upgrade_message += `<li>Step ${parseInt(k, 10) + 1}: ${self
+                        .workflow.nodes[k].name}<ul>`;
                     $.each(v, (i, vv) => {
-                        upgrade_message += "<li>" + vv + "</li>";
+                        upgrade_message += `<li>${vv}</li>`;
                     });
                     upgrade_message += "</ul></li>";
                 });
                 if (upgrade_message) {
                     window.show_modal(
                         "Subworkflow embedded with changes",
-                        "Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>" +
-                            upgrade_message +
-                            "</ul>",
+                        `Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>${upgrade_message}</ul>`,
                         { Continue: hide_modal }
                     );
                 } else {
@@ -672,7 +636,7 @@ export default Backbone.View.extend({
         var self = this;
         Utils.request({
             type: "POST",
-            url: Galaxy.root + "api/workflows/build_module",
+            url: `${Galaxy.root}api/workflows/build_module`,
             data: request_data,
             success: function(data) {
                 node.init_field_data(data);
@@ -734,12 +698,7 @@ export default Backbone.View.extend({
     display_file_list: function(node) {
         var addlist = "<select id='node_data_list' name='node_data_list'>";
         for (var out_terminal in node.output_terminals) {
-            addlist +=
-                "<option value='" +
-                out_terminal +
-                "'>" +
-                out_terminal +
-                "</option>";
+            addlist += `<option value='${out_terminal}'>${out_terminal}</option>`;
         }
         addlist += "</select>";
         return addlist;
@@ -806,10 +765,10 @@ export default Backbone.View.extend({
         });
         if (workflow_parameters && workflow_parameters.length !== 0) {
             $.each(workflow_parameters, (k, element) => {
-                new_parameter_content +=
-                    "<div>" +
-                    element.substring(2, element.length - 1) +
-                    "</div>";
+                new_parameter_content += `<div>${element.substring(
+                    2,
+                    element.length - 1
+                )}</div>`;
             });
             wf_parm_container.html(new_parameter_content);
             wf_parm_box.show();
@@ -827,10 +786,10 @@ export default Backbone.View.extend({
     showForm: function(content, node) {
         var self = this;
         var cls = "right-content";
-        var id = cls + "-" + node.id;
-        var $container = $("#" + cls);
-        if (content && $container.find("#" + id).length == 0) {
-            var $el = $('<div id="' + id + '" class="' + cls + '"/>');
+        var id = `${cls}-${node.id}`;
+        var $container = $(`#${cls}`);
+        if (content && $container.find(`#${id}`).length == 0) {
+            var $el = $(`<div id="${id}" class="${cls}"/>`);
             content.node = node;
             content.workflow = this.workflow;
             content.datatypes = this.datatypes;
@@ -847,8 +806,8 @@ export default Backbone.View.extend({
                 );
             }
         }
-        $("." + cls).hide();
-        $container.find("#" + id).show();
+        $(`.${cls}`).hide();
+        $container.find(`#${id}`).show();
         $container.show();
         $container.scrollTop();
     },
@@ -863,9 +822,7 @@ export default Backbone.View.extend({
         var self = this;
         var $f = $("<div class='toolForm toolFormInCanvas'/>");
         var $title = $(
-            "<div class='toolFormTitle unselectable'><span class='nodeTitle'>" +
-                title_text +
-                "</div></div>"
+            `<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</div></div>`
         );
         add_node_icon($title.find(".nodeTitle"), type);
         $f.append($title);
@@ -875,10 +832,7 @@ export default Backbone.View.extend({
         var node = new Node(this, { element: $f });
         node.type = type;
         node.content_id = content_id;
-        var tmp =
-            "<div><img height='16' align='middle' src='" +
-            Galaxy.root +
-            "static/images/loading_small_white_bg.gif'/> loading tool info...</div>";
+        var tmp = `<div><img height='16' align='middle' src='${Galaxy.root}static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
         $f.find(".toolFormBody").append(tmp);
         // Fix width to computed width
         // Now add floats

@@ -125,11 +125,7 @@ var NumberFilter = function(obj_dict) {
                             new_value = parseFloat(new_value);
                             if (invalid(new_value)) {
                                 alert(
-                                    "Parameter value must be in the range [" +
-                                        slider_min +
-                                        "-" +
-                                        slider_max +
-                                        "]"
+                                    `Parameter value must be in the range [${slider_min}-${slider_max}]`
                                 );
                                 return $(this);
                             }
@@ -145,11 +141,7 @@ var NumberFilter = function(obj_dict) {
                                 invalid(new_value[1])
                             ) {
                                 alert(
-                                    "Parameter value must be in the range [" +
-                                        slider_min +
-                                        "-" +
-                                        slider_max +
-                                        "]"
+                                    `Parameter value must be in the range [${slider_min}-${slider_max}]`
                                 );
                                 return $(this);
                             }
@@ -177,10 +169,10 @@ var NumberFilter = function(obj_dict) {
 
     var name_span = $("<span/>")
         .addClass("slider-name")
-        .text(filter.name + "  ")
+        .text(`${filter.name}  `)
         .appendTo(filter_label);
 
-    var values_span = $("<span/>").text(this.low + "-" + this.high);
+    var values_span = $("<span/>").text(`${this.low}-${this.high}`);
 
     var values_span_container = $("<span/>")
         .addClass("slider-value")
@@ -196,7 +188,7 @@ var NumberFilter = function(obj_dict) {
         .addClass("slider")
         .appendTo(filter.parent_div);
     filter.control_element = $("<div/>")
-        .attr("id", filter.name + "-filter-control")
+        .attr("id", `${filter.name}-filter-control`)
         .appendTo(slider_div);
     filter.control_element.slider({
         range: true,
@@ -337,7 +329,7 @@ extend(NumberFilter.prototype, {
         var values = ui.values;
 
         // Set new values in UI.
-        this.values_span.text(values[0] + "-" + values[1]);
+        this.values_span.text(`${values[0]}-${values[1]}`);
 
         // Set new values in filter.
         this.low = values[0];
@@ -669,8 +661,9 @@ extend(FiltersManager.prototype, {
                         filter.tool_id,
                         []
                     );
-                    tool_filter_conditions[tool_filter_conditions.length] =
-                        filter.tool_exp_name + " >= " + filter.low;
+                    tool_filter_conditions[
+                        tool_filter_conditions.length
+                    ] = `${filter.tool_exp_name} >= ${filter.low}`;
                 }
                 if (filter.max !== filter.high) {
                     tool_filter_conditions = get_or_create_dict_item(
@@ -678,8 +671,9 @@ extend(FiltersManager.prototype, {
                         filter.tool_id,
                         []
                     );
-                    tool_filter_conditions[tool_filter_conditions.length] =
-                        filter.tool_exp_name + " <= " + filter.high;
+                    tool_filter_conditions[
+                        tool_filter_conditions.length
+                    ] = `${filter.tool_exp_name} <= ${filter.high}`;
                 }
             }
         }
@@ -705,7 +699,7 @@ extend(FiltersManager.prototype, {
 
             var tool_id = filter_tuple[0];
             var tool_filters = filter_tuple[1];
-            var tool_filter_str = "(" + tool_filters.join(") and (") + ")";
+            var tool_filter_str = `(${tool_filters.join(") and (")})`;
 
             var url_params = {
                 cond: tool_filter_str,
@@ -722,7 +716,7 @@ extend(FiltersManager.prototype, {
                     // General error.
                     Galaxy.modal.show({
                         title: "Filter Dataset",
-                        body: "Error running tool " + tool_id,
+                        body: `Error running tool ${tool_id}`,
                         buttons: { Close: Galaxy.modal.hide() }
                     });
                 } else if (filters.length === 0) {

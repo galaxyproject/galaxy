@@ -82,7 +82,7 @@ var PairView = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     /** string rep */
     toString: function() {
-        return "PairView(" + this.pair.name + ")";
+        return `PairView(${this.pair.name})`;
     }
 });
 
@@ -155,8 +155,8 @@ function autoPairFnBuilder(options) {
 
             for (indexB = 0; indexB < listB.length; indexB++) {
                 var possible = listB[indexB];
-                this.debug(indexA + ":" + matchTo.name);
-                this.debug(indexB + ":" + possible.name);
+                this.debug(`${indexA}:${matchTo.name}`);
+                this.debug(`${indexB}:${possible.name}`);
 
                 // no matching with self
                 if (listA[indexA] !== listB[indexB]) {
@@ -573,7 +573,7 @@ var PairedCollectionCreator = Backbone.View
             // ensure existance and don't pair something with itself
             if (!(fwd && rev) || fwd === rev) {
                 throw new Error(
-                    "Bad pairing: " + [JSON.stringify(fwd), JSON.stringify(rev)]
+                    `Bad pairing: ${[JSON.stringify(fwd), JSON.stringify(rev)]}`
                 );
             }
             name = name || this._guessNameForPair(fwd, rev);
@@ -603,14 +603,14 @@ var PairedCollectionCreator = Backbone.View
                     revName = revName.replace(extension, "");
                 }
             }
-            return lcs || fwdName + " & " + revName;
+            return lcs || `${fwdName} & ${revName}`;
         },
 
         /** unpair a pair, removing it from paired, and adding the fwd,rev datasets back into unpaired */
         _unpair: function(pair, options) {
             options = options || {};
             if (!pair) {
-                throw new Error("Bad pair: " + JSON.stringify(pair));
+                throw new Error(`Bad pair: ${JSON.stringify(pair)}`);
             }
             this.paired = _.without(this.paired, pair);
             this._addToUnpaired(pair.forward);
@@ -661,11 +661,8 @@ var PairedCollectionCreator = Backbone.View
         createList: function(name) {
             var creator = this;
 
-            var url =
-                Galaxy.root +
-                "api/histories/" +
-                this.historyId +
-                "/contents/dataset_collections";
+            var url = `${Galaxy.root}api/histories/${this
+                .historyId}/contents/dataset_collections`;
 
             //TODO: use ListPairedCollection.create()
             var ajaxData = {
@@ -715,17 +712,15 @@ var PairedCollectionCreator = Backbone.View
             );
             if (xhr) {
                 if (xhr.readyState === 0 && xhr.status === 0) {
-                    content +=
-                        ": " +
-                        _l("Galaxy could not be reached and may be updating.") +
-                        _l(" Try again in a few minutes.");
+                    content += `: ${_l(
+                        "Galaxy could not be reached and may be updating."
+                    )}${_l(" Try again in a few minutes.")}`;
                 } else if (xhr.responseJSON) {
-                    content +=
-                        "<br /><pre>" +
-                        JSON.stringify(xhr.responseJSON) +
-                        "</pre>";
+                    content += `<br /><pre>${JSON.stringify(
+                        xhr.responseJSON
+                    )}</pre>`;
                 } else {
-                    content += ": " + message;
+                    content += `: ${message}`;
                 }
             }
             creator._showAlert(content, "alert-danger");
@@ -863,7 +858,7 @@ var PairedCollectionCreator = Backbone.View
             //TODO: to underscore template
             return (
                 $("<li/>")
-                    .attr("id", "dataset-" + dataset.id)
+                    .attr("id", `dataset-${dataset.id}`)
                     .addClass("dataset unpaired")
                     .attr("draggable", true)
                     .addClass(dataset.selected ? "selected" : "")
@@ -891,7 +886,7 @@ var PairedCollectionCreator = Backbone.View
         _renderUnpairedEmpty: function() {
             //this.debug( '-- renderUnpairedEmpty' );
             var $msg = $('<div class="empty-message"></div>').text(
-                "(" + _l("no remaining unpaired datasets") + ")"
+                `(${_l("no remaining unpaired datasets")})`
             );
             this.$(".unpaired-columns .paired-column .column-datasets")
                 .empty()
@@ -902,9 +897,7 @@ var PairedCollectionCreator = Backbone.View
         _renderUnpairedNotShown: function() {
             //this.debug( '-- renderUnpairedEmpty' );
             var $msg = $('<div class="empty-message"></div>').text(
-                "(" +
-                    _l("no datasets were found matching the current filters") +
-                    ")"
+                `(${_l("no datasets were found matching the current filters")})`
             );
             this.$(".unpaired-columns .paired-column .column-datasets")
                 .empty()
@@ -976,7 +969,7 @@ var PairedCollectionCreator = Backbone.View
         /** a message to display when none paired */
         _renderPairedEmpty: function() {
             var $msg = $('<div class="empty-message"></div>').text(
-                "(" + _l("no paired datasets yet") + ")"
+                `(${_l("no paired datasets yet")})`
             );
             this.$(".paired-columns .column-datasets")
                 .empty()
@@ -1058,7 +1051,7 @@ var PairedCollectionCreator = Backbone.View
                     .select();
             }
             if (clear) {
-                what = what || this.$("." + VALIDATION_CLASS);
+                what = what || this.$(`.${VALIDATION_CLASS}`);
                 what.removeClass(VALIDATION_CLASS);
             } else {
                 what.addClass(VALIDATION_CLASS);
@@ -1110,11 +1103,11 @@ var PairedCollectionCreator = Backbone.View
                 var msgClass = null;
                 if (this.paired.length) {
                     msgClass = "alert-success";
-                    message = this.paired.length + " " + _l("pairs created");
+                    message = `${this.paired.length} ${_l("pairs created")}`;
                     if (!this.unpaired.length) {
-                        message +=
-                            ": " +
-                            _l("all datasets have been successfully paired");
+                        message += `: ${_l(
+                            "all datasets have been successfully paired"
+                        )}`;
                         this.hideUnpaired();
                         this.$(".collection-name").focus();
                     }
@@ -1468,7 +1461,7 @@ var PairedCollectionCreator = Backbone.View
             }
 
             $unpaired.css({
-                height: unpairedHi + "px",
+                height: `${unpairedHi}px`,
                 flex: "0 0 auto"
             });
             return true;

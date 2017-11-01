@@ -69,7 +69,7 @@ var View = Backbone.View.extend({
                     var q =
                         model.get("onbeforeunload") &&
                         model.get("onbeforeunload")();
-                    q && (text += q + " ");
+                    q && (text += `${q} `);
                 });
                 if (text !== "") {
                     return text;
@@ -79,8 +79,7 @@ var View = Backbone.View.extend({
 
     render: function() {
         this.$navbarBrandTitle.html(
-            "Galaxy " +
-                ((this.options.brand && "/ " + this.options.brand) || "")
+            `Galaxy ${(this.options.brand && `/ ${this.options.brand}`) || ""}`
         );
         this.$navbarBrandLink.attr("href", this.options.logo_url);
         this.$navbarBrandImage.attr("src", this.options.logo_src);

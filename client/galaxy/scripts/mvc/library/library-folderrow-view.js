@@ -119,7 +119,7 @@ var FolderRowView = Backbone.View.extend({
         var dataset = Galaxy.libraries.folderListView.collection.get(
             dataset_id
         );
-        dataset.url = dataset.urlRoot + dataset.id + "?undelete=true";
+        dataset.url = `${dataset.urlRoot + dataset.id}?undelete=true`;
         dataset.destroy({
             success: function(model, response) {
                 Galaxy.libraries.folderListView.collection.remove(dataset_id);
@@ -135,12 +135,7 @@ var FolderRowView = Backbone.View.extend({
                     {
                         onclick: function() {
                             var folder_id = that.model.get("folder_id");
-                            window.location =
-                                Galaxy.root +
-                                "library/list#folders/" +
-                                folder_id +
-                                "/datasets/" +
-                                that.id;
+                            window.location = `${Galaxy.root}library/list#folders/${folder_id}/datasets/${that.id}`;
                         }
                     }
                 );
@@ -148,8 +143,8 @@ var FolderRowView = Backbone.View.extend({
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(
-                        "Dataset was not undeleted. " +
-                            response.responseJSON.err_msg
+                        `Dataset was not undeleted. ${response.responseJSON
+                            .err_msg}`
                     );
                 } else {
                     mod_toastr.error(
@@ -168,7 +163,7 @@ var FolderRowView = Backbone.View.extend({
             .closest("tr")
             .data("id");
         var folder = Galaxy.libraries.folderListView.collection.get(folder_id);
-        folder.url = folder.urlRoot + folder.id + "?undelete=true";
+        folder.url = `${folder.urlRoot + folder.id}?undelete=true`;
         folder.destroy({
             success: function(model, response) {
                 Galaxy.libraries.folderListView.collection.remove(folder_id);
@@ -185,8 +180,8 @@ var FolderRowView = Backbone.View.extend({
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(
-                        "Folder was not undeleted. " +
-                            response.responseJSON.err_msg
+                        `Folder was not undeleted. ${response.responseJSON
+                            .err_msg}`
                     );
                 } else {
                     mod_toastr.error(

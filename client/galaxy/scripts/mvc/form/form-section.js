@@ -59,9 +59,7 @@ var View = Backbone.View.extend({
                 var selectedCase = self.app.data.matchCase(input_def, value);
                 for (var i in input_def.cases) {
                     var case_def = input_def.cases[i];
-                    var section_row = self.$(
-                        "#" + input_def.id + "-section-" + i
-                    );
+                    var section_row = self.$(`#${input_def.id}-section-${i}`);
                     var nonhidden = false;
                     for (var j in case_def.inputs) {
                         if (!case_def.inputs[j].hidden) {
@@ -85,7 +83,7 @@ var View = Backbone.View.extend({
             });
             this._append(
                 sub_section.$el.addClass("ui-form-section"),
-                input_def.id + "-section-" + i
+                `${input_def.id}-section-${i}`
             );
         }
 
@@ -111,7 +109,7 @@ var View = Backbone.View.extend({
 
         // helper function to create new repeat blocks
         function create(inputs) {
-            var sub_section_id = input_def.id + "-section-" + block_index++;
+            var sub_section_id = `${input_def.id}-section-${block_index++}`;
             var sub_section = new View(self.app, { inputs: inputs });
             repeat.add({
                 id: sub_section_id,
@@ -167,7 +165,7 @@ var View = Backbone.View.extend({
                 .html(input_def.help)
         );
         this.app.on("expand", input_id => {
-            portlet.$("#" + input_id).length > 0 && portlet.expand();
+            portlet.$(`#${input_id}`).length > 0 && portlet.expand();
         });
         this._append(portlet.$el, input_def.id);
     },

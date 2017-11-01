@@ -23,7 +23,7 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         if (!this.model) {
             return "";
         }
-        return "history-column-" + this.model.get("id");
+        return `history-column-${this.model.get("id")}`;
     },
 
     // ------------------------------------------------------------------------ set up
@@ -269,7 +269,7 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     // ------------------------------------------------------------------------ misc
     /** String rep */
     toString: function() {
-        return "HistoryViewColumn(" + (this.panel ? this.panel : "") + ")";
+        return `HistoryViewColumn(${this.panel ? this.panel : ""})`;
     }
 });
 
@@ -285,7 +285,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     /** Set up internals, history collection, and columns to display the history */
     initialize: function initialize(options) {
         options = options || {};
-        this.log(this + ".init", options);
+        this.log(`${this}.init`, options);
 
         // add the className here (since we gen. pass the el in options)
         this.$el.addClass(this.className);
@@ -616,7 +616,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                 // TODO: reconsider order in list-view._setUpItemViewListeners, dragstart (instead of here)
                 toCopy.reverse().forEach(content => {
                     queue.add({
-                        name: "copy-" + content.id,
+                        name: `copy-${content.id}`,
                         fn: function() {
                             return panel.model.contents.copy(content);
                         }
@@ -667,7 +667,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         speed = speed !== undefined ? speed : this.fxSpeed;
         var multipanel = this;
 
-        multipanel.log(multipanel + ".render");
+        multipanel.log(`${multipanel}.render`);
         multipanel.$el.html(multipanel.mainTemplate(multipanel));
         multipanel.renderColumns(speed);
 
@@ -818,11 +818,9 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     /** Include deleted histories in the collection */
     toggleDeletedHistories: function(show) {
         if (show) {
-            window.location =
-                Galaxy.root +
-                "history/view_multiple?include_deleted_histories=True";
+            window.location = `${Galaxy.root}history/view_multiple?include_deleted_histories=True`;
         } else {
-            window.location = Galaxy.root + "history/view_multiple";
+            window.location = `${Galaxy.root}history/view_multiple`;
         }
     },
 
@@ -1080,11 +1078,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     // ------------------------------------------------------------------------ misc
     /** String rep */
     toString: function() {
-        return (
-            "MultiPanelColumns(" +
-            (this.columns ? this.columns.length : 0) +
-            ")"
-        );
+        return `MultiPanelColumns(${this.columns ? this.columns.length : 0})`;
     },
 
     // ------------------------------------------------------------------------ templates
@@ -1147,7 +1141,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             '<div class="more-options">',
             '<div class="order btn-group">',
             '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
-            _l("Order histories by") + " ",
+            `${_l("Order histories by")} `,
             '<span class="current-order"><%- view.orderDescriptions[ view.collection.order ] %></span> ',
             '<span class="caret"></span>',
             "</button>",

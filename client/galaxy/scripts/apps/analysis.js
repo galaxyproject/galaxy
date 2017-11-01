@@ -103,8 +103,9 @@ window.app = function app(options, bootstrapped) {
         show_visualizations_edit: function() {
             this.page.display(
                 new FormWrapper.View({
-                    url:
-                        "visualization/edit?id=" + QueryStringParsing.get("id"),
+                    url: `visualization/edit?id=${QueryStringParsing.get(
+                        "id"
+                    )}`,
                     redirect: "visualizations/list"
                 })
             );
@@ -113,7 +114,7 @@ window.app = function app(options, bootstrapped) {
         show_workflows_published: function() {
             this.page.display(
                 new GridView({
-                    url_base: Galaxy.root + "workflow/list_published",
+                    url_base: `${Galaxy.root}workflow/list_published`,
                     dict_format: true
                 })
             );
@@ -126,7 +127,7 @@ window.app = function app(options, bootstrapped) {
         show_histories_rename: function() {
             this.page.display(
                 new FormWrapper.View({
-                    url: "history/rename?id=" + QueryStringParsing.get("id"),
+                    url: `history/rename?id=${QueryStringParsing.get("id")}`,
                     redirect: "histories/list"
                 })
             );
@@ -135,9 +136,9 @@ window.app = function app(options, bootstrapped) {
         show_histories_permissions: function() {
             this.page.display(
                 new FormWrapper.View({
-                    url:
-                        "history/permissions?id=" +
-                        QueryStringParsing.get("id"),
+                    url: `history/permissions?id=${QueryStringParsing.get(
+                        "id"
+                    )}`,
                     redirect: "histories/list"
                 })
             );
@@ -146,7 +147,7 @@ window.app = function app(options, bootstrapped) {
         show_datasets: function() {
             this.page.display(
                 new GridView({
-                    url_base: Galaxy.root + "dataset/list",
+                    url_base: `${Galaxy.root}dataset/list`,
                     dict_format: true
                 })
             );
@@ -174,7 +175,7 @@ window.app = function app(options, bootstrapped) {
         show_pages_edit: function() {
             this.page.display(
                 new FormWrapper.View({
-                    url: "page/edit?id=" + QueryStringParsing.get("id"),
+                    url: `page/edit?id=${QueryStringParsing.get("id")}`,
                     redirect: "pages/list"
                 })
             );
@@ -233,7 +234,7 @@ window.app = function app(options, bootstrapped) {
                     this._loadWorkflow();
                     // load the center iframe with controller.action: galaxy.org/?m_c=history&m_a=list -> history/list
                 } else if (params.m_c) {
-                    this._loadCenterIframe(params.m_c + "/" + params.m_a);
+                    this._loadCenterIframe(`${params.m_c}/${params.m_a}`);
                     // show the workflow run form
                 } else {
                     this._loadCenterIframe("welcome");
@@ -259,11 +260,9 @@ window.app = function app(options, bootstrapped) {
         _loadWorkflow: function() {
             var self = this;
             Utils.get({
-                url:
-                    Galaxy.root +
-                    "api/workflows/" +
-                    Utils.getQueryString("id") +
-                    "/download?style=run",
+                url: `${Galaxy.root}api/workflows/${Utils.getQueryString(
+                    "id"
+                )}/download?style=run`,
                 success: function(response) {
                     self.page.display(new ToolFormComposite.View(response));
                 },

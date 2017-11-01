@@ -46,7 +46,7 @@ export default Backbone.Model.extend({
                 : this._fieldText(input_def);
             Galaxy.emit.debug(
                 "form-parameters::_addRow()",
-                "Auto matched field type (" + input_def.type + ")."
+                `Auto matched field type (${input_def.type}).`
             );
         }
         input_def.value === undefined && (input_def.value = null);
@@ -57,7 +57,7 @@ export default Backbone.Model.extend({
     /** Data input field */
     _fieldData: function(input_def) {
         return new SelectContent.View({
-            id: "field-" + input_def.id,
+            id: `field-${input_def.id}`,
             extensions: input_def.extensions,
             optional: input_def.optional,
             multiple: input_def.multiple,
@@ -105,7 +105,7 @@ export default Backbone.Model.extend({
 
         // create select field
         return new SelectClass.View({
-            id: "field-" + input_def.id,
+            id: `field-${input_def.id}`,
             data: data,
             error_text: input_def.error_text || "No options available",
             readonly: input_def.readonly,
@@ -126,7 +126,7 @@ export default Backbone.Model.extend({
 
         // create drill down field
         return new Ui.Drilldown.View({
-            id: "field-" + input_def.id,
+            id: `field-${input_def.id}`,
             data: input_def.options,
             display: input_def.display,
             optional: input_def.optional,
@@ -157,7 +157,7 @@ export default Backbone.Model.extend({
         }
         // create input element
         return new Ui.Input({
-            id: "field-" + input_def.id,
+            id: `field-${input_def.id}`,
             type: input_def.type,
             area: input_def.area,
             readonly: input_def.readonly,
@@ -170,7 +170,7 @@ export default Backbone.Model.extend({
     /** Slider field */
     _fieldSlider: function(input_def) {
         return new Ui.Slider.View({
-            id: "field-" + input_def.id,
+            id: `field-${input_def.id}`,
             precise: input_def.type == "float",
             is_workflow: input_def.is_workflow,
             min: input_def.min,
@@ -182,7 +182,7 @@ export default Backbone.Model.extend({
     /** Hidden field */
     _fieldHidden: function(input_def) {
         return new Ui.Hidden({
-            id: "field-" + input_def.id,
+            id: `field-${input_def.id}`,
             info: input_def.info
         });
     },
@@ -190,7 +190,7 @@ export default Backbone.Model.extend({
     /** Boolean field */
     _fieldBoolean: function(input_def) {
         return new Ui.RadioButton.View({
-            id: "field-" + input_def.id,
+            id: `field-${input_def.id}`,
             data: [
                 { label: "Yes", value: "true" },
                 { label: "No", value: "false" }
@@ -202,7 +202,7 @@ export default Backbone.Model.extend({
     /** Color picker field */
     _fieldColor: function(input_def) {
         return new ColorPicker({
-            id: "field-" + input_def.id,
+            id: `field-${input_def.id}`,
             onchange: input_def.onchange
         });
     },
@@ -210,7 +210,7 @@ export default Backbone.Model.extend({
     /** Library dataset field */
     _fieldLibrary: function(input_def) {
         return new SelectLibrary.View({
-            id: "field-" + input_def.id,
+            id: `field-${input_def.id}`,
             optional: input_def.optional,
             multiple: input_def.multiple,
             onchange: input_def.onchange
@@ -220,7 +220,7 @@ export default Backbone.Model.extend({
     /** FTP file field */
     _fieldFtp: function(input_def) {
         return new SelectFtp.View({
-            id: "field-" + input_def.id,
+            id: `field-${input_def.id}`,
             optional: input_def.optional,
             multiple: input_def.multiple,
             onchange: input_def.onchange
@@ -232,7 +232,7 @@ export default Backbone.Model.extend({
     _fieldGenomeSpace: function(input_def) {
         var self = this;
         return new SelectGenomeSpace.View({
-            id: "field-" + input_def.id,
+            id: `field-${input_def.id}`,
             onchange: function() {
                 self.app.trigger("change");
             }
@@ -242,7 +242,7 @@ export default Backbone.Model.extend({
     /** Upload file field */
     _fieldUpload: function(input_def) {
         return new Ui.Upload({
-            id: "field-" + input_def.id,
+            id: `field-${input_def.id}`,
             onchange: input_def.onchange
         });
     }

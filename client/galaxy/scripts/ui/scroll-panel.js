@@ -77,7 +77,7 @@ $.ui.plugin.add("draggable", "scrollPanel", {
             mouse_y + close_dist > max_vis_y
         ) {
             var t = Math.min(nudge, panel_pos.top - p_min_x);
-            panel.css("top", panel_pos.top - t + "px");
+            panel.css("top", `${panel_pos.top - t}px`);
             // Firefox sometimes moves by less, so we need to check. Yuck.
             var amount_moved = panel_pos.top - panel.position().top;
             instance.offset.parent.top -= amount_moved;

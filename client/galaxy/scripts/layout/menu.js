@@ -258,8 +258,9 @@ var Collection = Backbone.Collection.extend({
                 tooltip: _l("Account and saved data"),
                 menu: [
                     {
-                        title:
-                            _l("Logged in as") + " " + Galaxy.user.get("email")
+                        title: `${_l("Logged in as")} ${Galaxy.user.get(
+                            "email"
+                        )}`
                     },
                     {
                         title: _l("Preferences"),
@@ -271,9 +272,7 @@ var Collection = Backbone.Collection.extend({
                     },
                     {
                         title: _l("Logout"),
-                        url:
-                            "user/logout?session_csrf_token=" +
-                            Galaxy.session_csrf_token,
+                        url: `user/logout?session_csrf_token=${Galaxy.session_csrf_token}`,
                         target: "_top",
                         divider: true
                     },
@@ -340,7 +339,7 @@ var Tab = Backbone.View.extend({
             .addClass(this.model.get("cls"))
             .addClass(
                 this.model.get("icon") &&
-                    "dropdown-icon fa " + this.model.get("icon")
+                    `dropdown-icon fa ${this.model.get("icon")}`
             )
             .addClass(this.model.get("toggle") && "toggle")
             .attr("target", this.model.get("target"))
@@ -439,12 +438,13 @@ var Tab = Backbone.View.extend({
                 .popover({
                     html: true,
                     placement: "bottom",
-                    content:
-                        "Please " +
-                        buildLink("login", "user/login?use_panels=True") +
-                        " or " +
-                        buildLink("register", "user/create?use_panels=True") +
-                        " to use this feature."
+                    content: `Please ${buildLink(
+                        "login",
+                        "user/login?use_panels=True"
+                    )} or ${buildLink(
+                        "register",
+                        "user/create?use_panels=True"
+                    )} to use this feature.`
                 })
                 .popover("show");
             setTimeout(() => {

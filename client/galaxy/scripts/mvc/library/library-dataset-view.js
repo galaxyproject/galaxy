@@ -77,8 +77,8 @@ var LibraryDatasetView = Backbone.View.extend({
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(
-                        response.responseJSON.err_msg +
-                            " Click this to go back.",
+                        `${response.responseJSON
+                            .err_msg} Click this to go back.`,
                         "",
                         {
                             onclick: function() {
@@ -122,8 +122,8 @@ var LibraryDatasetView = Backbone.View.extend({
             this.ldda = new mod_library_model.Ldda({
                 id: this.options.ldda_id
             });
-            this.ldda.url =
-                this.ldda.urlRoot + this.model.id + "/versions/" + this.ldda.id;
+            this.ldda.url = `${this.ldda.urlRoot +
+                this.model.id}/versions/${this.ldda.id}`;
             this.ldda.fetch({
                 success: function() {
                     that.renderVersion();
@@ -159,7 +159,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     downloadDataset: function() {
-        var url = Galaxy.root + "api/libraries/datasets/download/uncompressed";
+        var url = `${Galaxy.root}api/libraries/datasets/download/uncompressed`;
         var data = { ld_ids: this.id };
         this.processDownload(url, data);
     },
@@ -173,22 +173,12 @@ var LibraryDatasetView = Backbone.View.extend({
             var inputs = "";
             $.each(data.split("&"), function() {
                 var pair = this.split("=");
-                inputs +=
-                    '<input type="hidden" name="' +
-                    pair[0] +
-                    '" value="' +
-                    pair[1] +
-                    '" />';
+                inputs += `<input type="hidden" name="${pair[0]}" value="${pair[1]}" />`;
             });
             //send request
             $(
-                '<form action="' +
-                    url +
-                    '" method="' +
-                    (method || "post") +
-                    '">' +
-                    inputs +
-                    "</form>"
+                `<form action="${url}" method="${method ||
+                    "post"}">${inputs}</form>`
             )
                 .appendTo("body")
                 .submit()
@@ -252,7 +242,7 @@ var LibraryDatasetView = Backbone.View.extend({
         var new_history_name = this.modal.$("input[name=history_name]").val();
         var that = this;
         if (new_history_name !== "") {
-            $.post(Galaxy.root + "api/histories", {
+            $.post(`${Galaxy.root}api/histories`, {
                 name: new_history_name
             })
                 .done(new_history => {
@@ -275,10 +265,10 @@ var LibraryDatasetView = Backbone.View.extend({
 
     processImportToHistory: function(history_id) {
         var historyItem = new mod_library_model.HistoryItem();
-        historyItem.url = historyItem.urlRoot + history_id + "/contents";
+        historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
         // set the used history as current so user will see the last one
         // that he imported into in the history panel on the 'analysis' page
-        jQuery.getJSON(Galaxy.root + "history/set_as_current?id=" + history_id);
+        jQuery.getJSON(`${Galaxy.root}history/set_as_current?id=${history_id}`);
         // save the dataset into selected history
         historyItem.save(
             { content: this.id, source: "library" },
@@ -298,8 +288,8 @@ var LibraryDatasetView = Backbone.View.extend({
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(
-                            "Dataset not imported. " +
-                                response.responseJSON.err_msg
+                            `Dataset not imported. ${response.responseJSON
+                                .err_msg}`
                         );
                     } else {
                         mod_toastr.error(
@@ -333,10 +323,7 @@ var LibraryDatasetView = Backbone.View.extend({
             })
         );
         $.get(
-            Galaxy.root +
-                "api/libraries/datasets/" +
-                self.id +
-                "/permissions?scope=current"
+            `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?scope=current`
         )
             .done(fetched_permissions => {
                 self.prepareSelectBoxes({
@@ -358,9 +345,9 @@ var LibraryDatasetView = Backbone.View.extend({
         for (var i = 0; i < role_list.length; i++) {
             // Replace the : and , in role's name since these are select2 separators for initialData
             selected_roles.push(
-                role_list[i][1] +
-                    ":" +
-                    role_list[i][0].replace(":", " ").replace(",", " &")
+                `${role_list[i][1]}:${role_list[i][0]
+                    .replace(":", " ")
+                    .replace(",", " &")}`
             );
         }
         return selected_roles;
@@ -400,7 +387,7 @@ var LibraryDatasetView = Backbone.View.extend({
             multiple: true,
             placeholder: "Click to select a role",
             formatResult: function roleFormatResult(role) {
-                return role.name + " type: " + role.type;
+                return `${role.name} type: ${role.type}`;
             },
             formatSelection: function roleFormatSelection(role) {
                 return role.name;
@@ -421,15 +408,12 @@ var LibraryDatasetView = Backbone.View.extend({
             },
             dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
         };
-        select_options.container = this.$el.find("#" + options.selector);
+        select_options.container = this.$el.find(`#${options.selector}`);
         select_options.css = options.selector;
         select_options.initialData = options.initialData.join(",");
         select_options.ajax = {
-            url:
-                Galaxy.root +
-                "api/libraries/datasets/" +
-                this.id +
-                "/permissions?scope=available",
+            url: `${Galaxy.root}api/libraries/datasets/${this
+                .id}/permissions?scope=available`,
             dataType: "json",
             quietMillis: 100,
             data: function(term, page) {
@@ -524,10 +508,7 @@ var LibraryDatasetView = Backbone.View.extend({
     makeDatasetPrivate: function() {
         var self = this;
         $.post(
-            Galaxy.root +
-                "api/libraries/datasets/" +
-                self.id +
-                "/permissions?action=make_private"
+            `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=make_private`
         )
             .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: false });
@@ -546,10 +527,7 @@ var LibraryDatasetView = Backbone.View.extend({
     removeDatasetRestrictions: function() {
         var self = this;
         $.post(
-            Galaxy.root +
-                "api/libraries/datasets/" +
-                self.id +
-                "/permissions?action=remove_restrictions"
+            `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`
         )
             .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: true });
@@ -593,10 +571,7 @@ var LibraryDatasetView = Backbone.View.extend({
             this.modifySelectObject.$el.select2("data")
         );
         $.post(
-            Galaxy.root +
-                "api/libraries/datasets/" +
-                self.id +
-                "/permissions?action=set_permissions",
+            `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=set_permissions`,
             {
                 "access_ids[]": access_ids,
                 "manage_ids[]": manage_ids,
@@ -624,7 +599,7 @@ var LibraryDatasetView = Backbone.View.extend({
         var that = this;
         if (this.list_genomes.length == 0) {
             mod_utils.get({
-                url: Galaxy.root + "api/datatypes?extension_only=False",
+                url: `${Galaxy.root}api/datatypes?extension_only=False`,
                 success: function(datatypes) {
                     for (var key in datatypes) {
                         that.list_extensions.push({
@@ -643,7 +618,7 @@ var LibraryDatasetView = Backbone.View.extend({
         }
         if (this.list_extensions.length == 0) {
             mod_utils.get({
-                url: Galaxy.root + "api/genomes",
+                url: `${Galaxy.root}api/genomes`,
                 success: function(genomes) {
                     for (var key in genomes) {
                         that.list_genomes.push({

@@ -24,7 +24,7 @@ function buildHDCASave(_super) {
     return function _save(attributes, options) {
         if (this.isNew()) {
             options = options || {};
-            options.url = this.urlRoot + this.get("history_id") + "/contents";
+            options.url = `${this.urlRoot + this.get("history_id")}/contents`;
             attributes = attributes || {};
             attributes.type = "dataset_collection";
         }
@@ -48,7 +48,7 @@ var HistoryListDatasetCollection = ListDC.extend(hcontentMixin).extend(
 
         /** String representation. */
         toString: function() {
-            return "History" + ListDC.prototype.toString.call(this);
+            return `History${ListDC.prototype.toString.call(this)}`;
         }
     }
 );
@@ -70,7 +70,7 @@ var HistoryPairDatasetCollection = PairDC.extend(hcontentMixin).extend(
 
         /** String representation. */
         toString: function() {
-            return "History" + PairDC.prototype.toString.call(this);
+            return `History${PairDC.prototype.toString.call(this)}`;
         }
     }
 );
@@ -91,7 +91,7 @@ var HistoryListPairedDatasetCollection = ListPairedDC.extend(
 
     /** String representation. */
     toString: function() {
-        return "History" + ListPairedDC.prototype.toString.call(this);
+        return `History${ListPairedDC.prototype.toString.call(this)}`;
     }
 });
 

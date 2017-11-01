@@ -43,7 +43,7 @@ var CustomToJSON = {
 var select_datasets = (filters, success_fn) => {
     // history dataset selection tab
     var history_grid = new GridView({
-        url_base: Galaxy.root + "visualization/list_history_datasets",
+        url_base: `${Galaxy.root}visualization/list_history_datasets`,
         filters: filters,
         dict_format: true,
         embedded: true
@@ -51,7 +51,7 @@ var select_datasets = (filters, success_fn) => {
 
     // library dataset selection tab
     var library_grid = new GridView({
-        url_base: Galaxy.root + "visualization/list_library_datasets",
+        url_base: `${Galaxy.root}visualization/list_library_datasets`,
         dict_format: true,
         embedded: true
     });
@@ -85,7 +85,7 @@ var select_datasets = (filters, success_fn) => {
                     .each(function() {
                         window.console.log($(this).val());
                         requests[requests.length] = $.ajax({
-                            url: Galaxy.root + "api/datasets/" + $(this).val(),
+                            url: `${Galaxy.root}api/datasets/${$(this).val()}`,
                             dataType: "json",
                             data: {
                                 data_type: "track_config",
@@ -148,7 +148,7 @@ _.extend(CanvasManager.prototype, {
         var patterns = this.patterns;
         var dummy_context = this.dummy_context;
         var image = new Image();
-        image.src = Galaxy.root + "static/images" + path;
+        image.src = `${Galaxy.root}static/images${path}`;
         image.onload = () => {
             patterns[key] = dummy_context.createPattern(image, "repeat");
         };
@@ -849,23 +849,17 @@ var GenomeRegion = Backbone.Model.extend(
             }
 
             // Keep a copy of region's string value for fast lookup.
-            this.attributes.str_val =
-                this.get("chrom") +
-                ":" +
-                this.get("start") +
-                "-" +
-                this.get("end");
+            this.attributes.str_val = `${this.get("chrom")}:${this.get(
+                "start"
+            )}-${this.get("end")}`;
 
             // Set str_val on attribute change.
             this.on(
                 "change",
                 function() {
-                    this.attributes.str_val =
-                        this.get("chrom") +
-                        ":" +
-                        this.get("start") +
-                        "-" +
-                        this.get("end");
+                    this.attributes.str_val = `${this.get("chrom")}:${this.get(
+                        "start"
+                    )}-${this.get("end")}`;
                 },
                 this
             );
@@ -1136,7 +1130,7 @@ var Visualization = Backbone.Model.extend({
         type: ""
     },
 
-    urlRoot: Galaxy.root + "api/visualizations",
+    urlRoot: `${Galaxy.root}api/visualizations`,
 
     /**
      * POSTs visualization's JSON to its URL using the parameter 'vis_json'

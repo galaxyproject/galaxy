@@ -17,14 +17,10 @@ var View = Backbone.View.extend({
         var history_id =
             Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
         this.model = new Backbone.Model();
-        this.model.url =
-            Galaxy.root +
-            "api/histories/" +
-            history_id +
-            "/custom_builds_metadata";
+        this.model.url = `${Galaxy.root}api/histories/${history_id}/custom_builds_metadata`;
         this.collection = new Collection();
-        this.collection.url =
-            Galaxy.root + "api/users/" + Galaxy.user.id + "/custom_builds";
+        this.collection.url = `${Galaxy.root}api/users/${Galaxy.user
+            .id}/custom_builds`;
         this.message = new Ui.Message({});
         this.installed_builds = new Ui.Select.View({
             optional: true,

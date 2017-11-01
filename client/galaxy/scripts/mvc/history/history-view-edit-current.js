@@ -21,7 +21,7 @@ var HistoryViewPrefs = BASE_MVC.SessionStorageModel.extend(
             scrollPosition: 0
         },
         toString: function() {
-            return "HistoryViewPrefs(" + JSON.stringify(this.toJSON()) + ")";
+            return `HistoryViewPrefs(${JSON.stringify(this.toJSON())})`;
         }
     }
 );
@@ -46,7 +46,7 @@ var _super = HISTORY_VIEW_EDIT.HistoryViewEdit;
  */
 var CurrentHistoryView = _super.extend(
     /** @lends CurrentHistoryView.prototype */ {
-        className: _super.prototype.className + " current-history-panel",
+        className: `${_super.prototype.className} current-history-panel`,
 
         /** override to use drilldown (and not foldout) for how collections are displayed */
         HDCAViewClass: _super.prototype.HDCAViewClass.extend({
@@ -111,7 +111,7 @@ var CurrentHistoryView = _super.extend(
         /** (re-)loads the user's current history & contents w/ details */
         loadCurrentHistory: function() {
             return this.loadHistory(null, {
-                url: Galaxy.root + "history/current_history_json"
+                url: `${Galaxy.root}history/current_history_json`
             });
         },
 
@@ -126,7 +126,7 @@ var CurrentHistoryView = _super.extend(
                 return $.when();
             }
             return this.loadHistory(historyId, {
-                url: Galaxy.root + "history/set_as_current?id=" + historyId
+                url: `${Galaxy.root}history/set_as_current?id=${historyId}`
             });
         },
 
@@ -141,7 +141,7 @@ var CurrentHistoryView = _super.extend(
                 return $.when();
             }
             return this.loadHistory(null, {
-                url: Galaxy.root + "history/create_new_current"
+                url: `${Galaxy.root}history/create_new_current`
             });
         },
 
@@ -430,7 +430,7 @@ var CurrentHistoryView = _super.extend(
                     });
                     // need to type mangle to go from web route to history contents
                     this._setCurrentContentById(
-                        hdaId ? "dataset-" + hdaId : null
+                        hdaId ? `dataset-${hdaId}` : null
                     );
                 },
                 // when the center panel is given a new view, clear the current indicator
@@ -527,11 +527,9 @@ var CurrentHistoryView = _super.extend(
 
         /** Return a string rep of the history */
         toString: function() {
-            return (
-                "CurrentHistoryView(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `CurrentHistoryView(${this.model
+                ? this.model.get("name")
+                : ""})`;
         }
     }
 );

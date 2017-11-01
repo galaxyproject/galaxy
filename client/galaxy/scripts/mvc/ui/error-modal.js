@@ -65,11 +65,7 @@ function _errorModal(message, title, details) {
                 $("<pre/>").text(JSON.stringify(details, null, "  "))
             ]);
 
-        $(
-            '<button id="button-1" class="pull-left">' +
-                _l("Details") +
-                "</button>"
-        )
+        $(`<button id="button-1" class="pull-left">${_l("Details")}</button>`)
             .appendTo(Galaxy.modal.$(".buttons"))
             .click(() => {
                 Galaxy.modal.$(".error-details").toggle();
@@ -90,7 +86,7 @@ function errorModal(message, title, details) {
         return _errorModal(message, title, details);
     }
 
-    alert(title + "\n\n" + message);
+    alert(`${title}\n\n${message}`);
     console.log("error details:", JSON.stringify(details));
 }
 
@@ -109,11 +105,9 @@ function offlineErrorModal() {
 /** 502 messages that should be displayed when galaxy is restarting */
 function badGatewayErrorModal() {
     return errorModal(
-        _l(
+        `${_l(
             "Galaxy is currently unreachable. Please try again in a few minutes."
-        ) +
-            " " +
-            CONTACT_MSG,
+        )} ${CONTACT_MSG}`,
         _l("Cannot connect to Galaxy")
     );
 }
@@ -122,7 +116,7 @@ function badGatewayErrorModal() {
 /** display a modal (with details) about a failed Backbone ajax operation */
 function ajaxErrorModal(model, xhr, options, message, title) {
     message = message || DEFAULT_AJAX_ERR_MSG;
-    message += " " + CONTACT_MSG;
+    message += ` ${CONTACT_MSG}`;
     title = title || _l("An error occurred");
     var details = _ajaxDetails(model, xhr, options);
     return errorModal(message, title, details);
@@ -142,7 +136,7 @@ function _ajaxDetails(model, xhr, options) {
         url: _.result(Galaxy.lastAjax, "url"),
         data: _.result(Galaxy.lastAjax, "data"),
         // backbone stuff (auto-redacting email for user)
-        model: _.result(model, "toJSON", model + ""),
+        model: _.result(model, "toJSON", `${model}`),
         user: _.omit(_.result(Galaxy.user, "toJSON"), "email")
     };
 }

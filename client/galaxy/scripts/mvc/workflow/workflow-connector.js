@@ -72,8 +72,8 @@ $.extend(Connector.prototype, {
         var canvas_width = canvas_max_x - canvas_min_x + 2 * canvas_extra;
         var canvas_height = canvas_max_y - canvas_min_y + 2 * canvas_extra;
         // Place the canvas
-        this.canvas.style.left = canvas_left + "px";
-        this.canvas.style.top = canvas_top + "px";
+        this.canvas.style.left = `${canvas_left}px`;
+        this.canvas.style.top = `${canvas_top}px`;
         this.canvas.setAttribute("width", canvas_width);
         this.canvas.setAttribute("height", canvas_height);
         // Adjust points to be relative to the canvas

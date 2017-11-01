@@ -71,10 +71,10 @@ var LibraryRouter = Backbone.Router.extend({
         var url = Backbone.history.getFragment();
         //prepend slash
         if (!/^\//.test(url) && url != "") {
-            url = "/" + url;
+            url = `/${url}`;
         }
         if (typeof ga !== "undefined") {
-            ga("send", "pageview", Galaxy.root + "library/list" + url);
+            ga("send", "pageview", `${Galaxy.root}library/list${url}`);
         }
     }
 });
@@ -193,13 +193,13 @@ var GalaxyLibrary = Backbone.View.extend({
                     "You must select at least one dataset to download"
                 );
                 Galaxy.libraries.library_router.navigate(
-                    "folders/" + folder_id,
+                    `folders/${folder_id}`,
                     { trigger: true, replace: true }
                 );
             } else {
                 Galaxy.libraries.folderToolbarView.download(folder_id, format);
                 Galaxy.libraries.library_router.navigate(
-                    "folders/" + folder_id,
+                    `folders/${folder_id}`,
                     { trigger: false, replace: true }
                 );
             }

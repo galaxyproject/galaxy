@@ -5,11 +5,7 @@
 import _l from "utils/localization";
 /** Builds a basic iframe */
 function iframe(src) {
-    return (
-        '<iframe src="' +
-        src +
-        '" frameborder="0" style="width: 100%; height: 100%;"/>'
-    );
+    return `<iframe src="${src}" frameborder="0" style="width: 100%; height: 100%;"/>`;
 }
 
 /** Traverse through json */
@@ -118,7 +114,7 @@ function textify(lst) {
         var lst = lst.toString().replace(/,/g, ", ");
         var pos = lst.lastIndexOf(", ");
         if (pos != -1) {
-            lst = lst.substr(0, pos) + " or " + lst.substr(pos + 2);
+            lst = `${lst.substr(0, pos)} or ${lst.substr(pos + 2)}`;
         }
         return lst;
     }
@@ -138,7 +134,7 @@ function get(options) {
     if (options.cache && top.__utils__get__[cache_key]) {
         options.success && options.success(top.__utils__get__[cache_key]);
         window.console.debug(
-            "utils.js::get() - Fetching from cache [" + options.url + "]."
+            `utils.js::get() - Fetching from cache [${options.url}].`
         );
     } else {
         request({
@@ -217,7 +213,7 @@ function request(options) {
      * @param{String}   name        - CSS property
      */
 function cssGetAttribute(classname, name) {
-    var el = $('<div class="' + classname + '"></div>');
+    var el = $(`<div class="${classname}"></div>`);
     el.appendTo(":eq(0)");
     var value = el.css(name);
     el.remove();
@@ -229,8 +225,8 @@ function cssGetAttribute(classname, name) {
      * @param{String}   url - Url of CSS file
      */
 function cssLoadFile(url) {
-    if (!$('link[href^="' + url + '"]').length) {
-        $('<link href="' + Galaxy.root + url + '" rel="stylesheet">').appendTo(
+    if (!$(`link[href^="${url}"]`).length) {
+        $(`<link href="${Galaxy.root}${url}" rel="stylesheet">`).appendTo(
             "head"
         );
     }
@@ -297,16 +293,16 @@ function bytesToString(size, normal_font, numberPlaces) {
     // return formatted string
     var rounded = unit == "b" ? size : roundToDecimalPlaces(size, numberPlaces);
     if (normal_font) {
-        return rounded + " " + unit;
+        return `${rounded} ${unit}`;
     } else {
-        return "<strong>" + rounded + "</strong> " + unit;
+        return `<strong>${rounded}</strong> ${unit}`;
     }
 }
 
 /** Create a unique id */
 function uid() {
     top.__utils__uid__ = top.__utils__uid__ || 0;
-    return "uid-" + top.__utils__uid__++;
+    return `uid-${top.__utils__uid__++}`;
 }
 
 /** Create a time stamp */
@@ -314,17 +310,8 @@ function time() {
     var d = new Date();
     var hours = (d.getHours() < 10 ? "0" : "") + d.getHours();
     var minutes = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
-    return (
-        d.getDate() +
-        "/" +
-        (d.getMonth() + 1) +
-        "/" +
-        d.getFullYear() +
-        ", " +
-        hours +
-        ":" +
-        minutes
-    );
+    return `${d.getDate()}/${d.getMonth() +
+        1}/${d.getFullYear()}, ${hours}:${minutes}`;
 }
 
 /** Append script and style tags to Galaxy main application */
@@ -348,9 +335,10 @@ function getQueryString(key) {
     return decodeURIComponent(
         window.location.search.replace(
             new RegExp(
-                "^(?:.*[&\\?]" +
-                    encodeURIComponent(key).replace(/[\.\+\*]/g, "\\$&") +
-                    "(?:\\=([^&]*))?)?.*$",
+                `^(?:.*[&\\?]${encodeURIComponent(key).replace(
+                    /[\.\+\*]/g,
+                    "\\$&"
+                )}(?:\\=([^&]*))?)?.*$`,
                 "i"
             ),
             "$1"
@@ -360,19 +348,13 @@ function getQueryString(key) {
 
 function setWindowTitle(title) {
     if (title) {
-        window.document.title =
-            "Galaxy " +
-            (window.Galaxy.config.brand
-                ? " | " + window.Galaxy.config.brand
-                : "") +
-            " | " +
-            _l(title);
+        window.document.title = `Galaxy ${window.Galaxy.config.brand
+            ? ` | ${window.Galaxy.config.brand}`
+            : ""} | ${_l(title)}`;
     } else {
-        window.document.title =
-            "Galaxy " +
-            (window.Galaxy.config.brand
-                ? " | " + window.Galaxy.config.brand
-                : "");
+        window.document.title = `Galaxy ${window.Galaxy.config.brand
+            ? ` | ${window.Galaxy.config.brand}`
+            : ""}`;
     }
 }
 

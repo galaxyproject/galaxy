@@ -11,7 +11,7 @@ var logNamespace = "workflow";
 var WorkflowItem = Backbone.Model.extend(baseMVC.LoggableMixin).extend({
     _logNamespace: logNamespace,
 
-    urlRoot: Galaxy.root + "api/workflows",
+    urlRoot: `${Galaxy.root}api/workflows`,
 
     toJSON: function() {
         // need to overwrite this as endpoint expects the 'workflow' key in payload
@@ -26,7 +26,7 @@ var WorkflowItem = Backbone.Model.extend(baseMVC.LoggableMixin).extend({
  */
 var WorkflowCollection = Backbone.Collection.extend({
     model: WorkflowItem,
-    url: Galaxy.root + "api/workflows"
+    url: `${Galaxy.root}api/workflows`
 });
 
 //==============================================================================

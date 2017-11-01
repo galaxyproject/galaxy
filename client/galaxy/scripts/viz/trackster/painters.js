@@ -281,7 +281,7 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
 
             var new_g = Math.round(pref_g + (255 - pref_g) * (1 - saturation));
             var new_b = Math.round(pref_b + (255 - pref_b) * (1 - saturation));
-            ctx.fillStyle = "rgb(" + new_r + "," + new_g + "," + new_b + ")";
+            ctx.fillStyle = `rgb(${new_r},${new_g},${new_b})`;
             ctx.fillRect(x_scaled, 0, delta_x_px, height_px);
         } else {
             // mode is Coverage/Line or Filled.
@@ -1386,7 +1386,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
             data = item.data;
             if (type === "text") {
                 ctx.save();
-                ctx.font = "bold " + ctx.font;
+                ctx.font = `bold ${ctx.font}`;
                 ctx.fillText(data[0], data[1], data[2]);
                 ctx.restore();
             } else if (type === "triangle") {
@@ -1675,25 +1675,18 @@ Color.prototype = {
     //
     toCSS: function() {
         if (this.alpha < 1.0) {
-            return (
-                "rgba(" +
-                this.rgb
-                    .map(c => Math.round(c))
-                    .concat(this.alpha)
-                    .join(", ") +
-                ")"
-            );
+            return `rgba(${this.rgb
+                .map(c => Math.round(c))
+                .concat(this.alpha)
+                .join(", ")})`;
         } else {
-            return (
-                "#" +
-                this.rgb
-                    .map(i => {
-                        i = Math.round(i);
-                        i = (i > 255 ? 255 : i < 0 ? 0 : i).toString(16);
-                        return i.length === 1 ? "0" + i : i;
-                    })
-                    .join("")
-            );
+            return `#${this.rgb
+                .map(i => {
+                    i = Math.round(i);
+                    i = (i > 255 ? 255 : i < 0 ? 0 : i).toString(16);
+                    return i.length === 1 ? `0${i}` : i;
+                })
+                .join("")}`;
         }
     },
 
@@ -1732,16 +1725,13 @@ Color.prototype = {
 
     toARGB: function() {
         var argb = [Math.round(this.alpha * 255)].concat(this.rgb);
-        return (
-            "#" +
-            argb
-                .map(i => {
-                    i = Math.round(i);
-                    i = (i > 255 ? 255 : i < 0 ? 0 : i).toString(16);
-                    return i.length === 1 ? "0" + i : i;
-                })
-                .join("")
-        );
+        return `#${argb
+            .map(i => {
+                i = Math.round(i);
+                i = (i > 255 ? 255 : i < 0 ? 0 : i).toString(16);
+                return i.length === 1 ? `0${i}` : i;
+            })
+            .join("")}`;
     },
 
     mix: function(color2, weight) {

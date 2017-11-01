@@ -54,7 +54,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             if (attributes.logger) {
                 this.logger = attributes.logger;
             }
-            this.log(this + ".initialize:", attributes);
+            this.log(`${this}.initialize:`, attributes);
 
             // ---- instance vars
             /** how quickly should jquery fx run? */
@@ -148,7 +148,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         /** listening for collection events */
         _setUpCollectionListeners: function() {
-            this.log(this + "._setUpCollectionListeners", this.collection);
+            this.log(`${this}._setUpCollectionListeners`, this.collection);
             this.stopListening(this.collection);
 
             // bubble up error events
@@ -188,7 +188,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         /** listening for sub-view events that bubble up with the 'view:' prefix */
         _setUpViewListeners: function() {
-            this.log(this + "._setUpViewListeners");
+            this.log(`${this}._setUpViewListeners`);
 
             // shift to select a range
             this.on({
@@ -218,7 +218,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
      *  @param {Number or String} speed   the speed of the render
      */
         render: function(speed) {
-            this.log(this + ".render", speed);
+            this.log(`${this}.render`, speed);
             var $newRender = this._buildNewRender();
             this._setUpBehaviors($newRender);
             this._queueNewRender($newRender, speed);
@@ -227,7 +227,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         /** Build a temp div containing the new children for the view's $el. */
         _buildNewRender: function() {
-            this.debug(this + "(ListPanel)._buildNewRender");
+            this.debug(`${this}(ListPanel)._buildNewRender`);
             var $newRender = $(this.templates.el({}, this));
             this._renderControls($newRender);
             this._renderTitle($newRender);
@@ -239,7 +239,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         /** Build a temp div containing the new children for the view's $el. */
         _renderControls: function($newRender) {
-            this.debug(this + "(ListPanel)._renderControls");
+            this.debug(`${this}(ListPanel)._renderControls`);
             var $controls = $(this.templates.controls({}, this));
             $newRender.find(".controls").replaceWith($controls);
             return $controls;
@@ -383,7 +383,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
         renderItems: function($whereTo) {
             $whereTo = $whereTo || this.$el;
             var panel = this;
-            panel.log(this + ".renderItems", $whereTo);
+            panel.log(`${this}.renderItems`, $whereTo);
 
             var $list = panel.$list($whereTo);
             panel.freeViews();
@@ -485,7 +485,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             // send all events to the panel, re-namspaceing them with the view prefix
             this.listenTo(view, "all", function() {
                 var args = Array.prototype.slice.call(arguments, 0);
-                args[0] = "view:" + args[0];
+                args[0] = `view:${args[0]}`;
                 panel.trigger.apply(panel, args);
             });
 
@@ -900,7 +900,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
         // ------------------------------------------------------------------------ misc
         /** Return a string rep of the panel */
         toString: function() {
-            return "ListPanel(" + this.collection + ")";
+            return `ListPanel(${this.collection})`;
         }
     }
 );
@@ -980,7 +980,7 @@ var ModelListPanel = ListPanel.extend({
      */
     setModel: function(model, attributes) {
         attributes = attributes || {};
-        this.debug(this + ".setModel:", model, attributes);
+        this.debug(`${this}.setModel:`, model, attributes);
 
         this.freeModel();
         this.freeViews();
@@ -1028,7 +1028,7 @@ var ModelListPanel = ListPanel.extend({
     /** listening for model events */
     _setUpModelListeners: function() {
         // override
-        this.log(this + "._setUpModelListeners", this.model);
+        this.log(`${this}._setUpModelListeners`, this.model);
         // bounce model errors up to the panel
         this.listenTo(
             this.model,
@@ -1045,7 +1045,7 @@ var ModelListPanel = ListPanel.extend({
         // debugging
         if (this.logger) {
             this.listenTo(this.model, "all", function(event) {
-                this.info(this + "(model)", event, arguments);
+                this.info(`${this}(model)`, event, arguments);
             });
         }
         return this;
@@ -1054,7 +1054,7 @@ var ModelListPanel = ListPanel.extend({
     /** Build a temp div containing the new children for the view's $el.
      */
     _renderControls: function($newRender) {
-        this.debug(this + "(ModelListPanel)._renderControls");
+        this.debug(`${this}(ModelListPanel)._renderControls`);
         var json = this.model ? this.model.toJSON() : {};
         var $controls = $(this.templates.controls(json, this));
         $newRender.find(".controls").replaceWith($controls);
@@ -1064,7 +1064,7 @@ var ModelListPanel = ListPanel.extend({
     // ------------------------------------------------------------------------ misc
     /** Return a string rep of the panel */
     toString: function() {
-        return "ModelListPanel(" + this.model + ")";
+        return `ModelListPanel(${this.model})`;
     }
 });
 

@@ -87,11 +87,9 @@ var CollectionViewEdit = _super.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return (
-                "CollectionViewEdit(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `CollectionViewEdit(${this.model
+                ? this.model.get("name")
+                : ""})`;
         }
     }
 );
@@ -107,11 +105,9 @@ var ListCollectionViewEdit = CollectionViewEdit.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return (
-                "ListCollectionViewEdit(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `ListCollectionViewEdit(${this.model
+                ? this.model.get("name")
+                : ""})`;
         }
     }
 );
@@ -123,11 +119,9 @@ var PairCollectionViewEdit = ListCollectionViewEdit.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return (
-                "PairCollectionViewEdit(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `PairCollectionViewEdit(${this.model
+                ? this.model.get("name")
+                : ""})`;
         }
     }
 );
@@ -146,11 +140,9 @@ var NestedPairCollectionViewEdit = PairCollectionViewEdit.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return (
-                "NestedPairCollectionViewEdit(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `NestedPairCollectionViewEdit(${this.model
+                ? this.model.get("name")
+                : ""})`;
         }
     }
 );
@@ -168,11 +160,9 @@ var ListOfPairsCollectionViewEdit = CollectionViewEdit.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return (
-                "ListOfPairsCollectionViewEdit(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `ListOfPairsCollectionViewEdit(${this.model
+                ? this.model.get("name")
+                : ""})`;
         }
     }
 );
@@ -190,11 +180,9 @@ var ListOfListsCollectionViewEdit = CollectionViewEdit.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return (
-                "ListOfListsCollectionViewEdit(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `ListOfListsCollectionViewEdit(${this.model
+                ? this.model.get("name")
+                : ""})`;
         }
     }
 );

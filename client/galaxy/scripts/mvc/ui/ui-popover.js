@@ -25,7 +25,7 @@ var View = Backbone.View.extend({
 
         // add event to hide if click is outside of popup and not on container
         var self = this;
-        $("body").on("mousedown." + this.uid, e => {
+        $("body").on(`mousedown.${this.uid}`, e => {
             // the 'is' for buttons that trigger popups
             // the 'has' for icons within a button that triggers a popup
             self.visible &&
@@ -107,7 +107,7 @@ var View = Backbone.View.extend({
      * Remove popover
     */
     remove: function() {
-        $("body").off("mousedown." + this.uid);
+        $("body").off(`mousedown.${this.uid}`);
         this.$el.remove();
     },
 

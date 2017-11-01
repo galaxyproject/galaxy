@@ -131,7 +131,7 @@ var get_random_color = colors => {
     } while (!ok && num_tries <= 10);
 
     // Add 0x1000000 to left pad number with 0s.
-    return "#" + (0x1000000 + new_color).toString(16).substr(1, 6);
+    return `#${(0x1000000 + new_color).toString(16).substr(1, 6)}`;
 };
 
 export default {

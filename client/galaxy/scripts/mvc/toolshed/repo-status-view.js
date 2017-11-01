@@ -8,8 +8,9 @@ var ToolShedRepoStatusView = Backbone.View.extend({
         this.options = _.defaults(this.options || [{}], options, this.defaults);
         this.model = new toolshed_model.RepoStatus();
         this.listenTo(this.model, "sync", this.render);
-        this.model.url +=
-            "?repositories=" + this.options.repositories.join("|");
+        this.model.url += `?repositories=${this.options.repositories.join(
+            "|"
+        )}`;
         this.model.fetch();
         this.timer = setInterval(
             self => {

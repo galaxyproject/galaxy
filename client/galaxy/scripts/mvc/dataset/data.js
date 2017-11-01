@@ -59,7 +59,7 @@ var Dataset = Backbone.Model.extend({
         return this.attributes.metadata.get(attribute);
     },
 
-    urlRoot: Galaxy.root + "api/datasets"
+    urlRoot: `${Galaxy.root}api/datasets`
 });
 
 /**
@@ -80,9 +80,9 @@ var TabularDataset = Dataset.extend({
         if (this.attributes.first_data_chunk) {
             this.attributes.offset = this.attributes.first_data_chunk.offset;
         }
-        this.attributes.chunk_url =
-            Galaxy.root + "dataset/display?dataset_id=" + this.id;
-        this.attributes.url_viz = Galaxy.root + "visualization";
+        this.attributes.chunk_url = `${Galaxy.root}dataset/display?dataset_id=${this
+            .id}`;
+        this.attributes.url_viz = `${Galaxy.root}visualization`;
     },
 
     /**
@@ -180,12 +180,10 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         var header_container = $("<thead/>").appendTo(data_table);
         var header_row = $("<tr/>").appendTo(header_container);
         if (column_names) {
-            header_row.append(
-                "<th>" + column_names.join("</th><th>") + "</th>"
-            );
+            header_row.append(`<th>${column_names.join("</th><th>")}</th>`);
         } else {
             for (var j = 1; j <= this.model.get_metadata("columns"); j++) {
-                header_row.append("<th>" + j + "</th>");
+                header_row.append(`<th>${j}</th>`);
             }
         }
 
@@ -561,7 +559,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
             // get target gene region
             var btn_viz_pars = {
                 dataset_id: this.dataset_id,
-                gene_region: chrom + ":" + start + "-" + end
+                gene_region: `${chrom}:${start}-${end}`
             };
 
             // get button position
@@ -572,14 +570,14 @@ var TabularButtonTracksterView = Backbone.View.extend({
             // update css
             $("#btn_viz").css({
                 position: "fixed",
-                top: top + "px",
-                left: left + "px"
+                top: `${top}px`,
+                left: `${left}px`
             });
             $("#btn_viz").off("click");
             $("#btn_viz").click(() => {
                 self.frame.add({
                     title: "Trackster",
-                    url: self.url_viz + "/trackster?" + $.param(btn_viz_pars)
+                    url: `${self.url_viz}/trackster?${$.param(btn_viz_pars)}`
                 });
             });
 

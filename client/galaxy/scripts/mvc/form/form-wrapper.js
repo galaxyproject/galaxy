@@ -41,7 +41,7 @@ var View = Backbone.View.extend({
             .fail(response => {
                 self.$el.empty().append(
                     new Ui.Message({
-                        message: "Failed to load resource " + self.url + ".",
+                        message: `Failed to load resource ${self.url}.`,
                         status: "danger",
                         persistent: true
                     }).$el
@@ -64,11 +64,9 @@ var View = Backbone.View.extend({
                     persistent: false
                 };
                 if (self.redirect) {
-                    window.location =
-                        Galaxy.root +
-                        self.redirect +
-                        "?" +
-                        $.param(success_message);
+                    window.location = `${Galaxy.root + self.redirect}?${$.param(
+                        success_message
+                    )}`;
                 } else {
                     form.data.matchModel(response, (input, input_id) => {
                         form.field_list[input_id].value(input.value);

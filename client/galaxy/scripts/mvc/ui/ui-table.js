@@ -59,12 +59,12 @@ var View = Backbone.View.extend({
 
     /** Helper to get row element */
     get: function(id) {
-        return this.$("#" + id);
+        return this.$(`#${id}`);
     },
 
     /** Delete row by id */
     del: function(id) {
-        var item = this.$tbody.find("#" + id);
+        var item = this.$tbody.find(`#${id}`);
         if (item.length > 0) {
             item.remove();
             this.row_count--;
@@ -86,7 +86,7 @@ var View = Backbone.View.extend({
             if (new_value !== undefined) {
                 this.$tbody.find("tr").removeClass("current");
                 if (new_value) {
-                    this.$tbody.find("#" + new_value).addClass("current");
+                    this.$tbody.find(`#${new_value}`).addClass("current");
                 }
             }
             var after = this.$tbody.find(".current").attr("id");
@@ -126,7 +126,7 @@ var View = Backbone.View.extend({
 
     /** Helper to create new row */
     _row: function() {
-        return $('<tr class="' + this.options.cls_tr + '"></tr>');
+        return $(`<tr class="${this.options.cls_tr}"></tr>`);
     },
 
     /** Handles onclick events */
@@ -165,19 +165,9 @@ var View = Backbone.View.extend({
 
     /** Template */
     _template: function() {
-        return (
-            "<div>" +
-            '<table class="' +
-            this.options.cls +
-            '">' +
-            "<thead/>" +
-            "<tbody/>" +
-            "</table>" +
-            "<tmessage>" +
-            this.options.content +
-            "</tmessage>" +
-            "<div>"
-        );
+        return `<div><table class="${this.options
+            .cls}"><thead/><tbody/></table><tmessage>${this.options
+            .content}</tmessage><div>`;
     }
 });
 

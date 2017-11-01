@@ -14,7 +14,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
 
         /** API location for this resource */
         urlRoot: function() {
-            return Galaxy.root + "api/users";
+            return `${Galaxy.root}api/users`;
         },
 
         /** Model defaults
@@ -23,7 +23,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
      */
         defaults: /** @lends User.prototype */ {
             id: null,
-            username: "(" + _l("anonymous user") + ")",
+            username: `(${_l("anonymous user")})`,
             email: "",
             total_disk_usage: 0,
             nice_total_disk_usage: "",
@@ -38,10 +38,10 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
             this.log("User.initialize:", data);
 
             this.on("loaded", function(model, resp) {
-                this.log(this + " has loaded:", model, resp);
+                this.log(`${this} has loaded:`, model, resp);
             });
             this.on("change", function(model, data) {
-                this.log(this + " has changed:", model, data.changes);
+                this.log(`${this} has changed:`, model, data.changes);
             });
         },
 
@@ -77,7 +77,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
 
             // requests for the current user must have a sep. constructed url (fetch don't work, ma)
             if (idOrCurrent === User.CURRENT_ID_STR) {
-                options.url = this.urlRoot + "/" + User.CURRENT_ID_STR;
+                options.url = `${this.urlRoot}/${User.CURRENT_ID_STR}`;
             }
             return Backbone.Model.prototype.fetch.call(this, options);
         },
@@ -103,7 +103,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
                 userInfo.unshift(this.get("id"));
                 userInfo.push(this.get("email"));
             }
-            return "User(" + userInfo.join(":") + ")";
+            return `User(${userInfo.join(":")})`;
         }
     }
 );
@@ -122,7 +122,7 @@ User.getCurrentUserFromApi = options => {
 var UserCollection = Backbone.Collection.extend(baseMVC.LoggableMixin).extend({
     model: User,
     urlRoot: function() {
-        return Galaxy.root + "api/users";
+        return `${Galaxy.root}api/users`;
     }
     //logger  : console,
 });

@@ -264,7 +264,7 @@ $.extend(ScrollPanel.prototype, {
         } else if (y + close_dist > max_y) {
             if (panel_pos.top > p_min_y) {
                 var t = Math.min(nudge, panel_pos.top - p_min_x);
-                panel.css("top", panel_pos.top - t + "px");
+                panel.css("top", `${panel_pos.top - t}px`);
                 moved = true;
             }
         }

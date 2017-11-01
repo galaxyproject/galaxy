@@ -11,7 +11,7 @@ var _super = DATASET_LI.DatasetListItemView;
  */
 var HDAListItemView = _super.extend(
     /** @lends HDAListItemView.prototype */ {
-        className: _super.prototype.className + " history-content",
+        className: `${_super.prototype.className} history-content`,
 
         initialize: function(attributes, options) {
             _super.prototype.initialize.call(this, attributes, options);
@@ -20,8 +20,8 @@ var HDAListItemView = _super.extend(
         // ......................................................................... misc
         /** String representation */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "HDAListItemView(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `HDAListItemView(${modelString})`;
         }
     }
 );

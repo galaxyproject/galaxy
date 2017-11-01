@@ -26,7 +26,7 @@ var View = Backbone.View.extend({
         // create insert new list element button
         this.button = new Ui.ButtonIcon({
             icon: "fa fa-sign-in",
-            tooltip: "Insert new " + this.name,
+            tooltip: `Insert new ${this.name}`,
             onclick: function() {
                 self.add({
                     id: self.select.value(),
@@ -88,7 +88,7 @@ var View = Backbone.View.extend({
     /** Add row */
     add: function(options) {
         var self = this;
-        if (this.$('[id="' + options.id + '"]').length === 0) {
+        if (this.$(`[id="${options.id}"]`).length === 0) {
             if (!Utils.isEmpty(options.id)) {
                 var $el = $(
                     this._templateRow({
@@ -110,13 +110,13 @@ var View = Backbone.View.extend({
                 this._refresh();
             } else {
                 this.message.update({
-                    message: "Please select a valid " + this.name + ".",
+                    message: `Please select a valid ${this.name}.`,
                     status: "danger"
                 });
             }
         } else {
             this.message.update({
-                message: "This " + this.name + " is already in the list."
+                message: `This ${this.name} is already in the list.`
             });
         }
     },
@@ -154,16 +154,7 @@ var View = Backbone.View.extend({
 
     /** Row Template */
     _templateRow: function(options) {
-        return (
-            '<div id="' +
-            options.id +
-            '" class="ui-list-id">' +
-            '<span class="ui-list-delete fa fa-trash"/>' +
-            '<span class="ui-list-name">' +
-            options.name +
-            "</span>" +
-            "</div>"
-        );
+        return `<div id="${options.id}" class="ui-list-id"><span class="ui-list-delete fa fa-trash"/><span class="ui-list-name">${options.name}</span></div>`;
     }
 });
 

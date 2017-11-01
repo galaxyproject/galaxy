@@ -23,7 +23,7 @@ export default Backbone.View.extend({
             var tag =
                 tag_name +
                 (tag_value !== undefined && tag_value !== ""
-                    ? ":" + tag_value
+                    ? `:${tag_value}`
                     : "");
             var advanced_search = $("#advanced-search").is(":visible");
             if (!advanced_search) {
@@ -39,10 +39,10 @@ export default Backbone.View.extend({
             if (grid_config.url_base && !grid_config.items) {
                 var url_data = grid_config.url_data || {};
                 _.each(grid_config.filters, (v, k) => {
-                    url_data["f-" + k] = v;
+                    url_data[`f-${k}`] = v;
                 });
                 $.ajax({
-                    url: grid_config.url_base + "?" + $.param(url_data),
+                    url: `${grid_config.url_base}?${$.param(url_data)}`,
                     success: function(response) {
                         response.embedded = grid_config.embedded;
                         response.filters = grid_config.filters || {};
@@ -163,7 +163,7 @@ export default Backbone.View.extend({
             $(this).off();
             $(this).submit(function() {
                 var column_key = $(this).attr("column_key");
-                var text_input_obj = $("#input-" + column_key + "-filter");
+                var text_input_obj = $(`#input-${column_key}-filter`);
                 var text_input = text_input_obj.val();
                 text_input_obj.val("");
                 self.add_filter_condition(column_key, text_input);
@@ -275,7 +275,7 @@ export default Backbone.View.extend({
 
         // add operation popup menus
         _.each(options.items, (item, index) => {
-            var button = self.$("#grid-" + index + "-popup").off();
+            var button = self.$(`#grid-${index}-popup`).off();
             var popup = new PopupMenu(button);
             _.each(options["operations"], operation => {
                 self._add_operation(popup, operation, item);
@@ -328,7 +328,7 @@ export default Backbone.View.extend({
         });
 
         // append to container
-        var container = this.$el.find("#" + name + "-filtering-criteria");
+        var container = this.$el.find(`#${name}-filtering-criteria`);
         container.append(t);
 
         // execute
@@ -355,7 +355,7 @@ export default Backbone.View.extend({
         if (cur_sort.indexOf(col_key) !== -1) {
             // Reverse sort.
             if (cur_sort.substring(0, 1) !== "-") {
-                new_sort = "-" + col_key;
+                new_sort = `-${col_key}`;
             }
         }
 
@@ -364,10 +364,10 @@ export default Backbone.View.extend({
 
         // Add sort arrow element to new sort column.
         var sort_arrow = new_sort.substring(0, 1) == "-" ? "&uarr;" : "&darr;";
-        var t = $("<span>" + sort_arrow + "</span>").addClass("sort-arrow");
+        var t = $(`<span>${sort_arrow}</span>`).addClass("sort-arrow");
 
         // Add to header
-        this.$el.find("#" + col_key + "-header").append(t);
+        this.$el.find(`#${col_key}-header`).append(t);
 
         // Update grid.
         this.grid.set("sort_key", new_sort);
@@ -382,7 +382,7 @@ export default Backbone.View.extend({
 
         var cur_value = this.grid.get("filters")[name];
         var self = this;
-        this.$el.find("." + name + "-filter").each(function() {
+        this.$el.find(`.${name}-filter`).each(function() {
             var text = $.trim($(this).text());
             var filter = category_filter[text];
             var filter_value = filter[name];
@@ -396,7 +396,7 @@ export default Backbone.View.extend({
                 // Add hyperlink for this filter since grid will no longer be using this filter. It is assumed that
                 // this element has a single child, a hyperlink/anchor.
                 $(this).empty();
-                var t = $('<a href="#">' + text + "</a>");
+                var t = $(`<a href="#">${text}</a>`);
                 t.click(() => {
                     self.set_categorical_filter(name, filter_value);
                 });
@@ -438,7 +438,7 @@ export default Backbone.View.extend({
                 text = $(this).text();
                 $(this).empty();
                 $(this).removeClass("inactive-link");
-                var t = $('<a href="#">' + text + "</a>");
+                var t = $(`<a href="#">${text}</a>`);
                 t.click(() => {
                     self.set_page(page_num);
                 });
@@ -577,8 +577,9 @@ export default Backbone.View.extend({
 
             // Do operation. If operation cannot be performed asynchronously, redirect to location.
             if (target == "top") {
-                window.top.location =
-                    href + "?" + $.param(this.grid.get_url_data());
+                window.top.location = `${href}?${$.param(
+                    this.grid.get_url_data()
+                )}`;
             } else if (this.grid.can_async_op(operation) || this.dict_format) {
                 this.update_grid();
             } else {
@@ -618,10 +619,9 @@ export default Backbone.View.extend({
 
         // get default url
         if (!href) {
-            href =
-                this.grid.get("url_base") +
-                "?" +
-                $.param(this.grid.get_url_data());
+            href = `${this.grid.get("url_base")}?${$.param(
+                this.grid.get_url_data()
+            )}`;
         }
 
         // clear grid of transient request attributes.

@@ -34,8 +34,8 @@ var LibraryView = Backbone.View.extend({
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(
-                        response.responseJSON.err_msg +
-                            " Click this to go back.",
+                        `${response.responseJSON
+                            .err_msg} Click this to go back.`,
                         "",
                         {
                             onclick: function() {
@@ -81,10 +81,7 @@ var LibraryView = Backbone.View.extend({
 
         var self = this;
         $.get(
-            Galaxy.root +
-                "api/libraries/" +
-                self.id +
-                "/permissions?scope=current"
+            `${Galaxy.root}api/libraries/${self.id}/permissions?scope=current`
         )
             .done(fetched_permissions => {
                 self.prepareSelectBoxes({
@@ -105,7 +102,7 @@ var LibraryView = Backbone.View.extend({
     _serializeRoles: function(role_list) {
         var selected_roles = [];
         for (var i = 0; i < role_list.length; i++) {
-            selected_roles.push(role_list[i][1] + ":" + role_list[i][0]);
+            selected_roles.push(`${role_list[i][1]}:${role_list[i][0]}`);
         }
         return selected_roles;
     },
@@ -170,14 +167,9 @@ var LibraryView = Backbone.View.extend({
             css: id,
             multiple: true,
             placeholder: "Click to select a role",
-            container: self.$el.find("#" + id),
+            container: self.$el.find(`#${id}`),
             ajax: {
-                url:
-                    Galaxy.root +
-                    "api/libraries/" +
-                    self.id +
-                    "/permissions?scope=available&is_library_access=" +
-                    is_library_access,
+                url: `${Galaxy.root}api/libraries/${self.id}/permissions?scope=available&is_library_access=${is_library_access}`,
                 dataType: "json",
                 quietMillis: 100,
                 data: function(term, page) {
@@ -195,7 +187,7 @@ var LibraryView = Backbone.View.extend({
                 }
             },
             formatResult: function roleFormatResult(role) {
-                return role.name + " type: " + role.type;
+                return `${role.name} type: ${role.type}`;
             },
 
             formatSelection: function roleFormatSelection(role) {
@@ -226,10 +218,7 @@ var LibraryView = Backbone.View.extend({
     makeDatasetPrivate: function() {
         var self = this;
         $.post(
-            Galaxy.root +
-                "api/libraries/datasets/" +
-                self.id +
-                "/permissions?action=make_private"
+            `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=make_private`
         )
             .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: false });
@@ -248,10 +237,7 @@ var LibraryView = Backbone.View.extend({
     removeDatasetRestrictions: function() {
         var self = this;
         $.post(
-            Galaxy.root +
-                "api/libraries/datasets/" +
-                self.id +
-                "/permissions?action=remove_restrictions"
+            `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`
         )
             .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: true });
@@ -293,10 +279,7 @@ var LibraryView = Backbone.View.extend({
         );
 
         $.post(
-            Galaxy.root +
-                "api/libraries/" +
-                self.id +
-                "/permissions?action=set_permissions",
+            `${Galaxy.root}api/libraries/${self.id}/permissions?action=set_permissions`,
             {
                 "access_ids[]": access_ids,
                 "add_ids[]": add_ids,

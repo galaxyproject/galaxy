@@ -9,7 +9,7 @@ var _super = DATASET_LI_EDIT.DatasetListItemEdit;
  */
 var HDAListItemEdit = _super.extend(
     /** @lends HDAListItemEdit.prototype */ {
-        className: _super.prototype.className + " history-content",
+        className: `${_super.prototype.className} history-content`,
 
         /** In this override, only get details if in the ready state, get rerunnable if in other states.
      *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
@@ -43,8 +43,8 @@ var HDAListItemEdit = _super.extend(
 
         /** string rep */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "HDAListItemEdit(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `HDAListItemEdit(${modelString})`;
         }
     }
 );

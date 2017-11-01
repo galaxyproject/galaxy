@@ -189,7 +189,7 @@ var SidePanel = Backbone.View.extend({
     },
 
     toString: function() {
-        return "SidePanel(" + this.id + ")";
+        return `SidePanel(${this.id})`;
     }
 });
 

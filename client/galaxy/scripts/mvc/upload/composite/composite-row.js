@@ -153,7 +153,7 @@ export default Backbone.View.extend({
     },
 
     render: function() {
-        this.$el.attr("id", "upload-row-" + this.model.id);
+        this.$el.attr("id", `upload-row-${this.model.id}`);
         this.$file_name.html(_.escape(this.model.get("file_name") || "-"));
         this.$file_desc.html(this.model.get("file_desc") || "Unavailable");
         this.$file_size.html(Utils.bytesToString(this.model.get("file_size")));
@@ -187,8 +187,8 @@ export default Backbone.View.extend({
             this.height = this.$el.height();
             this.$text
                 .css({
-                    width: this.$el.width() - 16 + "px",
-                    top: this.$el.height() - 8 + "px"
+                    width: `${this.$el.width() - 16}px`,
+                    top: `${this.$el.height() - 8}px`
                 })
                 .show();
             this.$el.height(this.$el.height() - 8 + this.$text.height() + 16);
@@ -203,7 +203,7 @@ export default Backbone.View.extend({
     _refreshInfo: function() {
         var info = this.model.get("info");
         if (info) {
-            this.$info_text.html("<strong>Failed: </strong>" + info).show();
+            this.$info_text.html(`<strong>Failed: </strong>${info}`).show();
         } else {
             this.$info_text.hide();
         }
@@ -213,7 +213,7 @@ export default Backbone.View.extend({
     _refreshPercentage: function() {
         var percentage = parseInt(this.model.get("percentage"));
         if (percentage != 0) {
-            this.$progress_bar.css({ width: percentage + "%" });
+            this.$progress_bar.css({ width: `${percentage}%` });
         } else {
             this.$progress_bar.addClass("no-transition");
             this.$progress_bar.css({ width: "0%" });
@@ -221,7 +221,7 @@ export default Backbone.View.extend({
             this.$progress_bar.removeClass("no-transition");
         }
         this.$percentage.html(
-            percentage != 100 ? percentage + "%" : "Adding to history..."
+            percentage != 100 ? `${percentage}%` : "Adding to history..."
         );
     },
 

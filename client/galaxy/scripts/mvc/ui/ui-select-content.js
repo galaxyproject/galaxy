@@ -240,16 +240,16 @@ var View = Backbone.View.extend({
                     var result = this._batch({ values: [] });
                     for (var i in id_list) {
                         var details = this.history[
-                            id_list[i] + "_" + this.config[current].src
+                            `${id_list[i]}_${this.config[current].src}`
                         ];
                         if (details) {
                             result.values.push(details);
                         } else {
                             Galaxy.emit.debug(
                                 "ui-select-content::value()",
-                                "Requested details not found for '" +
-                                    id_list[i] +
-                                    "'."
+                                `Requested details not found for '${id_list[
+                                    i
+                                ]}'.`
                             );
                             return null;
                         }
@@ -261,7 +261,7 @@ var View = Backbone.View.extend({
         } else {
             Galaxy.emit.debug(
                 "ui-select-content::value()",
-                "Invalid value/source '" + new_value + "'."
+                `Invalid value/source '${new_value}'.`
             );
         }
         return null;
@@ -291,7 +291,7 @@ var View = Backbone.View.extend({
 
         // identify selector type identifier i.e. [ flavor ]_[ type ]_[ multiple ]
         var config_id =
-            (this.model.get("flavor") ? this.model.get("flavor") + "_" : "") +
+            (this.model.get("flavor") ? `${this.model.get("flavor")}_` : "") +
             String(this.model.get("type")) +
             (this.model.get("multiple") ? "_multiple" : "");
         if (Configurations[config_id]) {
@@ -300,7 +300,7 @@ var View = Backbone.View.extend({
             this.config = Configurations["data"];
             Galaxy.emit.debug(
                 "ui-select-content::_changeType()",
-                "Invalid configuration/type id '" + config_id + "'."
+                `Invalid configuration/type id '${config_id}'.`
             );
         }
 
@@ -328,11 +328,9 @@ var View = Backbone.View.extend({
                             data[c.src] &&
                             data[c.src].length > self.model.get("pagelimit")),
                     individual: true,
-                    error_text:
-                        "No " +
-                        (extensions ? extensions + " " : "") +
-                        (src_labels[c.src] || "content") +
-                        " available.",
+                    error_text: `No ${extensions
+                        ? `${extensions} `
+                        : ""}${src_labels[c.src] || "content"} available.`,
                     onchange: function() {
                         self.trigger("change");
                     }
@@ -353,7 +351,7 @@ var View = Backbone.View.extend({
         var button_width = 0;
         if (this.fields.length > 1) {
             this.$el.append(this.button_type.$el);
-            button_width = Math.max(0, this.fields.length * 36) + "px";
+            button_width = `${Math.max(0, this.fields.length * 36)}px`;
         }
         _.each(this.fields, field => {
             self.$el.append(field.$el.css({ "margin-left": button_width }));
@@ -385,11 +383,11 @@ var View = Backbone.View.extend({
                 select_options[src].push({
                     hid: item.hid,
                     keep: item.keep,
-                    label: item.hid + ": " + item.name,
+                    label: `${item.hid}: ${item.name}`,
                     value: item.id,
                     tags: item.tags
                 });
-                self.history[item.id + "_" + src] = item;
+                self.history[`${item.id}_${src}`] = item;
             });
         });
         _.each(this.config, (c, i) => {
@@ -475,9 +473,9 @@ var View = Backbone.View.extend({
     /** Highlight drag result */
     _handleDropStatus: function(status) {
         var self = this;
-        this.$el.removeClass("ui-dragover").addClass("ui-dragover-" + status);
+        this.$el.removeClass("ui-dragover").addClass(`ui-dragover-${status}`);
         setTimeout(() => {
-            self.$el.removeClass("ui-dragover-" + status);
+            self.$el.removeClass(`ui-dragover-${status}`);
         }, this.model.get("statustimer"));
     },
 
@@ -487,7 +485,7 @@ var View = Backbone.View.extend({
         var current = this.model.get("current");
         var config = this.config[current];
         if (config.src == "hdca" && !config.multiple) {
-            var hdca = this.history[this.fields[current].value() + "_hdca"];
+            var hdca = this.history[`${this.fields[current].value()}_hdca`];
             if (hdca && hdca.map_over_type) {
                 result["batch"] = true;
             }

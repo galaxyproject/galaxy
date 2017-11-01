@@ -17,8 +17,8 @@ var DCListItemEdit = DCListItemView.extend(
         // ......................................................................... misc
         /** String representation */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "DCListItemEdit(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `DCListItemEdit(${modelString})`;
         }
     }
 );
@@ -39,8 +39,8 @@ var DCEListItemEdit = DCEListItemView.extend(
         // ......................................................................... misc
         /** String representation */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "DCEListItemEdit(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `DCEListItemEdit(${modelString})`;
         }
     }
 );
@@ -82,8 +82,8 @@ var DatasetDCEListItemEdit = DATASET_LI_EDIT.DatasetListItemEdit.extend(
         // ......................................................................... misc
         /** String representation */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "DatasetDCEListItemEdit(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `DatasetDCEListItemEdit(${modelString})`;
         }
     }
 );
@@ -103,8 +103,8 @@ var NestedDCDCEListItemEdit = DC_LI.NestedDCDCEListItemView.extend(
     /** @lends NestedDCDCEListItemEdit.prototype */ {
         /** String representation */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "NestedDCDCEListItemEdit(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `NestedDCDCEListItemEdit(${modelString})`;
         }
     }
 );

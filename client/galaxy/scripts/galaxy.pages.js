@@ -83,8 +83,7 @@ function get_item_info(dialog_type) {
     }
 
     // Build ajax URL that lists items for selection.
-    var item_list_action =
-        "list_" + item_plural.toLowerCase() + "_for_selection";
+    var item_list_action = `list_${item_plural.toLowerCase()}_for_selection`;
     var ajax_url = list_objects_url.replace("LIST_ACTION", item_list_action);
 
     // Set up and return dict.
@@ -108,7 +107,7 @@ function make_item_importable(item_controller, item_id, item_type) {
         url: ajax_url,
         data: { id: item_id, accessible: "True" },
         error: function() {
-            alert("Making " + item_type + " accessible failed");
+            alert(`Making ${item_type} accessible failed`);
         }
     });
 }
@@ -163,12 +162,7 @@ WYMeditor.editor.prototype.dialog = function(
         }
         show_modal(
             "Create Link",
-            "<div><div><label id='link_attribute_label'>URL <span style='float: right; font-size: 90%'><a href='#' id='set_link_id'>Create in-page anchor</a></span></label><br><input type='text' class='wym_href' value='" +
-                curURL +
-                "' size='40' /></div>" +
-                "<div><label>Title</label><br><input type='text' class='wym_title' value='" +
-                curTitle +
-                "' size='40' /></div><div>",
+            `<div><div><label id='link_attribute_label'>URL <span style='float: right; font-size: 90%'><a href='#' id='set_link_id'>Create in-page anchor</a></span></label><br><input type='text' class='wym_href' value='${curURL}' size='40' /></div><div><label>Title</label><br><input type='text' class='wym_title' value='${curTitle}' size='40' /></div><div>`,
             {
                 "Make link": function() {
                     // Get URL, name/title.
@@ -182,7 +176,7 @@ WYMeditor.editor.prototype.dialog = function(
                         wym._exec(WYMeditor.CREATE_LINK, sStamp);
 
                         // Set link attributes.
-                        var link = $("a[href=" + sStamp + "]", wym._doc.body);
+                        var link = $(`a[href=${sStamp}]`, wym._doc.body);
                         link
                             .attr(WYMeditor.HREF, sUrl)
                             .attr(WYMeditor.TITLE, sName)
@@ -208,19 +202,16 @@ WYMeditor.editor.prototype.dialog = function(
     if (dialogType == WYMeditor.DIALOG_IMAGE) {
         if (wym._selected_image) {
             $(
-                wym._options.dialogImageSelector +
-                    " " +
-                    wym._options.srcSelector
+                `${wym._options.dialogImageSelector} ${wym._options
+                    .srcSelector}`
             ).val($(wym._selected_image).attr(WYMeditor.SRC));
             $(
-                wym._options.dialogImageSelector +
-                    " " +
-                    wym._options.titleSelector
+                `${wym._options.dialogImageSelector} ${wym._options
+                    .titleSelector}`
             ).val($(wym._selected_image).attr(WYMeditor.TITLE));
             $(
-                wym._options.dialogImageSelector +
-                    " " +
-                    wym._options.altSelector
+                `${wym._options.dialogImageSelector} ${wym._options
+                    .altSelector}`
             ).val($(wym._selected_image).attr(WYMeditor.ALT));
         }
         show_modal(
@@ -242,7 +233,7 @@ WYMeditor.editor.prototype.dialog = function(
                     var sUrl = $(wym._options.srcSelector).val();
                     if (sUrl.length > 0) {
                         wym._exec(WYMeditor.INSERT_IMAGE, sStamp);
-                        $("img[src$=" + sStamp + "]", wym._doc.body)
+                        $(`img[src$=${sStamp}]`, wym._doc.body)
                             .attr(WYMeditor.SRC, sUrl)
                             .attr(
                                 WYMeditor.TITLE,
@@ -367,7 +358,7 @@ WYMeditor.editor.prototype.dialog = function(
             embedded: true
         });
         Galaxy.modal.show({
-            title: "Insert Link to " + item_info.singular,
+            title: `Insert Link to ${item_info.singular}`,
             body: $("<div/>")
                 .append(grid.$el)
                 .append(
@@ -376,9 +367,7 @@ WYMeditor.editor.prototype.dialog = function(
                             '<input id="make-importable" type="checkbox" checked/>'
                         )
                         .append(
-                            "Make the selected " +
-                                item_info.plural.toLowerCase() +
-                                " accessible so that they can viewed by everyone."
+                            `Make the selected ${item_info.plural.toLowerCase()} accessible so that they can viewed by everyone.`
                         )
                 ),
             closing_events: true,
@@ -412,7 +401,7 @@ WYMeditor.editor.prototype.dialog = function(
                             // Get link text.
                             wym._exec(WYMeditor.CREATE_LINK, sStamp);
                             var link_text = $(
-                                "a[href=" + sStamp + "]",
+                                `a[href=${sStamp}]`,
                                 wym._doc.body
                             ).text();
 
@@ -423,17 +412,11 @@ WYMeditor.editor.prototype.dialog = function(
                             ) {
                                 // User selected no text; create link from scratch and use default text.
                                 wym.insert(
-                                    "<a href='" +
-                                        returned_item_info.link +
-                                        "'>" +
-                                        item_info.singular +
-                                        " '" +
-                                        returned_item_info.name +
-                                        "'</a>"
+                                    `<a href='${returned_item_info.link}'>${item_info.singular} '${returned_item_info.name}'</a>`
                                 );
                             } else {
                                 // Link created from selected text; add href and title.
-                                $("a[href=" + sStamp + "]", wym._doc.body)
+                                $(`a[href=${sStamp}]`, wym._doc.body)
                                     .attr(
                                         WYMeditor.HREF,
                                         returned_item_info.link
@@ -487,7 +470,7 @@ WYMeditor.editor.prototype.dialog = function(
             embedded: true
         });
         Galaxy.modal.show({
-            title: "Insert Link to " + item_info.singular,
+            title: `Insert Link to ${item_info.singular}`,
             body: $("<div/>")
                 .append(grid.$el)
                 .append(
@@ -496,9 +479,7 @@ WYMeditor.editor.prototype.dialog = function(
                             '<input id="make-importable" type="checkbox" checked/>'
                         )
                         .append(
-                            "Make the selected " +
-                                item_info.plural.toLowerCase() +
-                                " accessible so that they can viewed by everyone."
+                            `Make the selected ${item_info.plural.toLowerCase()} accessible so that they can viewed by everyone.`
                         )
                 ),
             closing_events: true,
@@ -514,7 +495,7 @@ WYMeditor.editor.prototype.dialog = function(
                         var item_id = $(this).val();
                         // Use ':first' because there are many labels in table; the first one is the item name.
                         var item_name = $(
-                            "label[for='" + item_id + "']:first"
+                            `label[for='${item_id}']:first`
                         ).text();
 
                         if (make_importable)
@@ -527,7 +508,7 @@ WYMeditor.editor.prototype.dialog = function(
                         // Embedded item HTML; item class is embedded in div container classes; this is necessary because the editor strips
                         // all non-standard attributes when it returns its content (e.g. it will not return an element attribute of the form
                         // item_class='History').
-                        var item_elt_id = item_info.iclass + "-" + item_id;
+                        var item_elt_id = `${item_info.iclass}-${item_id}`;
                         var item_embed_html = [
                             "<div id='",
                             item_elt_id,
@@ -576,19 +557,9 @@ export default function editor_onload() {
         skin: "galaxy",
         basePath: editor_base_path,
         iframeBasePath: iframe_base_path,
-        boxHtml:
-            "<table class='wym_box' width='100%' height='100%'>" +
-            "<tr><td><div class='wym_area_top'>" +
-            WYMeditor.TOOLS +
-            "</div></td></tr>" +
-            "<tr height='100%'><td>" +
-            "<div class='wym_area_main' style='height: 100%;'>" +
-            // + WYMeditor.HTML
-            WYMeditor.IFRAME +
-            WYMeditor.STATUS +
-            "</div>" +
-            "</div>" +
-            "</td></tr></table>",
+        // + WYMeditor.HTML
+        boxHtml: `<table class='wym_box' width='100%' height='100%'><tr><td><div class='wym_area_top'>${WYMeditor.TOOLS}</div></td></tr><tr height='100%'><td><div class='wym_area_main' style='height: 100%;'>${// + WYMeditor.HTML
+        WYMeditor.IFRAME}${WYMeditor.STATUS}</div></div></td></tr></table>`,
         toolsItems: [
             { name: "Bold", title: "Strong", css: "wym_tools_strong" },
             { name: "Italic", title: "Emphasis", css: "wym_tools_emphasis" },

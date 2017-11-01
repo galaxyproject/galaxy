@@ -20,7 +20,7 @@ var DatasetListItemView = _super.extend(
     /** @lends DatasetListItemView.prototype */ {
         _logNamespace: logNamespace,
 
-        className: _super.prototype.className + " dataset",
+        className: `${_super.prototype.className} dataset`,
         //TODO:?? doesn't exactly match an hda's type_id
         id: function() {
             return ["dataset", this.model.get("id")].join("-");
@@ -31,7 +31,7 @@ var DatasetListItemView = _super.extend(
             if (attributes.logger) {
                 this.logger = this.model.logger = attributes.logger;
             }
-            this.log(this + ".initialize:", attributes);
+            this.log(`${this}.initialize:`, attributes);
             _super.prototype.initialize.call(this, attributes);
 
             /** where should pages from links be displayed? (default to new tab/window) */
@@ -117,7 +117,7 @@ var DatasetListItemView = _super.extend(
         _swapNewRender: function($newRender) {
             _super.prototype._swapNewRender.call(this, $newRender);
             if (this.model.has("state")) {
-                this.$el.addClass("state-" + this.model.get("state"));
+                this.$el.addClass(`state-${this.model.get("state")}`);
             }
             return this.$el;
         },
@@ -314,7 +314,7 @@ var DatasetListItemView = _super.extend(
                     '<a class="download-btn icon-btn" ',
                     'href="',
                     this.model.urls.download,
-                    '" title="' + _l("Download") + '" download>',
+                    `" title="${_l("Download")}" download>`,
                     '<span class="fa fa-floppy-o"></span>',
                     "</a>"
                 ].join("")
@@ -328,11 +328,11 @@ var DatasetListItemView = _super.extend(
                 [
                     '<div class="metafile-dropdown dropdown">',
                     '<a class="download-btn icon-btn" href="javascript:void(0)" data-toggle="dropdown"',
-                    ' title="' + _l("Download") + '">',
+                    ` title="${_l("Download")}">`,
                     '<span class="fa fa-floppy-o"></span>',
                     "</a>",
                     '<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">',
-                    '<li><a href="' + urls.download + '" download>',
+                    `<li><a href="${urls.download}" download>`,
                     _l("Download dataset"),
                     "</a></li>",
                     _.map(this.model.get("meta_files"), meta_file =>
@@ -381,8 +381,8 @@ var DatasetListItemView = _super.extend(
         // ......................................................................... misc
         /** String representation */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "DatasetListItemView(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `DatasetListItemView(${modelString})`;
         }
     }
 );

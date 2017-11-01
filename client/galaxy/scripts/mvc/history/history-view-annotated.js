@@ -19,7 +19,7 @@ var _super = HISTORY_VIEW.HistoryView;
  */
 var AnnotatedHistoryView = _super.extend(
     /** @lends AnnotatedHistoryView.prototype */ {
-        className: _super.prototype.className + " annotated-history-panel",
+        className: `${_super.prototype.className} annotated-history-panel`,
 
         // ------------------------------------------------------------------------ panel rendering
         /** In this override, add the history annotation */
@@ -107,11 +107,9 @@ var AnnotatedHistoryView = _super.extend(
         // ........................................................................ misc
         /** Return a string rep of the history */
         toString: function() {
-            return (
-                "AnnotatedHistoryView(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `AnnotatedHistoryView(${this.model
+                ? this.model.get("name")
+                : ""})`;
         }
     }
 );

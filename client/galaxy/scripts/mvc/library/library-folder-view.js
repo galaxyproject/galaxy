@@ -34,8 +34,8 @@ var FolderView = Backbone.View.extend({
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(
-                        response.responseJSON.err_msg +
-                            " Click this to go back.",
+                        `${response.responseJSON
+                            .err_msg} Click this to go back.`,
                         "",
                         {
                             onclick: function() {
@@ -70,12 +70,7 @@ var FolderView = Backbone.View.extend({
         this.$el.html(template({ folder: this.model, is_admin: is_admin }));
 
         var self = this;
-        $.get(
-            Galaxy.root +
-                "api/folders/" +
-                self.id +
-                "/permissions?scope=current"
-        )
+        $.get(`${Galaxy.root}api/folders/${self.id}/permissions?scope=current`)
             .done(fetched_permissions => {
                 self.prepareSelectBoxes({
                     fetched_permissions: fetched_permissions
@@ -95,7 +90,7 @@ var FolderView = Backbone.View.extend({
     _serializeRoles: function(role_list) {
         var selected_roles = [];
         for (var i = 0; i < role_list.length; i++) {
-            selected_roles.push(role_list[i][1] + ":" + role_list[i][0]);
+            selected_roles.push(`${role_list[i][1]}:${role_list[i][0]}`);
         }
         return selected_roles;
     },
@@ -147,13 +142,9 @@ var FolderView = Backbone.View.extend({
             css: id,
             multiple: true,
             placeholder: "Click to select a role",
-            container: self.$el.find("#" + id),
+            container: self.$el.find(`#${id}`),
             ajax: {
-                url:
-                    Galaxy.root +
-                    "api/folders/" +
-                    self.id +
-                    "/permissions?scope=available",
+                url: `${Galaxy.root}api/folders/${self.id}/permissions?scope=available`,
                 dataType: "json",
                 quietMillis: 100,
                 data: function(term, page) {
@@ -171,7 +162,7 @@ var FolderView = Backbone.View.extend({
                 }
             },
             formatResult: function roleFormatResult(role) {
-                return role.name + " type: " + role.type;
+                return `${role.name} type: ${role.type}`;
             },
 
             formatSelection: function roleFormatSelection(role) {
@@ -224,10 +215,7 @@ var FolderView = Backbone.View.extend({
             this.modifySelectObject.$el.select2("data")
         );
         $.post(
-            Galaxy.root +
-                "api/folders/" +
-                self.id +
-                "/permissions?action=set_permissions",
+            `${Galaxy.root}api/folders/${self.id}/permissions?action=set_permissions`,
             {
                 "add_ids[]": add_ids,
                 "manage_ids[]": manage_ids,

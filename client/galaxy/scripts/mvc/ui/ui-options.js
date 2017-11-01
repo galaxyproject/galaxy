@@ -164,7 +164,7 @@ var Base = Backbone.View.extend({
                 var values = $.isArray(new_value) ? new_value : [new_value];
                 _.each(values, v => {
                     self
-                        .$('input[value="' + v + '"]')
+                        .$(`input[value="${v}"]`)
                         .first()
                         .prop("checked", true);
                 });
@@ -189,7 +189,7 @@ var Base = Backbone.View.extend({
         this.$message
             .show()
             .removeClass()
-            .addClass("ui-message alert alert-" + status)
+            .addClass(`ui-message alert alert-${status}`)
             .html(text);
     },
 
@@ -253,7 +253,7 @@ RadioButton.View = Base.extend({
         if (new_value !== undefined) {
             this.$("input").prop("checked", false);
             this.$("label").removeClass("active");
-            this.$('[value="' + new_value + '"]')
+            this.$(`[value="${new_value}"]`)
                 .prop("checked", true)
                 .closest("label")
                 .addClass("active");

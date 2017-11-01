@@ -301,8 +301,7 @@ var Node = Backbone.Model.extend({
     error: function(text) {
         var b = $(this.element).find(".toolFormBody");
         b.find("div").remove();
-        var tmp =
-            "<div style='color: red; text-style: italic;'>" + text + "</div>";
+        var tmp = `<div style='color: red; text-style: italic;'>${text}</div>`;
         this.config_form = tmp;
         b.html(tmp);
         this.app.workflow.node_changed(this);

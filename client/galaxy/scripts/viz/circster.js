@@ -61,12 +61,8 @@ var UsesTicks = {
             .attr(
                 "transform",
                 d =>
-                    "rotate(" +
-                    (d.angle * 180 / Math.PI - 90) +
-                    ")" +
-                    "translate(" +
-                    d.radius +
-                    ",0)"
+                    `rotate(${d.angle * 180 / Math.PI -
+                        90})translate(${d.radius},0)`
             );
 
         // Add line + text for ticks.
@@ -128,15 +124,14 @@ var UsesTicks = {
                 rval = roundedNum;
             } else if (num < 1000000) {
                 // Use K.
-                rval =
-                    Math.round((roundedNum / 1000).toPrecision(3)).toFixed(0) +
-                    "K";
+                rval = `${Math.round(
+                    (roundedNum / 1000).toPrecision(3)
+                ).toFixed(0)}K`;
             } else if (num < 1000000000) {
                 // Use M.
-                rval =
-                    Math.round((roundedNum / 1000000).toPrecision(3)).toFixed(
-                        0
-                    ) + "M";
+                rval = `${Math.round(
+                    (roundedNum / 1000000).toPrecision(3)
+                ).toFixed(0)}M`;
             }
         }
 
@@ -266,12 +261,7 @@ var CircsterView = Backbone.View.extend({
                     var scale = d3.event.scale;
                     svg.attr(
                         "transform",
-                        "translate(" +
-                            d3.event.translate +
-                            ")" +
-                            " scale(" +
-                            scale +
-                            ")"
+                        `translate(${d3.event.translate}) scale(${scale})`
                     );
 
                     // Propagate scale changes to views.
@@ -294,10 +284,7 @@ var CircsterView = Backbone.View.extend({
                     }
                 })
             )
-            .attr(
-                "transform",
-                "translate(" + width / 2 + "," + height / 2 + ")"
-            )
+            .attr("transform", `translate(${width / 2},${height / 2})`)
             .append("svg:g")
             .attr("class", "tracks");
 
@@ -824,7 +811,7 @@ var CircsterChromLabelTrackView = CircsterTrackView.extend({
 
         var chrom_arcs = svg.selectAll("g");
 
-        chrom_arcs.selectAll("path").attr("id", d => "label-" + d.data.chrom);
+        chrom_arcs.selectAll("path").attr("id", d => `label-${d.data.chrom}`);
 
         chrom_arcs
             .append("svg:text")
@@ -832,7 +819,7 @@ var CircsterChromLabelTrackView = CircsterTrackView.extend({
             .attr("text-anchor", "middle")
             .append("svg:textPath")
             .attr("class", "chrom-label")
-            .attr("xlink:href", d => "#label-" + d.data.chrom)
+            .attr("xlink:href", d => `#label-${d.data.chrom}`)
             .attr("startOffset", "25%")
             .text(d => d.data.chrom);
 
@@ -1064,12 +1051,8 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
             .attr(
                 "transform",
                 d =>
-                    "rotate(" +
-                    (d.angle * 180 / Math.PI - 90) +
-                    ")" +
-                    "translate(" +
-                    d.radius +
-                    ",0)"
+                    `rotate(${d.angle * 180 / Math.PI -
+                        90})translate(${d.radius},0)`
             );
     },
 
@@ -1271,9 +1254,8 @@ var Circster = Backbone.View.extend({
 
         // setup title
         $("#center .unified-panel-header-inner").append(
-            galaxy_config.app.viz_config.title +
-                " " +
-                galaxy_config.app.viz_config.dbkey
+            `${galaxy_config.app.viz_config.title} ${galaxy_config.app
+                .viz_config.dbkey}`
         );
 
         // setup menu
@@ -1313,7 +1295,7 @@ var Circster = Backbone.View.extend({
 
                         // send to server
                         $.ajax({
-                            url: Galaxy.root + "visualization/save",
+                            url: `${Galaxy.root}visualization/save`,
                             type: "POST",
                             dataType: "json",
                             data: {
@@ -1347,7 +1329,7 @@ var Circster = Backbone.View.extend({
                     icon_class: "cross-circle",
                     title: "Close",
                     on_click: function() {
-                        window.location = Galaxy.root + "visualizations/list";
+                        window.location = `${Galaxy.root}visualizations/list`;
                     }
                 }
             ],

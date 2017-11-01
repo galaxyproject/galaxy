@@ -13,13 +13,9 @@ var Manager = Backbone.Model.extend({
             var id = $(this).attr("id");
             var field = self.app.field_list[id];
             if (field) {
-                sum +=
-                    id +
-                    ":" +
-                    JSON.stringify(field.value && field.value()) +
-                    ":" +
-                    field.collapsed +
-                    ";";
+                sum += `${id}:${JSON.stringify(
+                    field.value && field.value()
+                )}:${field.collapsed};`;
             }
         });
         return sum;
@@ -77,7 +73,7 @@ var Manager = Backbone.Model.extend({
                             var index = 0;
                             for (var i in block_indices) {
                                 convert(
-                                    flat_id + "_" + index++,
+                                    `${flat_id}_${index++}`,
                                     node[block_prefix + block_indices[i]]
                                 );
                             }
@@ -85,7 +81,7 @@ var Manager = Backbone.Model.extend({
                         case "conditional":
                             var value = self.app.field_list[input.id].value();
                             add(
-                                flat_id + "|" + input.test_param.name,
+                                `${flat_id}|${input.test_param.name}`,
                                 input.id,
                                 value
                             );
@@ -93,7 +89,7 @@ var Manager = Backbone.Model.extend({
                             if (selectedCase != -1) {
                                 convert(
                                     flat_id,
-                                    head[input.id + "-section-" + selectedCase]
+                                    head[`${input.id}-section-${selectedCase}`]
                                 );
                             }
                             break;
@@ -236,18 +232,18 @@ var visitInputs = (inputs, callback, prefix, context) => {
     for (var key in inputs) {
         var node = inputs[key];
         node.name = node.name || key;
-        var name = prefix ? prefix + "|" + node.name : node.name;
+        var name = prefix ? `${prefix}|${node.name}` : node.name;
         switch (node.type) {
             case "repeat":
                 _.each(node.cache, (cache, j) => {
-                    visitInputs(cache, callback, name + "_" + j, context);
+                    visitInputs(cache, callback, `${name}_${j}`, context);
                 });
                 break;
             case "conditional":
                 if (node.test_param) {
                     callback(
                         node.test_param,
-                        name + "|" + node.test_param.name,
+                        `${name}|${node.test_param.name}`,
                         context
                     );
                     var selectedCase = matchCase(node, node.test_param.value);
@@ -260,16 +256,12 @@ var visitInputs = (inputs, callback, prefix, context) => {
                         );
                     } else {
                         Galaxy.emit.debug(
-                            "form-data::visitInputs() - Invalid case for " +
-                                name +
-                                "."
+                            `form-data::visitInputs() - Invalid case for ${name}.`
                         );
                     }
                 } else {
                     Galaxy.emit.debug(
-                        "form-data::visitInputs() - Conditional test parameter missing for " +
-                            name +
-                            "."
+                        `form-data::visitInputs() - Conditional test parameter missing for ${name}.`
                     );
                 }
                 break;

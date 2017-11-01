@@ -120,7 +120,7 @@ var DatasetCollectionElementView = Backbone.View
             ].join("");
 
             var response = prompt(
-                _l("Enter a new name for the element") + ":",
+                `${_l("Enter a new name for the element")}:`,
                 this.element.name
             );
 
@@ -307,7 +307,7 @@ var ListCollectionCreator = Backbone.View
             this.workingElements.forEach(element => {
                 var currName = element.name;
                 while (existingNames.hasOwnProperty(currName)) {
-                    currName = element.name + " (" + counter + ")";
+                    currName = `${element.name} (${counter})`;
                     counter += 1;
                     if (counter >= SAFETY) {
                         throw new Error(
@@ -542,16 +542,14 @@ var ListCollectionCreator = Backbone.View
      */
         createList: function(name) {
             if (!this.workingElements.length) {
-                var message = _l("No valid elements for final list") + ". ";
-                message +=
-                    '<a class="cancel-create" href="javascript:void(0);">' +
-                    _l("Cancel") +
-                    "</a> ";
+                var message = `${_l("No valid elements for final list")}. `;
+                message += `<a class="cancel-create" href="javascript:void(0);">${_l(
+                    "Cancel"
+                )}</a> `;
                 message += _l("or");
-                message +=
-                    ' <a class="reset" href="javascript:void(0);">' +
-                    _l("start over") +
-                    "</a>.";
+                message += ` <a class="reset" href="javascript:void(0);">${_l(
+                    "start over"
+                )}</a>.`;
                 this._showAlert(message);
                 return;
             }
@@ -630,17 +628,15 @@ var ListCollectionCreator = Backbone.View
                 var xhr = data.xhr;
                 var message = data.message;
                 if (xhr.readyState === 0 && xhr.status === 0) {
-                    content +=
-                        ": " +
-                        _l("Galaxy could not be reached and may be updating.") +
-                        _l(" Try again in a few minutes.");
+                    content += `: ${_l(
+                        "Galaxy could not be reached and may be updating."
+                    )}${_l(" Try again in a few minutes.")}`;
                 } else if (xhr.responseJSON) {
-                    content +=
-                        ":<br /><pre>" +
-                        JSON.stringify(xhr.responseJSON) +
-                        "</pre>";
+                    content += `:<br /><pre>${JSON.stringify(
+                        xhr.responseJSON
+                    )}</pre>`;
                 } else {
-                    content += ": " + message;
+                    content += `: ${message}`;
                 }
             }
             creator._showAlert(content, "alert-danger");

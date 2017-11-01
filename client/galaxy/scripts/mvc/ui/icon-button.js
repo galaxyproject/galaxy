@@ -56,13 +56,13 @@ var IconButtonView = Backbone.View.extend({
 
     // generate html element
     template: function(options) {
-        var buffer = 'title="' + options.title + '" class="icon-button';
+        var buffer = `title="${options.title}" class="icon-button`;
 
         if (options.is_menu_button) {
             buffer += " menu-button";
         }
 
-        buffer += " " + options.icon_class;
+        buffer += ` ${options.icon_class}`;
 
         if (!options.enabled) {
             buffer += "_disabled";
@@ -72,13 +72,13 @@ var IconButtonView = Backbone.View.extend({
         buffer += '"';
 
         if (options.id) {
-            buffer += ' id="' + options.id + '"';
+            buffer += ` id="${options.id}"`;
         }
 
-        buffer += ' href="' + options.href + '"';
+        buffer += ` href="${options.href}"`;
         // add target for href
         if (options.target) {
-            buffer += ' target="' + options.target + '"';
+            buffer += ` target="${options.target}"`;
         }
         // set visibility
         if (!options.visible) {
@@ -87,9 +87,9 @@ var IconButtonView = Backbone.View.extend({
 
         // enabled/disabled
         if (options.enabled) {
-            buffer = "<a " + buffer + "/>";
+            buffer = `<a ${buffer}/>`;
         } else {
-            buffer = "<span " + buffer + "/>";
+            buffer = `<span ${buffer}/>`;
         }
 
         // return element

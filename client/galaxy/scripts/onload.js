@@ -214,7 +214,7 @@ $(document).ready(() => {
     function onloadWebhooks() {
         if (Galaxy.root !== undefined) {
             // Load all webhooks with the type 'onload'
-            $.getJSON(Galaxy.root + "api/webhooks/onload/all", webhooks => {
+            $.getJSON(`${Galaxy.root}api/webhooks/onload/all`, webhooks => {
                 _.each(webhooks, webhook => {
                     if (webhook.activate && webhook.script) {
                         $("<script/>", { type: "text/javascript" })

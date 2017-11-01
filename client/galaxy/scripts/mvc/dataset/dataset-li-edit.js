@@ -59,10 +59,8 @@ var DatasetListItemEdit = _super.extend(
 
             var editBtnData = {
                 title: _l("Edit attributes"),
-                href:
-                    Galaxy.root +
-                    "datasets/edit?dataset_id=" +
-                    this.model.attributes.id,
+                href: `${Galaxy.root}datasets/edit?dataset_id=${this.model
+                    .attributes.id}`,
                 faIcon: "fa-pencil",
                 classes: "edit-btn",
                 onclick: function(ev) {
@@ -153,11 +151,9 @@ var DatasetListItemEdit = _super.extend(
             var self = this;
 
             var parseToolBuild = data => {
-                var helpString =
-                    '<div id="thdiv-' + datasetID + '" class="toolhelp">';
+                var helpString = `<div id="thdiv-${datasetID}" class="toolhelp">`;
                 if (data.name && data.help) {
-                    helpString +=
-                        "<strong>Tool help for " + data.name + "</strong><hr/>";
+                    helpString += `<strong>Tool help for ${data.name}</strong><hr/>`;
                     helpString += data.help;
                 } else {
                     helpString +=
@@ -168,7 +164,7 @@ var DatasetListItemEdit = _super.extend(
             };
             var parseToolID = data => {
                 $.ajax({
-                    url: Galaxy.root + "api/tools/" + data.tool_id + "/build"
+                    url: `${Galaxy.root}api/tools/${data.tool_id}/build`
                 })
                     .done(data => {
                         parseToolBuild(data);
@@ -186,21 +182,19 @@ var DatasetListItemEdit = _super.extend(
                 href: "#",
                 faIcon: "fa-question",
                 onclick: function() {
-                    var divString = "thdiv-" + datasetID;
+                    var divString = `thdiv-${datasetID}`;
                     if (self.$el.find(".toolhelp").length > 0) {
                         self.$el.find(".toolhelp").toggle();
                     } else {
                         $.ajax({
-                            url: Galaxy.root + "api/jobs/" + jobID
+                            url: `${Galaxy.root}api/jobs/${jobID}`
                         })
                             .done(data => {
                                 parseToolID(data);
                             })
                             .fail(() => {
                                 console.log(
-                                    'Failed at recovering job information from the  Galaxy API for job id "' +
-                                        jobID +
-                                        '".'
+                                    `Failed at recovering job information from the  Galaxy API for job id "${jobID}".`
                                 );
                             });
                     }
@@ -242,10 +236,8 @@ var DatasetListItemEdit = _super.extend(
             var self = this;
             return faIconButton({
                 title: _l("View or report this error"),
-                href:
-                    Galaxy.root +
-                    "datasets/error?dataset_id=" +
-                    this.model.attributes.id,
+                href: `${Galaxy.root}datasets/error?dataset_id=${this.model
+                    .attributes.id}`,
                 classes: "report-error-btn",
                 faIcon: "fa-bug",
                 onclick: function(ev) {
@@ -453,8 +445,8 @@ var DatasetListItemEdit = _super.extend(
         // ......................................................................... misc
         /** string rep */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "HDAEditView(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `HDAEditView(${modelString})`;
         }
     }
 );

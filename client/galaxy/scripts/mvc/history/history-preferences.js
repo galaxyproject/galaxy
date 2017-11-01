@@ -59,7 +59,7 @@ var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
         },
 
         toString: function() {
-            return "HistoryPrefs(" + this.id + ")";
+            return `HistoryPrefs(${this.id})`;
         }
     },
     {
@@ -71,8 +71,7 @@ var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
         historyStorageKey: function historyStorageKey(historyId) {
             if (!historyId) {
                 throw new Error(
-                    "HistoryPrefs.historyStorageKey needs valid id: " +
-                        historyId
+                    `HistoryPrefs.historyStorageKey needs valid id: ${historyId}`
                 );
             }
             // single point of change

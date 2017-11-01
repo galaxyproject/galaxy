@@ -13,9 +13,8 @@ var HistoryPanel = Backbone.View.extend({
 
         // view of the current history
         this.historyView = new CurrentHistoryView.CurrentHistoryView({
-            className:
-                CurrentHistoryView.CurrentHistoryView.prototype.className +
-                " middle",
+            className: `${CurrentHistoryView.CurrentHistoryView.prototype
+                .className} middle`,
             purgeAllowed: this.allow_user_dataset_purge,
             linkTarget: "galaxy_main"
         });
@@ -40,14 +39,14 @@ var HistoryPanel = Backbone.View.extend({
             cls: "panel-header-button",
             target: "galaxy_main",
             icon: "fa fa-cog",
-            href: this.root + "root/history_options"
+            href: `${this.root}root/history_options`
         });
         this.buttonViewMulti = new Ui.ButtonLink({
             id: "history-view-multi-button",
             title: "View all histories",
             cls: "panel-header-button",
             icon: "fa fa-columns",
-            href: this.root + "history/view_multiple"
+            href: `${this.root}history/view_multiple`
         });
 
         // define components
@@ -70,7 +69,7 @@ var HistoryPanel = Backbone.View.extend({
         // fetch to update the quota meter adding 'current' for any anon-user's id
         Galaxy.listenTo(this.historyView, "history-size-change", () => {
             Galaxy.user.fetch({
-                url: Galaxy.user.urlRoot() + "/" + (Galaxy.user.id || "current")
+                url: `${Galaxy.user.urlRoot()}/${Galaxy.user.id || "current"}`
             });
         });
     },

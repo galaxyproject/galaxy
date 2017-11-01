@@ -13,8 +13,8 @@ var View = Backbone.View.extend({
         });
         this.button_new = new Ui.ButtonIcon({
             icon: "fa-plus",
-            title: "Insert " + this.options.title,
-            tooltip: "Add new " + this.options.title + " block",
+            title: `Insert ${this.options.title}`,
+            tooltip: `Add new ${this.options.title} block`,
             cls: "ui-button-icon ui-clear-float form-repeat-add",
             onclick: function() {
                 options.onnew && options.onnew();
@@ -71,7 +71,7 @@ var View = Backbone.View.extend({
             Galaxy.emit.debug("form-repeat::del()", "Invalid repeat block id.");
             return;
         }
-        this.$list.find("#" + id).remove();
+        this.$list.find(`#${id}`).remove();
         delete this.list[id];
         this.button_new.enable();
         this._refresh();
@@ -103,7 +103,7 @@ var View = Backbone.View.extend({
         var index = 0;
         for (var id in this.list) {
             var portlet = this.list[id];
-            portlet.title(++index + ": " + this.options.title);
+            portlet.title(`${++index}: ${this.options.title}`);
             portlet[
                 this.size() > this.options.min
                     ? "showOperation"

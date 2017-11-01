@@ -62,9 +62,10 @@ var FrameView = Backbone.View.extend({
                     .attr("scrolling", "auto")
                     .attr(
                         "src",
-                        options.url +
-                            (options.url.indexOf("?") === -1 ? "?" : "&") +
-                            "widget=True"
+                        `${options.url +
+                            (options.url.indexOf("?") === -1
+                                ? "?"
+                                : "&")}widget=True`
                     )
             );
         } else if (options.content) {
@@ -163,10 +164,8 @@ var View = Backbone.View.extend({
         if (this.frame_counter >= this.options.frame_max) {
             Galaxy.modal.show({
                 title: "Warning",
-                body:
-                    "You have reached the maximum number of allowed frames (" +
-                    this.options.frame_max +
-                    ").",
+                body: `You have reached the maximum number of allowed frames (${this
+                    .options.frame_max}).`,
                 buttons: {
                     Close: function() {
                         Galaxy.modal.hide();
@@ -174,7 +173,7 @@ var View = Backbone.View.extend({
                 }
             });
         } else {
-            var frame_id = "#frame-" + this.frame_uid++;
+            var frame_id = `#frame-${this.frame_uid++}`;
             if ($(frame_id).length !== 0) {
                 Galaxy.modal.show({
                     title: "Error",
@@ -410,10 +409,9 @@ var View = Backbone.View.extend({
     /** Identify the target frame */
     _frameIdentify: function(target) {
         return this.frame_list[
-            "#" +
-                $(target)
-                    .closest(".frame")
-                    .attr("id")
+            `#${$(target)
+                .closest(".frame")
+                .attr("id")}`
         ];
     },
 

@@ -153,28 +153,28 @@ var View = Backbone.View.extend({
 
     /** Enable a particular button */
     enableButton: function(id) {
-        this.$buttons.find("#" + id).prop("disabled", false);
+        this.$buttons.find(`#${id}`).prop("disabled", false);
     },
 
     /** Disable a particular button */
     disableButton: function(id) {
-        this.$buttons.find("#" + id).prop("disabled", true);
+        this.$buttons.find(`#${id}`).prop("disabled", true);
     },
 
     /** Hide a particular operation */
     hideOperation: function(id) {
-        this.$operations.find("#" + id).hide();
+        this.$operations.find(`#${id}`).hide();
     },
 
     /** Show a particular operation */
     showOperation: function(id) {
-        this.$operations.find("#" + id).show();
+        this.$operations.find(`#${id}`).show();
     },
 
     /** Replaces the event callback of an existing operation */
     setOperation: function(id, callback) {
         this.$operations
-            .find("#" + id)
+            .find(`#${id}`)
             .off("click")
             .on("click", callback);
     },

@@ -35,7 +35,7 @@ var WebhookView = Backbone.View.extend({
     render: function() {
         var webhook = this.model.toJSON();
 
-        this.$el.html('<div id="' + webhook.name + '"></div>');
+        this.$el.html(`<div id="${webhook.name}"></div>`);
         if (webhook.styles)
             $("<style/>", { type: "text/css" })
                 .text(webhook.styles)

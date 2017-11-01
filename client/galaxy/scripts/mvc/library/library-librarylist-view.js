@@ -26,7 +26,7 @@ var LibraryListView = Backbone.View.extend({
         this.modal = null;
         // collection of {Item}s
         this.collection = new mod_library_model.Libraries();
-        this.collection.url = this.collection.urlRoot + "?deleted=false";
+        this.collection.url = `${this.collection.urlRoot}?deleted=false`;
         this.collection.fetch({
             success: function() {
                 that.render();
@@ -145,7 +145,7 @@ var LibraryListView = Backbone.View.extend({
             this.render();
         } else {
             var that = this;
-            this.collection.url = this.collection.urlRoot + "?deleted=true";
+            this.collection.url = `${this.collection.urlRoot}?deleted=true`;
             this.collection.fetch({
                 remove: false,
                 success: function() {

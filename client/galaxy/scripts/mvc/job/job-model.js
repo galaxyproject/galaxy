@@ -47,7 +47,7 @@ var Job = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             /** instance vars and listeners */
             initialize: function(attributes, options) {
-                this.debug(this + "(Job).initialize", attributes, options);
+                this.debug(`${this}(Job).initialize`, attributes, options);
 
                 this.set("params", this.parseParams(this.get("params")), {
                     silent: true
@@ -65,7 +65,7 @@ var Job = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             _setUpListeners: function() {
                 // if the state has changed and the new state is a ready state, fire an event
                 this.on("change:state", function(currModel, newState) {
-                    this.log(this + " has changed state:", currModel, newState);
+                    this.log(`${this} has changed state:`, currModel, newState);
                     if (this.inReadyState()) {
                         this.trigger(
                             "state:ready",
@@ -93,7 +93,7 @@ var Job = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             // ........................................................................ ajax
             /** root api url */
-            urlRoot: Galaxy.root + "api/jobs",
+            urlRoot: `${Galaxy.root}api/jobs`,
             //url : function(){ return this.urlRoot; },
 
             // ........................................................................ searching
@@ -128,7 +128,7 @@ var JobCollection = Backbone.Collection.extend(BASE_MVC.LoggableMixin).extend(
         model: Job,
 
         /** root api url */
-        urlRoot: Galaxy.root + "api/jobs",
+        urlRoot: `${Galaxy.root}api/jobs`,
         url: function() {
             return this.urlRoot;
         },

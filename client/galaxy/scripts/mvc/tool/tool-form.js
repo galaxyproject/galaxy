@@ -21,17 +21,9 @@ var View = Backbone.View.extend({
                         var build_data = {};
                         var job_id = options.job_id;
                         if (job_id) {
-                            build_url =
-                                Galaxy.root +
-                                "api/jobs/" +
-                                job_id +
-                                "/build_for_rerun";
+                            build_url = `${Galaxy.root}api/jobs/${job_id}/build_for_rerun`;
                         } else {
-                            build_url =
-                                Galaxy.root +
-                                "api/tools/" +
-                                options.id +
-                                "/build";
+                            build_url = `${Galaxy.root}api/tools/${options.id}/build`;
                             build_data = $.extend({}, Galaxy.params);
                             build_data["tool_id"] &&
                                 delete build_data["tool_id"];
@@ -62,15 +54,11 @@ var View = Backbone.View.extend({
                                     (response && response.err_msg) ||
                                     "Uncaught error.";
                                 if (status == 401) {
-                                    window.location =
-                                        Galaxy.root +
-                                        "user/login?" +
-                                        $.param({
-                                            redirect:
-                                                Galaxy.root +
-                                                "?tool_id=" +
-                                                options.id
-                                        });
+                                    window.location = `${Galaxy.root}user/login?${$.param(
+                                        {
+                                            redirect: `${Galaxy.root}?tool_id=${options.id}`
+                                        }
+                                    )}`;
                                 } else if (form.$el.is(":empty")) {
                                     form.$el.prepend(
                                         new Ui.Message({
@@ -115,11 +103,9 @@ var View = Backbone.View.extend({
                         );
                         Utils.request({
                             type: "POST",
-                            url:
-                                Galaxy.root +
-                                "api/tools/" +
-                                form.model.get("id") +
-                                "/build",
+                            url: `${Galaxy.root}api/tools/${form.model.get(
+                                "id"
+                            )}/build`,
                             data: current_state,
                             success: function(data) {
                                 form.update(data);
@@ -156,7 +142,7 @@ var View = Backbone.View.extend({
         // build execute button
         var execute_button = new Ui.Button({
             icon: "fa-check",
-            tooltip: "Execute: " + options.name + " (" + options.version + ")",
+            tooltip: `Execute: ${options.name} (${options.version})`,
             title: "Execute",
             cls: "btn btn-primary ui-clear-float",
             wait_cls: "btn btn-info ui-clear-float",
@@ -207,7 +193,7 @@ var View = Backbone.View.extend({
             callback && callback();
             return;
         }
-        if (options.action !== Galaxy.root + "tool_runner/index") {
+        if (options.action !== `${Galaxy.root}tool_runner/index`) {
             var $f = $("<form/>").attr({
                 action: options.action,
                 method: options.method,
@@ -231,7 +217,7 @@ var View = Backbone.View.extend({
         );
         Utils.request({
             type: "POST",
-            url: Galaxy.root + "api/tools",
+            url: `${Galaxy.root}api/tools`,
             data: job_def,
             success: function(response) {
                 callback && callback();
@@ -241,7 +227,7 @@ var View = Backbone.View.extend({
                 if (response.jobs && response.jobs.length > 0) {
                     self.$el.append($("<div/>", { id: "webhook-view" }));
                     var WebhookApp = new Webhooks.WebhookView({
-                        urlRoot: Galaxy.root + "api/webhooks/tool",
+                        urlRoot: `${Galaxy.root}api/webhooks/tool`,
                         toolId: job_def.tool_id
                     });
                 }
@@ -328,11 +314,7 @@ var View = Backbone.View.extend({
                 } else if (batch_n !== n) {
                     this.form.highlight(
                         input_id,
-                        "Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>" +
-                            n +
-                            "</b> selection(s) while a previous field contains <b>" +
-                            batch_n +
-                            "</b>."
+                        `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batch_n}</b>.`
                     );
                     return false;
                 }
@@ -344,20 +326,19 @@ var View = Backbone.View.extend({
     _templateSuccess: function(response) {
         if (response.jobs && response.jobs.length > 0) {
             var njobs = response.jobs.length;
-            var njobs_text = njobs == 1 ? "1 job has" : njobs + " jobs have";
+            var njobs_text = njobs == 1 ? "1 job has" : `${njobs} jobs have`;
             var $message = $("<div/>")
                 .addClass("donemessagelarge")
                 .append(
                     $("<p/>").text(
-                        njobs_text +
-                            " been successfully added to the queue - resulting in the following datasets:"
+                        `${njobs_text} been successfully added to the queue - resulting in the following datasets:`
                     )
                 );
             _.each(response.outputs, output => {
                 $message.append(
                     $("<p/>")
                         .addClass("messagerow")
-                        .append($("<b/>").text(output.hid + ": " + output.name))
+                        .append($("<b/>").text(`${output.hid}: ${output.name}`))
                 );
             });
             $message.append(
@@ -381,8 +362,8 @@ var View = Backbone.View.extend({
             .addClass("errormessagelarge")
             .append(
                 $("<p/>").text(
-                    "The server could not complete the request. Please contact the Galaxy Team if this error persists. " +
-                        (err_msg || "")
+                    `The server could not complete the request. Please contact the Galaxy Team if this error persists. ${err_msg ||
+                        ""}`
                 )
             )
             .append($("<pre/>").text(JSON.stringify(response, null, 4)));

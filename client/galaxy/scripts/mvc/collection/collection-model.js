@@ -124,15 +124,11 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
                         "no endpoint for non-hdas within a collection yet"
                     );
                     // (a little silly since this api endpoint *also* points at hdas)
-                    return Galaxy.root + "api/datasets";
+                    return `${Galaxy.root}api/datasets`;
                 }
-                return (
-                    Galaxy.root +
-                    "api/histories/" +
-                    this.get("history_id") +
-                    "/contents/" +
-                    this.get("id")
-                );
+                return `${Galaxy.root}api/histories/${this.get(
+                    "history_id"
+                )}/contents/${this.get("id")}`;
             },
 
             defaults: _.extend(
@@ -142,14 +138,9 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
             ),
 
             _downloadQueryParameters: function() {
-                return (
-                    "?to_ext=" +
-                    this.get("file_ext") +
-                    "&hdca_id=" +
-                    this.get("parent_hdca_id") +
-                    "&element_identifier=" +
-                    this.get("element_identifier")
-                );
+                return `?to_ext=${this.get("file_ext")}&hdca_id=${this.get(
+                    "parent_hdca_id"
+                )}&element_identifier=${this.get("element_identifier")}`;
             },
 
             // because all objects have constructors (as this hashmap would even if this next line wasn't present)
@@ -224,7 +215,7 @@ var DatasetCollection = Backbone.Model
             /** set up: create elements instance var and (on changes to elements) update them  */
             initialize: function(model, options) {
                 this.debug(
-                    this + "(DatasetCollection).initialize:",
+                    `${this}(DatasetCollection).initialize:`,
                     model,
                     options,
                     this
@@ -240,7 +231,7 @@ var DatasetCollection = Backbone.Model
             /** move elements model attribute to full collection */
             _createElementsModel: function() {
                 this.debug(
-                    this + "._createElementsModel",
+                    `${this}._createElementsModel`,
                     this.collectionClass,
                     this.get("elements"),
                     this.elements
@@ -337,7 +328,7 @@ var DatasetCollection = Backbone.Model
                     this.get("id"),
                     this.get("name") || this.get("element_identifier")
                 ];
-                return "DatasetCollection(" + idAndName.join(",") + ")";
+                return `DatasetCollection(${idAndName.join(",")})`;
             }
         }
     );
@@ -352,7 +343,7 @@ var ListDatasetCollection = DatasetCollection.extend(
 
         /** String representation. */
         toString: function() {
-            return "List" + DatasetCollection.prototype.toString.call(this);
+            return `List${DatasetCollection.prototype.toString.call(this)}`;
         }
     }
 );
@@ -364,7 +355,7 @@ var PairDatasetCollection = ListDatasetCollection.extend(
     /** @lends PairDatasetCollection.prototype */ {
         /** String representation. */
         toString: function() {
-            return "Pair" + DatasetCollection.prototype.toString.call(this);
+            return `Pair${DatasetCollection.prototype.toString.call(this)}`;
         }
     }
 );
@@ -396,7 +387,7 @@ var NestedDCDCE = DatasetCollection.extend(
             /** String representation. */
             toString: function() {
                 var objStr = this.object
-                    ? "" + this.object
+                    ? `${this.object}`
                     : this.get("element_identifier");
                 return ["NestedDCDCE(", objStr, ")"].join("");
             }
@@ -449,7 +440,7 @@ var NestedPairDCDCE = PairDatasetCollection.extend(
             /** String representation. */
             toString: function() {
                 var objStr = this.object
-                    ? "" + this.object
+                    ? `${this.object}`
                     : this.get("element_identifier");
                 return ["NestedPairDCDCE(", objStr, ")"].join("");
             }
@@ -512,7 +503,7 @@ var NestedListDCDCE = ListDatasetCollection.extend(
             /** String representation. */
             toString: function() {
                 var objStr = this.object
-                    ? "" + this.object
+                    ? `${this.object}`
                     : this.get("element_identifier");
                 return ["NestedListDCDCE(", objStr, ")"].join("");
             }

@@ -85,7 +85,7 @@ var TracksterUI = Base.extend({
 
         // Make call to save visualization.
         return $.ajax({
-            url: Galaxy.root + "visualization/save",
+            url: `${Galaxy.root}visualization/save`,
             type: "POST",
             dataType: "json",
             data: {
@@ -178,10 +178,7 @@ var TracksterUI = Base.extend({
                     icon_class: "globe",
                     title: "Circster",
                     on_click: function() {
-                        window.location =
-                            self.baseURL +
-                            "visualization/circster?id=" +
-                            view.vis_id;
+                        window.location = `${self.baseURL}visualization/circster?id=${view.vis_id}`;
                     }
                 },
                 {
@@ -418,17 +415,17 @@ var TracksterUI = Base.extend({
                     },
                     "Leave without Saving": function() {
                         $(window).off("beforeunload");
-                        window.location = Galaxy.root + "visualization";
+                        window.location = `${Galaxy.root}visualization`;
                     },
                     Save: function() {
                         $.when(self.save_viz()).then(() => {
-                            window.location = Galaxy.root + "visualization";
+                            window.location = `${Galaxy.root}visualization`;
                         });
                     }
                 }
             });
         } else {
-            window.location = Galaxy.root + "visualization";
+            window.location = `${Galaxy.root}visualization`;
         }
     }
 });
@@ -491,17 +488,11 @@ var TracksterView = Backbone.View.extend({
         Galaxy.modal.show({
             title: "View Data in a New or Saved Visualization?",
             // either have text in here or have to remove body and the header/footer margins
-            body:
-                "<p><ul style='list-style: disc inside none'>You can add this dataset as:" +
-                "<li>a new track to one of your existing, saved Trackster " +
-                "sessions if they share the genome build: <b>" +
-                (dbkey || "Not available.") +
-                "</b></li>" +
-                "<li>or create a new session with this dataset as the only track</li>" +
-                "</ul></p>",
+            body: `<p><ul style='list-style: disc inside none'>You can add this dataset as:<li>a new track to one of your existing, saved Trackster sessions if they share the genome build: <b>${dbkey ||
+                "Not available."}</b></li><li>or create a new session with this dataset as the only track</li></ul></p>`,
             buttons: {
                 Cancel: function() {
-                    window.location = Galaxy.root + "visualizations/list";
+                    window.location = `${Galaxy.root}visualizations/list`;
                 },
                 "View in saved visualization": function() {
                     self.view_in_saved(dataset_params);
@@ -516,7 +507,7 @@ var TracksterView = Backbone.View.extend({
     // view
     view_in_saved: function(dataset_params) {
         var tracks_grid = new GridView({
-            url_base: Galaxy.root + "visualization/list_tracks",
+            url_base: `${Galaxy.root}visualization/list_tracks`,
             dict_format: true,
             embedded: true
         });
@@ -525,17 +516,16 @@ var TracksterView = Backbone.View.extend({
             body: tracks_grid.$el,
             buttons: {
                 Cancel: function() {
-                    window.location = Galaxy.root + "visualizations/list";
+                    window.location = `${Galaxy.root}visualizations/list`;
                 },
                 "Add to visualization": function() {
                     $(parent.document)
                         .find("input[name=id]:checked")
                         .each(function() {
                             dataset_params.id = $(this).val();
-                            window.location =
-                                Galaxy.root +
-                                "visualization/trackster?" +
-                                $.param(dataset_params);
+                            window.location = `${Galaxy.root}visualization/trackster?${$.param(
+                                dataset_params
+                            )}`;
                         });
                 }
             }
@@ -572,7 +562,7 @@ var TracksterView = Backbone.View.extend({
 
         // ajax
         $.ajax({
-            url: Galaxy.root + "api/genomes?chrom_info=True",
+            url: `${Galaxy.root}api/genomes?chrom_info=True`,
             data: {},
             error: function() {
                 alert("Couldn't create new browser.");
@@ -584,8 +574,7 @@ var TracksterView = Backbone.View.extend({
                     body: self.template_view_new(response),
                     buttons: {
                         Cancel: function() {
-                            window.location =
-                                Galaxy.root + "visualizations/list";
+                            window.location = `${Galaxy.root}visualizations/list`;
                         },
                         Create: function() {
                             self.create_browser(
@@ -638,27 +627,13 @@ var TracksterView = Backbone.View.extend({
 
         // add dbkeys
         for (var i = 0; i < response.length; i++) {
-            html +=
-                '<option value="' +
-                response[i][1] +
-                '">' +
-                response[i][0] +
-                "</option>";
+            html += `<option value="${response[i][1]}">${response[
+                i
+            ][0]}</option>`;
         }
 
         // close selection/finalize template
-        html +=
-            "</select>" +
-            "</div>" +
-            '<div style="clear: both;"></div>' +
-            "</div>" +
-            '<div class="form-row">' +
-            "Is the build not listed here? " +
-            '<a href="' +
-            Galaxy.root +
-            'user/dbkeys?use_panels=True">Add a Custom Build</a>' +
-            "</div>" +
-            "</form>";
+        html += `</select></div><div style="clear: both;"></div></div><div class="form-row">Is the build not listed here? <a href="${Galaxy.root}user/dbkeys?use_panels=True">Add a Custom Build</a></div></form>`;
 
         // return
         return html;
@@ -688,16 +663,14 @@ var TracksterView = Backbone.View.extend({
     init_editor: function() {
         // set title
         $("#center .unified-panel-title").text(
-            view.config.get_value("name") + " (" + view.dbkey + ")"
+            `${view.config.get_value("name")} (${view.dbkey})`
         );
 
         // add dataset
         if (galaxy_config.app.add_dataset)
             $.ajax({
-                url:
-                    Galaxy.root +
-                    "api/datasets/" +
-                    galaxy_config.app.add_dataset,
+                url: `${Galaxy.root}api/datasets/${galaxy_config.app
+                    .add_dataset}`,
                 data: { hda_ldda: "hda", data_type: "track_config" },
                 dataType: "json",
                 success: function(track_data) {
@@ -710,7 +683,7 @@ var TracksterView = Backbone.View.extend({
         // initialize icons
         $("#add-bookmark-button").click(() => {
             // add new bookmark.
-            var position = view.chrom + ":" + view.low + "-" + view.high;
+            var position = `${view.chrom}:${view.low}-${view.high}`;
 
             var annotation = "Bookmark description";
             return ui.add_bookmark(position, annotation, true);

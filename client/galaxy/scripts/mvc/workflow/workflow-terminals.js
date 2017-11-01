@@ -57,9 +57,8 @@ $.extend(CollectionTypeDescription.prototype, {
             return otherCollectionType;
         }
         return new CollectionTypeDescription(
-            this.collectionType +
-                ":" +
-                otherCollectionTypeDescription.collectionType
+            `${this
+                .collectionType}:${otherCollectionTypeDescription.collectionType}`
         );
     },
     canMatch: function(otherCollectionTypeDescription) {
@@ -109,7 +108,7 @@ $.extend(CollectionTypeDescription.prototype, {
         );
     },
     toString: function() {
-        return "CollectionType[" + this.collectionType + "]";
+        return `CollectionType[${this.collectionType}]`;
     },
     _endsWith: function(str, suffix) {
         return str.indexOf(suffix, str.length - suffix.length) !== -1;

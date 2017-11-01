@@ -11,7 +11,7 @@ var Default = Backbone.View.extend({
                 onchange: function() {
                     Utils.request({
                         type: "POST",
-                        url: Galaxy.root + "api/workflows/build_module",
+                        url: `${Galaxy.root}api/workflows/build_module`,
                         data: {
                             id: node.id,
                             type: node.type,
@@ -64,7 +64,7 @@ var Tool = Backbone.View.extend({
                     );
                     Utils.request({
                         type: "POST",
-                        url: Galaxy.root + "api/workflows/build_module",
+                        url: `${Galaxy.root}api/workflows/build_module`,
                         data: current_state,
                         success: function(data) {
                             form.model.set(data.config_form);
@@ -103,12 +103,9 @@ var Tool = Backbone.View.extend({
             if (input.type) {
                 if (["data", "data_collection"].indexOf(input.type) != -1) {
                     input.type = "hidden";
-                    input.info =
-                        "Data input '" +
-                        input.name +
-                        "' (" +
-                        Utils.textify(input.extensions) +
-                        ")";
+                    input.info = `Data input '${input.name}' (${Utils.textify(
+                        input.extensions
+                    )})`;
                     input.value = { __class__: "RuntimeValue" };
                 } else if (!input.fixed) {
                     input.collapsible_value = {
@@ -191,13 +188,13 @@ function _addSections(form) {
             var input = head.inputs[i];
             var action = input.action;
             if (action) {
-                input.name = "pja__" + output_id + "__" + input.action;
+                input.name = `pja__${output_id}__${input.action}`;
                 if (input.pja_arg) {
-                    input.name += "__" + input.pja_arg;
+                    input.name += `__${input.pja_arg}`;
                 }
                 if (input.payload) {
                     for (var p_id in input.payload) {
-                        input.payload[input.name + "__" + p_id] =
+                        input.payload[`${input.name}__${p_id}`] =
                             input.payload[p_id];
                         delete input.payload[p_id];
                     }
@@ -248,7 +245,7 @@ function _addSections(form) {
         });
         var output;
         var input_config = {
-            title: "Configure Output: '" + output_id + "'",
+            title: `Configure Output: '${output_id}'`,
             type: "section",
             flat: true,
             inputs: [
@@ -276,10 +273,9 @@ function _addSections(form) {
                     type: "text",
                     value: "",
                     ignore: "",
-                    help:
-                        'This action will rename the output dataset. Click <a href="https://galaxyproject.org/learn/advanced-workflow/variables/">here</a> for more information. Valid inputs are: <strong>' +
-                        input_terminal_names.join(", ") +
-                        "</strong>."
+                    help: `This action will rename the output dataset. Click <a href="https://galaxyproject.org/learn/advanced-workflow/variables/">here</a> for more information. Valid inputs are: <strong>${input_terminal_names.join(
+                        ", "
+                    )}</strong>.`
                 },
                 {
                     action: "ChangeDatatypeAction",
@@ -367,10 +363,10 @@ function _addSections(form) {
 
     if (output_id) {
         inputs.push({
-            name: "pja__" + output_id + "__EmailAction",
+            name: `pja__${output_id}__EmailAction`,
             label: "Email notification",
             type: "boolean",
-            value: String(Boolean(post_job_actions["EmailAction" + output_id])),
+            value: String(Boolean(post_job_actions[`EmailAction${output_id}`])),
             ignore: "false",
             help:
                 "An email notification will be sent when the job has completed.",
@@ -379,12 +375,12 @@ function _addSections(form) {
             }
         });
         inputs.push({
-            name: "pja__" + output_id + "__DeleteIntermediatesAction",
+            name: `pja__${output_id}__DeleteIntermediatesAction`,
             label: "Output cleanup",
             type: "boolean",
             value: String(
                 Boolean(
-                    post_job_actions["DeleteIntermediatesAction" + output_id]
+                    post_job_actions[`DeleteIntermediatesAction${output_id}`]
                 )
             ),
             ignore: "false",

@@ -96,7 +96,7 @@ var PopupMenu = Backbone.View.extend({
                 ].join("");
             }
             var href = option.href || "javascript:void(0);";
-            var target = option.target ? ' target="' + option.target + '"' : "";
+            var target = option.target ? ` target="${option.target}"` : "";
 
             var check = option.checked
                 ? '<span class="fa fa-check"></span>'
@@ -337,7 +337,7 @@ PopupMenu.make_popup_menus = (parent, menuSelector, buttonSelectorBuildFn) => {
     // default to (orig. Glx) matching button to menu by using the popupmenu attr of the menu as the id of the button
     buttonSelectorBuildFn =
         buttonSelectorBuildFn ||
-        (($menuElement, parent) => "#" + $menuElement.attr("popupmenu"));
+        (($menuElement, parent) => `#${$menuElement.attr("popupmenu")}`);
 
     // aggregate and return all PopupMenus
     var popupMenusCreated = [];

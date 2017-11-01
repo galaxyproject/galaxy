@@ -51,7 +51,7 @@ var ButtonDefault = Backbone.View.extend({
             .css("display", options.percentage !== -1 ? "block" : "none");
         this.$progress_bar
             .addClass("progress-bar")
-            .css({ width: options.percentage + "%" });
+            .css({ width: `${options.percentage}%` });
         this.$icon.removeClass().addClass("icon fa");
         this.$title.removeClass().addClass("title");
         if (options.wait) {
@@ -329,7 +329,7 @@ var ButtonMenu = ButtonDefault.extend({
         if (this.collection.length > 0) {
             this.$menu = $("<ul/>")
                 .addClass("menu dropdown-menu")
-                .addClass("pull-" + self.model.get("pull"))
+                .addClass(`pull-${self.model.get("pull")}`)
                 .attr("role", "menu");
             this.$el.append(this.$menu);
         }

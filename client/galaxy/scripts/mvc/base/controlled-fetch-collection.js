@@ -151,7 +151,7 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         var collection = this;
         var comparator = collection.comparators[order];
         if (_.isUndefined(comparator)) {
-            throw new Error("unknown order: " + order);
+            throw new Error(`unknown order: ${order}`);
         }
         // if( _.isUndefined( comparator ) ){ return; }
         if (comparator === collection.comparator) {

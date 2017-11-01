@@ -8,31 +8,16 @@ export default {
         if (options.embedded) {
             tmpl = this.grid_header(options) + this.grid_table(options);
         } else {
-            tmpl =
-                '<div class="loading-elt-overlay"></div>' +
-                "<table>" +
-                "<tr>" +
-                '<td width="75%">' +
-                this.grid_header(options) +
-                "</td>" +
-                "<td></td>" +
-                "<td></td>" +
-                "</tr>" +
-                "<tr>" +
-                '<td width="100%" id="grid-message" valign="top"></td>' +
-                "<td></td>" +
-                "<td></td>" +
-                "</tr>" +
-                "</table>" +
-                this.grid_table(options);
+            tmpl = `<div class="loading-elt-overlay"></div><table><tr><td width="75%">${this.grid_header(
+                options
+            )}</td><td></td><td></td></tr><tr><td width="100%" id="grid-message" valign="top"></td><td></td><td></td></tr></table>${this.grid_table(
+                options
+            )}`;
         }
 
         // add info text
         if (options.info_text) {
-            tmpl +=
-                '<br><div class="toolParamHelp" style="clear: both;">' +
-                options.info_text +
-                "</div>";
+            tmpl += `<br><div class="toolParamHelp" style="clear: both;">${options.info_text}</div>`;
         }
 
         // return
@@ -56,7 +41,7 @@ export default {
     grid_header: function(options) {
         var tmpl = '<div class="grid-header">';
         if (!options.embedded) {
-            tmpl += "<h2>" + options.title + "</h2>";
+            tmpl += `<h2>${options.title}</h2>`;
         }
         if (options.global_actions) {
             tmpl += '<ul class="manage-table-actions">';
@@ -68,16 +53,7 @@ export default {
             }
             for (var i in options.global_actions) {
                 var action = options.global_actions[i];
-                tmpl +=
-                    "<li>" +
-                    '<a class="action-button use-target" target="' +
-                    action.target +
-                    '" href="' +
-                    action.url_args +
-                    '" onclick="return false;" >' +
-                    action.label +
-                    "</a>" +
-                    "</li>";
+                tmpl += `<li><a class="action-button use-target" target="${action.target}" href="${action.url_args}" onclick="return false;" >${action.label}</a></li>`;
             }
             if (show_popup) {
                 tmpl += "</div>";
@@ -116,24 +92,13 @@ export default {
         for (var i in options.columns) {
             var column = options.columns[i];
             if (column.visible) {
-                tmpl += '<th id="' + column.key + '-header">';
+                tmpl += `<th id="${column.key}-header">`;
                 if (column.href) {
-                    tmpl +=
-                        '<a href="' +
-                        column.href +
-                        '" class="sort-link" sort_key="' +
-                        column.key +
-                        '">' +
-                        column.label +
-                        "</a>";
+                    tmpl += `<a href="${column.href}" class="sort-link" sort_key="${column.key}">${column.label}</a>`;
                 } else {
                     tmpl += column.label;
                 }
-                tmpl +=
-                    '<span class="sort-arrow">' +
-                    column.extra +
-                    "</span>" +
-                    "</th>";
+                tmpl += `<span class="sort-arrow">${column.extra}</span></th>`;
             }
         }
 
@@ -163,7 +128,7 @@ export default {
             // encode ids
             var item = options.items[i];
             var encoded_id = item.encode_id;
-            var popupmenu_id = "grid-" + i + "-popup";
+            var popupmenu_id = `grid-${i}-popup`;
 
             // Tag current
             tmpl += "<tr ";
@@ -174,14 +139,7 @@ export default {
 
             // Item selection column
             if (options.show_item_checkboxes) {
-                tmpl +=
-                    '<td style="width: 1.5em;">' +
-                    '<input type="checkbox" name="id" value="' +
-                    encoded_id +
-                    '" id="' +
-                    encoded_id +
-                    '" class="grid-row-select-checkbox" />' +
-                    "</td>";
+                tmpl += `<td style="width: 1.5em;"><input type="checkbox" name="id" value="${encoded_id}" id="${encoded_id}" class="grid-row-select-checkbox" /></td>`;
             }
 
             // Data columns
@@ -211,7 +169,7 @@ export default {
                     var id = "";
                     var cls = "";
                     if (column.attach_popup) {
-                        id = "grid-" + i + "-popup";
+                        id = `grid-${i}-popup`;
                         cls = "menubutton";
                         if (link != "") {
                             cls += " split";
@@ -220,43 +178,20 @@ export default {
                     }
 
                     // Check for row wrapping
-                    tmpl += "<td " + nowrap + ">";
+                    tmpl += `<td ${nowrap}>`;
 
                     // Link
                     if (link) {
                         if (options.operations.length != 0) {
-                            tmpl +=
-                                '<div id="' +
-                                id +
-                                '" class="' +
-                                cls +
-                                '" style="float: left;">';
+                            tmpl += `<div id="${id}" class="${cls}" style="float: left;">`;
                         }
-                        tmpl +=
-                            '<a class="menubutton-label use-target" target="' +
-                            target +
-                            '" href="' +
-                            link +
-                            '" onclick="return false;">' +
-                            value +
-                            "</a>";
+                        tmpl += `<a class="menubutton-label use-target" target="${target}" href="${link}" onclick="return false;">${value}</a>`;
                         if (options.operations.length != 0) {
                             tmpl += "</div>";
                         }
                     } else {
-                        tmpl +=
-                            '<div id="' +
-                            id +
-                            '" class="' +
-                            cls +
-                            '"><label id="' +
-                            column.label_id_prefix +
-                            encoded_id +
-                            '" for="' +
-                            encoded_id +
-                            '">' +
-                            (value || "") +
-                            "</label></div>";
+                        tmpl += `<div id="${id}" class="${cls}"><label id="${column.label_id_prefix}${encoded_id}" for="${encoded_id}">${value ||
+                            ""}</label></div>`;
                     }
                     tmpl += "</td>";
                 }
@@ -334,35 +269,15 @@ export default {
                 page_index++
             ) {
                 if (page_index == options.cur_page_num) {
-                    tmpl +=
-                        '<span class="page-link inactive-link" id="page-link-' +
-                        page_index +
-                        '">' +
-                        page_index +
-                        "</span>";
+                    tmpl += `<span class="page-link inactive-link" id="page-link-${page_index}">${page_index}</span>`;
                 } else {
-                    tmpl +=
-                        '<span class="page-link" id="page-link-' +
-                        page_index +
-                        '"><a href="javascript:void(0);" onclick="return false;" page_num="' +
-                        page_index +
-                        '">' +
-                        page_index +
-                        "</a></span>";
+                    tmpl += `<span class="page-link" id="page-link-${page_index}"><a href="javascript:void(0);" onclick="return false;" page_num="${page_index}">${page_index}</a></span>`;
                 }
             }
 
             // show last page
             if (max_page < num_pages) {
-                tmpl +=
-                    "..." +
-                    '<span class="page-link" id="page-link-' +
-                    num_pages +
-                    '"><a href="javascript:void(0);" onclick="return false;" page_num="' +
-                    num_pages +
-                    '">' +
-                    num_pages +
-                    "</a></span>";
+                tmpl += `...<span class="page-link" id="page-link-${num_pages}"><a href="javascript:void(0);" onclick="return false;" page_num="${num_pages}">${num_pages}</a></span>`;
             }
             tmpl += "</span>";
 
@@ -387,10 +302,7 @@ export default {
             for (var i in options.operations) {
                 var operation = options.operations[i];
                 if (operation.allow_multiple) {
-                    tmpl +=
-                        '<input type="button" value="' +
-                        operation.label +
-                        '" class="operation-button action-button">&nbsp;';
+                    tmpl += `<input type="button" value="${operation.label}" class="operation-button action-button">&nbsp;`;
                 }
             }
 
@@ -413,12 +325,7 @@ export default {
             for (i in options.operations) {
                 var operation = options.operations[i];
                 if (operation.global_operation) {
-                    tmpl +=
-                        '<a class="action-button" href="' +
-                        operation.global_operation +
-                        '">' +
-                        operation.label +
-                        "</a>";
+                    tmpl += `<a class="action-button" href="${operation.global_operation}">${operation.label}</a>`;
                 }
             }
             tmpl += "</td>" + "</tr>";
@@ -426,12 +333,7 @@ export default {
 
         // add legend
         if (options.legend) {
-            tmpl +=
-                "<tr>" +
-                '<td colspan="100">' +
-                options.legend +
-                "</td>" +
-                "</tr>";
+            tmpl += `<tr><td colspan="100">${options.legend}</td></tr>`;
         }
 
         // return
@@ -441,16 +343,9 @@ export default {
     // template
     message: function(options) {
         var status = options.status == "success" ? "done" : options.status;
-        return (
-            "<p>" +
-            '<div class="' +
-            status +
-            'message transient-message">' +
-            _.escape(options.message) +
-            "</div>" +
-            '<div style="clear: both"></div>' +
-            "</p>"
-        );
+        return `<p><div class="${status}message transient-message">${_.escape(
+            options.message
+        )}</div><div style="clear: both"></div></p>`;
     },
 
     // template
@@ -489,14 +384,7 @@ export default {
         //
         // standard search
         //
-        var tmpl =
-            '<div id="standard-search" style="display: ' +
-            standard_search_display +
-            ';">' +
-            "<table>" +
-            "<tr>" +
-            '<td style="padding: 0;">' +
-            "<table>";
+        var tmpl = `<div id="standard-search" style="display: ${standard_search_display};"><table><tr><td style="padding: 0;"><table>`;
 
         // add standard filters
         for (var i in options.columns) {
@@ -521,16 +409,7 @@ export default {
         //
         // advanced search
         //
-        tmpl +=
-            '<div id="advanced-search" style="display: ' +
-            advanced_search_display +
-            '; margin-top: 5px; border: 1px solid #ccc;">' +
-            "<table>" +
-            "<tr>" +
-            '<td style="text-align: left" colspan="100">' +
-            '<a href="" class="advanced-search-toggle">Close Advanced Search</a>' +
-            "</td>" +
-            "</tr>";
+        tmpl += `<div id="advanced-search" style="display: ${advanced_search_display}; margin-top: 5px; border: 1px solid #ccc;"><table><tr><td style="text-align: left" colspan="100"><a href="" class="advanced-search-toggle">Close Advanced Search</a></td></tr>`;
 
         // add advanced filters
         for (var i in options.columns) {
@@ -562,19 +441,11 @@ export default {
         var tmpl = "<tr>";
 
         if (column.filterable == "advanced") {
-            tmpl +=
-                '<td align="left" style="padding-left: 10px">' +
-                column_label +
-                ":</td>";
+            tmpl += `<td align="left" style="padding-left: 10px">${column_label}:</td>`;
         }
         tmpl += '<td style="padding-bottom: 1px;">';
         if (column.is_text) {
-            tmpl +=
-                '<form class="text-filter-form" column_key="' +
-                column_key +
-                '" action="' +
-                options.url +
-                '" method="get" >';
+            tmpl += `<form class="text-filter-form" column_key="${column_key}" action="${options.url}" method="get" >`;
             // Carry forward filtering criteria with hidden inputs.
             for (i in options.columns) {
                 var temp_column = options.columns[i];
@@ -584,19 +455,12 @@ export default {
                         if (temp_column.is_text) {
                             filter_value = JSON.stringify(filter_value);
                         }
-                        tmpl +=
-                            '<input type="hidden" id="' +
-                            temp_column.key +
-                            '" name="f-' +
-                            temp_column.key +
-                            '" value="' +
-                            filter_value +
-                            '"/>';
+                        tmpl += `<input type="hidden" id="${temp_column.key}" name="f-${temp_column.key}" value="${filter_value}"/>`;
                     }
                 }
             }
             // Print current filtering criteria and links to delete.
-            tmpl += '<span id="' + column_key + '-filtering-criteria">';
+            tmpl += `<span id="${column_key}-filtering-criteria">`;
 
             // add filters
             var column_filter = filters[column_key];
@@ -644,25 +508,10 @@ export default {
             }
 
             // print input field for column
-            tmpl +=
-                '<span class="search-box">' +
-                '<input class="search-box-input" id="input-' +
-                column_key +
-                '-filter" name="f-' +
-                column_key +
-                '" type="text" placeholder="' +
-                value +
-                '" size="' +
-                size +
-                '"/>' +
-                '<button type="submit" style="background: transparent; border: none; padding: 4px; margin: 0px;">' +
-                '<i class="fa fa-search"></i>' +
-                "</button>" +
-                "</span>" +
-                "</form>";
+            tmpl += `<span class="search-box"><input class="search-box-input" id="input-${column_key}-filter" name="f-${column_key}" type="text" placeholder="${value}" size="${size}"/><button type="submit" style="background: transparent; border: none; padding: 4px; margin: 0px;"><i class="fa fa-search"></i></button></span></form>`;
         } else {
             // filter criteria
-            tmpl += '<span id="' + column_key + '-filtering-criteria">';
+            tmpl += `<span id="${column_key}-filtering-criteria">`;
 
             // add category filters
             var seperator = false;
@@ -687,25 +536,9 @@ export default {
                 // add category
                 var filter = filters[column_key];
                 if (filter && cf[column_key] && filter == cf_arg) {
-                    tmpl +=
-                        '<span class="categorical-filter ' +
-                        column_key +
-                        '-filter current-filter">' +
-                        cf_label +
-                        "</span>";
+                    tmpl += `<span class="categorical-filter ${column_key}-filter current-filter">${cf_label}</span>`;
                 } else {
-                    tmpl +=
-                        '<span class="categorical-filter ' +
-                        column_key +
-                        '-filter">' +
-                        '<a href="javascript:void(0);" filter_key="' +
-                        cf_key +
-                        '" filter_val="' +
-                        cf_arg +
-                        '">' +
-                        cf_label +
-                        "</a>" +
-                        "</span>";
+                    tmpl += `<span class="categorical-filter ${column_key}-filter"><a href="javascript:void(0);" filter_key="${cf_key}" filter_val="${cf_arg}">${cf_label}</a></span>`;
                 }
             }
             tmpl += "</span>";
@@ -719,17 +552,6 @@ export default {
     // template for filter items
     filter_element: function(filter_key, filter_value) {
         filter_value = Utils.sanitize(filter_value);
-        return (
-            '<span class="text-filter-val">' +
-            filter_value +
-            '<a href="javascript:void(0);" filter_key="' +
-            filter_key +
-            '" filter_val="' +
-            filter_value +
-            '">' +
-            '<i class="fa fa-times" style="padding-left: 5px; padding-bottom: 6px;"/>' +
-            "</a>" +
-            "</span>"
-        );
+        return `<span class="text-filter-val">${filter_value}<a href="javascript:void(0);" filter_key="${filter_key}" filter_val="${filter_value}"><i class="fa fa-times" style="padding-left: 5px; padding-bottom: 6px;"/></a></span>`;
     }
 };

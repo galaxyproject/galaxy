@@ -21,7 +21,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
 
         /** Set up, accept options, and bind events */
         initialize: function(options) {
-            this.log(this + ".initialize:", options);
+            this.log(`${this}.initialize:`, options);
             _.extend(this.options, options);
 
             //this.bind( 'all', function( event, data ){ this.log( this + ' event:', event, data ); }, this );
@@ -34,7 +34,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
 
         /** Re-load user model data from the api */
         update: function(options) {
-            this.log(this + " updating user data...", options);
+            this.log(`${this} updating user data...`, options);
             this.model.loadFromApi(this.model.get("id"), options);
             return this;
         },
@@ -100,7 +100,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
         _render_usage: function() {
             //var usage = $( UserQuotaMeter.templates.usage( this.model.toJSON() ) );
             var usage = $(this._templateUsage(this.model.toJSON()));
-            this.log(this + ".rendering usage:", usage);
+            this.log(`${this}.rendering usage:`, usage);
             return usage;
         },
 
@@ -114,7 +114,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
 
             // no quota on server ('quota_percent' === null (can be valid at 0)), show usage instead
             this.log(
-                this + ".model.quota_percent:",
+                `${this}.model.quota_percent:`,
                 this.model.get("quota_percent")
             );
             if (
@@ -143,9 +143,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
                 '%"></div>',
                 '<div class="quota-meter-text" data-placement="left" style="top: 6px"',
                 data.nice_total_disk_usage
-                    ? ' title="Using ' +
-                      data.nice_total_disk_usage +
-                      '.  This value is recalculated when you log out.">'
+                    ? ` title="Using ${data.nice_total_disk_usage}.  This value is recalculated when you log out.">`
                     : ">",
                 _l("Using"),
                 " ",
@@ -169,7 +167,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
         },
 
         toString: function() {
-            return "UserQuotaMeter(" + this.model + ")";
+            return `UserQuotaMeter(${this.model})`;
         }
     }
 );

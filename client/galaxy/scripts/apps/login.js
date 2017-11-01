@@ -13,7 +13,7 @@ window.app = function app(options, bootstrapped) {
     // then remove this redirect
     if (!options.show_welcome_with_login) {
         var params = jQuery.param({ use_panels: "True", redirect: redirect });
-        window.location.href = Galaxy.root + "user/login?" + params;
+        window.location.href = `${Galaxy.root}user/login?${params}`;
         return;
     }
 
@@ -27,13 +27,10 @@ window.app = function app(options, bootstrapped) {
             this.page.$("#galaxy_main").prop("src", options.welcome_url);
         },
         _template: function() {
-            var login_url =
-                options.root + "user/login?" + $.param({ redirect: redirect });
-            return (
-                '<iframe src="' +
-                login_url +
-                '" frameborder="0" style="width: 100%; height: 100%;"/>'
-            );
+            var login_url = `${options.root}user/login?${$.param({
+                redirect: redirect
+            })}`;
+            return `<iframe src="${login_url}" frameborder="0" style="width: 100%; height: 100%;"/>`;
         }
     });
 

@@ -29,9 +29,9 @@ var faIconButton = options => {
         '<a class="',
         options.classes.join(" "),
         '"',
-        options.title ? ' title="' + options.title + '"' : "",
+        options.title ? ` title="${options.title}"` : "",
         !options.disabled && options.target
-            ? ' target="' + options.target + '"'
+            ? ` target="${options.target}"`
             : "",
         ' href="',
         !options.disabled && options.href

@@ -31,9 +31,9 @@
     var vendors = ["ms", "moz", "webkit", "o"];
     for (var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
         window.requestAnimationFrame =
-            window[vendors[x] + "RequestAnimationFrame"];
+            window[`${vendors[x]}RequestAnimationFrame`];
         window.cancelRequestAnimationFrame =
-            window[vendors[x] + "CancelRequestAnimationFrame"];
+            window[`${vendors[x]}CancelRequestAnimationFrame`];
     }
 
     if (!window.requestAnimationFrame)
@@ -79,8 +79,8 @@
     if (!!incompatibilities.length) {
         var root = document.querySelectorAll('link[rel="index"]').item(0);
         if (root) {
-            window.location = root.href + "static/incompatible-browser.html";
+            window.location = `${root.href}static/incompatible-browser.html`;
         }
-        console.log("incompatible browser:\n" + incompatibilities.join("\n"));
+        console.log(`incompatible browser:\n${incompatibilities.join("\n")}`);
     }
 })();

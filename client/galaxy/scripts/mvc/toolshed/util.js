@@ -1,7 +1,7 @@
 var searchShed = function(request, response) {
     var that = this;
     var shed_url = this.shed_url;
-    var base_url = Galaxy.root + "api/tool_shed/search";
+    var base_url = `${Galaxy.root}api/tool_shed/search`;
     $.get(base_url, { term: request.term, tool_shed_url: shed_url }, data => {
         var result_list = that.shedParser(data);
         response(result_list);
@@ -13,12 +13,8 @@ var shedParser = jsondata => {
     var hits = jsondata.hits;
     $.each(hits, hit => {
         var record = hits[hit];
-        var label =
-            record.repository.name +
-            " by " +
-            record.repository.repo_owner_username +
-            ": " +
-            record.repository.description;
+        var label = `${record.repository.name} by ${record.repository
+            .repo_owner_username}: ${record.repository.description}`;
         var result = { value: record.repository.id, label: label };
         results.push(result);
     });
@@ -32,12 +28,7 @@ var addToQueue = metadata => {
             metadata.tool_shed_url.length - 1
         );
     }
-    var key =
-        metadata.tool_shed_url +
-        "|" +
-        metadata.repository_id +
-        "|" +
-        metadata.changeset_revision;
+    var key = `${metadata.tool_shed_url}|${metadata.repository_id}|${metadata.changeset_revision}`;
     var queued_repos = new Object();
     if (localStorage.repositories) {
         queued_repos = JSON.parse(localStorage.repositories);

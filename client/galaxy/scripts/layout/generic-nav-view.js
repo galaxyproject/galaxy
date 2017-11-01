@@ -17,20 +17,13 @@ var GenericNavView = Backbone.View.extend({
             window.Galaxy.config.persistent_communication_rooms
         );
 
-        var query_string =
-            "?username=" +
-            username +
-            "&persistent_communication_rooms=" +
-            persistent_communication_rooms;
+        var query_string = `?username=${username}&persistent_communication_rooms=${persistent_communication_rooms}`;
 
-        var src = host + ":" + port + query_string;
+        var src = `${host}:${port}${query_string}`;
         var $el_chat_modal_header = null;
         var $el_chat_modal_body = null;
 
-        var iframe_template =
-            '<iframe class="f-iframe fade in communication-iframe" src="' +
-            src +
-            '"> </iframe>';
+        var iframe_template = `<iframe class="f-iframe fade in communication-iframe" src="${src}"> </iframe>`;
 
         var header_template =
             '<i class="fa fa-comment" aria-hidden="true" title="Communicate with other users"></i>' +
@@ -80,8 +73,8 @@ var GenericNavView = Backbone.View.extend({
                 $(".expand-compress-modal").attr("title", "Minimize");
                 $(".expand-compress-modal").css("margin-left", "96.2%");
             } else {
-                $(".chat-modal .modal-dialog").width(frame_width + "px");
-                $(".chat-modal .modal-body").height(frame_height + "px");
+                $(".chat-modal .modal-dialog").width(`${frame_width}px`);
+                $(".chat-modal .modal-body").height(`${frame_height}px`);
                 $(".expand-compress-modal")
                     .removeClass("fa-compress")
                     .addClass("fa-expand");

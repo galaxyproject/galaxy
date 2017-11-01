@@ -29,8 +29,8 @@ var View = Options.BaseIcons.extend({
 
     /** Expand/collapse a sub group */
     _setState: function(header_id, is_expanded) {
-        var $button = this.$(".button-" + header_id);
-        var $subgroup = this.$(".subgroup-" + header_id);
+        var $button = this.$(`.button-${header_id}`);
+        var $subgroup = this.$(`.subgroup-${header_id}`);
         $button.data("is_expanded", is_expanded);
         if (is_expanded) {
             $subgroup.show();
@@ -48,7 +48,7 @@ var View = Options.BaseIcons.extend({
 
         // attach event handler
         function attach($el, header_id) {
-            var $button = $el.find(".button-" + header_id);
+            var $button = $el.find(`.button-${header_id}`);
             $button.on("click", () => {
                 self._setState(header_id, !$button.data("is_expanded"));
             });
@@ -66,10 +66,10 @@ var View = Options.BaseIcons.extend({
                 if (has_options) {
                     var header_id = Utils.uid();
                     var $button = $("<span/>")
-                        .addClass("button-" + header_id)
+                        .addClass(`button-${header_id}`)
                         .addClass("ui-drilldown-button fa fa-plus-square");
                     var $subgroup = $("<div/>")
-                        .addClass("subgroup-" + header_id)
+                        .addClass(`subgroup-${header_id}`)
                         .addClass("ui-drilldown-subgroup");
                     $group.append(
                         $("<div/>")

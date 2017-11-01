@@ -24,15 +24,15 @@ var UserMenuBase = Backbone.View.extend({
         }
 
         if (!isNumeric(value)) {
-            alert(fieldName + " is not a number!");
+            alert(`${fieldName} is not a number!`);
             return false;
         }
 
         if (value > max) {
-            alert(fieldName + " is too large.");
+            alert(`${fieldName} is too large.`);
             return false;
         } else if (value < min) {
-            alert(fieldName + " is too small.");
+            alert(`${fieldName} is too small.`);
             return false;
         }
         return true;
@@ -389,11 +389,11 @@ var PhylovizLayoutBase = Backbone.View.extend({
 
         var calcalateLinePos = d => {
             // position of the source node <=> starting location of the line drawn
-            d.pos0 = d.source.y0 + " " + d.source.x0;
+            d.pos0 = `${d.source.y0} ${d.source.x0}`;
             // position where the line makes a right angle bend
-            d.pos1 = d.source.y0 + " " + d.target.x0;
+            d.pos1 = `${d.source.y0} ${d.target.x0}`;
             // point where the horizontal line becomes a dotted line
-            d.pos2 = d.target.y0 + " " + d.target.x0;
+            d.pos2 = `${d.target.y0} ${d.target.x0}`;
         };
 
         var linkEnter = link
@@ -406,14 +406,14 @@ var PhylovizLayoutBase = Backbone.View.extend({
             .attr("class", "link")
             .attr("d", d => {
                 calcalateLinePos(d);
-                return "M " + d.pos0 + " L " + d.pos1;
+                return `M ${d.pos0} L ${d.pos1}`;
             });
 
         var linkUpdate = link.transition().duration(500);
 
         linkUpdate.select("path.link").attr("d", d => {
             calcalateLinePos(d);
-            return "M " + d.pos0 + " L " + d.pos1 + " L " + d.pos2;
+            return `M ${d.pos0} L ${d.pos1} L ${d.pos2}`;
         });
 
         var linkExit = link.exit().remove();
@@ -457,15 +457,13 @@ var PhylovizLayoutBase = Backbone.View.extend({
                 var d = this.__data__;
                 var annotation = d.annotation || "None";
                 return d
-                    ? (d.name ? d.name + "<br/>" : "") +
-                          "Dist: " +
-                          d.dist +
-                          " <br/>Annotation1: " +
-                          annotation +
-                          (d.bootstrap
-                              ? "<br/>Confidence level: " +
-                                Math.round(100 * d.bootstrap)
-                              : "")
+                    ? `${d.name
+                          ? `${d.name}<br/>`
+                          : ""}Dist: ${d.dist} <br/>Annotation1: ${annotation}${d.bootstrap
+                          ? `<br/>Confidence level: ${Math.round(
+                                100 * d.bootstrap
+                            )}`
+                          : ""}`
                     : "";
             })
             .tooltip({ placement: "top", trigger: "hover" });
@@ -504,7 +502,7 @@ var PhylovizLinearView = PhylovizLayoutBase.extend({
      */
     renderNodes: function(source) {
         var self = this;
-        var fontSize = self.model.get("fontSize") + "px";
+        var fontSize = `${self.model.get("fontSize")}px`;
 
         // assigning properties from models
         self.tree
@@ -552,7 +550,7 @@ var PhylovizLinearView = PhylovizLayoutBase.extend({
         }
         nodeEnter.attr(
             "transform",
-            d => "translate(" + source.y0 + "," + source.x0 + ")"
+            d => `translate(${source.y0},${source.x0})`
         );
 
         nodeEnter
@@ -575,7 +573,7 @@ var PhylovizLinearView = PhylovizLayoutBase.extend({
         // Transition nodes to their new position.
         var nodeUpdate = node.transition().duration(duration);
 
-        nodeUpdate.attr("transform", d => "translate(" + d.y + "," + d.x + ")");
+        nodeUpdate.attr("transform", d => `translate(${d.y},${d.x})`);
 
         nodeUpdate
             .select("circle")
@@ -701,7 +699,7 @@ var PhylovizView = Backbone.View.extend({
 
         // -- Creating Title
         $("#title").text(
-            "Phylogenetic Tree from " + self.phyloTree.get("title") + ":"
+            `Phylogenetic Tree from ${self.phyloTree.get("title")}:`
         );
 
         // -- Create Linear view instance --
@@ -749,19 +747,12 @@ var PhylovizView = Backbone.View.extend({
             return;
         }
         self.zoomFunc.scale(scaleFactor); //update scale Factor
-        zoomStatement =
-            "translate(" +
-            self.margins[3] +
-            "," +
-            self.margins[0] +
-            ")" +
-            " scale(" +
-            scaleFactor +
-            ")";
+        zoomStatement = `translate(${self.margins[3]},${self
+            .margins[0]}) scale(${scaleFactor})`;
 
         // Do manual translation.
         if (d3.event !== null) {
-            translateStatement = "translate(" + d3.event.translate + ")";
+            translateStatement = `translate(${d3.event.translate})`;
         } else {
             if (typeof translateParams !== "undefined") {
                 var x = translateParams.split(",")[0];
@@ -774,7 +765,7 @@ var PhylovizView = Backbone.View.extend({
                 }
             }
             self.zoomFunc.translate(translationCoor); // update zoomFunc
-            translateStatement = "translate(" + translationCoor + ")";
+            translateStatement = `translate(${translationCoor})`;
         }
 
         self.phyloTree.set("scaleFactor", scaleFactor);

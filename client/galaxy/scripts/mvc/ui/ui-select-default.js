@@ -61,7 +61,7 @@ var View = Backbone.View.extend({
         this.$select
             .empty()
             .addClass("select")
-            .attr("id", this.model.get("id") + "_select")
+            .attr("id", `${this.model.get("id")}_select`)
             .prop("multiple", this.model.get("multiple"))
             .on("change", () => {
                 self.value(self._getValue());
@@ -224,27 +224,20 @@ var View = Backbone.View.extend({
                     });
                 },
                 formatResult: function(result) {
-                    return (
-                        _.escape(result.text) +
-                        '<div class="ui-tags">' +
-                        _.reduce(
-                            result.tags,
-                            (memo, tag) => {
-                                if (self.matched_tags[tag]) {
-                                    return (
-                                        memo +
-                                        "&nbsp;" +
-                                        '<div class="label label-info">' +
-                                        _.escape(tag) +
-                                        "</div>"
-                                    );
-                                }
-                                return memo;
-                            },
-                            ""
-                        ) +
-                        "</div>"
-                    );
+                    return `${_.escape(
+                        result.text
+                    )}<div class="ui-tags">${_.reduce(
+                        result.tags,
+                        (memo, tag) => {
+                            if (self.matched_tags[tag]) {
+                                return `${memo}&nbsp;<div class="label label-info">${_.escape(
+                                    tag
+                                )}</div>`;
+                            }
+                            return memo;
+                        },
+                        ""
+                    )}</div>`;
                 }
             });
             this.$(".select2-container .select2-search input").off("blur");

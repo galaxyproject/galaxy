@@ -45,7 +45,7 @@ var View = Backbone.View.extend({
                             title:
                                 title.length < title_length
                                     ? title
-                                    : title.substr(0, title_length) + "...",
+                                    : `${title.substr(0, title_length)}...`,
                             title_icon: model.get("title_icon"),
                             image_src: model.get("image_src")
                         })
@@ -87,9 +87,7 @@ var View = Backbone.View.extend({
             new_value = new_value == "__first" ? this.first : new_value;
             var before = this.$(".ui-thumbnail-current").attr("value");
             this.$(".ui-thumbnail-current").removeClass("ui-thumbnail-current");
-            this.$('[value="' + new_value + '"]').addClass(
-                "ui-thumbnail-current"
-            );
+            this.$(`[value="${new_value}"]`).addClass("ui-thumbnail-current");
             var after = this.$(".ui-thumbnail-current").attr("value");
             var change_handler = this.model.get("onchange");
             after != before && change_handler && change_handler(after);
@@ -114,47 +112,12 @@ var View = Backbone.View.extend({
 
     /* Thumbnail template with image */
     _templateThumbnailItem: function(options) {
-        return (
-            '<div class="ui-thumbnails-item ui-thumbnails-item-float" value="' +
-            options.id +
-            '">' +
-            '<img class="ui-thumbnails-image" src="' +
-            options.image_src +
-            '">' +
-            '<div class="ui-thumbnails-title ui-form-info">' +
-            '<span class="fa ' +
-            options.title_icon +
-            '"/>' +
-            options.title +
-            "</div>" +
-            "<div>"
-        );
+        return `<div class="ui-thumbnails-item ui-thumbnails-item-float" value="${options.id}"><img class="ui-thumbnails-image" src="${options.image_src}"><div class="ui-thumbnails-title ui-form-info"><span class="fa ${options.title_icon}"/>${options.title}</div><div>`;
     },
 
     /* Thumbnail template with image and description */
     _templateRegularItem: function(options) {
-        return (
-            '<div class="ui-thumbnails-item" value="' +
-            options.id +
-            '">' +
-            "<table>" +
-            "<tr>" +
-            "<td>" +
-            '<img class="ui-thumbnails-image" src="' +
-            options.image_src +
-            '">' +
-            "</td>" +
-            "<td>" +
-            '<div class="ui-thumbnails-description-title ui-form-info">' +
-            options.title +
-            "</div>" +
-            '<div class="ui-thumbnails-description-text ui-form-info">' +
-            options.description +
-            "</div>" +
-            "</td>" +
-            "</tr>" +
-            "<div>"
-        );
+        return `<div class="ui-thumbnails-item" value="${options.id}"><table><tr><td><img class="ui-thumbnails-image" src="${options.image_src}"></td><td><div class="ui-thumbnails-description-title ui-form-info">${options.title}</div><div class="ui-thumbnails-description-text ui-form-info">${options.description}</div></td></tr><div>`;
     }
 });
 

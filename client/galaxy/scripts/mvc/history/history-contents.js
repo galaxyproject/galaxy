@@ -50,13 +50,12 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
             // Raise a plain object with validationError to fake a model.validationError
             // (since we don't have a model to use validate with)
             // (the outer hack being the mixed content/model function in this collection)
-            var msg = "Unknown collection_type: " + attrs.collection_type;
+            var msg = `Unknown collection_type: ${attrs.collection_type}`;
             console.warn(msg, attrs);
             return { validationError: msg };
         }
         return {
-            validationError:
-                "Unknown history_content_type: " + attrs.history_content_type
+            validationError: `Unknown history_content_type: ${attrs.history_content_type}`
         };
     },
 
@@ -70,11 +69,11 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     order: "hid",
 
     /** root api url */
-    urlRoot: Galaxy.root + "api/histories",
+    urlRoot: `${Galaxy.root}api/histories`,
 
     /** complete api url */
     url: function() {
-        return this.urlRoot + "/" + this.historyId + "/contents";
+        return `${this.urlRoot}/${this.historyId}/contents`;
     },
 
     /** Set up */

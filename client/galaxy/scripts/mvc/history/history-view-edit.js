@@ -106,12 +106,12 @@ var HistoryViewEdit = _super.extend(
                 // loading indicators for deleted/hidden
                 "fetching-deleted": function(collection) {
                     this.$("> .controls .deleted-count").html(
-                        "<i>" + _l("loading...") + "</i>"
+                        `<i>${_l("loading...")}</i>`
                     );
                 },
                 "fetching-hidden": function(collection) {
                     this.$("> .controls .hidden-count").html(
-                        "<i>" + _l("loading...") + "</i>"
+                        `<i>${_l("loading...")}</i>`
                     );
                 },
                 "fetching-deleted-done fetching-hidden-done": this._renderCounts
@@ -360,7 +360,7 @@ var HistoryViewEdit = _super.extend(
                     LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection;
             } else {
                 console.warn(
-                    "Unknown collectionType encountered " + collectionType
+                    `Unknown collectionType encountered ${collectionType}`
                 );
             }
             createFunc(selection, hideSourceItems).done(() => {
@@ -627,11 +627,9 @@ var HistoryViewEdit = _super.extend(
         // ........................................................................ misc
         /** Return a string rep of the history */
         toString: function() {
-            return (
-                "HistoryViewEdit(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `HistoryViewEdit(${this.model
+                ? this.model.get("name")
+                : ""})`;
         }
     }
 );

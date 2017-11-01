@@ -5,7 +5,7 @@ var CitationView = Backbone.View.extend({
     tagName: "div",
     className: "citations",
     render: function() {
-        this.$el.append("<p>" + this.formattedReference() + "</p>");
+        this.$el.append(`<p>${this.formattedReference()}</p>`);
         return this;
     },
     formattedReference: function() {
@@ -16,40 +16,35 @@ var CitationView = Backbone.View.extend({
         var ref = "";
         // Code inspired by...
         // https://github.com/vkaravir/bib-publication-list/blob/master/src/bib-publication-list.js
-        var authorsAndYear =
-            this._asSentence(
-                (fields.author ? fields.author : "") +
-                    (fields.year ? " (" + fields.year + ")" : "")
-            ) + " ";
+        var authorsAndYear = `${this._asSentence(
+            (fields.author ? fields.author : "") +
+                (fields.year ? ` (${fields.year})` : "")
+        )} `;
         var title = fields.title || "";
-        var pages = fields.pages ? "pp. " + fields.pages : "";
+        var pages = fields.pages ? `pp. ${fields.pages}` : "";
         var address = fields.address;
         if (entryType == "article") {
             var volume =
                 (fields.volume ? fields.volume : "") +
-                (fields.number ? " (" + fields.number + ")" : "") +
-                (pages ? ", " + pages : "");
-            ref =
-                authorsAndYear +
+                (fields.number ? ` (${fields.number})` : "") +
+                (pages ? `, ${pages}` : "");
+            ref = `${authorsAndYear +
                 this._asSentence(title) +
-                (fields.journal ? "In <em>" + fields.journal + ", " : "") +
+                (fields.journal ? `In <em>${fields.journal}, ` : "") +
                 this._asSentence(volume) +
-                this._asSentence(fields.address) +
-                "</em>";
+                this._asSentence(fields.address)}</em>`;
         } else if (entryType == "inproceedings" || entryType == "proceedings") {
-            ref =
-                authorsAndYear +
+            ref = `${authorsAndYear +
                 this._asSentence(title) +
-                (fields.booktitle ? "In <em>" + fields.booktitle + ", " : "") +
+                (fields.booktitle ? `In <em>${fields.booktitle}, ` : "") +
                 (pages ? pages : "") +
-                (address ? ", " + address : "") +
-                ".</em>";
+                (address ? `, ${address}` : "")}.</em>`;
         } else if (entryType == "mastersthesis" || entryType == "phdthesis") {
             ref =
                 authorsAndYear +
                 this._asSentence(title) +
-                (fields.howpublished ? fields.howpublished + ". " : "") +
-                (fields.note ? fields.note + "." : "");
+                (fields.howpublished ? `${fields.howpublished}. ` : "") +
+                (fields.note ? `${fields.note}.` : "");
         } else if (entryType == "techreport") {
             ref =
                 authorsAndYear +
@@ -62,61 +57,55 @@ var CitationView = Backbone.View.extend({
             entryType == "inbook" ||
             entryType == "incollection"
         ) {
-            ref = authorsAndYear + " " + this._formatBookInfo(fields);
+            ref = `${authorsAndYear} ${this._formatBookInfo(fields)}`;
         } else {
-            ref =
-                authorsAndYear +
-                " " +
-                this._asSentence(title) +
-                this._asSentence(fields.howpublished) +
-                this._asSentence(fields.note);
+            ref = `${authorsAndYear} ${this._asSentence(
+                title
+            )}${this._asSentence(fields.howpublished)}${this._asSentence(
+                fields.note
+            )}`;
         }
         var doiUrl = "";
         if (fields.doi) {
-            doiUrl = "http://dx.doi.org/" + fields.doi;
-            ref +=
-                '[<a href="' +
-                doiUrl +
-                '" target="_blank">doi:' +
-                fields.doi +
-                "</a>]";
+            doiUrl = `http://dx.doi.org/${fields.doi}`;
+            ref += `[<a href="${doiUrl}" target="_blank">doi:${fields.doi}</a>]`;
         }
         var url = fields.url || doiUrl;
         if (url) {
-            ref += '[<a href="' + url + '" target="_blank">Link</a>]';
+            ref += `[<a href="${url}" target="_blank">Link</a>]`;
         }
         return ref;
     },
     _formatBookInfo: function(fields) {
         var info = "";
         if (fields.chapter) {
-            info += fields.chapter + " in ";
+            info += `${fields.chapter} in `;
         }
         if (fields.title) {
-            info += "<em>" + fields.title + "</em>";
+            info += `<em>${fields.title}</em>`;
         }
         if (fields.editor) {
-            info += ", Edited by " + fields.editor + ", ";
+            info += `, Edited by ${fields.editor}, `;
         }
         if (fields.publisher) {
-            info += ", " + fields.publisher;
+            info += `, ${fields.publisher}`;
         }
         if (fields.pages) {
-            info += ", pp. " + fields.pages + "";
+            info += `, pp. ${fields.pages}`;
         }
         if (fields.series) {
-            info += ", <em>" + fields.series + "</em>";
+            info += `, <em>${fields.series}</em>`;
         }
         if (fields.volume) {
-            info += ", Vol." + fields.volume;
+            info += `, Vol.${fields.volume}`;
         }
         if (fields.issn) {
-            info += ", ISBN: " + fields.issn;
+            info += `, ISBN: ${fields.issn}`;
         }
-        return info + ".";
+        return `${info}.`;
     },
     _asSentence: function(str) {
-        return str && str.trim() ? str + ". " : "";
+        return str && str.trim() ? `${str}. ` : "";
     }
 });
 
@@ -139,7 +128,7 @@ var CitationListView = Backbone.View.extend({
         this.$(".citations-formatted").append(citationView.render().el);
         var rawTextarea = this.$(".citations-bibtex-text");
         rawTextarea.val(
-            rawTextarea.val() + "\n\r" + citation.attributes.content
+            `${rawTextarea.val()}\n\r${citation.attributes.content}`
         );
     },
 

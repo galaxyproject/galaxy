@@ -230,7 +230,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
             }
 
             // Build row for param.
-            var id = "param_" + index;
+            var id = `param_${index}`;
 
             var type = param.get("type");
             var value = param.get("value");
@@ -238,7 +238,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
             row.append(
                 $("<label />")
                     .attr("for", id)
-                    .text(param.get("label") + ":")
+                    .text(`${param.get("label")}:`)
             );
             // Draw parameter as checkbox
             if (type === "bool") {
@@ -428,10 +428,10 @@ var ConfigSettingCollectionView = Backbone.View.extend({
         this.collection.each((setting, index) => {
             if (!setting.get("hidden")) {
                 // Set value from view.
-                var id = "param_" + index;
-                var value = self.$el.find("#" + id).val();
+                var id = `param_${index}`;
+                var value = self.$el.find(`#${id}`).val();
                 if (setting.get("type") === "bool") {
-                    value = self.$el.find("#" + id).is(":checked");
+                    value = self.$el.find(`#${id}`).is(":checked");
                 }
                 setting.set_value(value);
             }

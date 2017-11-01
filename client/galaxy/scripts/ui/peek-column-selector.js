@@ -104,8 +104,9 @@ COLUMN_NAME_DATA_KEY = "column-name";
 function validateControl(control) {
     if (control.disabled && jQuery.type(control.disabled) !== "array") {
         throw new Error(
-            '"disabled" must be defined as an array of indeces: ' +
-                JSON.stringify(control)
+            `"disabled" must be defined as an array of indeces: ${JSON.stringify(
+                control
+            )}`
         );
     }
     if (
@@ -114,20 +115,23 @@ function validateControl(control) {
         jQuery.type(control.selected) !== "array"
     ) {
         throw new Error(
-            'Mulitselect rows need an array for "selected": ' +
-                JSON.stringify(control)
+            `Mulitselect rows need an array for "selected": ${JSON.stringify(
+                control
+            )}`
         );
     }
     if (!control.label || !control.id) {
         throw new Error(
-            "Peek controls need a label and id for each control row: " +
-                JSON.stringify(control)
+            `Peek controls need a label and id for each control row: ${JSON.stringify(
+                control
+            )}`
         );
     }
     if (control.disabled && control.disabled.indexOf(control.selected) !== -1) {
         throw new Error(
-            "Selected column is in the list of disabled columns: " +
-                JSON.stringify(control)
+            `Selected column is in the list of disabled columns: ${JSON.stringify(
+                control
+            )}`
         );
     }
     return control;
@@ -144,7 +148,7 @@ function buildButton(control, columnIndex) {
 function buildControlCell(control, columnIndex) {
     var $td = $("<td/>")
         .html(buildButton(control, columnIndex))
-        .attr("data-" + COLUMN_INDEX_DATA_KEY, columnIndex);
+        .attr(`data-${COLUMN_INDEX_DATA_KEY}`, columnIndex);
 
     // disable if index in disabled array
     if (control.disabled && control.disabled.indexOf(columnIndex) !== -1) {
@@ -155,7 +159,7 @@ function buildControlCell(control, columnIndex) {
 
 /** set the text of the control based on selected/un */
 function setSelectedText($cell, control, columnIndex) {
-    var $button = $cell.children("." + BUTTON_CLASS);
+    var $button = $cell.children(`.${BUTTON_CLASS}`);
     if ($cell.hasClass(SELECTED_CLASS)) {
         $button.html(
             control.selectedText !== undefined
@@ -189,7 +193,7 @@ function buildSingleSelectCell(control, columnIndex) {
                 // only one can be selected - remove selected on all others, add it here
                 var $otherSelected = $cell
                     .parent()
-                    .children("." + SELECTED_CLASS)
+                    .children(`.${SELECTED_CLASS}`)
                     .removeClass(SELECTED_CLASS);
                 $otherSelected.each(function() {
                     setSelectedText($(this), control, columnIndex);
@@ -229,7 +233,7 @@ function buildMultiSelectCell(control, columnIndex) {
             setSelectedText($cell, control, columnIndex);
             var selectedColumnIndeces = $cell
                 .parent()
-                .find("." + SELECTED_CLASS)
+                .find(`.${SELECTED_CLASS}`)
                 .map((i, e) => $(e).data(COLUMN_INDEX_DATA_KEY));
 
             // fire the event from the table itself, passing the id and index of selected
@@ -266,7 +270,7 @@ function buildControlRow(cellCount, control, includePrompts) {
     if (includePrompts) {
         var $promptCell = $("<td/>")
             .addClass(PROMPT_CLASS)
-            .text(control.label + ":");
+            .text(`${control.label}:`);
         $controlRow.append($promptCell);
     }
     $controlRow.append(buildControlCells(cellCount, control));
@@ -291,7 +295,7 @@ function peekColumnSelector(options) {
         var $this = $(this);
         if (
             $this.text() &&
-            $this.text().match(new RegExp("^" + options.commentChar))
+            $this.text().match(new RegExp(`^${options.commentChar}`))
         ) {
             return $(this)
                 .css("color", "grey")
@@ -329,8 +333,8 @@ function peekColumnSelector(options) {
 
         var name = options.columnNames[i] || text;
         $this
-            .attr("data-" + COLUMN_NAME_DATA_KEY, name)
-            .text(i + 1 + (name ? "." + name : ""));
+            .attr(`data-${COLUMN_NAME_DATA_KEY}`, name)
+            .text(i + 1 + (name ? `.${name}` : ""));
     });
 
     // allow renaming of columns when the header is clicked
@@ -348,7 +352,7 @@ function peekColumnSelector(options) {
                     // set the new text and data
                     $this
                         .text(
-                            index + (newColumnName ? "." + newColumnName : "")
+                            index + (newColumnName ? `.${newColumnName}` : "")
                         )
                         .data(COLUMN_NAME_DATA_KEY, newColumnName)
                         .attr("data-", COLUMN_NAME_DATA_KEY, newColumnName);

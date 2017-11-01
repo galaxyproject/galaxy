@@ -104,7 +104,7 @@ var View = Backbone.View.extend({
             var counter = 0;
             $.each(this.options.buttons, (name, callback) => {
                 var $button = $("<button/>")
-                    .attr("id", "button-" + counter++)
+                    .attr("id", `button-${counter++}`)
                     .text(name)
                     .click(callback);
                 self.$buttons.append($button).append("&nbsp;");

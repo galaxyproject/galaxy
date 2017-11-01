@@ -64,9 +64,9 @@ var Visualization = Backbone.Model.extend(
         toString: function() {
             var idAndTitle = this.get("id") || "";
             if (this.get("title")) {
-                idAndTitle += ":" + this.get("title");
+                idAndTitle += `:${this.get("title")}`;
             }
-            return "Visualization(" + idAndTitle + ")";
+            return `Visualization(${idAndTitle})`;
         }
     }
 );
@@ -85,7 +85,7 @@ var VisualizationCollection = Backbone.Collection.extend(
         //logger              : console,
 
         url: function() {
-            return Galaxy.root + "api/visualizations";
+            return `${Galaxy.root}api/visualizations`;
         },
 
         /** Set up.

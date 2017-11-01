@@ -133,9 +133,9 @@ export default Backbone.View.extend({
         rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
         if (rgb) {
             function hex(x) {
-                return ("0" + parseInt(x).toString(16)).slice(-2);
+                return `0${parseInt(x).toString(16)}`.slice(-2);
             }
-            return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
+            return `#${hex(rgb[1])}${hex(rgb[2])}${hex(rgb[3])}`;
         } else {
             return null;
         }
@@ -199,13 +199,7 @@ export default Backbone.View.extend({
 
     /** Box template */
     _templateBox: function(color) {
-        return (
-            '<div id="' +
-            color +
-            '" class="ui-color-picker-box" style="background-color: #' +
-            color +
-            ';"/>'
-        );
+        return `<div id="${color}" class="ui-color-picker-box" style="background-color: #${color};"/>`;
     },
 
     /** Main template */

@@ -14,7 +14,7 @@ var Label = Backbone.View.extend({
     initialize: function(options) {
         this.model = (options && options.model) || new Backbone.Model(options);
         this.tagName = options.tagName || this.tagName;
-        this.setElement($("<" + this.tagName + "/>"));
+        this.setElement($(`<${this.tagName}/>`));
         this.listenTo(this.model, "change", this.render, this);
         this.render();
     },
@@ -60,12 +60,12 @@ var Message = Backbone.View.extend({
         var status = this.model.get("status");
         if (this.model.get("large")) {
             this.$el.addClass(
-                ((status == "success" && "done") ||
+                `${(status == "success" && "done") ||
                     (status == "danger" && "error") ||
-                    status) + "messagelarge"
+                    status}messagelarge`
             );
         } else {
-            this.$el.addClass("alert").addClass("alert-" + status);
+            this.$el.addClass("alert").addClass(`alert-${status}`);
         }
         if (this.model.get("message")) {
             this.$el.html(this.messageForDisplay());
@@ -110,7 +110,7 @@ var Input = Backbone.View.extend({
                 style: null
             }).set(options);
         this.tagName = this.model.get("area") ? "textarea" : "input";
-        this.setElement($("<" + this.tagName + "/>"));
+        this.setElement($(`<${this.tagName}/>`));
         this.listenTo(this.model, "change", this.render, this);
         this.render();
     },
@@ -126,7 +126,7 @@ var Input = Backbone.View.extend({
         var self = this;
         this.$el
             .removeClass()
-            .addClass("ui-" + this.tagName)
+            .addClass(`ui-${this.tagName}`)
             .addClass(this.model.get("cls"))
             .addClass(this.model.get("style"))
             .attr("id", this.model.id)

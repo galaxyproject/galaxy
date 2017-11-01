@@ -297,7 +297,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
     // Collapse tag name + value into a single string.
     //
     function build_tag_str(tag_name, tag_value) {
-        return tag_name + (tag_value ? ":" + tag_value : "");
+        return tag_name + (tag_value ? `:${tag_value}` : "");
     }
 
     // Initialize a "delete tag image": when click, delete tag from UI and send delete request to server.

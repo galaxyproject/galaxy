@@ -104,7 +104,7 @@ var TrackHeaderView = Backbone.View.extend({
 
         this.action_icons.mode_icon.attr(
             "title",
-            "Set display mode (now: " + this.mode + ")"
+            `Set display mode (now: ${this.mode})`
         );
 
         // Setup popup menu for changing modes.

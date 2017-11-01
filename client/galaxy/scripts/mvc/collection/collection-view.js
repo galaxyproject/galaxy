@@ -17,7 +17,7 @@ var CollectionView = _super.extend(
         //MODEL is either a DatasetCollection (or subclass) or a DatasetCollectionElement (list of pairs)
         _logNamespace: logNamespace,
 
-        className: _super.prototype.className + " dataset-collection-panel",
+        className: `${_super.prototype.className} dataset-collection-panel`,
 
         /** sub view class used for datasets */
         DatasetDCEViewClass: DC_LI.DatasetDCEListItemView,
@@ -41,7 +41,7 @@ var CollectionView = _super.extend(
             this.parentName = attributes.parentName;
             /** foldout or drilldown */
             this.foldoutStyle = attributes.foldoutStyle || "foldout";
-            this.downloadUrl = this.model.attributes.url + "/download";
+            this.downloadUrl = `${this.model.attributes.url}/download`;
         },
 
         _queueNewRender: function($newRender, speed) {
@@ -143,11 +143,9 @@ var CollectionView = _super.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return (
-                "CollectionView(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `CollectionView(${this.model
+                ? this.model.get("name")
+                : ""})`;
         }
     }
 );
@@ -210,11 +208,9 @@ var ListCollectionView = CollectionView.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return (
-                "ListCollectionView(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `ListCollectionView(${this.model
+                ? this.model.get("name")
+                : ""})`;
         }
     }
 );
@@ -226,11 +222,9 @@ var PairCollectionView = ListCollectionView.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return (
-                "PairCollectionView(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `PairCollectionView(${this.model
+                ? this.model.get("name")
+                : ""})`;
         }
     }
 );
@@ -248,11 +242,9 @@ var ListOfPairsCollectionView = CollectionView.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return (
-                "ListOfPairsCollectionView(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `ListOfPairsCollectionView(${this.model
+                ? this.model.get("name")
+                : ""})`;
         }
     }
 );
@@ -267,11 +259,9 @@ var ListOfListsCollectionView = CollectionView.extend({
 
     /** string rep */
     toString: function() {
-        return (
-            "ListOfListsCollectionView(" +
-            (this.model ? this.model.get("name") : "") +
-            ")"
-        );
+        return `ListOfListsCollectionView(${this.model
+            ? this.model.get("name")
+            : ""})`;
     }
 });
 

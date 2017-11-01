@@ -17,7 +17,7 @@ var DatasetList = _super.extend(
 
         /** class to use for constructing the sub-views */
         viewClass: DATASET_LI.DatasetListItemView,
-        className: _super.prototype.className + " dataset-list",
+        className: `${_super.prototype.className} dataset-list`,
 
         /** string to no hdas match the search terms */
         noneFoundMsg: _l("No matching datasets found"),
@@ -32,7 +32,7 @@ var DatasetList = _super.extend(
 
         /** Return a string rep of the history */
         toString: function() {
-            return "DatasetList(" + this.collection + ")";
+            return `DatasetList(${this.collection})`;
         }
     }
 );

@@ -22,7 +22,7 @@ var TagsEditor = Backbone.View
             if (options.usePrompt === false) {
                 this.label = "";
             } else {
-                this.label = '<label class="prompt">' + _l("Tags") + "</label>";
+                this.label = `<label class="prompt">${_l("Tags")}</label>`;
             }
             this.workflow_mode = options.workflow_mode || false;
             if (this.workflow_mode) {
@@ -55,14 +55,14 @@ var TagsEditor = Backbone.View
 
         _hashToName: function(tag) {
             if (tag.startsWith("#")) {
-                return "name:" + tag.slice(1);
+                return `name:${tag.slice(1)}`;
             }
             return tag;
         },
 
         _nameToHash: function(tag) {
             if (tag.startsWith("name:")) {
-                tag = "#" + tag.slice(5);
+                tag = `#${tag.slice(5)}`;
             }
             return tag;
         },
@@ -101,9 +101,7 @@ var TagsEditor = Backbone.View
 
         _renderEditor: function() {
             // set up initial tags by adding as CSV to input vals (necc. to init select2)
-            return (
-                '<input class="tags-input" value="' + this.tagsToCSV() + '"/>'
-            );
+            return `<input class="tags-input" value="${this.tagsToCSV()}"/>`;
         },
 
         _renderTags: function() {
@@ -112,16 +110,13 @@ var TagsEditor = Backbone.View
             var renderedArray = [];
             _.each(tags, tag => {
                 tag = tag.indexOf("name:") == 0 ? tag.slice(5) : tag;
-                var renderString =
-                    '<span class="label label-info">' + tag + "</span>";
+                var renderString = `<span class="label label-info">${tag}</span>`;
                 renderedArray.push(renderString);
             });
             if (renderedArray.length === 0) {
                 // If there are no tags to render we just show the add-tag-button
                 renderedArray.push(
-                    "<img src=" +
-                        addButton +
-                        ' class="add-tag-button" title="Add tags"/>'
+                    `<img src=${addButton} class="add-tag-button" title="Add tags"/>`
                 );
             }
             return renderedArray.join(" ");
@@ -164,7 +159,7 @@ var TagsEditor = Backbone.View
                 if (event.added) {
                     //??: solve weird behavior in FF on test.galaxyproject.org where
                     //  event.added.text is string object: 'String{ 0="o", 1="n", 2="e" }'
-                    self._addNewTagToTagsUsed(event.added.text + "");
+                    self._addNewTagToTagsUsed(`${event.added.text}`);
                 }
             });
         },
@@ -191,7 +186,7 @@ var TagsEditor = Backbone.View
 
         /** string rep */
         toString: function() {
-            return ["TagsEditor(", this.model + "", ")"].join("");
+            return ["TagsEditor(", `${this.model}`, ")"].join("");
         }
     });
 

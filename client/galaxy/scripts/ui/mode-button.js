@@ -94,13 +94,13 @@ ModeButton.prototype._getModeIndex = function _getModeIndex(modeKey) {
             return i;
         }
     }
-    throw new Error("mode not found: " + modeKey);
+    throw new Error(`mode not found: ${modeKey}`);
 };
 /** set the current mode to the one with the given index and set button html */
 ModeButton.prototype._setModeByIndex = function _setModeByIndex(index) {
     var newMode = this.options.modes[index];
     if (!newMode) {
-        throw new Error("mode index not found: " + index);
+        throw new Error(`mode index not found: ${index}`);
     }
     this.currModeIndex = index;
     if (newMode.html) {

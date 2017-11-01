@@ -10,7 +10,7 @@ var _super = DC_LI.DCListItemView;
  */
 var HDCAListItemView = _super.extend(
     /** @lends HDCAListItemView.prototype */ {
-        className: _super.prototype.className + " history-content",
+        className: `${_super.prototype.className} history-content`,
 
         /** event listeners */
         _setUpListeners: function() {
@@ -38,7 +38,7 @@ var HDCAListItemView = _super.extend(
                     return DC_VIEW.ListOfListsCollectionView;
             }
             throw new TypeError(
-                "Uknown collection_type: " + this.model.get("collection_type")
+                `Uknown collection_type: ${this.model.get("collection_type")}`
             );
         },
 
@@ -50,7 +50,7 @@ var HDCAListItemView = _super.extend(
                 ? STATES.RUNNING
                 : STATES.OK;
             //if( this.model.has( 'state' ) ){
-            this.$el.addClass("state-" + state);
+            this.$el.addClass(`state-${state}`);
             //}
             return this.$el;
         },
@@ -58,8 +58,8 @@ var HDCAListItemView = _super.extend(
         // ......................................................................... misc
         /** String representation */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "HDCAListItemView(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `HDCAListItemView(${modelString})`;
         }
     }
 );

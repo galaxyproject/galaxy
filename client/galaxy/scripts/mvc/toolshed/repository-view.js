@@ -13,8 +13,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         this.model = new toolshed_model.RepositoryCollection();
         this.listenTo(this.model, "sync", this.render);
         var shed = params.tool_shed.replace(/\//g, "%2f");
-        this.model.url +=
-            "?tool_shed_url=" + shed + "&repository_id=" + params.repository_id;
+        this.model.url += `?tool_shed_url=${shed}&repository_id=${params.repository_id}`;
         this.model.tool_shed_url = params.tool_shed.replace(/%2f/g, "/");
         this.model.tool_shed = shed;
         this.model.category = params.repository_id;
@@ -47,8 +46,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
             stc_html: models.get("shed_conf")
         });
         this.options.panel_section_dict = models.get("panel_section_dict");
-        this.options.api_url =
-            Galaxy.root + "api/tool_shed_repositories/install?async=True";
+        this.options.api_url = `${Galaxy.root}api/tool_shed_repositories/install?async=True`;
         this.options = _.extend(this.options, options);
         this.$el.html(repo_details_template(this.options));
         this.checkInstalled(this.options.current_metadata);
@@ -179,7 +177,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
             var changeset = $("#changeset")
                 .find("option:selected")
                 .val();
-            var api_url = Galaxy.root + "api/tool_shed/tool_json";
+            var api_url = `${Galaxy.root}api/tool_shed/tool_json`;
             var params = {
                 guid: guid,
                 tool_shed_url: tool_shed_url,
@@ -196,17 +194,14 @@ var ToolShedRepositoryView = Backbone.View.extend({
                             -1
                         ) {
                             input.type = "hidden";
-                            input.info =
-                                "Data input '" +
-                                input.name +
-                                "' (" +
-                                Utils.textify(input.extensions) +
-                                ")";
+                            input.info = `Data input '${input.name}' (${Utils.textify(
+                                input.extensions
+                            )})`;
                         }
                     }
                 });
                 var modal = new Modal.View();
-                var modal_title = "<u>" + name + "</u> " + desc;
+                var modal_title = `<u>${name}</u> ${desc}`;
                 modal.show({
                     closing_events: true,
                     title: modal_title,
@@ -226,7 +221,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         var params = { name: metadata.name, owner: metadata.owner };
         var already_installed = false;
         var queued = that.repoQueued(metadata);
-        $.get(Galaxy.root + "api/tool_shed_repositories", params, data => {
+        $.get(`${Galaxy.root}api/tool_shed_repositories`, params, data => {
             for (var index = 0; index < data.length; index++) {
                 var repository = data[index];
                 var installed = !repository.deleted && !repository.uninstalled;
@@ -322,13 +317,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         if (shed_url.substr(-1) == "/") {
             shed_url = shed_url.substr(0, shed_url.length - 1);
         }
-        return (
-            shed_url +
-            "|" +
-            metadata.repository_id +
-            "|" +
-            metadata.changeset_revision
-        );
+        return `${shed_url}|${metadata.repository_id}|${metadata.changeset_revision}`;
     },
 
     tpsSelection: function() {
@@ -349,10 +338,9 @@ var ToolShedRepositoryView = Backbone.View.extend({
     },
 
     doInstall: function(params) {
-        var controller_url =
-            Galaxy.root + "admin_toolshed/install_repositories";
+        var controller_url = `${Galaxy.root}admin_toolshed/install_repositories`;
         var repositories = params.repositories;
-        var new_route = "status/r/" + repositories.join("|");
+        var new_route = `status/r/${repositories.join("|")}`;
         $.post(controller_url, params, data => {
             console.log("Initializing repository installation succeeded");
         });

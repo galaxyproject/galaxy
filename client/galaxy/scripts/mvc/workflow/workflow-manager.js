@@ -35,9 +35,7 @@ $.extend(Workflow.prototype, {
         }
         if (!this.canLabelOutputWith(toLabel)) {
             Toastr.warning(
-                "Workflow contains duplicate workflow output labels " +
-                    toLabel +
-                    ". This must be fixed before it can be saved."
+                `Workflow contains duplicate workflow output labels ${toLabel}. This must be fixed before it can be saved.`
             );
         }
         if (toLabel) {
@@ -63,7 +61,7 @@ $.extend(Workflow.prototype, {
     },
     add_node: function(node) {
         node.id = this.id_counter;
-        node.element.attr("id", "wf-node-step-" + node.id);
+        node.element.attr("id", `wf-node-step-${node.id}`);
         this.id_counter++;
         this.nodes[node.id] = node;
         this.has_changes = true;
@@ -130,10 +128,10 @@ $.extend(Workflow.prototype, {
                                     action_arguments: {}
                                 };
                                 node.post_job_actions[
-                                    "HideDatasetAction" + ot.name
+                                    `HideDatasetAction${ot.name}`
                                 ] = null;
                                 node.post_job_actions[
-                                    "HideDatasetAction" + ot.name
+                                    `HideDatasetAction${ot.name}`
                                 ] = pja;
                             }
                         });
@@ -283,19 +281,18 @@ $.extend(Workflow.prototype, {
                 // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
                 $.each(node.output_terminals, (ot_id, ot) => {
                     if (
-                        node.post_job_actions["HideDatasetAction" + ot.name] ===
+                        node.post_job_actions[`HideDatasetAction${ot.name}`] ===
                         undefined
                     ) {
                         node.addWorkflowOutput(ot.name);
                         var callout = $(node.element).find(
-                            ".callout." + ot.name
+                            `.callout.${ot.name}`
                         );
                         callout
                             .find("img")
                             .attr(
                                 "src",
-                                Galaxy.root +
-                                    "static/images/fugue/asterisk-small.png"
+                                `${Galaxy.root}static/images/fugue/asterisk-small.png`
                             );
                         wf.has_changes = true;
                     }

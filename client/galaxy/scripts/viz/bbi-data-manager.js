@@ -13,8 +13,7 @@ var BBIDataManager = visualization.GenomeDataManager.extend({
         var deferred = $.Deferred();
         this.set_data(region, deferred);
 
-        var url =
-            Galaxy.root + "datasets/" + this.get("dataset").id + "/display";
+        var url = `${Galaxy.root}datasets/${this.get("dataset").id}/display`;
 
         var self = this;
         var promise = new $.Deferred();

@@ -52,7 +52,7 @@ export default Backbone.View.extend({
         // load extensions
         var self = this;
         Utils.get({
-            url: Galaxy.root + "api/datatypes?extension_only=False",
+            url: `${Galaxy.root}api/datatypes?extension_only=False`,
             success: function(datatypes) {
                 for (var key in datatypes) {
                     self.list_extensions.push({
@@ -76,7 +76,7 @@ export default Backbone.View.extend({
 
         // load genomes
         Utils.get({
-            url: Galaxy.root + "api/genomes",
+            url: `${Galaxy.root}api/genomes`,
             success: function(genomes) {
                 for (var key in genomes) {
                     self.list_genomes.push({
@@ -175,24 +175,24 @@ export default Backbone.View.extend({
                 var it = items[index];
                 it.set("status", "running");
                 if (it.get("file_size") > 0) {
-                    var prefix = "files_" + index + "|";
-                    inputs[prefix + "type"] = "upload_dataset";
-                    inputs[prefix + "space_to_tab"] =
+                    var prefix = `files_${index}|`;
+                    inputs[`${prefix}type`] = "upload_dataset";
+                    inputs[`${prefix}space_to_tab`] =
                         (it.get("space_to_tab") && "Yes") || null;
-                    inputs[prefix + "to_posix_lines"] =
+                    inputs[`${prefix}to_posix_lines`] =
                         (it.get("to_posix_lines") && "Yes") || null;
-                    inputs[prefix + "dbkey"] = it.get("genome", null);
-                    inputs[prefix + "file_type"] = it.get("extension", null);
+                    inputs[`${prefix}dbkey`] = it.get("genome", null);
+                    inputs[`${prefix}file_type`] = it.get("extension", null);
                     switch (it.get("file_mode")) {
                         case "new":
-                            inputs[prefix + "url_paste"] = it.get("url_paste");
+                            inputs[`${prefix}url_paste`] = it.get("url_paste");
                             break;
                         case "ftp":
-                            inputs[prefix + "ftp_files"] = it.get("file_path");
+                            inputs[`${prefix}ftp_files`] = it.get("file_path");
                             break;
                         case "local":
                             data.files.push({
-                                name: prefix + "file_data",
+                                name: `${prefix}file_data`,
                                 file: it.get("file_data")
                             });
                     }

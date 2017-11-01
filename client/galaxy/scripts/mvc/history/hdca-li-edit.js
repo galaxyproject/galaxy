@@ -25,14 +25,14 @@ var HDCAListItemEdit = _super.extend(
                     return DC_VIEW_EDIT.ListOfListsCollectionViewEdit;
             }
             throw new TypeError(
-                "Uknown collection_type: " + this.model.get("collection_type")
+                `Uknown collection_type: ${this.model.get("collection_type")}`
             );
         },
 
         // ......................................................................... delete
         /** In this override, add the delete button. */
         _renderPrimaryActions: function() {
-            this.log(this + "._renderPrimaryActions");
+            this.log(`${this}._renderPrimaryActions`);
             // render the display, edit attr and delete icon-buttons
             return _super.prototype._renderPrimaryActions
                 .call(this)
@@ -61,8 +61,8 @@ var HDCAListItemEdit = _super.extend(
         // ......................................................................... misc
         /** string rep */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "HDCAListItemEdit(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `HDCAListItemEdit(${modelString})`;
         }
     }
 );

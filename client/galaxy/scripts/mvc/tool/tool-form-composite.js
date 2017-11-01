@@ -52,16 +52,16 @@ var View = Backbone.View.extend({
         _.each(this.model.get("steps"), (step, i) => {
             Galaxy.emit.debug(
                 "tool-form-composite::initialize()",
-                i + " : Preparing workflow step."
+                `${i} : Preparing workflow step.`
             );
             var icon = WorkflowIcons[step.step_type];
-            var title =
-                parseInt(i + 1) + ": " + (step.step_label || step.step_name);
+            var title = `${parseInt(i + 1)}: ${step.step_label ||
+                step.step_name}`;
             if (step.annotation) {
-                title += " - " + step.annotation;
+                title += ` - ${step.annotation}`;
             }
             if (step.step_version) {
-                title += " (Galaxy Version " + step.step_version + ")";
+                title += ` (Galaxy Version ${step.step_version})`;
             }
             step = Utils.merge(
                 {
@@ -127,12 +127,10 @@ var View = Backbone.View.extend({
                     var connection = connections_by_name[name];
                     if (connection) {
                         input.type = "hidden";
-                        input.help = input.step_linked ? input.help + ", " : "";
-                        input.help +=
-                            "Output dataset '" +
-                            connection.output_name +
-                            "' from step " +
-                            (parseInt(i) + 1);
+                        input.help = input.step_linked ? `${input.help}, ` : "";
+                        input.help += `Output dataset '${connection.output_name}' from step ${parseInt(
+                            i
+                        ) + 1}`;
                         input.step_linked = input.step_linked || [];
                         input.step_linked.push(step);
                     }
@@ -153,7 +151,7 @@ var View = Backbone.View.extend({
                         label: wp_name,
                         name: wp_name,
                         type: "text",
-                        color: "hsl( " + ++wp_count * 100 + ", 70%, 30% )",
+                        color: `hsl( ${++wp_count * 100}, 70%, 30% )`,
                         style: "ui-form-wp-source",
                         links: []
                     })
@@ -254,7 +252,7 @@ var View = Backbone.View.extend({
             .empty()
             .append(
                 new Ui.Label({
-                    title: "Workflow: " + this.model.get("name")
+                    title: `Workflow: ${this.model.get("name")}`
                 }).$el
             )
             .append(this.execute_btn.$el);
@@ -366,7 +364,7 @@ var View = Backbone.View.extend({
                     );
                     Utils.request({
                         type: "POST",
-                        url: Galaxy.root + "api/tools/" + step.id + "/build",
+                        url: `${Galaxy.root}api/tools/${step.id}/build`,
                         data: current_state,
                         success: function(data) {
                             form.update(data);
@@ -405,7 +403,7 @@ var View = Backbone.View.extend({
                                         _.reduce(
                                             step.post_job_actions,
                                             (memo, value) =>
-                                                memo + " " + value.short_str,
+                                                `${memo} ${value.short_str}`,
                                             ""
                                         )
                                     )
@@ -458,7 +456,7 @@ var View = Backbone.View.extend({
                 });
             Galaxy.emit.debug(
                 "tool-form-composite::initialize()",
-                step.index + " : Workflow step state ready.",
+                `${step.index} : Workflow step state ready.`,
                 step
             );
             setTimeout(() => {
@@ -633,11 +631,7 @@ var View = Backbone.View.extend({
             );
             Utils.request({
                 type: "POST",
-                url:
-                    Galaxy.root +
-                    "api/workflows/" +
-                    this.model.id +
-                    "/invocations",
+                url: `${Galaxy.root}api/workflows/${this.model.id}/invocations`,
                 data: job_def,
                 success: function(response) {
                     Galaxy.emit.debug(
@@ -652,7 +646,7 @@ var View = Backbone.View.extend({
                     if ($.isArray(response) && response.length > 0) {
                         self.$el.append($("<div/>", { id: "webhook-view" }));
                         var WebhookApp = new Webhooks.WebhookView({
-                            urlRoot: Galaxy.root + "api/webhooks/workflow",
+                            urlRoot: `${Galaxy.root}api/webhooks/workflow`,
                             toolId: job_def.tool_id,
                             toolVersion: job_def.tool_version
                         });
@@ -752,13 +746,11 @@ var View = Backbone.View.extend({
                 .addClass("donemessagelarge")
                 .append(
                     $("<p/>").html(
-                        "Successfully invoked workflow <b>" +
-                            Utils.sanitize(this.model.get("name")) +
-                            "</b>" +
-                            (response.length > 1
-                                ? " <b>" + response.length + " times</b>"
-                                : "") +
-                            "."
+                        `Successfully invoked workflow <b>${Utils.sanitize(
+                            this.model.get("name")
+                        )}</b>${response.length > 1
+                            ? ` <b>${response.length} times</b>`
+                            : ""}.`
                     )
                 )
                 .append(
@@ -781,8 +773,9 @@ var View = Backbone.View.extend({
             .addClass("errormessagelarge")
             .append(
                 $("<p/>").text(
-                    "The server could not complete the request. Please contact the Galaxy Team if this error persists. " +
-                        (JSON.stringify(err_msg) || "")
+                    `The server could not complete the request. Please contact the Galaxy Team if this error persists. ${JSON.stringify(
+                        err_msg
+                    ) || ""}`
                 )
             )
             .append($("<pre/>").text(JSON.stringify(response, null, 4)));

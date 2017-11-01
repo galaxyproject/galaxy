@@ -167,7 +167,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
      *  @fires collapsed when a body has been collapsed
      */
     collapse: function() {
-        this.debug(this + "(ExpandableView).collapse");
+        this.debug(`${this}(ExpandableView).collapse`);
         var view = this;
         view.expanded = false;
         this.$details().slideUp(view.fxSpeed, () => {
@@ -323,8 +323,8 @@ var ListItemView = ExpandableView.extend(
         // ......................................................................... misc
         /** String representation */
         toString: function() {
-            var modelString = this.model ? this.model + "" : "(no model)";
-            return "ListItemView(" + modelString + ")";
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `ListItemView(${modelString})`;
         }
     })
 );

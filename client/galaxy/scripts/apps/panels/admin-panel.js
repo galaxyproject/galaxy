@@ -181,20 +181,15 @@ var AdminPanel = Backbone.View.extend({
             .$("#galaxy_main")
             .prop(
                 "src",
-                this.root +
-                    "admin/center?message=" +
-                    this.message +
-                    "&status=" +
-                    this.status
+                `${this.root}admin/center?message=${this.message}&status=${this
+                    .status}`
             );
     },
 
     _templateSection: function(options) {
         return [
             "<div>",
-            '<div class="ui-side-section-title">' +
-                _l(options.title) +
-                "</div>",
+            `<div class="ui-side-section-title">${_l(options.title)}</div>`,
             '<div class="ui-side-section-body"/>',
             "</div>"
         ].join("");

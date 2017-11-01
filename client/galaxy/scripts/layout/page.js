@@ -55,7 +55,7 @@ var View = Backbone.View.extend({
                 self[panel_instance.toString()] = panel_instance;
                 self.panels[panel_id] = new Panel.SidePanel({
                     id: panel_id,
-                    el: self.$("#" + panel_id),
+                    el: self.$(`#${panel_id}`),
                     view: panel_instance
                 });
             }
@@ -88,7 +88,7 @@ var View = Backbone.View.extend({
             var level = this.config.message_box_class || "info";
             this.$el.addClass("has-message-box");
             this.$messagebox
-                .attr("class", "panel-" + level + "-message")
+                .attr("class", `panel-${level}-message`)
                 .html(content)
                 .toggle(!!content)
                 .show();
@@ -104,11 +104,11 @@ var View = Backbone.View.extend({
         if (this.config.show_inactivity_warning) {
             var content = this.config.inactivity_box_content || "";
             var verificationLink = $("<a/>")
-                .attr("href", Galaxy.root + "user/resend_verification")
+                .attr("href", `${Galaxy.root}user/resend_verification`)
                 .text("Resend verification");
             this.$el.addClass("has-inactivity-box");
             this.$inactivebox
-                .html(content + " ")
+                .html(`${content} `)
                 .append(verificationLink)
                 .toggle(!!content)
                 .show();
@@ -128,7 +128,7 @@ var View = Backbone.View.extend({
                 panel.render();
             } else {
                 self.$("#center").css(panel_id, 0);
-                self.$("#" + panel_id).hide();
+                self.$(`#${panel_id}`).hide();
             }
         });
         return this;
@@ -167,7 +167,7 @@ var View = Backbone.View.extend({
         ) {
             // See if the configured communication server is available
             $.ajax({
-                url: host + ":" + port
+                url: `${host}:${port}`
             })
                 .success(data => {
                     // enable communication only when a user is logged in

@@ -87,8 +87,8 @@ function create_chart(inp_data, name, time, title) {
         var classes = d3.select(this).attr("class");
         classes = classes.split(" ");
         d3
-            .selectAll("." + classes[0])
-            .filter("." + classes[1])
+            .selectAll(`.${classes[0]}`)
+            .filter(`.${classes[1]}`)
             .style("cursor", "zoom-in")
             .transition()
             .duration(750)
@@ -109,11 +109,11 @@ function create_chart(inp_data, name, time, title) {
 
     // Create the chart object
     var chart = d3
-        .select("#" + name)
+        .select(`#${name}`)
         .attr("width", chart_width)
         .attr("height", chart_height)
         .attr("preserveAspectRatio", "xMidYMin")
-        .attr("viewBox", "0 0 " + chart_width + " " + chart_height)
+        .attr("viewBox", `0 0 ${chart_width} ${chart_height}`)
         .on("click", click);
 
     // Create bars on the chart and assosciate data with it
@@ -126,7 +126,7 @@ function create_chart(inp_data, name, time, title) {
             // Place the bar in the correct place
             var curr_margin = +margin.left;
             curr_margin += +(i * barWidth);
-            return "translate(" + curr_margin + "," + margin.top + ")";
+            return `translate(${curr_margin},${margin.top})`;
         })
         .on("mouseenter", d => {
             // Show tool tip
@@ -145,11 +145,10 @@ function create_chart(inp_data, name, time, title) {
                 .select("text")
                 .attr(
                     "transform",
-                    "translate( " +
-                        (margin.left - 5) +
-                        ", " +
-                        (height - d * zoom + +margin.top + 10) +
-                        " )"
+                    `translate( ${margin.left - 5}, ${height -
+                        d * zoom +
+                        +margin.top +
+                        10} )`
                 )
                 .attr("visibility", "visible")
                 .text(d);
@@ -157,18 +156,16 @@ function create_chart(inp_data, name, time, title) {
             d3
                 .select(d3.event.path[1])
                 .select(".tool_tip")
-                .attr("width", wdth + "px")
+                .attr("width", `${wdth}px`)
                 .attr("height", "15px")
                 .select("rect")
                 .attr(
                     "transform",
-                    "translate( " +
-                        (+margin.left - wdth) +
-                        ", " +
-                        (height - d * zoom + +margin.top) +
-                        " )"
+                    `translate( ${+margin.left - wdth}, ${height -
+                        d * zoom +
+                        +margin.top} )`
                 )
-                .attr("width", wdth + "px")
+                .attr("width", `${wdth}px`)
                 .attr("height", "15px")
                 .attr("fill", "#ebd9b2");
         })
@@ -196,7 +193,7 @@ function create_chart(inp_data, name, time, title) {
         .append("text")
         .attr("class", "title")
         .attr("text-anchor", "end")
-        .attr("transform", e => "translate( " + width + ",15 )")
+        .attr("transform", e => `translate( ${width},15 )`)
         .text(title);
 
     // Add an x axis line to the chart
@@ -211,7 +208,7 @@ function create_chart(inp_data, name, time, title) {
             var l_x = m_x + width;
             var l_y = m_y;
 
-            return "M" + m_x + " " + m_y + " L " + l_x + " " + l_y;
+            return `M${m_x} ${m_y} L ${l_x} ${l_y}`;
         });
 
     // Declare how high the y axis goes
@@ -228,9 +225,9 @@ function create_chart(inp_data, name, time, title) {
     chart
         .append("g")
         .attr("class", "y axis")
-        .attr("id", "y_" + name)
+        .attr("id", `y_${name}`)
         .attr("text-anchor", "end")
-        .attr("transform", "translate( " + margin.left + "," + margin.top + ")")
+        .attr("transform", `translate( ${margin.left},${margin.top})`)
         .call(yAxis)
         .select(".domain");
 
@@ -240,13 +237,12 @@ function create_chart(inp_data, name, time, title) {
         .append("text")
         .attr("class", "ax_title")
         .attr("transform", e => {
-            var axis = d3.select("#y_" + name).node();
+            var axis = d3.select(`#y_${name}`).node();
             var left_pad =
                 +margin.left - axis.getBoundingClientRect().width - 5;
             var top_pad =
                 +margin.top + axis.getBoundingClientRect().height / 2 - 30;
-            var trans =
-                "translate(" + left_pad + "," + top_pad + ")rotate(-90)";
+            var trans = `translate(${left_pad},${top_pad})rotate(-90)`;
 
             return trans;
         })
@@ -273,19 +269,19 @@ function create_chart(inp_data, name, time, title) {
             .attr("pointer-events", "none")
             .attr(
                 "transform",
-                (d, i) => "translate( " + barWidth / 2 + ", " + height + ")"
+                (d, i) => `translate( ${barWidth / 2}, ${height})`
             );
 
         // Append hour numbers
         bar
             .append("text")
             .attr("fill", "rgb(0,0,0)")
-            .attr("transform", "translate( 10, " + (height + 10) + " )")
+            .attr("transform", `translate( 10, ${height + 10} )`)
             .text((d, i) => {
                 var time = "0000";
 
                 if (hours_array[i].getHours() < 10) {
-                    time = "0" + String(hours_array[i].getHours());
+                    time = `0${String(hours_array[i].getHours())}`;
                 } else {
                     time = hours_array[i].getHours();
                 }
@@ -320,7 +316,7 @@ function create_chart(inp_data, name, time, title) {
             .attr("stroke", "black")
             .attr("stroke-width", 1)
             .attr("pointer-events", "none")
-            .attr("transform", (d, i) => "translate( 0, " + height + ")");
+            .attr("transform", (d, i) => `translate( 0, ${height})`);
 
         // Append day numbers
         curr_day = "";
@@ -338,7 +334,7 @@ function create_chart(inp_data, name, time, title) {
                     time = String(
                         hours_array[i].toLocaleString(locale, { month: "long" })
                     );
-                    time += " " + String(hours_array[i].getDate());
+                    time += ` ${String(hours_array[i].getDate())}`;
 
                     curr_day_text = hours_array[i].getDate();
                 }
@@ -363,9 +359,7 @@ function create_chart(inp_data, name, time, title) {
                     curr_day = hours_array[i].getDate();
                 }
 
-                return (
-                    "translate( " + (this_width + 2) + ", " + text_height + " )"
-                );
+                return `translate( ${this_width + 2}, ${text_height} )`;
             });
     } else if (time == "days") {
         // Append day lines
@@ -380,19 +374,19 @@ function create_chart(inp_data, name, time, title) {
             .attr("pointer-events", "none")
             .attr(
                 "transform",
-                (d, i) => "translate( " + barWidth / 2 + ", " + height + ")"
+                (d, i) => `translate( ${barWidth / 2}, ${height})`
             );
 
         // Append day numbers
         bar
             .append("text")
             .attr("fill", "rgb(0,0,0)")
-            .attr("transform", "translate( 9, " + (height + 10) + " )")
+            .attr("transform", `translate( 9, ${height + 10} )`)
             .text((d, i) => {
                 var time = "0000";
 
                 if (days_array[i].getDate() < 10) {
-                    time = "0" + String(days_array[i].getDate());
+                    time = `0${String(days_array[i].getDate())}`;
                 } else {
                     time = days_array[i].getDate();
                 }
@@ -427,7 +421,7 @@ function create_chart(inp_data, name, time, title) {
             .attr("stroke", "black")
             .attr("stroke-width", 1)
             .attr("pointer-events", "none")
-            .attr("transform", (d, i) => "translate( 0, " + height + ")");
+            .attr("transform", (d, i) => `translate( 0, ${height})`);
 
         // Append month numbers
         curr_month = "";
@@ -445,7 +439,7 @@ function create_chart(inp_data, name, time, title) {
                     time = String(
                         days_array[i].toLocaleString(locale, { month: "long" })
                     );
-                    time += " " + String(days_array[i].getFullYear());
+                    time += ` ${String(days_array[i].getFullYear())}`;
 
                     curr_month_text = days_array[i].getMonth();
                 }
@@ -470,9 +464,7 @@ function create_chart(inp_data, name, time, title) {
                     curr_month = days_array[i].getMonth();
                 }
 
-                return (
-                    "translate( " + (this_width + 2) + ", " + text_height + " )"
-                );
+                return `translate( ${this_width + 2}, ${text_height} )`;
             });
     }
 
@@ -486,7 +478,7 @@ function create_chart(inp_data, name, time, title) {
     // Initialize initial zoomed charts
     if (name == "jc_dy_chart" || name == "jc_hr_chart") {
         d3
-            .select("#" + name)
+            .select(`#${name}`)
             .attr("height", chart_height * chart_zoom)
             .attr("width", chart_width * chart_zoom)
             .style("cursor", "default");
@@ -544,8 +536,8 @@ function create_histogram(inp_data, name, title) {
         var classes = d3.select(this).attr("class");
         classes = classes.split(" ");
         d3
-            .selectAll("." + classes[0])
-            .filter("." + classes[1])
+            .selectAll(`.${classes[0]}`)
+            .filter(`.${classes[1]}`)
             .style("cursor", "zoom-in")
             .transition()
             .duration(750)
@@ -567,19 +559,19 @@ function create_histogram(inp_data, name, title) {
         var minutes = Math.floor(d - hours * 60);
 
         if (hours < 10) {
-            hours = "0" + hours;
+            hours = `0${hours}`;
         }
         if (minutes < 10) {
-            minutes = "0" + minutes;
+            minutes = `0${minutes}`;
         }
 
-        return hours + ":" + minutes;
+        return `${hours}:${minutes}`;
     };
 
     // Create a chart object
     var chart = d3
-        .select("#" + name)
-        .attr("viewBox", "0 0 " + chart_width + " " + chart_height)
+        .select(`#${name}`)
+        .attr("viewBox", `0 0 ${chart_width} ${chart_height}`)
         .attr("width", chart_width)
         .attr("height", chart_height)
         .attr("preserveAspectRatio", "xMidYMin")
@@ -590,7 +582,7 @@ function create_histogram(inp_data, name, title) {
         .append("g")
         .append("text")
         .attr("class", "title")
-        .attr("transform", e => "translate( " + width + ",15 )")
+        .attr("transform", e => `translate( ${width},15 )`)
         .text(title);
 
     // Put bars on chart
@@ -602,12 +594,7 @@ function create_histogram(inp_data, name, title) {
         .attr("class", "bar")
         .attr(
             "transform",
-            d =>
-                "translate(" +
-                (+x(d.x) + +margin.left) +
-                "," +
-                (+y(d.y) + +margin.top) +
-                ")"
+            d => `translate(${+x(d.x) + +margin.left},${+y(d.y) + +margin.top})`
         )
         .on("mouseenter", d => {
             // Show tool tip
@@ -626,11 +613,10 @@ function create_histogram(inp_data, name, title) {
                 .select("text")
                 .attr(
                     "transform",
-                    "translate( " +
-                        (margin.left - 5) +
-                        ", " +
-                        (height - d.length * zoom + +margin.top + 10) +
-                        " )"
+                    `translate( ${margin.left - 5}, ${height -
+                        d.length * zoom +
+                        +margin.top +
+                        10} )`
                 )
                 .attr("visibility", "visible")
                 .text(d.length);
@@ -638,18 +624,16 @@ function create_histogram(inp_data, name, title) {
             d3
                 .select(d3.event.path[1])
                 .select(".tool_tip")
-                .attr("width", wdth + "px")
+                .attr("width", `${wdth}px`)
                 .attr("height", "15px")
                 .select("rect")
                 .attr(
                     "transform",
-                    "translate( " +
-                        (+margin.left - wdth) +
-                        ", " +
-                        (height - d.length * zoom + +margin.top) +
-                        " )"
+                    `translate( ${+margin.left - wdth}, ${height -
+                        d.length * zoom +
+                        +margin.top} )`
                 )
-                .attr("width", wdth + "px")
+                .attr("width", `${wdth}px`)
                 .attr("height", "15px")
                 .attr("fill", "#ebd9b2");
         })
@@ -696,10 +680,10 @@ function create_histogram(inp_data, name, title) {
     chart
         .append("g")
         .attr("class", "x axis")
-        .attr("id", "x_" + name)
+        .attr("id", `x_${name}`)
         .attr(
             "transform",
-            "translate( " + margin.left + "," + (+height + +margin.top) + ")"
+            `translate( ${margin.left},${+height + +margin.top})`
         )
         .call(xAxis);
 
@@ -709,12 +693,12 @@ function create_histogram(inp_data, name, title) {
         .append("text")
         .attr("class", "ax_title")
         .attr("transform", e => {
-            var axis = d3.select("#x_" + name).node();
+            var axis = d3.select(`#x_${name}`).node();
             var left_pad =
                 +margin.left + axis.getBoundingClientRect().width / 2 + 30;
             var top_pad =
                 +margin.top + height + axis.getBoundingClientRect().height + 10;
-            var trans = "translate(" + left_pad + "," + top_pad + ")";
+            var trans = `translate(${left_pad},${top_pad})`;
 
             return trans;
         })
@@ -730,8 +714,8 @@ function create_histogram(inp_data, name, title) {
     chart
         .append("g")
         .attr("class", "y axis")
-        .attr("id", "y_" + name)
-        .attr("transform", "translate( " + margin.left + "," + margin.top + ")")
+        .attr("id", `y_${name}`)
+        .attr("transform", `translate( ${margin.left},${margin.top})`)
         .call(yAxis);
 
     // Add a title to the y axis
@@ -740,13 +724,12 @@ function create_histogram(inp_data, name, title) {
         .append("text")
         .attr("class", "ax_title")
         .attr("transform", e => {
-            var axis = d3.select("#y_" + name).node();
+            var axis = d3.select(`#y_${name}`).node();
             var left_pad =
                 +margin.left - axis.getBoundingClientRect().width - 5;
             var top_pad =
                 +margin.top + axis.getBoundingClientRect().height / 2 - 30;
-            var trans =
-                "translate(" + left_pad + "," + top_pad + ")rotate(-90)";
+            var trans = `translate(${left_pad},${top_pad})rotate(-90)`;
 
             return trans;
         })

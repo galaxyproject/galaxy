@@ -8,13 +8,9 @@ var View = Backbone.View.extend({
         this.item = this.model.get("item");
         this.title = this.model.get("plural");
         $.ajax({
-            url:
-                Galaxy.root +
-                this.item +
-                "/" +
-                this.model.get("action_id") +
-                "?" +
-                $.param(Galaxy.params),
+            url: `${Galaxy.root + this.item}/${this.model.get(
+                "action_id"
+            )}?${$.param(Galaxy.params)}`,
             success: function(response) {
                 response["dict_format"] = true;
                 self.model.set(response);
@@ -32,11 +28,9 @@ var View = Backbone.View.extend({
     _templateShared: function() {
         var self = this;
         var $tmpl = $(
-            "<div>" +
-                "<h2>" +
-                this.model.get("plural") +
-                " shared with you by others</h2>" +
-                "</div>"
+            `<div><h2>${this.model.get(
+                "plural"
+            )} shared with you by others</h2></div>`
         );
         var options = this.model.attributes;
         if (options.shared_by_others && options.shared_by_others.length > 0) {
@@ -49,34 +43,20 @@ var View = Backbone.View.extend({
                     "</table>"
             );
             _.each(options.shared_by_others, (it, index) => {
-                var display_url =
-                    Galaxy.root +
-                    self.item +
-                    "/display_by_username_and_slug?username=" +
-                    it.username +
-                    "&slug=" +
-                    it.slug;
+                var display_url = `${Galaxy.root +
+                    self.item}/display_by_username_and_slug?username=${it.username}&slug=${it.slug}`;
                 $table.append(
-                    "<tr>" +
-                        "<td>" +
-                        '<a href="' +
-                        display_url +
-                        '">' +
-                        _.escape(it.title) +
-                        "</a>" +
-                        "</td>" +
-                        "<td>" +
-                        _.escape(it.username) +
-                        "</td>" +
-                        "</tr>"
+                    `<tr><td><a href="${display_url}">${_.escape(
+                        it.title
+                    )}</a></td><td>${_.escape(it.username)}</td></tr>`
                 );
             });
             $tmpl.append($table);
         } else {
             $tmpl.append(
-                "No " +
-                    this.model.get("plural").toLowerCase() +
-                    " have been shared with you."
+                `No ${this.model
+                    .get("plural")
+                    .toLowerCase()} have been shared with you.`
             );
         }
         return $tmpl;

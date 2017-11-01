@@ -34,10 +34,10 @@ var Citation = Backbone.Model.extend(baseMVC.LoggableMixin).extend({
         if (parsed.errors.length) {
             // the gen. form of these errors seems to be [ line, col, char, error message ]
             var errors = parsed.errors.reduce(
-                (all, current) => all + "; " + current
+                (all, current) => `${all}; ${current}`
             );
             // throw new Error( 'Error parsing bibtex: ' + errors );
-            this.log("Error parsing bibtex: " + errors);
+            this.log(`Error parsing bibtex: ${errors}`);
         }
 
         this._fields = {};
@@ -68,7 +68,7 @@ var BaseCitationCollection = Backbone.Collection
         _logNamespace: logNamespace,
 
         /** root api url */
-        urlRoot: Galaxy.root + "api",
+        urlRoot: `${Galaxy.root}api`,
         partial: true, // Assume some tools in history/workflow may not be properly annotated yet.
         model: Citation
     });
@@ -76,14 +76,14 @@ var BaseCitationCollection = Backbone.Collection
 var HistoryCitationCollection = BaseCitationCollection.extend({
     /** complete api url */
     url: function() {
-        return this.urlRoot + "/histories/" + this.history_id + "/citations";
+        return `${this.urlRoot}/histories/${this.history_id}/citations`;
     }
 });
 
 var ToolCitationCollection = BaseCitationCollection.extend({
     /** complete api url */
     url: function() {
-        return this.urlRoot + "/tools/" + this.tool_id + "/citations";
+        return `${this.urlRoot}/tools/${this.tool_id}/citations`;
     },
     partial: false // If a tool has citations, assume they are complete.
 });

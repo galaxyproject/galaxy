@@ -38,7 +38,7 @@ var HistoryView = _super.extend(
         modelCollectionKey: "contents",
 
         tagName: "div",
-        className: _super.prototype.className + " history-panel",
+        className: `${_super.prototype.className} history-panel`,
 
         /** string to display when the collection is empty */
         emptyMsg: _l("This history is empty"),
@@ -349,7 +349,7 @@ var HistoryView = _super.extend(
                 case "dataset_collection":
                     return this.HDCAViewClass;
             }
-            throw new TypeError("Unknown history_content_type: " + contentType);
+            throw new TypeError(`Unknown history_content_type: ${contentType}`);
         },
 
         /** in this override, add a linktarget, and expand if id is in web storage */
@@ -556,26 +556,22 @@ var HistoryView = _super.extend(
         // ........................................................................ misc
         /** utility for adding -st, -nd, -rd, -th to numbers */
         ordinalIndicator: function(number) {
-            var numStr = number + "";
+            var numStr = `${number}`;
             switch (numStr.charAt(numStr.length - 1)) {
                 case "1":
-                    return numStr + "st";
+                    return `${numStr}st`;
                 case "2":
-                    return numStr + "nd";
+                    return `${numStr}nd`;
                 case "3":
-                    return numStr + "rd";
+                    return `${numStr}rd`;
                 default:
-                    return numStr + "th";
+                    return `${numStr}th`;
             }
         },
 
         /** Return a string rep of the history */
         toString: function() {
-            return (
-                "HistoryView(" +
-                (this.model ? this.model.get("name") : "") +
-                ")"
-            );
+            return `HistoryView(${this.model ? this.model.get("name") : ""})`;
         }
     }
 );

@@ -12,7 +12,7 @@ var JobListItemView = _super.extend(
         /** logger used to record this.log messages, commonly set to console */
         //logger              : console,
 
-        className: _super.prototype.className + " job",
+        className: `${_super.prototype.className} job`,
         id: function() {
             return ["job", this.model.get("id")].join("-");
         },
@@ -24,7 +24,7 @@ var JobListItemView = _super.extend(
             if (attributes.logger) {
                 this.logger = this.model.logger = attributes.logger;
             }
-            this.log(this + ".initialize:", attributes);
+            this.log(`${this}.initialize:`, attributes);
             _super.prototype.initialize.call(this, attributes);
 
             this.tool = attributes.tool || {};
@@ -38,7 +38,7 @@ var JobListItemView = _super.extend(
         _swapNewRender: function($newRender) {
             _super.prototype._swapNewRender.call(this, $newRender);
             if (this.model.has("state")) {
-                this.$el.addClass("state-" + this.model.get("state"));
+                this.$el.addClass(`state-${this.model.get("state")}`);
             }
             return this.$el;
         },
@@ -119,7 +119,7 @@ var JobListItemView = _super.extend(
         // ........................................................................ misc
         /** String representation */
         toString: function() {
-            return "JobListItemView(" + this.model + ")";
+            return `JobListItemView(${this.model})`;
         }
     }
 );

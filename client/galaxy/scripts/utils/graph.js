@@ -77,7 +77,7 @@ function Edge(source, target, data) {
 }
 /** String representation */
 Edge.prototype.toString = function() {
-    return this.source + "->" + this.target;
+    return `${this.source}->${this.target}`;
 };
 
 /** Return a plain object representing this edge */
@@ -109,7 +109,7 @@ function Vertex(name, data) {
 
 /** String representation */
 Vertex.prototype.toString = function() {
-    return "Vertex(" + this.name + ")";
+    return `Vertex(${this.name})`;
 };
 
 //TODO: better name w no collision for either this.eachEdge or this.edges
@@ -470,11 +470,11 @@ Graph.prototype.eachAdjacent = function(vertex, fn) {
 /** Print the graph to the console (debugging) */
 Graph.prototype.print = function() {
     var self = this;
-    console.log("Graph has " + Object.keys(self.vertices).length + " vertices");
+    console.log(`Graph has ${Object.keys(self.vertices).length} vertices`);
     self.eachVertex(vertex => {
         console.log(vertex.toString());
         vertex.eachEdge(edge => {
-            console.log("\t " + edge);
+            console.log(`\t ${edge}`);
         });
     });
     return self;
@@ -486,7 +486,7 @@ Graph.prototype.toDOT = function() {
     var strings = [];
     strings.push("graph bler {");
     self.edges(edge => {
-        strings.push("\t" + edge.from + " -- " + edge.to + ";");
+        strings.push(`\t${edge.from} -- ${edge.to};`);
     });
     strings.push("}");
     return strings.join("\n");

@@ -4,8 +4,7 @@
 export default {
     openFileBrowser: function(options) {
         var GS_UI_URL = window.Galaxy.config.genomespace_ui_url;
-        var GS_UPLOAD_URL =
-            GS_UI_URL + "upload/loadUrlToGenomespace.html?getLocation=true";
+        var GS_UPLOAD_URL = `${GS_UI_URL}upload/loadUrlToGenomespace.html?getLocation=true`;
 
         var newWin = window.open(
             GS_UPLOAD_URL,

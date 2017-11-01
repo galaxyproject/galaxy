@@ -84,16 +84,16 @@ var hooked_tour_from_data = data => {
 };
 
 var TourItem = Backbone.Model.extend({
-    urlRoot: gxy_root + "api/tours"
+    urlRoot: `${gxy_root}api/tours`
 });
 
 var Tours = Backbone.Collection.extend({
-    url: gxy_root + "api/tours",
+    url: `${gxy_root}api/tours`,
     model: TourItem
 });
 
 var giveTour = tour_id => {
-    var url = gxy_root + "api/tours/" + tour_id;
+    var url = `${gxy_root}api/tours/${tour_id}`;
     $.getJSON(url, data => {
         // Set hooks for additional click and data entry actions.
         var tourdata = hooked_tour_from_data(data);
@@ -177,7 +177,7 @@ var ToursView = Backbone.View.extend({
                 if (elem.hasClass("btn-secondary")) {
                     display = "none";
                 }
-                $("div[tag='" + tag + "']").css({ display: display });
+                $(`div[tag='${tag}']`).css({ display: display });
             });
     }
 });

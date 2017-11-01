@@ -29,12 +29,12 @@ var View = Backbone.View.extend({
 
     render: function() {
         var id = this.model.get("current");
-        id = this.$("#" + id).length > 0 ? id : this.first();
+        id = this.$(`#${id}`).length > 0 ? id : this.first();
         if (id) {
             this.$nav.children().removeClass("active");
             this.$content.children().removeClass("active");
-            this.$("#tab-" + id).addClass("active");
-            this.$("#" + id).addClass("active");
+            this.$(`#tab-${id}`).addClass("active");
+            this.$(`#${id}`).addClass("active");
         }
         this.$el[this.model.get("visible") ? "fadeIn" : "fadeOut"]("fast");
         this.$nav[this.size() > 1 ? "show" : "hide"]();
@@ -124,8 +124,8 @@ var View = Backbone.View.extend({
 
     /** Delete tab */
     _remove: function(tab_model) {
-        this.$("#tab-" + tab_model.id).remove();
-        this.$("#" + tab_model.id).remove();
+        this.$(`#tab-${tab_model.id}`).remove();
+        this.$(`#${tab_model.id}`).remove();
     },
 
     /** Reset collection */
@@ -136,7 +136,7 @@ var View = Backbone.View.extend({
 
     /** Change tab */
     _change: function(tab_model) {
-        this.$("#tab-" + tab_model.id)[
+        this.$(`#tab-${tab_model.id}`)[
             tab_model.get("hidden") ? "hide" : "show"
         ]();
     },
@@ -153,8 +153,8 @@ var View = Backbone.View.extend({
     _template_tab: function(options) {
         var $tmpl = $("<li/>")
             .addClass("tab-element")
-            .attr("id", "tab-" + options.id)
-            .append($("<a/>").attr("id", "tab-title-link-" + options.id));
+            .attr("id", `tab-${options.id}`)
+            .append($("<a/>").attr("id", `tab-title-link-${options.id}`));
         var $href = $tmpl.find("a");
         options.icon &&
             $href.append(
@@ -164,7 +164,7 @@ var View = Backbone.View.extend({
             );
         $href.append(
             $("<span/>")
-                .attr("id", "tab-title-text-" + options.id)
+                .attr("id", `tab-title-text-${options.id}`)
                 .addClass("tab-title-text")
                 .append(options.title)
         );

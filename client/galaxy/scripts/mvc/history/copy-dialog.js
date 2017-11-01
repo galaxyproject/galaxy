@@ -11,7 +11,7 @@ import _l from "utils/localization";
 var CopyDialog = {
     // language related strings/fns
     defaultName: _.template("Copy of '<%- name %>'"),
-    title: _.template(_l("Copying history") + ' "<%- name %>"'),
+    title: _.template(`${_l("Copying history")} "<%- name %>"`),
     submitLabel: _l("Copy"),
     errorMessage: _l("History could not be copied."),
     progressive: _l("Copying history"),
@@ -73,10 +73,8 @@ var CopyDialog = {
 
     // empty modal body and let the user know the copy is happening
     _showAjaxIndicator: function _showAjaxIndicator() {
-        var indicator =
-            '<p><span class="fa fa-spinner fa-spin"></span> ' +
-            this.progressive +
-            "...</p>";
+        var indicator = `<p><span class="fa fa-spinner fa-spin"></span> ${this
+            .progressive}...</p>`;
         this.modal
             .$(".modal-body")
             .empty()
@@ -209,7 +207,7 @@ var CopyDialog = {
  */
 var ImportDialog = _.extend({}, CopyDialog, {
     defaultName: _.template("imported: <%- name %>"),
-    title: _.template(_l("Importing history") + ' "<%- name %>"'),
+    title: _.template(`${_l("Importing history")} "<%- name %>"`),
     submitLabel: _l("Import"),
     errorMessage: _l("History could not be imported."),
     progressive: _l("Importing history"),

@@ -13,27 +13,20 @@ var View = Backbone.View.extend({
 
     // Fetch data for the selected dataset and
     render: function() {
-        var data_url =
-            Galaxy.root + "api/datasets/" + this.model.get("dataset_id");
+        var data_url = `${Galaxy.root}api/datasets/${this.model.get(
+            "dataset_id"
+        )}`;
 
         var self = this;
 
         Utils.get({
             url: data_url,
             success: function(dataset) {
-                var job_url =
-                    Galaxy.root +
-                    "api/jobs/" +
-                    dataset.creating_job +
-                    "?full=True";
+                var job_url = `${Galaxy.root}api/jobs/${dataset.creating_job}?full=True`;
                 Utils.get({
                     url: job_url,
                     success: function(job) {
-                        var job_url =
-                            Galaxy.root +
-                            "api/jobs/" +
-                            dataset.creating_job +
-                            "?full=True";
+                        var job_url = `${Galaxy.root}api/jobs/${dataset.creating_job}?full=True`;
                         self.render_error_page(self, dataset, job);
                     },
                     error: function(response) {
@@ -70,14 +63,12 @@ var View = Backbone.View.extend({
         self.$el.empty().append(self._templateHeader());
         self.$el.append("<h2>Dataset Error</h2>");
         self.$el.append(
-            "<p>An error occured while running the tool <b>" +
-                job.tool_id +
-                "</b>.</p>"
+            `<p>An error occured while running the tool <b>${job.tool_id}</b>.</p>`
         );
         self.$el.append(
             "<p>Tool execution generated the following messages:</p>"
         );
-        self.$el.append('<pre class="code">' + job.stderr + "</pre>");
+        self.$el.append(`<pre class="code">${job.stderr}</pre>`);
         self.$el.append("<h2>Report This Error</pre>");
         self.$el.append(
             "<p>Usually the local Galaxy administrators regularly review errors that occur on the server. However, if you would like to provide additional information (such as what you were trying to do when the error occurred) and a contact e-mail address, we will be better able to investigate your problem and get back to you.</p>"
@@ -158,7 +149,7 @@ var View = Backbone.View.extend({
                     floating: "clear",
                     onclick: function() {
                         var form_data = form.data.create();
-                        var url = Galaxy.root + "api/jobs/" + job.id + "/error";
+                        var url = `${Galaxy.root}api/jobs/${job.id}/error`;
                         form_data.dataset_id = dataset.id;
                         self.submit(form_data, url);
                     }

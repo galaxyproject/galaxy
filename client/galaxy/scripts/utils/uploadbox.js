@@ -89,7 +89,7 @@
                     } else if (!text) {
                         text = cnf.error_default;
                     }
-                    cnf.error(text + " (" + xhr.status + "). " + extra_info);
+                    cnf.error(`${text} (${xhr.status}). ${extra_info}`);
                 } else {
                     cnf.success(response);
                 }
@@ -135,9 +135,9 @@
 
         // append hidden upload field
         var $input = $(
-            '<input type="file" style="display: none" ' +
-                ((opts.multiple && "multiple") || "") +
-                "/>"
+            `<input type="file" style="display: none" ${(opts.multiple &&
+                "multiple") ||
+                ""}/>`
         );
         el.append(
             $input.change(function(e) {
