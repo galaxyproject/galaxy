@@ -1,18 +1,8 @@
-define(["libs/bibtex", "mvc/base-mvc", "utils/localization"], function(
-    parseBibtex,
+define(["libs/bibtexParse", "mvc/base-mvc", "utils/localization"], function(
+    bibtexParse,
     baseMVC,
     _l
 ) {
-    /* global Backbone */
-    // we use amd here to require, but bibtex uses a global or commonjs pattern.
-    // webpack will load via commonjs and plain requirejs will load as global. Check both
-    parseBibtex = parseBibtex || window.BibtexParser;
-
-    _.extend(parseBibtex.ENTRY_TYPES_, {
-        online: 998, // Galaxy MOD: Handle @online entries for preprints.
-        data: 999 // Galaxy MOD: Handle @data citations coming from figshare.
-    });
-
     var logNamespace = "citation";
     //==============================================================================
     /** @class model for tool citations.
@@ -30,24 +20,15 @@ define(["libs/bibtex", "mvc/base-mvc", "utils/localization"], function(
             var parsed;
             try {
                 // TODO: to model.parse/.validate
-                parsed = parseBibtex(this.attributes.content);
+                parsed = bibtexParse.toJSON(this.attributes.content);
             } catch (err) {
-                return;
-            }
-            // bibtex returns successfully parsed in .entries and any parsing errors in .errors
-            if (parsed.errors.length) {
-                // the gen. form of these errors seems to be [ line, col, char, error message ]
-                var errors = parsed.errors.reduce(function(all, current) {
-                    return all + "; " + current;
-                });
-                // throw new Error( 'Error parsing bibtex: ' + errors );
-                this.log("Error parsing bibtex: " + errors);
+                this.log("Error parsing bibtex: " + err);
             }
 
             this._fields = {};
-            this.entry = _.first(parsed.entries);
+            this.entry = _.first(parsed);
             if (this.entry) {
-                var rawFields = this.entry.Fields;
+                var rawFields = this.entry.entryTags;
                 for (var key in rawFields) {
                     var value = rawFields[key];
                     var lowerKey = key.toLowerCase();
@@ -56,7 +37,7 @@ define(["libs/bibtex", "mvc/base-mvc", "utils/localization"], function(
             }
         },
         entryType: function() {
-            return this.entry ? this.entry.EntryType : undefined;
+            return this.entry ? this.entry.entryType : undefined;
         },
         fields: function() {
             return this._fields;
