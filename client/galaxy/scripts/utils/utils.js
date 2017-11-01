@@ -26,7 +26,10 @@ function deepeach(dict, callback) {
 
 /** Identifies urls and replaces them with anchors */
 function linkify(inputText) {
-    var replacedText, replacePattern1, replacePattern2, replacePattern3;
+    var replacedText;
+    var replacePattern1;
+    var replacePattern2;
+    var replacePattern3;
 
     // URLs starting with http://, https://, or ftp://
     replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
@@ -260,10 +263,11 @@ function roundToDecimalPlaces(number, numPlaces) {
 }
 
 // calculate on import
-var kb = 1024,
-    mb = kb * kb,
-    gb = mb * kb,
-    tb = gb * kb;
+var kb = 1024;
+
+var mb = kb * kb;
+var gb = mb * kb;
+var tb = gb * kb;
 /**
      * Format byte size to string with units
      * @param{Integer}   size           - Size in bytes

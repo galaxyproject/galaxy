@@ -12,8 +12,8 @@ jQuery.fn.extend({
         }
 
         $(this).each(function() {
-            var $this = $(this),
-                targetSelector = $this.data("target");
+            var $this = $(this);
+            var targetSelector = $this.data("target");
 
             if (targetSelector) {
                 $this

@@ -166,14 +166,16 @@ var JobCollection = Backbone.Collection.extend(BASE_MVC.LoggableMixin).extend(
         // ........................................................................ ajax
         /** fetches all details for each job in the collection using a queue */
         queueDetailFetching: function() {
-            var collection = this,
-                queue = new AJAX_QUEUE.AjaxQueue(
-                    this.map(function(job) {
-                        return function() {
-                            return job.fetch({ silent: true });
-                        };
-                    })
-                );
+            var collection = this;
+
+            var queue = new AJAX_QUEUE.AjaxQueue(
+                this.map(function(job) {
+                    return function() {
+                        return job.fetch({ silent: true });
+                    };
+                })
+            );
+
             queue.done(function() {
                 collection.trigger("details-loaded");
             });
@@ -204,8 +206,8 @@ var JobCollection = Backbone.Collection.extend(BASE_MVC.LoggableMixin).extend(
         /** class level fn for fetching the job details for all jobs in a history */
         fromHistory: function(historyId) {
             console.debug(this);
-            var Collection = this,
-                collection = new Collection([]);
+            var Collection = this;
+            var collection = new Collection([]);
             collection
                 .fetch({ data: { history_id: historyId } })
                 .done(function() {

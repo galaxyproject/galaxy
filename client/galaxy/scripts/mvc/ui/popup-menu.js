@@ -95,11 +95,13 @@ var PopupMenu = Backbone.View.extend({
                     "</a></li>"
                 ].join("");
             }
-            var href = option.href || "javascript:void(0);",
-                target = option.target ? ' target="' + option.target + '"' : "",
-                check = option.checked
-                    ? '<span class="fa fa-check"></span>'
-                    : "";
+            var href = option.href || "javascript:void(0);";
+            var target = option.target ? ' target="' + option.target + '"' : "";
+
+            var check = option.checked
+                ? '<span class="fa fa-check"></span>'
+                : "";
+
             return [
                 '<li><a class="popupmenu-option" href="',
                 href,
@@ -257,15 +259,15 @@ PopupMenu.convertLinksToOptions = function($parent, selector) {
     selector = selector || "a";
     var options = [];
     $parent.find(selector).each(function(elem, i) {
-        var option = {},
-            $link = $(elem);
+        var option = {};
+        var $link = $(elem);
 
         // convert link text to the option text (html) and the href into the option func
         option.html = $link.text();
         if ($link.attr("href")) {
-            var linkHref = $link.attr("href"),
-                linkTarget = $link.attr("target"),
-                confirmText = $link.attr("confirm");
+            var linkHref = $link.attr("href");
+            var linkTarget = $link.attr("target");
+            var confirmText = $link.attr("confirm");
 
             option.func = function() {
                 // if there's a "confirm" attribute, throw up a confirmation dialog, and
@@ -348,10 +350,12 @@ PopupMenu.make_popup_menus = function(
     $(parent)
         .find(menuSelector)
         .each(function() {
-            var $menuElement = $(this),
-                $buttonElement = $(parent).find(
-                    buttonSelectorBuildFn($menuElement, parent)
-                );
+            var $menuElement = $(this);
+
+            var $buttonElement = $(parent).find(
+                buttonSelectorBuildFn($menuElement, parent)
+            );
+
             popupMenusCreated.push(
                 PopupMenu.fromDom($buttonElement, $menuElement)
             );

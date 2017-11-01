@@ -6,32 +6,38 @@ $.ui.plugin.add("draggable", "scrollPanel", {
     drag: function(e, ui) {
         var instance = $(this).data("draggable");
         clearTimeout(instance.timeout);
-        var o = ui.options,
-            element = instance.element,
-            panel = o.panel,
-            panel_pos = panel.position(),
-            panel_w = panel.width(),
-            panel_h = panel.height(),
-            viewport = panel.parent(),
-            viewport_w = viewport.width(),
-            viewport_h = viewport.height(),
-            element_w = element.width(),
-            element_h = element.height(),
-            moved = false,
-            close_dist = 5,
-            nudge = 23,
-            // Legal panel range
-            p_min_x = -(panel_w - viewport_w),
-            p_min_y = -(panel_h - viewport_h),
-            p_max_x = 0,
-            p_max_y = 0,
-            // Visible
-            min_vis_x = -panel_pos.left,
-            max_vis_x = min_vis_x + viewport_w,
-            min_vis_y = -panel_pos.top,
-            max_vis_y = min_vis_y + viewport_h,
-            // Mouse
-            mouse_x = ui.position.left + instance.offset.click.left;
+        var o = ui.options;
+        var element = instance.element;
+        var panel = o.panel;
+        var panel_pos = panel.position();
+        var panel_w = panel.width();
+        var panel_h = panel.height();
+        var viewport = panel.parent();
+        var viewport_w = viewport.width();
+        var viewport_h = viewport.height();
+        var element_w = element.width();
+        var element_h = element.height();
+        var moved = false;
+        var close_dist = 5;
+        var nudge = 23;
+
+        var // Legal panel range
+        p_min_x = -(panel_w - viewport_w);
+
+        var p_min_y = -(panel_h - viewport_h);
+        var p_max_x = 0;
+        var p_max_y = 0;
+
+        var // Visible
+        min_vis_x = -panel_pos.left;
+
+        var max_vis_x = min_vis_x + viewport_w;
+        var min_vis_y = -panel_pos.top;
+        var max_vis_y = min_vis_y + viewport_h;
+
+        var // Mouse
+        mouse_x = ui.position.left + instance.offset.click.left;
+
         mouse_y = ui.position.top + instance.offset.click.top;
         // Move it
         if (panel_pos.left < p_max_x && mouse_x - close_dist < min_vis_x) {

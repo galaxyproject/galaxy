@@ -229,8 +229,8 @@ var HistoryViewEdit = _super.extend(
                 return;
             }
 
-            var panel = this,
-                nameSelector = "> .controls .name";
+            var panel = this;
+            var nameSelector = "> .controls .name";
             $where
                 .find(nameSelector)
                 .attr("title", _l("Click to rename history"))
@@ -258,46 +258,47 @@ var HistoryViewEdit = _super.extend(
      *  ajax calls made for multiple datasets are queued
      */
         multiselectActions: function() {
-            var panel = this,
-                actions = [
-                    {
-                        html: _l("Hide datasets"),
-                        func: function() {
-                            var action =
-                                HDA_MODEL.HistoryDatasetAssociation.prototype
-                                    .hide;
-                            panel.getSelectedModels().ajaxQueue(action);
-                        }
-                    },
-                    {
-                        html: _l("Unhide datasets"),
-                        func: function() {
-                            var action =
-                                HDA_MODEL.HistoryDatasetAssociation.prototype
-                                    .unhide;
-                            panel.getSelectedModels().ajaxQueue(action);
-                        }
-                    },
-                    {
-                        html: _l("Delete datasets"),
-                        func: function() {
-                            var action =
-                                HDA_MODEL.HistoryDatasetAssociation.prototype[
-                                    "delete"
-                                ];
-                            panel.getSelectedModels().ajaxQueue(action);
-                        }
-                    },
-                    {
-                        html: _l("Undelete datasets"),
-                        func: function() {
-                            var action =
-                                HDA_MODEL.HistoryDatasetAssociation.prototype
-                                    .undelete;
-                            panel.getSelectedModels().ajaxQueue(action);
-                        }
+            var panel = this;
+
+            var actions = [
+                {
+                    html: _l("Hide datasets"),
+                    func: function() {
+                        var action =
+                            HDA_MODEL.HistoryDatasetAssociation.prototype.hide;
+                        panel.getSelectedModels().ajaxQueue(action);
                     }
-                ];
+                },
+                {
+                    html: _l("Unhide datasets"),
+                    func: function() {
+                        var action =
+                            HDA_MODEL.HistoryDatasetAssociation.prototype
+                                .unhide;
+                        panel.getSelectedModels().ajaxQueue(action);
+                    }
+                },
+                {
+                    html: _l("Delete datasets"),
+                    func: function() {
+                        var action =
+                            HDA_MODEL.HistoryDatasetAssociation.prototype[
+                                "delete"
+                            ];
+                        panel.getSelectedModels().ajaxQueue(action);
+                    }
+                },
+                {
+                    html: _l("Undelete datasets"),
+                    func: function() {
+                        var action =
+                            HDA_MODEL.HistoryDatasetAssociation.prototype
+                                .undelete;
+                        panel.getSelectedModels().ajaxQueue(action);
+                    }
+                }
+            ];
+
             if (panel.purgeAllowed) {
                 actions.push({
                     html: _l("Permanently delete datasets"),

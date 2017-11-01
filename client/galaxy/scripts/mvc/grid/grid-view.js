@@ -378,8 +378,9 @@ export default Backbone.View.extend({
     // Set new value for categorical filter.
     set_categorical_filter: function(name, new_value) {
         // Update filter hyperlinks to reflect new filter value.
-        var category_filter = this.grid.get("categorical_filters")[name],
-            cur_value = this.grid.get("filters")[name];
+        var category_filter = this.grid.get("categorical_filters")[name];
+
+        var cur_value = this.grid.get("filters")[name];
         var self = this;
         this.$el.find("." + name + "-filter").each(function() {
             var text = $.trim($(this).text());
@@ -415,10 +416,13 @@ export default Backbone.View.extend({
         // Update page hyperlink to reflect new page.
         var self = this;
         this.$el.find(".page-link").each(function() {
-            var id = $(this).attr("id"),
-                page_num = parseInt(id.split("-")[2], 10), // Id has form 'page-link-<page_num>
-                cur_page = self.grid.get("cur_page"),
-                text;
+            var id = $(this).attr("id");
+
+            var // Id has form 'page-link-<page_num>
+            page_num = parseInt(id.split("-")[2], 10);
+
+            var cur_page = self.grid.get("cur_page");
+            var text;
             if (page_num === new_page) {
                 // Remove link to page since grid will be on this page. It is assumed that
                 // this element has a single child, a hyperlink/anchor with text.

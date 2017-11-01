@@ -211,8 +211,9 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
                 //TODO: ideally this would be a DELETE call to the api
                 //  using purge async for now
-                var hda = this,
-                    xhr = jQuery.ajax(options);
+                var hda = this;
+
+                var xhr = jQuery.ajax(options);
                 xhr.done(function(message, status, responseObj) {
                     hda.set({ deleted: true, purged: true });
                 });
@@ -327,9 +328,9 @@ var DatasetAssociationCollection = Backbone.Collection
             // ........................................................................ ajax
             /** using a queue, perform ajaxFn on each of the models in this collection */
             ajaxQueue: function(ajaxFn, options) {
-                var deferred = jQuery.Deferred(),
-                    startingLength = this.length,
-                    responses = [];
+                var deferred = jQuery.Deferred();
+                var startingLength = this.length;
+                var responses = [];
 
                 if (!startingLength) {
                     deferred.resolve([]);

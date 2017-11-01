@@ -95,8 +95,9 @@ var TabularDataset = Dataset.extend({
         }
 
         // Get next chunk.
-        var self = this,
-            next_chunk = $.Deferred();
+        var self = this;
+
+        var next_chunk = $.Deferred();
         $.getJSON(this.attributes.chunk_url, {
             offset: self.attributes.offset
         }).success(function(chunk) {
@@ -175,9 +176,9 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             cellpadding: 0
         });
         this.$el.append(data_table);
-        var column_names = this.model.get_metadata("column_names"),
-            header_container = $("<thead/>").appendTo(data_table),
-            header_row = $("<tr/>").appendTo(header_container);
+        var column_names = this.model.get_metadata("column_names");
+        var header_container = $("<thead/>").appendTo(data_table);
+        var header_row = $("<tr/>").appendTo(header_container);
         if (column_names) {
             header_row.append(
                 "<th>" + column_names.join("</th><th>") + "</th>"
@@ -189,8 +190,9 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         }
 
         // Render first chunk.
-        var self = this,
-            first_chunk = this.model.get("first_data_chunk");
+        var self = this;
+
+        var first_chunk = this.model.get("first_data_chunk");
         if (first_chunk) {
             // First chunk is bootstrapped, so render now.
             this._renderChunk(first_chunk);
@@ -239,9 +241,10 @@ var TabularDatasetChunkedView = Backbone.View.extend({
 
     _renderRow: function(line) {
         // Check length of cells to ensure this is a complete row.
-        var cells = line.split("\t"),
-            row = $("<tr>"),
-            num_columns = this.model.get_metadata("columns");
+        var cells = line.split("\t");
+
+        var row = $("<tr>");
+        var num_columns = this.model.get_metadata("columns");
 
         if (this.row_count % 2 !== 0) {
             row.addClass("dark_row");

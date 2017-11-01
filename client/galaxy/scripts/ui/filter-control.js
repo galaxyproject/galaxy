@@ -53,9 +53,9 @@ function dropDownSelect(options, selected) {
 
     // trigger 'change.dropdown-select' when a new selection is made using the dropdown
     function selectThis(event) {
-        var $this = $(this),
-            $select = $this.parents(".dropdown-select"),
-            newSelection = $this.text();
+        var $this = $(this);
+        var $select = $this.parents(".dropdown-select");
+        var newSelection = $this.text();
         $select.find(".dropdown-select-selected").text(newSelection);
         $select.trigger("change.dropdown-select", newSelection);
     }
@@ -140,8 +140,8 @@ FilterControl.prototype._renderKeySelect = function __renderKeySelect() {
 
 /** render the op dropDownSelect, bind a change event to it, and return it */
 FilterControl.prototype._renderOpSelect = function __renderOpSelect() {
-    var filterControl = this,
-        ops = this.currFilter.ops;
+    var filterControl = this;
+    var ops = this.currFilter.ops;
     //TODO: search for currOp in avail. ops: use that for selected if there; otherwise: first op
     this.$opSelect = dropDownSelect(ops, ops[0])
         .addClass("filter-control-op")
@@ -177,16 +177,20 @@ FilterControl.prototype._renderValueInput = function __renderValueInput() {
 /** return the current state/setting for the filter as a three key object: key, op, value */
 FilterControl.prototype.val = function _val() {
     var key = this.$element
-            .find(".filter-control-key .dropdown-select-selected")
-            .text(),
-        op = this.$element
-            .find(".filter-control-op .dropdown-select-selected")
-            .text(),
-        // handle either a dropdown or plain input
-        $value = this.$element.find(".filter-control-value"),
-        value = $value.hasClass("dropdown-select")
-            ? $value.find(".dropdown-select-selected").text()
-            : $value.val();
+        .find(".filter-control-key .dropdown-select-selected")
+        .text();
+
+    var op = this.$element
+        .find(".filter-control-op .dropdown-select-selected")
+        .text();
+
+    var // handle either a dropdown or plain input
+    $value = this.$element.find(".filter-control-value");
+
+    var value = $value.hasClass("dropdown-select")
+        ? $value.find(".dropdown-select-selected").text()
+        : $value.val();
+
     return { key: key, op: op, value: value };
 };
 
@@ -200,8 +204,8 @@ jQuery.fn.extend({
     filterControl: function $filterControl(options) {
         var nonOptionsArgs = jQuery.makeArray(arguments).slice(1);
         return this.map(function() {
-            var $this = $(this),
-                data = $this.data(FilterControl.prototype.DATA_KEY);
+            var $this = $(this);
+            var data = $this.data(FilterControl.prototype.DATA_KEY);
 
             if (jQuery.type(options) === "object") {
                 data = new FilterControl($this, options);

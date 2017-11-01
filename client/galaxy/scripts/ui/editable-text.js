@@ -11,12 +11,15 @@ var $ = jQuery;
  */
 $.fn.make_text_editable = function(config_dict) {
     // Get config options.
-    var num_cols = "num_cols" in config_dict ? config_dict.num_cols : 30,
-        num_rows = "num_rows" in config_dict ? config_dict.num_rows : 4,
-        use_textarea =
-            "use_textarea" in config_dict ? config_dict.use_textarea : false,
-        on_finish = "on_finish" in config_dict ? config_dict.on_finish : null,
-        help_text = "help_text" in config_dict ? config_dict.help_text : null;
+    var num_cols = "num_cols" in config_dict ? config_dict.num_cols : 30;
+
+    var num_rows = "num_rows" in config_dict ? config_dict.num_rows : 4;
+
+    var use_textarea =
+        "use_textarea" in config_dict ? config_dict.use_textarea : false;
+
+    var on_finish = "on_finish" in config_dict ? config_dict.on_finish : null;
+    var help_text = "help_text" in config_dict ? config_dict.help_text : null;
 
     // Add element behavior.
     var container = $(this);
@@ -47,11 +50,10 @@ $.fn.make_text_editable = function(config_dict) {
 
         // Create input element(s) for editing.
         var cur_text =
-                "cur_text" in config_dict
-                    ? config_dict.cur_text
-                    : container.text(),
-            input_elt,
-            button_elt;
+            "cur_text" in config_dict ? config_dict.cur_text : container.text();
+
+        var input_elt;
+        var button_elt;
 
         if (use_textarea) {
             input_elt = $("<textarea/>")

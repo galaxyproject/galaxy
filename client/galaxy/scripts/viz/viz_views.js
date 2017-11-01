@@ -108,9 +108,10 @@ var TrackHeaderView = Backbone.View.extend({
         );
 
         // Setup popup menu for changing modes.
-        var self = this,
-            track = this.model,
-            mode_mapping = {};
+        var self = this;
+
+        var track = this.model;
+        var mode_mapping = {};
         for (var i = 0, len = track.display_modes.length; i < len; i++) {
             var mode = track.display_modes[i];
             mode_mapping[mode] = (function(mode) {

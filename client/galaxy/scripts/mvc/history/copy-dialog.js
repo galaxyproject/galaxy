@@ -89,23 +89,26 @@ var CopyDialog = {
     dialog: function _dialog(modal, history, options) {
         options = options || {};
 
-        var dialog = this,
-            deferred = jQuery.Deferred(),
-            // TODO: getting a little byzantine here
-            defaultCopyNameFn = options.nameFn || this.defaultName,
-            defaultCopyName = defaultCopyNameFn({
-                name: history.get("name")
-            }),
-            // TODO: these two might be simpler as one 3 state option (all,active,no-choice)
-            defaultCopyWhat = options.allDatasets
-                ? "copy-all"
-                : "copy-non-deleted",
-            allowAll = !_.isUndefined(options.allowAll)
-                ? options.allowAll
-                : true,
-            autoClose = !_.isUndefined(options.autoClose)
-                ? options.autoClose
-                : true;
+        var dialog = this;
+        var deferred = jQuery.Deferred();
+
+        var // TODO: getting a little byzantine here
+        defaultCopyNameFn = options.nameFn || this.defaultName;
+
+        var defaultCopyName = defaultCopyNameFn({
+            name: history.get("name")
+        });
+
+        var // TODO: these two might be simpler as one 3 state option (all,active,no-choice)
+        defaultCopyWhat = options.allDatasets ? "copy-all" : "copy-non-deleted";
+
+        var allowAll = !_.isUndefined(options.allowAll)
+            ? options.allowAll
+            : true;
+
+        var autoClose = !_.isUndefined(options.autoClose)
+            ? options.autoClose
+            : true;
 
         this.modal = modal;
 

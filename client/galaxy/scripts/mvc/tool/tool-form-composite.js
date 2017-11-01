@@ -146,8 +146,8 @@ var View = Backbone.View.extend({
         var wp_count = 0;
         this.wp_inputs = {};
         function _handleWorkflowParameter(value, callback) {
-            var re = /\$\{(.+?)\}/g,
-                match;
+            var re = /\$\{(.+?)\}/g;
+            var match;
             while ((match = re.exec(String(value)))) {
                 var wp_name = match[1];
                 callback(
@@ -509,8 +509,8 @@ var View = Backbone.View.extend({
                             }
                         } else if (input.wp_linked) {
                             new_value = input.value;
-                            var re = /\$\{(.+?)\}/g,
-                                match;
+                            var re = /\$\{(.+?)\}/g;
+                            var match;
                             while ((match = re.exec(input.value))) {
                                 var wp_field =
                                     self.wp_form.field_list[

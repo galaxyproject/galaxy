@@ -2,8 +2,9 @@ import * as _ from "libs/underscore";
 var extend = _.extend;
 
 // HACK: LABEL_SPACING is currently duplicated between here and painters
-var LABEL_SPACING = 2,
-    PACK_SPACING = 5;
+var LABEL_SPACING = 2;
+
+var PACK_SPACING = 5;
 
 /**
  * Hold slotting information for a feature.
@@ -40,10 +41,11 @@ extend(FeatureSlotter.prototype, {
      */
     _get_draw_coords: function(feature) {
         // Get initial draw coordinates using w_scale.
-        var draw_start = Math.floor(feature[1] * this.w_scale),
-            draw_end = Math.ceil(feature[2] * this.w_scale),
-            f_name = feature[3],
-            text_align;
+        var draw_start = Math.floor(feature[1] * this.w_scale);
+
+        var draw_end = Math.ceil(feature[2] * this.w_scale);
+        var f_name = feature[3];
+        var text_align;
 
         // Update start, end drawing locations to include feature name.
         // Try to put the name on the left, if not, put on right.
@@ -92,11 +94,12 @@ extend(FeatureSlotter.prototype, {
      */
     _find_slot: function(draw_coords) {
         // TODO: Use a data structure for faster searching of available slots.
-        var draw_start = draw_coords[0],
-            draw_end = draw_coords[1];
+        var draw_start = draw_coords[0];
+
+        var draw_end = draw_coords[1];
         for (var slot_num = 0; slot_num <= this.max_rows; slot_num++) {
-            var has_overlap = false,
-                slot = this.start_end_dct[slot_num];
+            var has_overlap = false;
+            var slot = this.start_end_dct[slot_num];
             if (slot !== undefined) {
                 // Iterate through features already in slot to see if current feature will fit.
                 for (var k = 0, k_len = slot.length; k < k_len; k++) {
@@ -119,11 +122,11 @@ extend(FeatureSlotter.prototype, {
      * Slot features.
      */
     slot_features: function(features) {
-        var start_end_dct = this.start_end_dct,
-            undone = [],
-            highest_slot = 0,
-            feature,
-            feature_uid;
+        var start_end_dct = this.start_end_dct;
+        var undone = [];
+        var highest_slot = 0;
+        var feature;
+        var feature_uid;
 
         // Loop through features to (a) find those that are not yet slotted and (b) update
         // those that are slotted if new information is availabe. For (a), features already
@@ -144,10 +147,11 @@ extend(FeatureSlotter.prototype, {
                     // Feature has changed (e.g. a single read now has its pair), so recalculate its
                     // drawing coordinates.
                     var old_draw_coords = this._get_draw_coords(
-                            slotted_info.feature
-                        ),
-                        new_draw_coords = this._get_draw_coords(feature),
-                        slotted_coords = this.start_end_dct[slotted_info.slot];
+                        slotted_info.feature
+                    );
+
+                    var new_draw_coords = this._get_draw_coords(feature);
+                    var slotted_coords = this.start_end_dct[slotted_info.slot];
                     for (var k = 0; k < slotted_coords.length; k++) {
                         var dc = slotted_coords[k];
                         if (

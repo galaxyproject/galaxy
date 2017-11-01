@@ -21,8 +21,8 @@ function parse(queryString) {
     if (!queryString) {
         return {};
     }
-    var parsed = {},
-        split = queryString.split("&");
+    var parsed = {};
+    var split = queryString.split("&");
     split.forEach(function(pairString) {
         var pair = pairString.split("=");
         parsed[pair[0]] = decodeURI(pair[1]);

@@ -372,10 +372,11 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             setAsCurrent: function() {
-                var history = this,
-                    xhr = jQuery.getJSON(
-                        Galaxy.root + "history/set_as_current?id=" + this.id
-                    );
+                var history = this;
+
+                var xhr = jQuery.getJSON(
+                    Galaxy.root + "history/set_as_current?id=" + this.id
+                );
 
                 xhr.done(function() {
                     history.trigger("set-as-current", history);
@@ -546,8 +547,9 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
     /** create a new history and by default set it to be the current history */
     create: function create(data, hdas, historyOptions, xhrOptions) {
         //TODO: .create is actually a collection function that's overridden here
-        var collection = this,
-            xhr = jQuery.getJSON(Galaxy.root + "history/create_new_current");
+        var collection = this;
+
+        var xhr = jQuery.getJSON(Galaxy.root + "history/create_new_current");
         return xhr.done(function(newData) {
             collection.setCurrent(
                 new History(newData, [], historyOptions || {})

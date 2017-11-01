@@ -254,9 +254,9 @@ function buildMenu(isAnon, purgeAllowed, urlRoot) {
 
 var create = function($button, options) {
     options = options || {};
-    var isAnon = options.anonymous === undefined ? true : options.anonymous,
-        purgeAllowed = options.purgeAllowed || false,
-        menu = buildMenu(isAnon, purgeAllowed, Galaxy.root);
+    var isAnon = options.anonymous === undefined ? true : options.anonymous;
+    var purgeAllowed = options.purgeAllowed || false;
+    var menu = buildMenu(isAnon, purgeAllowed, Galaxy.root);
     //console.debug( 'menu:', menu );
     return new PopupMenu($button, menu);
 };

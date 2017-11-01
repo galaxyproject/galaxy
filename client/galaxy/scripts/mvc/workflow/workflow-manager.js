@@ -434,11 +434,11 @@ $.extend(Workflow.prototype, {
         });
     },
     bounds_for_all_nodes: function() {
-        var xmin = Infinity,
-            xmax = -Infinity,
-            ymin = Infinity,
-            ymax = -Infinity,
-            p;
+        var xmin = Infinity;
+        var xmax = -Infinity;
+        var ymin = Infinity;
+        var ymax = -Infinity;
+        var p;
         $.each(this.nodes, function(id, node) {
             var e = $(node.element);
             p = e.position();

@@ -31,9 +31,9 @@ function async_save_text(
         if ($("#renaming-active").length > 0) {
             return;
         }
-        var text_elt = $("#" + text_elt_id),
-            old_text = text_elt.text(),
-            t;
+        var text_elt = $("#" + text_elt_id);
+        var old_text = text_elt.text();
+        var t;
 
         if (use_textarea) {
             t = $("<textarea></textarea>")

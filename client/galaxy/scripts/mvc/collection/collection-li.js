@@ -4,8 +4,9 @@ import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
 //==============================================================================
-var FoldoutListItemView = LIST_ITEM.FoldoutListItemView,
-    ListItemView = LIST_ITEM.ListItemView;
+var FoldoutListItemView = LIST_ITEM.FoldoutListItemView;
+
+var ListItemView = LIST_ITEM.ListItemView;
 /** @class Read only view for DatasetCollection.
  */
 var DCListItemView = FoldoutListItemView.extend(

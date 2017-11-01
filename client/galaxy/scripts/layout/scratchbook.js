@@ -204,15 +204,16 @@ export default Backbone.View.extend({
                 content: function(parent_elt) {
                     // Create view config.
                     var view_config = {
-                            container: parent_elt,
-                            name: viz.get("title"),
-                            id: viz.id,
-                            // FIXME: this will not work with custom builds b/c the dbkey needed to be encoded.
-                            dbkey: viz.get("dbkey"),
-                            stand_alone: false
-                        },
-                        latest_revision = viz.get("latest_revision"),
-                        drawables = latest_revision.config.view.drawables;
+                        container: parent_elt,
+                        name: viz.get("title"),
+                        id: viz.id,
+                        // FIXME: this will not work with custom builds b/c the dbkey needed to be encoded.
+                        dbkey: viz.get("dbkey"),
+                        stand_alone: false
+                    };
+
+                    var latest_revision = viz.get("latest_revision");
+                    var drawables = latest_revision.config.view.drawables;
 
                     // Set up datasets in drawables.
                     _.each(drawables, function(d) {

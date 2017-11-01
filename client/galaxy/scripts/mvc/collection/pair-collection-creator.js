@@ -88,9 +88,10 @@ var PairCollectionCreator = _super.extend({
     _renderList: function(speed, callback) {
         //this.debug( '-- _renderList' );
         //precondition: there are two valid elements in workingElements
-        var creator = this,
-            $tmp = jQuery("<div/>"),
-            $list = creator.$list();
+        var creator = this;
+
+        var $tmp = jQuery("<div/>");
+        var $list = creator.$list();
 
         // lose the original views, create the new, append all at once, then call their renders
         _.each(this.elementViews, function(view) {
@@ -279,22 +280,24 @@ var pairCollectionCreatorModal = function _pairCollectionCreatorModal(
  *  @returns {Deferred} resolved when the collection is added to the history.
  */
 function createPairCollection(contents, defaultHideSourceItems) {
-    var elements = contents.toJSON(),
-        promise = pairCollectionCreatorModal(elements, {
-            defaultHideSourceItems: defaultHideSourceItems,
-            creationFn: function(elements, name, hideSourceItems) {
-                elements = [
-                    { name: "forward", src: "hda", id: elements[0].id },
-                    { name: "reverse", src: "hda", id: elements[1].id }
-                ];
-                return contents.createHDCA(
-                    elements,
-                    "paired",
-                    name,
-                    hideSourceItems
-                );
-            }
-        });
+    var elements = contents.toJSON();
+
+    var promise = pairCollectionCreatorModal(elements, {
+        defaultHideSourceItems: defaultHideSourceItems,
+        creationFn: function(elements, name, hideSourceItems) {
+            elements = [
+                { name: "forward", src: "hda", id: elements[0].id },
+                { name: "reverse", src: "hda", id: elements[1].id }
+            ];
+            return contents.createHDCA(
+                elements,
+                "paired",
+                name,
+                hideSourceItems
+            );
+        }
+    });
+
     return promise;
 }
 

@@ -83,11 +83,13 @@ $.extend(Connector.prototype, {
         start_y -= canvas_top;
         end_x -= canvas_left;
         end_y -= canvas_top;
+
         // Draw the line
 
-        var c = this.canvas.getContext("2d"),
-            start_offsets = null,
-            end_offsets = null;
+        var c = this.canvas.getContext("2d");
+
+        var start_offsets = null;
+        var end_offsets = null;
         var num_offsets = 1;
         if (this.handle1 && this.handle1.isMappedOver()) {
             var start_offsets = [-6, -3, 0, 3, 6];
@@ -103,8 +105,8 @@ $.extend(Connector.prototype, {
         }
         var connector = this;
         for (var i = 0; i < num_offsets; i++) {
-            var inner_width = 5,
-                outer_width = 7;
+            var inner_width = 5;
+            var outer_width = 7;
             if (start_offsets.length > 1 || end_offsets.length > 1) {
                 // We have a multi-run, using many lines, make them small.
                 inner_width = 1;

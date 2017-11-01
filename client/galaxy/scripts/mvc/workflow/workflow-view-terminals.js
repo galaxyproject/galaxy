@@ -192,10 +192,11 @@ var BaseOutputTerminalView = TerminalView.extend({
     onDrag: function(e, d) {
         var onmove = function() {
             var po = $(d.proxy)
-                    .offsetParent()
-                    .offset(),
-                x = d.offsetX - po.left,
-                y = d.offsetY - po.top;
+                .offsetParent()
+                .offset();
+
+            var x = d.offsetX - po.left;
+            var y = d.offsetY - po.top;
             $(d.proxy).css({ left: x, top: y });
             d.proxy.terminal.redraw();
             // FIXME: global

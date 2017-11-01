@@ -126,8 +126,9 @@ var HistoryStructureComponent = Backbone.View
             var view = this;
             view.component.eachVertex(function(vertex) {
                 //TODO: hack
-                var type = vertex.data.job ? "job" : "copy",
-                    li;
+                var type = vertex.data.job ? "job" : "copy";
+
+                var li;
                 if (type === "job") {
                     li = view._createJobListItem(vertex);
                 } else if (type === "copy") {
@@ -140,9 +141,9 @@ var HistoryStructureComponent = Backbone.View
 
         _createJobListItem: function(vertex) {
             this.debug("_createJobListItem:", vertex);
-            var view = this,
-                jobData = vertex.data,
-                job = new JOB.Job(jobData.job);
+            var view = this;
+            var jobData = vertex.data;
+            var job = new JOB.Job(jobData.job);
 
             // get the models of the outputs for this job from the history
             var outputModels = _.map(job.get("outputs"), function(output) {
@@ -201,13 +202,14 @@ var HistoryStructureComponent = Backbone.View
 
         _createLayout: function(options) {
             options = _.defaults(_.clone(options || {}), this.layoutDefaults);
-            var view = this,
-                vertices = _.values(view.component.vertices),
-                layout = _.extend(options, {
-                    nodeMap: {},
-                    links: [],
-                    svg: { width: 0, height: 0 }
-                });
+            var view = this;
+            var vertices = _.values(view.component.vertices);
+
+            var layout = _.extend(options, {
+                nodeMap: {},
+                links: [],
+                svg: { width: 0, height: 0 }
+            });
 
             vertices.forEach(function(v, j) {
                 var node = { name: v.name, x: 0, y: 0 };
@@ -280,8 +282,9 @@ var HistoryStructureComponent = Backbone.View
                 // position the job views accrd. to the layout
                 view.component.eachVertex(function(v) {
                     //TODO:?? liMap needed - can't we attach to vertex?
-                    var li = view._liMap[v.name],
-                        position = view.layout.nodeMap[v.name];
+                    var li = view._liMap[v.name];
+
+                    var position = view.layout.nodeMap[v.name];
                     //this.debug( position );
                     li.$el.css({ top: position.y, left: position.x });
                 });
@@ -297,8 +300,8 @@ var HistoryStructureComponent = Backbone.View
 
         _updateLayout: function() {
             this.debug(this + "._updateLayout:");
-            var view = this,
-                layout = view.layout;
+            var view = this;
+            var layout = view.layout;
 
             layout.linkHeight = layout.linkSpacing * _.size(layout.nodeMap);
             layout.svg.height = layout.linkHeight + layout.jobHeight;
@@ -308,8 +311,9 @@ var HistoryStructureComponent = Backbone.View
 
             //TODO:?? can't we just alter the component v and e's directly?
             // layout the job views putting jobSpacing btwn each
-            var x = 0,
-                y = layout.linkHeight;
+            var x = 0;
+
+            var y = layout.linkHeight;
             _.each(layout.nodeMap, function(node, jobId) {
                 //this.debug( node, jobId );
                 node.x = x;
@@ -321,8 +325,8 @@ var HistoryStructureComponent = Backbone.View
             // layout the links - connecting each job by it's main coords (currently)
             //TODO: somehow adjust the svg height based on the largest distance the longest connection needs
             layout.links.forEach(function(link) {
-                var source = layout.nodeMap[link.source],
-                    target = layout.nodeMap[link.target];
+                var source = layout.nodeMap[link.source];
+                var target = layout.nodeMap[link.target];
                 link.x1 = source.x + layout.linkAdjX;
                 link.y1 = source.y + layout.linkAdjY;
                 link.x2 = target.x + layout.linkAdjX;
@@ -335,8 +339,8 @@ var HistoryStructureComponent = Backbone.View
 
         renderSVG: function() {
             this.debug(this + ".renderSVG:");
-            var view = this,
-                layout = view.layout;
+            var view = this;
+            var layout = view.layout;
 
             var svg = d3.select(this.$graph().get(0)).select("svg");
             if (svg.empty()) {
@@ -379,11 +383,11 @@ var HistoryStructureComponent = Backbone.View
         },
 
         _connectionPath: function(d) {
-            var CURVE_X = 0,
-                controlY =
-                    (d.x2 - d.x1) /
-                    this.layout.svg.width *
-                    this.layout.linkHeight;
+            var CURVE_X = 0;
+
+            var controlY =
+                (d.x2 - d.x1) / this.layout.svg.width * this.layout.linkHeight;
+
             return [
                 "M",
                 d.x1,
@@ -418,23 +422,26 @@ var HistoryStructureComponent = Backbone.View
             this.debug("highlightConnected", jobElement, highlight);
             highlight = highlight !== undefined ? highlight : true;
 
-            var view = this,
-                component = view.component,
-                jobClassFn = highlight
-                    ? jQuery.prototype.addClass
-                    : jQuery.prototype.removeClass,
-                connectionClass = highlight
-                    ? "connection highlighted"
-                    : "connection";
+            var view = this;
+            var component = view.component;
+
+            var jobClassFn = highlight
+                ? jQuery.prototype.addClass
+                : jQuery.prototype.removeClass;
+
+            var connectionClass = highlight
+                ? "connection highlighted"
+                : "connection";
 
             //console.debug( 'mouseover', this );
-            var $hoverTarget = jobClassFn.call($(jobElement), "highlighted"),
-                id = $hoverTarget.data(view._VERTEX_NAME_DATA_KEY);
+            var $hoverTarget = jobClassFn.call($(jobElement), "highlighted");
+
+            var id = $hoverTarget.data(view._VERTEX_NAME_DATA_KEY);
 
             // immed. ancestors
             component.edges({ target: id }).forEach(function(edge) {
-                var ancestorId = edge.source,
-                    ancestorLi = view._liMap[ancestorId];
+                var ancestorId = edge.source;
+                var ancestorLi = view._liMap[ancestorId];
                 //view.debug( '\t ancestor:', ancestorId, ancestorLi );
                 jobClassFn.call(ancestorLi.$el, "highlighted");
                 view
@@ -443,8 +450,8 @@ var HistoryStructureComponent = Backbone.View
             });
             // descendants
             component.vertices[id].eachEdge(function(edge) {
-                var descendantId = edge.target,
-                    descendantLi = view._liMap[descendantId];
+                var descendantId = edge.target;
+                var descendantLi = view._liMap[descendantId];
                 //view.debug( '\t descendant:', descendantId, descendantLi );
                 jobClassFn.call(descendantLi.$el, "highlighted");
                 view
@@ -486,8 +493,8 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
     //TODO: how can we use the dom height of the job li's - they're not visible when this is called?
     _updateLayout: function() {
         this.debug(this + "._updateLayout:");
-        var view = this,
-            layout = view.layout;
+        var view = this;
+        var layout = view.layout;
         //this.info( this.cid, '_updateLayout' )
 
         layout.linkWidth = layout.linkSpacing * _.size(layout.nodeMap);
@@ -497,8 +504,9 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
         layout.svg.height = 0;
 
         //TODO:?? can't we just alter the component v and e's directly?
-        var x = layout.linkWidth,
-            y = 0;
+        var x = layout.linkWidth;
+
+        var y = 0;
         _.each(layout.nodeMap, function(node, nodeId) {
             node.x = x;
             node.y = y;
@@ -509,8 +517,8 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
 
         // layout the links - connecting each job by it's main coords (currently)
         layout.links.forEach(function(link) {
-            var source = layout.nodeMap[link.source],
-                target = layout.nodeMap[link.target];
+            var source = layout.nodeMap[link.source];
+            var target = layout.nodeMap[link.target];
             link.x1 = source.x + layout.linkAdjX;
             link.y1 = source.y + layout.linkAdjY;
             link.x2 = target.x + layout.linkAdjX;
@@ -523,9 +531,11 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
     },
 
     _connectionPath: function(d) {
-        var CURVE_Y = 0,
-            controlX =
-                (d.y2 - d.y1) / this.layout.svg.height * this.layout.linkWidth;
+        var CURVE_Y = 0;
+
+        var controlX =
+            (d.y2 - d.y1) / this.layout.svg.height * this.layout.linkWidth;
+
         return [
             "M",
             d.x1,

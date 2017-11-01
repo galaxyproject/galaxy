@@ -14,8 +14,8 @@ var CustomToJSON = {
      * Returns JSON representation of object using to_json_keys and to_json_mappers.
      */
     toJSON: function() {
-        var self = this,
-            json = {};
+        var self = this;
+        var json = {};
         _.each(self.constructor.to_json_keys, function(k) {
             var val = self.get(k);
             if (k in self.constructor.to_json_mappers) {
@@ -147,9 +147,9 @@ var CanvasManager = function(default_font) {
 
 _.extend(CanvasManager.prototype, {
     load_pattern: function(key, path) {
-        var patterns = this.patterns,
-            dummy_context = this.dummy_context,
-            image = new Image();
+        var patterns = this.patterns;
+        var dummy_context = this.dummy_context;
+        var image = new Image();
         image.src = Galaxy.root + "static/images" + path;
         image.onload = function() {
             patterns[key] = dummy_context.createPattern(image, "repeat");
@@ -187,12 +187,13 @@ var Cache = Backbone.Model.extend({
      * Get an element from the cache using its key.
      */
     get_elt: function(key) {
-        var obj_cache = this.attributes.obj_cache,
-            key_ary = this.attributes.key_ary,
-            key_str = key.toString(),
-            index = _.indexOf(key_ary, function(k) {
-                return k.toString() === key_str;
-            });
+        var obj_cache = this.attributes.obj_cache;
+        var key_ary = this.attributes.key_ary;
+        var key_str = key.toString();
+
+        var index = _.indexOf(key_ary, function(k) {
+            return k.toString() === key_str;
+        });
 
         // Update cache.
         if (index !== -1) {
@@ -214,10 +215,10 @@ var Cache = Backbone.Model.extend({
      * Put an element into the cache.
      */
     set_elt: function(key, value) {
-        var obj_cache = this.attributes.obj_cache,
-            key_ary = this.attributes.key_ary,
-            key_str = key.toString(),
-            num_elements = this.attributes.num_elements;
+        var obj_cache = this.attributes.obj_cache;
+        var key_ary = this.attributes.key_ary;
+        var key_str = key.toString();
+        var num_elements = this.attributes.num_elements;
 
         // Update keys, objects.
         if (!obj_cache[key_str]) {
@@ -323,30 +324,32 @@ var GenomeDataManager = Cache.extend({
      * cannot be used).
      */
     data_is_ready: function() {
-        var dataset = this.get("dataset"),
-            ready_deferred = $.Deferred(),
-            // If requesting raw data, query dataset state; if requesting (converted) data,
-            // need to query converted datasets state.
-            query_type =
-                this.get("data_type") === "raw_data"
-                    ? "state"
-                    : this.get("data_type") === "data"
-                      ? "converted_datasets_state"
-                      : "error",
-            ss_deferred = new util_mod.ServerStateDeferred({
-                ajax_settings: {
-                    url: this.get("dataset").url(),
-                    data: {
-                        hda_ldda: dataset.get("hda_ldda"),
-                        data_type: query_type
-                    },
-                    dataType: "json"
+        var dataset = this.get("dataset");
+        var ready_deferred = $.Deferred();
+
+        var // If requesting raw data, query dataset state; if requesting (converted) data,
+        // need to query converted datasets state.
+        query_type =
+            this.get("data_type") === "raw_data"
+                ? "state"
+                : this.get("data_type") === "data"
+                  ? "converted_datasets_state"
+                  : "error";
+
+        var ss_deferred = new util_mod.ServerStateDeferred({
+            ajax_settings: {
+                url: this.get("dataset").url(),
+                data: {
+                    hda_ldda: dataset.get("hda_ldda"),
+                    data_type: query_type
                 },
-                interval: 5000,
-                success_fn: function(response) {
-                    return response !== "pending";
-                }
-            });
+                dataType: "json"
+            },
+            interval: 5000,
+            success_fn: function(response) {
+                return response !== "pending";
+            }
+        });
 
         $.when(ss_deferred.go()).then(function(response) {
             ready_deferred.resolve(response === "ok" || response === "data");
@@ -358,12 +361,14 @@ var GenomeDataManager = Cache.extend({
      * Perform a feature search from server; returns Deferred object that resolves when data is available.
      */
     search_features: function(query) {
-        var dataset = this.get("dataset"),
-            params = {
-                query: query,
-                hda_ldda: dataset.get("hda_ldda"),
-                data_type: "features"
-            };
+        var dataset = this.get("dataset");
+
+        var params = {
+            query: query,
+            hda_ldda: dataset.get("hda_ldda"),
+            data_type: "features"
+        };
+
         return $.getJSON(dataset.url(), params);
     },
 
@@ -374,16 +379,17 @@ var GenomeDataManager = Cache.extend({
      */
     load_data: function(region, mode, resolution, extra_params) {
         // Setup data request params.
-        var dataset = this.get("dataset"),
-            params = {
-                data_type: this.get("data_type"),
-                chrom: region.get("chrom"),
-                low: region.get("start"),
-                high: region.get("end"),
-                mode: mode,
-                resolution: resolution,
-                hda_ldda: dataset.get("hda_ldda")
-            };
+        var dataset = this.get("dataset");
+
+        var params = {
+            data_type: this.get("data_type"),
+            chrom: region.get("chrom"),
+            low: region.get("start"),
+            high: region.get("end"),
+            mode: mode,
+            resolution: resolution,
+            hda_ldda: dataset.get("hda_ldda")
+        };
 
         $.extend(params, extra_params);
 
@@ -399,12 +405,13 @@ var GenomeDataManager = Cache.extend({
         }
 
         // Do request.
-        var manager = this,
-            entry = $.getJSON(dataset.url(), params, function(result) {
-                // Add region to the result.
-                result.region = region;
-                manager.set_data(region, result);
-            });
+        var manager = this;
+
+        var entry = $.getJSON(dataset.url(), params, function(result) {
+            // Add region to the result.
+            result.region = region;
+            manager.set_data(region, result);
+        });
 
         this.set_data(region, entry);
         return entry;
@@ -429,10 +436,11 @@ var GenomeDataManager = Cache.extend({
         // TODO: this logic could be improved if the visualization knew whether
         // the data was "index" or "data."
         //
-        var key_ary = this.get("key_ary"),
-            obj_cache = this.get("obj_cache"),
-            entry_region,
-            is_subregion;
+        var key_ary = this.get("key_ary");
+
+        var obj_cache = this.get("obj_cache");
+        var entry_region;
+        var is_subregion;
         for (var i = 0; i < key_ary.length; i++) {
             entry_region = key_ary[i];
 
@@ -551,14 +559,16 @@ var GenomeDataManager = Cache.extend({
         // Get additional data, append to current data, and set new data. Use a custom deferred object
         // to signal when new data is available.
         //
-        var data_manager = this,
-            new_data_request = this.load_data(
-                query_region,
-                mode,
-                resolution,
-                extra_params
-            ),
-            new_data_available = $.Deferred();
+        var data_manager = this;
+
+        var new_data_request = this.load_data(
+            query_region,
+            mode,
+            resolution,
+            extra_params
+        );
+
+        var new_data_available = $.Deferred();
         // load_data sets cache to new_data_request, but use custom deferred object so that signal and data
         // is all data, not just new data.
         this.set_data(region, new_data_available);
@@ -650,27 +660,29 @@ var GenomeDataManager = Cache.extend({
     get_genome_wide_data: function(genome) {
         // -- Get all data. --
 
-        var self = this,
-            all_data_available = true,
-            //  Map chromosome info into genome data.
-            gw_data = _.map(genome.get("chroms_info").chrom_info, function(
-                chrom_info
-            ) {
-                var chrom_data = self.get_elt(
-                    new GenomeRegion({
-                        chrom: chrom_info.chrom,
-                        start: 0,
-                        end: chrom_info.len
-                    })
-                );
+        var self = this;
 
-                // Set flag if data is not available.
-                if (!chrom_data) {
-                    all_data_available = false;
-                }
+        var all_data_available = true;
 
-                return chrom_data;
-            });
+        var //  Map chromosome info into genome data.
+        gw_data = _.map(genome.get("chroms_info").chrom_info, function(
+            chrom_info
+        ) {
+            var chrom_data = self.get_elt(
+                new GenomeRegion({
+                    chrom: chrom_info.chrom,
+                    start: 0,
+                    end: chrom_info.len
+                })
+            );
+
+            // Set flag if data is not available.
+            if (!chrom_data) {
+                all_data_available = false;
+            }
+
+            return chrom_data;
+        });
 
         // -- If all data is available, return it. --
         if (all_data_available) {
@@ -830,9 +842,9 @@ var GenomeRegion = Backbone.Model.extend(
      */
         initialize: function(options) {
             if (options.from_str) {
-                var pieces = options.from_str.split(":"),
-                    chrom = pieces[0],
-                    start_end = pieces[1].split("-");
+                var pieces = options.from_str.split(":");
+                var chrom = pieces[0];
+                var start_end = pieces[1].split("-");
                 this.set({
                     chrom: chrom,
                     start: parseInt(start_end[0], 10),
@@ -893,13 +905,13 @@ var GenomeRegion = Backbone.Model.extend(
      * hence, OVERLAP_START indicates that the first region overlaps the start (but not the end) of the second region.
      */
         compute_overlap: function(a_region) {
-            var first_chrom = this.get("chrom"),
-                second_chrom = a_region.get("chrom"),
-                first_start = this.get("start"),
-                second_start = a_region.get("start"),
-                first_end = this.get("end"),
-                second_end = a_region.get("end"),
-                overlap;
+            var first_chrom = this.get("chrom");
+            var second_chrom = a_region.get("chrom");
+            var first_start = this.get("start");
+            var second_start = a_region.get("start");
+            var first_end = this.get("end");
+            var second_end = a_region.get("end");
+            var overlap;
 
             // Compare chroms.
             if (first_chrom && second_chrom && first_chrom !== second_chrom) {

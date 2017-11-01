@@ -156,10 +156,10 @@ var View = Backbone.View.extend({
 
     /** Check if the communication server is online and show the icon otherwise hide the icon */
     _checkCommunicationServerOnline: function() {
-        var host = window.Galaxy.config.communication_server_host,
-            port = window.Galaxy.config.communication_server_port,
-            preferences = window.Galaxy.user.attributes.preferences,
-            $chat_icon_element = $("#show-chat-online");
+        var host = window.Galaxy.config.communication_server_host;
+        var port = window.Galaxy.config.communication_server_port;
+        var preferences = window.Galaxy.user.attributes.preferences;
+        var $chat_icon_element = $("#show-chat-online");
         /** Check if the user has deactivated the communication in it's personal settings */
         if (
             preferences &&

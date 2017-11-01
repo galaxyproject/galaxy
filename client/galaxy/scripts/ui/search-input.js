@@ -19,22 +19,23 @@ var _l =
      *      is focused will clear the input and call a separate callback.
      */
 function searchInput(parentNode, options) {
-    var KEYCODE_ESC = 27,
-        KEYCODE_RETURN = 13,
-        $parentNode = $(parentNode),
-        firstSearch = true,
-        defaults = {
-            initialVal: "",
-            name: "search",
-            placeholder: "search",
-            classes: "",
-            onclear: function() {},
-            onfirstsearch: null,
-            onsearch: function(inputVal) {},
-            minSearchLen: 0,
-            escWillClear: true,
-            oninit: function() {}
-        };
+    var KEYCODE_ESC = 27;
+    var KEYCODE_RETURN = 13;
+    var $parentNode = $(parentNode);
+    var firstSearch = true;
+
+    var defaults = {
+        initialVal: "",
+        name: "search",
+        placeholder: "search",
+        classes: "",
+        onclear: function() {},
+        onfirstsearch: null,
+        onsearch: function(inputVal) {},
+        minSearchLen: 0,
+        escWillClear: true,
+        oninit: function() {}
+    };
 
     // .................................................................... input rendering and events
     // visually clear the search, trigger an event, and call the callback

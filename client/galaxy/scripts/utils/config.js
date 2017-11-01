@@ -232,9 +232,10 @@ var ConfigSettingCollectionView = Backbone.View.extend({
             }
 
             // Build row for param.
-            var id = "param_" + index,
-                type = param.get("type"),
-                value = param.get("value");
+            var id = "param_" + index;
+
+            var type = param.get("type");
+            var value = param.get("value");
             var row = $("<div class='form-row' />").appendTo(container);
             row.append(
                 $("<label />")
@@ -272,77 +273,83 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                 row.append(select);
             } else if (type === "color") {
                 // Draw parameter as color picker
-                var container_div = $("<div/>").appendTo(row),
-                    input = $("<input />")
-                        .attr("id", id)
-                        .attr("name", id)
-                        .val(value)
-                        .css("float", "left")
-                        .appendTo(container_div)
-                        .click(function(e) {
-                            // Hide other pickers.
-                            $(".tooltip").removeClass("in");
+                var container_div = $("<div/>").appendTo(row);
 
-                            // Show input's color picker.
-                            var tip = $(this)
-                                .siblings(".tooltip")
-                                .addClass("in");
-                            tip
-                                .css({
-                                    // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
-                                    // top: $(this).position().top + $(this.height)
-                                    left:
-                                        $(this).position().left +
-                                        $(this).width() +
-                                        5,
-                                    top:
-                                        $(this).position().top -
-                                        $(tip).height() / 2 +
-                                        $(this).height() / 2
-                                })
-                                .show();
+                var input = $("<input />")
+                    .attr("id", id)
+                    .attr("name", id)
+                    .val(value)
+                    .css("float", "left")
+                    .appendTo(container_div)
+                    .click(function(e) {
+                        // Hide other pickers.
+                        $(".tooltip").removeClass("in");
 
-                            // Click management:
-
-                            // Keep showing tip if clicking in tip.
-                            tip.click(function(e) {
-                                e.stopPropagation();
-                            });
-
-                            // Hide tip if clicking outside of tip.
-                            $(document).bind("click.color-picker", function() {
-                                tip.hide();
-                                $(document).unbind("click.color-picker");
-                            });
-
-                            // No propagation to avoid triggering document click (and tip hiding) above.
-                            e.stopPropagation();
-                        }),
-                    // Icon for setting a new random color; behavior set below.
-                    new_color_icon = $("<a href='javascript:void(0)'/>")
-                        .addClass("icon-button arrow-circle")
-                        .appendTo(container_div)
-                        .attr("title", "Set new random color")
-                        .tooltip(),
-                    // Color picker in tool tip style.
-                    tip = $(
-                        "<div class='tooltip right' style='position: absolute;' />"
-                    )
-                        .appendTo(container_div)
-                        .hide(),
-                    // Inner div for padding purposes
-                    tip_inner = $(
-                        "<div class='tooltip-inner' style='text-align: inherit'></div>"
-                    ).appendTo(tip),
-                    tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(
+                        // Show input's color picker.
+                        var tip = $(this)
+                            .siblings(".tooltip")
+                            .addClass("in");
                         tip
-                    ),
-                    farb_obj = $.farbtastic(tip_inner, {
-                        width: 100,
-                        height: 100,
-                        callback: input,
-                        color: value
+                            .css({
+                                // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
+                                // top: $(this).position().top + $(this.height)
+                                left:
+                                    $(this).position().left +
+                                    $(this).width() +
+                                    5,
+                                top:
+                                    $(this).position().top -
+                                    $(tip).height() / 2 +
+                                    $(this).height() / 2
+                            })
+                            .show();
+
+                        // Click management:
+
+                        // Keep showing tip if clicking in tip.
+                        tip.click(function(e) {
+                            e.stopPropagation();
+                        });
+
+                        // Hide tip if clicking outside of tip.
+                        $(document).bind("click.color-picker", function() {
+                            tip.hide();
+                            $(document).unbind("click.color-picker");
+                        });
+
+                        // No propagation to avoid triggering document click (and tip hiding) above.
+                        e.stopPropagation();
                     });
+
+                var // Icon for setting a new random color; behavior set below.
+                new_color_icon = $("<a href='javascript:void(0)'/>")
+                    .addClass("icon-button arrow-circle")
+                    .appendTo(container_div)
+                    .attr("title", "Set new random color")
+                    .tooltip();
+
+                var // Color picker in tool tip style.
+                tip = $(
+                    "<div class='tooltip right' style='position: absolute;' />"
+                )
+                    .appendTo(container_div)
+                    .hide();
+
+                var // Inner div for padding purposes
+                tip_inner = $(
+                    "<div class='tooltip-inner' style='text-align: inherit'></div>"
+                ).appendTo(tip);
+
+                var tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(
+                    tip
+                );
+
+                var farb_obj = $.farbtastic(tip_inner, {
+                    width: 100,
+                    height: 100,
+                    callback: input,
+                    color: value
+                });
 
                 // Clear floating.
                 container_div.append($("<div/>").css("clear", "both"));
@@ -375,25 +382,28 @@ var ConfigSettingCollectionView = Backbone.View.extend({
      */
     render_in_modal: function(title) {
         // Set up handlers for cancel, ok button and for handling esc key.
-        var self = this,
-            cancel_fn = function() {
-                Galaxy.modal.hide();
-                $(window).unbind("keypress.check_enter_esc");
-            },
-            ok_fn = function() {
-                Galaxy.modal.hide();
-                $(window).unbind("keypress.check_enter_esc");
-                self.update_from_form();
-            },
-            check_enter_esc = function(e) {
-                if ((e.keyCode || e.which) === 27) {
-                    // Escape key
-                    cancel_fn();
-                } else if ((e.keyCode || e.which) === 13) {
-                    // Enter key
-                    ok_fn();
-                }
-            };
+        var self = this;
+
+        var cancel_fn = function() {
+            Galaxy.modal.hide();
+            $(window).unbind("keypress.check_enter_esc");
+        };
+
+        var ok_fn = function() {
+            Galaxy.modal.hide();
+            $(window).unbind("keypress.check_enter_esc");
+            self.update_from_form();
+        };
+
+        var check_enter_esc = function(e) {
+            if ((e.keyCode || e.which) === 27) {
+                // Escape key
+                cancel_fn();
+            } else if ((e.keyCode || e.which) === 13) {
+                // Enter key
+                ok_fn();
+            }
+        };
 
         // Set keypress handler.
         $(window).bind("keypress.check_enter_esc", check_enter_esc);

@@ -312,8 +312,8 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
         /** render a menu containing the actions available to sets of selected items */
         _renderMultiselectActionMenu: function($where) {
             $where = $where || this.$el;
-            var $menu = $where.find(".list-action-menu"),
-                actions = this.multiselectActions();
+            var $menu = $where.find(".list-action-menu");
+            var actions = this.multiselectActions();
             if (!actions.length) {
                 return $menu.empty();
             }
@@ -499,8 +499,9 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
                 "draggable:dragstart",
                 function(ev, v) {
                     //TODO: set multiple drag data here
-                    var json = {},
-                        selected = this.getSelectedModels();
+                    var json = {};
+
+                    var selected = this.getSelectedModels();
                     if (selected.length) {
                         json = selected.toJSON();
                     } else {
@@ -684,8 +685,8 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
                 return viewA ? [viewA] : [];
             }
 
-            var indexA = this.views.indexOf(viewA),
-                indexB = this.views.indexOf(viewB);
+            var indexA = this.views.indexOf(viewA);
+            var indexB = this.views.indexOf(viewB);
 
             // handle not found
             if (indexA === -1 || indexB === -1) {
@@ -1068,8 +1069,8 @@ var ModelListPanel = ListPanel.extend({
      */
     _renderControls: function($newRender) {
         this.debug(this + "(ModelListPanel)._renderControls");
-        var json = this.model ? this.model.toJSON() : {},
-            $controls = $(this.templates.controls(json, this));
+        var json = this.model ? this.model.toJSON() : {};
+        var $controls = $(this.templates.controls(json, this));
         $newRender.find(".controls").replaceWith($controls);
         return $controls;
     },

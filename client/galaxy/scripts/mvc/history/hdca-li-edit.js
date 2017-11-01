@@ -41,8 +41,8 @@ var HDCAListItemEdit = _super.extend(
 
         /** Render icon-button to delete this collection. */
         _renderDeleteButton: function() {
-            var self = this,
-                deleted = this.model.get("deleted");
+            var self = this;
+            var deleted = this.model.get("deleted");
             return faIconButton({
                 title: deleted
                     ? _l("Dataset collection is already deleted")

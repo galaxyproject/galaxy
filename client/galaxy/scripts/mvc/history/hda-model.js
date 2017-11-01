@@ -4,8 +4,9 @@ import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
 //==============================================================================
-var _super = DATASET.DatasetAssociation,
-    hcontentMixin = HISTORY_CONTENT.HistoryContentMixin;
+var _super = DATASET.DatasetAssociation;
+
+var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin;
 /** @class (HDA) model for a Galaxy dataset contained in and related to a history.
  */
 var HistoryDatasetAssociation = _super.extend(

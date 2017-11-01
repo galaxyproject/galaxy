@@ -45,7 +45,10 @@ function init_galaxy_elts(wym) {
 
 // Based on the dialog type, return a dictionary of information about an item
 function get_item_info(dialog_type) {
-    var item_singular, item_plural, item_controller, item_class;
+    var item_singular;
+    var item_plural;
+    var item_controller;
+    var item_class;
     switch (dialog_type) {
         case CONTROLS.ITEM_HISTORY:
             item_singular = "History";
@@ -147,8 +150,11 @@ WYMeditor.editor.prototype.dialog = function(
             );
             $(wym._options.altSelector).val($(selected).attr(WYMeditor.ALT));
         }
+
         // Get current URL, title.
-        var curURL, curTitle;
+        var curURL;
+
+        var curTitle;
         if (selected) {
             curURL = $(selected).attr("href");
             if (curURL == undefined) curURL = "";
@@ -166,9 +172,10 @@ WYMeditor.editor.prototype.dialog = function(
             {
                 "Make link": function() {
                     // Get URL, name/title.
-                    var sUrl = $(wym._options.hrefSelector).val() || "",
-                        sId = $(".wym_id").val() || "",
-                        sName = $(wym._options.titleSelector).val() || "";
+                    var sUrl = $(wym._options.hrefSelector).val() || "";
+
+                    var sId = $(".wym_id").val() || "";
+                    var sName = $(wym._options.titleSelector).val() || "";
 
                     if (sUrl || sId) {
                         // Create link.

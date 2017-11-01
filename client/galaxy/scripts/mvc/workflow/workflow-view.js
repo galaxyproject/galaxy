@@ -644,7 +644,8 @@ export default Backbone.View.extend({
     scroll_to_nodes: function() {
         var cv = $("#canvas-viewport");
         var cc = $("#canvas-container");
-        var top, left;
+        var top;
+        var left;
         if (cc.width() < cv.width()) {
             left = (cv.width() - cc.width()) / 2;
         } else {
@@ -923,10 +924,11 @@ export default Backbone.View.extend({
             .bind("drag", function(e, d) {
                 // Move
                 var po = $(this)
-                        .offsetParent()
-                        .offset(),
-                    x = d.offsetX - po.left,
-                    y = d.offsetY - po.top;
+                    .offsetParent()
+                    .offset();
+
+                var x = d.offsetX - po.left;
+                var y = d.offsetY - po.top;
                 $(this).css({ left: x, top: y });
                 // Redraw
                 $(this)

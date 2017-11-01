@@ -2,6 +2,7 @@
 // Uses AMD or browser globals to create a jQuery plugin.
 import jQuery from "jquery";
 var $ = jQuery;
+
 //==============================================================================
 /** Column selection using the peek display as the control.
      *  Adds rows to the bottom of the peek with clickable areas in each cell
@@ -48,41 +49,52 @@ var $ = jQuery;
 
 /** option defaults */
 var defaults = {
-        /** does this control allow renaming headers? */
-        renameColumns: false,
-        /** does this control allow renaming headers? */
-        columnNames: [],
-        /** the comment character used by the peek's datatype */
-        commentChar: "#",
-        /** should comment rows be shown or hidden in the peek */
-        hideCommentRows: false,
-        /** should a column of row control prompts be used */
-        includePrompts: true,
-        /** what is the content of the top left cell (often a title) */
-        topLeftContent: "Columns:"
-    },
-    /** class added to the pre.peek element (to allow css on just the control) */
-    PEEKCONTROL_CLASS = "peek-column-selector",
-    /** the string of the event fired when a control row changes */
-    CHANGE_EVENT = "peek-column-selector.change",
-    /** the string of the event fired when a column is renamed */
-    RENAME_EVENT = "peek-column-selector.rename",
-    /** class added to the control rows */
-    ROW_CLASS = "control",
-    /** class added to the left-hand cells that serve as row prompts */
-    PROMPT_CLASS = "control-prompt",
-    /** class added to selected _cells_/tds */
-    SELECTED_CLASS = "selected",
-    /** class added to disabled/un-clickable cells/tds */
-    DISABLED_CLASS = "disabled",
-    /** class added to the clickable surface within a cell to select it */
-    BUTTON_CLASS = "button",
-    /** class added to peek table header (th) cells to indicate they can be clicked and are renamable */
-    RENAMABLE_HEADER_CLASS = "renamable-header",
-    /** the data key used for each cell to store the column index ('data-...') */
-    COLUMN_INDEX_DATA_KEY = "column-index",
-    /** renamable header data key used to store the column name (w/o the number and dot: '1.Bler') */
-    COLUMN_NAME_DATA_KEY = "column-name";
+    /** does this control allow renaming headers? */
+    renameColumns: false,
+    /** does this control allow renaming headers? */
+    columnNames: [],
+    /** the comment character used by the peek's datatype */
+    commentChar: "#",
+    /** should comment rows be shown or hidden in the peek */
+    hideCommentRows: false,
+    /** should a column of row control prompts be used */
+    includePrompts: true,
+    /** what is the content of the top left cell (often a title) */
+    topLeftContent: "Columns:"
+};
+
+var /** class added to the pre.peek element (to allow css on just the control) */
+PEEKCONTROL_CLASS = "peek-column-selector";
+
+var /** the string of the event fired when a control row changes */
+CHANGE_EVENT = "peek-column-selector.change";
+
+var /** the string of the event fired when a column is renamed */
+RENAME_EVENT = "peek-column-selector.rename";
+
+var /** class added to the control rows */
+ROW_CLASS = "control";
+
+var /** class added to the left-hand cells that serve as row prompts */
+PROMPT_CLASS = "control-prompt";
+
+var /** class added to selected _cells_/tds */
+SELECTED_CLASS = "selected";
+
+var /** class added to disabled/un-clickable cells/tds */
+DISABLED_CLASS = "disabled";
+
+var /** class added to the clickable surface within a cell to select it */
+BUTTON_CLASS = "button";
+
+var /** class added to peek table header (th) cells to indicate they can be clicked and are renamable */
+RENAMABLE_HEADER_CLASS = "renamable-header";
+
+var /** the data key used for each cell to store the column index ('data-...') */
+COLUMN_INDEX_DATA_KEY = "column-index";
+
+var /** renamable header data key used to store the column name (w/o the number and dot: '1.Bler') */
+COLUMN_NAME_DATA_KEY = "column-name";
 
 //TODO: not happy with pure functional here - rows should polymorph (multi, single, etc.)
 //TODO: needs clean up, move handlers to outer scope
@@ -187,9 +199,10 @@ function buildSingleSelectCell(control, columnIndex) {
                 setSelectedText($cell, control, columnIndex);
 
                 // fire the event from the table itself, passing the id and index of selected
-                var eventData = {},
-                    key = $cell.parent().attr("id"),
-                    val = $cell.data(COLUMN_INDEX_DATA_KEY);
+                var eventData = {};
+
+                var key = $cell.parent().attr("id");
+                var val = $cell.data(COLUMN_INDEX_DATA_KEY);
                 eventData[key] = val;
                 $cell.parents(".peek").trigger(CHANGE_EVENT, eventData);
             }
@@ -220,10 +233,12 @@ function buildMultiSelectCell(control, columnIndex) {
                 .map(function(i, e) {
                     return $(e).data(COLUMN_INDEX_DATA_KEY);
                 });
+
             // fire the event from the table itself, passing the id and index of selected
-            var eventData = {},
-                key = $cell.parent().attr("id"),
-                val = jQuery.makeArray(selectedColumnIndeces);
+            var eventData = {};
+
+            var key = $cell.parent().attr("id");
+            var val = jQuery.makeArray(selectedColumnIndeces);
             eventData[key] = val;
             $cell.parents(".peek").trigger(CHANGE_EVENT, eventData);
         });
@@ -265,25 +280,28 @@ function buildControlRow(cellCount, control, includePrompts) {
 function peekColumnSelector(options) {
     options = jQuery.extend(true, {}, defaults, options);
 
-    var $peek = $(this).addClass(PEEKCONTROL_CLASS),
-        $peektable = $peek.find("table"),
-        // get the size of the tables - width and height, number of comment rows
-        columnCount = $peektable.find("th").length,
-        rowCount = $peektable.find("tr").length,
-        // get the rows containing text starting with the comment char (also make them grey)
-        $commentRows = $peektable.find("td[colspan]").map(function(e, i) {
-            var $this = $(this);
-            if (
-                $this.text() &&
-                $this.text().match(new RegExp("^" + options.commentChar))
-            ) {
-                return $(this)
-                    .css("color", "grey")
-                    .parent()
-                    .get(0);
-            }
-            return null;
-        });
+    var $peek = $(this).addClass(PEEKCONTROL_CLASS);
+    var $peektable = $peek.find("table");
+
+    var // get the size of the tables - width and height, number of comment rows
+    columnCount = $peektable.find("th").length;
+
+    var rowCount = $peektable.find("tr").length;
+
+    var // get the rows containing text starting with the comment char (also make them grey)
+    $commentRows = $peektable.find("td[colspan]").map(function(e, i) {
+        var $this = $(this);
+        if (
+            $this.text() &&
+            $this.text().match(new RegExp("^" + options.commentChar))
+        ) {
+            return $(this)
+                .css("color", "grey")
+                .parent()
+                .get(0);
+        }
+        return null;
+    });
 
     // should comment rows in the peek be hidden?
     if (options.hideCommentRows) {
@@ -306,10 +324,12 @@ function peekColumnSelector(options) {
 
     // save either the options column name or the parsed text of each column header in html5 data attr and text
     var $headers = $peektable.find("th:not(.top-left)").each(function(i, e) {
-        var $this = $(this),
-            // can be '1.name' or '1'
-            text = $this.text().replace(/^\d+\.*/, ""),
-            name = options.columnNames[i] || text;
+        var $this = $(this);
+
+        var // can be '1.name' or '1'
+        text = $this.text().replace(/^\d+\.*/, "");
+
+        var name = options.columnNames[i] || text;
         $this
             .attr("data-" + COLUMN_NAME_DATA_KEY, name)
             .text(i + 1 + (name ? "." + name : ""));
@@ -321,10 +341,11 @@ function peekColumnSelector(options) {
             .addClass(RENAMABLE_HEADER_CLASS)
             .click(function renameColumn() {
                 // prompt for new name
-                var $this = $(this),
-                    index = $this.index() + (options.includePrompts ? 0 : 1),
-                    prevName = $this.data(COLUMN_NAME_DATA_KEY),
-                    newColumnName = prompt("New column name:", prevName);
+                var $this = $(this);
+
+                var index = $this.index() + (options.includePrompts ? 0 : 1);
+                var prevName = $this.data(COLUMN_NAME_DATA_KEY);
+                var newColumnName = prompt("New column name:", prevName);
                 if (newColumnName !== null && newColumnName !== prevName) {
                     // set the new text and data
                     $this

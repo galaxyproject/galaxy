@@ -64,8 +64,8 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
             idOrCurrent = idOrCurrent || User.CURRENT_ID_STR;
 
             options = options || {};
-            var model = this,
-                userFn = options.success;
+            var model = this;
+            var userFn = options.success;
 
             /** @ignore */
             options.success = function(newModel, response) {

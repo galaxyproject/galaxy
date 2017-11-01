@@ -69,18 +69,19 @@ var TracksterUI = Base.extend({
 
         // FIXME: give unique IDs to Drawables and save overview as ID.
         var overview_track_name = view.overview_drawable
-                ? view.overview_drawable.config.get_value("name")
-                : null,
-            viz_config = {
-                view: view.to_dict(),
-                viewport: {
-                    chrom: view.chrom,
-                    start: view.low,
-                    end: view.high,
-                    overview: overview_track_name
-                },
-                bookmarks: bookmarks
-            };
+            ? view.overview_drawable.config.get_value("name")
+            : null;
+
+        var viz_config = {
+            view: view.to_dict(),
+            viewport: {
+                chrom: view.chrom,
+                start: view.low,
+                end: view.high,
+                overview: overview_track_name
+            },
+            bookmarks: bookmarks
+        };
 
         // Make call to save visualization.
         return $.ajax({
@@ -126,81 +127,83 @@ var TracksterUI = Base.extend({
      * Create button menu
      */
     createButtonMenu: function() {
-        var self = this,
-            menu = mod_icon_btn.create_icon_buttons_menu(
-                [
-                    {
-                        icon_class: "plus-button",
-                        title: "Add tracks",
-                        on_click: function() {
-                            visualization.select_datasets(
-                                { dbkey: view.dbkey },
-                                function(new_tracks) {
-                                    _.each(new_tracks, function(track) {
-                                        view.add_drawable(
-                                            tracks.object_from_template(
-                                                track,
-                                                view,
-                                                view
-                                            )
-                                        );
-                                    });
-                                }
-                            );
-                        }
-                    },
-                    {
-                        icon_class: "block--plus",
-                        title: "Add group",
-                        on_click: function() {
-                            view.add_drawable(
-                                new tracks.DrawableGroup(view, view, {
-                                    name: "New Group"
-                                })
-                            );
-                        }
-                    },
-                    {
-                        icon_class: "bookmarks",
-                        title: "Bookmarks",
-                        on_click: function() {
-                            // HACK -- use style to determine if panel is hidden and hide/show accordingly.
-                            force_right_panel(
-                                $("div#right").css("right") == "0px"
-                                    ? "hide"
-                                    : "show"
-                            );
-                        }
-                    },
-                    {
-                        icon_class: "globe",
-                        title: "Circster",
-                        on_click: function() {
-                            window.location =
-                                self.baseURL +
-                                "visualization/circster?id=" +
-                                view.vis_id;
-                        }
-                    },
-                    {
-                        icon_class: "disk--arrow",
-                        title: "Save",
-                        on_click: function() {
-                            self.save_viz();
-                        }
-                    },
-                    {
-                        icon_class: "cross-circle",
-                        title: "Close",
-                        on_click: function() {
-                            self.handle_unsaved_changes(view);
-                        }
-                    }
-                ],
+        var self = this;
+
+        var menu = mod_icon_btn.create_icon_buttons_menu(
+            [
                 {
-                    tooltip_config: { placement: "bottom" }
+                    icon_class: "plus-button",
+                    title: "Add tracks",
+                    on_click: function() {
+                        visualization.select_datasets(
+                            { dbkey: view.dbkey },
+                            function(new_tracks) {
+                                _.each(new_tracks, function(track) {
+                                    view.add_drawable(
+                                        tracks.object_from_template(
+                                            track,
+                                            view,
+                                            view
+                                        )
+                                    );
+                                });
+                            }
+                        );
+                    }
+                },
+                {
+                    icon_class: "block--plus",
+                    title: "Add group",
+                    on_click: function() {
+                        view.add_drawable(
+                            new tracks.DrawableGroup(view, view, {
+                                name: "New Group"
+                            })
+                        );
+                    }
+                },
+                {
+                    icon_class: "bookmarks",
+                    title: "Bookmarks",
+                    on_click: function() {
+                        // HACK -- use style to determine if panel is hidden and hide/show accordingly.
+                        force_right_panel(
+                            $("div#right").css("right") == "0px"
+                                ? "hide"
+                                : "show"
+                        );
+                    }
+                },
+                {
+                    icon_class: "globe",
+                    title: "Circster",
+                    on_click: function() {
+                        window.location =
+                            self.baseURL +
+                            "visualization/circster?id=" +
+                            view.vis_id;
+                    }
+                },
+                {
+                    icon_class: "disk--arrow",
+                    title: "Save",
+                    on_click: function() {
+                        self.save_viz();
+                    }
+                },
+                {
+                    icon_class: "cross-circle",
+                    title: "Close",
+                    on_click: function() {
+                        self.handle_unsaved_changes(view);
+                    }
                 }
-            );
+            ],
+            {
+                tooltip_config: { placement: "bottom" }
+            }
+        );
+
         this.buttonMenu = menu;
         return menu;
     },
@@ -210,40 +213,45 @@ var TracksterUI = Base.extend({
      */
     add_bookmark: function(position, annotation, editable) {
         // Create HTML.
-        var bookmarks_container = $("#right .unified-panel-body"),
-            new_bookmark = $("<div/>")
-                .addClass("bookmark")
-                .appendTo(bookmarks_container);
+        var bookmarks_container = $("#right .unified-panel-body");
+
+        var new_bookmark = $("<div/>")
+            .addClass("bookmark")
+            .appendTo(bookmarks_container);
 
         var position_div = $("<div/>")
-                .addClass("position")
-                .appendTo(new_bookmark),
-            position_link = $("<a href=''/>")
-                .text(position)
-                .appendTo(position_div)
-                .click(function() {
-                    view.go_to(position);
-                    return false;
-                }),
-            annotation_div = $("<div/>")
-                .text(annotation)
-                .appendTo(new_bookmark);
+            .addClass("position")
+            .appendTo(new_bookmark);
+
+        var position_link = $("<a href=''/>")
+            .text(position)
+            .appendTo(position_div)
+            .click(function() {
+                view.go_to(position);
+                return false;
+            });
+
+        var annotation_div = $("<div/>")
+            .text(annotation)
+            .appendTo(new_bookmark);
 
         // If editable, enable bookmark deletion and annotation editing.
         if (editable) {
             var delete_icon_container = $("<div/>")
-                    .addClass("delete-icon-container")
-                    .prependTo(new_bookmark)
-                    .click(function() {
-                        // Remove bookmark.
-                        new_bookmark.slideUp("fast");
-                        new_bookmark.remove();
-                        view.has_changes = true;
-                        return false;
-                    }),
-                delete_icon = $("<a href=''/>")
-                    .addClass("icon-button delete")
-                    .appendTo(delete_icon_container);
+                .addClass("delete-icon-container")
+                .prependTo(new_bookmark)
+                .click(function() {
+                    // Remove bookmark.
+                    new_bookmark.slideUp("fast");
+                    new_bookmark.remove();
+                    view.has_changes = true;
+                    return false;
+                });
+
+            var delete_icon = $("<a href=''/>")
+                .addClass("icon-button delete")
+                .appendTo(delete_icon_container);
+
             annotation_div
                 .make_text_editable({
                     num_rows: 3,
@@ -268,18 +276,20 @@ var TracksterUI = Base.extend({
         editable
     ) {
         // Create view.
-        var self = this,
-            view = new tracks.TracksterView(
-                _.extend(view_config, { header: false })
-            );
+        var self = this;
+
+        var view = new tracks.TracksterView(
+            _.extend(view_config, { header: false })
+        );
+
         view.editor = true;
         $.when(view.load_chroms_deferred).then(function(chrom_info) {
             // Viewport config.
             if (viewport_config) {
-                var chrom = viewport_config.chrom,
-                    start = viewport_config.start,
-                    end = viewport_config.end,
-                    overview_drawable_name = viewport_config.overview;
+                var chrom = viewport_config.chrom;
+                var start = viewport_config.start;
+                var end = viewport_config.end;
+                var overview_drawable_name = viewport_config.overview;
 
                 if (chrom && start !== undefined && end) {
                     view.change_chrom(chrom, start, end);
@@ -295,7 +305,10 @@ var TracksterUI = Base.extend({
             // Add drawables to view.
             if (drawables_config) {
                 // FIXME: can from_dict() be used to create view and add drawables?
-                var drawable_config, drawable_type, drawable;
+                var drawable_config;
+
+                var drawable_type;
+                var drawable;
                 for (var i = 0; i < drawables_config.length; i++) {
                     view.add_drawable(
                         tracks.object_from_template(
@@ -461,14 +474,16 @@ var TracksterView = Backbone.View.extend({
 
     choose_existing_or_new: function() {
         var self = this;
-        var dbkey = query_string.get("dbkey"),
-            listTracksParams = {},
-            dataset_params = {
-                dbkey: dbkey,
-                dataset_id: query_string.get("dataset_id"),
-                hda_ldda: query_string.get("hda_ldda"),
-                gene_region: query_string.get("gene_region")
-            };
+        var dbkey = query_string.get("dbkey");
+        var listTracksParams = {};
+
+        var dataset_params = {
+            dbkey: dbkey,
+            dataset_id: query_string.get("dataset_id"),
+            hda_ldda: query_string.get("hda_ldda"),
+            gene_region: query_string.get("gene_region")
+        };
+
         if (dbkey) {
             listTracksParams["f-dbkey"] = dbkey;
         }
@@ -697,8 +712,9 @@ var TracksterView = Backbone.View.extend({
         // initialize icons
         $("#add-bookmark-button").click(function() {
             // add new bookmark.
-            var position = view.chrom + ":" + view.low + "-" + view.high,
-                annotation = "Bookmark description";
+            var position = view.chrom + ":" + view.low + "-" + view.high;
+
+            var annotation = "Bookmark description";
             return ui.add_bookmark(position, annotation, true);
         });
 

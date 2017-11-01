@@ -170,8 +170,8 @@ $.fn.modeButton = function $modeButton(options) {
         });
     }
 
-    var $first = $(this[0]),
-        button = $first.data("mode-button");
+    var $first = $(this[0]);
+    var button = $first.data("mode-button");
 
     if (!button) {
         throw new Error(

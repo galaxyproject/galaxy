@@ -153,8 +153,8 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
 
     /** Inner fn called when expand (public) has fetched the details */
     _expand: function() {
-        var view = this,
-            $newDetails = view._renderDetails();
+        var view = this;
+        var $newDetails = view._renderDetails();
         view.$details().replaceWith($newDetails);
         // needs to be set after the above or the slide will not show
         view.expanded = true;
@@ -253,9 +253,9 @@ var ListItemView = ExpandableView.extend(
 
         /** Render any warnings the item may need to show (e.g. "I'm deleted") */
         _renderWarnings: function() {
-            var view = this,
-                $warnings = $('<div class="warnings"></div>'),
-                json = view.model.toJSON();
+            var view = this;
+            var $warnings = $('<div class="warnings"></div>');
+            var json = view.model.toJSON();
             //TODO:! unordered (map)
             _.each(view.templates.warnings, function(templateFn) {
                 $warnings.append($(templateFn(json, view)));
@@ -304,8 +304,9 @@ var ListItemView = ExpandableView.extend(
         /** expand when the title bar is in focus and enter or space is pressed */
         _keyDownTitleBar: function(event) {
             // bail (with propagation) if keydown and not space or enter
-            var KEYCODE_SPACE = 32,
-                KEYCODE_RETURN = 13;
+            var KEYCODE_SPACE = 32;
+
+            var KEYCODE_RETURN = 13;
             if (
                 event &&
                 event.type === "keydown" &&
@@ -433,13 +434,15 @@ var FoldoutListItemView = ListItemView.extend({
     /** In this override, handle collection expansion. */
     _createFoldoutPanel: function() {
         var model = this.model;
-        var FoldoutClass = this._getFoldoutPanelClass(model),
-            options = this._getFoldoutPanelOptions(model),
-            foldout = new FoldoutClass(
-                _.extend(options, {
-                    model: model
-                })
-            );
+        var FoldoutClass = this._getFoldoutPanelClass(model);
+        var options = this._getFoldoutPanelOptions(model);
+
+        var foldout = new FoldoutClass(
+            _.extend(options, {
+                model: model
+            })
+        );
+
         return foldout;
     },
 

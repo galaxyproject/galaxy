@@ -2,8 +2,8 @@ import $ from "jquery";
 import * as _ from "libs/underscore";
 import * as Backbone from "libs/backbone";
 
-var MIN_PANEL_WIDTH = 160,
-    MAX_PANEL_WIDTH = 800;
+var MIN_PANEL_WIDTH = 160;
+var MAX_PANEL_WIDTH = 800;
 
 /** View for left/right panels used by Page view */
 var SidePanel = Backbone.View.extend({
@@ -80,15 +80,15 @@ var SidePanel = Backbone.View.extend({
     },
 
     _mousedownDragHandler: function(ev) {
-        var self = this,
-            draggingLeft = this.id === "left",
-            prevX = ev.pageX;
+        var self = this;
+        var draggingLeft = this.id === "left";
+        var prevX = ev.pageX;
 
         function move(e) {
             var delta = e.pageX - prevX;
             prevX = e.pageX;
-            var oldWidth = self.$el.width(),
-                newWidth = draggingLeft ? oldWidth + delta : oldWidth - delta;
+            var oldWidth = self.$el.width();
+            var newWidth = draggingLeft ? oldWidth + delta : oldWidth - delta;
             // Limit range
             newWidth = Math.min(
                 MAX_PANEL_WIDTH,
@@ -121,9 +121,9 @@ var SidePanel = Backbone.View.extend({
         if (!this.hidden) {
             return;
         }
-        var self = this,
-            animation = {},
-            whichSide = this.id;
+        var self = this;
+        var animation = {};
+        var whichSide = this.id;
         animation[whichSide] = 0;
         self.$el
             .css(whichSide, -this.saved_size)
@@ -140,8 +140,8 @@ var SidePanel = Backbone.View.extend({
         if (this.hidden) {
             return;
         }
-        var animation = {},
-            whichSide = this.id;
+        var animation = {};
+        var whichSide = this.id;
         this.saved_size = this.$el.width();
         animation[whichSide] = -this.saved_size;
         this.$el.animate(animation, "fast");

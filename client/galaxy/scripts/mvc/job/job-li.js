@@ -59,8 +59,9 @@ var JobListItemView = _super.extend(
         /** Return tool.inputs that should/can be safely displayed */
         _labelParamMap: function() {
             //ADAPTER
-            var params = this.model.get("params"),
-                labelParamMap = {};
+            var params = this.model.get("params");
+
+            var labelParamMap = {};
             _.each(this.tool.inputs, function(i) {
                 //console.debug( i.label, i.model_class );
                 if (i.label && i.model_class !== "DataToolParameter") {
@@ -72,8 +73,9 @@ var JobListItemView = _super.extend(
 
         _labelInputMap: function() {
             //ADAPTER
-            var view = this,
-                labelInputMap = {};
+            var view = this;
+
+            var labelInputMap = {};
             _.each(this.jobData.inputs, function(input) {
                 var toolInput = view._findToolInput(input.name);
                 if (toolInput) {
@@ -86,8 +88,9 @@ var JobListItemView = _super.extend(
         /** Return a tool.inputs object that matches (or partially matches) the given (job input) name */
         _findToolInput: function(name) {
             //ADAPTER
-            var toolInputs = this.tool.inputs,
-                exactMatch = _.findWhere(toolInputs, { name: name });
+            var toolInputs = this.tool.inputs;
+
+            var exactMatch = _.findWhere(toolInputs, { name: name });
             if (exactMatch) {
                 return exactMatch;
             }

@@ -13,10 +13,11 @@ var UserMenuBase = Backbone.View.extend({
      */
     isAcceptableValue: function($inputKey, min, max) {
         //TODO: use better feedback than alert
-        var value = $inputKey.val(),
-            fieldName =
-                $inputKey.attr("displayLabel") ||
-                $inputKey.attr("id").replace("phyloViz", "");
+        var value = $inputKey.val();
+
+        var fieldName =
+            $inputKey.attr("displayLabel") ||
+            $inputKey.attr("id").replace("phyloViz", "");
 
         function isNumeric(n) {
             return !isNaN(parseFloat(n)) && isFinite(n);
@@ -58,18 +59,31 @@ var UserMenuBase = Backbone.View.extend({
  *                  2) Nodes must appear in other after they have expand and contracted
  */
 function PhyloTreeLayout() {
-    var self = this,
-        hierarchy = d3.layout
-            .hierarchy()
-            .sort(null)
-            .value(null),
-        height = 360, // ! represents both the layout angle and the height of the layout, in px
-        layoutMode = "Linear",
-        leafHeight = 18, // height of each individual leaf node
-        depthSeparation = 200, // separation between nodes of different depth, in px
-        leafIndex = 0, // change to recurssive call
-        defaultDist = 0.5, // tree defaults to 0.5 dist if no dist is specified
-        maxTextWidth = 50; // maximum length of the text labels
+    var self = this; // maximum length of the text labels
+
+    var hierarchy = d3.layout
+        .hierarchy()
+        .sort(null)
+        .value(null);
+
+    var // ! represents both the layout angle and the height of the layout, in px
+    height = 360;
+
+    var layoutMode = "Linear";
+
+    var // height of each individual leaf node
+    leafHeight = 18;
+
+    var // separation between nodes of different depth, in px
+    depthSeparation = 200;
+
+    var // change to recurssive call
+    leafIndex = 0;
+
+    var // tree defaults to 0.5 dist if no dist is specified
+    defaultDist = 0.5;
+
+    var maxTextWidth = 50;
 
     self.leafHeight = function(inputLeafHeight) {
         if (typeof inputLeafHeight === "undefined") {
@@ -125,11 +139,13 @@ function PhyloTreeLayout() {
             // if d is an array, replate with the first object (newick, phyloxml)
             d = d[0];
         }
+
         // self is to find the depth of all the nodes, assumes root is passed in
-        var _nodes = hierarchy.call(self, d, i),
-            nodes = [],
-            maxDepth = 0,
-            numLeaves = 0;
+        var _nodes = hierarchy.call(self, d, i);
+
+        var nodes = [];
+        var maxDepth = 0;
+        var numLeaves = 0;
         //console.debug( JSON.stringify( _nodes, null, 2 ) )
         window._d = d;
         window._nodes = _nodes;
@@ -168,8 +184,8 @@ function PhyloTreeLayout() {
      * -- The layout will first calculate the y0 field going towards the leaves, and x0 when returning
      */
     function layout(node, maxDepth, vertSeparation, parent) {
-        var children = node.children,
-            sumChildVertSeparation = 0;
+        var children = node.children;
+        var sumChildVertSeparation = 0;
 
         // calculation of node's dist from parents, going down.
         var dist = node.dist || defaultDist;
@@ -351,8 +367,8 @@ var PhylovizLayoutBase = Backbone.View.extend({
      *  AND possibly when the tree is edited.
      */
     updateAndRender: function(source) {
-        var vis = d3.select(".vis"),
-            self = this;
+        var vis = d3.select(".vis");
+        var self = this;
         source = source || self.model.root;
 
         self.renderNodes(source);
@@ -441,8 +457,8 @@ var PhylovizLayoutBase = Backbone.View.extend({
         $(".tooltip").remove(); //clean up tooltip, just in case its listeners are removed by d3
         $(".node")
             .attr("data-original-title", function() {
-                var d = this.__data__,
-                    annotation = d.annotation || "None";
+                var d = this.__data__;
+                var annotation = d.annotation || "None";
                 return d
                     ? (d.name ? d.name + "<br/>" : "") +
                           "Dist: " +
@@ -492,18 +508,19 @@ var PhylovizLinearView = PhylovizLayoutBase.extend({
      * Renders the nodes base on Linear layout.
      */
     renderNodes: function(source) {
-        var self = this,
-            fontSize = self.model.get("fontSize") + "px";
+        var self = this;
+        var fontSize = self.model.get("fontSize") + "px";
 
         // assigning properties from models
         self.tree
             .separation(self.model.get("separation"))
             .leafHeight(self.model.get("leafHeight"));
 
-        var duration = 500,
-            nodes = self.tree
-                .separation(self.model.get("separation"))
-                .nodes(self.model.root);
+        var duration = 500;
+
+        var nodes = self.tree
+            .separation(self.model.get("separation"))
+            .nodes(self.model.root);
 
         var node = self.vis.selectAll("g.node").data(nodes, function(d) {
             return d.name + d.id || (d.id = ++self.i);
@@ -706,17 +723,18 @@ var PhylovizView = Backbone.View.extend({
      * Uses d3.zoom events, and extend them to allow manual updates and keeping states in model
      */
     zoomAndPan: function(event) {
-        var zoomParams, translateParams;
+        var zoomParams;
+        var translateParams;
         if (typeof event !== "undefined") {
             zoomParams = event.zoom;
             translateParams = event.translate;
         }
 
-        var self = this,
-            scaleFactor = self.zoomFunc.scale(),
-            translationCoor = self.zoomFunc.translate(),
-            zoomStatement = "",
-            translateStatement = "";
+        var self = this;
+        var scaleFactor = self.zoomFunc.scale();
+        var translationCoor = self.zoomFunc.translate();
+        var zoomStatement = "";
+        var translateStatement = "";
 
         // Do manual scaling.
         switch (zoomParams) {
@@ -779,8 +797,8 @@ var PhylovizView = Backbone.View.extend({
      * Primes the Ajax URL to load another Nexus tree
      */
     reloadViz: function() {
-        var self = this,
-            treeIndex = $("#phylovizNexSelector :selected").val();
+        var self = this;
+        var treeIndex = $("#phylovizNexSelector :selected").val();
         $.getJSON(
             self.phyloTree.get("dataset").url(),
             {
@@ -872,37 +890,39 @@ var HeaderButtons = Backbone.View.extend({
     },
 
     initNavBtns: function() {
-        var self = this,
-            navMenu = mod_icon_btn.create_icon_buttons_menu(
-                [
-                    {
-                        icon_class: "zoom-in",
-                        title: "Zoom in",
-                        on_click: function() {
-                            self.phylovizView.zoomAndPan({ zoom: "+" });
-                        }
-                    },
-                    {
-                        icon_class: "zoom-out",
-                        title: "Zoom out",
-                        on_click: function() {
-                            self.phylovizView.zoomAndPan({ zoom: "-" });
-                        }
-                    },
-                    {
-                        icon_class: "arrow-circle",
-                        title: "Reset Zoom/Pan",
-                        on_click: function() {
-                            self.phylovizView.zoomAndPan({
-                                zoom: "reset"
-                            });
-                        }
-                    }
-                ],
+        var self = this;
+
+        var navMenu = mod_icon_btn.create_icon_buttons_menu(
+            [
                 {
-                    tooltip_config: { placement: "bottom" }
+                    icon_class: "zoom-in",
+                    title: "Zoom in",
+                    on_click: function() {
+                        self.phylovizView.zoomAndPan({ zoom: "+" });
+                    }
+                },
+                {
+                    icon_class: "zoom-out",
+                    title: "Zoom out",
+                    on_click: function() {
+                        self.phylovizView.zoomAndPan({ zoom: "-" });
+                    }
+                },
+                {
+                    icon_class: "arrow-circle",
+                    title: "Reset Zoom/Pan",
+                    on_click: function() {
+                        self.phylovizView.zoomAndPan({
+                            zoom: "reset"
+                        });
+                    }
                 }
-            );
+            ],
+            {
+                tooltip_config: { placement: "bottom" }
+            }
+        );
+
         $("#phyloVizNavBtns").append(navMenu.$el);
     }
 });
@@ -1041,8 +1061,8 @@ var NodeSelectionView = UserMenuBase.extend({
      * For turning on and off the child elements
      */
     toggleUI: function() {
-        var self = this,
-            checked = self.UI.enableEdit.is(":checked");
+        var self = this;
+        var checked = self.UI.enableEdit.is(":checked");
 
         if (!checked) {
             self.cancelChanges();
@@ -1064,8 +1084,8 @@ var NodeSelectionView = UserMenuBase.extend({
      * Reverting to previous values in case user change their minds
      */
     cancelChanges: function() {
-        var self = this,
-            node = self.phyloTree.get("selectedNode");
+        var self = this;
+        var node = self.phyloTree.get("selectedNode");
         if (node) {
             $.each(self.valuesOfConcern, function(key, value) {
                 self.UI[key].val(node[key]);
@@ -1077,8 +1097,8 @@ var NodeSelectionView = UserMenuBase.extend({
      * Changing the data in the underlying tree with user-specified values
      */
     updateNodes: function() {
-        var self = this,
-            node = self.phyloTree.get("selectedNode");
+        var self = this;
+        var node = self.phyloTree.get("selectedNode");
         if (node) {
             if (
                 !self.isAcceptableValue(self.UI.dist, 0, 1) ||
@@ -1106,12 +1126,14 @@ var PhyloVizSearch = UserMenuBase.extend({
         var self = this;
 
         $("#phyloVizSearchBtn").on("click", function() {
-            var searchTerm = $("#phyloVizSearchTerm"),
-                searchConditionVal = $("#phyloVizSearchCondition")
-                    .val()
-                    .split("-"),
-                attr = searchConditionVal[0],
-                condition = searchConditionVal[1];
+            var searchTerm = $("#phyloVizSearchTerm");
+
+            var searchConditionVal = $("#phyloVizSearchCondition")
+                .val()
+                .split("-");
+
+            var attr = searchConditionVal[0];
+            var condition = searchConditionVal[1];
             self.hasIllegalJsonCharacters(searchTerm);
 
             if (attr === "dist") {

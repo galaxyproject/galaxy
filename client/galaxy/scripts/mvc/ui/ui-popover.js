@@ -126,7 +126,9 @@ var View = Backbone.View.extend({
         var container_position = $container.position();
 
         // get position
-        var top, left;
+        var top;
+
+        var left;
         top = left = 0;
         if (["top", "bottom"].indexOf(placement) != -1) {
             left =

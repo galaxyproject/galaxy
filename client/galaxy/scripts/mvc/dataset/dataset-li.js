@@ -215,8 +215,8 @@ var DatasetListItemView = _super.extend(
 
         /** Defer to the appropo summary rendering fn based on state */
         _renderSummary: function() {
-            var json = this.model.toJSON(),
-                summaryRenderFn = this.templates.summaries[json.state];
+            var json = this.model.toJSON();
+            var summaryRenderFn = this.templates.summaries[json.state];
             summaryRenderFn =
                 summaryRenderFn || this.templates.summaries.unknown;
             return summaryRenderFn(json, this);
@@ -224,9 +224,9 @@ var DatasetListItemView = _super.extend(
 
         /** Render messages to be displayed only when the details are shown */
         _renderDetailMessages: function() {
-            var view = this,
-                $warnings = $('<div class="detail-messages"></div>'),
-                json = view.model.toJSON();
+            var view = this;
+            var $warnings = $('<div class="detail-messages"></div>');
+            var json = view.model.toJSON();
             //TODO:! unordered (map)
             _.each(view.templates.detailMessages, function(templateFn) {
                 $warnings.append($(templateFn(json, view)));

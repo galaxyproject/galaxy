@@ -59,8 +59,8 @@ JobDAG.prototype.init = function _init(options) {
 
 /** add job filters based on options */
 JobDAG.prototype._initFilters = function __initFilters() {
-    var self = this,
-        filters = [];
+    var self = this;
+    var filters = [];
 
     if (self.options.excludeSetMetadata) {
         self.filteredSetMetadata = [];
@@ -173,8 +173,9 @@ JobDAG.prototype.sort = function _sort(jobs) {
 /** decorate with input/output datasets and tool */
 JobDAG.prototype.preprocessJob = function _preprocessJob(job, index) {
     //this.info( 'preprocessJob', job, index );
-    var self = this,
-        jobData = { job: job };
+    var self = this;
+
+    var jobData = { job: job };
 
     jobData.inputs = self._processInputs(job);
     if (_.size(jobData.inputs) === 0) {
@@ -194,9 +195,9 @@ JobDAG.prototype.preprocessJob = function _preprocessJob(job, index) {
 /**
  */
 JobDAG.prototype._processInputs = function __processInputs(job) {
-    var self = this,
-        inputs = job.inputs,
-        inputMap = {};
+    var self = this;
+    var inputs = job.inputs;
+    var inputMap = {};
     _.each(inputs, function(input, nameInJob) {
         input = _.clone(self._validateInputOutput(input));
         input.name = nameInJob;
@@ -233,9 +234,9 @@ JobDAG.prototype._validateInputOutput = function __validateInputOutput(
 /**
  */
 JobDAG.prototype._processOutputs = function __processOutputs(job) {
-    var self = this,
-        outputs = job.outputs,
-        outputMap = {};
+    var self = this;
+    var outputs = job.outputs;
+    var outputMap = {};
     _.each(outputs, function(output, nameInJob) {
         output = _.clone(self._validateInputOutput(output));
         output.name = nameInJob;
@@ -321,8 +322,9 @@ JobDAG.prototype.createJobLessVertex = function _createJobLessVertex(
 ) {
     // currently, copied contents are the only history contents without jobs (that I know of)
     //note: following needed to prevent id collision btwn content and jobs in vertex map
-    var JOBLESS_ID_MANGLER = "copy-",
-        mangledId = JOBLESS_ID_MANGLER + contentId;
+    var JOBLESS_ID_MANGLER = "copy-";
+
+    var mangledId = JOBLESS_ID_MANGLER + contentId;
     return this.createVertex(mangledId, this._historyContentsMap[contentId]);
 };
 
@@ -335,11 +337,13 @@ JobDAG.prototype.weakComponentGraphArray = function() {
         //  since update_time for jobless/copied datasets is changes more often
         component.vertices.sort(function cmpCreate(a, b) {
             var aCreateTime = a.data.job
-                    ? a.data.job.create_time
-                    : a.data.create_time,
-                bCreateTime = b.data.job
-                    ? b.data.job.create_time
-                    : b.data.create_time;
+                ? a.data.job.create_time
+                : a.data.create_time;
+
+            var bCreateTime = b.data.job
+                ? b.data.job.create_time
+                : b.data.create_time;
+
             if (aCreateTime > bCreateTime) {
                 return 1;
             }

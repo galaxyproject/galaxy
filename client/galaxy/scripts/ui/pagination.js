@@ -91,12 +91,13 @@ Pagination.prototype._render = function __render() {
 
 /** render previous and next pagination buttons */
 Pagination.prototype._renderPrevNext = function __renderPrevNext() {
-    var pagination = this,
-        $prev = _make$Li("Prev"),
-        $next = _make$Li("Next"),
-        $paginationContainer = $("<ul/>").addClass(
-            "pagination pagination-prev-next"
-        );
+    var pagination = this;
+    var $prev = _make$Li("Prev");
+    var $next = _make$Li("Next");
+
+    var $paginationContainer = $("<ul/>").addClass(
+        "pagination pagination-prev-next"
+    );
 
     // disable if it either end
     if (this.currPage === 0) {
@@ -127,16 +128,19 @@ Pagination.prototype._renderPrevNext = function __renderPrevNext() {
 Pagination.prototype._renderPages = function __renderPages() {
     // it's better to scroll the control and let the user see all pages
     //  than to force her/him to change pages in order to find the one they want (as traditional << >> does)
-    var pagination = this,
-        $scrollingContainer = $("<div>").addClass(
-            "pagination-scroll-container"
-        ),
-        $paginationContainer = $("<ul/>").addClass(
-            "pagination pagination-page-list"
-        ),
-        page$LiClick = function(ev) {
-            pagination.goToPage($(this).data("page"));
-        };
+    var pagination = this;
+
+    var $scrollingContainer = $("<div>").addClass(
+        "pagination-scroll-container"
+    );
+
+    var $paginationContainer = $("<ul/>").addClass(
+        "pagination pagination-page-list"
+    );
+
+    var page$LiClick = function(ev) {
+        pagination.goToPage($(this).data("page"));
+    };
 
     for (var i = 0; i < this.numPages; i += 1) {
         // add html5 data tag 'page' for later click event handler use
@@ -162,8 +166,8 @@ Pagination.prototype._scrollToActivePage = function __scrollToActivePage() {
         return this;
     }
 
-    var $activePage = this.$element.find("li.active"),
-        midpoint = $container.width() / 2;
+    var $activePage = this.$element.find("li.active");
+    var midpoint = $container.width() / 2;
     //console.debug( $container, $activePage, midpoint );
     $container.scrollLeft(
         $container.scrollLeft() + $activePage.position().left - midpoint
@@ -225,8 +229,9 @@ jQuery.fn.extend({
         }
 
         // (other invocations only work on the first element in selected)
-        var $firstElement = $(this[0]),
-            previousControl = $firstElement.data(Pagination.prototype.DATA_KEY);
+        var $firstElement = $(this[0]);
+
+        var previousControl = $firstElement.data(Pagination.prototype.DATA_KEY);
         // if a pagination control was found for this element, either...
         if (previousControl) {
             // invoke a function on the pagination object if passed a string (the function name)

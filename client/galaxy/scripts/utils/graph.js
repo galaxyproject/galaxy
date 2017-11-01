@@ -39,10 +39,10 @@ function matches(d, d2) {
  *      if propsOrFn is function, call the fn and returned the mapped values from it
  */
 function iterate(obj, propsOrFn) {
-    var fn = typeof propsOrFn === "function" ? propsOrFn : undefined,
-        props = typeof propsOrFn === "object" ? propsOrFn : undefined,
-        returned = [],
-        index = 0;
+    var fn = typeof propsOrFn === "function" ? propsOrFn : undefined;
+    var props = typeof propsOrFn === "object" ? propsOrFn : undefined;
+    var returned = [];
+    var index = 0;
     for (var key in obj) {
         if (obj.hasOwnProperty(key)) {
             var value = obj[key];
@@ -211,8 +211,8 @@ BreadthFirstSearch.prototype._search = function __search(start, search) {
         edges: []
     };
 
-    var self = this,
-        queue = [];
+    var self = this;
+    var queue = [];
 
     function discoverAdjacent(adj, edge) {
         var source = this;
@@ -268,8 +268,8 @@ DepthFirstSearch.prototype._search = function(start, search) {
         entryTimes: {},
         exitTimes: {}
     };
-    var self = this,
-        time = 0;
+    var self = this;
+    var time = 0;
 
     // discover verts adjacent to the source (this):
     //  processing each edge, saving the edge to the tree, and caching the reverse path with parents
@@ -363,8 +363,8 @@ Graph.prototype.readNodesAndLinks = function(data) {
     //console.debug( JSON.stringify( self.vertices, null, '  ' ) );
 
     (data.links || []).forEach(function(edge, i) {
-        var sourceName = data.nodes[edge.source].name,
-            targetName = data.nodes[edge.target].name;
+        var sourceName = data.nodes[edge.source].name;
+        var targetName = data.nodes[edge.target].name;
         self.createEdge(sourceName, targetName, self.directed);
     });
     //self.print();
@@ -421,8 +421,9 @@ Graph.prototype.createEdge = function(sourceName, targetName, directed, data) {
     }
 
     //TODO: prob. move to vertex
-    var self = this,
-        edge = new Edge(sourceName, targetName, data);
+    var self = this;
+
+    var edge = new Edge(sourceName, targetName, data);
     sourceVertex.edges[targetName] = edge;
     sourceVertex.degree += 1;
     self.numEdges += 1;
@@ -485,8 +486,8 @@ Graph.prototype.print = function() {
 
 /** Return a DOT format string of this graph */
 Graph.prototype.toDOT = function() {
-    var self = this,
-        strings = [];
+    var self = this;
+    var strings = [];
     strings.push("graph bler {");
     self.edges(function(edge) {
         strings.push("\t" + edge.from + " -- " + edge.to + ";");
@@ -497,8 +498,8 @@ Graph.prototype.toDOT = function() {
 
 /** Return vertices and edges of this graph in d3 node/link format */
 Graph.prototype.toNodesAndLinks = function() {
-    var self = this,
-        indeces = {};
+    var self = this;
+    var indeces = {};
     return {
         nodes: self.eachVertex(function(vertex, key, i) {
             indeces[vertex.name] = i;
@@ -562,10 +563,11 @@ Graph.prototype.depthFirstSearchTree = function(start, processFns) {
 Graph.prototype.weakComponents = function() {
     //TODO: alternately, instead of returning graph-like objects:
     //  - could simply decorate the vertices (vertex.component = componentIndex), or clone the graph and do that
-    var self = this,
-        searchGraph = this,
-        undiscovered,
-        components = [];
+    var self = this;
+
+    var searchGraph = this;
+    var undiscovered;
+    var components = [];
 
     function getComponent(undiscoveredVertex) {
         //TODO: better interface on dfs (search v. searchTree)

@@ -72,8 +72,8 @@ var DatasetCollectionElementView = Backbone.View
 
         /** animate the removal of this element and pub */
         discard: function() {
-            var view = this,
-                parentWidth = this.$el.parent().width();
+            var view = this;
+            var parentWidth = this.$el.parent().width();
             this.$el.animate(
                 { "margin-right": parentWidth },
                 "fast",
@@ -113,18 +113,21 @@ var DatasetCollectionElementView = Backbone.View
         _clickName: function(ev) {
             ev.stopPropagation();
             ev.preventDefault();
+
             var promptString = [
-                    _l("Enter a new name for the element"),
-                    ":\n(",
-                    _l(
-                        "Note that changing the name here will not rename the dataset"
-                    ),
-                    ")"
-                ].join(""),
-                response = prompt(
-                    _l("Enter a new name for the element") + ":",
-                    this.element.name
-                );
+                _l("Enter a new name for the element"),
+                ":\n(",
+                _l(
+                    "Note that changing the name here will not rename the dataset"
+                ),
+                ")"
+            ].join("");
+
+            var response = prompt(
+                _l("Enter a new name for the element") + ":",
+                this.element.name
+            );
+
             if (response) {
                 this.element.name = response;
                 this.render();
@@ -266,8 +269,8 @@ var ListCollectionCreator = Backbone.View
 
         /** separate working list into valid and invalid elements for this collection */
         _validateElements: function() {
-            var creator = this,
-                existingNames = {};
+            var creator = this;
+            var existingNames = {};
             creator.invalidElements = [];
 
             this.workingElements = this.workingElements.filter(function(
@@ -304,9 +307,9 @@ var ListCollectionCreator = Backbone.View
 
         /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
         _mangleDuplicateNames: function() {
-            var SAFETY = 900,
-                counter = 1,
-                existingNames = {};
+            var SAFETY = 900;
+            var counter = 1;
+            var existingNames = {};
             this.workingElements.forEach(function(element) {
                 var currName = element.name;
                 while (existingNames.hasOwnProperty(currName)) {
@@ -439,9 +442,10 @@ var ListCollectionCreator = Backbone.View
         /** render the elements in order (or a warning if no elements found) */
         _renderList: function(speed, callback) {
             //this.debug( '-- _renderList' );
-            var creator = this,
-                $tmp = jQuery("<div/>"),
-                $list = creator.$list();
+            var creator = this;
+
+            var $tmp = jQuery("<div/>");
+            var $list = creator.$list();
 
             _.each(this.elementViews, function(view) {
                 view.destroy();
@@ -558,10 +562,11 @@ var ListCollectionCreator = Backbone.View
                 return;
             }
 
-            var creator = this,
-                elements = this.workingElements.map(function(element) {
-                    return creator._elementToJSON(element);
-                });
+            var creator = this;
+
+            var elements = this.workingElements.map(function(element) {
+                return creator._elementToJSON(element);
+            });
 
             creator.blocking = true;
             return creator
@@ -625,11 +630,11 @@ var ListCollectionCreator = Backbone.View
         _errorHandler: function(data) {
             this.error(data);
 
-            var creator = this,
-                content = data.message || _l("An error occurred");
+            var creator = this;
+            var content = data.message || _l("An error occurred");
             if (data.xhr) {
-                var xhr = data.xhr,
-                    message = data.message;
+                var xhr = data.xhr;
+                var message = data.message;
                 if (xhr.readyState === 0 && xhr.status === 0) {
                     content +=
                         ": " +
@@ -727,11 +732,11 @@ var ListCollectionCreator = Backbone.View
 
         /** If the mouse is near enough to the list's top or bottom, scroll the list */
         _checkForAutoscroll: function($element, y) {
-            var AUTOSCROLL_SPEED = 2,
-                offset = $element.offset(),
-                scrollTop = $element.scrollTop(),
-                upperDist = y - offset.top,
-                lowerDist = offset.top + $element.outerHeight() - y;
+            var AUTOSCROLL_SPEED = 2;
+            var offset = $element.offset();
+            var scrollTop = $element.scrollTop();
+            var upperDist = y - offset.top;
+            var lowerDist = offset.top + $element.outerHeight() - y;
             if (upperDist >= 0 && upperDist < this.autoscrollDist) {
                 $element.scrollTop(scrollTop - AUTOSCROLL_SPEED);
             } else if (lowerDist >= 0 && lowerDist < this.autoscrollDist) {
@@ -743,14 +748,16 @@ var ListCollectionCreator = Backbone.View
      *  If the y is at the end of the list, return an empty jQuery object.
      */
         _getNearestElement: function(y) {
-            var WIGGLE = 4,
-                lis = this.$(
-                    ".collection-elements li.collection-element"
-                ).toArray();
+            var WIGGLE = 4;
+
+            var lis = this.$(
+                ".collection-elements li.collection-element"
+            ).toArray();
+
             for (var i = 0; i < lis.length; i++) {
-                var $li = $(lis[i]),
-                    top = $li.offset().top,
-                    halfHeight = Math.floor($li.outerHeight() / 2) + WIGGLE;
+                var $li = $(lis[i]);
+                var top = $li.offset().top;
+                var halfHeight = Math.floor($li.outerHeight() / 2) + WIGGLE;
                 if (top + halfHeight > y && top - halfHeight < y) {
                     return $li;
                 }
@@ -784,14 +791,16 @@ var ListCollectionCreator = Backbone.View
 
         /** resync the creator's list of elements based on the DOM order */
         _syncOrderToDom: function() {
-            var creator = this,
-                newElements = [];
+            var creator = this;
+            var newElements = [];
             //TODO: doesn't seem wise to use the dom to store these - can't we sync another way?
             this.$(".collection-elements .collection-element").each(function() {
-                var id = $(this).attr("data-element-id"),
-                    element = _.findWhere(creator.workingElements, {
-                        id: id
-                    });
+                var id = $(this).attr("data-element-id");
+
+                var element = _.findWhere(creator.workingElements, {
+                    id: id
+                });
+
                 if (element) {
                     newElements.push(element);
                 } else {
@@ -1075,9 +1084,9 @@ var collectionCreatorModal = function _collectionCreatorModal(
     options,
     CreatorClass
 ) {
-    var deferred = jQuery.Deferred(),
-        modal = Galaxy.modal || new UI_MODAL.View(),
-        creator;
+    var deferred = jQuery.Deferred();
+    var modal = Galaxy.modal || new UI_MODAL.View();
+    var creator;
 
     options = _.defaults(options || {}, {
         elements: elements,
@@ -1121,29 +1130,26 @@ var listCollectionCreatorModal = function _listCollectionCreatorModal(
  *  @returns {Deferred} resolved when the collection is added to the history.
  */
 function createListCollection(contents, defaultHideSourceItems) {
-    var elements = contents.toJSON(),
-        promise = listCollectionCreatorModal(elements, {
-            defaultHideSourceItems: defaultHideSourceItems,
-            creationFn: function(elements, name, hideSourceItems) {
-                elements = elements.map(function(element) {
-                    return {
-                        id: element.id,
-                        name: element.name,
-                        //TODO: this allows for list:list even if the filter above does not - reconcile
-                        src:
-                            element.history_content_type === "dataset"
-                                ? "hda"
-                                : "hdca"
-                    };
-                });
-                return contents.createHDCA(
-                    elements,
-                    "list",
-                    name,
-                    hideSourceItems
-                );
-            }
-        });
+    var elements = contents.toJSON();
+
+    var promise = listCollectionCreatorModal(elements, {
+        defaultHideSourceItems: defaultHideSourceItems,
+        creationFn: function(elements, name, hideSourceItems) {
+            elements = elements.map(function(element) {
+                return {
+                    id: element.id,
+                    name: element.name,
+                    //TODO: this allows for list:list even if the filter above does not - reconcile
+                    src:
+                        element.history_content_type === "dataset"
+                            ? "hda"
+                            : "hdca"
+                };
+            });
+            return contents.createHDCA(elements, "list", name, hideSourceItems);
+        }
+    });
+
     return promise;
 }
 

@@ -24,9 +24,10 @@ function GalaxyApp(options, bootstrapped) {
 addLogging(GalaxyApp, "GalaxyApp");
 
 // a debug flag can be set via local storage and made available during script/page loading
-var DEBUGGING_KEY = "galaxy:debug",
-    NAMESPACE_KEY = DEBUGGING_KEY + ":namespaces",
-    localDebugging = false;
+var DEBUGGING_KEY = "galaxy:debug";
+
+var NAMESPACE_KEY = DEBUGGING_KEY + ":namespaces";
+var localDebugging = false;
 try {
     localDebugging = localStorage.getItem(DEBUGGING_KEY) == "true";
 } catch (storageErr) {
@@ -92,8 +93,8 @@ GalaxyApp.prototype.defaultOptions = {
 
 /** filter to options present in defaultOptions (and default to them) */
 GalaxyApp.prototype._processOptions = function _processOptions(options) {
-    var self = this,
-        defaults = self.defaultOptions;
+    var self = this;
+    var defaults = self.defaultOptions;
 
     self.options = {};
     for (var k in defaults) {

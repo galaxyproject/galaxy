@@ -31,8 +31,9 @@ export default Backbone.Model.extend({
         // Update URL arg with new condition.
         if (append) {
             // Update or append value.
-            var cur_val = this.attributes.filters[key],
-                new_val;
+            var cur_val = this.attributes.filters[key];
+
+            var new_val;
             if (cur_val === null || cur_val === undefined) {
                 new_val = value;
             } else if (typeof cur_val == "string") {

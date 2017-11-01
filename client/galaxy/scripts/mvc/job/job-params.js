@@ -2,9 +2,9 @@
 import Utils from "utils/utils";
 /** Build messages after user action */
 function build_messages(self) {
-    var $el_message = self.$el.find(".response-message"),
-        status = Utils.getQueryString("status"),
-        message = Utils.getQueryString("message");
+    var $el_message = self.$el.find(".response-message");
+    var status = Utils.getQueryString("status");
+    var message = Utils.getQueryString("message");
 
     if (message && message !== "") {
         $el_message.addClass(status + "message");

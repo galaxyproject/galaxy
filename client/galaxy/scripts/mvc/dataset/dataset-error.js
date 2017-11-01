@@ -14,8 +14,9 @@ var View = Backbone.View.extend({
     // Fetch data for the selected dataset and
     render: function() {
         var data_url =
-                Galaxy.root + "api/datasets/" + this.model.get("dataset_id"),
-            self = this;
+            Galaxy.root + "api/datasets/" + this.model.get("dataset_id");
+
+        var self = this;
 
         Utils.get({
             url: data_url,

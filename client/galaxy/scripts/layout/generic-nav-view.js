@@ -8,31 +8,38 @@ var GenericNavView = Backbone.View.extend({
     /** makes bootstrap modal and iframe inside it */
     makeModalIframe: function(e) {
         // make modal
-        var host = window.Galaxy.config.communication_server_host,
-            port = window.Galaxy.config.communication_server_port,
-            username = escape(window.Galaxy.user.attributes.username),
-            persistent_communication_rooms = escape(
-                window.Galaxy.config.persistent_communication_rooms
-            ),
-            query_string =
-                "?username=" +
-                username +
-                "&persistent_communication_rooms=" +
-                persistent_communication_rooms,
-            src = host + ":" + port + query_string,
-            $el_chat_modal_header = null,
-            $el_chat_modal_body = null,
-            iframe_template =
-                '<iframe class="f-iframe fade in communication-iframe" src="' +
-                src +
-                '"> </iframe>',
-            header_template =
-                '<i class="fa fa-comment" aria-hidden="true" title="Communicate with other users"></i>' +
-                '<i class="fa fa-expand expand-compress-modal" aria-hidden="true" title="Maximize"></i>' +
-                '<i class="fa fa-times close-modal" aria-hidden="true" title="Close"></i>',
-            frame_height = 350,
-            frame_width = 600,
-            class_names = "ui-modal chat-modal";
+        var host = window.Galaxy.config.communication_server_host;
+
+        var port = window.Galaxy.config.communication_server_port;
+        var username = escape(window.Galaxy.user.attributes.username);
+
+        var persistent_communication_rooms = escape(
+            window.Galaxy.config.persistent_communication_rooms
+        );
+
+        var query_string =
+            "?username=" +
+            username +
+            "&persistent_communication_rooms=" +
+            persistent_communication_rooms;
+
+        var src = host + ":" + port + query_string;
+        var $el_chat_modal_header = null;
+        var $el_chat_modal_body = null;
+
+        var iframe_template =
+            '<iframe class="f-iframe fade in communication-iframe" src="' +
+            src +
+            '"> </iframe>';
+
+        var header_template =
+            '<i class="fa fa-comment" aria-hidden="true" title="Communicate with other users"></i>' +
+            '<i class="fa fa-expand expand-compress-modal" aria-hidden="true" title="Maximize"></i>' +
+            '<i class="fa fa-times close-modal" aria-hidden="true" title="Close"></i>';
+
+        var frame_height = 350;
+        var frame_width = 600;
+        var class_names = "ui-modal chat-modal";
 
         // deletes the chat modal if already present and create one
         if ($(".chat-modal").length > 0) {
@@ -87,8 +94,8 @@ var GenericNavView = Backbone.View.extend({
 
     /**renders the chat icon as a nav item*/
     render: function() {
-        var self = this,
-            navItem = {};
+        var self = this;
+        var navItem = {};
         navItem = {
             id: "show-chat-online",
             icon: "fa-comment-o",

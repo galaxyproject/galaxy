@@ -14,8 +14,9 @@ var BBIDataManager = visualization.GenomeDataManager.extend({
         this.set_data(region, deferred);
 
         var url =
-                Galaxy.root + "datasets/" + this.get("dataset").id + "/display",
-            self = this;
+            Galaxy.root + "datasets/" + this.get("dataset").id + "/display";
+
+        var self = this;
         var promise = new $.Deferred();
         $.when(bigwig.makeBwg(url)).then(function(bb, err) {
             $.when(
@@ -27,8 +28,9 @@ var BBIDataManager = visualization.GenomeDataManager.extend({
             ).then(function(data) {
                 // Transform data into "bigwig" format for LinePainter. "bigwig" format is an array of 2-element arrays
                 // where each element is [position, score]; unlike real bigwig format, no gaps are allowed.
-                var result = [],
-                    prev = { max: Number.MIN_VALUE };
+                var result = [];
+
+                var prev = { max: Number.MIN_VALUE };
                 data.forEach(function(d) {
                     // If there is a gap between prev and d, fill it with an interval with score 0.
                     // This is necessary for LinePainter to draw correctly.

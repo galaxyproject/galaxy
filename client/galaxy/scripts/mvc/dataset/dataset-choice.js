@@ -100,11 +100,11 @@ var DatasetChoiceModal = function(datasetJSON, options) {
             ? _l("Choose datasets:")
             : _l("Choose a dataset:"));
 
-    var modal,
-        list,
-        buttons,
-        promise = jQuery.Deferred(),
-        filterFn = options.filter || _filterDatasetJSON;
+    var modal;
+    var list;
+    var buttons;
+    var promise = jQuery.Deferred();
+    var filterFn = options.filter || _filterDatasetJSON;
 
     // filter the given datasets and if none left return a rejected promise for use with fail()
     datasetJSON = filterFn(datasetJSON, options.where, options.datasetsOnly);

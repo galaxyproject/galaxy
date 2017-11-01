@@ -34,22 +34,24 @@ var ServerStateDeferred = Backbone.Model.extend({
      * Returns a deferred that resolves when success function returns true.
      */
     go: function() {
-        var deferred = $.Deferred(),
-            self = this,
-            ajax_settings = self.get("ajax_settings"),
-            success_fn = self.get("success_fn"),
-            interval = self.get("interval"),
-            _go = function() {
-                $.ajax(ajax_settings).success(function(result) {
-                    if (success_fn(result)) {
-                        // Result is good, so resolve.
-                        deferred.resolve(result);
-                    } else {
-                        // Result not good, try again.
-                        setTimeout(_go, interval);
-                    }
-                });
-            };
+        var deferred = $.Deferred();
+        var self = this;
+        var ajax_settings = self.get("ajax_settings");
+        var success_fn = self.get("success_fn");
+        var interval = self.get("interval");
+
+        var _go = function() {
+            $.ajax(ajax_settings).success(function(result) {
+                if (success_fn(result)) {
+                    // Result is good, so resolve.
+                    deferred.resolve(result);
+                } else {
+                    // Result not good, try again.
+                    setTimeout(_go, interval);
+                }
+            });
+        };
+
         _go();
         return deferred;
     }
@@ -95,19 +97,20 @@ var get_random_color = function(colors) {
     };
 
     // Create new random color.
-    var new_color,
-        nr,
-        ng,
-        nb,
-        other_color,
-        or,
-        og,
-        ob,
-        n_brightness,
-        o_brightness,
-        diff,
-        ok = false,
-        num_tries = 0;
+    var new_color;
+
+    var nr;
+    var ng;
+    var nb;
+    var other_color;
+    var or;
+    var og;
+    var ob;
+    var n_brightness;
+    var o_brightness;
+    var diff;
+    var ok = false;
+    var num_tries = 0;
     do {
         // New color is never white b/c random in [0,1)
         new_color = Math.round(Math.random() * 0xffffff);

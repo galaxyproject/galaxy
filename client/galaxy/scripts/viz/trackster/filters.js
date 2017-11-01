@@ -68,12 +68,14 @@ var NumberFilter = function(obj_dict) {
     // Enable users to edit parameter's value via a text box.
     var edit_slider_values = function(container, span, slider) {
         container.click(function() {
-            var cur_value = span.text(),
-                max = parseFloat(slider.slider("option", "max")),
-                input_size =
-                    max <= 1 ? 4 : max <= 1000000 ? max.toString().length : 6,
-                multi_value = false,
-                slider_row = $(this).parents(".slider-row");
+            var cur_value = span.text();
+            var max = parseFloat(slider.slider("option", "max"));
+
+            var input_size =
+                max <= 1 ? 4 : max <= 1000000 ? max.toString().length : 6;
+
+            var multi_value = false;
+            var slider_row = $(this).parents(".slider-row");
 
             // Row now has input.
             slider_row.addClass("input");
@@ -110,16 +112,19 @@ var NumberFilter = function(obj_dict) {
                         // Enter/return key initiates callback. If new value(s) are in slider range,
                         // change value (which calls slider's change() function).
                         //
-                        var slider_min = slider.slider("option", "min"),
-                            slider_max = slider.slider("option", "max"),
-                            invalid = function(a_val) {
-                                return (
-                                    isNaN(a_val) ||
-                                    a_val > slider_max ||
-                                    a_val < slider_min
-                                );
-                            },
-                            new_value = $(this).val();
+                        var slider_min = slider.slider("option", "min");
+
+                        var slider_max = slider.slider("option", "max");
+
+                        var invalid = function(a_val) {
+                            return (
+                                isNaN(a_val) ||
+                                a_val > slider_max ||
+                                a_val < slider_min
+                            );
+                        };
+
+                        var new_value = $(this).val();
                         if (!multi_value) {
                             new_value = parseFloat(new_value);
                             if (invalid(new_value)) {
@@ -171,19 +176,23 @@ var NumberFilter = function(obj_dict) {
 
     // Set up filter label (name, values).
     var filter_label = $("<div/>")
-            .addClass("elt-label")
-            .appendTo(filter.parent_div),
-        name_span = $("<span/>")
-            .addClass("slider-name")
-            .text(filter.name + "  ")
-            .appendTo(filter_label),
-        values_span = $("<span/>").text(this.low + "-" + this.high),
-        values_span_container = $("<span/>")
-            .addClass("slider-value")
-            .appendTo(filter_label)
-            .append("[")
-            .append(values_span)
-            .append("]");
+        .addClass("elt-label")
+        .appendTo(filter.parent_div);
+
+    var name_span = $("<span/>")
+        .addClass("slider-name")
+        .text(filter.name + "  ")
+        .appendTo(filter_label);
+
+    var values_span = $("<span/>").text(this.low + "-" + this.high);
+
+    var values_span_container = $("<span/>")
+        .addClass("slider-value")
+        .appendTo(filter_label)
+        .append("[")
+        .append(values_span)
+        .append("]");
+
     filter.values_span = values_span;
 
     // Set up slider for filter.
@@ -439,8 +448,8 @@ extend(NumberFilter.prototype, {
             this.parent_div.hide();
         }
 
-        var slider_min = this.slider.slider("option", "min"),
-            slider_max = this.slider.slider("option", "max");
+        var slider_min = this.slider.slider("option", "min");
+        var slider_max = this.slider.slider("option", "max");
         if (this.min < slider_min || this.max > slider_max) {
             // Update slider min, max, step.
             this.slider.slider("option", "min", this.min);
@@ -501,11 +510,13 @@ var FiltersManager = function(track, obj_dict) {
     if (obj_dict && "filters" in obj_dict) {
         // Second condition needed for backward compatibility.
         var alpha_filter_name =
-                "alpha_filter" in obj_dict ? obj_dict.alpha_filter : null,
-            height_filter_name =
-                "height_filter" in obj_dict ? obj_dict.height_filter : null,
-            filters_dict = obj_dict.filters,
-            filter;
+            "alpha_filter" in obj_dict ? obj_dict.alpha_filter : null;
+
+        var height_filter_name =
+            "height_filter" in obj_dict ? obj_dict.height_filter : null;
+
+        var filters_dict = obj_dict.filters;
+        var filter;
         for (var i = 0; i < filters_dict.length; i++) {
             if (filters_dict[i].type === "number") {
                 filter = new NumberFilter(filters_dict[i]);
@@ -561,9 +572,9 @@ extend(FiltersManager.prototype, {
      * Returns dictionary for manager.
      */
     to_dict: function() {
-        var obj_dict = {},
-            filter_dicts = [],
-            filter;
+        var obj_dict = {};
+        var filter_dicts = [];
+        var filter;
 
         // Include individual filter states.
         for (var i = 0; i < this.filters.length; i++) {
@@ -648,9 +659,10 @@ extend(FiltersManager.prototype, {
         // Find and group active filters. Active filters are those being used to hide data.
         // Filters with the same tool id are grouped.
         //
-        var active_filters = {},
-            filter,
-            tool_filter_conditions;
+        var active_filters = {};
+
+        var filter;
+        var tool_filter_conditions;
         for (var i = 0; i < this.filters.length; i++) {
             filter = this.filters[i];
             if (filter.tool_id) {
@@ -693,16 +705,18 @@ extend(FiltersManager.prototype, {
         // iteratively application.
         (function run_filter(input_dataset_id, filters) {
             var // Set up filtering info and params.
-                filter_tuple = filters[0],
-                tool_id = filter_tuple[0],
-                tool_filters = filter_tuple[1],
-                tool_filter_str = "(" + tool_filters.join(") and (") + ")",
-                url_params = {
-                    cond: tool_filter_str,
-                    input: input_dataset_id,
-                    target_dataset_id: input_dataset_id,
-                    tool_id: tool_id
-                };
+            filter_tuple = filters[0];
+
+            var tool_id = filter_tuple[0];
+            var tool_filters = filter_tuple[1];
+            var tool_filter_str = "(" + tool_filters.join(") and (") + ")";
+
+            var url_params = {
+                cond: tool_filter_str,
+                input: input_dataset_id,
+                target_dataset_id: input_dataset_id,
+                tool_id: tool_id
+            };
 
             // Remove current filter.
             filters = filters.slice(1);

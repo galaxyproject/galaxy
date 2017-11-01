@@ -58,12 +58,15 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
      *  @returns {jQuery} the rendered meter
      */
         _render_quota: function() {
-            var modelJson = this.model.toJSON(),
-                //prevPercent = this.model.previous( 'quota_percent' ),
-                percent = modelJson.quota_percent,
-                //meter = $( UserQuotaMeter.templates.quota( modelJson ) );
-                $meter = $(this._templateQuotaMeter(modelJson)),
-                $bar = $meter.find(".progress-bar");
+            var modelJson = this.model.toJSON();
+
+            var //prevPercent = this.model.previous( 'quota_percent' ),
+            percent = modelJson.quota_percent;
+
+            var //meter = $( UserQuotaMeter.templates.quota( modelJson ) );
+            $meter = $(this._templateQuotaMeter(modelJson));
+
+            var $bar = $meter.find(".progress-bar");
             //this.log( this + '.rendering quota, percent:', percent, 'meter:', meter );
 
             // OVER QUOTA: color the quota bar and show the quota error message

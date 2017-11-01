@@ -24,13 +24,14 @@ function LoadingIndicator($where, options) {
         ].join("\n");
 
         var $indicator = $(html)
-                .hide()
-                .css(
-                    options.css || {
-                        position: "fixed"
-                    }
-                ),
-            $text = $indicator.children(".loading-indicator-text");
+            .hide()
+            .css(
+                options.css || {
+                    position: "fixed"
+                }
+            );
+
+        var $text = $indicator.children(".loading-indicator-text");
 
         if (options.cover) {
             $indicator.css({

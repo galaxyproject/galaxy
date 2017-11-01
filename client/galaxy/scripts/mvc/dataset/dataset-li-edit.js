@@ -54,25 +54,27 @@ var DatasetListItemEdit = _super.extend(
             ) {
                 return null;
             }
-            var purged = this.model.get("purged"),
-                deleted = this.model.get("deleted"),
-                editBtnData = {
-                    title: _l("Edit attributes"),
-                    href:
-                        Galaxy.root +
-                        "datasets/edit?dataset_id=" +
-                        this.model.attributes.id,
-                    faIcon: "fa-pencil",
-                    classes: "edit-btn",
-                    onclick: function(ev) {
-                        if (Galaxy.router) {
-                            ev.preventDefault();
-                            Galaxy.router.push("datasets/edit", {
-                                dataset_id: self.model.attributes.id
-                            });
-                        }
+            var purged = this.model.get("purged");
+            var deleted = this.model.get("deleted");
+
+            var editBtnData = {
+                title: _l("Edit attributes"),
+                href:
+                    Galaxy.root +
+                    "datasets/edit?dataset_id=" +
+                    this.model.attributes.id,
+                faIcon: "fa-pencil",
+                classes: "edit-btn",
+                onclick: function(ev) {
+                    if (Galaxy.router) {
+                        ev.preventDefault();
+                        Galaxy.router.push("datasets/edit", {
+                            dataset_id: self.model.attributes.id
+                        });
                     }
-                };
+                }
+            };
+
             // disable if purged or deleted and explain why in the tooltip
             if (deleted || purged) {
                 editBtnData.disabled = true;
@@ -103,8 +105,8 @@ var DatasetListItemEdit = _super.extend(
                 return null;
             }
 
-            var self = this,
-                deletedAlready = this.model.isDeletedOrPurged();
+            var self = this;
+            var deletedAlready = this.model.isDeletedOrPurged();
             return faIconButton({
                 title: !deletedAlready
                     ? _l("Delete")
@@ -124,8 +126,9 @@ var DatasetListItemEdit = _super.extend(
         /** In this override, add tags and annotations controls, make the ? dbkey a link to editing page */
         _renderDetails: function() {
             //TODO: generalize to be allow different details for each state
-            var $details = _super.prototype._renderDetails.call(this),
-                state = this.model.get("state");
+            var $details = _super.prototype._renderDetails.call(this);
+
+            var state = this.model.get("state");
 
             if (
                 !this.model.isDeletedOrPurged() &&

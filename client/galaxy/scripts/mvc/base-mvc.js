@@ -111,8 +111,8 @@ var SessionStorageModel = Backbone.Model.extend({
     /** set storage to the stringified item */
     _create: function(model) {
         try {
-            var json = model.toJSON(),
-                set = sessionStorage.setItem(model.id, JSON.stringify(json));
+            var json = model.toJSON();
+            var set = sessionStorage.setItem(model.id, JSON.stringify(json));
             return set === null ? set : json;
             // DOMException is thrown in Safari if in private browsing mode and sessionStorage is attempted:
             // http://stackoverflow.com/questions/14555347
@@ -175,8 +175,8 @@ var SessionStorageModel = Backbone.Model.extend({
  *  NOTE: this does not combine any hashes (like events, etc.) and you're expected to handle that
  */
 function mixin(mixinHash1, /* mixinHash2, etc: ... variadic */ propsHash) {
-    var args = Array.prototype.slice.call(arguments, 0),
-        lastArg = args.pop();
+    var args = Array.prototype.slice.call(arguments, 0);
+    var lastArg = args.pop();
     args.unshift(lastArg);
     return _.defaults.apply(_, args);
 }
@@ -259,8 +259,8 @@ var SearchableModelMixin = {
      *  @returns {Boolean} was term found in (any) attribute(s)
      */
     matches: function(term) {
-        var ATTR_SPECIFIER = "=",
-            split = term.split(ATTR_SPECIFIER);
+        var ATTR_SPECIFIER = "=";
+        var split = term.split(ATTR_SPECIFIER);
         // attribute is specified - search only that
         if (split.length >= 2) {
             var attrKey = split[0];

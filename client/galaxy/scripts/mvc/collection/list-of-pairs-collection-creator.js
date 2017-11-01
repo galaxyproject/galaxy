@@ -94,10 +94,10 @@ function autoPairFnBuilder(options) {
         options.createPair ||
         function _defaultCreatePair(params) {
             params = params || {};
-            var a = params.listA.splice(params.indexA, 1)[0],
-                b = params.listB.splice(params.indexB, 1)[0],
-                aInBIndex = params.listB.indexOf(a),
-                bInAIndex = params.listA.indexOf(b);
+            var a = params.listA.splice(params.indexA, 1)[0];
+            var b = params.listB.splice(params.indexB, 1)[0];
+            var aInBIndex = params.listB.indexOf(a);
+            var bInAIndex = params.listA.indexOf(b);
             if (aInBIndex !== -1) {
                 params.listB.splice(aInBIndex, 1);
             }
@@ -131,15 +131,17 @@ function autoPairFnBuilder(options) {
     return function _strategy(params) {
         this.debug("autopair _strategy ---------------------------");
         params = params || {};
-        var listA = params.listA,
-            listB = params.listB,
-            indexA = 0,
-            indexB,
-            bestMatch = {
-                score: 0.0,
-                index: null
-            },
-            paired = [];
+        var listA = params.listA;
+        var listB = params.listB;
+        var indexA = 0;
+        var indexB;
+
+        var bestMatch = {
+            score: 0.0,
+            index: null
+        };
+
+        var paired = [];
         //console.debug( 'params:', JSON.stringify( params, null, '  ' ) );
         this.debug("starting list lens:", listA.length, listB.length);
         this.debug(
@@ -358,9 +360,10 @@ var PairedCollectionCreator = Backbone.View
         /** split initial list into two lists, those that pass forward filters & those passing reverse */
         _splitByFilters: function() {
             var regexFilters = this.filters.map(function(stringFilter) {
-                    return new RegExp(stringFilter);
-                }),
-                split = [[], []];
+                return new RegExp(stringFilter);
+            });
+
+            var split = [[], []];
 
             function _filter(unpaired, filter) {
                 return filter.test(unpaired.name);
@@ -387,11 +390,12 @@ var PairedCollectionCreator = Backbone.View
                     return low;
                 }
 
-                var mid = Math.floor((hi - low) / 2) + low,
-                    compared = naturalSort(
-                        dataset.name,
-                        this.unpaired[mid].name
-                    );
+                var mid = Math.floor((hi - low) / 2) + low;
+
+                var compared = naturalSort(
+                    dataset.name,
+                    this.unpaired[mid].name
+                );
 
                 if (compared < 0) {
                     return binSearchSortedIndex(low, mid);
@@ -421,8 +425,9 @@ var PairedCollectionCreator = Backbone.View
      */
         autoPair: function(strategy) {
             // split first using exact matching
-            var split = this._splitByFilters(),
-                paired = [];
+            var split = this._splitByFilters();
+
+            var paired = [];
             if (this.twoPassAutopairing) {
                 paired = this.autopairSimple({
                     listA: split[0],
@@ -470,17 +475,17 @@ var PairedCollectionCreator = Backbone.View
             },
             match: function _matches(params) {
                 params = params || {};
+
                 var distance = levenshteinDistance(
-                        params.matchTo,
-                        params.possible
-                    ),
-                    score =
-                        1.0 -
-                        distance /
-                            Math.max(
-                                params.matchTo.length,
-                                params.possible.length
-                            );
+                    params.matchTo,
+                    params.possible
+                );
+
+                var score =
+                    1.0 -
+                    distance /
+                        Math.max(params.matchTo.length, params.possible.length);
+
                 if (score > params.bestMatch.score) {
                     return {
                         index: params.index,
@@ -498,13 +503,16 @@ var PairedCollectionCreator = Backbone.View
             },
             match: function _matches(params) {
                 params = params || {};
+
                 var match = this._naiveStartingAndEndingLCS(
-                        params.matchTo,
-                        params.possible
-                    ).length,
-                    score =
-                        match /
-                        Math.max(params.matchTo.length, params.possible.length);
+                    params.matchTo,
+                    params.possible
+                ).length;
+
+                var score =
+                    match /
+                    Math.max(params.matchTo.length, params.possible.length);
+
                 if (score > params.bestMatch.score) {
                     return {
                         index: params.index,
@@ -517,10 +525,10 @@ var PairedCollectionCreator = Backbone.View
 
         /** return the concat'd longest common prefix and suffix from two strings */
         _naiveStartingAndEndingLCS: function(s1, s2) {
-            var fwdLCS = "",
-                revLCS = "",
-                i = 0,
-                j = 0;
+            var fwdLCS = "";
+            var revLCS = "";
+            var i = 0;
+            var j = 0;
             while (i < s1.length && i < s2.length) {
                 if (s1[i] !== s2[i]) {
                     break;
@@ -580,12 +588,14 @@ var PairedCollectionCreator = Backbone.View
                 removeExtensions !== undefined
                     ? removeExtensions
                     : this.removeExtensions;
-            var fwdName = fwd.name,
-                revName = rev.name,
-                lcs = this._naiveStartingAndEndingLCS(
-                    fwdName.replace(new RegExp(this.filters[0]), ""),
-                    revName.replace(new RegExp(this.filters[1]), "")
-                );
+            var fwdName = fwd.name;
+            var revName = rev.name;
+
+            var lcs = this._naiveStartingAndEndingLCS(
+                fwdName.replace(new RegExp(this.filters[0]), ""),
+                revName.replace(new RegExp(this.filters[1]), "")
+            );
+
             if (removeExtensions) {
                 var lastDotIndex = lcs.lastIndexOf(".");
                 if (lastDotIndex > 0) {
@@ -651,12 +661,13 @@ var PairedCollectionCreator = Backbone.View
      *  @returns {jQuery.xhr Object}    the jquery ajax request
      */
         createList: function(name) {
-            var creator = this,
-                url =
-                    Galaxy.root +
-                    "api/histories/" +
-                    this.historyId +
-                    "/contents/dataset_collections";
+            var creator = this;
+
+            var url =
+                Galaxy.root +
+                "api/histories/" +
+                this.historyId +
+                "/contents/dataset_collections";
 
             //TODO: use ListPairedCollection.create()
             var ajaxData = {
@@ -779,11 +790,12 @@ var PairedCollectionCreator = Backbone.View
         /** render the unpaired section, showing datasets accrd. to filters, update the unpaired counts */
         _renderUnpaired: function(speed, callback) {
             //this.debug( '-- _renderUnpaired' );
-            var creator = this,
-                $fwd,
-                $rev,
-                $prd = [],
-                split = this._splitByFilters();
+            var creator = this;
+
+            var $fwd;
+            var $rev;
+            var $prd = [];
+            var split = this._splitByFilters();
             // update unpaired counts
             this.$(".forward-column .title").text(
                 [split[0].length, _l("unpaired forward")].join(" ")
@@ -903,19 +915,23 @@ var PairedCollectionCreator = Backbone.View
         },
         /** try to detect if the unpaired section has a scrollbar and adjust left column for better centering of all */
         _adjUnpairedOnScrollbar: function() {
-            var $unpairedColumns = this.$(".unpaired-columns").last(),
-                $firstDataset = this.$(
-                    ".unpaired-columns .reverse-column .dataset"
-                ).first();
+            var $unpairedColumns = this.$(".unpaired-columns").last();
+
+            var $firstDataset = this.$(
+                ".unpaired-columns .reverse-column .dataset"
+            ).first();
+
             if (!$firstDataset.length) {
                 return;
             }
+
             var ucRight =
-                    $unpairedColumns.offset().left +
-                    $unpairedColumns.outerWidth(),
-                dsRight =
-                    $firstDataset.offset().left + $firstDataset.outerWidth(),
-                rightDiff = Math.floor(ucRight) - Math.floor(dsRight);
+                $unpairedColumns.offset().left + $unpairedColumns.outerWidth();
+
+            var dsRight =
+                $firstDataset.offset().left + $firstDataset.outerWidth();
+
+            var rightDiff = Math.floor(ucRight) - Math.floor(dsRight);
             //this.debug( 'rightDiff:', ucRight, '-', dsRight, '=', rightDiff );
             this.$(".unpaired-columns .forward-column").css(
                 "margin-left",
@@ -1092,8 +1108,8 @@ var PairedCollectionCreator = Backbone.View
                 this._renderUnpaired();
                 this._renderPaired();
 
-                var message,
-                    msgClass = null;
+                var message;
+                var msgClass = null;
                 if (this.paired.length) {
                     msgClass = "alert-success";
                     message = this.paired.length + " " + _l("pairs created");
@@ -1274,11 +1290,13 @@ var PairedCollectionCreator = Backbone.View
      */
         toggleSelectUnpaired: function($dataset, options) {
             options = options || {};
-            var dataset = $dataset.data("dataset"),
-                select =
-                    options.force !== undefined
-                        ? options.force
-                        : !$dataset.hasClass("selected");
+            var dataset = $dataset.data("dataset");
+
+            var select =
+                options.force !== undefined
+                    ? options.force
+                    : !$dataset.hasClass("selected");
+
             //this.debug( id, options.force, $dataset, dataset );
             if (!$dataset.length || dataset === undefined) {
                 return $dataset;
@@ -1299,10 +1317,10 @@ var PairedCollectionCreator = Backbone.View
         /** pair all the currently selected unpaired datasets */
         pairAllSelected: function(options) {
             options = options || {};
-            var creator = this,
-                fwds = [],
-                revs = [],
-                pairs = [];
+            var creator = this;
+            var fwds = [];
+            var revs = [];
+            var pairs = [];
             creator
                 .$(".unpaired-columns .forward-column .dataset.selected")
                 .each(function() {
@@ -1341,14 +1359,16 @@ var PairedCollectionCreator = Backbone.View
         /** when holding down the shift key on a click, 'paint' the moused over datasets as selected */
         _mousedownUnpaired: function(ev) {
             if (ev.shiftKey) {
-                var creator = this,
-                    $startTarget = $(ev.target).addClass("selected"),
-                    moveListener = function(ev) {
-                        creator
-                            .$(ev.target)
-                            .filter(".dataset")
-                            .addClass("selected");
-                    };
+                var creator = this;
+                var $startTarget = $(ev.target).addClass("selected");
+
+                var moveListener = function(ev) {
+                    creator
+                        .$(ev.target)
+                        .filter(".dataset")
+                        .addClass("selected");
+                };
+
                 $startTarget.parent().on("mousemove", moveListener);
 
                 // on any mouseup, stop listening to the move and try to pair any selected
@@ -1362,13 +1382,16 @@ var PairedCollectionCreator = Backbone.View
         /** attempt to pair two datasets directly across from one another */
         _clickPairRow: function(ev) {
             //if( !ev.currentTarget ){ return true; }
-            var rowIndex = $(ev.currentTarget).index(),
-                fwd = $(".unpaired-columns .forward-column .dataset")
-                    .eq(rowIndex)
-                    .data("dataset"),
-                rev = $(".unpaired-columns .reverse-column .dataset")
-                    .eq(rowIndex)
-                    .data("dataset");
+            var rowIndex = $(ev.currentTarget).index();
+
+            var fwd = $(".unpaired-columns .forward-column .dataset")
+                .eq(rowIndex)
+                .data("dataset");
+
+            var rev = $(".unpaired-columns .reverse-column .dataset")
+                .eq(rowIndex)
+                .data("dataset");
+
             //this.debug( 'row:', rowIndex, fwd, rev );
             this._pair(fwd, rev);
         },
@@ -1376,8 +1399,8 @@ var PairedCollectionCreator = Backbone.View
         // ........................................................................ divider/partition
         /** start dragging the visible divider/partition between unpaired and paired panes */
         _startPartitionDrag: function(ev) {
-            var creator = this,
-                startingY = ev.pageY;
+            var creator = this;
+            var startingY = ev.pageY;
             //this.debug( 'partition drag START:', ev );
             $("body").css("cursor", "ns-resize");
             creator.$(".flexible-partition-drag").css("color", "black");
@@ -1406,10 +1429,10 @@ var PairedCollectionCreator = Backbone.View
 
         /** adjust the parition up/down +/-adj pixels */
         adjPartition: function(adj) {
-            var $unpaired = this.$(".unpaired-columns"),
-                $paired = this.$(".paired-columns"),
-                unpairedHi = parseInt($unpaired.css("height"), 10),
-                pairedHi = parseInt($paired.css("height"), 10);
+            var $unpaired = this.$(".unpaired-columns");
+            var $paired = this.$(".paired-columns");
+            var unpairedHi = parseInt($unpaired.css("height"), 10);
+            var pairedHi = parseInt($paired.css("height"), 10);
             //this.debug( adj, 'hi\'s:', unpairedHi, pairedHi, unpairedHi + adj, pairedHi - adj );
 
             unpairedHi = Math.max(10, unpairedHi + adj);
@@ -1468,11 +1491,11 @@ var PairedCollectionCreator = Backbone.View
         /** rename a pair when the pair name is clicked */
         _clickPairName: function(ev) {
             ev.stopPropagation();
-            var $name = $(ev.currentTarget),
-                $pair = $name.parent().parent(),
-                index = $pair.index(".dataset.paired"),
-                pair = this.paired[index],
-                response = prompt("Enter a new name for the pair:", pair.name);
+            var $name = $(ev.currentTarget);
+            var $pair = $name.parent().parent();
+            var index = $pair.index(".dataset.paired");
+            var pair = this.paired[index];
+            var response = prompt("Enter a new name for the pair:", pair.name);
             if (response) {
                 pair.name = response;
                 // set a flag (which won't be passed in json creation) for manual naming so we don't overwrite these
@@ -1526,10 +1549,10 @@ var PairedCollectionCreator = Backbone.View
         /** If the mouse is near enough to the list's top or bottom, scroll the list */
         _checkForAutoscroll: function($element, y) {
             var AUTOSCROLL_SPEED = 2;
-            var offset = $element.offset(),
-                scrollTop = $element.scrollTop(),
-                upperDist = y - offset.top,
-                lowerDist = offset.top + $element.outerHeight() - y;
+            var offset = $element.offset();
+            var scrollTop = $element.scrollTop();
+            var upperDist = y - offset.top;
+            var lowerDist = offset.top + $element.outerHeight() - y;
             //this.debug( '_checkForAutoscroll:', scrollTop, upperDist, lowerDist );
             if (upperDist >= 0 && upperDist < this.autoscrollDist) {
                 $element.scrollTop(scrollTop - AUTOSCROLL_SPEED);
@@ -1542,12 +1565,12 @@ var PairedCollectionCreator = Backbone.View
      *      If the y is at the end of the list, return an empty jQuery object.
      */
         _getNearestPairedDatasetLi: function(y) {
-            var WIGGLE = 4,
-                lis = this.$(".paired-columns .column-datasets li").toArray();
+            var WIGGLE = 4;
+            var lis = this.$(".paired-columns .column-datasets li").toArray();
             for (var i = 0; i < lis.length; i++) {
-                var $li = $(lis[i]),
-                    top = $li.offset().top,
-                    halfHeight = Math.floor($li.outerHeight() / 2) + WIGGLE;
+                var $li = $(lis[i]);
+                var top = $li.offset().top;
+                var halfHeight = Math.floor($li.outerHeight() / 2) + WIGGLE;
                 if (top + halfHeight > y && top - halfHeight < y) {
                     //this.debug( y, top + halfHeight, top - halfHeight )
                     return $li;
@@ -1907,8 +1930,8 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(
     datasets,
     options
 ) {
-    var deferred = jQuery.Deferred(),
-        creator;
+    var deferred = jQuery.Deferred();
+    var creator;
 
     options = _.defaults(options || {}, {
         datasets: datasets,

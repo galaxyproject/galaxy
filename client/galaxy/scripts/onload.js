@@ -87,12 +87,14 @@ function init_refresh_on_change() {
     $("select[refresh_on_change='true']")
         .off("change")
         .change(function() {
-            var select_field = $(this),
-                select_val = select_field.val(),
-                refresh = false,
-                ref_on_change_vals = select_field.attr(
-                    "refresh_on_change_values"
-                );
+            var select_field = $(this);
+            var select_val = select_field.val();
+            var refresh = false;
+
+            var ref_on_change_vals = select_field.attr(
+                "refresh_on_change_values"
+            );
+
             if (ref_on_change_vals) {
                 ref_on_change_vals = ref_on_change_vals.split(",");
                 var last_selected_value = select_field.attr(
@@ -114,12 +116,14 @@ function init_refresh_on_change() {
     $(":checkbox[refresh_on_change='true']")
         .off("click")
         .click(function() {
-            var select_field = $(this),
-                select_val = select_field.val(),
-                refresh = false,
-                ref_on_change_vals = select_field.attr(
-                    "refresh_on_change_values"
-                );
+            var select_field = $(this);
+            var select_val = select_field.val();
+            var refresh = false;
+
+            var ref_on_change_vals = select_field.attr(
+                "refresh_on_change_values"
+            );
+
             if (ref_on_change_vals) {
                 ref_on_change_vals = ref_on_change_vals.split(",");
                 var last_selected_value = select_field.attr(

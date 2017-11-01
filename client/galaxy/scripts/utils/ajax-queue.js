@@ -39,13 +39,14 @@ AjaxQueue.prototype.init = function init(initialFunctions) {
 /** add a fn to the queue */
 AjaxQueue.prototype.add = function add(fn) {
     //console.debug( 'AjaxQueue.prototype.add:', fn );
-    var self = this,
-        index = this.queue.length;
+    var self = this;
+
+    var index = this.queue.length;
     this.numToProcess += 1;
 
     this.queue.push(function() {
-        var fnIndex = index,
-            xhr = fn();
+        var fnIndex = index;
+        var xhr = fn();
         // if successful, notify using the deferred to allow tracking progress
         xhr.done(function(response) {
             self.deferred.notify({

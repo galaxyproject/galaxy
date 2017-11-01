@@ -247,16 +247,20 @@ MetricsLogger.prototype._postCache = function _postCache(options) {
         return jQuery.when({});
     }
 
-    var self = this,
-        postSize = options.count || self._postSize,
-        // do not splice - remove after *successful* post
-        entries = self.cache.get(postSize),
-        entriesLength = entries.length,
-        // use the optional getPingData to add any extra info we may want to send
-        postData =
-            typeof self.options.getPingData === "function"
-                ? self.options.getPingData()
-                : {};
+    var self = this;
+    var postSize = options.count || self._postSize;
+
+    var // do not splice - remove after *successful* post
+    entries = self.cache.get(postSize);
+
+    var entriesLength = entries.length;
+
+    var // use the optional getPingData to add any extra info we may want to send
+    postData =
+        typeof self.options.getPingData === "function"
+            ? self.options.getPingData()
+            : {};
+
     //console.debug( postSize, entriesLength );
 
     // add the metrics and send
@@ -312,8 +316,9 @@ MetricsLogger.prototype._emitToConsole = function _emitToConsole(
     logArguments
 ) {
     //console.debug( '_emitToConsole:', level, namespace, logArguments );
-    var self = this,
-        whitelist = self.options.consoleNamespaceWhitelist;
+    var self = this;
+
+    var whitelist = self.options.consoleNamespaceWhitelist;
     if (!self.consoleLogger) {
         return self;
     }
@@ -474,9 +479,9 @@ LoggingCache.prototype._initStorage = function _initStorage() {
 
 /** add an entry to the cache, removing the oldest beforehand if size >= maxSize */
 LoggingCache.prototype.add = function add(entry) {
-    var self = this,
-        _cache = self._fetchAndParse(),
-        overage = _cache.length + 1 - self.maxSize;
+    var self = this;
+    var _cache = self._fetchAndParse();
+    var overage = _cache.length + 1 - self.maxSize;
     if (overage > 0) {
         _cache.splice(0, overage);
     }
@@ -514,8 +519,8 @@ LoggingCache.prototype.get = function get(count) {
 
 /** remove count number of entries starting with the oldest */
 LoggingCache.prototype.remove = function remove(count) {
-    var _cache = this._fetchAndParse(),
-        removed = _cache.splice(0, count);
+    var _cache = this._fetchAndParse();
+    var removed = _cache.splice(0, count);
     this._unparseAndStore(_cache);
     return removed;
 };

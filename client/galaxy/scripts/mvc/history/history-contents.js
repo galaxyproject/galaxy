@@ -432,7 +432,10 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     /** copy an existing, accessible hda into this collection */
     copy: function(json) {
         // TODO: somehow showhorn all this into 'save'
-        var id, type, contentType;
+        var id;
+
+        var type;
+        var contentType;
         if (_.isString(json)) {
             id = json;
             contentType = "hda";
@@ -447,30 +450,32 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                 }[json.model_class] || "hda";
             type = contentType === "hdca" ? "dataset_collection" : "dataset";
         }
-        var collection = this,
-            xhr = jQuery
-                .ajax(this.url(), {
-                    method: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify({
-                        content: id,
-                        source: contentType,
-                        type: type
-                    })
+        var collection = this;
+
+        var xhr = jQuery
+            .ajax(this.url(), {
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    content: id,
+                    source: contentType,
+                    type: type
                 })
-                .done(function(response) {
-                    collection.add([response], { parse: true });
-                })
-                .fail(function(error, status, message) {
-                    collection.trigger(
-                        "error",
-                        collection,
-                        xhr,
-                        {},
-                        "Error copying contents",
-                        { type: type, id: id, source: contentType }
-                    );
-                });
+            })
+            .done(function(response) {
+                collection.add([response], { parse: true });
+            })
+            .fail(function(error, status, message) {
+                collection.trigger(
+                    "error",
+                    collection,
+                    xhr,
+                    {},
+                    "Error copying contents",
+                    { type: type, id: id, source: contentType }
+                );
+            });
+
         return xhr;
     },
 

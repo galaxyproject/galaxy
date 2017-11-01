@@ -160,10 +160,12 @@ var Tool = Backbone.Model.extend({
      * client and server yet.
      */
     remove_inputs: function(types) {
-        var tool = this,
-            incompatible_inputs = tool.get("inputs").filter(function(input) {
-                return types.indexOf(input.get("type")) !== -1;
-            });
+        var tool = this;
+
+        var incompatible_inputs = tool.get("inputs").filter(function(input) {
+            return types.indexOf(input.get("type")) !== -1;
+        });
+
         tool.get("inputs").remove(incompatible_inputs);
     },
 
@@ -261,20 +263,21 @@ var Tool = Backbone.Model.extend({
         // Because job may require indexing datasets, use server-side
         // deferred to ensure that job is run. Also use deferred that
         // resolves to outputs from tool.
-        var run_deferred = $.Deferred(),
-            ss_deferred = new util.ServerStateDeferred({
-                ajax_settings: {
-                    url: this.urlRoot,
-                    data: JSON.stringify(payload),
-                    dataType: "json",
-                    contentType: "application/json",
-                    type: "POST"
-                },
-                interval: 2000,
-                success_fn: function(response) {
-                    return response !== "pending";
-                }
-            });
+        var run_deferred = $.Deferred();
+
+        var ss_deferred = new util.ServerStateDeferred({
+            ajax_settings: {
+                url: this.urlRoot,
+                data: JSON.stringify(payload),
+                dataType: "json",
+                contentType: "application/json",
+                type: "POST"
+            },
+            interval: 2000,
+            success_fn: function(response) {
+                return response !== "pending";
+            }
+        });
 
         // Run job and resolve run_deferred to tool outputs.
         $.when(ss_deferred.go()).then(function(result) {
@@ -321,8 +324,8 @@ var ToolSection = Backbone.Model.extend({
     },
 
     apply_search_results: function(results) {
-        var all_hidden = true,
-            cur_label;
+        var all_hidden = true;
+        var cur_label;
         _.each(this.attributes.elems, function(elt) {
             if (elt instanceof ToolSectionLabel) {
                 cur_label = elt;
@@ -439,23 +442,24 @@ var ToolPanel = Backbone.Model.extend({
      */
     parse: function(response) {
         // Recursive function to parse tool panel elements.
-        var self = this,
-            // Helper to recursively parse tool panel.
-            parse_elt = function(elt_dict) {
-                var type = elt_dict.model_class;
-                // There are many types of tools; for now, anything that ends in 'Tool'
-                // is treated as a generic tool.
-                if (type.indexOf("Tool") === type.length - 4) {
-                    return self.attributes.tools.get(elt_dict.id);
-                } else if (type === "ToolSection") {
-                    // Parse elements.
-                    var elems = _.map(elt_dict.elems, parse_elt);
-                    elt_dict.elems = elems;
-                    return new ToolSection(elt_dict);
-                } else if (type === "ToolSectionLabel") {
-                    return new ToolSectionLabel(elt_dict);
-                }
-            };
+        var self = this;
+
+        var // Helper to recursively parse tool panel.
+        parse_elt = function(elt_dict) {
+            var type = elt_dict.model_class;
+            // There are many types of tools; for now, anything that ends in 'Tool'
+            // is treated as a generic tool.
+            if (type.indexOf("Tool") === type.length - 4) {
+                return self.attributes.tools.get(elt_dict.id);
+            } else if (type === "ToolSection") {
+                // Parse elements.
+                var elems = _.map(elt_dict.elems, parse_elt);
+                elt_dict.elems = elems;
+                return new ToolSection(elt_dict);
+            } else if (type === "ToolSectionLabel") {
+                return new ToolSectionLabel(elt_dict);
+            }
+        };
 
         return _.map(response, parse_elt);
     },
@@ -737,9 +741,10 @@ var ToolPanelView = Backbone.View.extend({
         self.$el.find("a.tool-link").click(function(e) {
             // Tool id is always the first class.
             var tool_id = $(this)
-                    .attr("class")
-                    .split(/\s+/)[0],
-                tool = self.model.get("tools").get(tool_id);
+                .attr("class")
+                .split(/\s+/)[0];
+
+            var tool = self.model.get("tools").get(tool_id);
 
             self.trigger("tool_link_click", e, tool);
         });

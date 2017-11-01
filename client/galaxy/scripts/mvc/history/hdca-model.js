@@ -11,11 +11,12 @@ TODO:
     collection-model is used.
 
 ==============================================================================*/
-var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin,
-    ListDC = DC_MODEL.ListDatasetCollection,
-    PairDC = DC_MODEL.PairDatasetCollection,
-    ListPairedDC = DC_MODEL.ListPairedDatasetCollection,
-    ListOfListsDC = DC_MODEL.ListOfListsDatasetCollection;
+var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin;
+
+var ListDC = DC_MODEL.ListDatasetCollection;
+var PairDC = DC_MODEL.PairDatasetCollection;
+var ListPairedDC = DC_MODEL.ListPairedDatasetCollection;
+var ListOfListsDC = DC_MODEL.ListOfListsDatasetCollection;
 
 //==============================================================================
 /** Override to post to contents route w/o id. */

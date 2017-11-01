@@ -126,11 +126,11 @@ function make_popup_menus(parent) {
 
             // find each anchor in the menu, convert them into an options map: { a.text : click_function }
             menu.find("a").each(function() {
-                var link = $(this),
-                    link_dom = link.get(0),
-                    confirmtext = link_dom.getAttribute("confirm"),
-                    href = link_dom.getAttribute("href"),
-                    target = link_dom.getAttribute("target");
+                var link = $(this);
+                var link_dom = link.get(0);
+                var confirmtext = link_dom.getAttribute("confirm");
+                var href = link_dom.getAttribute("href");
+                var target = link_dom.getAttribute("target");
 
                 // no href - no function (gen. a label)
                 if (!href) {

@@ -88,8 +88,8 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     /** do the dimensions of this column overlap the given (horizontal) browser coords? */
     inView: function(viewLeft, viewRight) {
-        var columnLeft = this.$el.offset().left,
-            columnRight = columnLeft + this.$el.width();
+        var columnLeft = this.$el.offset().left;
+        var columnRight = columnLeft + this.$el.width();
         if (columnRight < viewLeft) {
             return false;
         }
@@ -429,8 +429,8 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                 this.collection.includeDeleted,
                 history
             );
-            var multipanel = this,
-                column = multipanel.columnMap[history.id];
+            var multipanel = this;
+            var column = multipanel.columnMap[history.id];
             if (!column) {
                 return;
             }
@@ -538,8 +538,9 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     /** add a new column for history and make it the current history/column */
     addAsCurrentColumn: function add(history, collection, options) {
         //this.log( 'adding current column for:', history );
-        var multipanel = this,
-            newColumn = this.addColumn(history, false);
+        var multipanel = this;
+
+        var newColumn = this.addColumn(history, false);
         this.setCurrentHistory(history);
         newColumn.once("rendered", function() {
             multipanel.queueHdaFetch(newColumn);
@@ -554,8 +555,8 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         if (!column) {
             return;
         }
-        var multipanel = this,
-            widthToRemove = this.options.columnWidth + this.options.columnGap;
+        var multipanel = this;
+        var widthToRemove = this.options.columnWidth + this.options.columnGap;
         column.$el.fadeOut("fast", function() {
             if (render) {
                 $(this).remove();
@@ -863,9 +864,9 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     /** change the collection order and re-fetch when the drop down in the options menu is changed */
     _chooseOrder: function(ev) {
-        var multipanel = this,
-            collection = multipanel.collection,
-            orderKey = $(ev.currentTarget).data("order");
+        var multipanel = this;
+        var collection = multipanel.collection;
+        var orderKey = $(ev.currentTarget).data("order");
         // set the sort order text also
         multipanel
             .$(".current-order")
@@ -1010,9 +1011,9 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     /** Adjust the height of the first, current column since flex-boxes won't work with fixed postiion elements */
     _recalcFirstColumnHeight: function() {
-        var $firstColumn = this.$(".history-column").first(),
-            middleHeight = this.$(".middle").height(),
-            controlHeight = $firstColumn.find(".panel-controls").height();
+        var $firstColumn = this.$(".history-column").first();
+        var middleHeight = this.$(".middle").height();
+        var controlHeight = $firstColumn.find(".panel-controls").height();
         $firstColumn
             .height(middleHeight)
             .find(".inner")
@@ -1021,9 +1022,9 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     /** Get the left and right pixel coords of the middle element */
     _viewport: function() {
-        var $outerMiddle = this.$(".middle").parent(),
-            viewLeft = $outerMiddle.offset().left,
-            width = $outerMiddle.width();
+        var $outerMiddle = this.$(".middle").parent();
+        var viewLeft = $outerMiddle.offset().left;
+        var width = $outerMiddle.width();
         return {
             left: viewLeft,
             right: viewLeft + width
@@ -1052,9 +1053,9 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     /** is the middle, horizontally scrolling section scrolled fully to the right? */
     checkForEndOfScroll: function(viewport) {
         viewport = viewport || this._viewport();
-        var END_PADDING = 16,
-            $middle = this.$(".middle"),
-            scrollRight = $middle.parent().scrollLeft() + viewport.right;
+        var END_PADDING = 16;
+        var $middle = this.$(".middle");
+        var scrollRight = $middle.parent().scrollLeft() + viewport.right;
         if (scrollRight >= $middle.width() - END_PADDING) {
             this.trigger("end-of-scroll");
         }

@@ -578,8 +578,8 @@ function create_histogram(inp_data, name, title) {
 
     // Formatter for x axis times (converting minutes to HH:MM).
     var formatMinutes = function(d) {
-        var hours = Math.floor(d / 60),
-            minutes = Math.floor(d - hours * 60);
+        var hours = Math.floor(d / 60);
+        var minutes = Math.floor(d - hours * 60);
 
         if (hours < 10) {
             hours = "0" + hours;
@@ -628,8 +628,9 @@ function create_histogram(inp_data, name, title) {
         })
         .on("mouseenter", function(d) {
             // Show tool tip
-            var i = 0,
-                size = d.length;
+            var i = 0;
+
+            var size = d.length;
 
             while (size >= 1) {
                 size = size / 10;

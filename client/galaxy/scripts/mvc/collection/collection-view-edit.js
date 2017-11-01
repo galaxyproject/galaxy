@@ -51,8 +51,9 @@ var CollectionViewEdit = _super.extend(
             this.tagsEditorShown = true;
 
             //TODO: extract
-            var panel = this,
-                nameSelector = "> .controls .name";
+            var panel = this;
+
+            var nameSelector = "> .controls .name";
             $where
                 .find(nameSelector)
                 .attr("title", _l("Click to rename collection"))
