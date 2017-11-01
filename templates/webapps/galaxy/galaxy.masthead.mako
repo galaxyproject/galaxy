@@ -66,7 +66,7 @@
         ], function( Masthead, Modal, user ){
             if( !Galaxy.user ) {
                 // this doesn't need to wait for the page being readied
-                Galaxy.user = new user.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
+                Galaxy.user = new user.default.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
             }
 
             $(function() {

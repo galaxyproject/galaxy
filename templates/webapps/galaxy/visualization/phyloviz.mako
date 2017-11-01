@@ -157,7 +157,7 @@
                 var phyloviz;
 
                 // -- Initialization code |-->
-                phyloviz = new phyloviz_mod.PhylovizView({
+                phyloviz = new phyloviz_mod.default.PhylovizView({
                     data    : data,
                     layout  : "Linear",
                     config  :  config
