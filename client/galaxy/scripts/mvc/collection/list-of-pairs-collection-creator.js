@@ -59,11 +59,7 @@ currPanel.once( 'rendered', function(){
                     this.dragStartHandler,
                     false
                 );
-                handle.addEventListener(
-                    "dragend",
-                    this.dragEndHandler,
-                    false
-                );
+                handle.addEventListener("dragend", this.dragEndHandler, false);
                 return this;
             },
 
