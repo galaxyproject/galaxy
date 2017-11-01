@@ -1,9 +1,6 @@
 import unittest
 
-from .framework import (
-    selenium_test,
-    SeleniumTestCase
-)
+from .framework import selenium_test, SeleniumTestCase
 
 
 class ToolDescribingToursTestCase(SeleniumTestCase):
@@ -21,15 +18,20 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
         self._ensure_tdt_available()
 
         self.wait_for_and_click_selector('#title_textutil a')
-        self.wait_for_and_click_selector('a[href^="/tool_runner?tool_id=Cut1"]')
+        self.tool_open('Cut1')
 
         # Run Tour generation
         self.wait_for_and_click_selector('#options .dropdown-toggle')
         self.click_label('Generate Tour')
+        self.history_panel_wait_for_hid_ok(1)
 
         tour_popup_selector = '#step-0.popover.tour-tour'
         self.wait_for_selector_visible(tour_popup_selector)
         self.assert_selector(tour_popup_selector)
+
+        # Run tool
+        self.tool_execute()
+        self.history_panel_wait_for_hid_ok(2)
 
     def _ensure_tdt_available(self):
         """ Skip a test if the webhook TDT doesn't appear. """
