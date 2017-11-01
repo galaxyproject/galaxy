@@ -1,13 +1,12 @@
 import logging
 import os
-import threading
-import time
 from xml.etree import ElementTree
 
 import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.util import plugin_config
 from galaxy.util.handlers import ConfiguresHandlers
+from galaxy.util.monitors import Monitors
 
 log = logging.getLogger(__name__)
 
@@ -75,16 +74,22 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
         return self.__has_handlers.get_handler(None, index=random_index)
 
     def shutdown(self):
+        exception = None
         for workflow_scheduler in self.workflow_schedulers.values():
             try:
                 workflow_scheduler.shutdown()
-            except Exception:
+            except Exception as e:
+                exception = exception or e
                 log.exception(EXCEPTION_MESSAGE_SHUTDOWN)
         if self.request_monitor:
             try:
                 self.request_monitor.shutdown()
-            except Exception:
+            except Exception as e:
+                exception = exception or e
                 log.exception("Failed to shutdown workflow request monitor.")
+
+        if exception:
+            raise exception
 
     def queue(self, workflow_invocation, request_params):
         workflow_invocation.state = model.WorkflowInvocation.states.NEW
@@ -170,32 +175,29 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
         self.request_monitor = WorkflowRequestMonitor(self.app, self)
 
 
-class WorkflowRequestMonitor(object):
+class WorkflowRequestMonitor(Monitors, object):
 
     def __init__(self, app, workflow_scheduling_manager):
         self.app = app
-        self.active = True
         self.workflow_scheduling_manager = workflow_scheduling_manager
-        self.monitor_thread = threading.Thread(name="WorkflowRequestMonitor.monitor_thread", target=self.__monitor)
-        self.monitor_thread.setDaemon(True)
-        self.monitor_thread.start()
+        self._init_monitor_thread(name="WorkflowRequestMonitor.monitor_thread", target=self.__monitor, start=True, config=app.config)
 
     def __monitor(self):
         to_monitor = self.workflow_scheduling_manager.active_workflow_schedulers
-        while self.active:
+        while self.monitor_running:
             for workflow_scheduler_id, workflow_scheduler in to_monitor.items():
-                if not self.active:
+                if not self.monitor_running:
                     return
 
                 self.__schedule(workflow_scheduler_id, workflow_scheduler)
-                # TODO: wake if stopped
-                time.sleep(1)
+
+            self._monitor_sleep(1)
 
     def __schedule(self, workflow_scheduler_id, workflow_scheduler):
         invocation_ids = self.__active_invocation_ids(workflow_scheduler_id)
         for invocation_id in invocation_ids:
             self.__attempt_schedule(invocation_id, workflow_scheduler)
-            if not self.active:
+            if not self.monitor_running:
                 return
 
     def __attempt_schedule(self, invocation_id, workflow_scheduler):
@@ -232,4 +234,4 @@ class WorkflowRequestMonitor(object):
         )
 
     def shutdown(self):
-        self.active = False
+        self.shutdown_monitor()

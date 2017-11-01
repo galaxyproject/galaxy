@@ -29,6 +29,7 @@ from galaxy.util import (
     shrink_stream_by_size
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.monitors import Monitors
 
 from .state_handler_factory import build_state_handlers
 
@@ -134,6 +135,19 @@ class BaseJobRunner(object):
         log.info("%s: Sending stop signal to %s worker threads" % (self.runner_name, len(self.work_threads)))
         for i in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
+
+        join_timeout = self.app.config.monitor_thread_join_timeout
+        if join_timeout > 0:
+            exception = None
+            for thread in self.work_threads:
+                try:
+                    thread.join(join_timeout)
+                except Exception as e:
+                    exception = e
+                    log.exception("Faild to shutdown worker thread")
+
+            if exception:
+                raise exception
 
     # Most runners should override the legacy URL handler methods and destination param method
     def url_to_destination(self, url):
@@ -506,7 +520,7 @@ class AsynchronousJobState(JobState):
             self.cleanup_file_attributes.append(attribute)
 
 
-class AsynchronousJobRunner(BaseJobRunner):
+class AsynchronousJobRunner(Monitors, BaseJobRunner):
     """Parent class for any job runner that runs jobs asynchronously (e.g. via
     a distributed resource manager).  Provides general methods for having a
     thread to monitor the state of asynchronous jobs and submitting those jobs
@@ -524,9 +538,8 @@ class AsynchronousJobRunner(BaseJobRunner):
         self.monitor_queue = Queue()
 
     def _init_monitor_thread(self):
-        self.monitor_thread = threading.Thread(name="%s.monitor_thread" % self.runner_name, target=self.monitor)
-        self.monitor_thread.setDaemon(True)
-        self.monitor_thread.start()
+        name = "%s.monitor_thread" % self.runner_name
+        super(AsynchronousJobRunner, self)._init_monitor_thread(name=name, target=self.monitor, start=True, config=self.app.config)
 
     def handle_stop(self):
         # DRMAA and SGE runners should override this and disconnect.
@@ -565,6 +578,7 @@ class AsynchronousJobRunner(BaseJobRunner):
         log.info("%s: Sending stop signal to monitor thread" % self.runner_name)
         self.monitor_queue.put(STOP_SIGNAL)
         # Call the parent's shutdown method to stop workers
+        self.shutdown_monitor()
         super(AsynchronousJobRunner, self).shutdown()
 
     def check_watched_items(self):

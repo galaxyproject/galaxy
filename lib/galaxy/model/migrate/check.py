@@ -34,7 +34,18 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
     new_database = not database_exists(url)
     if new_database:
         template = app and getattr(app.config, "database_template", None)
-        create_database(url, template=template)
+        encoding = app and getattr(app.config, "database_encoding", None)
+        create_kwds = {}
+
+        message = "Creating database for URI [%s]" % url
+        if template:
+            message += " from template [%s]" % template
+            create_kwds["template"] = template
+        if encoding:
+            message += " with encoding [%s]" % encoding
+            create_kwds["encoding"] = encoding
+        log.info(message)
+        create_database(url, **create_kwds)
 
     # Create engine and metadata
     engine = create_engine(url, **engine_options)
