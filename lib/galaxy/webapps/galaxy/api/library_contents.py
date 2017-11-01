@@ -308,15 +308,6 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         replace_id = kwd.get('replace_id', None)
         replace_dataset = None
         upload_option = kwd.get('upload_option', 'upload_file')
-        if kwd.get('files_0|uni_to_posix', False):
-            to_posix_lines = kwd.get('files_0|to_posix_lines', '')
-        else:
-            to_posix_lines = kwd.get('to_posix_lines', '')
-        if kwd.get('files_0|space_to_tab', False):
-            space_to_tab = kwd.get('files_0|space_to_tab', '')
-        else:
-            space_to_tab = kwd.get('space_to_tab', '')
-        link_data_only = kwd.get('link_data_only', 'copy_files')
         dbkey = kwd.get('dbkey', '?')
         if isinstance(dbkey, list):
             last_used_build = dbkey[0]
@@ -364,7 +355,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             # on the dataset that would cause accessibility issues.
             vars = dict(DATASET_ACCESS_in=roles)
             permissions, in_roles, error, message = \
-                trans.app.security_agent.derive_roles_from_access(trans, library.id, cntrller, library=True, **vars)
+                trans.app.security_agent.derive_roles_from_access(trans, library.id, 'api', library=True, **vars)
         if error:
             return 400, message
         else:
@@ -443,10 +434,6 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 dataset_upload_inputs.append(input)
         # Library-specific params
         server_dir = kwd.get('server_dir', '')
-        if replace_dataset not in [None, 'None']:
-            replace_id = trans.security.encode_id(replace_dataset.id)
-        else:
-            replace_id = None
         upload_option = kwd.get('upload_option', 'upload_file')
         response_code = 200
         if upload_option == 'upload_directory':
