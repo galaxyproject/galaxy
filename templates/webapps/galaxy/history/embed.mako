@@ -80,9 +80,9 @@
                 order           : 'hid-asc',
             });
 
-            var historyView = new viewMod.AnnotatedHistoryView({
+            var historyView = new viewMod.default.AnnotatedHistoryView({
                 el          : $embeddedHistory.find( ".history-panel" ),
-                className   : viewMod.AnnotatedHistoryView.prototype.className + ' wide',
+                className   : viewMod.default.AnnotatedHistoryView.prototype.className + ' wide',
                 model       : historyModel
             });
 
@@ -130,7 +130,7 @@
 
             $embeddedHistory.find( '.import' ).click( function( ev ){
                 var dialogOptions = { useImport: true, allowAll: false, autoClose: false };
-                historyCopyDialog( historyModel, dialogOptions ).done( showConfirmationModal );
+                historyCopyDialog.default( historyModel, dialogOptions ).done( showConfirmationModal );
             })
         });
     });
