@@ -440,7 +440,10 @@ define(["utils/utils"], function(Utils) {
 
         // template
         message: function(options) {
-            var status = options.status == "success" ? "done" : options.status;
+            var status = str(options.status);
+            if (status.indexOf(["success", "ok"]) != -1) {
+                status = "done";
+            }
             return (
                 "<p>" +
                 '<div class="' +
