@@ -263,7 +263,7 @@ ensure_grunt_for_qunit() {
 }
 
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.01.1'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.01.4'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
@@ -284,6 +284,10 @@ then
        shift 2
     else
        db_type="sqlite"
+    fi
+    if [ "$1" = "--selenium" ]; then
+        DOCKER_RUN_EXTRA_ARGS="-e USE_SELENIUM=1 ${DOCKER_RUN_EXTRA_ARGS}"
+        shift
     fi
     if [ "$1" = "--external_tmp" ]; then
        # If /tmp is a tmpfs there may be better performance by reusing
