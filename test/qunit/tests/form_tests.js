@@ -14,7 +14,7 @@ define([ 'test-app', 'QUnit', 'sinon', 'mvc/form/form-input', 'mvc/ui/ui-misc', 
     } );
 
     QUnit.test( 'tool-form', function(assert) {
-        var toolform = new ToolForm.View( { id: 'test' } );
+        var toolform = new ToolForm.default.View( { id: 'test' } );
         var form = toolform.form;
         $( 'body' ).prepend( toolform.$el );
         window.fakeserver.respond();
@@ -53,8 +53,8 @@ define([ 'test-app', 'QUnit', 'sinon', 'mvc/form/form-input', 'mvc/ui/ui-misc', 
 
     QUnit.test( 'data', function(assert) {
         var visits = [];
-        Utils.get( { url: Galaxy.root + 'api/tools/test/build', success: function( response ) {
-            FormData.visitInputs( response.inputs, function( node, name, context ) {
+        Utils.default.get( { url: Galaxy.root + 'api/tools/test/build', success: function( response ) {
+            FormData.default.visitInputs( response.inputs, function( node, name, context ) {
                 visits.push( { name: name, node: node } );
             } );
         } } );
@@ -63,8 +63,8 @@ define([ 'test-app', 'QUnit', 'sinon', 'mvc/form/form-input', 'mvc/ui/ui-misc', 
     });
 
     QUnit.test( 'input', function(assert) {
-        var input = new InputElement( {}, {
-            field: new Ui.Input({})
+        var input = new InputElement.default( {}, {
+            field: new Ui.default.Input({})
         });
         $( 'body' ).prepend( input.$el );
         assert.ok( input.$field.css( 'display' ) == 'block', 'Input field shown' );

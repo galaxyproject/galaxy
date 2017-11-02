@@ -11,8 +11,8 @@ define([
 
     // ------------------------------------------------------------------------
     QUnit.test( "Empty JobDAG construction", function(assert) {
-        var dag = new JobDAG();
-        assert.ok( dag instanceof JobDAG );
+        var dag = new JobDAG.default();
+        assert.ok( dag instanceof JobDAG.default );
 
         // default options
         assert.deepEqual( dag.filters, [] );
@@ -36,7 +36,7 @@ define([
 
     QUnit.test( "Empty JobDAG construction - changing options", function(assert) {
         var dag;
-        dag = new JobDAG({
+        dag = new JobDAG.default({
             excludeSetMetadata : true
         });
 
@@ -49,7 +49,7 @@ define([
 
         // filters
         function testFilter( job, index, jobData ){ return true; }
-        dag = new JobDAG({
+        dag = new JobDAG.default({
             filters : [ testFilter ]
         });
         assert.equal( dag.filters[0], testFilter );
@@ -62,7 +62,7 @@ define([
         var history = testData.historyContents1,
             jobs = testData.jobs1,
             dag;
-        dag = new JobDAG({
+        dag = new JobDAG.default({
             historyContents : history,
             tools : testData.tools,
             jobs : jobs
@@ -146,7 +146,7 @@ define([
         var history = testData.historyContents2,
             jobs = testData.jobs2,
             dag;
-        dag = new JobDAG({
+        dag = new JobDAG.default({
             historyContents : history,
             tools : testData.tools,
             jobs : jobs,
@@ -173,7 +173,7 @@ define([
         var history = testData.historyContents3,
             jobs = testData.jobs3,
             dag;
-        dag = new JobDAG({
+        dag = new JobDAG.default({
             historyContents : history,
             tools : testData.tools,
             jobs : jobs
@@ -232,7 +232,7 @@ define([
         var history = testData.historyContents4,
             jobs = testData.jobs4,
             dag;
-        dag = new JobDAG({
+        dag = new JobDAG.default({
             historyContents : history,
             tools : testData.tools,
             jobs : jobs

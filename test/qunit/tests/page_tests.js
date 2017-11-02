@@ -21,7 +21,7 @@ define([ "test-app", "layout/page", "layout/panel", "QUnit"
 
     QUnit.test( "test center/right", function(assert) {
         this.$container.empty();
-        var page = new Page.View({
+        var page = new Page.default.View({
             Right   : Backbone.View.extend({
                 initialize: function() {
                     this.setElement( $('<div/>') );
@@ -33,12 +33,12 @@ define([ "test-app", "layout/page", "layout/panel", "QUnit"
     });
     QUnit.test( "test center", function(assert) {
         this.$container.empty();
-        var page = new Page.View({}).render();
+        var page = new Page.default.View({}).render();
         _check( assert, page, { left: 'none', right: 'none' } );
     });
     QUnit.test( "test left/center", function(assert) {
         this.$container.empty();
-        var page = new Page.View({
+        var page = new Page.default.View({
             Left   : Backbone.View.extend({
                 initialize: function() {
                     this.setElement( $('<div/>') );

@@ -18,7 +18,7 @@ define([
 ){
     return {
         create: function() {
-            window.Galaxy = new appBase.GalaxyApp( bootstrapped );
+            window.Galaxy = new appBase.default.GalaxyApp( bootstrapped );
             window.Galaxy.currHistoryPanel = { model: new Backbone.Model() };
             window.Galaxy.emit = {
                 debug : function(){},

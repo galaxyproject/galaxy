@@ -6,7 +6,7 @@ define([ "test-app", "layout/masthead", "QUnit"
         beforeEach: function() {
             testApp.create();
             var self = this;
-            this.masthead = new Masthead.View({
+            this.masthead = new Masthead.default.View({
                 'brand'                     : 'brand',
                 'use_remote_user'           : 'use_remote_user',
                 'remote_user_logout_href'   : 'remote_user_logout_href',

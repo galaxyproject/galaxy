@@ -5,7 +5,7 @@ define([ "test-app", "mvc/upload/upload-view", "QUnit"
     QUnit.module( "Upload dialog test", {
         beforeEach: function( ) {
             testApp.create();
-            this.app = new GalaxyUpload();
+            this.app = new GalaxyUpload.default();
         },
         afterEach: function() {
             testApp.destroy();

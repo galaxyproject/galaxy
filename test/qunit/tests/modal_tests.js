@@ -7,7 +7,7 @@ define([ "test-app", "mvc/ui/ui-modal", "QUnit", "sinon"
             testApp.create();
             this.clock = sinon.useFakeTimers();
             var self = this;
-            this.app = new GalaxyModal.View({
+            this.app = new GalaxyModal.default.View({
                 title   : 'Test title',
                 body    : 'Test body',
                 buttons : {
