@@ -60,10 +60,10 @@
         },
         "flake8-import-order": {
             "hashes": [
-                "sha256:3351e102c4702391ba86d2acf22a0b2170336288193714dcc245d1ab9f0548f0",
-                "sha256:905ca7059f20d7371eca3ceb493ef2d58f466b1e2e62fdaa582c6107ff7894e1"
+                "sha256:26c052d93d8b2d17c5e31bdcf0cdcb513c0b039d2671905dc9ddb5bcec8f72e1",
+                "sha256:a025f6d691e6ca3a749ebcb9dea8ee3aa341407d767dda1c263060f80f6b377e"
             ],
-            "version": "==0.14.2"
+            "version": "==0.14.3"
         },
         "mccabe": {
             "hashes": [
