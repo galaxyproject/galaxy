@@ -356,7 +356,7 @@ def workflow_run_config_to_request(trans, run_config, workflow):
             )
 
     replacement_dict = run_config.replacement_dict
-    for name, value, job_options in replacement_dict.items():
+    for name, value in replacement_dict.items():
         add_parameter(
             name=name,
             value=value,
