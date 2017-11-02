@@ -111,7 +111,7 @@ class JobRunnerMapper(object):
 
         # Don't hit the DB to load the job object if not needed
         require_db = False
-        for param in ["job", "user", "user_email", "resource_params", "workflow_invocation_uuid", "workflow_options"]:
+        for param in ["job", "user", "user_email", "resource_params", "workflow_invocation_uuid"]:
             if param in function_arg_names:
                 require_db = True
                 break
@@ -136,11 +136,6 @@ class JobRunnerMapper(object):
                 param_values = job.raw_param_dict()
                 workflow_invocation_uuid = param_values.get("__workflow_invocation_uuid__", None)
                 actual_args["workflow_invocation_uuid"] = workflow_invocation_uuid
-
-            if "workflow_options" in function_arg_names:
-                param_values = job.raw_param_dict()
-                workflow_options = param_values.get("__workflow_params__", None)
-                actual_args["workflow_options"] = workflow_options
 
         return expand_function(**actual_args)
 

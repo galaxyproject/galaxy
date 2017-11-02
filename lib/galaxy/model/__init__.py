@@ -4176,17 +4176,17 @@ class WorkflowRequest(object, Dictifiable):
 class WorkflowRequestInputParameter(object, Dictifiable):
     """ Workflow-related parameters not tied to steps or inputs.
     """
-    dict_collection_visible_keys = ['id', 'name', 'value', 'type', 'job_options']
+    dict_collection_visible_keys = ['id', 'name', 'value', 'type']
     types = Bunch(
         REPLACEMENT_PARAMETERS='replacements',
-        META_PARAMETERS='meta',  #
+        META_PARAMETERS='meta',
+        WORKFLOW_OPTIONS='options',
     )
 
-    def __init__(self, name=None, value=None, type=None, job_options=None):
+    def __init__(self, name=None, value=None, type=None):
         self.name = name
         self.value = value
         self.type = type
-        self.job_options = job_options
 
 
 class WorkflowRequestStepState(object, Dictifiable):

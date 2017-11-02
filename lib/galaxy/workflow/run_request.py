@@ -1,5 +1,6 @@
 import logging
 import uuid
+from json import dumps
 
 from galaxy import (
     exceptions,
@@ -316,12 +317,11 @@ def workflow_run_config_to_request(trans, run_config, workflow):
     workflow_invocation.uuid = uuid.uuid1()
     workflow_invocation.history = run_config.target_history
 
-    def add_parameter(name, value, type, job_options):
+    def add_parameter(name, value, type):
         parameter = model.WorkflowRequestInputParameter(
             name=name,
             value=value,
             type=type,
-            job_options=job_options
         )
         workflow_invocation.input_parameters.append(parameter)
 
@@ -361,14 +361,15 @@ def workflow_run_config_to_request(trans, run_config, workflow):
             name=name,
             value=value,
             type=param_types.REPLACEMENT_PARAMETERS,
-            job_options=job_options,
         )
     for step_id, content in run_config.inputs.items():
         workflow_invocation.add_input(content, step_id)
 
     if 'workflow_options' in run_config.inputs:
-        workflow_options = run_config.inputs['workflow_options']
-    add_parameter("copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false", param_types.META_PARAMETERS, workflow_options)
+        workflow_options = dumps(run_config.inputs['workflow_options'])
+        add_parameter("workflow_options", workflow_options, param_types.WORKFLOW_OPTIONS)
+    add_parameter("copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false",
+                  param_types.META_PARAMETERS)
     return workflow_invocation
 
 

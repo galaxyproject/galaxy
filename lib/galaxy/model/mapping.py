@@ -837,8 +837,7 @@ model.WorkflowRequestInputParameter.table = Table(
         ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")),
     Column("name", Unicode(255)),
     Column("value", TEXT),
-    Column("type", Unicode(255)),
-    Column("job_options", JSONType))
+    Column("type", Unicode(255)))
 
 model.WorkflowRequestInputStepParmeter.table = Table(
     "workflow_request_input_step_parameter", metadata,
