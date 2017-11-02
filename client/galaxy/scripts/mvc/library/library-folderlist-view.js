@@ -60,7 +60,7 @@ var FolderListView = Backbone.View.extend({
     fetchFolder: function(options) {
         var options = options || {};
         this.options.include_deleted = options.include_deleted;
-        var that = this;
+        var self = this;
 
         this.folderContainer = new mod_library_model.FolderContainer({
             id: this.options.id
@@ -74,8 +74,8 @@ var FolderListView = Backbone.View.extend({
         }
         this.folderContainer.fetch({
             success: function(folder_container) {
-                that.folder_container = folder_container;
-                that.render();
+                self.folder_container = folder_container;
+                self.render();
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
@@ -132,7 +132,7 @@ var FolderListView = Backbone.View.extend({
 
         // when dataset_id is present render its details too
         if (this.options.dataset_id) {
-            var row = _.findWhere(that.rowViews, {
+            var row = _.findWhere(self.rowViews, {
                 id: this.options.dataset_id
             });
             if (row) {
@@ -233,9 +233,9 @@ var FolderListView = Backbone.View.extend({
      * function for each. Also binds the hover behavior.
      */
     renderAll: function() {
-        var that = this;
+        var self = this;
         _.each(this.collection.models.reverse(), model => {
-            that.renderOne(model);
+            self.renderOne(model);
         });
         this.postRender();
     },
@@ -313,16 +313,16 @@ var FolderListView = Backbone.View.extend({
      */
     selectAll: function(event) {
         var selected = event.target.checked;
-        that = this;
+        var self = this;
         // Iterate each checkbox
         $(":checkbox", "#folder_list_body").each(function() {
             this.checked = selected;
             var $row = $(this).closest("tr");
             // Change color of selected/unselected
             if (selected) {
-                that.makeDarkRow($row);
+                self.makeDarkRow($row);
             } else {
-                that.makeWhiteRow($row);
+                self.makeWhiteRow($row);
             }
         });
     },
