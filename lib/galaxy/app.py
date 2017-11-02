@@ -212,18 +212,53 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         log.info("Galaxy app startup finished %s" % self.startup_timer)
 
     def shutdown(self):
-        self.watchers.shutdown()
-        self.workflow_scheduling_manager.shutdown()
-        self.job_manager.shutdown()
-        self.object_store.shutdown()
-        if self.heartbeat:
-            self.heartbeat.shutdown()
-        self.update_repository_manager.shutdown()
+        exception = None
+        try:
+            self.watchers.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown configuration watchers cleanly")
+        try:
+            self.workflow_scheduling_manager.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown workflow scheduling manager cleanly")
+        try:
+            self.job_manager.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown job manager cleanly")
+        try:
+            self.object_store.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown object store cleanly")
+        try:
+            if self.heartbeat:
+                self.heartbeat.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown heartbeat cleanly")
+        try:
+            self.update_repository_manager.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown update repository manager cleanly")
+
         try:
             self.control_worker.shutdown()
-        except AttributeError:
-            # There is no control_worker
-            pass
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown control worker cleanly")
+
+        try:
+            self.model.engine.dispose()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown SA database engine cleanly")
+
+        if exception:
+            raise exception
 
     def configure_fluent_log(self):
         if self.config.fluent_log:

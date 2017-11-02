@@ -342,8 +342,8 @@ export default {
 
     // template
     message: function(options) {
-        var status = str(options.status);
-        if (status.indexOf(["success", "ok"]) != -1) {
+        var status = options.status;
+        if (["success", "ok"].indexOf(status) != -1) {
             status = "done";
         }
         return `<p><div class="${status}message transient-message">${_.escape(
