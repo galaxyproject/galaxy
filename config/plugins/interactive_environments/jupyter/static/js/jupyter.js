@@ -1,4 +1,6 @@
+//Globals to be rid of
 var IES = window.IES;
+var toastr = window.toastr;
 
 function message_failed_auth(password){
     toastr.info(
@@ -70,7 +72,7 @@ function keep_alive(){
         spin_state.timeout_count = 0;
         spin_state.error_count = 0;
         return false;  // keep spinning
-    }
+    };
     var timeout_error = function(jqxhr, status, error){
         console.log("IE keepalive request failed " + spin_state.count + " time(s) of " + count_max + " max: " + status + ": " + error);
         if(spin_state.count == warn_at){
@@ -86,7 +88,7 @@ function keep_alive(){
             IES.spin_error("IE keepalive failure limit reached", "Lost connection to interactive environment, contact your administrator", false);
             return true;  // stop spinning
         }
-    }
+    };
     console.log("IE keepalive worker starting");
     IES.spin(notebook_access_url, false, success, timeout_error, timeout_error, spin_state);
 }
