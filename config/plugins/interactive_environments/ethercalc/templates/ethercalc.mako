@@ -26,12 +26,13 @@ var url = '${ url }';
 ${ ie.plugin_require_config() }
 
 // Keep container running
-requirejs(['interactive_environments', 'plugin/ethercalc'], function(){
+requirejs(['galaxy.interactive_environments', 'plugin/ethercalc'], function(){
     keep_alive(url);
 });
 
-requirejs(['interactive_environments', 'plugin/ethercalc'], function(){
-    load_when_ready(ie_readiness_url, function(){
+requirejs(['galaxy.interactive_environments', 'plugin/ethercalc'], function(IES){
+    window.IES = IES;
+    IES.load_when_ready(ie_readiness_url, function(){
         load_notebook(url);
     });
 });
