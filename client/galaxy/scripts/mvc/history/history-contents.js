@@ -18,6 +18,41 @@ var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
 var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     _logNamespace: "history",
 
+    // ........................................................................ set up
+    limitPerPage: 500,
+
+    /** @type {Integer} how many contents per call to fetch when using progressivelyFetchDetails */
+    limitPerProgressiveFetch: 500,
+
+    /** @type {String} order used here and when fetching from server */
+    order: "hid",
+
+    /** root api url */
+    urlRoot: `${Galaxy.root}api/histories`,
+
+    /** complete api url */
+    url: function() {
+        return `${this.urlRoot}/${this.historyId}/contents`;
+    },
+
+    /** Set up */
+    initialize: function(models, options) {
+        options = options || {};
+        _super.prototype.initialize.call(this, models, options);
+
+        this.history = options.history || null;
+        this.setHistoryId(options.historyId || null);
+        /** @type {Boolean} does this collection contain and fetch deleted elements */
+        this.includeDeleted = options.includeDeleted || this.includeDeleted;
+        /** @type {Boolean} does this collection contain and fetch non-visible elements */
+        this.includeHidden = options.includeHidden || this.includeHidden;
+
+        // backbonejs uses collection.model.prototype.idAttribute to determine if a model is *already* in a collection
+        //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
+        //  manually here - if we don't, contents will not merge but be replaced/swapped.
+        this.model.prototype.idAttribute = "type_id";
+    },
+
     // ........................................................................ composite collection
     /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
     model: function(attrs, options) {
@@ -57,41 +92,6 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         return {
             validationError: `Unknown history_content_type: ${attrs.history_content_type}`
         };
-    },
-
-    // ........................................................................ set up
-    limitPerPage: 500,
-
-    /** @type {Integer} how many contents per call to fetch when using progressivelyFetchDetails */
-    limitPerProgressiveFetch: 500,
-
-    /** @type {String} order used here and when fetching from server */
-    order: "hid",
-
-    /** root api url */
-    urlRoot: `${Galaxy.root}api/histories`,
-
-    /** complete api url */
-    url: function() {
-        return `${this.urlRoot}/${this.historyId}/contents`;
-    },
-
-    /** Set up */
-    initialize: function(models, options) {
-        options = options || {};
-        _super.prototype.initialize.call(this, models, options);
-
-        this.history = options.history || null;
-        this.setHistoryId(options.historyId || null);
-        /** @type {Boolean} does this collection contain and fetch deleted elements */
-        this.includeDeleted = options.includeDeleted || this.includeDeleted;
-        /** @type {Boolean} does this collection contain and fetch non-visible elements */
-        this.includeHidden = options.includeHidden || this.includeHidden;
-
-        // backbonejs uses collection.model.prototype.idAttribute to determine if a model is *already* in a collection
-        //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
-        //  manually here - if we don't, contents will not merge but be replaced/swapped.
-        this.model.prototype.idAttribute = "type_id";
     },
 
     setHistoryId: function(newId) {

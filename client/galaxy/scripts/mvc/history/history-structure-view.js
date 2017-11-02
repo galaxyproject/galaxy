@@ -116,7 +116,6 @@ var HistoryStructureComponent = Backbone.View
 
             this._liMap = {};
             this._createVertexItems();
-
             this.zoomLevel = attributes.zoomLevel || this._INITIAL_ZOOM_LEVEL;
 
             this.layout = this._createLayout(attributes.layoutOptions);
