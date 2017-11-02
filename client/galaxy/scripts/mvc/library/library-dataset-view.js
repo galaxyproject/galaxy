@@ -63,15 +63,15 @@ var LibraryDatasetView = Backbone.View.extend({
         this.model = new mod_library_model.Item({
             id: this.options.id
         });
-        var that = this;
+        var self = this;
         this.model.fetch({
             success: function() {
-                if (that.options.show_permissions) {
-                    that.showPermissions();
-                } else if (that.options.show_version) {
-                    that.fetchVersion();
+                if (self.options.show_permissions) {
+                    self.showPermissions();
+                } else if (self.options.show_version) {
+                    self.fetchVersion();
                 } else {
-                    that.render();
+                    self.render();
                 }
             },
             error: function(model, response) {
@@ -112,7 +112,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
     fetchVersion: function(options) {
         this.options = _.extend(this.options, options);
-        that = this;
+        var self = this;
         if (!this.options.ldda_id) {
             this.render();
             mod_toastr.error(
@@ -126,7 +126,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 this.model.id}/versions/${this.ldda.id}`;
             this.ldda.fetch({
                 success: function() {
-                    that.renderVersion();
+                    self.renderVersion();
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
@@ -240,19 +240,19 @@ var LibraryDatasetView = Backbone.View.extend({
     importCurrentIntoHistory: function() {
         this.modal.disableButton("Import");
         var new_history_name = this.modal.$("input[name=history_name]").val();
-        var that = this;
+        var self = this;
         if (new_history_name !== "") {
             $.post(`${Galaxy.root}api/histories`, {
                 name: new_history_name
             })
                 .done(new_history => {
-                    that.processImportToHistory(new_history.id);
+                    self.processImportToHistory(new_history.id);
                 })
                 .fail((xhr, status, error) => {
                     mod_toastr.error("An error occurred.");
                 })
                 .always(() => {
-                    that.modal.enableButton("Import");
+                    self.modal.enableButton("Import");
                 });
         } else {
             var history_id = $(this.modal.$el)
@@ -596,23 +596,23 @@ var LibraryDatasetView = Backbone.View.extend({
    * and save them in sorted arrays.
    */
     fetchExtAndGenomes: function() {
-        var that = this;
+        var self = this;
         if (this.list_genomes.length == 0) {
             mod_utils.get({
                 url: `${Galaxy.root}api/datatypes?extension_only=False`,
                 success: function(datatypes) {
                     for (var key in datatypes) {
-                        that.list_extensions.push({
+                        self.list_extensions.push({
                             id: datatypes[key].extension,
                             text: datatypes[key].extension,
                             description: datatypes[key].description,
                             description_url: datatypes[key].description_url
                         });
                     }
-                    that.list_extensions.sort(
+                    self.list_extensions.sort(
                         (a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0)
                     );
-                    that.list_extensions.unshift(that.auto);
+                    self.list_extensions.unshift(self.auto);
                 }
             });
         }
@@ -621,12 +621,12 @@ var LibraryDatasetView = Backbone.View.extend({
                 url: `${Galaxy.root}api/genomes`,
                 success: function(genomes) {
                     for (var key in genomes) {
-                        that.list_genomes.push({
+                        self.list_genomes.push({
                             id: genomes[key][1],
                             text: genomes[key][0]
                         });
                     }
-                    that.list_genomes.sort(
+                    self.list_genomes.sort(
                         (a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0)
                     );
                 }
@@ -639,7 +639,7 @@ var LibraryDatasetView = Backbone.View.extend({
         // See this.fetchExtAndGenomes()
         // TODO switch to common resources:
         // https://trello.com/c/dIUE9YPl/1933-ui-common-resources-and-data-into-galaxy-object
-        var that = this;
+        var self = this;
         var current_genome = "?";
         var current_ext = "auto";
         if (typeof options !== "undefined") {
@@ -652,14 +652,14 @@ var LibraryDatasetView = Backbone.View.extend({
         }
         this.select_genome = new mod_select.View({
             css: "dataset-genome-select",
-            data: that.list_genomes,
-            container: that.$el.find("#dataset_genome_select"),
+            data: self.list_genomes,
+            container: self.$el.find("#dataset_genome_select"),
             value: current_genome
         });
         this.select_extension = new mod_select.View({
             css: "dataset-extension-select",
-            data: that.list_extensions,
-            container: that.$el.find("#dataset_extension_select"),
+            data: self.list_extensions,
+            container: self.$el.find("#dataset_extension_select"),
             value: current_ext
         });
     },
