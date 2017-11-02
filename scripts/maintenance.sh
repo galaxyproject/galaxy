@@ -63,12 +63,12 @@ fi
 
 MAINTENANCE_LOG="$SCRIPTLOCATION/../maintenance.log"
 COMMANDS=(
-"python scripts/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --delete_userless_histories >> $MAINTENANCE_LOG"
-"python scripts/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_histories >> $MAINTENANCE_LOG"
-"python scripts/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_datasets >> $MAINTENANCE_LOG"
-"python scripts/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_folders >> $MAINTENANCE_LOG"
-"python scripts/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --delete_datasets >> $MAINTENANCE_LOG"
-"python scripts/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_datasets >> $MAINTENANCE_LOG")
+"python $SCRIPTLOCATION/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --delete_userless_histories >> $MAINTENANCE_LOG"
+"python $SCRIPTLOCATION/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_histories >> $MAINTENANCE_LOG"
+"python $SCRIPTLOCATION/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_datasets >> $MAINTENANCE_LOG"
+"python $SCRIPTLOCATION/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_folders >> $MAINTENANCE_LOG"
+"python $SCRIPTLOCATION/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --delete_datasets >> $MAINTENANCE_LOG"
+"python $SCRIPTLOCATION/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_datasets >> $MAINTENANCE_LOG")
 
 printf "\nDry run: $DRYRUN\nDays: $DAYS\n\n"
 echo "Will run following commands and output in $MAINTENANCE_LOG"
@@ -77,14 +77,15 @@ for (( i = 0; i < ${#COMMANDS[@]} ; i++ )); do
 done
 
 if [ "$DRYRUN" = false ]; then
-  echo "python scripts/set_user_disk_usage.py >> $MAINTENANCE_LOG" 
+  echo "python $SCRIPTLOCATION/set_user_disk_usage.py >> $MAINTENANCE_LOG"
 fi
 
 # Run the commands
+cd $SCRIPTLOCATION/../
 for (( i = 0; i < ${#COMMANDS[@]} ; i++ )); do
   eval "${COMMANDS[$i]}"
 done
 
 if [ "$DRYRUN" = false ]; then
-  python scripts/set_user_disk_usage.py >> $MAINTENANCE_LOG
+  python $SCRIPTLOCATION/set_user_disk_usage.py >> $MAINTENANCE_LOG
 fi
