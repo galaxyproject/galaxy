@@ -246,14 +246,10 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
             log.exception("Failed to shutdown update repository manager cleanly")
 
         try:
-            try:
-                self.control_worker.shutdown()
-            except Exception as e:
-                exception = exception or e
-                log.exception("Failed to shutdown control worker cleanly")
-        except AttributeError:
-            # There is no control_worker
-            pass
+            self.control_worker.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown control worker cleanly")
 
         try:
             self.model.engine.dispose()
