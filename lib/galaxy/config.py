@@ -133,6 +133,7 @@ class Configuration(object):
         self.database_create_tables = string_as_bool(kwargs.get("database_create_tables", "True"))
         self.database_query_profiling_proxy = string_as_bool(kwargs.get("database_query_profiling_proxy", "False"))
         self.database_template = kwargs.get("database_template", None)
+        self.database_encoding = kwargs.get("database_encoding", None)  # Create new databases with this encoding.
         self.slow_query_log_threshold = float(kwargs.get("slow_query_log_threshold", 0))
 
         # Don't set this to true for production databases, but probably should
@@ -372,6 +373,7 @@ class Configuration(object):
         self.use_heartbeat = string_as_bool(kwargs.get('use_heartbeat', 'False'))
         self.heartbeat_interval = int(kwargs.get('heartbeat_interval', 20))
         self.heartbeat_log = kwargs.get('heartbeat_log', None)
+        self.monitor_thread_join_timeout = int(kwargs.get("monitor_thread_join_timeout", 5))
         self.log_actions = string_as_bool(kwargs.get('log_actions', 'False'))
         self.log_events = string_as_bool(kwargs.get('log_events', 'False'))
         self.sanitize_all_html = string_as_bool(kwargs.get('sanitize_all_html', True))
