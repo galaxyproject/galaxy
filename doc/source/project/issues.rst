@@ -76,7 +76,6 @@ request/report to separate enhancements and new features from bugs, etc.
 -  ``kind/feature`` - something brand new
 -  ``kind/refactoring`` - refactoring of existing code, no functional
    changes
--  ``kind/testing`` - issues related to tests and the testing framework
 
 Status Labels
 -------------
@@ -121,11 +120,13 @@ particular domain, as well as more organized release notes.
 -  ``area/dataset-collections``
 -  ``area/datatypes`` - Changes to Galaxy's datatypes
 -  ``area/datatype-framework`` - Changes to Galaxy's datatype and metadata framework
+-  ``area/dependencies`` - Changes related to Python or JavaScript dependencies of Galaxy itself
 -  ``area/documentation``
 -  ``area/framework``
 -  ``area/GIEs``
 -  ``area/histories``
 -  ``area/i18n``
+-  ``area/libraries`` - Change related to data libraries.
 -  ``area/jobs``
 -  ``area/objectstore``
 -  ``area/performance``
