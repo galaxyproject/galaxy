@@ -2,11 +2,11 @@ FROM toolshed/requirements
 MAINTAINER John Chilton, jmchilton@gmail.com
 
 RUN apt-get -qq update && \
-    apt-get install --no-install-recommends -y postgresql-client python-pip && \
+    apt-get install --no-install-recommends -y postgresql-client python-pip libffi-dev python-cffi && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV GALAXY_ROOT=/galaxy \
-    GALAXY_CONFIG_OVERRIDE_ADMIN_USERS=admin@galaxy.org \
+    GALAXY_CONFIG_OVERRIDE_ADMIN_USERS=admin@galaxy.org,test@bx.psu.edu \
     GALAXY_CONFIG_OVERRIDE_ALLOW_USER_DATASET_PURGE=true \
     GALAXY_CONFIG_OVERRIDE_ALLOW_LIBRARY_PATH_PASTE=true \
     GALAXY_CONFIG_OVERRIDE_ENABLE_BETA_WORKFLOW_MODULES=true \

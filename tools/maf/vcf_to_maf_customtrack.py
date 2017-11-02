@@ -47,7 +47,7 @@ class SampleVCFParser(Iterator):
                 for i in sample_value[gt_index].replace('|', '/').replace('\\', '/').split('/'):  # Do we need to consider phase here?
                     try:
                         gt_indexes.append(int(i))
-                    except:
+                    except Exception:
                         gt_indexes.append(None)
                 for i, allele_i in enumerate(gt_indexes):
                     if allele_i is not None:

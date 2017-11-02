@@ -1,18 +1,19 @@
+from __future__ import absolute_import
+
 import glob
+import json
 import logging
-import operator
 import os
 import os.path
 import string
 import sys
 import tarfile
 import tempfile
-import urllib
-import urllib2
 import zipfile
-from json import dumps, loads
 
+import requests
 from markupsafe import escape
+from six.moves.urllib.parse import quote_plus, urlencode
 from sqlalchemy import and_, false
 from sqlalchemy.orm import eagerload_all
 
@@ -20,10 +21,29 @@ from galaxy import util, web
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
-from galaxy.util import inflector, unicodify, FILENAME_VALID_CHARS
+from galaxy.util import (
+    FILENAME_VALID_CHARS,
+    inflector,
+    unicodify
+)
+from galaxy.util.path import (
+    safe_contains,
+    safe_relpath,
+    unsafe_walk
+)
 from galaxy.util.streamball import StreamBall
-from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
+from galaxy.web.base.controller import (
+    BaseUIController,
+    UsesExtendedMetadataMixin,
+    UsesFormDefinitionsMixin,
+    UsesLibraryMixinItems
+)
+from galaxy.web.form_builder import (
+    AddressField,
+    build_select_field,
+    CheckboxField,
+    SelectField,
+)
 
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
 try:
@@ -64,12 +84,13 @@ except ImportError:
 
 try:
     os.rmdir(tmpd)
-except:
+except Exception:
     pass
 
 
 class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems):
     @web.json
+    @web.require_admin
     def library_item_updates(self, trans, ids=None, states=None):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
@@ -93,6 +114,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         return rval
 
     @web.expose
+    @web.require_admin
     def browse_library(self, trans, cntrller='library', **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -109,7 +131,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         current_user_roles = trans.get_current_user_roles()
         try:
             library = trans.sa_session.query(trans.app.model.Library).get(trans.security.decode_id(library_id))
-        except:
+        except Exception:
             # Protect against attempts to phish for valid keys that return libraries
             library = None
         # Most security for browsing libraries is handled in the template, but do a basic check here.
@@ -165,6 +187,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                                         status=status))
 
     @web.expose
+    @web.require_admin
     def library_info(self, trans, cntrller, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -175,7 +198,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         library_id = kwd.get('id', None)
         try:
             library = trans.sa_session.query(trans.app.model.Library).get(trans.security.decode_id(library_id))
-        except:
+        except Exception:
             library = None
         self._check_access(trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted)
         if kwd.get('library_info_button', False):
@@ -224,6 +247,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                    status=escape(status))
 
     @web.expose
+    @web.require_admin
     def library_permissions(self, trans, cntrller, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -234,7 +258,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         library_id = kwd.get('id', None)
         try:
             library = trans.sa_session.query(trans.app.model.Library).get(trans.security.decode_id(library_id))
-        except:
+        except Exception:
             library = None
         self._check_access(trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted)
         self._check_manage(trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted)
@@ -280,7 +304,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         current_user_roles = trans.get_current_user_roles()
         try:
             parent_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(parent_id))
-        except:
+        except Exception:
             parent_folder = None
         # Check the library which actually contains the user-supplied parent folder, not the user-supplied
         # library, which could be anything.
@@ -346,6 +370,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                    status=escape(status))
 
     @web.expose
+    @web.require_admin
     def folder_info(self, trans, cntrller, id, library_id, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -355,7 +380,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         current_user_roles = trans.get_current_user_roles()
         try:
             folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(id))
-        except:
+        except Exception:
             folder = None
         self._check_access(trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted)
         if kwd.get('rename_folder_button', False):
@@ -402,6 +427,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                    status=escape(status))
 
     @web.expose
+    @web.require_admin
     def folder_permissions(self, trans, cntrller, id, library_id, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -411,7 +437,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         current_user_roles = trans.get_current_user_roles()
         try:
             folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(id))
-        except:
+        except Exception:
             folder = None
         self._check_access(trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted)
         self._check_manage(trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted)
@@ -452,6 +478,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                    status=escape(status))
 
     @web.expose
+    @web.require_admin
     def ldda_edit_info(self, trans, cntrller, library_id, folder_id, id, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -461,14 +488,14 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         current_user_roles = trans.get_current_user_roles()
         try:
             ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(trans.security.decode_id(id))
-        except:
+        except Exception:
             ldda = None
         self._check_access(trans, cntrller, is_admin, ldda, current_user_roles, use_panels, library_id, show_deleted)
         self._check_modify(trans, cntrller, is_admin, ldda, current_user_roles, use_panels, library_id, show_deleted)
         dbkey = kwd.get('dbkey', '?')
         if isinstance(dbkey, list):
             dbkey = dbkey[0]
-        file_formats = [dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change]
+        file_formats = [dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.items() if dtype_value.allow_datatype_change]
         file_formats.sort()
 
         def __ok_to_edit_metadata(ldda_id):
@@ -555,7 +582,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             if len(em_string):
                 payload = None
                 try:
-                    payload = loads(em_string)
+                    payload = json.loads(em_string)
                 except Exception:
                     message = 'Invalid JSON input'
                     status = 'error'
@@ -603,6 +630,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                    status=escape(status))
 
     @web.expose
+    @web.require_admin
     def ldda_info(self, trans, cntrller, library_id, folder_id, id, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -652,6 +680,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                    status=escape(status))
 
     @web.expose
+    @web.require_admin
     def ldda_permissions(self, trans, cntrller, library_id, folder_id, id, **kwd):
         message = str(escape(kwd.get('message', '')))
         status = kwd.get('status', 'done')
@@ -665,7 +694,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         for id in ids:
             try:
                 ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(trans.security.decode_id(id))
-            except:
+            except Exception:
                 ldda = None
             if ldda:
                 library = ldda.library_dataset.folder.parent_library
@@ -673,7 +702,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             lddas.append(ldda)
             libraries.append(library)
         library = libraries[0]
-        if filter(lambda x: x != library, libraries):
+        if any(x != library for x in libraries):
             message = "Library datasets specified span multiple libraries."
             return trans.response.send_redirect(web.url_for(controller='library_common',
                                                             action='browse_library',
@@ -849,6 +878,9 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             elif upload_option == 'upload_paths' and not is_admin:
                 error = True
                 message = 'Uploading files via filesystem paths can only be performed by administrators'
+            elif upload_option not in ('upload_file', 'upload_directory', 'upload_paths'):
+                error = True
+                message = 'Invalid upload_option'
             elif roles:
                 # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
                 # on the dataset that would cause accessibility issues.
@@ -931,7 +963,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                             return created_outputs_dict[0], created_outputs_dict[1]
                         return 200, created_outputs_dict
                     total_added = len(created_outputs_dict.keys())
-                    ldda_id_list = [str(v.id) for k, v in created_outputs_dict.items()]
+                    ldda_id_list = [str(v.id) for v in created_outputs_dict.values()]
                     created_ldda_ids = ",".join(ldda_id_list)
                     if replace_dataset:
                         message = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % (total_added, escape(replace_dataset_name), escape(folder.name))
@@ -1048,7 +1080,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         populate_state(trans, tool.inputs, kwd, state.inputs)
         tool_params = state.inputs
         dataset_upload_inputs = []
-        for input_name, input in tool.inputs.iteritems():
+        for input_name, input in tool.inputs.items():
             if input.type == "upload_dataset":
                 dataset_upload_inputs.append(input)
         # Library-specific params
@@ -1064,17 +1096,26 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         if upload_option == 'upload_directory':
             if server_dir in [None, 'None', '']:
                 response_code = 400
-            if cntrller == 'library_admin' or (cntrller == 'api' and trans.user_is_admin):
+            if trans.user_is_admin() and cntrller in ('library_admin', 'api'):
                 import_dir = trans.app.config.library_import_dir
                 import_dir_desc = 'library_import_dir'
-                full_dir = os.path.join(import_dir, server_dir)
             else:
                 import_dir = trans.app.config.user_library_import_dir
+                if server_dir != trans.user.email:
+                    import_dir = os.path.join(import_dir, trans.user.email)
                 import_dir_desc = 'user_library_import_dir'
-                if server_dir == trans.user.email:
-                    full_dir = os.path.join(import_dir, server_dir)
-                else:
-                    full_dir = os.path.join(import_dir, trans.user.email, server_dir)
+            full_dir = os.path.join(import_dir, server_dir)
+            unsafe = None
+            if safe_relpath(server_dir):
+                if import_dir_desc == 'user_library_import_dir' and safe_contains(import_dir, full_dir, whitelist=trans.app.config.user_library_import_symlink_whitelist):
+                    for unsafe in unsafe_walk(full_dir, whitelist=[import_dir] + trans.app.config.user_library_import_symlink_whitelist):
+                        log.error('User attempted to import a path that resolves to a path outside of their import dir: %s -> %s', unsafe, os.path.realpath(unsafe))
+            else:
+                log.error('User attempted to import a directory path that resolves to a path outside of their import dir: %s -> %s', server_dir, os.path.realpath(full_dir))
+                unsafe = True
+            if unsafe:
+                response_code = 403
+                message = 'Invalid server_dir'
             if import_dir:
                 message = 'Select a directory'
             else:
@@ -1089,7 +1130,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             # FIXME: instead of passing params here ( which have been processed by util.Params(), the original kwd
             # should be passed so that complex objects that may have been included in the initial request remain.
             library_bunch = upload_common.handle_library_params(trans, kwd, folder_id, replace_dataset)
-        except:
+        except Exception:
             response_code = 500
             message = "Unable to parse upload parameters, please report this error."
         # Proceed with (mostly) regular upload processing if we're still errorless
@@ -1122,8 +1163,8 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         json_file_path = upload_common.create_paramfile(trans, uploaded_datasets)
         data_list = [ud.data for ud in uploaded_datasets]
         job_params = {}
-        job_params['link_data_only'] = dumps(kwd.get('link_data_only', 'copy_files'))
-        job_params['uuid'] = dumps(kwd.get('uuid', None))
+        job_params['link_data_only'] = json.dumps(kwd.get('link_data_only', 'copy_files'))
+        job_params['uuid'] = json.dumps(kwd.get('uuid', None))
         job, output = upload_common.create_job(trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder, job_params=job_params)
         trans.sa_session.add(job)
         trans.sa_session.flush()
@@ -1268,6 +1309,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         return None
 
     @web.expose
+    @web.require_admin
     def add_history_datasets_to_library(self, trans, cntrller, library_id, folder_id, hda_ids='', **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -1299,7 +1341,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         if replace_id not in [None, 'None']:
             try:
                 replace_dataset = trans.sa_session.query(trans.app.model.LibraryDataset).get(trans.security.decode_id(replace_id))
-            except:
+            except Exception:
                 replace_dataset = None
             self._check_access(trans, cntrller, is_admin, replace_dataset, current_user_roles, use_panels, library_id, show_deleted)
             self._check_modify(trans, cntrller, is_admin, replace_dataset, current_user_roles, use_panels, library_id, show_deleted)
@@ -1335,7 +1377,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 for hda_id in hda_ids:
                     try:
                         hda = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(trans.security.decode_id(hda_id))
-                    except:
+                    except Exception:
                         hda = None
                     self._check_access(trans, cntrller, is_admin, hda, current_user_roles, use_panels, library_id, show_deleted)
                     if roles:
@@ -1501,7 +1543,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                         if not os.path.isdir(path):
                             try:
                                 os.makedirs(path)
-                            except:
+                            except Exception:
                                 continue
                 elif option_value == 'upload_paths':
                     if not is_admin or not trans.app.config.allow_library_path_paste:
@@ -1510,6 +1552,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         return upload_option_select_list
 
     @web.expose
+    @web.require_admin
     def download_dataset_from_folder(self, trans, cntrller, id, library_id=None, **kwd):
         """Catches the dataset id and displays file contents as directed"""
         show_deleted = util.string_as_bool(kwd.get('show_deleted', False))
@@ -1518,7 +1561,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         current_user_roles = trans.get_current_user_roles()
         try:
             ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(trans.security.decode_id(id))
-        except:
+        except Exception:
             ldda = None
         self._check_access(trans, cntrller, is_admin, ldda, current_user_roles, use_panels, library_id, show_deleted)
         composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
@@ -1537,7 +1580,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
             try:
                 return open(ldda.file_name)
-            except:
+            except Exception:
                 message = 'This dataset contains no content'
         return trans.response.send_redirect(web.url_for(controller='library_common',
                                                         action='browse_library',
@@ -1549,6 +1592,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                                         status='error'))
 
     @web.expose
+    @web.require_admin
     def library_dataset_info(self, trans, cntrller, id, library_id, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -1558,7 +1602,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         current_user_roles = trans.get_current_user_roles()
         try:
             library_dataset = trans.sa_session.query(trans.app.model.LibraryDataset).get(trans.security.decode_id(id))
-        except:
+        except Exception:
             library_dataset = None
         self._check_access(trans, cntrller, is_admin, library_dataset, current_user_roles, use_panels, library_id, show_deleted)
         if kwd.get('edit_attributes_button', False):
@@ -1597,6 +1641,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                    status=escape(status))
 
     @web.expose
+    @web.require_admin
     def library_dataset_permissions(self, trans, cntrller, id, library_id, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -1606,7 +1651,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         current_user_roles = trans.get_current_user_roles()
         try:
             library_dataset = trans.sa_session.query(trans.app.model.LibraryDataset).get(trans.security.decode_id(id))
-        except:
+        except Exception:
             library_dataset = None
         self._check_access(trans, cntrller, is_admin, library_dataset, current_user_roles, use_panels, library_id, show_deleted)
         self._check_manage(trans, cntrller, is_admin, library_dataset, current_user_roles, use_panels, library_id, show_deleted)
@@ -1645,6 +1690,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                    status=escape(status))
 
     @web.expose
+    @web.require_admin
     def make_library_item_public(self, trans, cntrller, library_id, item_type, id, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -1687,6 +1733,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                                         status=status))
 
     @web.expose
+    @web.require_admin
     def act_on_multiple_datasets(self, trans, cntrller, library_id=None, ldda_ids='', **kwd):
         # This method is called from 1 of 3 places:
         # - this controller's download_dataset_from_folder() method
@@ -1706,7 +1753,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 for fname, relpath in self.files.items():
                     crc = '-'
                     size = os.stat(fname).st_size
-                    quoted_fname = urllib.quote_plus(fname, '/')
+                    quoted_fname = quote_plus(fname, '/')
                     rval += '%s %i %s%s %s\r\n' % (crc, size, self.url_base, quoted_fname, relpath)
                 return rval
         # Perform an action on a list of library datasets.
@@ -1770,7 +1817,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                     ldda = self.get_library_dataset_dataset_association(trans, ldda_id)
                     assert not ldda.dataset.purged
                     lddas.append(ldda)
-                except:
+                except Exception:
                     ldda = None
                     message += "Invalid library dataset id (%s) specified.  " % str(ldda_id)
         if not error:
@@ -1838,7 +1885,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                     if action == 'zip':
                         # Can't use mkstemp - the file must not exist first
                         tmpd = tempfile.mkdtemp()
-                        util.umask_fix_perms(tmpd, trans.app.config.umask, 0777, self.app.config.gid)
+                        util.umask_fix_perms(tmpd, trans.app.config.umask, 0o777, self.app.config.gid)
                         tmpf = os.path.join(tmpd, 'library_download.' + action)
                         if trans.app.config.upstream_gzip:
                             archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_STORED, True)
@@ -1862,7 +1909,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                     log.exception("Unable to create archive for download")
                     message = "Unable to create archive for download, please report this error"
                     status = 'error'
-                except:
+                except Exception:
                     error = True
                     log.exception("Unexpected error in create archive for download")
                     message = "Unable to create archive for download, please report - %s" % sys.exc_info()[0]
@@ -1979,6 +2026,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                        status=escape(status))
 
     @web.expose
+    @web.require_admin
     def import_datasets_to_histories(self, trans, cntrller, library_id='', folder_id='', ldda_ids='', target_history_id='', target_history_ids='', new_history_name='', **kwd):
         # This method is called from one of the following places:
         # - a menu option for a library dataset ( ldda_ids is a single ldda id )
@@ -2003,7 +2051,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             folder = None
         ldda_ids = util.listify(ldda_ids)
         if ldda_ids:
-            ldda_ids = map(trans.security.decode_id, ldda_ids)
+            ldda_ids = list(map(trans.security.decode_id, ldda_ids))
         if target_history_ids:
             target_history_ids = util.listify(target_history_ids)
             target_history_ids = set(
@@ -2109,6 +2157,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                    status=escape(status))
 
     @web.expose
+    @web.require_admin
     def manage_template_inheritance(self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, **kwd):
         show_deleted = util.string_as_bool(kwd.get('show_deleted', False))
         use_panels = util.string_as_bool(kwd.get('use_panels', False))
@@ -2154,6 +2203,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                                         status='done'))
 
     @web.expose
+    @web.require_admin
     def move_library_item(self, trans, cntrller, item_type, item_id, source_library_id='', make_target_current=True, **kwd):
         # This method is called from one of the following places:
         # - a menu option for a library dataset ( item_type is 'ldda' and item_id is a single ldda id )
@@ -2197,7 +2247,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             # We've been called from a menu option for a library dataset search result set
             move_ldda_ids = util.listify(item_id)
             if move_ldda_ids:
-                move_ldda_ids = map(trans.security.decode_id, move_ldda_ids)
+                move_ldda_ids = list(map(trans.security.decode_id, move_ldda_ids))
         elif item_type == 'folder':
             move_folder_id = item_id
             move_folder = trans.sa_session.query(trans.model.LibraryFolder).get(trans.security.decode_id(move_folder_id))
@@ -2371,6 +2421,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                    status=escape(status))
 
     @web.expose
+    @web.require_admin
     def delete_library_item(self, trans, cntrller, library_id, item_id, item_type, **kwd):
         # This action will handle deleting all types of library items.  State is saved for libraries and
         # folders ( i.e., if undeleted, the state of contents of the library or folder will remain, so previously
@@ -2403,7 +2454,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             for library_item_id in library_item_ids:
                 try:
                     library_item = trans.sa_session.query(item_types[item_type]).get(trans.security.decode_id(library_item_id))
-                except:
+                except Exception:
                     library_item = None
                 if not library_item or not (is_admin or trans.app.security_agent.can_access_library_item(current_user_roles, library_item, trans.user)):
                     invalid_items += 1
@@ -2439,6 +2490,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                                             status=status))
 
     @web.expose
+    @web.require_admin
     def undelete_library_item(self, trans, cntrller, library_id, item_id, item_type, **kwd):
         # This action will handle undeleting all types of library items
         status = kwd.get('status', 'done')
@@ -2467,7 +2519,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             for library_item_id in library_item_ids:
                 try:
                     library_item = trans.sa_session.query(item_types[item_type]).get(trans.security.decode_id(library_item_id))
-                except:
+                except Exception:
                     library_item = None
                 if not library_item or not (is_admin or trans.app.security_agent.can_access_library_item(current_user_roles, library_item, trans.user)):
                     invalid_items += 1
@@ -2720,7 +2772,7 @@ def get_comptypes(trans):
         # exception every time after the first time)
         try:
             comptypes_t.remove(comptype)
-        except:
+        except ValueError:
             pass
     return comptypes_t
 
@@ -2752,19 +2804,17 @@ def sort_by_attr(seq, attr):
     # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
     # only to provide stable sorting, but mainly to eliminate comparison of objects
     # (which can be expensive or prohibited) in case of equal attribute values.
-    intermed = map(None, map(getattr, seq, (attr, ) * len(seq)), xrange(len(seq)), seq)
+    intermed = [(getattr(v, attr), i, v) for i, v in enumerate(seq)]
     intermed.sort()
-    return map(operator.getitem, intermed, (-1, ) * len(intermed))
+    return [_[-1] for _ in intermed]
 
 
 def lucene_search(trans, cntrller, search_term, search_url, **kwd):
     """Return display of results from a full-text lucene search of data libraries."""
     message = escape(kwd.get('message', ''))
     status = kwd.get('status', 'done')
-    full_url = "%s/find?%s" % (search_url, urllib.urlencode({"kwd" : search_term}))
-    response = urllib2.urlopen(full_url)
-    ldda_ids = loads(response.read())["ids"]
-    response.close()
+    full_url = "%s/find?%s" % (search_url, urlencode({"kwd" : search_term}))
+    ldda_ids = requests.get(full_url).json()['ids']
     lddas = [trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(ldda_id) for ldda_id in ldda_ids]
     return status, message, get_sorted_accessible_library_items(trans, cntrller, lddas, 'name')
 

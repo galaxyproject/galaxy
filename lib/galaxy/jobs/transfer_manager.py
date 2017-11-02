@@ -9,6 +9,8 @@ import socket
 import subprocess
 import threading
 
+from six.moves import shlex_quote
+
 from galaxy.util import listify, sleeper
 from galaxy.util.json import jsonrpc_request, validate_jsonrpc_response
 
@@ -23,7 +25,7 @@ class TransferManager(object):
     def __init__(self, app):
         self.app = app
         self.sa_session = app.model.context.current
-        self.command = 'python %s' % os.path.abspath(os.path.join(os.getcwd(), 'scripts', 'transfer.py'))
+        self.command = ['python', os.path.abspath(os.path.join(os.getcwd(), 'scripts', 'transfer.py'))]
         if app.config.get_bool('enable_job_recovery', True):
             # Only one Galaxy server process should be able to recover jobs! (otherwise you'll have nasty race conditions)
             self.running = True
@@ -68,9 +70,9 @@ class TransferManager(object):
             # The transfer script should daemonize fairly quickly - if this is
             # not the case, this process will need to be moved to a
             # non-blocking method.
-            cmd = '%s %s' % (self.command, tj.id)
-            log.debug('Transfer command is: %s' % cmd)
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            cmd = self.command + [tj.id]
+            log.debug('Transfer command is: %s', ' '.join(map(shlex_quote, cmd)))
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             p.wait()
             output = p.stdout.read(32768)
             if p.returncode != 0:
@@ -145,7 +147,7 @@ class TransferManager(object):
                 # restart the transfer if socket communication fails repeatedly.
                 try:
                     os.kill(tj.pid, 0)
-                except:
+                except Exception:
                     self.sa_session.refresh(tj)
                     if tj.state == tj.states.RUNNING:
                         log.error('Transfer job %s is marked as running but pid %s appears to be dead.' % (tj.id, tj.pid))

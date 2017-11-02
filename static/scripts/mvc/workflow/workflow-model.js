@@ -1,2 +1,2 @@
-define(["mvc/base-mvc"],function(a){var b="workflow",c=Backbone.Model.extend(a.LoggableMixin).extend({_logNamespace:b,urlRoot:"/api/workflows",toJSON:function(){return{workflow:this.attributes}}}),d=Backbone.Collection.extend({model:c,url:"/api/workflows"});return{WorkflowItem:c,WorkflowCollection:d}});
+"use strict";define(["mvc/base-mvc"],function(o){var e=Backbone.Model.extend(o.LoggableMixin).extend({_logNamespace:"workflow",urlRoot:Galaxy.root+"api/workflows",toJSON:function(){return{workflow:this.attributes}}});return{WorkflowItem:e,WorkflowCollection:Backbone.Collection.extend({model:e,url:Galaxy.root+"api/workflows"})}});
 //# sourceMappingURL=../../../maps/mvc/workflow/workflow-model.js.map

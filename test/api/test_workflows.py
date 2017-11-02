@@ -8,8 +8,8 @@ from uuid import uuid4
 import yaml
 from requests import delete, put
 
-from base import api
-from base.populators import (
+from base import api  # noqa: I100
+from base.populators import (  # noqa: I100
     DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_tool,
@@ -172,7 +172,7 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
         )
         if jobs_descriptions is None:
             assert source_type != "path"
-            jobs_descriptions = yaml.load(has_workflow)
+            jobs_descriptions = yaml.safe_load(has_workflow)
 
         test_data = jobs_descriptions.get("test_data", {})
 

@@ -1,10 +1,10 @@
+from galaxy_selenium.navigates_galaxy import retry_call_during_transitions
+
 from .framework import (
-    SeleniumTestCase,
     selenium_test,
+    SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
-
-from galaxy_selenium.navigates_galaxy import retry_call_during_transitions
 
 
 class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):

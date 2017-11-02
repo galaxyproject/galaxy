@@ -4,11 +4,12 @@
 See doc/source/admin/grt.rst for more detailed usage information.
 """
 import argparse
+import logging
 import os
 import sys
-import yaml
-import logging
+
 import requests
+import yaml
 
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml.sample'))
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))
@@ -28,11 +29,11 @@ def main(argv):
     logging.info('Loading GRT configuration...')
     try:
         with open(args.config) as handle:
-            config = yaml.load(handle)
+            config = yaml.safe_load(handle)
     except Exception:
         logging.info('Using default GRT configuration')
         with open(sample_config) as handle:
-            config = yaml.load(handle)
+            config = yaml.safe_load(handle)
 
     REPORT_DIR = args.report_directory
     GRT_URL = config['grt']['url'].rstrip('/') + '/'

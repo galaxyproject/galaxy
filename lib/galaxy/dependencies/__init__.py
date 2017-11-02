@@ -63,7 +63,7 @@ class ConditionalDependencies(object):
         try:
             name = name.replace('-', '_').replace('.', '_')
             return getattr(self, 'check_' + name)()
-        except:
+        except Exception:
             return False
 
     def check_psycopg2(self):
@@ -114,6 +114,11 @@ class ConditionalDependencies(object):
 
     def check_kamaki(self):
         return 'pithos' in self.object_stores
+
+    def check_watchdog(self):
+        install_set = {'auto', 'True', 'true', 'polling'}
+        return (self.config['watch_tools'] in install_set or
+                self.config['watch_tool_data_dir'] in install_set)
 
 
 def optional(config_file):

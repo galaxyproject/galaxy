@@ -6,7 +6,7 @@ import shutil
 import tempfile
 from json import dumps, loads
 
-from sqlalchemy.orm import eagerload, eagerload_all
+from sqlalchemy.orm import eagerload_all
 from sqlalchemy.sql import expression
 
 from galaxy import model
@@ -244,7 +244,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                     try:
                         imported_job.create_time = datetime.datetime.strptime(job_attrs["create_time"], "%Y-%m-%dT%H:%M:%S.%f")
                         imported_job.update_time = datetime.datetime.strptime(job_attrs["update_time"], "%Y-%m-%dT%H:%M:%S.%f")
-                    except:
+                    except Exception:
                         pass
                     self.sa_session.add(imported_job)
                     self.sa_session.flush()
@@ -271,14 +271,12 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                             input_hda = self.sa_session.query(model.HistoryDatasetAssociation) \
                                             .filter_by(history=new_history, hid=value.hid).first()
                             value = input_hda.id
-                        # print "added parameter %s-->%s to job %i" % ( name, value, imported_job.id )
                         imported_job.add_parameter(name, dumps(value, cls=HistoryDatasetAssociationIDEncoder))
 
                     # TODO: Connect jobs to input datasets.
 
                     # Connect jobs to output datasets.
                     for output_hid in job_attrs['output_datasets']:
-                        # print "%s job has output dataset %i" % (imported_job.id, output_hid)
                         output_hda = self.sa_session.query(model.HistoryDatasetAssociation) \
                             .filter_by(history=new_history, hid=output_hid).first()
                         if output_hda:
@@ -322,7 +320,6 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
         """
         query = (trans.sa_session.query(trans.model.HistoryDatasetAssociation)
                  .filter(trans.model.HistoryDatasetAssociation.history == history)
-                 .options(eagerload("children"))
                  .join("dataset")
                  .options(eagerload_all("dataset.actions"))
                  .order_by(trans.model.HistoryDatasetAssociation.hid)
@@ -488,7 +485,7 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
             # Get the job's parameters
             try:
                 params_objects = job.get_param_values(trans.app)
-            except:
+            except Exception:
                 # Could not get job params.
                 continue
 

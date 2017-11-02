@@ -76,7 +76,6 @@ request/report to separate enhancements and new features from bugs, etc.
 -  ``kind/feature`` - something brand new
 -  ``kind/refactoring`` - refactoring of existing code, no functional
    changes
--  ``kind/testing`` - issues related to tests and the testing framework
 
 Status Labels
 -------------
@@ -116,25 +115,39 @@ particular domain, as well as more organized release notes.
 -  ``area/admin`` - Changes to admin functionality of the Galaxy webapp.
 -  ``area/API``
 -  ``area/cleanup`` - General code cleanup.
+-  ``area/cwl`` - changes related to supporting the common workflow language in Galaxy
 -  ``area/database`` - Change requires a modification to Galaxy's database.
 -  ``area/dataset-collections``
 -  ``area/datatypes`` - Changes to Galaxy's datatypes
 -  ``area/datatype-framework`` - Changes to Galaxy's datatype and metadata framework
+-  ``area/dependencies`` - Changes related to Python or JavaScript dependencies of Galaxy itself
 -  ``area/documentation``
 -  ``area/framework``
 -  ``area/GIEs``
 -  ``area/histories``
+-  ``area/i18n``
+-  ``area/libraries`` - Change related to data libraries.
 -  ``area/jobs``
+-  ``area/objectstore``
 -  ``area/performance``
 -  ``area/reports``
+-  ``area/security``
 -  ``area/system`` - Changes to scripts used to run or manage Galaxy.
--  ``area/tools`` - Changes to specific tools in Galaxy.
+-  ``area/testing``
+-  ``area/testing/api``
+-  ``area/testing/integration``
+-  ``area/testing/selenium``
 -  ``area/tool-framework``
+-  ``area/tool-dependencies`` - Changes to dependency resolution (including Conda).
+-  ``area/tools`` - Changes to specific tools in Galaxy.
 -  ``area/toolshed``- Changes to the tool shed client or server.
 -  ``area/UI-UX``
+-  ``area/upload``
 -  ``area/util``
 -  ``area/visualizations``
+-  ``area/webhooks``
 -  ``area/workflows``
+-  ``area/workflows/subworkflows``
 
 New labels should be proposed by opening a pull request against this document
 in the dev branch of Galaxy.

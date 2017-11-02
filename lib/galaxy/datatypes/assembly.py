@@ -63,7 +63,7 @@ class Amos(data.Text):
                         if re.match(r'{(RED|CTG|TLE)$', line):
                             isAmos = True
             fh.close()
-        except:
+        except Exception:
             pass
         return isAmos
 
@@ -102,7 +102,7 @@ class Sequences(sequence.Fasta):
                     else:
                         break  # we found a non-empty line, but it's not a fasta header
             fh.close()
-        except:
+        except Exception:
             pass
         return False
 
@@ -138,7 +138,7 @@ class Roadmaps(data.Text):
                 else:
                     break  # we found a non-empty line, but it's not a fasta header
             fh.close()
-        except:
+        except Exception:
             pass
         return False
 
@@ -202,7 +202,7 @@ class Velvet(Html):
                 gen_msg = gen_msg + ' Long Reads'
             if len(gen_msg) > 0:
                 gen_msg = 'Uses: ' + gen_msg
-        except:
+        except Exception:
             log.debug("Velveth could not read Log file in %s" % efp)
         log.debug("Velveth log info  %s" % gen_msg)
         rval = ['<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>']

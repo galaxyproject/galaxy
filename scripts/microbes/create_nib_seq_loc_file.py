@@ -1,23 +1,25 @@
 #!/usr/bin/env python
 # Dan Blankenberg
+from __future__ import print_function
+
 import os
 import sys
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def __main__():
     base_dir = os.path.join(os.getcwd(), "bacteria")
     try:
         base_dir = sys.argv[1]
-    except:
-        print "using default base_dir:", base_dir
+    except IndexError:
+        print("using default base_dir:", base_dir)
 
     loc_out = os.path.join(base_dir, "seq.loc")
     try:
         loc_out = os.path.join(base_dir, sys.argv[2])
-    except:
-        print "using default seq.loc:", loc_out
+    except Exception:
+        print("using default seq.loc:", loc_out)
 
     organisms = {}
 
@@ -51,7 +53,7 @@ def __main__():
         org = organisms[org]
         try:
             build = org['genome project id']
-        except:
+        except KeyError:
             continue
         if 'build' in org:
             build = org['build']
@@ -62,13 +64,13 @@ def __main__():
         # TODO: add better checking, i.e. for updating
         try:
             os.mkdir(seq_path)
-        except:
-            print "Skipping", build
+        except Exception:
+            print("Skipping", build)
             # continue
 
         loc_out.write("seq %s %s\n" % (build, seq_path))
 
-        # print org info
+        # Print org info
 
         for chr in org['chrs']:
             chr = org['chrs'][chr]

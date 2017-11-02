@@ -3,6 +3,7 @@
 import collections
 import logging
 import os
+import subprocess
 
 import six
 
@@ -11,7 +12,6 @@ from ..container_resolvers import (
 )
 from ..docker_util import build_docker_images_command
 from ..mulled.mulled_build import (
-    check_output,
     DEFAULT_CHANNELS,
     ensure_installed,
     InvolucroContext,
@@ -54,8 +54,8 @@ CachedV2MulledImageMultiTarget.package_hash = _package_hash
 
 def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
     command = build_docker_images_command(truncate=True, sudo=False)
-    command = "%s | tail -n +2 | tr -s ' ' | cut -d' ' -f1,2" % command
-    images_and_versions = check_output(command)
+    images_and_versions = subprocess.check_output(command).strip().split('\n')
+    images_and_versions = [line.split()[0:2] for line in images_and_versions[1:]]
     name_filter = get_filter(namespace)
 
     def output_line_to_image(line):

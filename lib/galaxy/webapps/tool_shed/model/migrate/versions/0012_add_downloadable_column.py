@@ -1,6 +1,8 @@
 """
 Migration script to add the downloadable column to the repository_metadata table.
 """
+from __future__ import print_function
+
 import logging
 import sys
 
@@ -18,7 +20,7 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     # Create and initialize imported column in job table.
@@ -34,8 +36,8 @@ def upgrade(migrate_engine):
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_true = "true"
         migrate_engine.execute("UPDATE repository_metadata SET downloadable=%s" % default_true)
-    except Exception as e:
-        print "Adding downloadable column to the repository_metadata table failed: %s" % str(e)
+    except Exception:
+        log.exception("Adding downloadable column to the repository_metadata table failed.")
 
 
 def downgrade(migrate_engine):
@@ -45,5 +47,5 @@ def downgrade(migrate_engine):
     RepositoryMetadata_table = Table("repository_metadata", metadata, autoload=True)
     try:
         RepositoryMetadata_table.c.downloadable.drop()
-    except Exception as e:
-        print "Dropping column downloadable from the repository_metadata table failed: %s" % str(e)
+    except Exception:
+        log.exception("Dropping column downloadable from the repository_metadata table failed.")

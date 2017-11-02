@@ -6,7 +6,7 @@ import sys
 
 import bx.intervals.io
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def stop_err(msg):
@@ -41,31 +41,31 @@ def __main__():
     input_name = sys.argv[2]
     try:
         chromCol = int(sys.argv[3]) - 1
-    except:
+    except Exception:
         stop_err("'%s' is an invalid chrom column, correct the column settings before attempting to convert the data format." % str(sys.argv[3]))
     try:
         startCol = int(sys.argv[4]) - 1
-    except:
+    except Exception:
         stop_err("'%s' is an invalid start column, correct the column settings before attempting to convert the data format." % str(sys.argv[4]))
     try:
         endCol = int(sys.argv[5]) - 1
-    except:
+    except Exception:
         stop_err("'%s' is an invalid end column, correct the column settings before attempting to convert the data format." % str(sys.argv[5]))
     try:
         strandCol = int(sys.argv[6]) - 1
-    except:
+    except Exception:
         strandCol = -1
     try:
         nameCol = int(sys.argv[7]) - 1
-    except:
+    except Exception:
         nameCol = -1
     try:
         extension = sys.argv[8]
-    except:
+    except IndexError:
         extension = 'interval'  # default extension
     try:
         force_num_columns = int(sys.argv[9])
-    except:
+    except Exception:
         force_num_columns = None
 
     skipped_lines = 0
@@ -116,7 +116,7 @@ def __main__():
                                                     fields2 = fields[11].rstrip(",").split(",")  # remove trailing comma and split on comma
                                                     for field in fields2:
                                                         int(field)
-            except:
+            except Exception:
                 strict_bed = False
                 break
             if force_num_columns is not None and len(fields) != force_num_columns:
@@ -137,14 +137,14 @@ def __main__():
                     name = region.fields[nameCol]
                 else:
                     raise IndexError
-            except:
+            except Exception:
                 name = "region_%i" % count
             try:
                 fields = [str(item) for item in (region.chrom, region.start, region.end, name, 0, region.strand)]
                 if force_num_columns is not None and len(fields) != force_num_columns:
                     fields = force_bed_field_count(fields, count, force_num_columns)
                 out.write("%s\n" % '\t'.join(fields))
-            except:
+            except Exception:
                 skipped_lines += 1
                 if first_skipped_line is None:
                     first_skipped_line = count + 1

@@ -3,7 +3,6 @@ Test lib/galaxy/visualization/plugins/registry.
 """
 import os
 import re
-import sys
 import unittest
 
 from six import string_types
@@ -12,11 +11,8 @@ from galaxy import model
 from galaxy.visualization.plugins import plugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 
-unit_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-sys.path.insert(1, unit_root)
-from unittest_utils import galaxy_mock, utility
+from ...unittest_utils import galaxy_mock, utility
 
-# -----------------------------------------------------------------------------
 glx_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir))
 template_cache_dir = os.path.join(glx_dir, 'database', 'compiled_templates')
 addtional_templates_dir = os.path.join(glx_dir, 'config', 'plugins', 'visualizations', 'common', 'templates')
@@ -41,7 +37,6 @@ config1 = """\
 """
 
 
-# -----------------------------------------------------------------------------
 class VisualizationsRegistry_TestCase(unittest.TestCase):
 
     def test_plugin_load_from_repo(self):
@@ -263,7 +258,6 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         trans = galaxy_mock.MockTrans()
         script_entry._set_up_template_plugin(mock_app_dir.root_path, [addtional_templates_dir])
         response = script_entry._render({}, trans=trans, embedded=True)
-        # print response
         self.assertTrue('src="bler"' in response)
         self.assertTrue('type="text/javascript"' in response)
         self.assertTrue('data-main="one"' in response)

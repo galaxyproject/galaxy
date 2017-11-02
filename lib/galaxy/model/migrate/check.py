@@ -10,6 +10,7 @@ from sqlalchemy import (
     Table
 )
 from sqlalchemy.exc import NoSuchTableError
+from sqlalchemy_utils import create_database, database_exists
 
 log = logging.getLogger(__name__)
 
@@ -29,6 +30,23 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
     3) Database at state where migrate support introduced --> add version control information but make no changes (might still require manual update)
     4) Database versioned but out of date --> fail with informative message, user must run "sh manage_db.sh upgrade"
     """
+    # Create the base database if it doesn't yet exist.
+    new_database = not database_exists(url)
+    if new_database:
+        template = app and getattr(app.config, "database_template", None)
+        encoding = app and getattr(app.config, "database_encoding", None)
+        create_kwds = {}
+
+        message = "Creating database for URI [%s]" % url
+        if template:
+            message += " from template [%s]" % template
+            create_kwds["template"] = template
+        if encoding:
+            message += " with encoding [%s]" % encoding
+            create_kwds["encoding"] = encoding
+        log.info(message)
+        create_database(url, **create_kwds)
+
     # Create engine and metadata
     engine = create_engine(url, **engine_options)
 
@@ -36,14 +54,14 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
         try:
             # Declare the database to be under a repository's version control
             db_schema = schema.ControlledSchema.create(engine, migrate_repository)
-        except:
+        except Exception:
             # The database is already under version control
             db_schema = schema.ControlledSchema(engine, migrate_repository)
         # Apply all scripts to get to current version
         migrate_to_current_version(engine, db_schema)
 
     meta = MetaData(bind=engine)
-    if app and getattr(app.config, 'database_auto_migrate', False):
+    if new_database or (app and getattr(app.config, 'database_auto_migrate', False)):
         migrate()
         return
 

@@ -60,7 +60,7 @@ class SetMetadataToolAction(ToolAction):
         try:
             # For backward compatibility, some tools may not have versions yet.
             job.tool_version = tool.version
-        except:
+        except AttributeError:
             job.tool_version = "1.0.1"
         job.state = job.states.WAITING  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         job.set_handler(tool.get_job_handler(job_params))
@@ -88,7 +88,7 @@ class SetMetadataToolAction(ToolAction):
                                                                      job_metadata=None,
                                                                      include_command=False,
                                                                      max_metadata_value_size=app.config.max_metadata_value_size,
-                                                                     kwds={'overwrite' : overwrite})
+                                                                     kwds={'overwrite': overwrite})
         incoming['__SET_EXTERNAL_METADATA_COMMAND_LINE__'] = cmd_line
         for name, value in tool.params_to_strings(incoming, app).items():
             job.add_parameter(name, value)

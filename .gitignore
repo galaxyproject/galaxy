@@ -125,6 +125,7 @@ sprite-*.less
 static/scripts/bundled/[0-9]*
 node_modules
 bower_components
+client/galaxy/scripts/libs/*
 
 # Documentation build files.
 doc/build

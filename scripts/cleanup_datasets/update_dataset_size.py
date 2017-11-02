@@ -12,7 +12,7 @@ from six.moves import configparser
 
 import galaxy.app
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def usage(prog):

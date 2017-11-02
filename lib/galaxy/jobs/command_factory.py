@@ -17,19 +17,7 @@ log = getLogger(__name__)
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
-if [ "$GALAXY_LIB" != "None" ]; then
-    if [ -n "$PYTHONPATH" ]; then
-        PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
-    else
-        PYTHONPATH="$GALAXY_LIB"
-    fi
-    export PYTHONPATH
-fi
-if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" \
-     -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then
-    . "$GALAXY_VIRTUAL_ENV/bin/activate"
-fi
-GALAXY_PYTHON=`command -v python`
+[ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True
 """
 
 
@@ -198,6 +186,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     output_fnames = metadata_kwds.get('output_fnames', job_wrapper.get_output_fnames())
     config_root = metadata_kwds.get('config_root', None)
     config_file = metadata_kwds.get('config_file', None)
+    datatypes_config = metadata_kwds.get('datatypes_config', None)
     compute_tmp_dir = metadata_kwds.get('compute_tmp_dir', None)
     resolve_metadata_dependencies = job_wrapper.commands_in_new_shell
     metadata_command = job_wrapper.setup_external_metadata(
@@ -208,6 +197,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         set_extension=False,
         config_root=config_root,
         config_file=config_file,
+        datatypes_config=datatypes_config,
         compute_tmp_dir=compute_tmp_dir,
         resolve_metadata_dependencies=resolve_metadata_dependencies,
         kwds={'overwrite': False}

@@ -24,12 +24,12 @@ def main():
 
     try:
         maf_reader = bx.align.maf.Reader(open(input_file))
-    except:
+    except Exception:
         print("Unable to open source MAF file", file=sys.stderr)
         sys.exit()
     try:
         maf_writer = FusingAlignmentWriter(bx.align.maf.Writer(open(output_file, 'w')))
-    except:
+    except Exception:
         print("Unable to open output file", file=sys.stderr)
         sys.exit()
     try:

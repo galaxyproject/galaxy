@@ -15,5 +15,5 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             data.name = "%s (%s)" % (data.name, data.dbkey)
             app.model.context.add(data)
             app.model.context.flush()
-        except:
+        except Exception:
             continue
