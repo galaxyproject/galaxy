@@ -2,6 +2,12 @@
 define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-slider', 'mvc/ui/ui-thumbnails', 'mvc/ui/ui-tabs'
 ], function( QUnit, sinon, testApp, Ui, SelectContent, Drilldown, Slider, Thumbnails, Tabs ){
     'use strict';
+    Ui = Ui.default;
+    SelectContent = SelectContent.default;
+    Drilldown = Drilldown.default;
+    Slider = Slider.default;
+    Thumbnails = Thumbnails.default;
+    Tabs = Tabs.default;
     QUnit.module( 'Ui test', {
         beforeEach: function() {
             testApp.create();
@@ -15,7 +21,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
 
     QUnit.test( 'tabs', function(assert) {
         var self = this;
-        var tabs = new Tabs.default.View({});
+        var tabs = new Tabs.View({});
         var collection = tabs.collection;
         collection.add( { id: 'id_a', title: 'title_a', icon: 'icon_a', $el: 'el_a' } );
         var _test = function() {
@@ -62,7 +68,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
             assert.ok( $(thumb.$( '.ui-thumbnails-title' )[ options.index || 0 ]).html() == options.title, 'Correct title with icon' );
             assert.ok( $(thumb.$( '.ui-thumbnails-description-text' )[ options.index || 0 ]).html() == options.description, 'Correct description' );
         };
-        var thumb = new Thumbnails.default.View({
+        var thumb = new Thumbnails.View({
             title_default   : 'title_default',
             title_list      : 'title_list',
             collection      : [{
@@ -103,7 +109,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
     });
 
     QUnit.test( 'button-default', function(assert) {
-        var button = new Ui.default.Button( { title: 'title' } );
+        var button = new Ui.Button( { title: 'title' } );
         var model = button.model;
         $( 'body' ).prepend( button.$el );
         assert.ok( button.$title.html() == 'title', 'Has correct title' );
@@ -122,7 +128,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
         assert.ok( button.$title.html() == model.get( 'title' ), 'Shows correct regular title' );
     });
     QUnit.test( 'button-default', function(assert) {
-        var button = new Ui.default.Button( { title: 'title' } );
+        var button = new Ui.Button( { title: 'title' } );
         var model = button.model;
         $( 'body' ).prepend( button.$el );
         assert.ok( button.$title.html() == 'title', 'Has correct title' );
@@ -142,7 +148,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
     });
 
     QUnit.test( 'button-icon', function(assert) {
-        var button = new Ui.default.ButtonIcon( { title: 'title' } );
+        var button = new Ui.ButtonIcon( { title: 'title' } );
         var model = button.model;
         $( 'body' ).prepend( button.$el );
         assert.ok( button.$title.html() == 'title', 'Has correct title' );
@@ -156,7 +162,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
     });
 
     QUnit.test( 'button-check', function(assert) {
-        var button = new Ui.default.ButtonCheck( { title: 'title' } );
+        var button = new Ui.ButtonCheck( { title: 'title' } );
         var model = button.model;
         $( 'body' ).prepend( button.$el );
         assert.ok( button.$title.html() == 'title', 'Has correct title' );
@@ -195,7 +201,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
             assert.ok( obj.$menu.find( '.ui-button-check' ).length === ( Boolean( options.all_icon ) ? 1 : 0 ), 'All button available: ' + Boolean( options.all_active ) );
         }
 
-        var radio = new Ui.default.Radio.View({});
+        var radio = new Ui.Radio.View({});
         $( 'body' ).prepend( radio.$el );
         radio.model.set( 'visible', false );
         assert.ok( radio.value() === null, 'Initial value is `null`.' );
@@ -281,7 +287,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
             length: 3
         });
 
-        var check = new Ui.default.Checkbox.View({});
+        var check = new Ui.Checkbox.View({});
         $( 'body' ).prepend( check.$el );
         _test( check, {
             menu_visible: false,
@@ -380,7 +386,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
             all_icon: 'fa-check-square-o'
         });
 
-        var radiobutton = new Ui.default.RadioButton.View({});
+        var radiobutton = new Ui.RadioButton.View({});
         $( 'body' ).prepend( radiobutton.$el );
         radiobutton.model.set( 'data', [ { value: 'valuea', label: 'labela' }, { value: 'valueb', label: 'labelb' } ] );
         _test( radiobutton, {
@@ -401,7 +407,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
             length: 2
         });
 
-        var drilldown = new Drilldown.default.View({});
+        var drilldown = new Drilldown.View({});
         $( 'body' ).prepend( drilldown.$el );
         drilldown.model.set( 'data', [ { value: 'valuea', name: 'labela', options: [
                                             { value: 'valueb', name: 'labelb' },
@@ -436,7 +442,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
             length: 14,
             all_icon: 'fa-minus-square-o'
         });
-        var drillradio = new Drilldown.default.View( { display: 'radio' } );
+        var drillradio = new Drilldown.View( { display: 'radio' } );
         $( 'body' ).prepend( drillradio.$el );
         _test( drillradio, {
             menu_visible: false,
@@ -467,7 +473,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
             assert.ok( Boolean( select.all_button ) === Boolean( options.multiple ), 'Visiblity of select all button correct.' );
             options.multiple && assert.ok( select.all_button.$( '.icon' ).hasClass( options.all_icon ), 'All button in correct state: ' + options.all_icon );
         }
-        var select = new Ui.default.Select.View({});
+        var select = new Ui.Select.View({});
         $( 'body' ).prepend( select.$el );
         assert.ok( select.first() === '__null__', 'First select is \'__null__\'' );
         assert.ok( select.$dropdown.hasClass( 'fa-caret-down' ), 'Caret down shown.' );
@@ -574,7 +580,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
     } );
 
     QUnit.test( 'label', function(assert) {
-        var label = new Ui.default.Label({
+        var label = new Ui.Label({
             title   : '_title'
         });
         $( 'body' ).prepend( label.$el );
@@ -584,23 +590,23 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
     } );
 
     QUnit.test( 'slider', function(assert) {
-        var input = new Slider.default.View( { min: 1, max: 100, value: 10 } );
+        var input = new Slider.View( { min: 1, max: 100, value: 10 } );
         $( 'body' ).prepend( input.$el );
         assert.ok( input.$slider.slider( 'value' ) == 10, 'Correct value.' );
         assert.ok( input.value( 1000 ) == 100, 'Correct upper limit.' );
         assert.ok( input.$slider.slider( 'value' ) == 100, 'Correct slider value.' );
         assert.ok( input.$slider.slider( 'option', 'step' ) == 1, 'Correct default step size.' );
-        var input1 = new Slider.default.View( { value: 10 } );
+        var input1 = new Slider.View( { value: 10 } );
         $( 'body' ).prepend( input1.$el );
         assert.ok( input1.$slider.css( 'display' ) == 'none', 'Slider hidden.' );
-        var input2 = new Slider.default.View( { min: 0, max: 100, value: 10.1, precise: true } );
+        var input2 = new Slider.View( { min: 0, max: 100, value: 10.1, precise: true } );
         $( 'body' ).prepend( input2.$el );
         assert.ok( input2.$slider.slider( 'option', 'step' ) == 0.01, 'Correct float step size.' );
         assert.ok( input2.$slider.slider( 'value' ) == 10.1, 'Correct float slider value.' );
     } );
 
     QUnit.test( 'input', function(assert) {
-        var input = new Ui.default.Input();
+        var input = new Ui.Input();
         $( 'body' ).prepend( input.$el );
         assert.ok( input.tagName === 'input', 'Created input.' );
         assert.ok( input.value() === undefined, 'Input empty.' );
@@ -623,7 +629,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
     } );
 
     QUnit.test( 'textarea', function(assert) {
-        var input = new Ui.default.Input( { area: true } );
+        var input = new Ui.Input( { area: true } );
         $( 'body' ).prepend( input.$el );
         assert.ok( input.tagName === 'textarea', 'Created textarea.' );
         assert.ok( input.value() === undefined, 'Unavailable value.' );
@@ -635,7 +641,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
     } );
 
     QUnit.test( 'message', function(assert) {
-        var message = new Ui.default.Message({
+        var message = new Ui.Message({
             persistent  : true,
             message     : '_message',
             status      : 'danger'
@@ -651,7 +657,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
     } );
 
     QUnit.test( 'hidden', function(assert) {
-        var hidden = new Ui.default.Hidden();
+        var hidden = new Ui.Hidden();
         $( 'body' ).prepend( hidden.$el );
         hidden.model.set( 'info', '_info' );
         assert.ok( hidden.$info.css( 'display', 'block' ), 'Info shown.' );
@@ -663,7 +669,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
     } );
 
     QUnit.test( 'select-content', function(assert) {
-        var select = new SelectContent.default.View({});
+        var select = new SelectContent.View({});
         $( 'body' ).prepend( select.$el );
         var _testSelect = function( tag, options ) {
             var field = select.fields[ tag == 'first' ? 0 : select.fields.length - 1 ];
@@ -783,7 +789,7 @@ define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-conte
         assert.ok( select.config[ select.model.get( 'current' ) ].src == 'hdca', 'Matched collection field' );
         assert.ok( JSON.stringify( select.value() ) == '{"values":[{"id":"id2","name":"name2","hid":"hid2"}],"batch":true}', 'Checking collection value' );
 
-        select = new SelectContent.default.View({});
+        select = new SelectContent.View({});
         $( 'body' ).prepend( select.$el );
         var _testEmptySelect = function( tag, txt_extension, txt_label ) {
             var field = select.fields[ tag == 'first' ? 0 : select.fields.length - 1 ];

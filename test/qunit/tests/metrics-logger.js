@@ -13,6 +13,7 @@ define([
     QUnit
 ){
     "use strict";
+    metrics = metrics.default;
 
     var MockConsole = function(){
         var self = this;
@@ -33,10 +34,10 @@ define([
     QUnit.module( "Metrics logger tests" );
     // ======================================================================== MetricsLogger
     QUnit.test( "logger construction/initializiation defaults", function(assert) {
-        var logger = new metrics.default.MetricsLogger({});
+        var logger = new metrics.MetricsLogger({});
         assert.equal( logger.consoleLogger, null );
-        assert.equal( logger.options.logLevel,         metrics.default.MetricsLogger.NONE );
-        assert.equal( logger.options.consoleLevel,     metrics.default.MetricsLogger.NONE );
+        assert.equal( logger.options.logLevel,         metrics.MetricsLogger.NONE );
+        assert.equal( logger.options.consoleLevel,     metrics.MetricsLogger.NONE );
         assert.equal( logger.options.defaultNamespace, 'Galaxy' );
         assert.equal( logger.options.clientPrefix,     'client.' );
         assert.equal( logger.options.postSize,         1000 );
@@ -47,18 +48,18 @@ define([
         assert.equal( logger.options.onServerResponse, undefined );
 
         assert.equal( logger._postSize, 1000 );
-        assert.equal( logger.cache.constructor, metrics.default.LoggingCache );
+        assert.equal( logger.cache.constructor, metrics.LoggingCache );
     });
 
     QUnit.test( "_parseLevel", function(assert) {
-        var logger = new metrics.default.MetricsLogger({});
-        assert.equal( logger._parseLevel( 'all' ),     metrics.default.MetricsLogger.ALL );
-        assert.equal( logger._parseLevel( 'debug' ),   metrics.default.MetricsLogger.DEBUG );
-        assert.equal( logger._parseLevel( 'info' ),    metrics.default.MetricsLogger.INFO );
-        assert.equal( logger._parseLevel( 'warn' ),    metrics.default.MetricsLogger.WARN );
-        assert.equal( logger._parseLevel( 'error' ),   metrics.default.MetricsLogger.ERROR );
-        assert.equal( logger._parseLevel( 'metric' ),  metrics.default.MetricsLogger.METRIC );
-        assert.equal( logger._parseLevel( 'none' ),    metrics.default.MetricsLogger.NONE );
+        var logger = new metrics.MetricsLogger({});
+        assert.equal( logger._parseLevel( 'all' ),     metrics.MetricsLogger.ALL );
+        assert.equal( logger._parseLevel( 'debug' ),   metrics.MetricsLogger.DEBUG );
+        assert.equal( logger._parseLevel( 'info' ),    metrics.MetricsLogger.INFO );
+        assert.equal( logger._parseLevel( 'warn' ),    metrics.MetricsLogger.WARN );
+        assert.equal( logger._parseLevel( 'error' ),   metrics.MetricsLogger.ERROR );
+        assert.equal( logger._parseLevel( 'metric' ),  metrics.MetricsLogger.METRIC );
+        assert.equal( logger._parseLevel( 'none' ),    metrics.MetricsLogger.NONE );
         assert.equal( logger._parseLevel( 15 ),        15 );
 
         assert.throws( function(){
@@ -71,18 +72,18 @@ define([
 
     // ------------------------------------------------------------------------ Emit to cache
     QUnit.test( "emit to cache at level", function(assert) {
-        var logger = new metrics.default.MetricsLogger({
+        var logger = new metrics.MetricsLogger({
             logLevel : 'metric'
         });
         logger.cache.empty();
 
-        assert.equal( logger.options.logLevel, metrics.default.MetricsLogger.METRIC );
+        assert.equal( logger.options.logLevel, metrics.MetricsLogger.METRIC );
         logger.emit( 'metric', 'test', [ 1, 2, { three: 3 }] );
         assert.equal( logger.cache.length(), 1 );
 
         var cached = logger.cache.get( 1 )[0];
         //console.debug( 'cached:', JSON.stringify( cached ) );
-        assert.equal( cached.level, metrics.default.MetricsLogger.METRIC );
+        assert.equal( cached.level, metrics.MetricsLogger.METRIC );
         assert.equal( cached.namespace, 'client.test' );
         assert.equal( cached.args.length, 3 );
         assert.equal( cached.args[2].three, 3 );
@@ -91,7 +92,7 @@ define([
     });
 
     QUnit.test( "emit to cache below does not cache", function(assert) {
-        var logger = new metrics.default.MetricsLogger({
+        var logger = new metrics.MetricsLogger({
             logLevel : 'metric'
         });
         logger.cache.empty();
@@ -101,7 +102,7 @@ define([
     });
 
     QUnit.test( "emit to cache (silently) drops non-parsable", function(assert) {
-        var logger = new metrics.default.MetricsLogger({
+        var logger = new metrics.MetricsLogger({
             logLevel : 'metric'
         });
         logger.cache.empty();
@@ -117,7 +118,7 @@ define([
 
     QUnit.test( "_postCache success", function (assert) {
         var callback = sinon.spy(),
-            logger = new metrics.default.MetricsLogger({
+            logger = new metrics.MetricsLogger({
                 logLevel : 'metric',
                 onServerResponse : function( response ){ callback(); }
             });
@@ -149,7 +150,7 @@ define([
         // metrics were in proper form on server
         assert.equal( metricsOnServer.length, 1 );
         var metric = metricsOnServer[0];
-        assert.equal( metric.level, metrics.default.MetricsLogger.METRIC );
+        assert.equal( metric.level, metrics.MetricsLogger.METRIC );
         assert.equal( metric.namespace, 'client.test' );
         assert.equal( metric.args.length, 3 );
         assert.equal( metric.args[2].three, 3 );
@@ -161,7 +162,7 @@ define([
 
     QUnit.test( "_postCache failure", function (assert) {
         var callback = sinon.spy(),
-            logger = new metrics.default.MetricsLogger({
+            logger = new metrics.MetricsLogger({
                 logLevel : 'metric',
                 onServerResponse : function( response ){ callback(); }
             });
@@ -192,11 +193,11 @@ define([
     // ------------------------------------------------------------------------ Emit to console
     QUnit.test( "emit to console at level", function(assert) {
         var mockConsole = new MockConsole(),
-            logger = new metrics.default.MetricsLogger({
+            logger = new metrics.MetricsLogger({
                 consoleLevel    : 'debug',
                 consoleLogger   : mockConsole
             });
-        assert.equal( logger.options.consoleLevel, metrics.default.MetricsLogger.DEBUG );
+        assert.equal( logger.options.consoleLevel, metrics.MetricsLogger.DEBUG );
         assert.equal( logger.consoleLogger.constructor, MockConsole );
 
         logger.emit( 'debug', 'test', [ 1, 2, { three: 3 }] );
@@ -210,7 +211,7 @@ define([
 
     QUnit.test( "emit to console below does not output", function(assert) {
         var mockConsole = new MockConsole(),
-            logger = new metrics.default.MetricsLogger({
+            logger = new metrics.MetricsLogger({
                 consoleLevel    : 'error',
                 consoleLogger   : mockConsole
             });
@@ -220,12 +221,12 @@ define([
 
     // ------------------------------------------------------------------------ Shortcuts
     QUnit.test( "logger shortcuts emit to default namespace properly", function(assert) {
-        var logger = new metrics.default.MetricsLogger({
+        var logger = new metrics.MetricsLogger({
                 logLevel    : 'all'
             });
         logger.cache.empty();
 
-        assert.equal( logger.options.logLevel, metrics.default.MetricsLogger.ALL );
+        assert.equal( logger.options.logLevel, metrics.MetricsLogger.ALL );
         logger.log( 0 );
         logger.debug( 1 );
         logger.info( 2 );
@@ -259,7 +260,7 @@ define([
     // ======================================================================== LoggingCache
     QUnit.test( "cache construction/initializiation defaults", function(assert) {
         // use empty to prevent tests stepping on one another due to persistence
-        var cache = new metrics.default.LoggingCache({ key: 'logs-test' }).empty();
+        var cache = new metrics.LoggingCache({ key: 'logs-test' }).empty();
         assert.equal( cache.maxSize,   5000 );
         assert.equal( window.localStorage.getItem( 'logs-test' ), '[]' );
     });
@@ -268,20 +269,20 @@ define([
         ////TODO: doesn't work - readonly
         //window.localStorage = null;
         //console.debug( 'localStorage:', window.localStorage );
-        var oldFn = metrics.default.LoggingCache.prototype._hasStorage;
-        metrics.default.LoggingCache.prototype._hasStorage = function(){ return false; };
+        var oldFn = metrics.LoggingCache.prototype._hasStorage;
+        metrics.LoggingCache.prototype._hasStorage = function(){ return false; };
         assert.throws( function(){
-            return new metrics.default.LoggingCache({ key: 'logs-test' });
+            return new metrics.LoggingCache({ key: 'logs-test' });
         }, /LoggingCache needs localStorage/, 'lack of localStorage throws error' );
-        metrics.default.LoggingCache.prototype._hasStorage = oldFn;
+        metrics.LoggingCache.prototype._hasStorage = oldFn;
 
         assert.throws( function(){
-            return new metrics.default.LoggingCache();
+            return new metrics.LoggingCache();
         }, /LoggingCache needs key for localStorage/, 'lack of key throws error' );
     });
 
     QUnit.test( "cache construction/initializiation setting max cache size", function(assert) {
-        var cache = new metrics.default.LoggingCache({
+        var cache = new metrics.LoggingCache({
             key     : 'logs-test',
             maxSize : 5
         }).empty();
@@ -289,7 +290,7 @@ define([
     });
 
     QUnit.test( "cache plays well with no data", function(assert) {
-        var cache = new metrics.default.LoggingCache({ key: 'logs-test' }).empty();
+        var cache = new metrics.LoggingCache({ key: 'logs-test' }).empty();
 
         assert.equal( cache.length(), 0 );
         var get = cache.get( 10 );
@@ -300,7 +301,7 @@ define([
     });
 
     QUnit.test( "cache add properly adds and removes data", function(assert) {
-        var cache = new metrics.default.LoggingCache({
+        var cache = new metrics.LoggingCache({
             key     : 'logs-test',
             maxSize : 5
         }).empty();
@@ -325,7 +326,7 @@ define([
     });
 
     QUnit.test( "cache past max loses oldest", function(assert) {
-        var cache = new metrics.default.LoggingCache({
+        var cache = new metrics.LoggingCache({
             key     : 'logs-test',
             maxSize : 5
         }).empty();
@@ -343,16 +344,16 @@ define([
     });
 
     QUnit.test( "cache is properly persistent", function(assert) {
-        var cache1 = new metrics.default.LoggingCache({ key : 'logs-test' }).empty(),
+        var cache1 = new metrics.LoggingCache({ key : 'logs-test' }).empty(),
             entry = [{ one: 1 }, 'two' ];
         cache1.add( entry );
         assert.equal( cache1.length(), 1 );
 
-        var cache2 = new metrics.default.LoggingCache({ key : 'logs-test' });
+        var cache2 = new metrics.LoggingCache({ key : 'logs-test' });
         assert.equal( cache2.length(), 1, 'old key gets previously stored' );
         assert.equal( JSON.stringify( cache2.get( 1 )[0] ), JSON.stringify( entry ) );
 
-        var cache3 = new metrics.default.LoggingCache({ key : 'logs-bler' });
+        var cache3 = new metrics.LoggingCache({ key : 'logs-bler' });
         assert.equal( cache3.length(), 0, 'new key causes new storage' );
     });
 

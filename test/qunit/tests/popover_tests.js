@@ -2,18 +2,20 @@
 define([ "test-app", "mvc/ui/ui-misc", "mvc/ui/ui-popover", "QUnit"
 ], function( testApp, Ui, Popover, QUnit ){
     "use strict";
+    Ui = Ui.default;
+    Popover = Popover.default;
     QUnit.module( "Popover test", {
         beforeEach: function() {
             testApp.create();
             var self = this;
-            this.button = new Ui.default.Button({
+            this.button = new Ui.Button({
                 title   : 'Test button',
                 onclick : function() {
                     self.popover.show();
                 }
             });
             this.$parent = $( '<div/>' ).append( this.button.$el );
-            this.popover = new Popover.default.View({
+            this.popover = new Popover.View({
                 title       : 'Test Title',
                 body        : 'Test Body',
                 placement   : 'bottom',

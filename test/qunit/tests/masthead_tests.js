@@ -2,11 +2,12 @@
 define([ "test-app", "layout/masthead", "QUnit"
 ], function( testApp, Masthead, QUnit ){
     "use strict";
+    Masthead = Masthead.default;
     QUnit.module( "Masthead test", {
         beforeEach: function() {
             testApp.create();
             var self = this;
-            this.masthead = new Masthead.default.View({
+            this.masthead = new Masthead.View({
                 'brand'                     : 'brand',
                 'use_remote_user'           : 'use_remote_user',
                 'remote_user_logout_href'   : 'remote_user_logout_href',

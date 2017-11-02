@@ -13,13 +13,15 @@ define([
     QUnit
 ){
     "use strict";
+    HDA_MODEL = HDA_MODEL.default;
+    HDA_BASE = HDA_BASE.default;
     QUnit.module( "HDA base backbone view tests" );
 
     QUnit.test( "Base HDA view default construction, initialize", function(assert) {
-        var hda = new HDA_MODEL.default.HistoryDatasetAssociation({
+        var hda = new HDA_MODEL.HistoryDatasetAssociation({
                     id          : '123'
                 }),
-            view = new HDA_BASE.default.HDAListItemView({ model: hda });
+            view = new HDA_BASE.HDAListItemView({ model: hda });
 
         assert.strictEqual( view.model, hda );
 

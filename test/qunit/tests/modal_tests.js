@@ -2,12 +2,13 @@
 define([ "test-app", "mvc/ui/ui-modal", "QUnit", "sinon"
 ], function( testApp, GalaxyModal, QUnit, sinon ){
     "use strict";
+    GalaxyModal = GalaxyModal.default;
     QUnit.module( "Modal dialog test", {
         beforeEach: function() {
             testApp.create();
             this.clock = sinon.useFakeTimers();
             var self = this;
-            this.app = new GalaxyModal.default.View({
+            this.app = new GalaxyModal.View({
                 title   : 'Test title',
                 body    : 'Test body',
                 buttons : {

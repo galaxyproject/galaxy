@@ -13,7 +13,8 @@ define([
     QUnit
 ){
     "use strict";
-    var PCC = PAIRED_COLLECTION_CREATOR.default.PairedCollectionCreator;
+    PAIRED_COLLECTION_CREATOR = PAIRED_COLLECTION_CREATOR.default;
+    var PCC = PAIRED_COLLECTION_CREATOR.PairedCollectionCreator;
 
     QUnit.module( "Galaxy client app tests" );
 

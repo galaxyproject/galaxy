@@ -2,10 +2,11 @@
 define([ "test-app", "mvc/upload/upload-view", "QUnit"
 ], function( testApp, GalaxyUpload, QUnit ){
     "use strict";
+    GalaxyUpload = GalaxyUpload.default;
     QUnit.module( "Upload dialog test", {
         beforeEach: function( ) {
             testApp.create();
-            this.app = new GalaxyUpload.default();
+            this.app = new GalaxyUpload();
         },
         afterEach: function() {
             testApp.destroy();

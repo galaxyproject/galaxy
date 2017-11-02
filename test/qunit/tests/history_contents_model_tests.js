@@ -10,16 +10,17 @@ define([
     sinon,
     QUnit
 ){
+    HDA_MODEL = HDA_MODEL.default;
     QUnit.module( "History Contents Model QUnit.Tests" );
 
     QUnit.test( "HDA Constructions with Default Attributes", function(assert) {
-        var hda = new HDA_MODEL.default.HistoryDatasetAssociation({});
+        var hda = new HDA_MODEL.HistoryDatasetAssociation({});
         assert.equal( hda.get( 'name' ), "(unnamed dataset)" );
         assert.equal( hda.get( 'state' ), "new" );
     });
 
     QUnit.test( "HDA Construction with Supplied Attributes", function(assert) {
-        var hda = new HDA_MODEL.default.HistoryDatasetAssociation({
+        var hda = new HDA_MODEL.HistoryDatasetAssociation({
             history_content_type : 'dataset',
             name: "my dataset",
             state: "ok"
@@ -29,7 +30,7 @@ define([
     });
 
     QUnit.test( "HDA Deletion", function(assert) {
-        var hda = new HDA_MODEL.default.HistoryDatasetAssociation({
+        var hda = new HDA_MODEL.HistoryDatasetAssociation({
             history_content_type : 'dataset',
             id: "hda1",
             history_id: "h1",

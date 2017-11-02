@@ -2,6 +2,8 @@
 define([ "test-app", "layout/page", "layout/panel", "QUnit"
 ], function( testApp, Page, Panel, QUnit ){
     "use strict";
+    Page = Page.default;
+    Panel = Panel.default;
     QUnit.module( "Page test", {
         beforeEach: function() {
             testApp.create();
@@ -21,7 +23,7 @@ define([ "test-app", "layout/page", "layout/panel", "QUnit"
 
     QUnit.test( "test center/right", function(assert) {
         this.$container.empty();
-        var page = new Page.default.View({
+        var page = new Page.View({
             Right   : Backbone.View.extend({
                 initialize: function() {
                     this.setElement( $('<div/>') );
@@ -33,12 +35,12 @@ define([ "test-app", "layout/page", "layout/panel", "QUnit"
     });
     QUnit.test( "test center", function(assert) {
         this.$container.empty();
-        var page = new Page.default.View({}).render();
+        var page = new Page.View({}).render();
         _check( assert, page, { left: 'none', right: 'none' } );
     });
     QUnit.test( "test left/center", function(assert) {
         this.$container.empty();
-        var page = new Page.default.View({
+        var page = new Page.View({
             Left   : Backbone.View.extend({
                 initialize: function() {
                     this.setElement( $('<div/>') );
