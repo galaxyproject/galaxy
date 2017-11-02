@@ -54,21 +54,22 @@ var notebook_pubkey_url = '${ notebook_pubkey_url }';
 require.config({
     baseUrl: app_root,
     paths: {
-        "interactive_environments": "${h.url_for('/static/scripts/galaxy.interactive_environments')}",
+        "galaxy.interactive_environments": "${h.url_for('/static/scripts/galaxy.interactive_environments')}",
         "plugin" : app_root + "js/",
         "crypto" : app_root + "js/crypto/",
     },
 });
 requirejs([
-    'interactive_environments',
+    'galaxy.interactive_environments',
     'crypto/prng4',
     'crypto/rng',
     'crypto/rsa',
     'crypto/jsbn',
     'crypto/base64',
     'plugin/rstudio'
-], function(){
-    load_when_ready(ie_readiness_url, function(){
+], function(IES){
+    window.IES = IES;
+    IES.load_when_ready(ie_readiness_url, function(){
         load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_url);
     });
 });

@@ -1,3 +1,7 @@
+// Assumed globals we need to get rid of
+var IES = window.IES;
+var toastr = window.toastr;
+
 function message_failed_connection(){
     toastr.error(
         "Could not connect to RStudio. Please contact your administrator.",
@@ -17,7 +21,7 @@ function message_failed_connection(){
 function load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_url){
     // Test notebook_login_url for accessibility, executing the login+load function whenever
     // we've successfully connected to the IE.
-    test_ie_availability(notebook_pubkey_url, function(){
+    IES.test_ie_availability(notebook_pubkey_url, function(){
         var payload = "rstudio\nrstudio";
         $.ajax({
             type: 'GET',
@@ -54,7 +58,7 @@ function load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_
                     },
                     // If that is successful, load the notebook
                     success: function(){
-                        append_notebook(notebook_access_url);
+                        IES.append_notebook(notebook_access_url);
                     },
                     error: function(jqxhr, status, error){
                         // TODO: Uncomment when rstudio / nginx play nicely and
@@ -62,7 +66,7 @@ function load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_
                         // issuing a mixed-content warning.
                         //message_failed_connection();
                         // Do we want to try and load the notebook anyway? Just in case?
-                        append_notebook(notebook_access_url);
+                        IES.append_notebook(notebook_access_url);
                     }
                 });
             }
