@@ -625,18 +625,7 @@
     <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="true" display_in_upload="true" />
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true" />
     <!-- PlantTribes datatypes -->
-    <datatype extension="ptalign" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignment" />
-    <datatype extension="ptalignca" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentCodonAlignment" />
-    <datatype extension="ptaligntrimmed" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentTrimmed" />
-    <datatype extension="ptaligntrimmedca" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment" />
-    <datatype extension="ptalignfiltered" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentFiltered" />
-    <datatype extension="ptalignfilteredca" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment" />
     <datatype extension="ptkscmp" type="galaxy.datatypes.plant_tribes:PlantTribesKsComponents" display_in_upload="true"/>
-    <datatype extension="ptortho" type="galaxy.datatypes.plant_tribes:PlantTribesOrtho" />
-    <datatype extension="ptorthocs" type="galaxy.datatypes.plant_tribes:PlantTribesOrthoCodingSequence" />
-    <datatype extension="ptphylip" type="galaxy.datatypes.plant_tribes:PlantTribesPhylip" />
-    <datatype extension="pttgf" type="galaxy.datatypes.plant_tribes:PlantTribesTargetedGeneFamilies" />
-    <datatype extension="pttree" type="galaxy.datatypes.plant_tribes:PlantTribesPhylogeneticTree" />
     <datatype extension="smat" type="galaxy.datatypes.plant_tribes:Smat" display_in_upload="true" />
   </registration>
   <sniffers>
