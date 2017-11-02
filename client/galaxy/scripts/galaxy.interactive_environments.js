@@ -1,29 +1,30 @@
 /**
  * Internal function to remove content from the main area and add the notebook.
  * Not idempotent
+ * TODO: This isn't just internal, some notebooks are calling it?
  */
-function append_notebook(url) {
+export function append_notebook(url) {
     clear_main_area();
     $("#main").append(
         `<iframe frameBorder="0" seamless="seamless" style="width: 100%; height: 100%; overflow:hidden;" scrolling="no" src="${url}"></iframe>`
     );
 }
 
-function clear_main_area() {
+export function clear_main_area() {
     $("#spinner").remove();
     $("#main")
         .children()
         .remove();
 }
 
-function display_spinner() {
+export function display_spinner() {
     $("#main").append(
         `<img id="spinner" src="${galaxy_root}static/style/largespinner.gif" style="position:absolute;margin:auto;top:0;left:0;right:0;bottom:0;">`
     );
 }
 
 /* Create a spin_state object used by spin() and spin_again() */
-function make_spin_state(
+export function make_spin_state(
     type,
     ajax_timeout_init,
     ajax_timeout_max,
@@ -51,7 +52,7 @@ function make_spin_state(
 }
 
 /* Log/display an error when spinning fails. */
-function spin_error(console_msg, user_msg, clear) {
+export function spin_error(console_msg, user_msg, clear) {
     console.log(console_msg);
     if (clear) clear_main_area();
     if (typeof user_msg == "string") {
@@ -84,7 +85,7 @@ function spin_again(spin_state) {
  * returns `true`, the condition is considered "resolved" and spinning stops. Otherwise, continue spinning, increasing
  * AJAX timeouts and/or sleep values as configured in the spin_state.
  */
-function spin(
+export function spin(
     url,
     bool_response,
     success_callback,
@@ -201,7 +202,7 @@ function spin_until(
  * @param {String} callback: function to call once successfully connected.
  *
  */
-function test_ie_availability(url, success_callback) {
+export function test_ie_availability(url, success_callback) {
     var messages = {
         success: "IE connection succeeded, returning",
         waiting:
@@ -222,7 +223,7 @@ function test_ie_availability(url, success_callback) {
  * @param {String} callback: function to call once successfully connected.
  *
  */
-export default function load_when_ready(url, success_callback) {
+export function load_when_ready(url, success_callback) {
     var messages = {
         success: "Galaxy reports IE container ready, returning",
         not_ready:
