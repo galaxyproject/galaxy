@@ -994,99 +994,9 @@ class Newick(Text):
         return ['phyloviz']
 
 
-class MaximumLikelihoodDistanceMatrix(Text):
-    """Distance matrix of sequence homology"""
-    file_ext = 'mldist'
-
-    def init_meta(self, dataset, copy_from=None):
-        Text.init_meta(self, dataset, copy_from=copy_from)
-
-    def sniff(self, filename):
-        """
-        Detect the MLDIST file
-
-        Header is an integer, and all other lines follow
-        a sample name followed by an array of floats
-        overall conforming to the standard square matrix
-        type.
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('example.mldist')
-        >>> MaximumLikelihoodDistanceMatrix().sniff(fname)
-        True
-
-
-        >>> fname = get_test_fname('example.iqtree')
-        >>> MaximumLikelihoodDistanceMatrix().sniff(fname)
-        False
-
-
-        >>> fname = get_test_fname('mothur_datatypetest_false.mothur.pair.dist')
-        >>> MaximumLikelihoodDistanceMatrix().sniff(fname)
-        False
-
-
-        >>> fname = get_test_fname('mothur_datatypetest_false.mothur.lower.dist')
-        >>> MaximumLikelihoodDistanceMatrix().sniff(fname)
-        False
-        """
-        with open(filename, "r") as fio:
-
-            if b'\x00' in fio.read(512):
-                return False
-
-            fio.seek(0)
-
-            header = fio.readline()
-
-            try:
-                int(header)
-            except ValueError:
-                return False
-
-            num_tokens = -1
-            num_lines = 0
-
-            for line in fio:
-
-                num_lines += 1
-                if num_lines > 5000:
-                    break
-
-                line = line.splitlines()[0].strip()
-
-                if line == "":
-                    continue
-
-                tokens = line.split()
-
-                if num_tokens == -1:
-                    num_tokens = len(tokens)
-
-                elif len(tokens) != num_tokens:
-                    # not a square matrix
-                    return False
-
-                try:
-                    [float(tok) for tok in tokens[1:]]
-                except ValueError:
-                    return False
-
-            return True
-
-        return False
-
-
 class IQTree(Text):
     """IQ-TREE format"""
     file_ext = 'iqtree'
-
-    def __init__(self, **kwd):
-        """Init mixed format"""
-        Text.__init__(self, **kwd)
-
-    def init_meta(self, dataset, copy_from=None):
-        Text.init_meta(self, dataset, copy_from=copy_from)
 
     def sniff(self, filename):
         """
@@ -1100,46 +1010,16 @@ class IQTree(Text):
         >>> IQTree().sniff(fname)
         True
 
-
         >>> fname = get_test_fname('temp.txt')
         >>> IQTree().sniff(fname)
         False
-
 
         >>> fname = get_test_fname('test_tab1.tabular')
         >>> IQTree().sniff(fname)
         False
         """
         with open(filename, 'r') as fio:
-
-            if b'\x00' in fio.read(512):
-                return False
-
-            fio.seek(0)
-
-            found_line = {
-                'IQ-TREE' : False,
-                'REFERENCES': False,
-                'SEQUENCE ALIGNMENT': False,
-                'ModelFinder': False,
-                'SUBSTITUTION PROCESS': False,
-                'MAXIMUM LIKELIHOOD TREE': False,
-                'TIME STAMP': False
-            }
-
-            num_lines = 0
-
-            for line in fio:
-
-                num_lines += 1
-                if num_lines > 500:
-                    break
-
-                for wanted_line in found_line:
-                    if line.startswith(wanted_line):
-                        found_line[wanted_line] = True
-
-            return set(found_line.values()) == {True}
+            return fio.read(7) == "IQ-TREE"
 
         return False
 
