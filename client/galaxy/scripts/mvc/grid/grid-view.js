@@ -70,8 +70,8 @@ export default Backbone.View.extend({
     handle_refresh: function(refresh_frames) {
         if (refresh_frames) {
             if ($.inArray("history", refresh_frames) > -1) {
-                if (top.Galaxy && top.Galaxy.currHistoryPanel) {
-                    top.Galaxy.currHistoryPanel.loadCurrentHistory();
+                if (window.top.Galaxy && window.top.Galaxy.currHistoryPanel) {
+                    window.top.Galaxy.currHistoryPanel.loadCurrentHistory();
                 }
             }
         }
