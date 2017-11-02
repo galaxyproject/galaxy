@@ -126,6 +126,7 @@ var View = Backbone.View.extend({
         ];
 
         // TODO
+        /*
         if (false && response.any_public) {
             inputs.push({
                 name: "public_consent",
@@ -137,6 +138,7 @@ var View = Backbone.View.extend({
                 type: "boolean"
             });
         }
+        */
 
         var form = new Form({
             title: "Error Report",
