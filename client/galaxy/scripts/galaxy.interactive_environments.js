@@ -195,31 +195,6 @@ function spin_until(
 }
 
 /**
- * Test a boolean (json) response from a URL, and call a callback when done.
- * http://stackoverflow.com/q/25390206/347368
- * @param {String} url: URL to test response of. Must return a 200 (302->200 is OK) and either `true` or `false`.
- * @param {String} callback: function to call once successfully connected.
- *
- */
-function load_when_ready(url, success_callback) {
-    var messages = {
-        success: "Galaxy reports IE container ready, returning",
-        not_ready:
-            "Galaxy is launching a container in which to run this interactive environment. Please wait...",
-        unknown_response:
-            "Galaxy failed to launch a container in which to run this interactive environment, contact a Galaxy administrator.",
-        waiting:
-            "Galaxy is launching a container in which to run this interactive environment. Please wait...",
-        wait_warn:
-            "It is taking an usually long time to start a container. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
-        error:
-            "Galaxy encountered an error while attempting to determine the readiness of this interactive environment's container, contact a Galaxy administrator."
-    };
-    var spin_state = make_spin_state("IE container readiness");
-    spin_until(url, true, messages, success_callback, spin_state);
-}
-
-/**
  * Test availability of a URL, and call a callback when done.
  * http://stackoverflow.com/q/25390206/347368
  * @param {String} url: URL to test availability of. Must return a 200 (302->200 is OK).
@@ -238,4 +213,29 @@ function test_ie_availability(url, success_callback) {
     };
     var spin_state = make_spin_state("IE availability");
     spin_until(url, false, messages, success_callback, spin_state);
+}
+
+/**
+ * Test a boolean (json) response from a URL, and call a callback when done.
+ * http://stackoverflow.com/q/25390206/347368
+ * @param {String} url: URL to test response of. Must return a 200 (302->200 is OK) and either `true` or `false`.
+ * @param {String} callback: function to call once successfully connected.
+ *
+ */
+export default function load_when_ready(url, success_callback) {
+    var messages = {
+        success: "Galaxy reports IE container ready, returning",
+        not_ready:
+            "Galaxy is launching a container in which to run this interactive environment. Please wait...",
+        unknown_response:
+            "Galaxy failed to launch a container in which to run this interactive environment, contact a Galaxy administrator.",
+        waiting:
+            "Galaxy is launching a container in which to run this interactive environment. Please wait...",
+        wait_warn:
+            "It is taking an usually long time to start a container. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
+        error:
+            "Galaxy encountered an error while attempting to determine the readiness of this interactive environment's container, contact a Galaxy administrator."
+    };
+    var spin_state = make_spin_state("IE container readiness");
+    spin_until(url, true, messages, success_callback, spin_state);
 }
