@@ -1,3 +1,4 @@
+
 funcsigs==1.0.2; python_version < '3.3'
 recommonmark==0.4.0
 snowballstemmer==1.2.1
@@ -21,8 +22,8 @@ argh==0.26.2
 markupsafe==1.0
 pytz==2017.3
 jinja2==2.9.6
-twill==0.9.1
-pygithub3==0.5.1
+twill==0.9.1; python_version < '3'
+pygithub3==0.5.1; python_version < '3'
 pyyaml==3.12
 sphinx==1.6.5
 pbr==3.1.1
