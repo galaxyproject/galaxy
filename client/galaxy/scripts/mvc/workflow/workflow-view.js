@@ -671,30 +671,6 @@ export default Backbone.View.extend({
         this._moduleInitAjax(node, { type: type, _: "true" });
     },
 
-    // This function preloads how to display known pja's.
-    display_pja: function(pja, node) {
-        // DBTODO SANITIZE INPUTS.
-        var self = this;
-        $("#pja_container").append(get_pja_form(pja, node));
-        $(
-            "#pja_container>.toolForm:last>.toolFormTitle>.buttons"
-        ).click(function() {
-            var action_to_rem = $(this)
-                .closest(".toolForm", ".action_tag")
-                .children(".action_tag:first")
-                .text();
-            $(this)
-                .closest(".toolForm")
-                .remove();
-            delete self.workflow.active_node.post_job_actions[action_to_rem];
-            self.workflow.active_form_has_changes = true;
-        });
-    },
-
-    display_pja_list: function() {
-        return pja_list;
-    },
-
     display_file_list: function(node) {
         var addlist = "<select id='node_data_list' name='node_data_list'>";
         for (var out_terminal in node.output_terminals) {
@@ -702,25 +678,6 @@ export default Backbone.View.extend({
         }
         addlist += "</select>";
         return addlist;
-    },
-
-    new_pja: function(action_type, target, node) {
-        if (node.post_job_actions === undefined) {
-            //New tool node, set up dict.
-            node.post_job_actions = {};
-        }
-        if (node.post_job_actions[action_type + target] === undefined) {
-            var new_pja = {};
-            new_pja.action_type = action_type;
-            new_pja.output_name = target;
-            node.post_job_actions[action_type + target] = null;
-            node.post_job_actions[action_type + target] = new_pja;
-            display_pja(new_pja, node);
-            this.workflow.active_form_has_changes = true;
-            return true;
-        } else {
-            return false;
-        }
     },
 
     showWorkflowParameters: function() {
