@@ -115,12 +115,8 @@ var View = Backbone.View.extend({
         }
 
         // configure background, separator line
-        this.$backdrop[(this.options.backdrop && "addClass") || "removeClass"](
-            "in"
-        );
-        this.$header[
-            (!this.options.title_separator && "addClass") || "removeClass"
-        ]("no-separator");
+        this.$backdrop[(this.options.backdrop && "addClass") || "removeClass"]("in");
+        this.$header[(!this.options.title_separator && "addClass") || "removeClass"]("no-separator");
 
         // fix dimensions
         // note: because this is a singleton, we need to clear inline styles from any previous invocations

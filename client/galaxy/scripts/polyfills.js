@@ -30,10 +30,8 @@
     var lastTime = 0;
     var vendors = ["ms", "moz", "webkit", "o"];
     for (var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
-        window.requestAnimationFrame =
-            window[`${vendors[x]}RequestAnimationFrame`];
-        window.cancelRequestAnimationFrame =
-            window[`${vendors[x]}CancelRequestAnimationFrame`];
+        window.requestAnimationFrame = window[`${vendors[x]}RequestAnimationFrame`];
+        window.cancelRequestAnimationFrame = window[`${vendors[x]}CancelRequestAnimationFrame`];
     }
 
     if (!window.requestAnimationFrame)
@@ -71,9 +69,7 @@
         }
     ];
     // build a list of feature names for features that were not found
-    var incompatibilities = features
-        .filter(feature => !feature.compatible())
-        .map(feature => feature.name);
+    var incompatibilities = features.filter(feature => !feature.compatible()).map(feature => feature.name);
 
     // if there are needed features missing, follow the index link to the static incompat warning
     if (!!incompatibilities.length) {

@@ -97,8 +97,7 @@ function searchInput(parentNode, options) {
                         // return key or the search string len > minSearchLen (if not 0) triggers search
                         if (
                             event.which === KEYCODE_RETURN ||
-                            (options.minSearchLen &&
-                                searchTerms.length >= options.minSearchLen)
+                            (options.minSearchLen && searchTerms.length >= options.minSearchLen)
                         ) {
                             search.call(this, event, searchTerms);
                         }
@@ -112,12 +111,9 @@ function searchInput(parentNode, options) {
     // a button for clearing the search bar, placed on the right hand side
     function $clearBtn() {
         return $(
-            [
-                '<span class="search-clear fa fa-times-circle" ',
-                'title="',
-                _l("clear search (esc)"),
-                '"></span>'
-            ].join("")
+            ['<span class="search-clear fa fa-times-circle" ', 'title="', _l("clear search (esc)"), '"></span>'].join(
+                ""
+            )
         )
             .tooltip({ placement: "bottom" })
             .click(function(event) {
@@ -129,12 +125,7 @@ function searchInput(parentNode, options) {
     // a button for clearing the search bar, placed on the right hand side
     function $loadingIndicator() {
         return $(
-            [
-                '<span class="search-loading fa fa-spinner fa-spin" ',
-                'title="',
-                _l("loading..."),
-                '"></span>'
-            ].join("")
+            ['<span class="search-loading fa fa-spinner fa-spin" ', 'title="', _l("loading..."), '"></span>'].join("")
         )
             .hide()
             .tooltip({ placement: "bottom" });
@@ -161,9 +152,7 @@ function searchInput(parentNode, options) {
         options = jQuery.extend(true, {}, defaults, options);
     }
     //NOTE: prepended
-    return $parentNode
-        .addClass("search-input")
-        .prepend([$input(), $clearBtn(), $loadingIndicator()]);
+    return $parentNode.addClass("search-input").prepend([$input(), $clearBtn(), $loadingIndicator()]);
 }
 
 // as jq plugin

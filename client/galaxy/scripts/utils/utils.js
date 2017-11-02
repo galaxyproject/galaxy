@@ -29,24 +29,15 @@ function linkify(inputText) {
 
     // URLs starting with http://, https://, or ftp://
     replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
-    replacedText = inputText.replace(
-        replacePattern1,
-        '<a href="$1" target="_blank">$1</a>'
-    );
+    replacedText = inputText.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
 
     // URLs starting with "www." (without // before it, or it'd re-link the ones done above).
     replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
-    replacedText = replacedText.replace(
-        replacePattern2,
-        '$1<a href="http://$2" target="_blank">$2</a>'
-    );
+    replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank">$2</a>');
 
     // Change email addresses to mailto:: links.
     replacePattern3 = /(([a-zA-Z0-9\-\_\.])+@[a-zA-Z\_]+?(\.[a-zA-Z]{2,6})+)/gim;
-    replacedText = replacedText.replace(
-        replacePattern3,
-        '<a href="mailto:$1">$1</a>'
-    );
+    replacedText = replacedText.replace(replacePattern3, '<a href="mailto:$1">$1</a>');
 
     return replacedText;
 }
@@ -64,10 +55,7 @@ function isJSON(text) {
     return /^[\],:{}\s]*$/.test(
         text
             .replace(/\\["\\\/bfnrtu]/g, "@")
-            .replace(
-                /"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,
-                "]"
-            )
+            .replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]")
             .replace(/(?:^|:|,)(?:\s*\[)+/g, "")
     );
 }
@@ -95,10 +83,7 @@ function isEmpty(value) {
         return true;
     }
     for (var i in value) {
-        if (
-            ["__null__", "__undefined__", null, undefined].indexOf(value[i]) >
-            -1
-        ) {
+        if (["__null__", "__undefined__", null, undefined].indexOf(value[i]) > -1) {
             return true;
         }
     }
@@ -133,9 +118,7 @@ function get(options) {
     var cache_key = JSON.stringify(options);
     if (options.cache && top.__utils__get__[cache_key]) {
         options.success && options.success(top.__utils__get__[cache_key]);
-        window.console.debug(
-            `utils.js::get() - Fetching from cache [${options.url}].`
-        );
+        window.console.debug(`utils.js::get() - Fetching from cache [${options.url}].`);
     } else {
         request({
             url: options.url,
@@ -226,9 +209,7 @@ function cssGetAttribute(classname, name) {
      */
 function cssLoadFile(url) {
     if (!$(`link[href^="${url}"]`).length) {
-        $(`<link href="${Galaxy.root}${url}" rel="stylesheet">`).appendTo(
-            "head"
-        );
+        $(`<link href="${Galaxy.root}${url}" rel="stylesheet">`).appendTo("head");
     }
 }
 
@@ -310,8 +291,7 @@ function time() {
     var d = new Date();
     var hours = (d.getHours() < 10 ? "0" : "") + d.getHours();
     var minutes = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
-    return `${d.getDate()}/${d.getMonth() +
-        1}/${d.getFullYear()}, ${hours}:${minutes}`;
+    return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}, ${hours}:${minutes}`;
 }
 
 /** Append script and style tags to Galaxy main application */
@@ -334,13 +314,7 @@ function appendScriptStyle(data) {
 function getQueryString(key) {
     return decodeURIComponent(
         window.location.search.replace(
-            new RegExp(
-                `^(?:.*[&\\?]${encodeURIComponent(key).replace(
-                    /[\.\+\*]/g,
-                    "\\$&"
-                )}(?:\\=([^&]*))?)?.*$`,
-                "i"
-            ),
+            new RegExp(`^(?:.*[&\\?]${encodeURIComponent(key).replace(/[\.\+\*]/g, "\\$&")}(?:\\=([^&]*))?)?.*$`, "i"),
             "$1"
         )
     );
@@ -348,13 +322,11 @@ function getQueryString(key) {
 
 function setWindowTitle(title) {
     if (title) {
-        window.document.title = `Galaxy ${window.Galaxy.config.brand
-            ? ` | ${window.Galaxy.config.brand}`
-            : ""} | ${_l(title)}`;
+        window.document.title = `Galaxy ${window.Galaxy.config.brand ? ` | ${window.Galaxy.config.brand}` : ""} | ${_l(
+            title
+        )}`;
     } else {
-        window.document.title = `Galaxy ${window.Galaxy.config.brand
-            ? ` | ${window.Galaxy.config.brand}`
-            : ""}`;
+        window.document.title = `Galaxy ${window.Galaxy.config.brand ? ` | ${window.Galaxy.config.brand}` : ""}`;
     }
 }
 

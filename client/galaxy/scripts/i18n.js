@@ -73,10 +73,7 @@
     function mixin(target, source, force) {
         var prop;
         for (prop in source) {
-            if (
-                source.hasOwnProperty(prop) &&
-                (!target.hasOwnProperty(prop) || force)
-            ) {
+            if (source.hasOwnProperty(prop) && (!target.hasOwnProperty(prop) || force)) {
                 target[prop] = source[prop];
             } else if (typeof source[prop] === "object") {
                 if (!target[prop] && source[prop]) {
@@ -130,8 +127,7 @@
                         locale = masterConfig.locale =
                             typeof navigator === "undefined"
                                 ? "root"
-                                : ((navigator.languages &&
-                                      navigator.languages[0]) ||
+                                : ((navigator.languages && navigator.languages[0]) ||
                                       navigator.language ||
                                       navigator.userLanguage ||
                                       "root"
@@ -166,30 +162,17 @@
                         for (i = 0; i < parts.length; i++) {
                             part = parts[i];
                             current += (current ? "-" : "") + part;
-                            addPart(
-                                current,
-                                master,
-                                needed,
-                                toLoad,
-                                prefix,
-                                suffix
-                            );
+                            addPart(current, master, needed, toLoad, prefix, suffix);
                         }
 
                         //Load all the parts missing.
                         req(toLoad, function() {
                             var i, partBundle, part;
-                            for (
-                                i = needed.length - 1;
-                                i > -1 && needed[i];
-                                i--
-                            ) {
+                            for (i = needed.length - 1; i > -1 && needed[i]; i--) {
                                 part = needed[i];
                                 partBundle = master[part];
                                 if (partBundle === true || partBundle === 1) {
-                                    partBundle = req(
-                                        prefix + part + "/" + suffix
-                                    );
+                                    partBundle = req(prefix + part + "/" + suffix);
                                 }
                                 mixin(value, partBundle);
                             }

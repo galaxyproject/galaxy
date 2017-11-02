@@ -32,11 +32,7 @@ export default Backbone.View.extend({
                     var field = self.field_list[input_id];
                     if (field.update) {
                         var new_options = [];
-                        if (
-                            ["data", "data_collection", "drill_down"].indexOf(
-                                input.type
-                            ) != -1
-                        ) {
+                        if (["data", "data_collection", "drill_down"].indexOf(input.type) != -1) {
                             new_options = input.options;
                         } else {
                             for (var i in node.options) {
@@ -51,10 +47,7 @@ export default Backbone.View.extend({
                         }
                         field.update(new_options);
                         field.trigger("change");
-                        Galaxy.emit.debug(
-                            "form-view::update()",
-                            `Updating options for ${input_id}`
-                        );
+                        Galaxy.emit.debug("form-view::update()", `Updating options for ${input_id}`);
                     }
                 }
             }
@@ -83,19 +76,12 @@ export default Backbone.View.extend({
                 var $panel = this.$el
                     .parents()
                     .filter(function() {
-                        return (
-                            ["auto", "scroll"].indexOf(
-                                $(this).css("overflow")
-                            ) != -1
-                        );
+                        return ["auto", "scroll"].indexOf($(this).css("overflow")) != -1;
                     })
                     .first();
                 $panel.animate(
                     {
-                        scrollTop:
-                            $panel.scrollTop() +
-                            input_element.$el.offset().top -
-                            120
+                        scrollTop: $panel.scrollTop() + input_element.$el.offset().top - 120
                     },
                     500
                 );
@@ -137,11 +123,7 @@ export default Backbone.View.extend({
         var current_check = this.data.checksum();
         this.on("change", input_id => {
             var input = self.input_list[input_id];
-            if (
-                !input ||
-                input.refresh_on_change ||
-                self.model.get("always_refresh")
-            ) {
+            if (!input || input.refresh_on_change || self.model.get("always_refresh")) {
                 var new_check = self.data.checksum();
                 if (new_check != current_check) {
                     current_check = new_check;

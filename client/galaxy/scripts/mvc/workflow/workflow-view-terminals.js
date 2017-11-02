@@ -92,10 +92,7 @@ var BaseInputTerminalView = TerminalView.extend({
         var terminal = this.el.terminal;
         // Accept a dragable if it is an output terminal and has a
         // compatible type
-        return (
-            $(d.drag).hasClass("output-terminal") &&
-            terminal.canAccept(d.drag.terminal)
-        );
+        return $(d.drag).hasClass("output-terminal") && terminal.canAccept(d.drag.terminal);
     },
     onDropStart: function(e, d) {
         if (d.proxy.terminal) {
@@ -212,9 +209,7 @@ var BaseOutputTerminalView = TerminalView.extend({
         // Save PJAs in the case of change datatype actions.
         window.workflow_globals.workflow.check_changes_in_active_form();
         // Drag proxy div
-        var h = $(
-            '<div class="drag-terminal" style="position: absolute;"></div>'
-        )
+        var h = $('<div class="drag-terminal" style="position: absolute;"></div>')
             .appendTo("#canvas-container")
             .get(0);
         // Terminal and connection to display noodle while dragging

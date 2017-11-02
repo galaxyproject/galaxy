@@ -15,10 +15,7 @@ export default Backbone.View.extend({
     render: function() {
         this.renderToolLabel();
         this.renderToolErrors();
-        this.$el.css(
-            "width",
-            Math.min(250, Math.max(this.$el.width(), this.output_width))
-        );
+        this.$el.css("width", Math.min(250, Math.max(this.$el.width(), this.output_width)));
     },
 
     renderToolLabel: function() {
@@ -26,9 +23,7 @@ export default Backbone.View.extend({
     },
 
     renderToolErrors: function() {
-        this.node.errors
-            ? this.$el.addClass("tool-node-error")
-            : this.$el.removeClass("tool-node-error");
+        this.node.errors ? this.$el.addClass("tool-node-error") : this.$el.removeClass("tool-node-error");
     },
 
     newInputsDiv: function() {
@@ -97,9 +92,7 @@ export default Backbone.View.extend({
             nodeView: this
         });
         this.outputViews[output.name] = outputView;
-        this.tool_body.append(
-            outputView.$el.append(terminalView.terminalElements())
-        );
+        this.tool_body.append(outputView.$el.append(terminalView.terminalElements()));
     },
 
     redrawWorkflowOutputs: function() {

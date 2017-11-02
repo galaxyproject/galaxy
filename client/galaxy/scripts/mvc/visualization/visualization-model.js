@@ -126,11 +126,7 @@ var VisualizationCollection = Backbone.Collection.extend(
 
         /** String representation. */
         toString: function() {
-            return [
-                "VisualizationCollection(",
-                [this.historyId, this.length].join(),
-                ")"
-            ].join("");
+            return ["VisualizationCollection(", [this.historyId, this.length].join(), ")"].join("");
         }
     }
 );

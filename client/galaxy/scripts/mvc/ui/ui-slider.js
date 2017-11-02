@@ -65,8 +65,7 @@ var View = Backbone.View.extend({
 
         // build slider, cannot be rebuild in render
         var opts = this.model.attributes;
-        this.has_slider =
-            opts.max !== null && opts.min !== null && opts.max > opts.min;
+        this.has_slider = opts.max !== null && opts.min !== null && opts.max > opts.min;
         var step = opts.step;
         if (!step) {
             if (opts.precise && this.has_slider) {
@@ -77,11 +76,9 @@ var View = Backbone.View.extend({
         }
         if (this.has_slider) {
             this.$text.addClass("ui-form-slider-left");
-            this.$slider
-                .slider({ min: opts.min, max: opts.max, step: step })
-                .on("slide", (event, ui) => {
-                    self.value(ui.value);
-                });
+            this.$slider.slider({ min: opts.min, max: opts.max, step: step }).on("slide", (event, ui) => {
+                self.value(ui.value);
+            });
         } else {
             this.$slider.hide();
         }
@@ -101,17 +98,11 @@ var View = Backbone.View.extend({
     value: function(new_val) {
         var options = this.model.attributes;
         if (new_val !== undefined) {
-            if (
-                new_val !== null &&
-                new_val !== "" &&
-                !this._isParameter(new_val)
-            ) {
+            if (new_val !== null && new_val !== "" && !this._isParameter(new_val)) {
                 isNaN(new_val) && (new_val = 0);
                 !options.precise && (new_val = Math.round(new_val));
-                options.max !== null &&
-                    (new_val = Math.min(new_val, options.max));
-                options.min !== null &&
-                    (new_val = Math.max(new_val, options.min));
+                options.max !== null && (new_val = Math.min(new_val, options.max));
+                options.min !== null && (new_val = Math.max(new_val, options.min));
             }
             this.model.set("value", new_val);
             this.model.trigger("change");
@@ -122,10 +113,7 @@ var View = Backbone.View.extend({
 
     /** Return true if the field contains a workflow parameter i.e. $('name') */
     _isParameter: function(value) {
-        return (
-            this.model.get("is_workflow") &&
-            String(value).substring(0, 1) === "$"
-        );
+        return this.model.get("is_workflow") && String(value).substring(0, 1) === "$";
     },
 
     /** Slider template */

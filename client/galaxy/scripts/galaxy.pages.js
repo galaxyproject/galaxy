@@ -98,10 +98,7 @@ function get_item_info(dialog_type) {
 
 // Make an item importable.
 function make_item_importable(item_controller, item_id, item_type) {
-    var ajax_url = set_accessible_url.replace(
-        "ITEM_CONTROLLER",
-        item_controller
-    );
+    var ajax_url = set_accessible_url.replace("ITEM_CONTROLLER", item_controller);
     $.ajax({
         type: "POST",
         url: ajax_url,
@@ -113,11 +110,7 @@ function make_item_importable(item_controller, item_id, item_type) {
 }
 
 // Completely replace WYM's dialog handling
-WYMeditor.editor.prototype.dialog = function(
-    dialogType,
-    dialogFeatures,
-    bodyHtml
-) {
+WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtml) {
     var wym = this;
     var sStamp = wym.uniqueStamp();
     var selected = wym.selected();
@@ -144,9 +137,7 @@ WYMeditor.editor.prototype.dialog = function(
         if (selected) {
             $(wym._options.hrefSelector).val($(selected).attr(WYMeditor.HREF));
             $(wym._options.srcSelector).val($(selected).attr(WYMeditor.SRC));
-            $(wym._options.titleSelector).val(
-                $(selected).attr(WYMeditor.TITLE)
-            );
+            $(wym._options.titleSelector).val($(selected).attr(WYMeditor.TITLE));
             $(wym._options.altSelector).val($(selected).attr(WYMeditor.ALT));
         }
 
@@ -201,18 +192,15 @@ WYMeditor.editor.prototype.dialog = function(
     // IMAGE DIALOG
     if (dialogType == WYMeditor.DIALOG_IMAGE) {
         if (wym._selected_image) {
-            $(
-                `${wym._options.dialogImageSelector} ${wym._options
-                    .srcSelector}`
-            ).val($(wym._selected_image).attr(WYMeditor.SRC));
-            $(
-                `${wym._options.dialogImageSelector} ${wym._options
-                    .titleSelector}`
-            ).val($(wym._selected_image).attr(WYMeditor.TITLE));
-            $(
-                `${wym._options.dialogImageSelector} ${wym._options
-                    .altSelector}`
-            ).val($(wym._selected_image).attr(WYMeditor.ALT));
+            $(`${wym._options.dialogImageSelector} ${wym._options.srcSelector}`).val(
+                $(wym._selected_image).attr(WYMeditor.SRC)
+            );
+            $(`${wym._options.dialogImageSelector} ${wym._options.titleSelector}`).val(
+                $(wym._selected_image).attr(WYMeditor.TITLE)
+            );
+            $(`${wym._options.dialogImageSelector} ${wym._options.altSelector}`).val(
+                $(wym._selected_image).attr(WYMeditor.ALT)
+            );
         }
         show_modal(
             "Image",
@@ -235,14 +223,8 @@ WYMeditor.editor.prototype.dialog = function(
                         wym._exec(WYMeditor.INSERT_IMAGE, sStamp);
                         $(`img[src$=${sStamp}]`, wym._doc.body)
                             .attr(WYMeditor.SRC, sUrl)
-                            .attr(
-                                WYMeditor.TITLE,
-                                $(wym._options.titleSelector).val()
-                            )
-                            .attr(
-                                WYMeditor.ALT,
-                                $(wym._options.altSelector).val()
-                            );
+                            .attr(WYMeditor.TITLE, $(wym._options.titleSelector).val())
+                            .attr(WYMeditor.ALT, $(wym._options.altSelector).val());
                     }
                     hide_modal();
                 },
@@ -299,20 +281,11 @@ WYMeditor.editor.prototype.dialog = function(
                         }
 
                         //set the summary attr
-                        $(table).attr(
-                            "summary",
-                            $(wym._options.summarySelector).val()
-                        );
+                        $(table).attr("summary", $(wym._options.summarySelector).val());
 
                         //append the table after the selected container
-                        var node = $(
-                            wym.findUp(
-                                wym.container(),
-                                WYMeditor.MAIN_CONTAINERS
-                            )
-                        ).get(0);
-                        if (!node || !node.parentNode)
-                            $(wym._doc.body).append(table);
+                        var node = $(wym.findUp(wym.container(), WYMeditor.MAIN_CONTAINERS)).get(0);
+                        if (!node || !node.parentNode) $(wym._doc.body).append(table);
                         else $(node).after(table);
                     }
                     hide_modal();
@@ -363,9 +336,7 @@ WYMeditor.editor.prototype.dialog = function(
                 .append(grid.$el)
                 .append(
                     $("<div/>")
-                        .append(
-                            '<input id="make-importable" type="checkbox" checked/>'
-                        )
+                        .append('<input id="make-importable" type="checkbox" checked/>')
                         .append(
                             `Make the selected ${item_info.plural.toLowerCase()} accessible so that they can viewed by everyone.`
                         )
@@ -375,8 +346,7 @@ WYMeditor.editor.prototype.dialog = function(
                 Insert: function() {
                     // Make selected items accessible (importable) ?
                     var make_importable = false;
-                    if ($("#make-importable:checked").val() != null)
-                        make_importable = true;
+                    if ($("#make-importable:checked").val() != null) make_importable = true;
 
                     // Insert links to history for each checked item.
                     var item_ids = new Array();
@@ -384,26 +354,15 @@ WYMeditor.editor.prototype.dialog = function(
                         var item_id = $(this).val();
 
                         // Make item importable?
-                        if (make_importable)
-                            make_item_importable(
-                                item_info.controller,
-                                item_id,
-                                item_info.singular
-                            );
+                        if (make_importable) make_item_importable(item_info.controller, item_id, item_info.singular);
 
                         // Insert link(s) to item(s). This is done by getting item info and then manipulating wym.
                         var url_template = get_name_and_link_url + item_id;
-                        var ajax_url = url_template.replace(
-                            "ITEM_CONTROLLER",
-                            item_info.controller
-                        );
+                        var ajax_url = url_template.replace("ITEM_CONTROLLER", item_info.controller);
                         $.getJSON(ajax_url, returned_item_info => {
                             // Get link text.
                             wym._exec(WYMeditor.CREATE_LINK, sStamp);
-                            var link_text = $(
-                                `a[href=${sStamp}]`,
-                                wym._doc.body
-                            ).text();
+                            var link_text = $(`a[href=${sStamp}]`, wym._doc.body).text();
 
                             // Insert link: need to do different actions depending on link text.
                             if (
@@ -417,14 +376,8 @@ WYMeditor.editor.prototype.dialog = function(
                             } else {
                                 // Link created from selected text; add href and title.
                                 $(`a[href=${sStamp}]`, wym._doc.body)
-                                    .attr(
-                                        WYMeditor.HREF,
-                                        returned_item_info.link
-                                    )
-                                    .attr(
-                                        WYMeditor.TITLE,
-                                        item_info.singular + item_id
-                                    );
+                                    .attr(WYMeditor.HREF, returned_item_info.link)
+                                    .attr(WYMeditor.TITLE, item_info.singular + item_id);
                             }
                         });
                     });
@@ -475,9 +428,7 @@ WYMeditor.editor.prototype.dialog = function(
                 .append(grid.$el)
                 .append(
                     $("<div/>")
-                        .append(
-                            '<input id="make-importable" type="checkbox" checked/>'
-                        )
+                        .append('<input id="make-importable" type="checkbox" checked/>')
                         .append(
                             `Make the selected ${item_info.plural.toLowerCase()} accessible so that they can viewed by everyone.`
                         )
@@ -487,23 +438,15 @@ WYMeditor.editor.prototype.dialog = function(
                 Embed: function() {
                     // Make selected items accessible (importable) ?
                     var make_importable = false;
-                    if ($("#make-importable:checked").val() != null)
-                        make_importable = true;
+                    if ($("#make-importable:checked").val() != null) make_importable = true;
 
                     grid.$("input[name=id]:checked").each(function() {
                         // Get item ID and name.
                         var item_id = $(this).val();
                         // Use ':first' because there are many labels in table; the first one is the item name.
-                        var item_name = $(
-                            `label[for='${item_id}']:first`
-                        ).text();
+                        var item_name = $(`label[for='${item_id}']:first`).text();
 
-                        if (make_importable)
-                            make_item_importable(
-                                item_info.controller,
-                                item_id,
-                                item_info.singular
-                            );
+                        if (make_importable) make_item_importable(item_info.controller, item_id, item_info.singular);
 
                         // Embedded item HTML; item class is embedded in div container classes; this is necessary because the editor strips
                         // all non-standard attributes when it returns its content (e.g. it will not return an element attribute of the form
@@ -547,8 +490,7 @@ export default function editor_onload() {
     // Generic error handling
     $(document).ajaxError((e, x) => {
         // console.log( e, x );
-        var message =
-            x.responseText || x.statusText || "Could not connect to server";
+        var message = x.responseText || x.statusText || "Could not connect to server";
         show_modal("Server error", message, { "Ignore error": hide_modal });
         return false;
     });

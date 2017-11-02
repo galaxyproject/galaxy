@@ -49,8 +49,7 @@ var View = Backbone.View.extend({
     _addConditional: function(input_def) {
         var self = this;
         input_def.test_param.id = input_def.id;
-        this.app.model.get("sustain_conditionals") &&
-            (input_def.test_param.disabled = true);
+        this.app.model.get("sustain_conditionals") && (input_def.test_param.disabled = true);
         var field = this._addRow(input_def.test_param);
 
         // set onchange event for test parameter
@@ -81,10 +80,7 @@ var View = Backbone.View.extend({
             var sub_section = new View(this.app, {
                 inputs: input_def.cases[i].inputs
             });
-            this._append(
-                sub_section.$el.addClass("ui-form-section"),
-                `${input_def.id}-section-${i}`
-            );
+            this._append(sub_section.$el.addClass("ui-form-section"), `${input_def.id}-section-${i}`);
         }
 
         // trigger refresh on conditional input field after all input elements have been created
@@ -125,15 +121,7 @@ var View = Backbone.View.extend({
         // add parsed/minimum number of repeat blocks
         //
         var n_cache = _.size(input_def.cache);
-        for (
-            var i = 0;
-            i <
-            Math.max(
-                Math.max(n_cache, input_def.min || 0),
-                input_def.default || 0
-            );
-            i++
-        ) {
+        for (var i = 0; i < Math.max(Math.max(n_cache, input_def.min || 0), input_def.default || 0); i++) {
             create(i < n_cache ? input_def.cache[i] : input_def.inputs);
         }
 
@@ -183,9 +171,7 @@ var View = Backbone.View.extend({
         this.app.field_list[id] = field;
         var input_element = new InputElement(this.app, {
             name: input_def.name,
-            label: input_def.hide_label
-                ? ""
-                : input_def.label || input_def.name,
+            label: input_def.hide_label ? "" : input_def.label || input_def.name,
             value: input_def.value,
             text_value: input_def.text_value,
             collapsible_value: input_def.collapsible_value,

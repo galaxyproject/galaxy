@@ -17,18 +17,10 @@ export default FormBase.extend({
         this._update(this.model.get("initialmodel"));
 
         // listen to history panel
-        if (
-            this.model.get("listen_to_history") &&
-            parent.Galaxy &&
-            parent.Galaxy.currHistoryPanel
-        ) {
-            this.listenTo(
-                parent.Galaxy.currHistoryPanel.collection,
-                "change",
-                () => {
-                    self.model.get("onchange")();
-                }
-            );
+        if (this.model.get("listen_to_history") && parent.Galaxy && parent.Galaxy.currHistoryPanel) {
+            this.listenTo(parent.Galaxy.currHistoryPanel.collection, "change", () => {
+                self.model.get("onchange")();
+            });
         }
         // destroy dom elements
         this.$el.on("remove", () => {
@@ -107,11 +99,7 @@ export default FormBase.extend({
             title: (!options.narrow && "Versions") || null,
             tooltip: "Select another tool version"
         });
-        if (
-            !options.sustain_version &&
-            options.versions &&
-            options.versions.length > 1
-        ) {
+        if (!options.sustain_version && options.versions && options.versions.length > 1) {
             for (var i in options.versions) {
                 var version = options.versions[i];
                 if (version != options.version) {
@@ -121,13 +109,7 @@ export default FormBase.extend({
                         icon: "fa-cube",
                         onclick: function() {
                             // here we update the tool version (some tools encode the version also in the id)
-                            self.model.set(
-                                "id",
-                                options.id.replace(
-                                    options.version,
-                                    this.version
-                                )
-                            );
+                            self.model.set("id", options.id.replace(options.version, this.version));
                             self.model.set("version", this.version);
                             self._update();
                         }
@@ -156,9 +138,7 @@ export default FormBase.extend({
                 icon: "fa-search",
                 title: "Search",
                 onclick: function() {
-                    window.open(
-                        `${options.biostar_url}/local/search/page/?q=${options.name}`
-                    );
+                    window.open(`${options.biostar_url}/local/search/page/?q=${options.name}`);
                 }
             });
         }
@@ -168,8 +148,7 @@ export default FormBase.extend({
             onclick: function() {
                 prompt(
                     "Copy to clipboard: Ctrl+C, Enter",
-                    `${window.location.origin +
-                        Galaxy.root}root?tool_id=${options.id}`
+                    `${window.location.origin + Galaxy.root}root?tool_id=${options.id}`
                 );
             }
         });
@@ -226,10 +205,7 @@ export default FormBase.extend({
                         icon: webhook.config.icon,
                         title: webhook.config.title,
                         onclick: function() {
-                            var func = new Function(
-                                "options",
-                                webhook.config.function
-                            );
+                            var func = new Function("options", webhook.config.function);
                             func(options);
                         }
                     });

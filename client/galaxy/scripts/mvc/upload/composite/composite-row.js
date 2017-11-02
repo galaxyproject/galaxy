@@ -43,11 +43,7 @@ export default Backbone.View.extend({
                 self.$el.removeClass("warning");
             },
             onchange: function(files) {
-                if (
-                    self.model.get("status") != "running" &&
-                    files &&
-                    files.length > 0
-                ) {
+                if (self.model.get("status") != "running" && files && files.length > 0) {
                     self.model.reset({
                         file_data: files[0],
                         file_name: files[0].name,
@@ -173,10 +169,7 @@ export default Backbone.View.extend({
     /** Refresh ready or not states */
     _refreshReady: function() {
         this.app.collection.each(model => {
-            model.set(
-                "status",
-                (model.get("file_size") > 0 && "ready") || "init"
-            );
+            model.set("status", (model.get("file_size") > 0 && "ready") || "init");
         });
     },
 
@@ -220,9 +213,7 @@ export default Backbone.View.extend({
             this.$progress_bar[0].offsetHeight;
             this.$progress_bar.removeClass("no-transition");
         }
-        this.$percentage.html(
-            percentage != 100 ? `${percentage}%` : "Adding to history..."
-        );
+        this.$percentage.html(percentage != 100 ? `${percentage}%` : "Adding to history...");
     },
 
     /** Refresh status */
@@ -235,9 +226,7 @@ export default Backbone.View.extend({
         if (status == "running" || status == "ready") {
             this.model.set("percentage", 0);
         }
-        this.$source
-            .find(".button")
-            [status == "running" ? "addClass" : "removeClass"]("disabled");
+        this.$source.find(".button")[status == "running" ? "addClass" : "removeClass"]("disabled");
         if (status == "success") {
             this.$el.addClass("success");
             this.model.set("percentage", 100);

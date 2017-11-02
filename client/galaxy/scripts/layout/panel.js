@@ -38,11 +38,7 @@ var SidePanel = Backbone.View.extend({
 
     /** panel dom template. id is 'right' or 'left' */
     _templatePanel: function() {
-        return [
-            this._templateHeader(),
-            this._templateBody(),
-            this._templateFooter()
-        ].join("");
+        return [this._templateHeader(), this._templateBody(), this._templateFooter()].join("");
     },
 
     /** panel dom template. id is 'right' or 'left' */
@@ -90,10 +86,7 @@ var SidePanel = Backbone.View.extend({
             var oldWidth = self.$el.width();
             var newWidth = draggingLeft ? oldWidth + delta : oldWidth - delta;
             // Limit range
-            newWidth = Math.min(
-                MAX_PANEL_WIDTH,
-                Math.max(MIN_PANEL_WIDTH, newWidth)
-            );
+            newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth));
             self.resize(newWidth);
         }
 
@@ -161,8 +154,7 @@ var SidePanel = Backbone.View.extend({
     //TODO: only used in message.mako?
     /**   */
     handle_minwidth_hint: function(hint) {
-        var space =
-            this.$center().width() - (this.hidden ? this.saved_size : 0);
+        var space = this.$center().width() - (this.hidden ? this.saved_size : 0);
         if (space < hint) {
             if (!this.hidden) {
                 this.toggle();
@@ -231,8 +223,7 @@ var CenterPanel = Backbone.View.extend({
     /** Display a view in the center panel, hide iframe */
     display: function(view) {
         var contentWindow = this.$frame[0].contentWindow || {};
-        var message =
-            contentWindow.onbeforeunload && contentWindow.onbeforeunload();
+        var message = contentWindow.onbeforeunload && contentWindow.onbeforeunload();
         if (!message || confirm(message)) {
             contentWindow.onbeforeunload = undefined;
             this.$frame.attr("src", "about:blank").hide();

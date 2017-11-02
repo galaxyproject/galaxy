@@ -43,9 +43,7 @@ var DataOutputView = Backbone.View.extend({
         var label = output.name;
         var node = this.nodeView.node;
 
-        var isInput =
-            output.extensions.indexOf("input") >= 0 ||
-            output.extensions.indexOf("input_collection") >= 0;
+        var isInput = output.extensions.indexOf("input") >= 0 || output.extensions.indexOf("input_collection") >= 0;
         if (!isInput) {
             label = `${label} (${output.extensions.join(", ")})`;
         }
@@ -108,28 +106,17 @@ var OutputCalloutView = Backbone.View.extend({
             .append(
                 $("<div class='buttons'></div>").append(
                     $("<img/>")
-                        .attr(
-                            "src",
-                            `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`
-                        )
+                        .attr("src", `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`)
                         .click(() => {
                             var outputName = view.output.name;
                             if (node.isWorkflowOutput(outputName)) {
                                 node.removeWorkflowOutput(outputName);
                                 view
                                     .$("img")
-                                    .attr(
-                                        "src",
-                                        `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`
-                                    );
+                                    .attr("src", `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`);
                             } else {
                                 node.addWorkflowOutput(outputName);
-                                view
-                                    .$("img")
-                                    .attr(
-                                        "src",
-                                        `${Galaxy.root}static/images/fugue/asterisk-small.png`
-                                    );
+                                view.$("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
                             }
                             window.workflow_globals.workflow.has_changes = true;
                             window.workflow_globals.canvas_manager.draw_overview();
@@ -138,8 +125,7 @@ var OutputCalloutView = Backbone.View.extend({
             )
             .tooltip({
                 delay: 500,
-                title:
-                    "Mark dataset as a workflow output. All unmarked datasets will be hidden."
+                title: "Mark dataset as a workflow output. All unmarked datasets will be hidden."
             });
 
         this.$el.css({
@@ -153,23 +139,14 @@ var OutputCalloutView = Backbone.View.extend({
 
     resetImage: function() {
         if (!this.node.isWorkflowOutput(this.output.name)) {
-            this.$("img").attr(
-                "src",
-                `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`
-            );
+            this.$("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`);
         } else {
-            this.$("img").attr(
-                "src",
-                `${Galaxy.root}static/images/fugue/asterisk-small.png`
-            );
+            this.$("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
         }
     },
 
     hoverImage: function() {
-        this.$("img").attr(
-            "src",
-            `${Galaxy.root}static/images/fugue/asterisk-small-yellow.png`
-        );
+        this.$("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small-yellow.png`);
     }
 });
 

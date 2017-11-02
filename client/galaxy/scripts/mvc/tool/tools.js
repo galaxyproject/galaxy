@@ -132,8 +132,7 @@ var Tool = Backbone.Model.extend({
             "inputs",
             new ToolParameterCollection(
                 _.map(options.inputs, p => {
-                    var p_class =
-                        ToolParameter.subModelTypes[p.type] || ToolParameter;
+                    var p_class = ToolParameter.subModelTypes[p.type] || ToolParameter;
                     return new p_class(p);
                 })
             )
@@ -158,9 +157,7 @@ var Tool = Backbone.Model.extend({
     remove_inputs: function(types) {
         var tool = this;
 
-        var incompatible_inputs = tool
-            .get("inputs")
-            .filter(input => types.indexOf(input.get("type")) !== -1);
+        var incompatible_inputs = tool.get("inputs").filter(input => types.indexOf(input.get("type")) !== -1);
 
         tool.get("inputs").remove(incompatible_inputs);
     },
@@ -186,9 +183,7 @@ var Tool = Backbone.Model.extend({
     },
 
     apply_search_results: function(results) {
-        _.indexOf(results, this.attributes.id) !== -1
-            ? this.show()
-            : this.hide();
+        _.indexOf(results, this.attributes.id) !== -1 ? this.show() : this.hide();
         return this.is_visible();
     },
 
@@ -420,15 +415,9 @@ _.extend(ToolSearch.prototype, VisibilityMixin);
 var ToolPanel = Backbone.Model.extend({
     initialize: function(options) {
         this.attributes.tool_search = options.tool_search;
-        this.attributes.tool_search.on(
-            "change:results",
-            this.apply_search_results,
-            this
-        );
+        this.attributes.tool_search.on("change:results", this.apply_search_results, this);
         this.attributes.tools = options.tools;
-        this.attributes.layout = new Backbone.Collection(
-            this.parse(options.layout)
-        );
+        this.attributes.layout = new Backbone.Collection(this.parse(options.layout));
     },
 
     /**
@@ -669,10 +658,7 @@ var ToolSearchView = Backbone.View.extend({
 
     query_changed: function(evData) {
         // check for the 'clear key' (ESC) first
-        if (
-            this.model.attributes.clear_key &&
-            this.model.attributes.clear_key === evData.which
-        ) {
+        if (this.model.attributes.clear_key && this.model.attributes.clear_key === evData.which) {
             this.clear();
             return false;
         }
@@ -692,9 +678,7 @@ var ToolPanelView = Backbone.View.extend({
      * Set up view.
      */
     initialize: function() {
-        this.model
-            .get("tool_search")
-            .on("change:results", this.handle_search_results, this);
+        this.model.get("tool_search").on("change:results", this.handle_search_results, this);
     },
 
     render: function() {

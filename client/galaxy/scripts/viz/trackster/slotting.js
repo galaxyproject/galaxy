@@ -52,8 +52,7 @@ extend(FeatureSlotter.prototype, {
         if (f_name !== undefined && this.include_label) {
             // Add gap for label spacing and extra pack space padding
             // TODO: Fix constants
-            var text_len =
-                this.measureText(f_name).width + (LABEL_SPACING + PACK_SPACING);
+            var text_len = this.measureText(f_name).width + (LABEL_SPACING + PACK_SPACING);
             if (draw_start - text_len >= 0) {
                 draw_start -= text_len;
                 text_align = "left";
@@ -140,33 +139,22 @@ extend(FeatureSlotter.prototype, {
             if (slotted_info) {
                 // Feature is slotted; if feature now has larger start/end coordinates,
                 // update drawing coordinates.
-                if (
-                    feature[1] < slotted_info.feature[1] ||
-                    slotted_info.feature[2] < feature[2]
-                ) {
+                if (feature[1] < slotted_info.feature[1] || slotted_info.feature[2] < feature[2]) {
                     // Feature has changed (e.g. a single read now has its pair), so recalculate its
                     // drawing coordinates.
-                    var old_draw_coords = this._get_draw_coords(
-                        slotted_info.feature
-                    );
+                    var old_draw_coords = this._get_draw_coords(slotted_info.feature);
 
                     var new_draw_coords = this._get_draw_coords(feature);
                     var slotted_coords = this.start_end_dct[slotted_info.slot];
                     for (var k = 0; k < slotted_coords.length; k++) {
                         var dc = slotted_coords[k];
-                        if (
-                            dc[0] === old_draw_coords[0] &&
-                            dc[1] === old_draw_coords[1]
-                        ) {
+                        if (dc[0] === old_draw_coords[0] && dc[1] === old_draw_coords[1]) {
                             // Replace old drawing coordinates with new ones.
                             slotted_coords[k] = new_draw_coords;
                         }
                     }
                 }
-                highest_slot = Math.max(
-                    highest_slot,
-                    this.slots[feature_uid].slot
-                );
+                highest_slot = Math.max(highest_slot, this.slots[feature_uid].slot);
             } else {
                 undone.push(i);
             }

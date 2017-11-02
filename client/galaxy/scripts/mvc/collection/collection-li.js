@@ -11,8 +11,7 @@ var ListItemView = LIST_ITEM.ListItemView;
  */
 var DCListItemView = FoldoutListItemView.extend(
     /** @lends DCListItemView.prototype */ {
-        className: `${FoldoutListItemView.prototype
-            .className} dataset-collection`,
+        className: `${FoldoutListItemView.prototype.className} dataset-collection`,
         id: function() {
             return ["dataset_collection", this.model.get("id")].join("-");
         },
@@ -35,9 +34,7 @@ var DCListItemView = FoldoutListItemView.extend(
                     // if the model has been decorated after the fact with the element count,
                     // render the subtitle where the count is displayed
                 } else if (_.has(model.changed, "element_count")) {
-                    this.$("> .title-bar .subtitle").replaceWith(
-                        this._renderSubtitle()
-                    );
+                    this.$("> .title-bar .subtitle").replaceWith(this._renderSubtitle());
                 }
             });
         },
@@ -51,9 +48,7 @@ var DCListItemView = FoldoutListItemView.extend(
         // ......................................................................... foldout
         /** override to add linktarget to sub-panel */
         _getFoldoutPanelOptions: function() {
-            var options = FoldoutListItemView.prototype._getFoldoutPanelOptions.call(
-                this
-            );
+            var options = FoldoutListItemView.prototype._getFoldoutPanelOptions.call(this);
             return _.extend(options, {
                 linkTarget: this.linkTarget,
                 hasUser: this.hasUser
@@ -77,36 +72,32 @@ var DCListItemView = FoldoutListItemView.extend(
 // ............................................................................ TEMPLATES
 /** underscore templates */
 DCListItemView.prototype.templates = (() => {
-    var warnings = _.extend(
-        {},
-        FoldoutListItemView.prototype.templates.warnings,
-        {
-            error: BASE_MVC.wrapTemplate([
-                // error during index fetch - show error on dataset
-                "<% if( model.error ){ %>",
-                '<div class="errormessagesmall">',
-                _l("There was an error getting the data for this collection"),
-                ": <%- model.error %>",
-                "</div>",
-                "<% } %>"
-            ]),
-            purged: BASE_MVC.wrapTemplate([
-                "<% if( model.purged ){ %>",
-                '<div class="purged-msg warningmessagesmall">',
-                _l("This collection has been deleted and removed from disk"),
-                "</div>",
-                "<% } %>"
-            ]),
-            deleted: BASE_MVC.wrapTemplate([
-                // deleted not purged
-                "<% if( model.deleted && !model.purged ){ %>",
-                '<div class="deleted-msg warningmessagesmall">',
-                _l("This collection has been deleted"),
-                "</div>",
-                "<% } %>"
-            ])
-        }
-    );
+    var warnings = _.extend({}, FoldoutListItemView.prototype.templates.warnings, {
+        error: BASE_MVC.wrapTemplate([
+            // error during index fetch - show error on dataset
+            "<% if( model.error ){ %>",
+            '<div class="errormessagesmall">',
+            _l("There was an error getting the data for this collection"),
+            ": <%- model.error %>",
+            "</div>",
+            "<% } %>"
+        ]),
+        purged: BASE_MVC.wrapTemplate([
+            "<% if( model.purged ){ %>",
+            '<div class="purged-msg warningmessagesmall">',
+            _l("This collection has been deleted and removed from disk"),
+            "</div>",
+            "<% } %>"
+        ]),
+        deleted: BASE_MVC.wrapTemplate([
+            // deleted not purged
+            "<% if( model.deleted && !model.purged ){ %>",
+            '<div class="deleted-msg warningmessagesmall">',
+            _l("This collection has been deleted"),
+            "</div>",
+            "<% } %>"
+        ])
+    });
 
     // use element identifier
     var titleBarTemplate = BASE_MVC.wrapTemplate(
@@ -153,8 +144,7 @@ DCListItemView.prototype.templates = (() => {
 var DCEListItemView = ListItemView.extend(
     /** @lends DCEListItemView.prototype */ {
         /** add the DCE class to the list item */
-        className: `${ListItemView.prototype
-            .className} dataset-collection-element`,
+        className: `${ListItemView.prototype.className} dataset-collection-element`,
 
         /** set up */
         initialize: function(attributes) {
@@ -201,8 +191,7 @@ DCEListItemView.prototype.templates = (() => {
  */
 var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend(
     /** @lends DatasetDCEListItemView.prototype */ {
-        className: `${DATASET_LI.DatasetListItemView.prototype
-            .className} dataset-collection-element`,
+        className: `${DATASET_LI.DatasetListItemView.prototype.className} dataset-collection-element`,
 
         /** set up */
         initialize: function(attributes) {
@@ -210,10 +199,7 @@ var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend(
                 this.logger = this.model.logger = attributes.logger;
             }
             this.log("DatasetDCEListItemView.initialize:", attributes);
-            DATASET_LI.DatasetListItemView.prototype.initialize.call(
-                this,
-                attributes
-            );
+            DATASET_LI.DatasetListItemView.prototype.initialize.call(this, attributes);
         },
 
         /** In this override, only get details if in the ready state.
@@ -264,8 +250,7 @@ DatasetDCEListItemView.prototype.templates = (() => {
  */
 var NestedDCDCEListItemView = DCListItemView.extend(
     /** @lends NestedDCDCEListItemView.prototype */ {
-        className: `${DCListItemView.prototype
-            .className} dataset-collection-element`,
+        className: `${DCListItemView.prototype.className} dataset-collection-element`,
 
         /** In this override, add the state as a class for use with state-based CSS */
         _swapNewRender: function($newRender) {

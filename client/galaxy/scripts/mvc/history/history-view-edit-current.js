@@ -78,10 +78,7 @@ var CurrentHistoryView = _super.extend(
                     {
                         id: HistoryViewPrefs.storageKey()
                     },
-                    _.pick(
-                        attributes,
-                        _.keys(HistoryViewPrefs.prototype.defaults)
-                    )
+                    _.pick(attributes, _.keys(HistoryViewPrefs.prototype.defaults))
                 )
             );
 
@@ -118,11 +115,7 @@ var CurrentHistoryView = _super.extend(
         /** loads a history & contents w/ details and makes them the current history */
         switchToHistory: function(historyId, attributes) {
             if (Galaxy.user.isAnonymous()) {
-                this.trigger(
-                    "error",
-                    _l("You must be logged in to switch histories"),
-                    _l("Anonymous user")
-                );
+                this.trigger("error", _l("You must be logged in to switch histories"), _l("Anonymous user"));
                 return $.when();
             }
             return this.loadHistory(historyId, {
@@ -133,11 +126,7 @@ var CurrentHistoryView = _super.extend(
         /** creates a new history on the server and sets it as the user's current history */
         createNewHistory: function(attributes) {
             if (Galaxy.user.isAnonymous()) {
-                this.trigger(
-                    "error",
-                    _l("You must be logged in to create histories"),
-                    _l("Anonymous user")
-                );
+                this.trigger("error", _l("You must be logged in to create histories"), _l("Anonymous user"));
                 return $.when();
             }
             return this.loadHistory(null, {
@@ -162,12 +151,7 @@ var CurrentHistoryView = _super.extend(
             // re-broadcast any model change events so that listeners don't have to re-bind to each history
             return this.listenTo(this.model, {
                 "change:nice_size change:size": function() {
-                    this.trigger(
-                        "history-size-change",
-                        this,
-                        this.model,
-                        arguments
-                    );
+                    this.trigger("history-size-change", this, this.model, arguments);
                 },
                 "change:id": function() {
                     this.once("loading-done", function() {
@@ -182,15 +166,8 @@ var CurrentHistoryView = _super.extend(
             _super.prototype._setUpCollectionListeners.call(this);
             // if a hidden item is created (gen. by a workflow), moves thru the updater to the ready state,
             //  then: remove it from the collection if the panel is set to NOT show hidden datasets
-            this.listenTo(this.collection, "state:ready", function(
-                model,
-                newState,
-                oldState
-            ) {
-                if (
-                    !model.get("visible") &&
-                    !this.collection.storage.includeHidden()
-                ) {
+            this.listenTo(this.collection, "state:ready", function(model, newState, oldState) {
+                if (!model.get("visible") && !this.collection.storage.includeHidden()) {
                     this.removeItemView(model);
                 }
             });
@@ -208,18 +185,12 @@ var CurrentHistoryView = _super.extend(
 
             // cache the handler to remove and re-add so we don't pile up the handlers
             if (!this._debouncedScrollCaptureHandler) {
-                this._debouncedScrollCaptureHandler = _.debounce(
-                    function scrollCapture() {
-                        // cache the scroll position (only if visible)
-                        if (panel.$el.is(":visible")) {
-                            panel.preferences.set(
-                                "scrollPosition",
-                                $(this).scrollTop()
-                            );
-                        }
-                    },
-                    40
-                );
+                this._debouncedScrollCaptureHandler = _.debounce(function scrollCapture() {
+                    // cache the scroll position (only if visible)
+                    if (panel.$el.is(":visible")) {
+                        panel.preferences.set("scrollPosition", $(this).scrollTop());
+                    }
+                }, 40);
             }
 
             panel
@@ -235,9 +206,7 @@ var CurrentHistoryView = _super.extend(
                 return $();
             }
             var $newRender = _super.prototype._buildNewRender.call(this);
-            $newRender
-                .find(".search")
-                .prependTo($newRender.find("> .controls"));
+            $newRender.find(".search").prependTo($newRender.find("> .controls"));
             this._renderQuotaMessage($newRender);
             return $newRender;
         },
@@ -245,9 +214,7 @@ var CurrentHistoryView = _super.extend(
         /** render the message displayed when a user is over quota and can't run jobs */
         _renderQuotaMessage: function($whereTo) {
             $whereTo = $whereTo || this.$el;
-            return $(this.templates.quotaMsg({}, this)).prependTo(
-                $whereTo.find(".messages")
-            );
+            return $(this.templates.quotaMsg({}, this)).prependTo($whereTo.find(".messages"));
         },
 
         /** In this override, get and set current panel preferences when editor is used */
@@ -259,13 +226,9 @@ var CurrentHistoryView = _super.extend(
                 panel.tagsEditor.toggle(true);
             }
             // store preference when shown or hidden
-            panel.listenTo(
-                panel.tagsEditor,
-                "hiddenUntilActivated:shown hiddenUntilActivated:hidden",
-                tagsEditor => {
-                    panel.preferences.set("tagsEditorShown", tagsEditor.hidden);
-                }
-            );
+            panel.listenTo(panel.tagsEditor, "hiddenUntilActivated:shown hiddenUntilActivated:hidden", tagsEditor => {
+                panel.preferences.set("tagsEditorShown", tagsEditor.hidden);
+            });
         },
 
         /** In this override, get and set current panel preferences when editor is used */
@@ -281,10 +244,7 @@ var CurrentHistoryView = _super.extend(
                 panel.annotationEditor,
                 "hiddenUntilActivated:shown hiddenUntilActivated:hidden",
                 annotationEditor => {
-                    panel.preferences.set(
-                        "annotationEditorShown",
-                        annotationEditor.hidden
-                    );
+                    panel.preferences.set("annotationEditorShown", annotationEditor.hidden);
                 }
             );
         },
@@ -317,12 +277,7 @@ var CurrentHistoryView = _super.extend(
 
         /** Override to remove any drill down panels */
         addItemView: function(model, collection, options) {
-            var view = _super.prototype.addItemView.call(
-                this,
-                model,
-                collection,
-                options
-            );
+            var view = _super.prototype.addItemView.call(this, model, collection, options);
             if (!view) {
                 return view;
             }
@@ -350,9 +305,7 @@ var CurrentHistoryView = _super.extend(
 
         /** display 'current content': add a visible highlight and store the id of a content item */
         setCurrentContent: function(view) {
-            this.$(".history-content.current-content").removeClass(
-                "current-content"
-            );
+            this.$(".history-content.current-content").removeClass("current-content");
             if (view) {
                 view.$el.addClass("current-content");
                 this.currentContentId = view.model.id;
@@ -429,9 +382,7 @@ var CurrentHistoryView = _super.extend(
                         return hdaId;
                     });
                     // need to type mangle to go from web route to history contents
-                    this._setCurrentContentById(
-                        hdaId ? `dataset-${hdaId}` : null
-                    );
+                    this._setCurrentContentById(hdaId ? `dataset-${hdaId}` : null);
                 },
                 // when the center panel is given a new view, clear the current indicator
                 "center-panel:load": function(view) {
@@ -461,9 +412,7 @@ var CurrentHistoryView = _super.extend(
 
         /** Override to preserve the quota message */
         clearMessages: function(ev) {
-            var $target = !_.isUndefined(ev)
-                ? $(ev.currentTarget)
-                : this.$messages().children('[class$="message"]');
+            var $target = !_.isUndefined(ev) ? $(ev.currentTarget) : this.$messages().children('[class$="message"]');
             $target = $target.not(".quota-message");
             $target.fadeOut(this.fxSpeed, function() {
                 $(this).remove();
@@ -497,10 +446,7 @@ var CurrentHistoryView = _super.extend(
             if (confirm(_l("Really unhide all hidden datasets?"))) {
                 // get all hidden, regardless of deleted/purged
                 return self.model.contents
-                    ._filterAndUpdate(
-                        { visible: false, deleted: "", purged: "" },
-                        { visible: true }
-                    )
+                    ._filterAndUpdate({ visible: false, deleted: "", purged: "" }, { visible: true })
                     .done(() => {
                         // TODO: would be better to render these as they're unhidden instead of all at once
                         if (!self.model.contents.includeHidden) {
@@ -527,9 +473,7 @@ var CurrentHistoryView = _super.extend(
 
         /** Return a string rep of the history */
         toString: function() {
-            return `CurrentHistoryView(${this.model
-                ? this.model.get("name")
-                : ""})`;
+            return `CurrentHistoryView(${this.model ? this.model.get("name") : ""})`;
         }
     }
 );
@@ -541,9 +485,7 @@ CurrentHistoryView.prototype.templates = (() => {
             '<div class="quota-message errormessage">',
             _l("You are over your disk quota"),
             ". ",
-            _l(
-                "Tool execution is on hold until your disk usage drops below your allocated quota"
-            ),
+            _l("Tool execution is on hold until your disk usage drops below your allocated quota"),
             ".",
             "</div>"
         ],

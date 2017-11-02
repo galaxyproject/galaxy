@@ -147,11 +147,7 @@ NamedAjaxQueue.prototype.add = function add(obj) {
     //console.debug( 'NamedAjaxQueue.adding:', obj )
     //console.debug( 'NamedAjaxQueue.prototype.add:', obj );
     if (!(obj.hasOwnProperty("name") && obj.hasOwnProperty("fn"))) {
-        throw new Error(
-            `NamedAjaxQueue.add requires an object with both "name" and "fn": ${JSON.stringify(
-                obj
-            )}`
-        );
+        throw new Error(`NamedAjaxQueue.add requires an object with both "name" and "fn": ${JSON.stringify(obj)}`);
     }
     if (this.names.hasOwnProperty(obj.name)) {
         //console.warn( 'name has been used:', obj.name );

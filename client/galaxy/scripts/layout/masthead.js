@@ -18,9 +18,7 @@ var View = Backbone.View.extend({
         this.collection = new Menu.Collection();
         this.collection
             .on("add", model => {
-                self.$navbarTabs.append(
-                    new Menu.Tab({ model: model }).render().$el
-                );
+                self.$navbarTabs.append(new Menu.Tab({ model: model }).render().$el);
             })
             .on("reset", () => {
                 self.$navbarTabs.empty();
@@ -56,19 +54,14 @@ var View = Backbone.View.extend({
                                 .hide()
                         );
                     }
-                    $("iframe[id=download]").attr(
-                        "src",
-                        $download_link.attr("href")
-                    );
+                    $("iframe[id=download]").attr("src", $download_link.attr("href"));
                     e.preventDefault();
                 }
             })
             .on("beforeunload", () => {
                 var text = "";
                 self.collection.each(model => {
-                    var q =
-                        model.get("onbeforeunload") &&
-                        model.get("onbeforeunload")();
+                    var q = model.get("onbeforeunload") && model.get("onbeforeunload")();
                     q && (text += `${q} `);
                 });
                 if (text !== "") {
@@ -78,9 +71,7 @@ var View = Backbone.View.extend({
     },
 
     render: function() {
-        this.$navbarBrandTitle.html(
-            `Galaxy ${(this.options.brand && `/ ${this.options.brand}`) || ""}`
-        );
+        this.$navbarBrandTitle.html(`Galaxy ${(this.options.brand && `/ ${this.options.brand}`) || ""}`);
         this.$navbarBrandLink.attr("href", this.options.logo_url);
         this.$navbarBrandImage.attr("src", this.options.logo_src);
         this.quotaMeter.render();

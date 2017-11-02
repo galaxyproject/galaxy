@@ -32,10 +32,7 @@ var WorkflowItemView = Backbone.View.extend({
     },
 
     showInToolPanel: function() {
-        this.model.set(
-            "show_in_tool_panel",
-            !this.model.get("show_in_tool_panel")
-        );
+        this.model.set("show_in_tool_panel", !this.model.get("show_in_tool_panel"));
         this.model.save();
         // This reloads the whole page, so that the workflow appears in the tool panel.
         // Ideally we would notify only the tool panel of a change
@@ -44,16 +41,10 @@ var WorkflowItemView = Backbone.View.extend({
 
     removeWorkflow: function() {
         var wfName = this.model.get("name");
-        if (
-            window.confirm(
-                `Are you sure you want to delete workflow '${wfName}'?`
-            )
-        ) {
+        if (window.confirm(`Are you sure you want to delete workflow '${wfName}'?`)) {
             this.model.destroy({
                 success: function() {
-                    mod_toastr.success(
-                        `Successfully deleted workflow '${wfName}'`
-                    );
+                    mod_toastr.success(`Successfully deleted workflow '${wfName}'`);
                 }
             });
             this.remove();
@@ -62,18 +53,13 @@ var WorkflowItemView = Backbone.View.extend({
 
     renameWorkflow: function() {
         var oldName = this.model.get("name");
-        var newName = window.prompt(
-            `Enter a new Name for workflow '${oldName}'`,
-            oldName
-        );
+        var newName = window.prompt(`Enter a new Name for workflow '${oldName}'`, oldName);
         if (newName) {
             this.model.save(
                 { name: newName },
                 {
                     success: function() {
-                        mod_toastr.success(
-                            `Successfully renamed workflow '${oldName}' to '${newName}'`
-                        );
+                        mod_toastr.success(`Successfully renamed workflow '${oldName}' to '${newName}'`);
                     }
                 }
             );
@@ -95,9 +81,7 @@ var WorkflowItemView = Backbone.View.extend({
                 at: 0,
                 wait: true,
                 success: function() {
-                    mod_toastr.success(
-                        `Successfully copied workflow '${oldName}' to '${newName}'`
-                    );
+                    mod_toastr.success(`Successfully copied workflow '${oldName}' to '${newName}'`);
                 },
                 error: function(model, resp, options) {
                     // signature seems to have changed over the course of backbone dev
@@ -122,9 +106,9 @@ var WorkflowItemView = Backbone.View.extend({
             "owner"
         ) === Galaxy.user.attributes.username
             ? "You"
-            : this.model.get("owner")}</span></td><td>${this.model.get(
-            "number_of_steps"
-        )}</td><td>${this.model.get("published")
+            : this.model.get("owner")}</span></td><td>${this.model.get("number_of_steps")}</td><td>${this.model.get(
+            "published"
+        )
             ? "Yes"
             : "No"}</td><td>${checkboxHtml}</td>`;
         return trHtml;
@@ -143,28 +127,19 @@ var WorkflowItemView = Backbone.View.extend({
     /** Template for user actions for workflows */
     _templateActions: function() {
         if (this.model.get("owner") === Galaxy.user.attributes.username) {
-            return `<ul class="dropdown-menu action-dpd"><li><a href="${Galaxy.root}workflow/editor?id=${this
-                .model
-                .id}">Edit</a></li><li><a href="${Galaxy.root}workflow/run?id=${this
-                .model
-                .id}">Run</a></li><li><a href="${Galaxy.root}workflow/sharing?id=${this
-                .model
-                .id}">Share</a></li><li><a href="${Galaxy.root}api/workflows/${this
-                .model
+            return `<ul class="dropdown-menu action-dpd"><li><a href="${Galaxy.root}workflow/editor?id=${this.model
+                .id}">Edit</a></li><li><a href="${Galaxy.root}workflow/run?id=${this.model
+                .id}">Run</a></li><li><a href="${Galaxy.root}workflow/sharing?id=${this.model
+                .id}">Share</a></li><li><a href="${Galaxy.root}api/workflows/${this.model
                 .id}/download?format=json-download">Download</a></li><li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li><li><a id="rename-workflow" style="cursor: pointer;">Rename</a></li><li><a href="${Galaxy.root}workflow/display_by_id?id=${this
-                .model
-                .id}">View</a></li><li><a id="delete-workflow" style="cursor: pointer;">Delete</a></li></ul>`;
+                .model.id}">View</a></li><li><a id="delete-workflow" style="cursor: pointer;">Delete</a></li></ul>`;
         } else {
             return `<ul class="dropdown-menu action-dpd"><li><a href="${Galaxy.root}workflow/display_by_username_and_slug?username=${this.model.get(
                 "owner"
-            )}&slug=${this.model.get(
-                "slug"
-            )}">View</a></li><li><a href="${Galaxy.root}workflow/run?id=${this
-                .model
+            )}&slug=${this.model.get("slug")}">View</a></li><li><a href="${Galaxy.root}workflow/run?id=${this.model
                 .id}">Run</a></li><li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li><li><a class="link-confirm-shared-${this
-                .model
-                .id}" href="${Galaxy.root}workflow/sharing?unshare_me=True&id=${this
-                .model.id}">Remove</a></li></ul>`;
+                .model.id}" href="${Galaxy.root}workflow/sharing?unshare_me=True&id=${this.model
+                .id}">Remove</a></li></ul>`;
         }
     }
 });
@@ -215,9 +190,7 @@ var WorkflowListView = Backbone.View.extend({
             try {
                 wf_json = JSON.parse(reader.result);
             } catch (e) {
-                mod_toastr.error(
-                    `Could not read file '${f.name}'. Verify it is a valid Galaxy workflow`
-                );
+                mod_toastr.error(`Could not read file '${f.name}'. Verify it is a valid Galaxy workflow`);
                 wf_json = null;
             }
             if (wf_json) {
@@ -225,9 +198,7 @@ var WorkflowListView = Backbone.View.extend({
                     at: 0,
                     wait: true,
                     success: function() {
-                        mod_toastr.success(
-                            `Successfully imported workflow '${wf_json.name}'`
-                        );
+                        mod_toastr.success(`Successfully imported workflow '${wf_json.name}'`);
                     },
                     error: function(model, resp, options) {
                         mod_toastr.error(options.errorThrown);
@@ -243,12 +214,7 @@ var WorkflowListView = Backbone.View.extend({
         var msg_text = QueryStringParsing.get("message");
         var msg_status = QueryStringParsing.get("status");
         if (msg_status === "error") {
-            mod_toastr.error(
-                _.escape(
-                    msg_text ||
-                        "Unknown Error, please report this to an administrator."
-                )
-            );
+            mod_toastr.error(_.escape(msg_text || "Unknown Error, please report this to an administrator."));
         } else if (msg_text) {
             mod_toastr.info(_.escape(msg_text));
         }
@@ -268,11 +234,7 @@ var WorkflowListView = Backbone.View.extend({
             self.confirmDelete(item);
         }, this);
         var minQueryLength = 3;
-        this.searchWorkflow(
-            this.$(".search-wf"),
-            this.$(".workflow-search tr"),
-            minQueryLength
-        );
+        this.searchWorkflow(this.$(".search-wf"), this.$(".workflow-search tr"), minQueryLength);
         this.adjustActiondropdown();
         this._showArgErrors();
         return this;
@@ -291,10 +253,7 @@ var WorkflowListView = Backbone.View.extend({
     confirmDelete: function(workflow) {
         var $el_shared_wf_link = this.$(`.link-confirm-shared-${workflow.id}`);
         $el_shared_wf_link.click(() =>
-            window.confirm(
-                `Are you sure you want to remove the shared workflow '${workflow
-                    .attributes.name}'?`
-            )
+            window.confirm(`Are you sure you want to remove the shared workflow '${workflow.attributes.name}'?`)
         );
     },
 

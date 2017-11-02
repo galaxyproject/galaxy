@@ -6,9 +6,7 @@ var CollectionCreatorMixin = {
     _validationWarning: function(what, clear) {
         var VALIDATION_CLASS = "validation-warning";
         if (what === "name") {
-            what = this.$(".collection-name").add(
-                this.$(".collection-name-prompt")
-            );
+            what = this.$(".collection-name").add(this.$(".collection-name-prompt"));
             this.$(".collection-name")
                 .focus()
                 .select();

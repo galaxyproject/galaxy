@@ -104,10 +104,7 @@ var ConfigSetting = Backbone.Model.extend({
             this.set(_.extend({}, defaults, options));
         }
 
-        if (
-            this.get("value") === undefined &&
-            this.get("default_value") !== undefined
-        ) {
+        if (this.get("value") === undefined && this.get("default_value") !== undefined) {
             // Use default to set value (if present).
             this.set_value(this.get("default_value"));
 
@@ -201,9 +198,7 @@ var ConfigSettingCollection = Backbone.Collection.extend(
         from_models_and_saved_values: function(models, saved_values) {
             // If there are saved values, copy models and update with saved values.
             if (saved_values) {
-                models = _.map(models, m =>
-                    _.extend({}, m, { value: saved_values[m.key] })
-                );
+                models = _.map(models, m => _.extend({}, m, { value: saved_values[m.key] }));
             }
 
             return new ConfigSettingCollection(models);
@@ -291,14 +286,8 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                             .css({
                                 // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
                                 // top: $(this).position().top + $(this.height)
-                                left:
-                                    $(this).position().left +
-                                    $(this).width() +
-                                    5,
-                                top:
-                                    $(this).position().top -
-                                    $(tip).height() / 2 +
-                                    $(this).height() / 2
+                                left: $(this).position().left + $(this).width() + 5,
+                                top: $(this).position().top - $(tip).height() / 2 + $(this).height() / 2
                             })
                             .show();
 
@@ -327,20 +316,14 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                     .tooltip();
 
                 var // Color picker in tool tip style.
-                tip = $(
-                    "<div class='tooltip right' style='position: absolute;' />"
-                )
+                tip = $("<div class='tooltip right' style='position: absolute;' />")
                     .appendTo(container_div)
                     .hide();
 
                 var // Inner div for padding purposes
-                tip_inner = $(
-                    "<div class='tooltip-inner' style='text-align: inherit'></div>"
-                ).appendTo(tip);
+                tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip);
 
-                var tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(
-                    tip
-                );
+                var tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(tip);
 
                 var farb_obj = $.farbtastic(tip_inner, {
                     width: 100,

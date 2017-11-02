@@ -74,9 +74,7 @@ var TagsEditor = Backbone.View
 
         _workflowTemplate: function() {
             // Shows labels by default, event handler controls whether we show tags or editor
-            return [
-                this.show_editor ? this._renderEditor() : this._renderTags()
-            ].join(" ");
+            return [this.show_editor ? this._renderEditor() : this._renderTags()].join(" ");
         },
 
         keydownHandler: function(e) {
@@ -115,9 +113,7 @@ var TagsEditor = Backbone.View
             });
             if (renderedArray.length === 0) {
                 // If there are no tags to render we just show the add-tag-button
-                renderedArray.push(
-                    `<img src=${addButton} class="add-tag-button" title="Add tags"/>`
-                );
+                renderedArray.push(`<img src=${addButton} class="add-tag-button" title="Add tags"/>`);
             }
             return renderedArray.join(" ");
         },

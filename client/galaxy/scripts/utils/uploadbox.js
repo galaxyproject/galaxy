@@ -108,11 +108,7 @@
         );
 
         // send request
-        Galaxy.emit.debug(
-            "uploadbox::uploadpost()",
-            "Posting following data.",
-            cnf
-        );
+        Galaxy.emit.debug("uploadbox::uploadpost()", "Posting following data.", cnf);
         xhr.send(form);
     };
 
@@ -134,11 +130,7 @@
         );
 
         // append hidden upload field
-        var $input = $(
-            `<input type="file" style="display: none" ${(opts.multiple &&
-                "multiple") ||
-                ""}/>`
-        );
+        var $input = $(`<input type="file" style="display: none" ${(opts.multiple && "multiple") || ""}/>`);
         el.append(
             $input.change(function(e) {
                 opts.onchange(e.target.files);
@@ -221,10 +213,7 @@
                 _.each(files, (file, key) => {
                     if (
                         file.mode !== "new" &&
-                        _.filter(
-                            queue,
-                            f => f.name === file.name && f.size === file.size
-                        ).length
+                        _.filter(queue, f => f.name === file.name && f.size === file.size).length
                     ) {
                         file.duplicate = true;
                     }
@@ -329,12 +318,7 @@
 
         // verify browser compatibility
         function compatible() {
-            return (
-                window.File &&
-                window.FormData &&
-                window.XMLHttpRequest &&
-                window.FileList
-            );
+            return window.File && window.FormData && window.XMLHttpRequest && window.FileList;
         }
 
         // export functions

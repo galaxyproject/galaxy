@@ -16,10 +16,7 @@ var HDCAListItemView = _super.extend(
         _setUpListeners: function() {
             _super.prototype._setUpListeners.call(this);
             this.listenTo(this.model, {
-                "change:tags change:populated change:visible": function(
-                    model,
-                    options
-                ) {
+                "change:tags change:populated change:visible": function(model, options) {
                     this.render();
                 }
             });
@@ -37,18 +34,14 @@ var HDCAListItemView = _super.extend(
                 case "list:list":
                     return DC_VIEW.ListOfListsCollectionView;
             }
-            throw new TypeError(
-                `Uknown collection_type: ${this.model.get("collection_type")}`
-            );
+            throw new TypeError(`Uknown collection_type: ${this.model.get("collection_type")}`);
         },
 
         /** In this override, add the state as a class for use with state-based CSS */
         _swapNewRender: function($newRender) {
             _super.prototype._swapNewRender.call(this, $newRender);
             //TODO: model currently has no state
-            var state = !this.model.get("populated")
-                ? STATES.RUNNING
-                : STATES.OK;
+            var state = !this.model.get("populated") ? STATES.RUNNING : STATES.OK;
             //if( this.model.has( 'state' ) ){
             this.$el.addClass(`state-${state}`);
             //}

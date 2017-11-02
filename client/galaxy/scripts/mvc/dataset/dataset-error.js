@@ -13,9 +13,7 @@ var View = Backbone.View.extend({
 
     // Fetch data for the selected dataset and
     render: function() {
-        var data_url = `${Galaxy.root}api/datasets/${this.model.get(
-            "dataset_id"
-        )}`;
+        var data_url = `${Galaxy.root}api/datasets/${this.model.get("dataset_id")}`;
 
         var self = this;
 
@@ -36,10 +34,7 @@ var View = Backbone.View.extend({
                             persistent: true,
                             cls: "errormessage"
                         };
-                        self.display_message(
-                            error_response,
-                            self.$(".response-message")
-                        );
+                        self.display_message(error_response, self.$(".response-message"));
                     }
                 });
             },
@@ -50,10 +45,7 @@ var View = Backbone.View.extend({
                     persistent: true,
                     cls: "errormessage"
                 };
-                self.display_message(
-                    error_response,
-                    self.$(".response-message")
-                );
+                self.display_message(error_response, self.$(".response-message"));
             }
         });
     },
@@ -62,12 +54,8 @@ var View = Backbone.View.extend({
     render_error_page: function(self, dataset, job) {
         self.$el.empty().append(self._templateHeader());
         self.$el.append("<h2>Dataset Error</h2>");
-        self.$el.append(
-            `<p>An error occured while running the tool <b>${job.tool_id}</b>.</p>`
-        );
-        self.$el.append(
-            "<p>Tool execution generated the following messages:</p>"
-        );
+        self.$el.append(`<p>An error occured while running the tool <b>${job.tool_id}</b>.</p>`);
+        self.$el.append("<p>Tool execution generated the following messages:</p>");
         self.$el.append(`<pre class="code">${job.stderr}</pre>`);
         self.$el.append("<h2>Report This Error</pre>");
         self.$el.append(
@@ -95,11 +83,7 @@ var View = Backbone.View.extend({
 
     /** Main template */
     _templateHeader: function() {
-        return (
-            '<div class="page-container edit-attr">' +
-            '<div class="response-message"></div>' +
-            "</div>"
-        );
+        return '<div class="page-container edit-attr">' + '<div class="response-message"></div>' + "</div>";
     },
 
     /** Convert tab template */
@@ -115,8 +99,7 @@ var View = Backbone.View.extend({
                 value: Galaxy.user.get("email")
             },
             {
-                help:
-                    "Any additional comments you can provide regarding what you were doing at the time of the bug.",
+                help: "Any additional comments you can provide regarding what you were doing at the time of the bug.",
                 options: [],
                 type: "text",
                 area: true,
@@ -189,15 +172,11 @@ var View = Backbone.View.extend({
             error: function(response) {
                 var error_response = {
                     status: "error",
-                    message:
-                        "Error occured while saving. Please fill all the required fields and try again.",
+                    message: "Error occured while saving. Please fill all the required fields and try again.",
                     persistent: true,
                     cls: "errormessage"
                 };
-                self.display_message(
-                    error_response,
-                    self.$(".response-message")
-                );
+                self.display_message(error_response, self.$(".response-message"));
             }
         });
     }

@@ -159,9 +159,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
                     // Failed. Roll back changes and show alert.
                     new_tag_button.remove();
                     delete settings.tags[tag_name_and_value[0]];
-                    var new_text = settings.get_toggle_link_text_fn(
-                        settings.tags
-                    );
+                    var new_text = settings.get_toggle_link_text_fn(settings.tags);
                     toggle_link.text(new_text);
                     alert("Add tag failed");
                 },
@@ -178,17 +176,9 @@ jQuery.fn.autocomplete_tagging = function(options) {
     });
 
     // Add autocomplete to input.
-    var format_item_func = (
-        key,
-        row_position,
-        num_rows,
-        value,
-        search_term
-    ) => {
+    var format_item_func = (key, row_position, num_rows, value, search_term) => {
         var tag_name_and_value = value.split(":");
-        return tag_name_and_value.length === 1
-            ? tag_name_and_value[0]
-            : tag_name_and_value[1];
+        return tag_name_and_value.length === 1 ? tag_name_and_value[0] : tag_name_and_value[1];
     };
     var autocomplete_options = {
         selectFirst: false,
@@ -196,10 +186,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
         autoFill: false,
         highlight: false
     };
-    tag_input_field.autocomplete_verheul(
-        settings.ajax_autocomplete_tag_url,
-        autocomplete_options
-    );
+    tag_input_field.autocomplete_verheul(settings.ajax_autocomplete_tag_url, autocomplete_options);
 
     // Initialize delete tag images for current tags.
     this_obj.find(".delete-tag-img").each(function() {
@@ -343,9 +330,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
                     }
                     alert("Remove tag failed");
 
-                    toggle_link.text(
-                        settings.get_toggle_link_text_fn(settings.tags)
-                    );
+                    toggle_link.text(settings.get_toggle_link_text_fn(settings.tags));
 
                     // TODO: no idea why it's necessary to set this up again.
                     delete_img.mouseenter(function() {

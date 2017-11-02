@@ -76,26 +76,17 @@ var LibraryDatasetView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(
-                        `${response.responseJSON
-                            .err_msg} Click this to go back.`,
-                        "",
-                        {
-                            onclick: function() {
-                                Galaxy.libraries.library_router.back();
-                            }
+                    mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
+                        onclick: function() {
+                            Galaxy.libraries.library_router.back();
                         }
-                    );
+                    });
                 } else {
-                    mod_toastr.error(
-                        "An error occurred. Click this to go back.",
-                        "",
-                        {
-                            onclick: function() {
-                                Galaxy.libraries.library_router.back();
-                            }
+                    mod_toastr.error("An error occurred. Click this to go back.", "", {
+                        onclick: function() {
+                            Galaxy.libraries.library_router.back();
                         }
-                    );
+                    });
                 }
             }
         });
@@ -115,15 +106,12 @@ var LibraryDatasetView = Backbone.View.extend({
         var self = this;
         if (!this.options.ldda_id) {
             this.render();
-            mod_toastr.error(
-                "Library dataset version requested but no id provided."
-            );
+            mod_toastr.error("Library dataset version requested but no id provided.");
         } else {
             this.ldda = new mod_library_model.Ldda({
                 id: this.options.ldda_id
             });
-            this.ldda.url = `${this.ldda.urlRoot +
-                this.model.id}/versions/${this.ldda.id}`;
+            this.ldda.url = `${this.ldda.urlRoot + this.model.id}/versions/${this.ldda.id}`;
             this.ldda.fetch({
                 success: function() {
                     self.renderVersion();
@@ -176,10 +164,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 inputs += `<input type="hidden" name="${pair[0]}" value="${pair[1]}" />`;
             });
             //send request
-            $(
-                `<form action="${url}" method="${method ||
-                    "post"}">${inputs}</form>`
-            )
+            $(`<form action="${url}" method="${method || "post"}">${inputs}</form>`)
                 .appendTo("body")
                 .submit()
                 .remove();
@@ -214,15 +199,11 @@ var LibraryDatasetView = Backbone.View.extend({
         this.histories.fetch({
             success: function(histories) {
                 if (histories.length === 0) {
-                    mod_toastr.warning(
-                        "You have to create history first. Click this to do so.",
-                        "",
-                        {
-                            onclick: function() {
-                                window.location = Galaxy.root;
-                            }
+                    mod_toastr.warning("You have to create history first. Click this to do so.", "", {
+                        onclick: function() {
+                            window.location = Galaxy.root;
                         }
-                    );
+                    });
                 } else {
                     callback(self);
                 }
@@ -275,26 +256,17 @@ var LibraryDatasetView = Backbone.View.extend({
             {
                 success: function() {
                     Galaxy.modal.hide();
-                    mod_toastr.success(
-                        "Dataset imported. Click this to start analyzing it.",
-                        "",
-                        {
-                            onclick: function() {
-                                window.location = Galaxy.root;
-                            }
+                    mod_toastr.success("Dataset imported. Click this to start analyzing it.", "", {
+                        onclick: function() {
+                            window.location = Galaxy.root;
                         }
-                    );
+                    });
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        mod_toastr.error(
-                            `Dataset not imported. ${response.responseJSON
-                                .err_msg}`
-                        );
+                        mod_toastr.error(`Dataset not imported. ${response.responseJSON.err_msg}`);
                     } else {
-                        mod_toastr.error(
-                            "An error occured. Dataset not imported. Please try again."
-                        );
+                        mod_toastr.error("An error occured. Dataset not imported. Please try again.");
                     }
                 }
             }
@@ -307,10 +279,7 @@ var LibraryDatasetView = Backbone.View.extend({
         this.options = _.extend(this.options, options);
         $(".tooltip").remove();
         if (this.options.fetched_permissions !== undefined) {
-            if (
-                this.options.fetched_permissions.access_dataset_roles.length ===
-                0
-            ) {
+            if (this.options.fetched_permissions.access_dataset_roles.length === 0) {
                 this.model.set({ is_unrestricted: true });
             } else {
                 this.model.set({ is_unrestricted: false });
@@ -322,9 +291,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 is_admin: Galaxy.config.is_admin_user
             })
         );
-        $.get(
-            `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?scope=current`
-        )
+        $.get(`${Galaxy.root}api/libraries/datasets/${self.id}/permissions?scope=current`)
             .done(fetched_permissions => {
                 self.prepareSelectBoxes({
                     fetched_permissions: fetched_permissions,
@@ -332,9 +299,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 });
             })
             .fail(() => {
-                mod_toastr.error(
-                    "An error occurred while attempting to fetch dataset permissions."
-                );
+                mod_toastr.error("An error occurred while attempting to fetch dataset permissions.");
             });
         $("#center [data-toggle]").tooltip();
         $("#center").css("overflow", "auto");
@@ -344,11 +309,7 @@ var LibraryDatasetView = Backbone.View.extend({
         var selected_roles = [];
         for (var i = 0; i < role_list.length; i++) {
             // Replace the : and , in role's name since these are select2 separators for initialData
-            selected_roles.push(
-                `${role_list[i][1]}:${role_list[i][0]
-                    .replace(":", " ")
-                    .replace(",", " &")}`
-            );
+            selected_roles.push(`${role_list[i][1]}:${role_list[i][0].replace(":", " ").replace(",", " &")}`);
         }
         return selected_roles;
     },
@@ -358,25 +319,19 @@ var LibraryDatasetView = Backbone.View.extend({
         this.accessSelectObject = new mod_select.View(
             this._generate_select_options({
                 selector: "access_perm",
-                initialData: this._serializeRoles(
-                    this.options.fetched_permissions.access_dataset_roles
-                )
+                initialData: this._serializeRoles(this.options.fetched_permissions.access_dataset_roles)
             })
         );
         this.modifySelectObject = new mod_select.View(
             this._generate_select_options({
                 selector: "modify_perm",
-                initialData: this._serializeRoles(
-                    this.options.fetched_permissions.modify_item_roles
-                )
+                initialData: this._serializeRoles(this.options.fetched_permissions.modify_item_roles)
             })
         );
         this.manageSelectObject = new mod_select.View(
             this._generate_select_options({
                 selector: "manage_perm",
-                initialData: this._serializeRoles(
-                    this.options.fetched_permissions.manage_dataset_roles
-                )
+                initialData: this._serializeRoles(this.options.fetched_permissions.manage_dataset_roles)
             })
         );
     },
@@ -412,8 +367,7 @@ var LibraryDatasetView = Backbone.View.extend({
         select_options.css = options.selector;
         select_options.initialData = options.initialData.join(",");
         select_options.ajax = {
-            url: `${Galaxy.root}api/libraries/datasets/${this
-                .id}/permissions?scope=available`,
+            url: `${Galaxy.root}api/libraries/datasets/${this.id}/permissions?scope=available`,
             dataType: "json",
             quietMillis: 100,
             data: function(term, page) {
@@ -445,25 +399,17 @@ var LibraryDatasetView = Backbone.View.extend({
                 ld.set("name", new_name);
                 is_changed = true;
             } else {
-                mod_toastr.warning(
-                    "Library dataset name has to be at least 1 character long."
-                );
+                mod_toastr.warning("Library dataset name has to be at least 1 character long.");
                 return;
             }
         }
         var new_info = this.$el.find(".input_dataset_misc_info").val();
-        if (
-            typeof new_info !== "undefined" &&
-            new_info !== ld.get("misc_info")
-        ) {
+        if (typeof new_info !== "undefined" && new_info !== ld.get("misc_info")) {
             ld.set("misc_info", new_info);
             is_changed = true;
         }
         var new_genome_build = this.select_genome.$el.select2("data").id;
-        if (
-            typeof new_genome_build !== "undefined" &&
-            new_genome_build !== ld.get("genome_build")
-        ) {
+        if (typeof new_genome_build !== "undefined" && new_genome_build !== ld.get("genome_build")) {
             ld.set("genome_build", new_genome_build);
             is_changed = true;
         }
@@ -484,9 +430,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error(
-                            "An error occured while attempting to update the library dataset."
-                        );
+                        mod_toastr.error("An error occured while attempting to update the library dataset.");
                     }
                 }
             });
@@ -507,9 +451,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
     makeDatasetPrivate: function() {
         var self = this;
-        $.post(
-            `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=make_private`
-        )
+        $.post(`${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=make_private`)
             .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: false });
                 self.showPermissions({
@@ -518,30 +460,22 @@ var LibraryDatasetView = Backbone.View.extend({
                 mod_toastr.success("The dataset is now private to you.");
             })
             .fail(() => {
-                mod_toastr.error(
-                    "An error occurred while attempting to make dataset private."
-                );
+                mod_toastr.error("An error occurred while attempting to make dataset private.");
             });
     },
 
     removeDatasetRestrictions: function() {
         var self = this;
-        $.post(
-            `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`
-        )
+        $.post(`${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`)
             .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: true });
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
-                mod_toastr.success(
-                    "Access to this dataset is now unrestricted."
-                );
+                mod_toastr.success("Access to this dataset is now unrestricted.");
             })
             .fail(() => {
-                mod_toastr.error(
-                    "An error occurred while attempting to make dataset unrestricted."
-                );
+                mod_toastr.error("An error occurred while attempting to make dataset unrestricted.");
             });
     },
 
@@ -561,23 +495,14 @@ var LibraryDatasetView = Backbone.View.extend({
    */
     savePermissions: function(event) {
         var self = this;
-        var access_ids = this._extractIds(
-            this.accessSelectObject.$el.select2("data")
-        );
-        var manage_ids = this._extractIds(
-            this.manageSelectObject.$el.select2("data")
-        );
-        var modify_ids = this._extractIds(
-            this.modifySelectObject.$el.select2("data")
-        );
-        $.post(
-            `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=set_permissions`,
-            {
-                "access_ids[]": access_ids,
-                "manage_ids[]": manage_ids,
-                "modify_ids[]": modify_ids
-            }
-        )
+        var access_ids = this._extractIds(this.accessSelectObject.$el.select2("data"));
+        var manage_ids = this._extractIds(this.manageSelectObject.$el.select2("data"));
+        var modify_ids = this._extractIds(this.modifySelectObject.$el.select2("data"));
+        $.post(`${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=set_permissions`, {
+            "access_ids[]": access_ids,
+            "manage_ids[]": manage_ids,
+            "modify_ids[]": modify_ids
+        })
             .done(fetched_permissions => {
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
@@ -585,9 +510,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 mod_toastr.success("Permissions saved.");
             })
             .fail(() => {
-                mod_toastr.error(
-                    "An error occurred while attempting to set dataset permissions."
-                );
+                mod_toastr.error("An error occurred while attempting to set dataset permissions.");
             });
     },
 
@@ -609,9 +532,7 @@ var LibraryDatasetView = Backbone.View.extend({
                             description_url: datatypes[key].description_url
                         });
                     }
-                    self.list_extensions.sort(
-                        (a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0)
-                    );
+                    self.list_extensions.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
                     self.list_extensions.unshift(self.auto);
                 }
             });
@@ -626,9 +547,7 @@ var LibraryDatasetView = Backbone.View.extend({
                             text: genomes[key][0]
                         });
                     }
-                    self.list_genomes.sort(
-                        (a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0)
-                    );
+                    self.list_genomes.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
                 }
             });
         }

@@ -23,11 +23,7 @@ function naturalSort(a, b) {
     var oFxNcL;
 
     var oFyNcL;
-    for (
-        var cLoc = 0, numS = Math.max(xN.length, yN.length);
-        cLoc < numS;
-        cLoc++
-    ) {
+    for (var cLoc = 0, numS = Math.max(xN.length, yN.length); cLoc < numS; cLoc++) {
         oFxNcL = parseFloat(xN[cLoc]) || xN[cLoc];
         oFyNcL = parseFloat(yN[cLoc]) || yN[cLoc];
         if (oFxNcL < oFyNcL) {

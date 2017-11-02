@@ -47,18 +47,13 @@ var Libraries = Backbone.Collection.extend({
        */
     getVisible: function(show_deleted, filters) {
         filters = filters || [];
-        var filteredLibraries = new Libraries(
-            this.filter(item => item.isVisible(show_deleted))
-        );
+        var filteredLibraries = new Libraries(this.filter(item => item.isVisible(show_deleted)));
 
         return filteredLibraries;
     },
 
     sortLibraries: function(sort_key, sort_order) {
-        this.comparator = mod_util.generateLibraryComparator(
-            sort_key,
-            sort_order
-        );
+        this.comparator = mod_util.generateLibraryComparator(sort_key, sort_order);
         this.sort();
     }
 });
@@ -80,10 +75,7 @@ var Folder = Backbone.Collection.extend({
     model: LibraryItem,
 
     sortFolder: function(sort_key, sort_order) {
-        this.comparator = mod_util.generateFolderComparator(
-            sort_key,
-            sort_order
-        );
+        this.comparator = mod_util.generateFolderComparator(sort_key, sort_order);
         this.sort();
     }
 });
@@ -107,9 +99,7 @@ var FolderContainer = Backbone.Model.extend({
                 var file_item = new Ldda(obj.folder_contents[i]);
                 this.get("folder").add(file_item);
             } else {
-                Galaxy.emit.error(
-                    "Unknown folder item type encountered while parsing response."
-                );
+                Galaxy.emit.error("Unknown folder item type encountered while parsing response.");
             }
         }
         return obj;

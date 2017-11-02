@@ -13,9 +13,7 @@ var GenericNavView = Backbone.View.extend({
         var port = window.Galaxy.config.communication_server_port;
         var username = escape(window.Galaxy.user.attributes.username);
 
-        var persistent_communication_rooms = escape(
-            window.Galaxy.config.persistent_communication_rooms
-        );
+        var persistent_communication_rooms = escape(window.Galaxy.config.persistent_communication_rooms);
 
         var query_string = `?username=${username}&persistent_communication_rooms=${persistent_communication_rooms}`;
 

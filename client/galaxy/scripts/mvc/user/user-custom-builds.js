@@ -14,13 +14,11 @@ var Collection = Backbone.Collection.extend({
 var View = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
-        var history_id =
-            Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
+        var history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
         this.model = new Backbone.Model();
         this.model.url = `${Galaxy.root}api/histories/${history_id}/custom_builds_metadata`;
         this.collection = new Collection();
-        this.collection.url = `${Galaxy.root}api/users/${Galaxy.user
-            .id}/custom_builds`;
+        this.collection.url = `${Galaxy.root}api/users/${Galaxy.user.id}/custom_builds`;
         this.message = new Ui.Message({});
         this.installed_builds = new Ui.Select.View({
             optional: true,
@@ -61,17 +59,9 @@ var View = Backbone.View.extend({
                             $("<div/>")
                                 .addClass("ui-column-left")
                                 .append(this.message.$el)
-                                .append(
-                                    (this.$form = $("<div/>").addClass(
-                                        "ui-margin-top"
-                                    ))
-                                )
+                                .append((this.$form = $("<div/>").addClass("ui-margin-top")))
                         )
-                        .append(
-                            (this.$help = $("<div/>").addClass(
-                                "ui-column-right"
-                            ))
-                        )
+                        .append((this.$help = $("<div/>").addClass("ui-column-right")))
                 )
         );
         this.listenTo(this.collection, "add remove reset", () => {
@@ -96,11 +86,7 @@ var View = Backbone.View.extend({
         this.collection.each(model => {
             self.table.add(model.get("name"));
             self.table.add(model.id);
-            self.table.add(
-                model.get("count") !== undefined
-                    ? model.get("count")
-                    : "Processing..."
-            );
+            self.table.add(model.get("count") !== undefined ? model.get("count") : "Processing...");
             self.table.add(
                 new Ui.ButtonIcon({
                     icon: "fa-trash-o",
@@ -217,21 +203,15 @@ var View = Backbone.View.extend({
                                         });
                                     } else {
                                         self.message.update({
-                                            message:
-                                                "Successfully added a new custom build.",
+                                            message: "Successfully added a new custom build.",
                                             status: "success"
                                         });
                                     }
                                 },
                                 error: function(response, err) {
-                                    var message =
-                                        err &&
-                                        err.responseJSON &&
-                                        err.responseJSON.err_msg;
+                                    var message = err && err.responseJSON && err.responseJSON.err_msg;
                                     self.message.update({
-                                        message:
-                                            message ||
-                                            "Failed to create custom build.",
+                                        message: message || "Failed to create custom build.",
                                         status: "danger"
                                     });
                                 }
@@ -263,11 +243,7 @@ var View = Backbone.View.extend({
         this.$help
             .empty()
             .addClass("alert alert-info")
-            .html(
-                len_type == "fasta"
-                    ? this._templateFasta()
-                    : this._templateLen()
-            );
+            .html(len_type == "fasta" ? this._templateFasta() : this._templateLen());
     },
 
     _templateLen: function() {

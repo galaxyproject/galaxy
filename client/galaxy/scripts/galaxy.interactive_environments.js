@@ -36,12 +36,9 @@ export function make_spin_state(
 ) {
     var s = {
         type: typeof type !== "undefined" ? type : "GIE spin",
-        ajax_timeout:
-            typeof ajax_timeout_init !== "undefined" ? ajax_timeout_init : 2000,
-        ajax_timeout_max:
-            typeof ajax_timeout_max !== "undefined" ? ajax_timeout_max : 16000,
-        ajax_timeout_step:
-            typeof ajax_timeout_step !== "undefined" ? ajax_timeout_step : 500,
+        ajax_timeout: typeof ajax_timeout_init !== "undefined" ? ajax_timeout_init : 2000,
+        ajax_timeout_max: typeof ajax_timeout_max !== "undefined" ? ajax_timeout_max : 16000,
+        ajax_timeout_step: typeof ajax_timeout_step !== "undefined" ? ajax_timeout_step : 500,
         sleep: typeof sleep_init !== "undefined" ? sleep_init : 500,
         sleep_max: typeof sleep_max !== "undefined" ? sleep_max : 8000,
         sleep_step: typeof sleep_step !== "undefined" ? sleep_step : 100,
@@ -85,14 +82,7 @@ function spin_again(spin_state) {
  * returns `true`, the condition is considered "resolved" and spinning stops. Otherwise, continue spinning, increasing
  * AJAX timeouts and/or sleep values as configured in the spin_state.
  */
-export function spin(
-    url,
-    bool_response,
-    success_callback,
-    timeout_callback,
-    error_callback,
-    spin_state
-) {
+export function spin(url, bool_response, success_callback, timeout_callback, error_callback, spin_state) {
     var spinner = () => {
         var ajax_params = {
             url: url,
@@ -113,12 +103,10 @@ export function spin(
                         spin_state.ajax_timeout += spin_state.ajax_timeout_step;
                     }
                     spin_state.count++;
-                    if (!timeout_callback(jqxhr, status, error))
-                        spin_again(spin_state);
+                    if (!timeout_callback(jqxhr, status, error)) spin_again(spin_state);
                 } else {
                     spin_state.count++;
-                    if (!error_callback(jqxhr, status, error))
-                        spin_again(spin_state);
+                    if (!error_callback(jqxhr, status, error)) spin_again(spin_state);
                 }
             }
         };
@@ -136,13 +124,7 @@ export function spin(
  * @param {Boolean} bool_response: If set to `true`, do not stop spinning until the response is `true`. Otherwise, stop
  *     as soon as a successful response is received.
  */
-function spin_until(
-    url,
-    bool_response,
-    messages,
-    success_callback,
-    spin_state
-) {
+function spin_until(url, bool_response, messages, success_callback, spin_state) {
     var warn_at = 40; // ~2 mins
     var message_once = (message, spin_state) => {
         if (spin_state.count == 1) {
@@ -165,11 +147,7 @@ function spin_until(
             message_once(messages["not_ready"], spin_state);
             return false; // keep spinning
         } else {
-            spin_error(
-                `Invalid response to ${spin_state.type} request`,
-                messages["invalid_response"],
-                true
-            );
+            spin_error(`Invalid response to ${spin_state.type} request`, messages["invalid_response"], true);
         }
         return true; // stop spinning
     };
@@ -185,14 +163,7 @@ function spin_until(
         }
         return false; // keep spinning
     };
-    spin(
-        url,
-        bool_response,
-        wrapped_success,
-        timeout_error,
-        timeout_error,
-        spin_state
-    );
+    spin(url, bool_response, wrapped_success, timeout_error, timeout_error, spin_state);
 }
 
 /**
@@ -205,8 +176,7 @@ function spin_until(
 export function test_ie_availability(url, success_callback) {
     var messages = {
         success: "IE connection succeeded, returning",
-        waiting:
-            "Interactive environment container is running, attempting to connect to the IE. Please wait...",
+        waiting: "Interactive environment container is running, attempting to connect to the IE. Please wait...",
         wait_warn:
             "It is taking an usually long time to connect to the interactive environment. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
         error:
@@ -226,12 +196,10 @@ export function test_ie_availability(url, success_callback) {
 export function load_when_ready(url, success_callback) {
     var messages = {
         success: "Galaxy reports IE container ready, returning",
-        not_ready:
-            "Galaxy is launching a container in which to run this interactive environment. Please wait...",
+        not_ready: "Galaxy is launching a container in which to run this interactive environment. Please wait...",
         unknown_response:
             "Galaxy failed to launch a container in which to run this interactive environment, contact a Galaxy administrator.",
-        waiting:
-            "Galaxy is launching a container in which to run this interactive environment. Please wait...",
+        waiting: "Galaxy is launching a container in which to run this interactive environment. Please wait...",
         wait_warn:
             "It is taking an usually long time to start a container. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
         error:

@@ -29,8 +29,7 @@ var View = Backbone.View.extend({
             }
             self.center.display(view);
         };
-        Galaxy.router = this.router =
-            options.Router && new options.Router(self, options);
+        Galaxy.router = this.router = options.Router && new options.Router(self, options);
         this.masthead = new Masthead.View(this.config);
         this.center = new Panel.CenterPanel();
 
@@ -47,8 +46,7 @@ var View = Backbone.View.extend({
         // build panels
         this.panels = {};
         _.each(this._panelids, panel_id => {
-            var panel_class_name =
-                panel_id.charAt(0).toUpperCase() + panel_id.slice(1);
+            var panel_class_name = panel_id.charAt(0).toUpperCase() + panel_id.slice(1);
             var panel_class = options[panel_class_name];
             if (panel_class) {
                 var panel_instance = new panel_class(self, options);
@@ -161,10 +159,7 @@ var View = Backbone.View.extend({
         var preferences = window.Galaxy.user.attributes.preferences;
         var $chat_icon_element = $("#show-chat-online");
         /** Check if the user has deactivated the communication in it's personal settings */
-        if (
-            preferences &&
-            ["1", "true"].indexOf(preferences.communication_server) != -1
-        ) {
+        if (preferences && ["1", "true"].indexOf(preferences.communication_server) != -1) {
             // See if the configured communication server is available
             $.ajax({
                 url: `${host}:${port}`

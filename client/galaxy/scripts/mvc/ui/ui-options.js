@@ -41,9 +41,7 @@ var Base = Backbone.View.extend({
         if (this.model.get("multiple")) {
             this.all_button = new Buttons.ButtonCheck({
                 onclick: function() {
-                    self
-                        .$("input")
-                        .prop("checked", self.all_button.value() !== 0);
+                    self.$("input").prop("checked", self.all_button.value() !== 0);
                     self.value(self._getValue());
                     self.trigger("change");
                 }
@@ -114,18 +112,11 @@ var Base = Backbone.View.extend({
 
     _changeValue: function() {
         this._setValue(this.model.get("value"));
-        if (
-            this._getValue() === null &&
-            !this.model.get("multiple") &&
-            !this.model.get("optional")
-        ) {
+        if (this._getValue() === null && !this.model.get("multiple") && !this.model.get("optional")) {
             this._setValue(this.first());
         }
         this.all_button &&
-            this.all_button.value(
-                $.isArray(this._getValue()) ? this._getValue().length : 0,
-                this.length()
-            );
+            this.all_button.value($.isArray(this._getValue()) ? this._getValue().length : 0, this.length());
     },
 
     /** Return/Set current selection */

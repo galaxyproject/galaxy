@@ -10,9 +10,7 @@ var View = Backbone.View.extend({
         this.setElement($("<div/>"));
         this.model = new Backbone.Model();
         Utils.get({
-            url: `${Galaxy.root}history/${options.action_id}?${$.param(
-                Galaxy.params
-            )}`,
+            url: `${Galaxy.root}history/${options.action_id}?${$.param(Galaxy.params)}`,
             success: function(response) {
                 response["dict_format"] = true;
                 _.each(response["operations"], operation => {
@@ -38,17 +36,11 @@ var View = Backbone.View.extend({
         history
             .fetch()
             .fail(() => {
-                alert(
-                    "History could not be fetched. Please contact an administrator"
-                );
+                alert("History could not be fetched. Please contact an administrator");
             })
             .done(() => {
                 historyCopyDialog(history, {}).done(() => {
-                    if (
-                        window.parent &&
-                        window.parent.Galaxy &&
-                        window.parent.Galaxy.currHistoryPanel
-                    ) {
+                    if (window.parent && window.parent.Galaxy && window.parent.Galaxy.currHistoryPanel) {
                         window.parent.Galaxy.currHistoryPanel.loadCurrentHistory();
                     }
                     window.location.reload(true);

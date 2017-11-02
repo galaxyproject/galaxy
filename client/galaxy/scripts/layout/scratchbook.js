@@ -69,23 +69,16 @@ export default Backbone.View.extend({
             Galaxy.currHistoryPanel.collection.each(model => {
                 !model.get("deleted") &&
                     model.get("visible") &&
-                    self.history_cache[history_id].dataset_ids.push(
-                        model.get("id")
-                    );
+                    self.history_cache[history_id].dataset_ids.push(model.get("id"));
             });
         }
         var _findDataset = (dataset, offset) => {
             if (dataset) {
-                var history_details =
-                    self.history_cache[dataset.get("history_id")];
+                var history_details = self.history_cache[dataset.get("history_id")];
                 if (history_details && history_details.dataset_ids) {
                     var dataset_list = history_details.dataset_ids;
                     var pos = dataset_list.indexOf(dataset.get("id"));
-                    if (
-                        pos !== -1 &&
-                        pos + offset >= 0 &&
-                        pos + offset < dataset_list.length
-                    ) {
+                    if (pos !== -1 && pos + offset >= 0 && pos + offset < dataset_list.length) {
                         return dataset_list[pos + offset];
                     }
                 }
@@ -112,11 +105,7 @@ export default Backbone.View.extend({
                                 icon: "fa fa-chevron-circle-left",
                                 tooltip: "Previous in History",
                                 onclick: function(frame) {
-                                    _loadDatasetOffset(
-                                        current_dataset,
-                                        -1,
-                                        frame
-                                    );
+                                    _loadDatasetOffset(current_dataset, -1, frame);
                                 },
                                 disabled: function() {
                                     return !_findDataset(current_dataset, -1);
@@ -126,11 +115,7 @@ export default Backbone.View.extend({
                                 icon: "fa fa-chevron-circle-right",
                                 tooltip: "Next in History",
                                 onclick: function(frame) {
-                                    _loadDatasetOffset(
-                                        current_dataset,
-                                        1,
-                                        frame
-                                    );
+                                    _loadDatasetOffset(current_dataset, 1, frame);
                                 },
                                 disabled: function() {
                                     return !_findDataset(current_dataset, 1);
@@ -227,20 +212,13 @@ export default Backbone.View.extend({
     add: function(options) {
         if (options.target == "_blank") {
             window.open(options.url);
-        } else if (
-            options.target == "_top" ||
-            options.target == "_parent" ||
-            options.target == "_self"
-        ) {
+        } else if (options.target == "_top" || options.target == "_parent" || options.target == "_self") {
             window.location = options.url;
         } else if (!this.active || options.noscratchbook) {
             var $galaxy_main = $(window.parent.document).find("#galaxy_main");
             if (options.target == "galaxy_main" || options.target == "center") {
                 if ($galaxy_main.length === 0) {
-                    window.location = `${options.url +
-                        (options.url.indexOf("?") == -1
-                            ? "?"
-                            : "&")}use_panels=True`;
+                    window.location = `${options.url + (options.url.indexOf("?") == -1 ? "?" : "&")}use_panels=True`;
                 } else {
                     $galaxy_main.attr("src", options.url);
                 }

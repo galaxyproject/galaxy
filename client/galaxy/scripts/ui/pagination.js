@@ -41,9 +41,7 @@ Pagination.prototype.init = function _init($element, options) {
 
     this.currPage = this.options.startingPage;
     if (this.options.totalDataSize !== null) {
-        this.numPages = Math.ceil(
-            this.options.totalDataSize / this.options.perPage
-        );
+        this.numPages = Math.ceil(this.options.totalDataSize / this.options.perPage);
         // limit currPage by numPages
         if (this.currPage >= this.numPages) {
             this.currPage = this.numPages - 1;
@@ -61,9 +59,7 @@ Pagination.prototype.init = function _init($element, options) {
 
 /** helper to create a simple li + a combo */
 function _make$Li(contents) {
-    return $(
-        ['<li><a href="javascript:void(0);">', contents, "</a></li>"].join("")
-    );
+    return $(['<li><a href="javascript:void(0);">', contents, "</a></li>"].join(""));
 }
 
 /** render previous and next pagination buttons */
@@ -95,9 +91,7 @@ Pagination.prototype._renderPrevNext = function __renderPrevNext() {
     var $prev = _make$Li("Prev");
     var $next = _make$Li("Next");
 
-    var $paginationContainer = $("<ul/>").addClass(
-        "pagination pagination-prev-next"
-    );
+    var $paginationContainer = $("<ul/>").addClass("pagination pagination-prev-next");
 
     // disable if it either end
     if (this.currPage === 0) {
@@ -109,8 +103,7 @@ Pagination.prototype._renderPrevNext = function __renderPrevNext() {
     }
     if (
         (this.numPages && this.currPage === this.numPages - 1) ||
-        (this.options.currDataSize &&
-            this.options.currDataSize < this.options.perPage)
+        (this.options.currDataSize && this.options.currDataSize < this.options.perPage)
     ) {
         $next.addClass("disabled");
     } else {
@@ -130,13 +123,9 @@ Pagination.prototype._renderPages = function __renderPages() {
     //  than to force her/him to change pages in order to find the one they want (as traditional << >> does)
     var pagination = this;
 
-    var $scrollingContainer = $("<div>").addClass(
-        "pagination-scroll-container"
-    );
+    var $scrollingContainer = $("<div>").addClass("pagination-scroll-container");
 
-    var $paginationContainer = $("<ul/>").addClass(
-        "pagination pagination-page-list"
-    );
+    var $paginationContainer = $("<ul/>").addClass("pagination pagination-page-list");
 
     var page$LiClick = function(ev) {
         pagination.goToPage($(this).data("page"));
@@ -169,9 +158,7 @@ Pagination.prototype._scrollToActivePage = function __scrollToActivePage() {
     var $activePage = this.$element.find("li.active");
     var midpoint = $container.width() / 2;
     //console.debug( $container, $activePage, midpoint );
-    $container.scrollLeft(
-        $container.scrollLeft() + $activePage.position().left - midpoint
-    );
+    $container.scrollLeft($container.scrollLeft() + $activePage.position().left - midpoint);
     return this;
 };
 

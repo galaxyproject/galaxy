@@ -6,9 +6,7 @@ function get(key, queryString) {
     if (!matches || !matches.length) {
         return undefined;
     }
-    matches = _.map(matches, match =>
-        decodeURIComponent(match.substr(key.length + 1).replace(/\+/g, " "))
-    );
+    matches = _.map(matches, match => decodeURIComponent(match.substr(key.length + 1).replace(/\+/g, " ")));
     if (matches.length === 1) {
         return matches[0];
     }

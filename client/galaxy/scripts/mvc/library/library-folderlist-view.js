@@ -65,12 +65,10 @@ var FolderListView = Backbone.View.extend({
         this.folderContainer = new mod_library_model.FolderContainer({
             id: this.options.id
         });
-        this.folderContainer.url = `${this.folderContainer.attributes.urlRoot +
-            this.options.id}/contents`;
+        this.folderContainer.url = `${this.folderContainer.attributes.urlRoot + this.options.id}/contents`;
 
         if (this.options.include_deleted) {
-            this.folderContainer.url = `${this.folderContainer
-                .url}?include_deleted=true`;
+            this.folderContainer.url = `${this.folderContainer.url}?include_deleted=true`;
         }
         this.folderContainer.fetch({
             success: function(folder_container) {
@@ -79,26 +77,17 @@ var FolderListView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(
-                        `${response.responseJSON
-                            .err_msg} Click this to go back.`,
-                        "",
-                        {
-                            onclick: function() {
-                                Galaxy.libraries.library_router.back();
-                            }
+                    mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
+                        onclick: function() {
+                            Galaxy.libraries.library_router.back();
                         }
-                    );
+                    });
                 } else {
-                    mod_toastr.error(
-                        "An error occurred. Click this to go back.",
-                        "",
-                        {
-                            onclick: function() {
-                                Galaxy.libraries.library_router.back();
-                            }
+                    mod_toastr.error("An error occurred. Click this to go back.", "", {
+                        onclick: function() {
+                            Galaxy.libraries.library_router.back();
                         }
-                    );
+                    });
                 }
             }
         });
@@ -122,8 +111,7 @@ var FolderListView = Backbone.View.extend({
         this.$el.html(
             template({
                 path: this.folderContainer.attributes.metadata.full_path,
-                parent_library_id: this.folderContainer.attributes.metadata
-                    .parent_library_id,
+                parent_library_id: this.folderContainer.attributes.metadata.parent_library_id,
                 id: this.options.id,
                 upper_folder_id: upper_folder_id,
                 order: this.current_sort_order
@@ -138,9 +126,7 @@ var FolderListView = Backbone.View.extend({
             if (row) {
                 row.showDatasetDetails();
             } else {
-                mod_toastr.error(
-                    "Requested dataset not found. Showing folder instead."
-                );
+                mod_toastr.error("Requested dataset not found. Showing folder instead.");
             }
         } else {
             if (this.options.show_page === null || this.options.show_page < 1) {
@@ -158,31 +144,20 @@ var FolderListView = Backbone.View.extend({
         if (this.options.show_page === null || this.options.show_page < 1) {
             this.options.show_page = 1;
         }
-        this.options.total_items_count = this.folder_container.get(
-            "folder"
-        ).models.length;
+        this.options.total_items_count = this.folder_container.get("folder").models.length;
         this.options.page_count = Math.ceil(
-            this.options.total_items_count /
-                Galaxy.libraries.preferences.get("folder_page_size")
+            this.options.total_items_count / Galaxy.libraries.preferences.get("folder_page_size")
         );
-        var page_start =
-            Galaxy.libraries.preferences.get("folder_page_size") *
-            (this.options.show_page - 1);
+        var page_start = Galaxy.libraries.preferences.get("folder_page_size") * (this.options.show_page - 1);
         var items_to_render = null;
         items_to_render = this.folder_container
             .get("folder")
-            .models.slice(
-                page_start,
-                page_start +
-                    Galaxy.libraries.preferences.get("folder_page_size")
-            );
+            .models.slice(page_start, page_start + Galaxy.libraries.preferences.get("folder_page_size"));
         this.options.items_shown = items_to_render.length;
         // User requests page with no items
         if (
-            Galaxy.libraries.preferences.get("folder_page_size") *
-                this.options.show_page >
-            this.options.total_items_count +
-                Galaxy.libraries.preferences.get("folder_page_size")
+            Galaxy.libraries.preferences.get("folder_page_size") * this.options.show_page >
+            this.options.total_items_count + Galaxy.libraries.preferences.get("folder_page_size")
         ) {
             items_to_render = [];
         }
@@ -221,10 +196,8 @@ var FolderListView = Backbone.View.extend({
     postRender: function() {
         var fetched_metadata = this.folderContainer.attributes.metadata;
         fetched_metadata.contains_file_or_folder =
-            typeof this.collection.findWhere({ type: "file" }) !==
-                "undefined" ||
-            typeof this.collection.findWhere({ type: "folder" }) !==
-                "undefined";
+            typeof this.collection.findWhere({ type: "file" }) !== "undefined" ||
+            typeof this.collection.findWhere({ type: "folder" }) !== "undefined";
         Galaxy.libraries.folderToolbarView.configureElements(fetched_metadata);
     },
 
@@ -282,10 +255,7 @@ var FolderListView = Backbone.View.extend({
 
     /** Checks whether the list is empty and adds/removes the message */
     checkEmptiness: function() {
-        if (
-            this.$el.find(".dataset_row").length === 0 &&
-            this.$el.find(".folder_row").length === 0
-        ) {
+        if (this.$el.find(".dataset_row").length === 0 && this.$el.find(".folder_row").length === 0) {
             this.$el.find(".empty-folder-message").show();
         } else {
             this.$el.find(".empty-folder-message").hide();
@@ -294,16 +264,9 @@ var FolderListView = Backbone.View.extend({
 
     sortColumnClicked: function(event) {
         event.preventDefault();
-        this.current_sort_order =
-            this.current_sort_order === "asc" ? "desc" : "asc";
-        this.current_sort_key = event.currentTarget.className.replace(
-            "sort-folder-",
-            ""
-        );
-        this.collection.sortFolder(
-            this.current_sort_key,
-            this.current_sort_order
-        );
+        this.current_sort_order = this.current_sort_order === "asc" ? "desc" : "asc";
+        this.current_sort_key = event.currentTarget.className.replace("sort-folder-", "");
+        this.collection.sortFolder(this.current_sort_key, this.current_sort_order);
         this.renderSortIcon();
     },
 
@@ -397,13 +360,9 @@ var FolderListView = Backbone.View.extend({
             $('[class*="sort-icon"]')
                 .removeClass("fa-sort-alpha-desc")
                 .removeClass("fa-sort-alpha-asc");
-            $(`.sort-icon-${this.current_sort_key}`).addClass(
-                "fa-sort-alpha-asc"
-            );
+            $(`.sort-icon-${this.current_sort_key}`).addClass("fa-sort-alpha-asc");
         } else {
-            $(`.sort-icon-${this.current_sort_key}`).addClass(
-                "fa-sort-alpha-desc"
-            );
+            $(`.sort-icon-${this.current_sort_key}`).addClass("fa-sort-alpha-desc");
         }
     },
 

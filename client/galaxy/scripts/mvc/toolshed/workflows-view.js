@@ -38,9 +38,8 @@ var View = Backbone.View.extend({
             var params = { tool_ids: tool_ids };
             $.get(api_url, params, data => {
                 repository_id = data.repository.id;
-                var new_route = `repository/s/${toolshed
-                    .replace(/:/g, "%3a")
-                    .replace(/\//g, "%2f")}/r/${data.repository.id}`;
+                var new_route = `repository/s/${toolshed.replace(/:/g, "%3a").replace(/\//g, "%2f")}/r/${data.repository
+                    .id}`;
                 Backbone.history.navigate(new_route, {
                     trigger: true,
                     replace: true
@@ -62,8 +61,7 @@ var View = Backbone.View.extend({
                 $.get(api_url, params, data => {
                     var changesets = Object.keys(data.repository.metadata);
                     var current_changeset = changesets[0];
-                    var current_metadata =
-                        data.repository.metadata[current_changeset];
+                    var current_metadata = data.repository.metadata[current_changeset];
                     current_metadata.tool_shed_url = toolshed;
                     toolshed_util.addToQueue(current_metadata);
                     elem.remove();

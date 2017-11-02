@@ -29,12 +29,7 @@ var JobDAG = function(options) {
     self.filteredErroredJobs = [];
 
     self.dataKeys = ["jobs", "historyContents", "tools"];
-    _super.call(
-        self,
-        true,
-        _.pick(options, self.dataKeys),
-        _.omit(options, self.dataKeys)
-    );
+    _super.call(self, true, _.pick(options, self.dataKeys), _.omit(options, self.dataKeys));
 };
 JobDAG.prototype = new GRAPH.Graph();
 JobDAG.prototype.constructor = JobDAG;
@@ -97,11 +92,7 @@ JobDAG.prototype._initFilters = function __initFilters() {
 /**  */
 JobDAG.prototype.read = function _read(data) {
     var self = this;
-    if (
-        _.has(data, "historyContents") &&
-        _.has(data, "jobs") &&
-        _.has(data, "tools")
-    ) {
+    if (_.has(data, "historyContents") && _.has(data, "jobs") && _.has(data, "tools")) {
         // a job dag is composed of these three elements:
         //  clone the 3 data sources into the DAG, processing the jobs finally using the history and tools
         self
@@ -117,9 +108,7 @@ JobDAG.prototype.read = function _read(data) {
 };
 
 /**  */
-JobDAG.prototype.preprocessHistoryContents = function _preprocessHistoryContents(
-    historyContents
-) {
+JobDAG.prototype.preprocessHistoryContents = function _preprocessHistoryContents(historyContents) {
     this.info("processing history");
     var self = this;
     self._historyContentsMap = {};
@@ -148,9 +137,7 @@ JobDAG.prototype.preprocessJobs = function _preprocessJobs(jobs) {
     var self = this;
     self._outputIdToJobMap = {};
 
-    self._jobsData = self
-        .sort(jobs)
-        .map(job => self.preprocessJob(_.clone(job)));
+    self._jobsData = self.sort(jobs).map(job => self.preprocessJob(_.clone(job)));
     //console.debug( JSON.stringify( self._jobsData, null, '    ' ) );
     //console.debug( JSON.stringify( self._outputIdToJobMap, null, '    ' ) );
     return self;
@@ -213,20 +200,12 @@ JobDAG.prototype._processInputs = function __processInputs(job) {
 
 /**
  */
-JobDAG.prototype._validateInputOutput = function __validateInputOutput(
-    inputOutput
-) {
+JobDAG.prototype._validateInputOutput = function __validateInputOutput(inputOutput) {
     if (!inputOutput.id) {
-        throw new Error(
-            "No id on job input/output: ",
-            JSON.stringify(inputOutput)
-        );
+        throw new Error("No id on job input/output: ", JSON.stringify(inputOutput));
     }
     if (!inputOutput.src || inputOutput.src !== "hda") {
-        throw new Error(
-            "Bad src on job input/output: ",
-            JSON.stringify(inputOutput)
-        );
+        throw new Error("Bad src on job input/output: ", JSON.stringify(inputOutput));
     }
     return inputOutput;
 };
@@ -262,12 +241,7 @@ JobDAG.prototype._filterJob = function _filterJob(jobData, index) {
     var self = this;
     for (var i = 0; i < self.filters.length; i++) {
         if (!self.filters[i].call(self, jobData)) {
-            self.debug(
-                "\t job",
-                jobData.job.id,
-                " has been filtered out by function:\n",
-                self.filters[i]
-            );
+            self.debug("\t job", jobData.job.id, " has been filtered out by function:\n", self.filters[i]);
             return false;
         }
     }
@@ -307,17 +281,12 @@ JobDAG.prototype.createGraph = function _createGraph(jobsData) {
     });
     //console.debug( self.toVerticesAndEdges().edges );
 
-    self.debug(
-        "final graph: ",
-        JSON.stringify(self.toVerticesAndEdges(), null, "  ")
-    );
+    self.debug("final graph: ", JSON.stringify(self.toVerticesAndEdges(), null, "  "));
     return self;
 };
 
 /** Return a 'mangled' version of history contents id to prevent contents <-> job id collision */
-JobDAG.prototype.createJobLessVertex = function _createJobLessVertex(
-    contentId
-) {
+JobDAG.prototype.createJobLessVertex = function _createJobLessVertex(contentId) {
     // currently, copied contents are the only history contents without jobs (that I know of)
     //note: following needed to prevent id collision btwn content and jobs in vertex map
     var JOBLESS_ID_MANGLER = "copy-";
@@ -334,13 +303,9 @@ JobDAG.prototype.weakComponentGraphArray = function() {
         // note: using create_time (as opposed to update_time)
         //  since update_time for jobless/copied datasets is changes more often
         component.vertices.sort(function cmpCreate(a, b) {
-            var aCreateTime = a.data.job
-                ? a.data.job.create_time
-                : a.data.create_time;
+            var aCreateTime = a.data.job ? a.data.job.create_time : a.data.create_time;
 
-            var bCreateTime = b.data.job
-                ? b.data.job.create_time
-                : b.data.create_time;
+            var bCreateTime = b.data.job ? b.data.job.create_time : b.data.create_time;
 
             if (aCreateTime > bCreateTime) {
                 return 1;

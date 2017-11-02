@@ -111,8 +111,6 @@ export default Backbone.Model.extend({
 
     // Return URL for obtaining a new grid
     get_url: function(args) {
-        return `${this.get("url_base")}?${$.param(
-            this.get_url_data()
-        )}&${$.param(args)}`;
+        return `${this.get("url_base")}?${$.param(this.get_url_data())}&${$.param(args)}`;
     }
 });

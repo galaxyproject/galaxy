@@ -18,9 +18,7 @@ var LibraryDatasets = Backbone.Collection.extend({
         });
     },
     url: function() {
-        return `${Galaxy.root}api/libraries/${this.config.get(
-            "library_id"
-        )}/contents`;
+        return `${Galaxy.root}api/libraries/${this.config.get("library_id")}/contents`;
     }
 });
 

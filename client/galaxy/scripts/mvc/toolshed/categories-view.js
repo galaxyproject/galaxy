@@ -14,8 +14,7 @@ var ToolShedCategories = Backbone.View.extend({
         this.options = _.defaults(this.options || options, this.defaults);
         this.model = new toolshed_model.Categories();
         this.listenTo(this.model, "sync", this.render);
-        this.model.url = `${this.model.url}?tool_shed_url=${this.options
-            .tool_shed}`;
+        this.model.url = `${this.model.url}?tool_shed_url=${this.options.tool_shed}`;
         this.model.tool_shed = shed;
         this.model.fetch();
     },
@@ -54,8 +53,7 @@ var ToolShedCategories = Backbone.View.extend({
                     tool_shed_url: that.model.tool_shed,
                     tsr_id: tsr_id
                 };
-                var new_route = `repository/s/${that.model
-                    .tool_shed}/r/${tsr_id}`;
+                var new_route = `repository/s/${that.model.tool_shed}/r/${tsr_id}`;
                 Backbone.history.navigate(new_route, {
                     trigger: true,
                     replace: true
@@ -66,8 +64,7 @@ var ToolShedCategories = Backbone.View.extend({
 
     reDraw: function(options) {
         this.$el.empty();
-        this.model.url = `${this.model.url}?tool_shed_url=${this.options
-            .tool_shed}`;
+        this.model.url = `${this.model.url}?tool_shed_url=${this.options.tool_shed}`;
         this.initialize(options);
     },
 

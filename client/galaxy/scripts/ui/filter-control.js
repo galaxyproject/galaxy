@@ -39,13 +39,9 @@ function dropDownSelect(options, selected) {
         $select.append(
             [
                 '<ul class="dropdown-menu" role="menu">',
-                _.map(options, option =>
-                    [
-                        '<li><a href="javascript:void(0)">',
-                        option,
-                        "</a></li>"
-                    ].join("")
-                ).join("\n"),
+                _.map(options, option => ['<li><a href="javascript:void(0)">', option, "</a></li>"].join("")).join(
+                    "\n"
+                ),
                 "</ul>"
             ].join("\n")
         );
@@ -109,13 +105,7 @@ FilterControl.prototype.init = function _init(element, options) {
 
 /** render (or re-render) the controls on the element */
 FilterControl.prototype.render = function _render() {
-    this.$element
-        .empty()
-        .append([
-            this._renderKeySelect(),
-            this._renderOpSelect(),
-            this._renderValueInput()
-        ]);
+    this.$element.empty().append([this._renderKeySelect(), this._renderOpSelect(), this._renderValueInput()]);
     return this;
 };
 
@@ -126,10 +116,7 @@ FilterControl.prototype._renderKeySelect = function __renderKeySelect() {
     this.$keySelect = dropDownSelect(keys, this.currFilter.key)
         .addClass("filter-control-key")
         .on("change.dropdown-select", (event, selection) => {
-            filterControl.currFilter = _.findWhere(
-                filterControl.options.filters,
-                { key: selection }
-            );
+            filterControl.currFilter = _.findWhere(filterControl.options.filters, { key: selection });
             // when the filter/key changes, re-render the control entirely
             filterControl.render()._triggerChange();
         });
@@ -174,20 +161,14 @@ FilterControl.prototype._renderValueInput = function __renderValueInput() {
 
 /** return the current state/setting for the filter as a three key object: key, op, value */
 FilterControl.prototype.val = function _val() {
-    var key = this.$element
-        .find(".filter-control-key .dropdown-select-selected")
-        .text();
+    var key = this.$element.find(".filter-control-key .dropdown-select-selected").text();
 
-    var op = this.$element
-        .find(".filter-control-op .dropdown-select-selected")
-        .text();
+    var op = this.$element.find(".filter-control-op .dropdown-select-selected").text();
 
     var // handle either a dropdown or plain input
     $value = this.$element.find(".filter-control-value");
 
-    var value = $value.hasClass("dropdown-select")
-        ? $value.find(".dropdown-select-selected").text()
-        : $value.val();
+    var value = $value.hasClass("dropdown-select") ? $value.find(".dropdown-select-selected").text() : $value.val();
 
     return { key: key, op: op, value: value };
 };

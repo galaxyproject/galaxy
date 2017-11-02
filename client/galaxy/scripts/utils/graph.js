@@ -186,9 +186,7 @@ GraphSearch.prototype._searchTree = function __searchTree(search) {
     var self = this;
     return new Graph(true, {
         edges: search.edges,
-        vertices: Object.keys(search.discovered).map(key =>
-            self.graph.vertices[key].toJSON()
-        )
+        vertices: Object.keys(search.discovered).map(key => self.graph.vertices[key].toJSON())
     });
 };
 
@@ -441,10 +439,7 @@ Graph.prototype.createEdge = function(sourceName, targetName, directed, data) {
 
 /** Walk over all the edges of the graph using the vertex.eachEdge iterator */
 Graph.prototype.edges = function(propsOrFn) {
-    return Array.prototype.concat.apply(
-        [],
-        this.eachVertex(vertex => vertex.eachEdge(propsOrFn))
-    );
+    return Array.prototype.concat.apply([], this.eachVertex(vertex => vertex.eachEdge(propsOrFn)));
 };
 
 /** Iterate over all the vertices in the graph */
@@ -563,23 +558,16 @@ Graph.prototype.weakComponents = function() {
 
     function getComponent(undiscoveredVertex) {
         //TODO: better interface on dfs (search v. searchTree)
-        var search = new DepthFirstSearch(searchGraph)._search(
-            undiscoveredVertex
-        );
+        var search = new DepthFirstSearch(searchGraph)._search(undiscoveredVertex);
 
         // remove curr discovered from undiscovered
-        undiscovered = undiscovered.filter(
-            name => !(name in search.discovered)
-        );
+        undiscovered = undiscovered.filter(name => !(name in search.discovered));
 
         return {
-            vertices: Object.keys(search.discovered).map(vertexName =>
-                self.vertices[vertexName].toJSON()
-            ),
+            vertices: Object.keys(search.discovered).map(vertexName => self.vertices[vertexName].toJSON()),
             edges: search.edges.map(edge => {
                 // restore any reversed edges
-                var hasBeenReversed =
-                    self.vertices[edge.target].edges[edge.source] !== undefined;
+                var hasBeenReversed = self.vertices[edge.target].edges[edge.source] !== undefined;
                 if (self.directed && hasBeenReversed) {
                     var swap = edge.source;
                     edge.source = edge.target;
@@ -611,14 +599,8 @@ Graph.prototype.weakComponentGraph = function() {
     //note: although this can often look like the original graph - edges can be lost
     var components = this.weakComponents();
     return new Graph(this.directed, {
-        vertices: components.reduce(
-            (reduction, curr) => reduction.concat(curr.vertices),
-            []
-        ),
-        edges: components.reduce(
-            (reduction, curr) => reduction.concat(curr.edges),
-            []
-        )
+        vertices: components.reduce((reduction, curr) => reduction.concat(curr.vertices), []),
+        edges: components.reduce((reduction, curr) => reduction.concat(curr.edges), [])
     });
 };
 
@@ -626,9 +608,7 @@ Graph.prototype.weakComponentGraph = function() {
 Graph.prototype.weakComponentGraphArray = function() {
     //note: although this can often look like the original graph - edges can be lost
     var graph = this;
-    return this.weakComponents().map(
-        component => new Graph(graph.directed, component)
-    );
+    return this.weakComponents().map(component => new Graph(graph.directed, component));
 };
 
 // ============================================================================

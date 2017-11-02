@@ -93,9 +93,7 @@ var AdminPanel = Backbone.View.extend({
                     {
                         title: "Install new tools (Beta)",
                         url: "admin_toolshed/browse_toolsheds",
-                        enabled:
-                            self.settings.is_tool_shed_installed &&
-                            self.config.enable_beta_ts_api_install
+                        enabled: self.settings.is_tool_shed_installed && self.config.enable_beta_ts_api_install
                     },
                     {
                         title: "Monitor installation",
@@ -110,8 +108,7 @@ var AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: "Manage metadata",
-                        url:
-                            "admin_toolshed/reset_metadata_on_selected_installed_repositories",
+                        url: "admin_toolshed/reset_metadata_on_selected_installed_repositories",
                         enabled: self.settings.is_repo_installed
                     },
                     {
@@ -171,11 +168,7 @@ var AdminPanel = Backbone.View.extend({
         });
         this.page
             .$("#galaxy_main")
-            .prop(
-                "src",
-                `${this.root}admin/center?message=${this.message}&status=${this
-                    .status}`
-            );
+            .prop("src", `${this.root}admin/center?message=${this.message}&status=${this.status}`);
     },
 
     _templateSection: function(options) {

@@ -100,11 +100,7 @@ var DCECollection = Backbone.Collection.extend(BASE_MVC.LoggableMixin).extend(
 
         /** String representation. */
         toString: function() {
-            return [
-                "DatasetCollectionElementCollection(",
-                this.length,
-                ")"
-            ].join("");
+            return ["DatasetCollectionElementCollection(", this.length, ")"].join("");
         }
     }
 );
@@ -120,15 +116,11 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
             url: function() {
                 // won't always be an hda
                 if (!this.has("history_id")) {
-                    console.warn(
-                        "no endpoint for non-hdas within a collection yet"
-                    );
+                    console.warn("no endpoint for non-hdas within a collection yet");
                     // (a little silly since this api endpoint *also* points at hdas)
                     return `${Galaxy.root}api/datasets`;
                 }
-                return `${Galaxy.root}api/histories/${this.get(
-                    "history_id"
-                )}/contents/${this.get("id")}`;
+                return `${Galaxy.root}api/histories/${this.get("history_id")}/contents/${this.get("id")}`;
             },
 
             defaults: _.extend(
@@ -150,11 +142,7 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
             constructor: function(attributes, options) {
                 this.debug("\t DatasetDCE.constructor:", attributes, options);
                 //DATASET_MODEL.DatasetAssociation.prototype.constructor.call( this, attributes, options );
-                DatasetCollectionElementMixin.constructor.call(
-                    this,
-                    attributes,
-                    options
-                );
+                DatasetCollectionElementMixin.constructor.call(this, attributes, options);
             },
 
             /** Does this model already contain detailed data (as opposed to just summary level data)? */
@@ -214,12 +202,7 @@ var DatasetCollection = Backbone.Model
 
             /** set up: create elements instance var and (on changes to elements) update them  */
             initialize: function(model, options) {
-                this.debug(
-                    `${this}(DatasetCollection).initialize:`,
-                    model,
-                    options,
-                    this
-                );
+                this.debug(`${this}(DatasetCollection).initialize:`, model, options, this);
                 this.elements = this._createElementsModel();
                 this.on("change:elements", function() {
                     this.log("change:elements");
@@ -230,12 +213,7 @@ var DatasetCollection = Backbone.Model
 
             /** move elements model attribute to full collection */
             _createElementsModel: function() {
-                this.debug(
-                    `${this}._createElementsModel`,
-                    this.collectionClass,
-                    this.get("elements"),
-                    this.elements
-                );
+                this.debug(`${this}._createElementsModel`, this.collectionClass, this.get("elements"), this.elements);
                 //TODO: same patterns as DatasetCollectionElement _createObjectModel - refactor to BASE_MVC.hasSubModel?
                 var elements = this.get("elements") || [];
                 this.unset("elements", { silent: true });
@@ -283,11 +261,7 @@ var DatasetCollection = Backbone.Model
             // ........................................................................ ajax
             /** override to use actual Dates objects for create/update times */
             parse: function(response, options) {
-                var parsed = Backbone.Model.prototype.parse.call(
-                    this,
-                    response,
-                    options
-                );
+                var parsed = Backbone.Model.prototype.parse.call(this, response, options);
                 if (parsed.create_time) {
                     parsed.create_time = new Date(parsed.create_time);
                 }
@@ -324,10 +298,7 @@ var DatasetCollection = Backbone.Model
             // ........................................................................ misc
             /** String representation */
             toString: function() {
-                var idAndName = [
-                    this.get("id"),
-                    this.get("name") || this.get("element_identifier")
-                ];
+                var idAndName = [this.get("id"), this.get("name") || this.get("element_identifier")];
                 return `DatasetCollection(${idAndName.join(",")})`;
             }
         }
@@ -377,18 +348,12 @@ var NestedDCDCE = DatasetCollection.extend(
             /** call the mixin constructor */
             constructor: function(attributes, options) {
                 this.debug("\t NestedDCDCE.constructor:", attributes, options);
-                DatasetCollectionElementMixin.constructor.call(
-                    this,
-                    attributes,
-                    options
-                );
+                DatasetCollectionElementMixin.constructor.call(this, attributes, options);
             },
 
             /** String representation. */
             toString: function() {
-                var objStr = this.object
-                    ? `${this.object}`
-                    : this.get("element_identifier");
+                var objStr = this.object ? `${this.object}` : this.get("element_identifier");
                 return ["NestedDCDCE(", objStr, ")"].join("");
             }
         }
@@ -424,24 +389,14 @@ var NestedPairDCDCE = PairDatasetCollection.extend(
             //  - re-apply manually it now
             /** This is both a collection and a collection element - call the constructor */
             constructor: function(attributes, options) {
-                this.debug(
-                    "\t NestedPairDCDCE.constructor:",
-                    attributes,
-                    options
-                );
+                this.debug("\t NestedPairDCDCE.constructor:", attributes, options);
                 //DatasetCollection.constructor.call( this, attributes, options );
-                DatasetCollectionElementMixin.constructor.call(
-                    this,
-                    attributes,
-                    options
-                );
+                DatasetCollectionElementMixin.constructor.call(this, attributes, options);
             },
 
             /** String representation. */
             toString: function() {
-                var objStr = this.object
-                    ? `${this.object}`
-                    : this.get("element_identifier");
+                var objStr = this.object ? `${this.object}` : this.get("element_identifier");
                 return ["NestedPairDCDCE(", objStr, ")"].join("");
             }
         }
@@ -473,9 +428,7 @@ var ListPairedDatasetCollection = DatasetCollection.extend(
 
         /** String representation. */
         toString: function() {
-            return ["ListPairedDatasetCollection(", this.get("name"), ")"].join(
-                ""
-            );
+            return ["ListPairedDatasetCollection(", this.get("name"), ")"].join("");
         }
     }
 );
@@ -488,23 +441,13 @@ var NestedListDCDCE = ListDatasetCollection.extend(
         /** @lends NestedListDCDCE.prototype */ {
             /** This is both a collection and a collection element - call the constructor */
             constructor: function(attributes, options) {
-                this.debug(
-                    "\t NestedListDCDCE.constructor:",
-                    attributes,
-                    options
-                );
-                DatasetCollectionElementMixin.constructor.call(
-                    this,
-                    attributes,
-                    options
-                );
+                this.debug("\t NestedListDCDCE.constructor:", attributes, options);
+                DatasetCollectionElementMixin.constructor.call(this, attributes, options);
             },
 
             /** String representation. */
             toString: function() {
-                var objStr = this.object
-                    ? `${this.object}`
-                    : this.get("element_identifier");
+                var objStr = this.object ? `${this.object}` : this.get("element_identifier");
                 return ["NestedListDCDCE(", objStr, ")"].join("");
             }
         }
@@ -531,9 +474,7 @@ var ListOfListsDatasetCollection = DatasetCollection.extend({
 
     /** String representation. */
     toString: function() {
-        return ["ListOfListsDatasetCollection(", this.get("name"), ")"].join(
-            ""
-        );
+        return ["ListOfListsDatasetCollection(", this.get("name"), ")"].join("");
     }
 });
 

@@ -252,10 +252,7 @@ export default {
             if (options.show_item_checkboxes) {
                 tmpl += "<td></td>";
             }
-            tmpl +=
-                '<td colspan="100">' +
-                '<span id="page-link-container">' +
-                "Page:";
+            tmpl += '<td colspan="100">' + '<span id="page-link-container">' + "Page:";
 
             if (min_page > 1) {
                 tmpl +=
@@ -263,11 +260,7 @@ export default {
             }
 
             // create page urls
-            for (
-                var page_index = min_page;
-                page_index < max_page + 1;
-                page_index++
-            ) {
+            for (var page_index = min_page; page_index < max_page + 1; page_index++) {
                 if (page_index == options.cur_page_num) {
                     tmpl += `<span class="page-link inactive-link" id="page-link-${page_index}">${page_index}</span>`;
                 } else {
@@ -402,8 +395,7 @@ export default {
 
         // show advanced search link in standard display
         if (show_advanced_search_link) {
-            tmpl +=
-                '<a href="" class="advanced-search-toggle">Advanced Search</a>';
+            tmpl += '<a href="" class="advanced-search-toggle">Advanced Search</a>';
         }
 
         // finalize standard search display

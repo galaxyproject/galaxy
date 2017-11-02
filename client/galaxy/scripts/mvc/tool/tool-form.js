@@ -25,11 +25,9 @@ var View = Backbone.View.extend({
                         } else {
                             build_url = `${Galaxy.root}api/tools/${options.id}/build`;
                             build_data = $.extend({}, Galaxy.params);
-                            build_data["tool_id"] &&
-                                delete build_data["tool_id"];
+                            build_data["tool_id"] && delete build_data["tool_id"];
                         }
-                        options.version &&
-                            (build_data["tool_version"] = options.version);
+                        options.version && (build_data["tool_version"] = options.version);
 
                         // get initial model
                         Utils.get({
@@ -42,23 +40,15 @@ var View = Backbone.View.extend({
                                 }
                                 form.model.set(data);
                                 self._customize(form);
-                                Galaxy.emit.debug(
-                                    "tool-form-base::_buildModel()",
-                                    "Initial tool model ready.",
-                                    data
-                                );
+                                Galaxy.emit.debug("tool-form-base::_buildModel()", "Initial tool model ready.", data);
                                 process.resolve();
                             },
                             error: function(response, status) {
-                                var error_message =
-                                    (response && response.err_msg) ||
-                                    "Uncaught error.";
+                                var error_message = (response && response.err_msg) || "Uncaught error.";
                                 if (status == 401) {
-                                    window.location = `${Galaxy.root}user/login?${$.param(
-                                        {
-                                            redirect: `${Galaxy.root}?tool_id=${options.id}`
-                                        }
-                                    )}`;
+                                    window.location = `${Galaxy.root}user/login?${$.param({
+                                        redirect: `${Galaxy.root}?tool_id=${options.id}`
+                                    })}`;
                                 } else if (form.$el.is(":empty")) {
                                     form.$el.prepend(
                                         new Ui.Message({
@@ -96,33 +86,19 @@ var View = Backbone.View.extend({
                             inputs: $.extend(true, {}, form.data.create())
                         };
                         form.wait(true);
-                        Galaxy.emit.debug(
-                            "tool-form::postchange()",
-                            "Sending current state.",
-                            current_state
-                        );
+                        Galaxy.emit.debug("tool-form::postchange()", "Sending current state.", current_state);
                         Utils.request({
                             type: "POST",
-                            url: `${Galaxy.root}api/tools/${form.model.get(
-                                "id"
-                            )}/build`,
+                            url: `${Galaxy.root}api/tools/${form.model.get("id")}/build`,
                             data: current_state,
                             success: function(data) {
                                 form.update(data);
                                 form.wait(false);
-                                Galaxy.emit.debug(
-                                    "tool-form::postchange()",
-                                    "Received new model.",
-                                    data
-                                );
+                                Galaxy.emit.debug("tool-form::postchange()", "Received new model.", data);
                                 process.resolve();
                             },
                             error: function(response) {
-                                Galaxy.emit.debug(
-                                    "tool-form::postchange()",
-                                    "Refresh request failed.",
-                                    response
-                                );
+                                Galaxy.emit.debug("tool-form::postchange()", "Refresh request failed.", response);
                                 process.reject();
                             }
                         });
@@ -186,10 +162,7 @@ var View = Backbone.View.extend({
         };
         this.form.trigger("reset");
         if (!self.validate(job_def)) {
-            Galaxy.emit.debug(
-                "tool-form::submit()",
-                "Submission canceled. Validation failed."
-            );
+            Galaxy.emit.debug("tool-form::submit()", "Submission canceled. Validation failed.");
             callback && callback();
             return;
         }
@@ -210,11 +183,7 @@ var View = Backbone.View.extend({
             callback && callback();
             return;
         }
-        Galaxy.emit.debug(
-            "tool-form::submit()",
-            "Validation complete.",
-            job_def
-        );
+        Galaxy.emit.debug("tool-form::submit()", "Validation complete.", job_def);
         Utils.request({
             type: "POST",
             url: `${Galaxy.root}api/tools`,
@@ -231,22 +200,14 @@ var View = Backbone.View.extend({
                         toolId: job_def.tool_id
                     });
                 }
-                parent.Galaxy &&
-                    parent.Galaxy.currHistoryPanel &&
-                    parent.Galaxy.currHistoryPanel.refreshContents();
+                parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.refreshContents();
             },
             error: function(response) {
                 callback && callback();
-                Galaxy.emit.debug(
-                    "tool-form::submit",
-                    "Submission failed.",
-                    response
-                );
+                Galaxy.emit.debug("tool-form::submit", "Submission failed.", response);
                 var input_found = false;
                 if (response && response.err_data) {
-                    var error_messages = self.form.data.matchResponse(
-                        response.err_data
-                    );
+                    var error_messages = self.form.data.matchResponse(response.err_data);
                     for (var input_id in error_messages) {
                         self.form.highlight(input_id, error_messages[input_id]);
                         input_found = true;
@@ -256,10 +217,7 @@ var View = Backbone.View.extend({
                 if (!input_found) {
                     self.modal.show({
                         title: "Job submission failed",
-                        body: self._templateError(
-                            job_def,
-                            response && response.err_msg
-                        ),
+                        body: self._templateError(job_def, response && response.err_msg),
                         buttons: {
                             Close: function() {
                                 self.modal.hide();
@@ -284,10 +242,7 @@ var View = Backbone.View.extend({
             var input_field = this.form.field_list[input_id];
             var input_def = this.form.input_list[input_id];
             if (!input_id || !input_def || !input_field) {
-                Galaxy.emit.debug(
-                    "tool-form::validate()",
-                    "Retrieving input objects failed."
-                );
+                Galaxy.emit.debug("tool-form::validate()", "Retrieving input objects failed.");
                 continue;
             }
             if (!input_def.optional && input_value == null) {
@@ -296,8 +251,7 @@ var View = Backbone.View.extend({
             }
             if (input_value && input_value.batch) {
                 var n = input_value.values.length;
-                var src =
-                    n > 0 && input_value.values[0] && input_value.values[0].src;
+                var src = n > 0 && input_value.values[0] && input_value.values[0].src;
                 if (src) {
                     if (batch_src === null) {
                         batch_src = src;
@@ -350,10 +304,7 @@ var View = Backbone.View.extend({
             );
             return $message;
         } else {
-            return this._templateError(
-                response,
-                "Invalid success response. No jobs found."
-            );
+            return this._templateError(response, "Invalid success response. No jobs found.");
         }
     },
 

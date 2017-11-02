@@ -26,15 +26,9 @@ Examples:
 
 ============================================================================ */
 
-var CONTACT_MSG = _l(
-    "Please contact a Galaxy administrator if the problem persists."
-);
-var DEFAULT_AJAX_ERR_MSG = _l(
-    "An error occurred while updating information with the server."
-);
-var DETAILS_MSG = _l(
-    "The following information can assist the developers in finding the source of the error:"
-);
+var CONTACT_MSG = _l("Please contact a Galaxy administrator if the problem persists.");
+var DEFAULT_AJAX_ERR_MSG = _l("An error occurred while updating information with the server.");
+var DETAILS_MSG = _l("The following information can assist the developers in finding the source of the error:");
 
 /** private helper that builds the modal and handles adding details */
 function _errorModal(message, title, details) {
@@ -60,10 +54,7 @@ function _errorModal(message, title, details) {
             .addClass("error-details")
             .hide()
             .appendTo(Galaxy.modal.$(".modal-content"))
-            .append([
-                $("<p/>").text(DETAILS_MSG),
-                $("<pre/>").text(JSON.stringify(details, null, "  "))
-            ]);
+            .append([$("<p/>").text(DETAILS_MSG), $("<pre/>").text(JSON.stringify(details, null, "  "))]);
 
         $(`<button id="button-1" class="pull-left">${_l("Details")}</button>`)
             .appendTo(Galaxy.modal.$(".buttons"))
@@ -93,21 +84,14 @@ function errorModal(message, title, details) {
 // ----------------------------------------------------------------------------
 /** display a modal when the user may be offline */
 function offlineErrorModal() {
-    return errorModal(
-        _l(
-            "You appear to be offline. Please check your connection and try again."
-        ),
-        _l("Offline?")
-    );
+    return errorModal(_l("You appear to be offline. Please check your connection and try again."), _l("Offline?"));
 }
 
 // ----------------------------------------------------------------------------
 /** 502 messages that should be displayed when galaxy is restarting */
 function badGatewayErrorModal() {
     return errorModal(
-        `${_l(
-            "Galaxy is currently unreachable. Please try again in a few minutes."
-        )} ${CONTACT_MSG}`,
+        `${_l("Galaxy is currently unreachable. Please try again in a few minutes.")} ${CONTACT_MSG}`,
         _l("Cannot connect to Galaxy")
     );
 }

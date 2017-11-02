@@ -136,9 +136,7 @@ var View = Backbone.View.extend({
 
     /** Change tab */
     _change: function(tab_model) {
-        this.$(`#tab-${tab_model.id}`)[
-            tab_model.get("hidden") ? "hide" : "show"
-        ]();
+        this.$(`#tab-${tab_model.id}`)[tab_model.get("hidden") ? "hide" : "show"]();
     },
 
     /** Main template */

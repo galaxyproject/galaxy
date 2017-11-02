@@ -139,8 +139,7 @@ var View = Backbone.View.extend({
                 {
                     icon: "fa fa-chain-broken",
                     value: "true",
-                    tooltip:
-                        "Unlinked dataset inputs will be run against *all* other inputs."
+                    tooltip: "Unlinked dataset inputs will be run against *all* other inputs."
                 }
             ]
         });
@@ -178,8 +177,7 @@ var View = Backbone.View.extend({
                 e.preventDefault();
             })
             .on("dragleave", function(e) {
-                this.lastenter === e.target &&
-                    self.$el.removeClass("ui-dragover");
+                this.lastenter === e.target && self.$el.removeClass("ui-dragover");
             })
             .on("drop", e => {
                 self._handleDrop(e);
@@ -239,17 +237,13 @@ var View = Backbone.View.extend({
                 if (id_list.length > 0) {
                     var result = this._batch({ values: [] });
                     for (var i in id_list) {
-                        var details = this.history[
-                            `${id_list[i]}_${this.config[current].src}`
-                        ];
+                        var details = this.history[`${id_list[i]}_${this.config[current].src}`];
                         if (details) {
                             result.values.push(details);
                         } else {
                             Galaxy.emit.debug(
                                 "ui-select-content::value()",
-                                `Requested details not found for '${id_list[
-                                    i
-                                ]}'.`
+                                `Requested details not found for '${id_list[i]}'.`
                             );
                             return null;
                         }
@@ -259,10 +253,7 @@ var View = Backbone.View.extend({
                 }
             }
         } else {
-            Galaxy.emit.debug(
-                "ui-select-content::value()",
-                `Invalid value/source '${new_value}'.`
-            );
+            Galaxy.emit.debug("ui-select-content::value()", `Invalid value/source '${new_value}'.`);
         }
         return null;
     },
@@ -274,9 +265,7 @@ var View = Backbone.View.extend({
             if (self.model.get("current") == i) {
                 field.$el.show();
                 _.each(self.$batch, ($batchfield, batchmode) => {
-                    $batchfield[
-                        self.config[i].batch == batchmode ? "show" : "hide"
-                    ]();
+                    $batchfield[self.config[i].batch == batchmode ? "show" : "hide"]();
                 });
                 self.button_type.value(i);
             } else {
@@ -298,10 +287,7 @@ var View = Backbone.View.extend({
             this.config = Configurations[config_id];
         } else {
             this.config = Configurations["data"];
-            Galaxy.emit.debug(
-                "ui-select-content::_changeType()",
-                `Invalid configuration/type id '${config_id}'.`
-            );
+            Galaxy.emit.debug("ui-select-content::_changeType()", `Invalid configuration/type id '${config_id}'.`);
         }
 
         // prepare extension component of error message
@@ -323,14 +309,9 @@ var View = Backbone.View.extend({
                     optional: self.model.get("optional"),
                     multiple: c.multiple,
                     searchable:
-                        !c.multiple ||
-                        (data &&
-                            data[c.src] &&
-                            data[c.src].length > self.model.get("pagelimit")),
+                        !c.multiple || (data && data[c.src] && data[c.src].length > self.model.get("pagelimit")),
                     individual: true,
-                    error_text: `No ${extensions
-                        ? `${extensions} `
-                        : ""}${src_labels[c.src] || "content"} available.`,
+                    error_text: `No ${extensions ? `${extensions} ` : ""}${src_labels[c.src] || "content"} available.`,
                     onchange: function() {
                         self.trigger("change");
                     }
@@ -391,11 +372,7 @@ var View = Backbone.View.extend({
             });
         });
         _.each(this.config, (c, i) => {
-            select_options[c.src] &&
-                self.fields[i].add(
-                    select_options[c.src],
-                    (a, b) => b.hid - a.hid
-                );
+            select_options[c.src] && self.fields[i].add(select_options[c.src], (a, b) => b.hid - a.hid);
         });
     },
 
@@ -414,10 +391,7 @@ var View = Backbone.View.extend({
             for (var i = 0; i < this.config.length; i++) {
                 var field = this.fields[i];
                 var c = this.config[i];
-                if (
-                    c.src == src &&
-                    [multiple, true].indexOf(c.multiple) !== -1
-                ) {
+                if (c.src == src && [multiple, true].indexOf(c.multiple) !== -1) {
                     this.model.set("current", i);
                     field.value(list);
                     break;
@@ -437,12 +411,9 @@ var View = Backbone.View.extend({
             var current = this.model.get("current");
             var config = this.config[current];
             var field = this.fields[current];
-            var drop_data = JSON.parse(
-                ev.originalEvent.dataTransfer.getData("text")
-            )[0];
+            var drop_data = JSON.parse(ev.originalEvent.dataTransfer.getData("text"))[0];
             var new_id = drop_data.id;
-            var new_src =
-                drop_data.history_content_type == "dataset" ? "hda" : "hdca";
+            var new_src = drop_data.history_content_type == "dataset" ? "hda" : "hdca";
             var new_value = { id: new_id, src: new_src };
             if (data && _.findWhere(data[new_src], new_value)) {
                 if (config.src == new_src) {
@@ -492,10 +463,7 @@ var View = Backbone.View.extend({
         }
         if (config.batch == Batch.LINKED || config.batch == Batch.ENABLED) {
             result["batch"] = true;
-            if (
-                config.batch == Batch.ENABLED &&
-                this.button_product.value() === "true"
-            ) {
+            if (config.batch == Batch.ENABLED && this.button_product.value() === "true") {
                 result["product"] = true;
             }
         }

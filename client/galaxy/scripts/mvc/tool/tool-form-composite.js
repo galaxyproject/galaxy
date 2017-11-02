@@ -32,11 +32,7 @@ var View = Backbone.View.extend({
     /** Refresh height of scrollable div below header, handle scrolling by lazy loading steps */
     _refresh: function(step_index) {
         var margin =
-            _.reduce(
-                this.$el.children(),
-                (memo, child) => memo + $(child).outerHeight(),
-                0
-            ) -
+            _.reduce(this.$el.children(), (memo, child) => memo + $(child).outerHeight(), 0) -
             this.$steps.height() +
             90;
         this.$steps.css("height", $(window).height() - margin);
@@ -50,13 +46,9 @@ var View = Backbone.View.extend({
         this.links = [];
         this.parms = [];
         _.each(this.model.get("steps"), (step, i) => {
-            Galaxy.emit.debug(
-                "tool-form-composite::initialize()",
-                `${i} : Preparing workflow step.`
-            );
+            Galaxy.emit.debug("tool-form-composite::initialize()", `${i} : Preparing workflow step.`);
             var icon = WorkflowIcons[step.step_type];
-            var title = `${parseInt(i + 1)}: ${step.step_label ||
-                step.step_name}`;
+            var title = `${parseInt(i + 1)}: ${step.step_label || step.step_name}`;
             if (step.annotation) {
                 title += ` - ${step.annotation}`;
             }
@@ -105,9 +97,7 @@ var View = Backbone.View.extend({
         _.each(this.steps, (step, i) => {
             _.each(step.output_connections, output_connection => {
                 _.each(self.steps, (sub_step, j) => {
-                    sub_step.step_index ===
-                        output_connection.input_step_index &&
-                        self.links[i].push(sub_step);
+                    sub_step.step_index === output_connection.input_step_index && self.links[i].push(sub_step);
                 });
             });
         });
@@ -119,18 +109,14 @@ var View = Backbone.View.extend({
                 var connections_by_name = {};
                 _.each(step.output_connections, connection => {
                     sub_step.step_index === connection.input_step_index &&
-                        (connections_by_name[
-                            connection.input_name
-                        ] = connection);
+                        (connections_by_name[connection.input_name] = connection);
                 });
                 _.each(self.parms[j], (input, name) => {
                     var connection = connections_by_name[name];
                     if (connection) {
                         input.type = "hidden";
                         input.help = input.step_linked ? `${input.help}, ` : "";
-                        input.help += `Output dataset '${connection.output_name}' from step ${parseInt(
-                            i
-                        ) + 1}`;
+                        input.help += `Output dataset '${connection.output_name}' from step ${parseInt(i) + 1}`;
                         input.step_linked = input.step_linked || [];
                         input.step_linked.push(step);
                     }
@@ -181,40 +167,22 @@ var View = Backbone.View.extend({
             if (step.step_type == "tool") {
                 var data_resolved = true;
                 FormData.visitInputs(step.inputs, (input, name, context) => {
-                    var is_runtime_value =
-                        input.value && input.value.__class__ == "RuntimeValue";
-                    var is_data_input =
-                        ["data", "data_collection"].indexOf(input.type) != -1;
+                    var is_runtime_value = input.value && input.value.__class__ == "RuntimeValue";
+                    var is_data_input = ["data", "data_collection"].indexOf(input.type) != -1;
                     var data_ref = context[input.data_ref];
-                    input.step_linked &&
-                        !self._isDataStep(input.step_linked) &&
-                        (data_resolved = false);
+                    input.step_linked && !self._isDataStep(input.step_linked) && (data_resolved = false);
                     input.options &&
-                        ((input.options.length == 0 && !data_resolved) ||
-                            input.wp_linked) &&
+                        ((input.options.length == 0 && !data_resolved) || input.wp_linked) &&
                         (input.is_workflow = true);
                     data_ref &&
                         (input.is_workflow =
-                            (data_ref.step_linked &&
-                                !self._isDataStep(data_ref.step_linked)) ||
-                            input.wp_linked);
-                    (is_data_input ||
-                        (input.value &&
-                            input.value.__class__ == "RuntimeValue" &&
-                            !input.step_linked)) &&
+                            (data_ref.step_linked && !self._isDataStep(data_ref.step_linked)) || input.wp_linked);
+                    (is_data_input || (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked)) &&
                         (step.collapsed = false);
                     is_runtime_value && (input.value = input.default_value);
                     input.flavor = "workflow";
-                    if (
-                        !is_runtime_value &&
-                        !is_data_input &&
-                        input.type !== "hidden" &&
-                        !input.wp_linked
-                    ) {
-                        if (
-                            input.optional ||
-                            (!Utils.isEmpty(input.value) && input.value !== "")
-                        ) {
+                    if (!is_runtime_value && !is_data_input && input.type !== "hidden" && !input.wp_linked) {
+                        if (input.optional || (!Utils.isEmpty(input.value) && input.value !== "")) {
                             input.collapsible_value = input.value;
                             input.collapsible_preview = true;
                         }
@@ -357,11 +325,7 @@ var View = Backbone.View.extend({
                         inputs: $.extend(true, {}, form.data.create())
                     };
                     form.wait(true);
-                    Galaxy.emit.debug(
-                        "tool-form-composite::postchange()",
-                        "Sending current state.",
-                        current_state
-                    );
+                    Galaxy.emit.debug("tool-form-composite::postchange()", "Sending current state.", current_state);
                     Utils.request({
                         type: "POST",
                         url: `${Galaxy.root}api/tools/${step.id}/build`,
@@ -369,19 +333,11 @@ var View = Backbone.View.extend({
                         success: function(data) {
                             form.update(data);
                             form.wait(false);
-                            Galaxy.emit.debug(
-                                "tool-form-composite::postchange()",
-                                "Received new model.",
-                                data
-                            );
+                            Galaxy.emit.debug("tool-form-composite::postchange()", "Received new model.", data);
                             process.resolve();
                         },
                         error: function(response) {
-                            Galaxy.emit.debug(
-                                "tool-form-composite::postchange()",
-                                "Refresh request failed.",
-                                response
-                            );
+                            Galaxy.emit.debug("tool-form-composite::postchange()", "Refresh request failed.", response);
                             process.reject();
                         }
                     });
@@ -402,8 +358,7 @@ var View = Backbone.View.extend({
                                     .html(
                                         _.reduce(
                                             step.post_job_actions,
-                                            (memo, value) =>
-                                                `${memo} ${value.short_str}`,
+                                            (memo, value) => `${memo} ${value.short_str}`,
                                             ""
                                         )
                                     )
@@ -411,10 +366,7 @@ var View = Backbone.View.extend({
                     );
                 }
             } else {
-                var is_simple_input =
-                    ["data_input", "data_collection_input"].indexOf(
-                        step.step_type
-                    ) != -1;
+                var is_simple_input = ["data_input", "data_collection_input"].indexOf(step.step_type) != -1;
                 _.each(step.inputs, input => {
                     input.flavor = "module";
                     input.hide_label = is_simple_input;
@@ -454,11 +406,7 @@ var View = Backbone.View.extend({
                     wait_text: "Preparing...",
                     percentage: (step.index + 1) * 100.0 / self.steps.length
                 });
-            Galaxy.emit.debug(
-                "tool-form-composite::initialize()",
-                `${step.index} : Workflow step state ready.`,
-                step
-            );
+            Galaxy.emit.debug("tool-form-composite::initialize()", `${step.index} : Workflow step state ready.`, step);
             setTimeout(() => {
                 promise.resolve();
             }, 0);
@@ -479,19 +427,14 @@ var View = Backbone.View.extend({
                             new_value = { values: [] };
                             _.each(input.step_linked, source_step => {
                                 if (self._isDataStep(source_step)) {
-                                    var value = self.forms[
-                                        source_step.index
-                                    ].data.create().input;
+                                    var value = self.forms[source_step.index].data.create().input;
                                     value &&
                                         _.each(value.values, v => {
                                             new_value.values.push(v);
                                         });
                                 }
                             });
-                            if (
-                                !input.multiple &&
-                                new_value.values.length > 0
-                            ) {
+                            if (!input.multiple && new_value.values.length > 0) {
                                 new_value = {
                                     values: [new_value.values[0]]
                                 };
@@ -501,15 +444,10 @@ var View = Backbone.View.extend({
                             var re = /\$\{(.+?)\}/g;
                             var match;
                             while ((match = re.exec(input.value))) {
-                                var wp_field =
-                                    self.wp_form.field_list[
-                                        self.wp_form.data.match(match[1])
-                                    ];
+                                var wp_field = self.wp_form.field_list[self.wp_form.data.match(match[1])];
                                 var wp_value = wp_field && wp_field.value();
                                 if (wp_value) {
-                                    new_value = new_value
-                                        .split(match[0])
-                                        .join(wp_value);
+                                    new_value = new_value.split(match[0]).join(wp_value);
                                 }
                             }
                         }
@@ -528,10 +466,7 @@ var View = Backbone.View.extend({
     /** Refresh the history after job submission while form is shown */
     _refreshHistory: function() {
         var self = this;
-        var history =
-            parent.Galaxy &&
-            parent.Galaxy.currHistoryPanel &&
-            parent.Galaxy.currHistoryPanel.model;
+        var history = parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.model;
         this._refresh_history && clearTimeout(this._refresh_history);
         if (history) {
             history.refresh().success(() => {
@@ -562,12 +497,8 @@ var View = Backbone.View.extend({
         var self = this;
         var history_form_data = this.history_form.data.create();
         var job_def = {
-            new_history_name: history_form_data["new_history|name"]
-                ? history_form_data["new_history|name"]
-                : null,
-            history_id: !history_form_data["new_history|name"]
-                ? this.model.get("history_id")
-                : null,
+            new_history_name: history_form_data["new_history|name"] ? history_form_data["new_history|name"] : null,
+            history_id: !history_form_data["new_history|name"] ? this.model.get("history_id") : null,
             replacement_params: this.wp_form ? this.wp_form.data.create() : {},
             parameters: {},
             // Tool form will submit flat maps for each parameter
@@ -592,10 +523,7 @@ var View = Backbone.View.extend({
                 var input_def = form.input_list[input_id];
                 if (!input_def.step_linked) {
                     if (this._isDataStep(step)) {
-                        validated =
-                            input_value &&
-                            input_value.values &&
-                            input_value.values.length > 0;
+                        validated = input_value && input_value.values && input_value.values.length > 0;
                     } else {
                         validated =
                             input_def.optional ||
@@ -606,10 +534,8 @@ var View = Backbone.View.extend({
                         form.highlight(input_id);
                         break;
                     }
-                    job_def.parameters[step_index] =
-                        job_def.parameters[step_index] || {};
-                    job_def.parameters[step_index][job_input_id] =
-                        job_inputs[job_input_id];
+                    job_def.parameters[step_index] = job_def.parameters[step_index] || {};
+                    job_def.parameters[step_index][job_input_id] = job_inputs[job_input_id];
                 }
             }
             if (!validated) {
@@ -618,27 +544,15 @@ var View = Backbone.View.extend({
         }
         if (!validated) {
             self._enabled(true);
-            Galaxy.emit.debug(
-                "tool-form-composite::submit()",
-                "Validation failed.",
-                job_def
-            );
+            Galaxy.emit.debug("tool-form-composite::submit()", "Validation failed.", job_def);
         } else {
-            Galaxy.emit.debug(
-                "tool-form-composite::submit()",
-                "Validation complete.",
-                job_def
-            );
+            Galaxy.emit.debug("tool-form-composite::submit()", "Validation complete.", job_def);
             Utils.request({
                 type: "POST",
                 url: `${Galaxy.root}api/workflows/${this.model.id}/invocations`,
                 data: job_def,
                 success: function(response) {
-                    Galaxy.emit.debug(
-                        "tool-form-composite::submit",
-                        "Submission successful.",
-                        response
-                    );
+                    Galaxy.emit.debug("tool-form-composite::submit", "Submission successful.", response);
                     self.$el.children().hide();
                     self.$el.append(self._templateSuccess(response));
 
@@ -655,26 +569,16 @@ var View = Backbone.View.extend({
                     self._refreshHistory();
                 },
                 error: function(response) {
-                    Galaxy.emit.debug(
-                        "tool-form-composite::submit",
-                        "Submission failed.",
-                        response
-                    );
+                    Galaxy.emit.debug("tool-form-composite::submit", "Submission failed.", response);
                     var input_found = false;
                     if (response && response.err_data) {
                         for (var i in self.forms) {
                             var form = self.forms[i];
-                            var step_related_errors =
-                                response.err_data[form.model.get("step_index")];
+                            var step_related_errors = response.err_data[form.model.get("step_index")];
                             if (step_related_errors) {
-                                var error_messages = form.data.matchResponse(
-                                    step_related_errors
-                                );
+                                var error_messages = form.data.matchResponse(step_related_errors);
                                 for (var input_id in error_messages) {
-                                    form.highlight(
-                                        input_id,
-                                        error_messages[input_id]
-                                    );
+                                    form.highlight(input_id, error_messages[input_id]);
                                     input_found = true;
                                     break;
                                 }
@@ -684,10 +588,7 @@ var View = Backbone.View.extend({
                     if (!input_found) {
                         self.modal.show({
                             title: "Workflow submission failed",
-                            body: self._templateError(
-                                job_def,
-                                response && response.err_msg
-                            ),
+                            body: self._templateError(job_def, response && response.err_msg),
                             buttons: {
                                 Close: function() {
                                     self.modal.hide();
@@ -716,8 +617,7 @@ var View = Backbone.View.extend({
             percentage: -1
         });
         this.wp_form && this.wp_form.portlet[enabled ? "enable" : "disable"]();
-        this.history_form &&
-            this.history_form.portlet[enabled ? "enable" : "disable"]();
+        this.history_form && this.history_form.portlet[enabled ? "enable" : "disable"]();
         _.each(this.forms, form => {
             form && form.portlet[enabled ? "enable" : "disable"]();
         });
@@ -728,11 +628,7 @@ var View = Backbone.View.extend({
         var lst = $.isArray(steps) ? steps : [steps];
         for (var i = 0; i < lst.length; i++) {
             var step = lst[i];
-            if (
-                !step ||
-                !step.step_type ||
-                !step.step_type.startsWith("data")
-            ) {
+            if (!step || !step.step_type || !step.step_type.startsWith("data")) {
                 return false;
             }
         }
@@ -748,9 +644,7 @@ var View = Backbone.View.extend({
                     $("<p/>").html(
                         `Successfully invoked workflow <b>${Utils.sanitize(
                             this.model.get("name")
-                        )}</b>${response.length > 1
-                            ? ` <b>${response.length} times</b>`
-                            : ""}.`
+                        )}</b>${response.length > 1 ? ` <b>${response.length} times</b>` : ""}.`
                     )
                 )
                 .append(
@@ -761,10 +655,7 @@ var View = Backbone.View.extend({
                         )
                 );
         } else {
-            return this._templateError(
-                response,
-                "Invalid success response. No invocations found."
-            );
+            return this._templateError(response, "Invalid success response. No invocations found.");
         }
     },
 

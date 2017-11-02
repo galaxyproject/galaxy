@@ -15,8 +15,7 @@ $.fn.make_text_editable = function(config_dict) {
 
     var num_rows = "num_rows" in config_dict ? config_dict.num_rows : 4;
 
-    var use_textarea =
-        "use_textarea" in config_dict ? config_dict.use_textarea : false;
+    var use_textarea = "use_textarea" in config_dict ? config_dict.use_textarea : false;
 
     var on_finish = "on_finish" in config_dict ? config_dict.on_finish : null;
     var help_text = "help_text" in config_dict ? config_dict.help_text : null;
@@ -49,8 +48,7 @@ $.fn.make_text_editable = function(config_dict) {
         };
 
         // Create input element(s) for editing.
-        var cur_text =
-            "cur_text" in config_dict ? config_dict.cur_text : container.text();
+        var cur_text = "cur_text" in config_dict ? config_dict.cur_text : container.text();
 
         var input_elt;
         var button_elt;

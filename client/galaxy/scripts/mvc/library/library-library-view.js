@@ -33,26 +33,17 @@ var LibraryView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(
-                        `${response.responseJSON
-                            .err_msg} Click this to go back.`,
-                        "",
-                        {
-                            onclick: function() {
-                                Galaxy.libraries.library_router.back();
-                            }
+                    mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
+                        onclick: function() {
+                            Galaxy.libraries.library_router.back();
                         }
-                    );
+                    });
                 } else {
-                    mod_toastr.error(
-                        "An error occurred. Click this to go back.",
-                        "",
-                        {
-                            onclick: function() {
-                                Galaxy.libraries.library_router.back();
-                            }
+                    mod_toastr.error("An error occurred. Click this to go back.", "", {
+                        onclick: function() {
+                            Galaxy.libraries.library_router.back();
                         }
-                    );
+                    });
                 }
             }
         });
@@ -63,10 +54,7 @@ var LibraryView = Backbone.View.extend({
         $(".tooltip").remove();
 
         if (this.options.fetched_permissions !== undefined) {
-            if (
-                this.options.fetched_permissions.access_library_role_list
-                    .length === 0
-            ) {
+            if (this.options.fetched_permissions.access_library_role_list.length === 0) {
                 this.model.set({ is_unrestricted: true });
             } else {
                 this.model.set({ is_unrestricted: false });
@@ -80,18 +68,14 @@ var LibraryView = Backbone.View.extend({
         this.$el.html(template({ library: this.model, is_admin: is_admin }));
 
         var self = this;
-        $.get(
-            `${Galaxy.root}api/libraries/${self.id}/permissions?scope=current`
-        )
+        $.get(`${Galaxy.root}api/libraries/${self.id}/permissions?scope=current`)
             .done(fetched_permissions => {
                 self.prepareSelectBoxes({
                     fetched_permissions: fetched_permissions
                 });
             })
             .fail(() => {
-                mod_toastr.error(
-                    "An error occurred while attempting to fetch library permissions."
-                );
+                mod_toastr.error("An error occurred while attempting to fetch library permissions.");
             });
 
         $("#center [data-toggle]").tooltip();
@@ -112,56 +96,27 @@ var LibraryView = Backbone.View.extend({
         var fetched_permissions = this.options.fetched_permissions;
         var self = this;
 
-        var selected_access_library_roles = this._serializeRoles(
-            fetched_permissions.access_library_role_list
-        );
-        var selected_add_item_roles = this._serializeRoles(
-            fetched_permissions.add_library_item_role_list
-        );
-        var selected_manage_library_roles = this._serializeRoles(
-            fetched_permissions.manage_library_role_list
-        );
-        var selected_modify_library_roles = this._serializeRoles(
-            fetched_permissions.modify_library_role_list
-        );
+        var selected_access_library_roles = this._serializeRoles(fetched_permissions.access_library_role_list);
+        var selected_add_item_roles = this._serializeRoles(fetched_permissions.add_library_item_role_list);
+        var selected_manage_library_roles = this._serializeRoles(fetched_permissions.manage_library_role_list);
+        var selected_modify_library_roles = this._serializeRoles(fetched_permissions.modify_library_role_list);
 
         self.accessSelectObject = new mod_select.View(
-            this._createSelectOptions(
-                this,
-                "access_perm",
-                selected_access_library_roles,
-                true
-            )
+            this._createSelectOptions(this, "access_perm", selected_access_library_roles, true)
         );
         self.addSelectObject = new mod_select.View(
-            this._createSelectOptions(
-                this,
-                "add_perm",
-                selected_add_item_roles,
-                false
-            )
+            this._createSelectOptions(this, "add_perm", selected_add_item_roles, false)
         );
         self.manageSelectObject = new mod_select.View(
-            this._createSelectOptions(
-                this,
-                "manage_perm",
-                selected_manage_library_roles,
-                false
-            )
+            this._createSelectOptions(this, "manage_perm", selected_manage_library_roles, false)
         );
         self.modifySelectObject = new mod_select.View(
-            this._createSelectOptions(
-                this,
-                "modify_perm",
-                selected_modify_library_roles,
-                false
-            )
+            this._createSelectOptions(this, "modify_perm", selected_modify_library_roles, false)
         );
     },
 
     _createSelectOptions: function(self, id, init_data, is_library_access) {
-        is_library_access =
-            is_library_access === true ? is_library_access : false;
+        is_library_access = is_library_access === true ? is_library_access : false;
         var select_options = {
             minimumInputLength: 0,
             css: id,
@@ -217,9 +172,7 @@ var LibraryView = Backbone.View.extend({
 
     makeDatasetPrivate: function() {
         var self = this;
-        $.post(
-            `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=make_private`
-        )
+        $.post(`${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=make_private`)
             .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: false });
                 self.showPermissions({
@@ -228,30 +181,22 @@ var LibraryView = Backbone.View.extend({
                 mod_toastr.success("The dataset is now private to you.");
             })
             .fail(() => {
-                mod_toastr.error(
-                    "An error occurred while attempting to make dataset private."
-                );
+                mod_toastr.error("An error occurred while attempting to make dataset private.");
             });
     },
 
     removeDatasetRestrictions: function() {
         var self = this;
-        $.post(
-            `${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`
-        )
+        $.post(`${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`)
             .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: true });
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
-                mod_toastr.success(
-                    "Access to this dataset is now unrestricted."
-                );
+                mod_toastr.success("Access to this dataset is now unrestricted.");
             })
             .fail(() => {
-                mod_toastr.error(
-                    "An error occurred while attempting to make dataset unrestricted."
-                );
+                mod_toastr.error("An error occurred while attempting to make dataset unrestricted.");
             });
     },
 
@@ -265,28 +210,17 @@ var LibraryView = Backbone.View.extend({
     savePermissions: function(event) {
         var self = this;
 
-        var access_ids = this._extractIds(
-            this.accessSelectObject.$el.select2("data")
-        );
-        var add_ids = this._extractIds(
-            this.addSelectObject.$el.select2("data")
-        );
-        var manage_ids = this._extractIds(
-            this.manageSelectObject.$el.select2("data")
-        );
-        var modify_ids = this._extractIds(
-            this.modifySelectObject.$el.select2("data")
-        );
+        var access_ids = this._extractIds(this.accessSelectObject.$el.select2("data"));
+        var add_ids = this._extractIds(this.addSelectObject.$el.select2("data"));
+        var manage_ids = this._extractIds(this.manageSelectObject.$el.select2("data"));
+        var modify_ids = this._extractIds(this.modifySelectObject.$el.select2("data"));
 
-        $.post(
-            `${Galaxy.root}api/libraries/${self.id}/permissions?action=set_permissions`,
-            {
-                "access_ids[]": access_ids,
-                "add_ids[]": add_ids,
-                "manage_ids[]": manage_ids,
-                "modify_ids[]": modify_ids
-            }
-        )
+        $.post(`${Galaxy.root}api/libraries/${self.id}/permissions?action=set_permissions`, {
+            "access_ids[]": access_ids,
+            "add_ids[]": add_ids,
+            "manage_ids[]": manage_ids,
+            "modify_ids[]": modify_ids
+        })
             .done(fetched_permissions => {
                 //fetch dataset again
                 self.showPermissions({
@@ -295,9 +229,7 @@ var LibraryView = Backbone.View.extend({
                 mod_toastr.success("Permissions saved.");
             })
             .fail(() => {
-                mod_toastr.error(
-                    "An error occurred while attempting to set library permissions."
-                );
+                mod_toastr.error("An error occurred while attempting to set library permissions.");
             });
     },
 

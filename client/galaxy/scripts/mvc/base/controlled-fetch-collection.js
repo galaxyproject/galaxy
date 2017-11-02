@@ -177,11 +177,7 @@ var PaginatedCollection = ControlledFetchCollection.extend({
     limitPerPage: 500,
 
     initialize: function(models, options) {
-        ControlledFetchCollection.prototype.initialize.call(
-            this,
-            models,
-            options
-        );
+        ControlledFetchCollection.prototype.initialize.call(this, models, options);
         this.currentPage = options.currentPage || 0;
     },
 
@@ -250,14 +246,9 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
     limitPerFetch: 100,
 
     initialize: function(models, options) {
-        ControlledFetchCollection.prototype.initialize.call(
-            this,
-            models,
-            options
-        );
+        ControlledFetchCollection.prototype.initialize.call(this, models, options);
         /** @type {Integer} number of contents to return from the first fetch */
-        this.limitOnFirstFetch =
-            options.limitOnFirstFetch || this.limitOnFirstFetch;
+        this.limitOnFirstFetch = options.limitOnFirstFetch || this.limitOnFirstFetch;
         /** @type {Integer} limit for every fetch after the first */
         this.limitPerFetch = options.limitPerFetch || this.limitPerFetch;
         /** @type {Boolean} are all contents fetched? */
@@ -271,10 +262,7 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
         // options (options for backbone.fetch and jquery.ajax generally)
         // backbone option; false here to make fetching an addititive process
         options.remove = options.remove || false;
-        return ControlledFetchCollection.prototype._buildFetchOptions.call(
-            this,
-            options
-        );
+        return ControlledFetchCollection.prototype._buildFetchOptions.call(this, options);
     },
 
     /** fetch the first 'page' of data */
@@ -309,8 +297,7 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
         } else if (options.offset === undefined) {
             options.offset = collection.lastFetched;
         }
-        var limit = (options.limit =
-            options.limit || collection.limitPerFetch || null);
+        var limit = (options.limit = options.limit || collection.limitPerFetch || null);
         Galaxy.debug("fetchMore, limit:", limit, "offset:", options.offset);
 
         collection.trigger("fetching-more");
@@ -322,14 +309,9 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
                 })
                 // maintain allFetched flag and trigger if all were fetched this time
                 .done(function _postFetchMore(fetchedData) {
-                    var numFetched = _.isArray(fetchedData)
-                        ? fetchedData.length
-                        : 0;
+                    var numFetched = _.isArray(fetchedData) ? fetchedData.length : 0;
                     collection.lastFetched += numFetched;
-                    Galaxy.debug(
-                        "fetchMore, lastFetched:",
-                        collection.lastFetched
-                    );
+                    Galaxy.debug("fetchMore, lastFetched:", collection.lastFetched);
                     // anything less than a full page means we got all there is to get
                     if (!limit || numFetched < limit) {
                         collection.allFetched = true;

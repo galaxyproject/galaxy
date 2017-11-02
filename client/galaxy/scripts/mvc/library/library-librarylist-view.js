@@ -55,8 +55,7 @@ var LibraryListView = Backbone.View.extend({
         var is_public = model => model.get("public") === true;
         $(".tooltip").hide();
         if (typeof options !== "undefined") {
-            models =
-                typeof options.models !== "undefined" ? options.models : null;
+            models = typeof options.models !== "undefined" ? options.models : null;
         }
         if (this.collection !== null && models === null) {
             this.sortLibraries();
@@ -89,29 +88,20 @@ var LibraryListView = Backbone.View.extend({
             this.options.show_page = 1;
         }
         this.options.total_libraries_count = libraries_to_render.length;
-        var page_start =
-            Galaxy.libraries.preferences.get("library_page_size") *
-            (this.options.show_page - 1);
+        var page_start = Galaxy.libraries.preferences.get("library_page_size") * (this.options.show_page - 1);
         this.options.page_count = Math.ceil(
-            this.options.total_libraries_count /
-                Galaxy.libraries.preferences.get("library_page_size")
+            this.options.total_libraries_count / Galaxy.libraries.preferences.get("library_page_size")
         );
-        if (
-            this.options.total_libraries_count > 0 &&
-            page_start < this.options.total_libraries_count
-        ) {
+        if (this.options.total_libraries_count > 0 && page_start < this.options.total_libraries_count) {
             libraries_to_render = libraries_to_render.slice(
                 page_start,
-                page_start +
-                    Galaxy.libraries.preferences.get("library_page_size")
+                page_start + Galaxy.libraries.preferences.get("library_page_size")
             );
             this.options.libraries_shown = libraries_to_render.length;
             // User requests page with no libraries
             if (
-                Galaxy.libraries.preferences.get("library_page_size") *
-                    this.options.show_page >
-                this.options.total_libraries_count +
-                    Galaxy.libraries.preferences.get("library_page_size")
+                Galaxy.libraries.preferences.get("library_page_size") * this.options.show_page >
+                this.options.total_libraries_count + Galaxy.libraries.preferences.get("library_page_size")
             ) {
                 libraries_to_render = [];
             }
@@ -119,8 +109,7 @@ var LibraryListView = Backbone.View.extend({
                 template({
                     length: 1,
                     order: Galaxy.libraries.preferences.get("sort_order"),
-                    search_term:
-                        Galaxy.libraries.libraryToolbarView.options.search_term
+                    search_term: Galaxy.libraries.libraryToolbarView.options.search_term
                 })
             );
             Galaxy.libraries.libraryToolbarView.renderPaginator(this.options);
@@ -130,8 +119,7 @@ var LibraryListView = Backbone.View.extend({
                 template({
                     length: 0,
                     order: Galaxy.libraries.preferences.get("sort_order"),
-                    search_term:
-                        Galaxy.libraries.libraryToolbarView.options.search_term
+                    search_term: Galaxy.libraries.libraryToolbarView.options.search_term
                 })
             );
             Galaxy.libraries.libraryToolbarView.renderPaginator(this.options);
@@ -205,9 +193,7 @@ var LibraryListView = Backbone.View.extend({
         if (Galaxy.libraries.preferences.get("sort_by") === "name") {
             if (Galaxy.libraries.preferences.get("sort_order") === "asc") {
                 this.collection.sortLibraries("name", "asc");
-            } else if (
-                Galaxy.libraries.preferences.get("sort_order") === "desc"
-            ) {
+            } else if (Galaxy.libraries.preferences.get("sort_order") === "desc") {
                 this.collection.sortLibraries("name", "desc");
             }
         }

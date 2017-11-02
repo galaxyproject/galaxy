@@ -80,8 +80,7 @@ var TabularDataset = Dataset.extend({
         if (this.attributes.first_data_chunk) {
             this.attributes.offset = this.attributes.first_data_chunk.offset;
         }
-        this.attributes.chunk_url = `${Galaxy.root}dataset/display?dataset_id=${this
-            .id}`;
+        this.attributes.chunk_url = `${Galaxy.root}dataset/display?dataset_id=${this.id}`;
         this.attributes.url_viz = `${Galaxy.root}visualization`;
     },
 
@@ -225,10 +224,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             $cell.attr("colspan", colspan).addClass("stringalign");
         } else if (column_types) {
             if (index < column_types.length) {
-                if (
-                    column_types[index] === "str" ||
-                    column_types[index] === "list"
-                ) {
+                if (column_types[index] === "str" || column_types[index] === "list") {
                     /* Left align all str columns, right align the rest */
                     $cell.addClass("stringalign");
                 }
@@ -265,12 +261,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
                 },
                 this
             );
-            row.append(
-                this._renderCell(
-                    cells.slice(num_columns - 1).join("\t"),
-                    num_columns - 1
-                )
-            );
+            row.append(this._renderCell(cells.slice(num_columns - 1).join("\t"), num_columns - 1));
         } else if (cells.length === 1) {
             // Comment line, just return the one cell.
             row.append(this._renderCell(line, 0, num_columns));
@@ -317,10 +308,7 @@ var TopLevelTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
         TabularDatasetChunkedView.prototype.initialize.call(this, options);
 
         // Scrolling happens in top-level elements.
-        var scroll_elt = _.find(
-            this.$el.parents(),
-            p => $(p).css("overflow") === "auto"
-        );
+        var scroll_elt = _.find(this.$el.parents(), p => $(p).css("overflow") === "auto");
 
         // If no scrolling element found, use window.
         if (!scroll_elt) {
@@ -335,12 +323,7 @@ var TopLevelTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
      * Returns true if user has scrolled to the bottom of the view.
      */
     scrolled_to_bottom: function() {
-        return (
-            this.$el.height() -
-                this.scroll_elt.scrollTop() -
-                this.scroll_elt.height() <=
-            0
-        );
+        return this.$el.height() - this.scroll_elt.scrollTop() - this.scroll_elt.height() <= 0;
     }
 });
 
@@ -363,10 +346,7 @@ var EmbeddedTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
      * Returns true if user has scrolled to the bottom of the view.
      */
     scrolled_to_bottom: function() {
-        return (
-            this.$el.scrollTop() + this.$el.innerHeight() >=
-            this.el.scrollHeight
-        );
+        return this.$el.scrollTop() + this.$el.innerHeight() >= this.el.scrollHeight;
     }
 });
 
@@ -426,19 +406,13 @@ var TabularButtonTracksterView = Backbone.View.extend({
         // check for bed-file format
         if (this.file_ext == "bed") {
             // verify that metadata exists
-            if (
-                metadata.get("chromCol") &&
-                metadata.get("startCol") &&
-                metadata.get("endCol")
-            ) {
+            if (metadata.get("chromCol") && metadata.get("startCol") && metadata.get("endCol")) {
                 // read in columns
                 this.col.chrom = metadata.get("chromCol") - 1;
                 this.col.start = metadata.get("startCol") - 1;
                 this.col.end = metadata.get("endCol") - 1;
             } else {
-                console.log(
-                    "TabularButtonTrackster : Bed-file metadata incomplete."
-                );
+                console.log("TabularButtonTrackster : Bed-file metadata incomplete.");
                 return;
             }
         }
@@ -447,8 +421,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
         if (this.file_ext == "vcf") {
             // search array
             function search(str, array) {
-                for (var j = 0; j < array.length; j++)
-                    if (array[j].match(str)) return j;
+                for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
                 return -1;
             }
 
@@ -459,9 +432,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
 
             // verify that metadata exists
             if (this.col.chrom == -1 || this.col.start == -1) {
-                console.log(
-                    "TabularButtonTrackster : VCF-file metadata incomplete."
-                );
+                console.log("TabularButtonTrackster : VCF-file metadata incomplete.");
                 return;
             }
         }
@@ -475,9 +446,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
         if (model.id) {
             this.dataset_id = model.id;
         } else {
-            console.log(
-                "TabularButtonTrackster : Dataset identification is missing."
-            );
+            console.log("TabularButtonTrackster : Dataset identification is missing.");
             return;
         }
 
@@ -485,9 +454,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
         if (model.get("url_viz")) {
             this.url_viz = model.get("url_viz");
         } else {
-            console.log(
-                "TabularButtonTrackster : Url for visualization controller is missing."
-            );
+            console.log("TabularButtonTrackster : Url for visualization controller is missing.");
             return;
         }
 

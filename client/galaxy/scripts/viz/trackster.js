@@ -68,9 +68,7 @@ var TracksterUI = Base.extend({
         });
 
         // FIXME: give unique IDs to Drawables and save overview as ID.
-        var overview_track_name = view.overview_drawable
-            ? view.overview_drawable.config.get_value("name")
-            : null;
+        var overview_track_name = view.overview_drawable ? view.overview_drawable.config.get_value("name") : null;
 
         var viz_config = {
             view: view.to_dict(),
@@ -102,18 +100,13 @@ var TracksterUI = Base.extend({
                 view.has_changes = false;
 
                 // Needed to set URL when first saving a visualization.
-                window.history.pushState(
-                    {},
-                    "",
-                    vis_info.url + window.location.hash
-                );
+                window.history.pushState({}, "", vis_info.url + window.location.hash);
             })
             .error(() => {
                 // show dialog
                 Galaxy.modal.show({
                     title: "Could Not Save",
-                    body:
-                        "Could not save visualization. Please try again later.",
+                    body: "Could not save visualization. Please try again later.",
                     buttons: {
                         Cancel: function() {
                             Galaxy.modal.hide();
@@ -135,20 +128,11 @@ var TracksterUI = Base.extend({
                     icon_class: "plus-button",
                     title: "Add tracks",
                     on_click: function() {
-                        visualization.select_datasets(
-                            { dbkey: view.dbkey },
-                            new_tracks => {
-                                _.each(new_tracks, track => {
-                                    view.add_drawable(
-                                        tracks.object_from_template(
-                                            track,
-                                            view,
-                                            view
-                                        )
-                                    );
-                                });
-                            }
-                        );
+                        visualization.select_datasets({ dbkey: view.dbkey }, new_tracks => {
+                            _.each(new_tracks, track => {
+                                view.add_drawable(tracks.object_from_template(track, view, view));
+                            });
+                        });
                     }
                 },
                 {
@@ -167,11 +151,7 @@ var TracksterUI = Base.extend({
                     title: "Bookmarks",
                     on_click: function() {
                         // HACK -- use style to determine if panel is hidden and hide/show accordingly.
-                        force_right_panel(
-                            $("div#right").css("right") == "0px"
-                                ? "hide"
-                                : "show"
-                        );
+                        force_right_panel($("div#right").css("right") == "0px" ? "hide" : "show");
                     }
                 },
                 {
@@ -265,19 +245,11 @@ var TracksterUI = Base.extend({
     /**
      * Create a complete Trackster visualization. Returns view.
      */
-    create_visualization: function(
-        view_config,
-        viewport_config,
-        drawables_config,
-        bookmarks_config,
-        editable
-    ) {
+    create_visualization: function(view_config, viewport_config, drawables_config, bookmarks_config, editable) {
         // Create view.
         var self = this;
 
-        var view = new tracks.TracksterView(
-            _.extend(view_config, { header: false })
-        );
+        var view = new tracks.TracksterView(_.extend(view_config, { header: false }));
 
         view.editor = true;
         $.when(view.load_chroms_deferred).then(chrom_info => {
@@ -307,23 +279,14 @@ var TracksterUI = Base.extend({
                 var drawable_type;
                 var drawable;
                 for (var i = 0; i < drawables_config.length; i++) {
-                    view.add_drawable(
-                        tracks.object_from_template(
-                            drawables_config[i],
-                            view,
-                            view
-                        )
-                    );
+                    view.add_drawable(tracks.object_from_template(drawables_config[i], view, view));
                 }
             }
 
             // Set overview.
             var overview_drawable;
             for (var i = 0; i < view.drawables.length; i++) {
-                if (
-                    view.drawables[i].config.get_value("name") ===
-                    overview_drawable_name
-                ) {
+                if (view.drawables[i].config.get_value("name") === overview_drawable_name) {
                     view.set_overview(view.drawables[i]);
                     break;
                 }
@@ -334,11 +297,7 @@ var TracksterUI = Base.extend({
                 var bookmark;
                 for (var i = 0; i < bookmarks_config.length; i++) {
                     bookmark = bookmarks_config[i];
-                    self.add_bookmark(
-                        bookmark["position"],
-                        bookmark["annotation"],
-                        editable
-                    );
+                    self.add_bookmark(bookmark["position"], bookmark["annotation"], editable);
                 }
             }
 
@@ -377,23 +336,15 @@ var TracksterUI = Base.extend({
                     view.move_fraction(0.25);
                     break;
                 case 38:
-                    var change = Math.round(
-                        view.viewport_container.height() / 15.0
-                    );
-                    view.viewport_container.scrollTop(
-                        view.viewport_container.scrollTop() - 20
-                    );
+                    var change = Math.round(view.viewport_container.height() / 15.0);
+                    view.viewport_container.scrollTop(view.viewport_container.scrollTop() - 20);
                     break;
                 case 39:
                     view.move_fraction(-0.25);
                     break;
                 case 40:
-                    var change = Math.round(
-                        view.viewport_container.height() / 15.0
-                    );
-                    view.viewport_container.scrollTop(
-                        view.viewport_container.scrollTop() + 20
-                    );
+                    var change = Math.round(view.viewport_container.height() / 15.0);
+                    view.viewport_container.scrollTop(view.viewport_container.scrollTop() + 20);
                     break;
             }
         });
@@ -407,8 +358,7 @@ var TracksterUI = Base.extend({
             var self = this;
             Galaxy.modal.show({
                 title: "Close visualization",
-                body:
-                    "There are unsaved changes to your visualization which will be lost if you do not save them.",
+                body: "There are unsaved changes to your visualization which will be lost if you do not save them.",
                 buttons: {
                     Cancel: function() {
                         Galaxy.modal.hide();
@@ -523,9 +473,7 @@ var TracksterView = Backbone.View.extend({
                         .find("input[name=id]:checked")
                         .each(function() {
                             dataset_params.id = $(this).val();
-                            window.location = `${Galaxy.root}visualization/trackster?${$.param(
-                                dataset_params
-                            )}`;
+                            window.location = `${Galaxy.root}visualization/trackster?${$.param(dataset_params)}`;
                         });
                 }
             }
@@ -577,10 +525,7 @@ var TracksterView = Backbone.View.extend({
                             window.location = `${Galaxy.root}visualizations/list`;
                         },
                         Create: function() {
-                            self.create_browser(
-                                $("#new-title").val(),
-                                $("#new-dbkey").val()
-                            );
+                            self.create_browser($("#new-title").val(), $("#new-dbkey").val());
                             Galaxy.modal.hide();
                         }
                     }
@@ -588,13 +533,7 @@ var TracksterView = Backbone.View.extend({
 
                 // select default
                 var dbkeys_in_genomes = response.map(r => r[1]);
-                if (
-                    galaxy_config.app.default_dbkey &&
-                    _.contains(
-                        dbkeys_in_genomes,
-                        galaxy_config.app.default_dbkey
-                    )
-                ) {
+                if (galaxy_config.app.default_dbkey && _.contains(dbkeys_in_genomes, galaxy_config.app.default_dbkey)) {
                     $("#new-dbkey").val(galaxy_config.app.default_dbkey);
                 }
 
@@ -627,9 +566,7 @@ var TracksterView = Backbone.View.extend({
 
         // add dbkeys
         for (var i = 0; i < response.length; i++) {
-            html += `<option value="${response[i][1]}">${response[
-                i
-            ][0]}</option>`;
+            html += `<option value="${response[i][1]}">${response[i][0]}</option>`;
         }
 
         // close selection/finalize template
@@ -662,21 +599,16 @@ var TracksterView = Backbone.View.extend({
     // initialization for editor-specific functions.
     init_editor: function() {
         // set title
-        $("#center .unified-panel-title").text(
-            `${view.config.get_value("name")} (${view.dbkey})`
-        );
+        $("#center .unified-panel-title").text(`${view.config.get_value("name")} (${view.dbkey})`);
 
         // add dataset
         if (galaxy_config.app.add_dataset)
             $.ajax({
-                url: `${Galaxy.root}api/datasets/${galaxy_config.app
-                    .add_dataset}`,
+                url: `${Galaxy.root}api/datasets/${galaxy_config.app.add_dataset}`,
                 data: { hda_ldda: "hda", data_type: "track_config" },
                 dataType: "json",
                 success: function(track_data) {
-                    view.add_drawable(
-                        tracks.object_from_template(track_data, view, view)
-                    );
+                    view.add_drawable(tracks.object_from_template(track_data, view, view));
                 }
             });
 

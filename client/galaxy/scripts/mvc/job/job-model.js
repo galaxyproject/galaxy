@@ -53,9 +53,7 @@ var Job = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     silent: true
                 });
 
-                this.outputCollection =
-                    attributes.outputCollection ||
-                    new HISTORY_CONTENTS.HistoryContents([]);
+                this.outputCollection = attributes.outputCollection || new HISTORY_CONTENTS.HistoryContents([]);
                 this._setUpListeners();
             },
 
@@ -67,12 +65,7 @@ var Job = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 this.on("change:state", function(currModel, newState) {
                     this.log(`${this} has changed state:`, currModel, newState);
                     if (this.inReadyState()) {
-                        this.trigger(
-                            "state:ready",
-                            currModel,
-                            newState,
-                            this.previous("state")
-                        );
+                        this.trigger("state:ready", currModel, newState, this.previous("state"));
                     }
                 });
             },
@@ -106,13 +99,7 @@ var Job = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             // ........................................................................ misc
             /** String representation */
             toString: function() {
-                return [
-                    "Job(",
-                    this.get("id"),
-                    ":",
-                    this.get("tool_id"),
-                    ")"
-                ].join("");
+                return ["Job(", this.get("id"), ":", this.get("tool_id"), ")"].join("");
             }
         }
     )
@@ -162,9 +149,7 @@ var JobCollection = Backbone.Collection.extend(BASE_MVC.LoggableMixin).extend(
         queueDetailFetching: function() {
             var collection = this;
 
-            var queue = new AJAX_QUEUE.AjaxQueue(
-                this.map(job => () => job.fetch({ silent: true }))
-            );
+            var queue = new AJAX_QUEUE.AjaxQueue(this.map(job => () => job.fetch({ silent: true })));
 
             queue.done(() => {
                 collection.trigger("details-loaded");

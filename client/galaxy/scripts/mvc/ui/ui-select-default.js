@@ -28,36 +28,21 @@ var View = Backbone.View.extend({
                 pagesize: 20
             }).set(options);
         this.on("change", () => {
-            self.model.get("onchange") &&
-                self.model.get("onchange")(self.value());
+            self.model.get("onchange") && self.model.get("onchange")(self.value());
         });
         this.listenTo(this.model, "change:data", this._changeData, this);
-        this.listenTo(
-            this.model,
-            "change:disabled",
-            this._changeDisabled,
-            this
-        );
+        this.listenTo(this.model, "change:disabled", this._changeDisabled, this);
         this.listenTo(this.model, "change:wait", this._changeWait, this);
         this.listenTo(this.model, "change:visible", this._changeVisible, this);
         this.listenTo(this.model, "change:value", this._changeValue, this);
-        this.listenTo(
-            this.model,
-            "change:multiple change:searchable change:cls change:id",
-            this.render,
-            this
-        );
+        this.listenTo(this.model, "change:multiple change:searchable change:cls change:id", this.render, this);
         this.render();
     },
 
     render: function() {
         var self = this;
-        this.model.get("searchable")
-            ? this._renderSearchable()
-            : this._renderClassic();
-        this.$el
-            .addClass(this.model.get("cls"))
-            .attr("id", this.model.get("id"));
+        this.model.get("searchable") ? this._renderSearchable() : this._renderClassic();
+        this.$el.addClass(this.model.get("cls")).attr("id", this.model.get("id"));
         this.$select
             .empty()
             .addClass("select")
@@ -77,21 +62,13 @@ var View = Backbone.View.extend({
     _renderClassic: function() {
         var self = this;
         this.$el
-            .addClass(
-                this.model.get("multiple") ? "ui-select-multiple" : "ui-select"
-            )
+            .addClass(this.model.get("multiple") ? "ui-select-multiple" : "ui-select")
             .append((this.$select = $("<select/>")))
             .append((this.$dropdown = $("<div/>")))
-            .append(
-                (this.$resize = $("<div/>").append(
-                    (this.$resize_icon = $("<i/>"))
-                ))
-            );
+            .append((this.$resize = $("<div/>").append((this.$resize_icon = $("<i/>")))));
         if (this.model.get("multiple")) {
             this.$dropdown.hide();
-            this.$resize_icon
-                .addClass("fa fa-angle-double-right fa-rotate-45")
-                .show();
+            this.$resize_icon.addClass("fa fa-angle-double-right fa-rotate-45").show();
             this.$resize
                 .removeClass()
                 .addClass("icon-resize")
@@ -104,12 +81,7 @@ var View = Backbone.View.extend({
                     $("#dd-helper")
                         .show()
                         .on("mousemove", event => {
-                            self.$select.height(
-                                Math.max(
-                                    currentHeight + (event.pageY - currentY),
-                                    self.minHeight
-                                )
-                            );
+                            self.$select.height(Math.max(currentHeight + (event.pageY - currentY), self.minHeight));
                         })
                         .on("mouseup mouseleave", () => {
                             $("#dd-helper")
@@ -127,9 +99,7 @@ var View = Backbone.View.extend({
     /** Renders the default select2 field */
     _renderSearchable: function() {
         var self = this;
-        this.$el
-            .append((this.$select = $("<div/>")))
-            .append((this.$dropdown = $("<div/>")));
+        this.$el.append((this.$select = $("<div/>"))).append((this.$dropdown = $("<div/>")));
         this.$dropdown.hide();
         if (!this.model.get("multiple")) {
             this.$dropdown.show().on("click", () => {
@@ -137,11 +107,7 @@ var View = Backbone.View.extend({
             });
         }
         this.all_button = null;
-        if (
-            this.model.get("multiple") &&
-            !this.model.get("individual") &&
-            !this.model.get("readonly")
-        ) {
+        if (this.model.get("multiple") && !this.model.get("individual") && !this.model.get("readonly")) {
             this.all_button = new Buttons.ButtonCheck({
                 onclick: function() {
                     var new_value = [];
@@ -216,23 +182,16 @@ var View = Backbone.View.extend({
                         return found || self._match(q.term, e.text);
                     });
                     q.callback({
-                        results: results.slice(
-                            (q.page - 1) * pagesize,
-                            q.page * pagesize
-                        ),
+                        results: results.slice((q.page - 1) * pagesize, q.page * pagesize),
                         more: results.length >= q.page * pagesize
                     });
                 },
                 formatResult: function(result) {
-                    return `${_.escape(
-                        result.text
-                    )}<div class="ui-tags">${_.reduce(
+                    return `${_.escape(result.text)}<div class="ui-tags">${_.reduce(
                         result.tags,
                         (memo, tag) => {
                             if (self.matched_tags[tag]) {
-                                return `${memo}&nbsp;<div class="label label-info">${_.escape(
-                                    tag
-                                )}</div>`;
+                                return `${memo}&nbsp;<div class="label label-info">${_.escape(tag)}</div>`;
                             }
                             return memo;
                         },
@@ -251,19 +210,14 @@ var View = Backbone.View.extend({
                 );
             });
         }
-        this.model.set(
-            "disabled",
-            this.model.get("readonly") || this.length() == 0
-        );
+        this.model.set("disabled", this.model.get("readonly") || this.length() == 0);
         this._changeValue();
     },
 
     /** Handles field enabling/disabling, usually used when no options are available */
     _changeDisabled: function() {
         if (this.model.get("searchable")) {
-            this.$select.select2(
-                this.model.get("disabled") ? "disable" : "enable"
-            );
+            this.$select.select2(this.model.get("disabled") ? "disable" : "enable");
         } else {
             this.$select.prop("disabled", this.model.get("disabled"));
         }
@@ -274,9 +228,7 @@ var View = Backbone.View.extend({
         this.$dropdown
             .removeClass()
             .addClass("icon-dropdown fa")
-            .addClass(
-                this.model.get("wait") ? "fa-spinner fa-spin" : "fa-caret-down"
-            );
+            .addClass(this.model.get("wait") ? "fa-spinner fa-spin" : "fa-caret-down");
     },
 
     /** Handles field visibility */
@@ -291,10 +243,7 @@ var View = Backbone.View.extend({
         if (this.model.get("multiple")) {
             if (this.all_button) {
                 var value = this._getValue();
-                this.all_button.value(
-                    $.isArray(value) ? value.length : 0,
-                    this.length()
-                );
+                this.all_button.value($.isArray(value) ? value.length : 0, this.length());
             }
         } else if (this._getValue() === null && !this.model.get("optional")) {
             this._setValue(this.first());
@@ -362,9 +311,7 @@ var View = Backbone.View.extend({
     /** Update all available options at once */
     add: function(options, sorter) {
         _.each(this.model.get("data"), v => {
-            v.keep &&
-                !_.findWhere(options, { value: v.value }) &&
-                options.push(v);
+            v.keep && !_.findWhere(options, { value: v.value }) && options.push(v);
         });
         sorter && options && options.sort(sorter);
         this.model.set("data", options);
@@ -382,9 +329,7 @@ var View = Backbone.View.extend({
 
     /** Number of available options */
     length: function() {
-        return $.isArray(this.model.get("data"))
-            ? this.model.get("data").length
-            : 0;
+        return $.isArray(this.model.get("data")) ? this.model.get("data").length : 0;
     },
 
     /** Set value to dom */

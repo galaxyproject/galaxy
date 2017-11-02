@@ -117,9 +117,7 @@ var Collection = Backbone.Collection.extend({
                                 icon: webhook.config.icon,
                                 url: webhook.config.url,
                                 tooltip: webhook.config.tooltip,
-                                onclick:
-                                    webhook.config.function &&
-                                    new Function(webhook.config.function)
+                                onclick: webhook.config.function && new Function(webhook.config.function)
                             };
 
                             // Galaxy.page is undefined for data libraries, workflows pages
@@ -258,9 +256,7 @@ var Collection = Backbone.Collection.extend({
                 tooltip: _l("Account and saved data"),
                 menu: [
                     {
-                        title: `${_l("Logged in as")} ${Galaxy.user.get(
-                            "email"
-                        )}`
+                        title: `${_l("Logged in as")} ${Galaxy.user.get("email")}`
                     },
                     {
                         title: _l("Preferences"),
@@ -337,17 +333,13 @@ var Tab = Backbone.View.extend({
             .removeClass()
             .addClass("dropdown-toggle")
             .addClass(this.model.get("cls"))
-            .addClass(
-                this.model.get("icon") &&
-                    `dropdown-icon fa ${this.model.get("icon")}`
-            )
+            .addClass(this.model.get("icon") && `dropdown-icon fa ${this.model.get("icon")}`)
             .addClass(this.model.get("toggle") && "toggle")
             .attr("target", this.model.get("target"))
             .attr("href", this.model.get("url"))
             .attr("title", this.model.get("tooltip"))
             .tooltip("destroy");
-        this.model.get("tooltip") &&
-            this.$toggle.tooltip({ placement: "bottom" });
+        this.model.get("tooltip") && this.$toggle.tooltip({ placement: "bottom" });
         this.$dropdown
             .removeClass()
             .addClass("dropdown")
@@ -370,8 +362,7 @@ var Tab = Backbone.View.extend({
         if (this.model.get("menu")) {
             _.each(this.model.get("menu"), menuItem => {
                 self.$menu.append(self._buildMenuItem(menuItem));
-                menuItem.divider &&
-                    self.$menu.append($("<li/>").addClass("divider"));
+                menuItem.divider && self.$menu.append($("<li/>").addClass("divider"));
             });
             self.$menu.addClass("dropdown-menu");
             self.$toggle.append($("<b/>").addClass("caret"));
@@ -417,9 +408,7 @@ var Tab = Backbone.View.extend({
         });
         if (!model.get("disabled")) {
             if (!model.get("menu")) {
-                model.get("onclick")
-                    ? model.get("onclick")()
-                    : Galaxy.frame.add(model.attributes);
+                model.get("onclick") ? model.get("onclick")() : Galaxy.frame.add(model.attributes);
             } else {
                 model.set("show_menu", true);
             }
@@ -438,10 +427,7 @@ var Tab = Backbone.View.extend({
                 .popover({
                     html: true,
                     placement: "bottom",
-                    content: `Please ${buildLink(
-                        "login",
-                        "user/login?use_panels=True"
-                    )} or ${buildLink(
+                    content: `Please ${buildLink("login", "user/login?use_panels=True")} or ${buildLink(
                         "register",
                         "user/create?use_panels=True"
                     )} to use this feature.`
@@ -455,11 +441,7 @@ var Tab = Backbone.View.extend({
 
     /** Url formatting */
     _formatUrl: function(url) {
-        return typeof url == "string" &&
-            url.indexOf("//") === -1 &&
-            url.charAt(0) != "/"
-            ? Galaxy.root + url
-            : url;
+        return typeof url == "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? Galaxy.root + url : url;
     },
 
     /** body tempate */

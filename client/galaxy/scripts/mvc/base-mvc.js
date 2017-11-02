@@ -45,9 +45,7 @@ var SessionStorageModel = Backbone.Model.extend({
         // check for sessionStorage and error if no id is provided
         this._checkEnabledSessionStorage();
         if (!initialAttrs.id) {
-            throw new Error(
-                "SessionStorageModel requires an id in the initial attributes"
-            );
+            throw new Error("SessionStorageModel requires an id in the initial attributes");
         }
         this.id = initialAttrs.id;
 
@@ -118,12 +116,7 @@ var SessionStorageModel = Backbone.Model.extend({
             // http://stackoverflow.com/questions/14555347
             // TODO: this could probably use a more general soln - like detecting priv. mode + safari => non-ajaxing Model
         } catch (err) {
-            if (
-                !(
-                    err instanceof DOMException &&
-                    navigator.userAgent.indexOf("Safari") > -1
-                )
-            ) {
+            if (!(err instanceof DOMException && navigator.userAgent.indexOf("Safari") > -1)) {
                 throw err;
             }
         }
@@ -158,11 +151,7 @@ var SessionStorageModel = Backbone.Model.extend({
     }
 });
 (() => {
-    SessionStorageModel.prototype = _.omit(
-        SessionStorageModel.prototype,
-        "url",
-        "urlRoot"
-    );
+    SessionStorageModel.prototype = _.omit(SessionStorageModel.prototype, "url", "urlRoot");
 })();
 
 //==============================================================================
@@ -245,9 +234,7 @@ var SearchableModelMixin = {
      */
     search: function(searchFor) {
         var model = this;
-        return _.filter(this.searchAttributes, key =>
-            model.searchAttribute(key, searchFor)
-        );
+        return _.filter(this.searchAttributes, key => model.searchAttribute(key, searchFor));
     },
 
     /** alias of search, but returns a boolean; accepts attribute specifiers where
@@ -320,9 +307,7 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */ {
         };
         _.extend(this.HUAVOptions, options || {});
         /** has this been shown already (and onshowFirstTime called)? */
-        this.HUAVOptions.hasBeenShown = this.HUAVOptions.$elementShown.is(
-            ":visible"
-        );
+        this.HUAVOptions.hasBeenShown = this.HUAVOptions.$elementShown.is(":visible");
         this.hidden = this.isHidden();
 
         if ($activator) {
@@ -367,10 +352,7 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */ {
             }
             this.hidden = true;
         }
-        return this.HUAVOptions.showFn.apply(
-            this.HUAVOptions.$elementShown,
-            arguments
-        );
+        return this.HUAVOptions.showFn.apply(this.HUAVOptions.$elementShown, arguments);
     }
 };
 

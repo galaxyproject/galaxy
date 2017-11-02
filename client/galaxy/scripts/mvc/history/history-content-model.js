@@ -54,9 +54,9 @@ var HistoryContentMixin = {
 
     /** full url spec. for this content */
     url: function() {
-        var url = `${this.urlRoot + this.get("history_id")}/contents/${this.get(
-            "history_content_type"
-        )}s/${this.get("id")}`;
+        var url = `${this.urlRoot + this.get("history_id")}/contents/${this.get("history_content_type")}s/${this.get(
+            "id"
+        )}`;
         return url;
     },
 
@@ -77,9 +77,7 @@ var HistoryContentMixin = {
 
     // ........................................................................ misc
     toString: function() {
-        return [this.get("type_id"), this.get("hid"), this.get("name")].join(
-            ":"
-        );
+        return [this.get("type_id"), this.get("hid"), this.get("name")].join(":");
     }
 };
 

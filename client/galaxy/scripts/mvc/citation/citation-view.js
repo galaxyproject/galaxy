@@ -17,8 +17,7 @@ var CitationView = Backbone.View.extend({
         // Code inspired by...
         // https://github.com/vkaravir/bib-publication-list/blob/master/src/bib-publication-list.js
         var authorsAndYear = `${this._asSentence(
-            (fields.author ? fields.author : "") +
-                (fields.year ? ` (${fields.year})` : "")
+            (fields.author ? fields.author : "") + (fields.year ? ` (${fields.year})` : "")
         )} `;
         var title = fields.title || "";
         var pages = fields.pages ? `pp. ${fields.pages}` : "";
@@ -52,18 +51,12 @@ var CitationView = Backbone.View.extend({
                 this._asSentence(fields.institution) +
                 this._asSentence(fields.number) +
                 this._asSentence(fields.type);
-        } else if (
-            entryType == "book" ||
-            entryType == "inbook" ||
-            entryType == "incollection"
-        ) {
+        } else if (entryType == "book" || entryType == "inbook" || entryType == "incollection") {
             ref = `${authorsAndYear} ${this._formatBookInfo(fields)}`;
         } else {
-            ref = `${authorsAndYear} ${this._asSentence(
-                title
-            )}${this._asSentence(fields.howpublished)}${this._asSentence(
-                fields.note
-            )}`;
+            ref = `${authorsAndYear} ${this._asSentence(title)}${this._asSentence(
+                fields.howpublished
+            )}${this._asSentence(fields.note)}`;
         }
         var doiUrl = "";
         if (fields.doi) {
@@ -127,9 +120,7 @@ var CitationListView = Backbone.View.extend({
         var citationView = new CitationView({ model: citation });
         this.$(".citations-formatted").append(citationView.render().el);
         var rawTextarea = this.$(".citations-bibtex-text");
-        rawTextarea.val(
-            `${rawTextarea.val()}\n\r${citation.attributes.content}`
-        );
+        rawTextarea.val(`${rawTextarea.val()}\n\r${citation.attributes.content}`);
     },
 
     render: function() {

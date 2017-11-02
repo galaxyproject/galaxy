@@ -60,9 +60,7 @@ var Message = Backbone.View.extend({
         var status = this.model.get("status");
         if (this.model.get("large")) {
             this.$el.addClass(
-                `${(status == "success" && "done") ||
-                    (status == "danger" && "error") ||
-                    status}messagelarge`
+                `${(status == "success" && "done") || (status == "danger" && "error") || status}messagelarge`
             );
         } else {
             this.$el.addClass("alert").addClass(`alert-${status}`);
@@ -118,8 +116,7 @@ var Input = Backbone.View.extend({
         input: "_onchange"
     },
     value: function(new_val) {
-        new_val !== undefined &&
-            this.model.set("value", typeof new_val === "string" ? new_val : "");
+        new_val !== undefined && this.model.set("value", typeof new_val === "string" ? new_val : "");
         return this.model.get("value");
     },
     render: function() {
@@ -149,17 +146,14 @@ var Input = Backbone.View.extend({
             this.$el.val(this.model.get("value"));
         }
         _.each(["readonly", "disabled"], attr_name => {
-            self.model.get(attr_name)
-                ? self.$el.attr(attr_name, true)
-                : self.$el.removeAttr(attr_name);
+            self.model.get(attr_name) ? self.$el.attr(attr_name, true) : self.$el.removeAttr(attr_name);
         });
         this.$el[this.model.get("visible") ? "show" : "hide"]();
         return this;
     },
     _onchange: function() {
         this.value(this.$el.val());
-        this.model.get("onchange") &&
-            this.model.get("onchange")(this.model.get("value"));
+        this.model.get("onchange") && this.model.get("onchange")(this.model.get("value"));
     }
 });
 
@@ -182,9 +176,7 @@ var Hidden = Backbone.View.extend({
     render: function() {
         this.$el.attr("id", this.model.id);
         this.$hidden.val(this.model.get("value"));
-        this.model.get("info")
-            ? this.$info.show().text(this.model.get("info"))
-            : this.$info.hide();
+        this.model.get("info") ? this.$info.show().text(this.model.get("info")) : this.$info.hide();
         return this;
     }
 });
@@ -207,9 +199,7 @@ var Upload = Backbone.View.extend({
                         .addClass("ui-textarea")
                         .attr("disabled", true))
                 )
-                .append(
-                    (this.$wait = $("<i/>").addClass("fa fa-spinner fa-spin"))
-                )
+                .append((this.$wait = $("<i/>").addClass("fa fa-spinner fa-spin")))
         );
         this.listenTo(this.model, "change", this.render, this);
         this.$file.on("change", e => {
@@ -223,12 +213,8 @@ var Upload = Backbone.View.extend({
     },
     render: function() {
         this.$el.attr("id", this.model.id);
-        this.model.get("info")
-            ? this.$info.show().text(this.model.get("info"))
-            : this.$info.hide();
-        this.model.get("value")
-            ? this.$text.text(this.model.get("value")).show()
-            : this.$text.hide();
+        this.model.get("info") ? this.$info.show().text(this.model.get("info")) : this.$info.hide();
+        this.model.get("value") ? this.$text.text(this.model.get("value")).show() : this.$text.hide();
         this.model.get("wait") ? this.$wait.show() : this.$wait.hide();
         return this;
     },

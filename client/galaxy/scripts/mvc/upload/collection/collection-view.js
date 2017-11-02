@@ -120,10 +120,7 @@ export default Backbone.View.extend({
                 self._eventAnnounce(index, file);
             },
             initialize: function(index) {
-                return self.app.toData(
-                    [self.collection.get(index)],
-                    self.history_id
-                );
+                return self.app.toData([self.collection.get(index)], self.history_id);
             },
             progress: function(index, percentage) {
                 self._eventProgress(index, percentage);
@@ -234,10 +231,7 @@ export default Backbone.View.extend({
     _eventProgress: function(index, percentage) {
         var it = this.collection.get(index);
         it.set("percentage", percentage);
-        this.ui_button.model.set(
-            "percentage",
-            this._uploadPercentage(percentage, it.get("file_size"))
-        );
+        this.ui_button.model.set("percentage", this._uploadPercentage(percentage, it.get("file_size")));
     },
 
     /** Success */
@@ -246,10 +240,7 @@ export default Backbone.View.extend({
         var hids = _.pluck(message["outputs"], "hid");
         var it = this.collection.get(index);
         it.set({ percentage: 100, status: "success", hids: hids });
-        this.ui_button.model.set(
-            "percentage",
-            this._uploadPercentage(100, it.get("file_size"))
-        );
+        this.ui_button.model.set("percentage", this._uploadPercentage(100, it.get("file_size")));
         this.upload_completed += it.get("file_size") * 100;
         this.counter.announce--;
         this.counter.success++;
@@ -285,19 +276,11 @@ export default Backbone.View.extend({
         _.forEach(this.collection.models, upload => {
             allHids.push.apply(allHids, upload.get("hids"));
         });
-        var models = _.map(allHids, hid =>
-            Galaxy.currHistoryPanel.collection.getByHid(hid)
-        );
-        var selection = new Galaxy.currHistoryPanel.collection.constructor(
-            models
-        );
+        var models = _.map(allHids, hid => Galaxy.currHistoryPanel.collection.getByHid(hid));
+        var selection = new Galaxy.currHistoryPanel.collection.constructor(models);
         // I'm building the selection wrong because I need to set this historyId directly.
         selection.historyId = Galaxy.currHistoryPanel.collection.historyId;
-        Galaxy.currHistoryPanel.buildCollection(
-            this.collectionType,
-            selection,
-            true
-        );
+        Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection, true);
         this.counter.running = 0;
         this._updateScreen();
         this._eventReset();
@@ -382,9 +365,7 @@ export default Backbone.View.extend({
     _eventStop: function() {
         if (this.counter.running > 0) {
             this.ui_button.model.set("status", "info");
-            $(".upload-top-info").html(
-                "Queue will pause after completing the current file..."
-            );
+            $(".upload-top-info").html("Queue will pause after completing the current file...");
             this.uploadbox.stop();
         }
     },
@@ -408,8 +389,7 @@ export default Backbone.View.extend({
         this.collection.each(model => {
             if (
                 model.get("status") == "init" &&
-                (model.get("extension") == self.options.default_extension ||
-                    !defaults_only)
+                (model.get("extension") == self.options.default_extension || !defaults_only)
             ) {
                 model.set("extension", extension);
             }
@@ -428,8 +408,7 @@ export default Backbone.View.extend({
         this.collection.each(model => {
             if (
                 model.get("status") == "init" &&
-                (model.get("genome") == self.options.default_genome ||
-                    !defaults_only)
+                (model.get("genome") == self.options.default_genome || !defaults_only)
             ) {
                 model.set("genome", genome);
             }
@@ -451,35 +430,25 @@ export default Backbone.View.extend({
                 message = `You added ${this.counter
                     .announce} file(s) to the queue. Add more files or click 'Start' to proceed.`;
             } else {
-                message = `Please wait...${this.counter.announce} out of ${this
-                    .counter.running} remaining.`;
+                message = `Please wait...${this.counter.announce} out of ${this.counter.running} remaining.`;
             }
         }
         this.$(".upload-top-info").html(message);
         var enable_reset =
-            this.counter.running == 0 &&
-            this.counter.announce + this.counter.success + this.counter.error >
-                0;
-        var enable_start =
-            this.counter.running == 0 && this.counter.announce > 0;
+            this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0;
+        var enable_start = this.counter.running == 0 && this.counter.announce > 0;
         var enable_build =
             this.counter.running == 0 &&
             this.counter.announce == 0 &&
             this.counter.success > 0 &&
             this.counter.error == 0;
         var enable_sources = this.counter.running == 0;
-        var show_table =
-            this.counter.announce + this.counter.success + this.counter.error >
-            0;
+        var show_table = this.counter.announce + this.counter.success + this.counter.error > 0;
         this.btnReset[enable_reset ? "enable" : "disable"]();
         this.btnStart[enable_start ? "enable" : "disable"]();
-        this.btnStart.$el[enable_start ? "addClass" : "removeClass"](
-            "btn-primary"
-        );
+        this.btnStart.$el[enable_start ? "addClass" : "removeClass"]("btn-primary");
         this.btnBuild[enable_build ? "enable" : "disable"]();
-        this.btnBuild.$el[enable_build ? "addClass" : "removeClass"](
-            "btn-primary"
-        );
+        this.btnBuild.$el[enable_build ? "addClass" : "removeClass"]("btn-primary");
         this.btnStop[this.counter.running > 0 ? "enable" : "disable"]();
         this.btnLocal[enable_sources ? "enable" : "disable"]();
         this.btnFtp[enable_sources ? "enable" : "disable"]();

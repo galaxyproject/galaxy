@@ -89,11 +89,7 @@ export default Backbone.View.extend({
         this.$body.append($it);
         if (this.collection) {
             var model_index = this.ftp_index[ftp_file.path];
-            $icon.addClass(
-                model_index === undefined
-                    ? options.class_add
-                    : options.class_remove
-            );
+            $icon.addClass(model_index === undefined ? options.class_add : options.class_remove);
             $it.on("click", () => {
                 self._switch($icon, ftp_file);
                 self._refresh();
@@ -126,10 +122,7 @@ export default Backbone.View.extend({
         for (var index in ftp_files) {
             var ftp_file = ftp_files[index];
             var model_index = this.ftp_index[ftp_file.path];
-            if (
-                (model_index === undefined && add) ||
-                (model_index !== undefined && !add)
-            ) {
+            if ((model_index === undefined && add) || (model_index !== undefined && !add)) {
                 this._switch(this.rows[index], ftp_file);
             }
         }
@@ -167,9 +160,7 @@ export default Backbone.View.extend({
             this.$select.addClass(this.model.get("class_add"));
         } else {
             this.$select.addClass(
-                counts == this.rows.length
-                    ? this.model.get("class_remove")
-                    : this.model.get("class_partial")
+                counts == this.rows.length ? this.model.get("class_remove") : this.model.get("class_partial")
             );
         }
     },

@@ -46,45 +46,28 @@ var ANY_COLLECTION_TYPE_DESCRIPTION = {
 
 $.extend(CollectionTypeDescription.prototype, {
     append: function(otherCollectionTypeDescription) {
-        if (
-            otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION
-        ) {
+        if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
             return this;
         }
-        if (
-            otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION
-        ) {
+        if (otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION) {
             return otherCollectionType;
         }
-        return new CollectionTypeDescription(
-            `${this
-                .collectionType}:${otherCollectionTypeDescription.collectionType}`
-        );
+        return new CollectionTypeDescription(`${this.collectionType}:${otherCollectionTypeDescription.collectionType}`);
     },
     canMatch: function(otherCollectionTypeDescription) {
-        if (
-            otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION
-        ) {
+        if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
             return false;
         }
-        if (
-            otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION
-        ) {
+        if (otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION) {
             return true;
         }
-        return (
-            otherCollectionTypeDescription.collectionType == this.collectionType
-        );
+        return otherCollectionTypeDescription.collectionType == this.collectionType;
     },
     canMapOver: function(otherCollectionTypeDescription) {
-        if (
-            otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION
-        ) {
+        if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
             return false;
         }
-        if (
-            otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION
-        ) {
+        if (otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION) {
             return false;
         }
         if (this.rank <= otherCollectionTypeDescription.rank) {
@@ -103,9 +86,7 @@ $.extend(CollectionTypeDescription.prototype, {
         return new CollectionTypeDescription(effectiveCollectionType);
     },
     equal: function(otherCollectionTypeDescription) {
-        return (
-            otherCollectionTypeDescription.collectionType == this.collectionType
-        );
+        return otherCollectionTypeDescription.collectionType == this.collectionType;
     },
     toString: function() {
         return `CollectionType[${this.collectionType}]`;
@@ -185,9 +166,7 @@ var Terminal = Backbone.Model.extend({
         }
     },
     isMappedOver: function() {
-        return (
-            this.terminalMapping && this.terminalMapping.mapOver.isCollection
-        );
+        return this.terminalMapping && this.terminalMapping.mapOver.isCollection;
     },
     resetMapping: function() {
         this.terminalMapping.disableMapOver();
@@ -205,10 +184,7 @@ var OutputTerminal = Terminal.extend({
     resetMappingIfNeeded: function() {
         // If inputs were only mapped over to preserve
         // an output just disconnected reset these...
-        if (
-            !this.node.hasConnectedOutputTerminals() &&
-            !this.node.hasConnectedMappedInputTerminals()
-        ) {
+        if (!this.node.hasConnectedOutputTerminals() && !this.node.hasConnectedMappedInputTerminals()) {
             _.each(this.node.mappedInputTerminals(), mappedInput => {
                 mappedInput.resetMappingIfNeeded();
             });
@@ -255,9 +231,7 @@ var BaseInputTerminal = Terminal.extend({
         // No output terminals are counting on this being mapped
         // over if connected inputs are still mapped over or if none
         // of the outputs are connected...
-        var reset =
-            this.node.hasConnectedMappedInputTerminals() ||
-            !this.node.hasConnectedOutputTerminals();
+        var reset = this.node.hasConnectedMappedInputTerminals() || !this.node.hasConnectedOutputTerminals();
         if (reset) {
             this.resetMapping();
         }
@@ -332,9 +306,7 @@ var BaseInputTerminal = Terminal.extend({
             });
         } else {
             // All outputs should have same mapOver status - least specific.
-            constraints.push(
-                _.first(_.values(this.node.output_terminals)).mapOver()
-            );
+            constraints.push(_.first(_.values(this.node.output_terminals)).mapOver());
         }
         return constraints;
     },
@@ -352,8 +324,7 @@ var BaseInputTerminal = Terminal.extend({
                     var pja = other.node.post_job_actions[pja_i];
                     if (
                         pja.action_type == "ChangeDatatypeAction" &&
-                        (pja.output_name == "" ||
-                            pja.output_name == other.name) &&
+                        (pja.output_name == "" || pja.output_name == other.name) &&
                         pja.action_arguments
                     ) {
                         cat_outputs.push(pja.action_arguments["newtype"]);
@@ -367,10 +338,7 @@ var BaseInputTerminal = Terminal.extend({
                     other_datatype == "input" ||
                     other_datatype == "_sniff_" ||
                     other_datatype == "input_collection" ||
-                    window.workflow_globals.app.isSubType(
-                        cat_outputs[other_datatype_i],
-                        thisDatatype
-                    )
+                    window.workflow_globals.app.isSubType(cat_outputs[other_datatype_i], thisDatatype)
                 ) {
                     return true;
                 }
@@ -426,22 +394,12 @@ var InputTerminal = BaseInputTerminal.extend({
                     return false;
                 }
             }
-            if (
-                thisMapOver.isCollection &&
-                thisMapOver.canMatch(otherCollectionType)
-            ) {
+            if (thisMapOver.isCollection && thisMapOver.canMatch(otherCollectionType)) {
                 return this._producesAcceptableDatatype(other);
             } else {
                 //  Need to check if this would break constraints...
                 var mappingConstraints = this._mappingConstraints();
-                if (
-                    mappingConstraints.every(
-                        _.bind(
-                            otherCollectionType.canMatch,
-                            otherCollectionType
-                        )
-                    )
-                ) {
+                if (mappingConstraints.every(_.bind(otherCollectionType.canMatch, otherCollectionType))) {
                     return this._producesAcceptableDatatype(other);
                 } else {
                     return false;
@@ -464,9 +422,7 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
         var collectionTypes = [];
         if (input.collection_types) {
             _.each(input.collection_types, collectionType => {
-                collectionTypes.push(
-                    new CollectionTypeDescription(collectionType)
-                );
+                collectionTypes.push(new CollectionTypeDescription(collectionType));
             });
         } else {
             collectionTypes.push(ANY_COLLECTION_TYPE_DESCRIPTION);
@@ -486,17 +442,13 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
     _effectiveMapOver: function(other) {
         var collectionTypes = this.collectionTypes;
         var otherCollectionType = this._otherCollectionType(other);
-        var canMatch = _.some(collectionTypes, collectionType =>
-            collectionType.canMatch(otherCollectionType)
-        );
+        var canMatch = _.some(collectionTypes, collectionType => collectionType.canMatch(otherCollectionType));
 
         if (!canMatch) {
             for (var collectionTypeIndex in collectionTypes) {
                 var collectionType = collectionTypes[collectionTypeIndex];
                 if (otherCollectionType.canMapOver(collectionType)) {
-                    var effectiveMapOver = otherCollectionType.effectiveMapOver(
-                        collectionType
-                    );
+                    var effectiveMapOver = otherCollectionType.effectiveMapOver(collectionType);
                     if (effectiveMapOver != NULL_COLLECTION_TYPE_DESCRIPTION) {
                         return effectiveMapOver;
                     }
@@ -514,10 +466,8 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
         if (otherCollectionType.isCollection) {
             var effectiveCollectionTypes = this._effectiveCollectionTypes();
             var thisMapOver = this.mapOver();
-            var canMatch = _.some(
-                effectiveCollectionTypes,
-                effectiveCollectionType =>
-                    effectiveCollectionType.canMatch(otherCollectionType)
+            var canMatch = _.some(effectiveCollectionTypes, effectiveCollectionType =>
+                effectiveCollectionType.canMatch(otherCollectionType)
             );
             if (canMatch) {
                 // Only way a direct match...
@@ -526,11 +476,7 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
             } else if (thisMapOver.isCollection) {
                 // In this case, mapOver already set and we didn't match skipping...
                 return false;
-            } else if (
-                _.some(this.collectionTypes, collectionType =>
-                    otherCollectionType.canMapOver(collectionType)
-                )
-            ) {
+            } else if (_.some(this.collectionTypes, collectionType => otherCollectionType.canMapOver(collectionType))) {
                 var effectiveMapOver = this._effectiveMapOver(other);
                 if (!effectiveMapOver.isCollection) {
                     return false;
@@ -551,15 +497,11 @@ var OutputCollectionTerminal = Terminal.extend({
         Terminal.prototype.initialize.call(this, attr);
         this.datatypes = attr.datatypes;
         if (attr.collection_type) {
-            this.collectionType = new CollectionTypeDescription(
-                attr.collection_type
-            );
+            this.collectionType = new CollectionTypeDescription(attr.collection_type);
         } else {
             var collectionTypeSource = attr.collection_type_source;
             if (!collectionTypeSource) {
-                console.log(
-                    "Warning: No collection type or collection type source defined."
-                );
+                console.log("Warning: No collection type or collection type source defined.");
             }
             this.collectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
         }
@@ -568,23 +510,16 @@ var OutputCollectionTerminal = Terminal.extend({
     update: function(output) {
         var newCollectionType;
         if (output.collection_type) {
-            newCollectionType = new CollectionTypeDescription(
-                output.collection_type
-            );
+            newCollectionType = new CollectionTypeDescription(output.collection_type);
         } else {
             var collectionTypeSource = output.collection_type_source;
             if (!collectionTypeSource) {
-                console.log(
-                    "Warning: No collection type or collection type source defined."
-                );
+                console.log("Warning: No collection type or collection type source defined.");
             }
             newCollectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
         }
 
-        if (
-            newCollectionType.collectionType !=
-            this.collectionType.collectionType
-        ) {
+        if (newCollectionType.collectionType != this.collectionType.collectionType) {
             _.each(this.connectors, connector => {
                 // TODO: consider checking if connection valid before removing...
                 connector.destroy();

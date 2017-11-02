@@ -32,10 +32,7 @@ function MetricsLogger(options) {
     var self = this;
 
     ///** get the current user's id from bootstrapped data or options */
-    self.userId =
-        window.bootstrapped && window.bootstrapped.user
-            ? window.bootstrapped.user.id
-            : null;
+    self.userId = window.bootstrapped && window.bootstrapped.user ? window.bootstrapped.user.id : null;
     self.userId = self.userId || options.userId || null;
 
     /** the (optional) console to emit logs to */
@@ -101,9 +98,7 @@ MetricsLogger.prototype._init = function _init(options) {
     self.options = {};
     for (var k in MetricsLogger.defaultOptions) {
         if (MetricsLogger.defaultOptions.hasOwnProperty(k)) {
-            self.options[k] = options.hasOwnProperty(k)
-                ? options[k]
-                : MetricsLogger.defaultOptions[k];
+            self.options[k] = options.hasOwnProperty(k) ? options[k] : MetricsLogger.defaultOptions[k];
         }
     }
     self.options.logLevel = self._parseLevel(self.options.logLevel);
@@ -130,10 +125,7 @@ MetricsLogger.prototype._initCache = function _initCache() {
             key: this.options.cacheKeyPrefix + this.userId
         });
     } catch (err) {
-        this._emitToConsole("warn", "MetricsLogger", [
-            "Could not intitialize logging cache:",
-            err
-        ]);
+        this._emitToConsole("warn", "MetricsLogger", ["Could not intitialize logging cache:", err]);
         this.options.logLevel = MetricsLogger.NONE;
     }
 };
@@ -178,11 +170,7 @@ MetricsLogger.prototype.emit = function emit(level, namespace, logArguments) {
 
 //----------------------------------------------------------------------------- cache
 /** add a message to the cache and if messages.length is high enough post them to the server */
-MetricsLogger.prototype._addToCache = function _addToCache(
-    level,
-    namespace,
-    logArguments
-) {
+MetricsLogger.prototype._addToCache = function _addToCache(level, namespace, logArguments) {
     this._emitToConsole("debug", "MetricsLogger", [
         "_addToCache:",
         arguments,
@@ -193,9 +181,7 @@ MetricsLogger.prototype._addToCache = function _addToCache(
     var self = this;
     // try add to the cache and if we've got _postSize number of entries, attempt to post them to the server
     try {
-        var newLength = self.cache.add(
-            self._buildEntry(level, namespace, logArguments)
-        );
+        var newLength = self.cache.add(self._buildEntry(level, namespace, logArguments));
         if (newLength >= self._postSize) {
             self._postCache();
         }
@@ -212,11 +198,7 @@ MetricsLogger.prototype._addToCache = function _addToCache(
 };
 
 /** build a log cache entry object from the given level, namespace, and arguments (optionally adding timestamp */
-MetricsLogger.prototype._buildEntry = function _buildEntry(
-    level,
-    namespace,
-    logArguments
-) {
+MetricsLogger.prototype._buildEntry = function _buildEntry(level, namespace, logArguments) {
     this._emitToConsole("debug", "MetricsLogger", ["_buildEntry:", arguments]);
     var entry = {
         level: level,
@@ -236,11 +218,7 @@ MetricsLogger.prototype._buildEntry = function _buildEntry(
  */
 MetricsLogger.prototype._postCache = function _postCache(options) {
     options = options || {};
-    this._emitToConsole("info", "MetricsLogger", [
-        "_postCache",
-        options,
-        this._postSize
-    ]);
+    this._emitToConsole("info", "MetricsLogger", ["_postCache", options, this._postSize]);
 
     // short circuit if we're already sending
     if (!this.options.postUrl || this._sending) {
@@ -256,10 +234,7 @@ MetricsLogger.prototype._postCache = function _postCache(options) {
     var entriesLength = entries.length;
 
     var // use the optional getPingData to add any extra info we may want to send
-    postData =
-        typeof self.options.getPingData === "function"
-            ? self.options.getPingData()
-            : {};
+    postData = typeof self.options.getPingData === "function" ? self.options.getPingData() : {};
 
     //console.debug( postSize, entriesLength );
 
@@ -310,11 +285,7 @@ MetricsLogger.prototype._delayPost = function _delayPost() {
 
 //----------------------------------------------------------------------------- console
 /** output message to console based on level and consoleLogger type */
-MetricsLogger.prototype._emitToConsole = function _emitToConsole(
-    level,
-    namespace,
-    logArguments
-) {
+MetricsLogger.prototype._emitToConsole = function _emitToConsole(level, namespace, logArguments) {
     //console.debug( '_emitToConsole:', level, namespace, logArguments );
     var self = this;
 
@@ -331,30 +302,15 @@ MetricsLogger.prototype._emitToConsole = function _emitToConsole(
     args.unshift(namespace);
     //TODO: script location and/or source maps?
     //TODO: branch on navigator.userAgent == AIIEEE - it only has log
-    if (
-        level >= MetricsLogger.METRIC &&
-        typeof self.consoleLogger.info === "function"
-    ) {
+    if (level >= MetricsLogger.METRIC && typeof self.consoleLogger.info === "function") {
         return self.consoleLogger.info.apply(self.consoleLogger, args);
-    } else if (
-        level >= MetricsLogger.ERROR &&
-        typeof self.consoleLogger.error === "function"
-    ) {
+    } else if (level >= MetricsLogger.ERROR && typeof self.consoleLogger.error === "function") {
         return self.consoleLogger.error.apply(self.consoleLogger, args);
-    } else if (
-        level >= MetricsLogger.WARN &&
-        typeof self.consoleLogger.warn === "function"
-    ) {
+    } else if (level >= MetricsLogger.WARN && typeof self.consoleLogger.warn === "function") {
         self.consoleLogger.warn.apply(self.consoleLogger, args);
-    } else if (
-        level >= MetricsLogger.INFO &&
-        typeof self.consoleLogger.info === "function"
-    ) {
+    } else if (level >= MetricsLogger.INFO && typeof self.consoleLogger.info === "function") {
         self.consoleLogger.info.apply(self.consoleLogger, args);
-    } else if (
-        level >= MetricsLogger.DEBUG &&
-        typeof self.consoleLogger.debug === "function"
-    ) {
+    } else if (level >= MetricsLogger.DEBUG && typeof self.consoleLogger.debug === "function") {
         self.consoleLogger.debug.apply(self.consoleLogger, args);
     } else if (typeof self.consoleLogger.log === "function") {
         self.consoleLogger.log.apply(self.consoleLogger, args);
@@ -366,56 +322,32 @@ MetricsLogger.prototype._emitToConsole = function _emitToConsole(
 // generic functions when logging from non-namespaced object (e.g. templates)
 /** log to default namespace */
 MetricsLogger.prototype.log = function log() {
-    this.emit(
-        1,
-        this.options.defaultNamespace,
-        Array.prototype.slice.call(arguments, 0)
-    );
+    this.emit(1, this.options.defaultNamespace, Array.prototype.slice.call(arguments, 0));
 };
 
 /** debug to default namespace */
 MetricsLogger.prototype.debug = function debug() {
-    this.emit(
-        MetricsLogger.DEBUG,
-        this.options.defaultNamespace,
-        Array.prototype.slice.call(arguments, 0)
-    );
+    this.emit(MetricsLogger.DEBUG, this.options.defaultNamespace, Array.prototype.slice.call(arguments, 0));
 };
 
 /** info to default namespace */
 MetricsLogger.prototype.info = function info() {
-    this.emit(
-        MetricsLogger.INFO,
-        this.options.defaultNamespace,
-        Array.prototype.slice.call(arguments, 0)
-    );
+    this.emit(MetricsLogger.INFO, this.options.defaultNamespace, Array.prototype.slice.call(arguments, 0));
 };
 
 /** warn to default namespace */
 MetricsLogger.prototype.warn = function warn() {
-    this.emit(
-        MetricsLogger.WARN,
-        this.options.defaultNamespace,
-        Array.prototype.slice.call(arguments, 0)
-    );
+    this.emit(MetricsLogger.WARN, this.options.defaultNamespace, Array.prototype.slice.call(arguments, 0));
 };
 
 /** error to default namespace */
 MetricsLogger.prototype.error = function error() {
-    this.emit(
-        MetricsLogger.ERROR,
-        this.options.defaultNamespace,
-        Array.prototype.slice.call(arguments, 0)
-    );
+    this.emit(MetricsLogger.ERROR, this.options.defaultNamespace, Array.prototype.slice.call(arguments, 0));
 };
 
 /** metric to default namespace */
 MetricsLogger.prototype.metric = function metric() {
-    this.emit(
-        MetricsLogger.METRIC,
-        this.options.defaultNamespace,
-        Array.prototype.slice.call(arguments, 0)
-    );
+    this.emit(MetricsLogger.METRIC, this.options.defaultNamespace, Array.prototype.slice.call(arguments, 0));
 };
 
 /* ============================================================================

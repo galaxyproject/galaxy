@@ -18,9 +18,8 @@ var CopyDialog = {
     activeLabel: _l("Copy only the active, non-deleted datasets"),
     allLabel: _l("Copy all datasets including deleted ones"),
     anonWarning:
-        _l(
-            "As an anonymous user, unless you login or register, you will lose your current history "
-        ) + _l("after copying this history. "),
+        _l("As an anonymous user, unless you login or register, you will lose your current history ") +
+        _l("after copying this history. "),
 
     // template for modal body
     _template: _.template(
@@ -73,8 +72,7 @@ var CopyDialog = {
 
     // empty modal body and let the user know the copy is happening
     _showAjaxIndicator: function _showAjaxIndicator() {
-        var indicator = `<p><span class="fa fa-spinner fa-spin"></span> ${this
-            .progressive}...</p>`;
+        var indicator = `<p><span class="fa fa-spinner fa-spin"></span> ${this.progressive}...</p>`;
         this.modal
             .$(".modal-body")
             .empty()
@@ -100,13 +98,9 @@ var CopyDialog = {
         var // TODO: these two might be simpler as one 3 state option (all,active,no-choice)
         defaultCopyWhat = options.allDatasets ? "copy-all" : "copy-non-deleted";
 
-        var allowAll = !_.isUndefined(options.allowAll)
-            ? options.allowAll
-            : true;
+        var allowAll = !_.isUndefined(options.allowAll) ? options.allowAll : true;
 
-        var autoClose = !_.isUndefined(options.autoClose)
-            ? options.autoClose
-            : true;
+        var autoClose = !_.isUndefined(options.autoClose) ? options.autoClose : true;
 
         this.modal = modal;
 
@@ -118,8 +112,7 @@ var CopyDialog = {
                 return;
             }
             // get further settings, shut down and indicate the ajax call, then hide and resolve/reject
-            var copyAllDatasets =
-                modal.$('input[name="copy-what"]:checked').val() === "copy-all";
+            var copyAllDatasets = modal.$('input[name="copy-what"]:checked').val() === "copy-all";
             modal.$("button").prop("disabled", true);
             dialog._showAjaxIndicator();
             history
@@ -132,12 +125,7 @@ var CopyDialog = {
                         name: name,
                         copyAllDatasets: copyAllDatasets
                     };
-                    ERROR_MODAL.ajaxErrorModal(
-                        history,
-                        xhr,
-                        options,
-                        dialog.errorMessage
-                    );
+                    ERROR_MODAL.ajaxErrorModal(history, xhr, options, dialog.errorMessage);
                     deferred.rejectWith(deferred, arguments);
                 })
                 .done(() => {
@@ -214,9 +202,8 @@ var ImportDialog = _.extend({}, CopyDialog, {
     activeLabel: _l("Import only the active, non-deleted datasets"),
     allLabel: _l("Import all datasets including deleted ones"),
     anonWarning:
-        _l(
-            "As an anonymous user, unless you login or register, you will lose your current history "
-        ) + _l("after importing this history. ")
+        _l("As an anonymous user, unless you login or register, you will lose your current history ") +
+        _l("after importing this history. ")
 });
 
 //==============================================================================

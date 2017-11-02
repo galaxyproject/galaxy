@@ -13,8 +13,7 @@ var HistoryPanel = Backbone.View.extend({
 
         // view of the current history
         this.historyView = new CurrentHistoryView.CurrentHistoryView({
-            className: `${CurrentHistoryView.CurrentHistoryView.prototype
-                .className} middle`,
+            className: `${CurrentHistoryView.CurrentHistoryView.prototype.className} middle`,
             purgeAllowed: this.allow_user_dataset_purge,
             linkTarget: "galaxy_main"
         });
@@ -53,11 +52,7 @@ var HistoryPanel = Backbone.View.extend({
         this.model = new Backbone.Model({
             cls: "history-right-panel",
             title: _l("History"),
-            buttons: [
-                this.buttonRefresh,
-                this.buttonOptions,
-                this.buttonViewMulti
-            ]
+            buttons: [this.buttonRefresh, this.buttonOptions, this.buttonViewMulti]
         });
 
         // build body template and connect history view
@@ -85,9 +80,7 @@ var HistoryPanel = Backbone.View.extend({
 
     /** add history view div */
     _template: function(data) {
-        return [
-            '<div id="current-history-panel" class="history-panel middle"/>'
-        ].join("");
+        return ['<div id="current-history-panel" class="history-panel middle"/>'].join("");
     },
 
     toString: function() {

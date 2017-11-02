@@ -177,10 +177,8 @@ export default Backbone.View.extend({
                 if (it.get("file_size") > 0) {
                     var prefix = `files_${index}|`;
                     inputs[`${prefix}type`] = "upload_dataset";
-                    inputs[`${prefix}space_to_tab`] =
-                        (it.get("space_to_tab") && "Yes") || null;
-                    inputs[`${prefix}to_posix_lines`] =
-                        (it.get("to_posix_lines") && "Yes") || null;
+                    inputs[`${prefix}space_to_tab`] = (it.get("space_to_tab") && "Yes") || null;
+                    inputs[`${prefix}to_posix_lines`] = (it.get("to_posix_lines") && "Yes") || null;
                     inputs[`${prefix}dbkey`] = it.get("genome", null);
                     inputs[`${prefix}file_type`] = it.get("extension", null);
                     switch (it.get("file_mode")) {

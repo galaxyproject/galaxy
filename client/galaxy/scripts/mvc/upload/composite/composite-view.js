@@ -100,11 +100,7 @@ export default Backbone.View.extend({
             this.select_genome.enable();
             this.select_extension.enable();
         }
-        if (
-            this.collection.where({ status: "ready" }).length ==
-                this.collection.length &&
-            this.collection.length > 0
-        ) {
+        if (this.collection.where({ status: "ready" }).length == this.collection.length && this.collection.length > 0) {
             this.btnStart.enable();
             this.btnStart.$el.addClass("btn-primary");
         } else {

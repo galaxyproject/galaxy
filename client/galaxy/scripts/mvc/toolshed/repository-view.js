@@ -29,11 +29,8 @@ var ToolShedRepositoryView = Backbone.View.extend({
             queue: toolshed_util.queueLength()
         };
         var changesets = Object.keys(this.options.repository.metadata);
-        this.options.current_changeset =
-            this.options.current_changeset || changesets[changesets.length - 1];
-        this.options.current_metadata = this.options.repository.metadata[
-            this.options.current_changeset
-        ];
+        this.options.current_changeset = this.options.current_changeset || changesets[changesets.length - 1];
+        this.options.current_metadata = this.options.repository.metadata[this.options.current_changeset];
         this.options.current_metadata.tool_shed_url = this.model.tool_shed_url;
         this.options.tools = this.options.current_metadata.tools;
         this.options.repository_dependencies_template = this.templateRepoDependencies;
@@ -60,10 +57,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
             that.options.current_changeset = $("#changeset")
                 .find("option:selected")
                 .text();
-            that.options.current_metadata =
-                that.options.repository.metadata[
-                    that.options.current_changeset
-                ];
+            that.options.current_metadata = that.options.repository.metadata[that.options.current_changeset];
             that.checkInstalled(that.options.current_metadata);
             that.reDraw();
         });
@@ -82,23 +76,13 @@ var ToolShedRepositoryView = Backbone.View.extend({
                         .val()
                 ]
             ]);
-            params.tool_shed_repository_ids = JSON.stringify([
-                $("#install_repository").attr("data-tsrid")
-            ]);
+            params.tool_shed_repository_ids = JSON.stringify([$("#install_repository").attr("data-tsrid")]);
             params.tool_shed_url = that.model.tool_shed_url;
-            params.install_tool_dependencies = $(
-                "#install_tool_dependencies"
-            ).val();
-            params.install_repository_dependencies = $(
-                "#install_repository_dependencies"
-            ).val();
-            params.install_resolver_dependencies = $(
-                "#install_resolver_dependencies"
-            ).val();
+            params.install_tool_dependencies = $("#install_tool_dependencies").val();
+            params.install_repository_dependencies = $("#install_repository_dependencies").val();
+            params.install_resolver_dependencies = $("#install_resolver_dependencies").val();
             var tps = that.panelSelect(params);
-            params.tool_panel_section = JSON.stringify(
-                that.panelSelect(params)
-            );
+            params.tool_panel_section = JSON.stringify(that.panelSelect(params));
             params.shed_tool_conf = $("select[name='shed_tool_conf']")
                 .find("option:selected")
                 .val();
@@ -112,33 +96,19 @@ var ToolShedRepositoryView = Backbone.View.extend({
             that.options.current_changeset = $("#changeset")
                 .find("option:selected")
                 .text();
-            that.options.current_metadata =
-                that.options.repository.metadata[
-                    that.options.current_changeset
-                ];
+            that.options.current_metadata = that.options.repository.metadata[that.options.current_changeset];
             var changeset = that.options.current_changeset;
             var repository_metadata = {};
             _.each(Object.keys(that.options.current_metadata), key => {
                 if (!repository_metadata[key]) {
-                    repository_metadata[key] =
-                        that.options.current_metadata[key];
+                    repository_metadata[key] = that.options.current_metadata[key];
                 }
             });
-            repository_metadata.install_tool_dependencies = $(
-                "#install_tool_dependencies"
-            ).val();
-            repository_metadata.install_repository_dependencies = $(
-                "#install_repository_dependencies"
-            ).val();
-            repository_metadata.install_resolver_dependencies = $(
-                "#install_resolver_dependencies"
-            ).val();
-            repository_metadata.tool_panel_section = JSON.stringify(
-                that.panelSelect({})
-            );
-            repository_metadata.shed_tool_conf = $(
-                "select[name='shed_tool_conf']"
-            )
+            repository_metadata.install_tool_dependencies = $("#install_tool_dependencies").val();
+            repository_metadata.install_repository_dependencies = $("#install_repository_dependencies").val();
+            repository_metadata.install_resolver_dependencies = $("#install_resolver_dependencies").val();
+            repository_metadata.tool_panel_section = JSON.stringify(that.panelSelect({}));
+            repository_metadata.shed_tool_conf = $("select[name='shed_tool_conf']")
                 .find("option:selected")
                 .val();
             repository_metadata.tool_shed_url = that.model.tool_shed_url;
@@ -189,14 +159,9 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 var toolform = new FormView(data);
                 Utils.deepeach(data.inputs, input => {
                     if (input.type) {
-                        if (
-                            ["data", "data_collection"].indexOf(input.type) !=
-                            -1
-                        ) {
+                        if (["data", "data_collection"].indexOf(input.type) != -1) {
                             input.type = "hidden";
-                            input.info = `Data input '${input.name}' (${Utils.textify(
-                                input.extensions
-                            )})`;
+                            input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
                         }
                     }
                 });
@@ -226,10 +191,8 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 var repository = data[index];
                 var installed = !repository.deleted && !repository.uninstalled;
                 var changeset_match =
-                    repository.changeset_revision ==
-                        metadata.changeset_revision ||
-                    repository.installed_changeset_revision ==
-                        metadata.changeset_revision;
+                    repository.changeset_revision == metadata.changeset_revision ||
+                    repository.installed_changeset_revision == metadata.changeset_revision;
                 if (
                     repository.name == metadata.repository.name &&
                     repository.owner == metadata.repository.owner &&
@@ -240,9 +203,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 }
                 if (already_installed) {
                     $("#install_repository").prop("disabled", true);
-                    $("#install_repository").val(
-                        "This revision is already installed"
-                    );
+                    $("#install_repository").val("This revision is already installed");
                 } else {
                     $("#install_repository").prop("disabled", false);
                     $("#install_repository").val("Install this revision");
@@ -250,9 +211,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
             }
             if (that.repoQueued(metadata) || already_installed) {
                 $("#queue_install").hide();
-                $("#queue_install").val(
-                    "This revision is already in the queue"
-                );
+                $("#queue_install").val("This revision is already in the queue");
             } else {
                 $("#queue_install").show();
                 $("#queue_install").val("Install this revision later");

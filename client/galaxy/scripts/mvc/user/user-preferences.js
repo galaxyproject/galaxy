@@ -11,8 +11,7 @@ var Model = Backbone.Model.extend({
             user_id: options.user_id,
             information: {
                 title: "Manage information",
-                description:
-                    "Edit your email, addresses and custom parameters or change your username.",
+                description: "Edit your email, addresses and custom parameters or change your username.",
                 url: `api/users/${options.user_id}/information/inputs`,
                 icon: "fa-user",
                 redirect: "user"
@@ -27,8 +26,7 @@ var Model = Backbone.Model.extend({
             },
             communication: {
                 title: "Change communication settings",
-                description:
-                    "Enable or disable the communication feature to chat with other users.",
+                description: "Enable or disable the communication feature to chat with other users.",
                 url: `api/users/${options.user_id}/communication/inputs`,
                 icon: "fa-comments-o",
                 redirect: "user"
@@ -52,8 +50,7 @@ var Model = Backbone.Model.extend({
             },
             toolbox_filters: {
                 title: "Manage Toolbox filters",
-                description:
-                    "Customize your Toolbox by displaying or omitting sets of Tools.",
+                description: "Customize your Toolbox by displaying or omitting sets of Tools.",
                 url: `api/users/${options.user_id}/toolbox_filters/inputs`,
                 icon: "fa-filter",
                 submit_title: "Save filters",
@@ -69,8 +66,7 @@ var Model = Backbone.Model.extend({
             },
             custom_builds: {
                 title: "Manage custom builds",
-                description:
-                    "Add or remove custom builds using history datasets.",
+                description: "Add or remove custom builds using history datasets.",
                 icon: "fa-cubes",
                 onclick: function() {
                     window.location.href = `${Galaxy.root}custom_builds`;
@@ -83,8 +79,7 @@ var Model = Backbone.Model.extend({
                 onclick: function() {
                     Galaxy.modal.show({
                         title: "Sign out",
-                        body:
-                            "Do you want to continue and sign out of all active sessions?",
+                        body: "Do you want to continue and sign out of all active sessions?",
                         buttons: {
                             Cancel: function() {
                                 Galaxy.modal.hide();
@@ -116,22 +111,12 @@ var View = Backbone.View.extend({
             self.$preferences = $("<div/>")
                 .addClass("ui-panel")
                 .append($("<h2/>").append("User preferences"))
-                .append(
-                    $("<p/>").append(
-                        `You are logged in as <strong>${_.escape(
-                            data.email
-                        )}</strong>.`
-                    )
-                )
-                .append(
-                    (self.$table = $("<table/>").addClass("ui-panel-table"))
-                );
+                .append($("<p/>").append(`You are logged in as <strong>${_.escape(data.email)}</strong>.`))
+                .append((self.$table = $("<table/>").addClass("ui-panel-table")));
             var message = QueryStringParsing.get("message");
             var status = QueryStringParsing.get("status");
             if (message && status) {
-                self.$preferences.prepend(
-                    new Ui.Message({ message: message, status: status }).$el
-                );
+                self.$preferences.prepend(new Ui.Message({ message: message, status: status }).$el);
             }
             if (!config.use_remote_user) {
                 self._addLink("information");

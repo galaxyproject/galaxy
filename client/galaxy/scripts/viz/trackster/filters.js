@@ -70,8 +70,7 @@ var NumberFilter = function(obj_dict) {
             var cur_value = span.text();
             var max = parseFloat(slider.slider("option", "max"));
 
-            var input_size =
-                max <= 1 ? 4 : max <= 1000000 ? max.toString().length : 6;
+            var input_size = max <= 1 ? 4 : max <= 1000000 ? max.toString().length : 6;
 
             var multi_value = false;
             var slider_row = $(this).parents(".slider-row");
@@ -115,43 +114,27 @@ var NumberFilter = function(obj_dict) {
 
                         var slider_max = slider.slider("option", "max");
 
-                        var invalid = a_val =>
-                            isNaN(a_val) ||
-                            a_val > slider_max ||
-                            a_val < slider_min;
+                        var invalid = a_val => isNaN(a_val) || a_val > slider_max || a_val < slider_min;
 
                         var new_value = $(this).val();
                         if (!multi_value) {
                             new_value = parseFloat(new_value);
                             if (invalid(new_value)) {
-                                alert(
-                                    `Parameter value must be in the range [${slider_min}-${slider_max}]`
-                                );
+                                alert(`Parameter value must be in the range [${slider_min}-${slider_max}]`);
                                 return $(this);
                             }
                         } else {
                             // Multi value.
                             new_value = new_value.split("-");
-                            new_value = [
-                                parseFloat(new_value[0]),
-                                parseFloat(new_value[1])
-                            ];
-                            if (
-                                invalid(new_value[0]) ||
-                                invalid(new_value[1])
-                            ) {
-                                alert(
-                                    `Parameter value must be in the range [${slider_min}-${slider_max}]`
-                                );
+                            new_value = [parseFloat(new_value[0]), parseFloat(new_value[1])];
+                            if (invalid(new_value[0]) || invalid(new_value[1])) {
+                                alert(`Parameter value must be in the range [${slider_min}-${slider_max}]`);
                                 return $(this);
                             }
                         }
 
                         // Updating the slider also updates slider values and removes input.
-                        slider.slider(
-                            multi_value ? "values" : "value",
-                            new_value
-                        );
+                        slider.slider(multi_value ? "values" : "value", new_value);
                         slider_row.removeClass("input");
                     }
                 });
@@ -200,75 +183,61 @@ var NumberFilter = function(obj_dict) {
             filter.slide(event, ui);
         },
         change: function(event, ui) {
-            filter.control_element
-                .slider("option", "slide")
-                .call(filter.control_element, event, ui);
+            filter.control_element.slider("option", "slide").call(filter.control_element, event, ui);
         }
     });
     filter.slider = filter.control_element;
     filter.slider_label = values_span;
 
     // Enable users to edit slider values via text box.
-    edit_slider_values(
-        values_span_container,
-        values_span,
-        filter.control_element
-    );
+    edit_slider_values(values_span_container, values_span, filter.control_element);
 
     // Set up filter display controls.
     var display_controls_div = $("<div/>")
         .addClass("display-controls")
         .appendTo(filter.parent_div);
-    this.transparency_icon = create_action_icon(
-        "Use filter for data transparency",
-        "layer-transparent",
-        () => {
-            if (filter.manager.alpha_filter !== filter) {
-                // Setting this filter as the alpha filter.
-                filter.manager.alpha_filter = filter;
-                // Update UI for new filter.
-                filter.manager.parent_div
-                    .find(".layer-transparent")
-                    .removeClass("active")
-                    .hide();
-                filter.transparency_icon.addClass("active").show();
-            } else {
-                // Clearing filter as alpha filter.
-                filter.manager.alpha_filter = null;
-                filter.transparency_icon.removeClass("active");
-            }
-            filter.manager.track.request_draw({
-                force: true,
-                clear_after: true
-            });
+    this.transparency_icon = create_action_icon("Use filter for data transparency", "layer-transparent", () => {
+        if (filter.manager.alpha_filter !== filter) {
+            // Setting this filter as the alpha filter.
+            filter.manager.alpha_filter = filter;
+            // Update UI for new filter.
+            filter.manager.parent_div
+                .find(".layer-transparent")
+                .removeClass("active")
+                .hide();
+            filter.transparency_icon.addClass("active").show();
+        } else {
+            // Clearing filter as alpha filter.
+            filter.manager.alpha_filter = null;
+            filter.transparency_icon.removeClass("active");
         }
-    )
+        filter.manager.track.request_draw({
+            force: true,
+            clear_after: true
+        });
+    })
         .appendTo(display_controls_div)
         .hide();
-    this.height_icon = create_action_icon(
-        "Use filter for data height",
-        "arrow-resize-090",
-        () => {
-            if (filter.manager.height_filter !== filter) {
-                // Setting this filter as the height filter.
-                filter.manager.height_filter = filter;
-                // Update UI for new filter.
-                filter.manager.parent_div
-                    .find(".arrow-resize-090")
-                    .removeClass("active")
-                    .hide();
-                filter.height_icon.addClass("active").show();
-            } else {
-                // Clearing filter as alpha filter.
-                filter.manager.height_filter = null;
-                filter.height_icon.removeClass("active");
-            }
-            filter.manager.track.request_draw({
-                force: true,
-                clear_after: true
-            });
+    this.height_icon = create_action_icon("Use filter for data height", "arrow-resize-090", () => {
+        if (filter.manager.height_filter !== filter) {
+            // Setting this filter as the height filter.
+            filter.manager.height_filter = filter;
+            // Update UI for new filter.
+            filter.manager.parent_div
+                .find(".arrow-resize-090")
+                .removeClass("active")
+                .hide();
+            filter.height_icon.addClass("active").show();
+        } else {
+            // Clearing filter as alpha filter.
+            filter.manager.height_filter = null;
+            filter.height_icon.removeClass("active");
         }
-    )
+        filter.manager.track.request_draw({
+            force: true,
+            clear_after: true
+        });
+    })
         .appendTo(display_controls_div)
         .hide();
     filter.parent_div.hover(
@@ -442,11 +411,7 @@ extend(NumberFilter.prototype, {
             // Update slider min, max, step.
             this.slider.slider("option", "min", this.min);
             this.slider.slider("option", "max", this.max);
-            this.slider.slider(
-                "option",
-                "step",
-                this.get_slider_step(this.min, this.max)
-            );
+            this.slider.slider("option", "step", this.get_slider_step(this.min, this.max));
             // Refresh slider:
             // TODO: do we want to keep current values or reset to min/max?
             // Currently we reset values:
@@ -497,11 +462,9 @@ var FiltersManager = function(track, obj_dict) {
     //
     if (obj_dict && "filters" in obj_dict) {
         // Second condition needed for backward compatibility.
-        var alpha_filter_name =
-            "alpha_filter" in obj_dict ? obj_dict.alpha_filter : null;
+        var alpha_filter_name = "alpha_filter" in obj_dict ? obj_dict.alpha_filter : null;
 
-        var height_filter_name =
-            "height_filter" in obj_dict ? obj_dict.height_filter : null;
+        var height_filter_name = "height_filter" in obj_dict ? obj_dict.height_filter : null;
 
         var filters_dict = obj_dict.filters;
         var filter;
@@ -572,12 +535,8 @@ extend(FiltersManager.prototype, {
         obj_dict.filters = filter_dicts;
 
         // Include transparency, height filters.
-        obj_dict.alpha_filter = this.alpha_filter
-            ? this.alpha_filter.name
-            : null;
-        obj_dict.height_filter = this.height_filter
-            ? this.height_filter.name
-            : null;
+        obj_dict.alpha_filter = this.alpha_filter ? this.alpha_filter.name : null;
+        obj_dict.height_filter = this.height_filter ? this.height_filter.name : null;
 
         // Include visibility.
         obj_dict.visible = this.parent_div.is(":visible");
@@ -656,24 +615,12 @@ extend(FiltersManager.prototype, {
             if (filter.tool_id) {
                 // Add filtering conditions if filter low/high are set.
                 if (filter.min !== filter.low) {
-                    tool_filter_conditions = get_or_create_dict_item(
-                        active_filters,
-                        filter.tool_id,
-                        []
-                    );
-                    tool_filter_conditions[
-                        tool_filter_conditions.length
-                    ] = `${filter.tool_exp_name} >= ${filter.low}`;
+                    tool_filter_conditions = get_or_create_dict_item(active_filters, filter.tool_id, []);
+                    tool_filter_conditions[tool_filter_conditions.length] = `${filter.tool_exp_name} >= ${filter.low}`;
                 }
                 if (filter.max !== filter.high) {
-                    tool_filter_conditions = get_or_create_dict_item(
-                        active_filters,
-                        filter.tool_id,
-                        []
-                    );
-                    tool_filter_conditions[
-                        tool_filter_conditions.length
-                    ] = `${filter.tool_exp_name} <= ${filter.high}`;
+                    tool_filter_conditions = get_or_create_dict_item(active_filters, filter.tool_id, []);
+                    tool_filter_conditions[tool_filter_conditions.length] = `${filter.tool_exp_name} <= ${filter.high}`;
                 }
             }
         }
@@ -685,10 +632,7 @@ extend(FiltersManager.prototype, {
         // Create list of (tool_id, tool_filters) tuples.
         var active_filters_list = [];
         for (var tool_id in active_filters) {
-            active_filters_list[active_filters_list.length] = [
-                tool_id,
-                active_filters[tool_id]
-            ];
+            active_filters_list[active_filters_list.length] = [tool_id, active_filters[tool_id]];
         }
 
         // Invoke recursive function to run filters; this enables chaining of filters via
@@ -723,8 +667,7 @@ extend(FiltersManager.prototype, {
                     // No more filters to run.
                     Galaxy.modal.show({
                         title: "Filtering Dataset",
-                        body:
-                            "Filter(s) are running on the complete dataset. Outputs are in dataset's history.",
+                        body: "Filter(s) are running on the complete dataset. Outputs are in dataset's history.",
                         buttons: { Close: Galaxy.modal.hide() }
                     });
                 } else {

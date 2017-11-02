@@ -7,9 +7,7 @@ var TrackHeaderView = Backbone.View.extend({
 
     initialize: function() {
         // Watch and update name changes.
-        this.model.config
-            .get("name")
-            .on("change:value", this.update_name, this);
+        this.model.config.get("name").on("change:value", this.update_name, this);
         this.render();
     },
 
@@ -62,14 +60,7 @@ var TrackHeaderView = Backbone.View.extend({
     /**
      * Add an action icon to this object. Appends icon unless prepend flag is specified.
      */
-    add_action_icon: function(
-        name,
-        title,
-        css_class,
-        on_click_fn,
-        prepend,
-        hide
-    ) {
+    add_action_icon: function(name, title, css_class, on_click_fn, prepend, hide) {
         var self = this;
         this.action_icons[name] = $("<a/>")
             .attr("title", title)
@@ -97,15 +88,9 @@ var TrackHeaderView = Backbone.View.extend({
 
         // Set modes, init mode.
         this.model.display_modes = new_modes;
-        this.model.mode =
-            init_mode ||
-            this.model.config.get_value("mode") ||
-            this.model.display_modes[0];
+        this.model.mode = init_mode || this.model.config.get_value("mode") || this.model.display_modes[0];
 
-        this.action_icons.mode_icon.attr(
-            "title",
-            `Set display mode (now: ${this.mode})`
-        );
+        this.action_icons.mode_icon.attr("title", `Set display mode (now: ${this.mode})`);
 
         // Setup popup menu for changing modes.
         var self = this;

@@ -80,10 +80,7 @@ var Node = Backbone.Model.extend({
         var inputTerminals = this.input_terminals;
         for (var inputName in inputTerminals) {
             var inputTerminal = inputTerminals[inputName];
-            if (
-                inputTerminal.connectors.length > 0 &&
-                inputTerminal.isMappedOver()
-            ) {
+            if (inputTerminal.connectors.length > 0 && inputTerminal.isMappedOver()) {
                 return true;
             }
         }
@@ -167,14 +164,10 @@ var Node = Backbone.Model.extend({
         this.errors = data.errors;
         this.tooltip = data.tooltip ? data.tooltip : "";
         this.annotation = data.annotation;
-        this.post_job_actions = data.post_job_actions
-            ? data.post_job_actions
-            : {};
+        this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
         this.label = data.label;
         this.uuid = data.uuid;
-        this.workflow_outputs = data.workflow_outputs
-            ? data.workflow_outputs
-            : [];
+        this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
         var node = this;
         var nodeView = new NodeView({
             el: this.element[0],
@@ -218,15 +211,11 @@ var Node = Backbone.Model.extend({
 
         // Remove the unused outputs
         _.each(unused_outputs, unused_output => {
-            _.each(
-                nodeView.outputViews[unused_output].terminalElement.terminal
-                    .connectors,
-                x => {
-                    if (x) {
-                        x.destroy(); // Removes the noodle connectors
-                    }
+            _.each(nodeView.outputViews[unused_output].terminalElement.terminal.connectors, x => {
+                if (x) {
+                    x.destroy(); // Removes the noodle connectors
                 }
-            );
+            });
             nodeView.outputViews[unused_output].remove(); // removes the rendered output
             delete nodeView.outputViews[unused_output]; // removes the reference to the output
             delete node.output_terminals[unused_output]; // removes the output terminal
@@ -242,8 +231,7 @@ var Node = Backbone.Model.extend({
             } else {
                 // the output already exists, but the output formats may have changed.
                 // Therefore we update the datatypes and destroy invalid connections.
-                node.output_terminals[output.name].datatypes =
-                    output.extensions;
+                node.output_terminals[output.name].datatypes = output.extensions;
                 node.output_terminals[output.name].destroyInvalidConnections();
             }
         });
@@ -268,25 +256,16 @@ var Node = Backbone.Model.extend({
             newTerminalViews[input.name] = terminalView;
         });
         // Cleanup any leftover terminals
-        _.each(
-            _.difference(
-                _.values(nodeView.terminalViews),
-                _.values(newTerminalViews)
-            ),
-            unusedView => {
-                unusedView.el.terminal.destroy();
-            }
-        );
+        _.each(_.difference(_.values(nodeView.terminalViews), _.values(newTerminalViews)), unusedView => {
+            unusedView.el.terminal.destroy();
+        });
         nodeView.terminalViews = newTerminalViews;
         node.nodeView.render();
         // In general workflow editor assumes tool outputs don't change in # or
         // type (not really valid right?) but adding special logic here for
         // data collection input parameters that can have their collection
         // change.
-        if (
-            data.data_outputs.length == 1 &&
-            "collection_type" in data.data_outputs[0]
-        ) {
+        if (data.data_outputs.length == 1 && "collection_type" in data.data_outputs[0]) {
             nodeView.updateDataOutput(data.data_outputs[0]);
         }
         old_body.replaceWith(new_body);

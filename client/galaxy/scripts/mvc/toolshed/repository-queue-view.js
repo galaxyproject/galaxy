@@ -31,13 +31,8 @@ var View = Backbone.View.extend({
     bindEvents: function() {
         var that = this;
         $(".install_one").on("click", function() {
-            var repository_metadata = that.loadFromQueue(
-                $(this).attr("data-repokey")
-            );
-            that.installFromQueue(
-                repository_metadata,
-                $(this).attr("data-repokey")
-            );
+            var repository_metadata = that.loadFromQueue($(this).attr("data-repokey"));
+            that.installFromQueue(repository_metadata, $(this).attr("data-repokey"));
         });
         $(".remove_one").on("click", function() {
             var queue_key = $(this).attr("data-repokey");
@@ -63,23 +58,15 @@ var View = Backbone.View.extend({
     installFromQueue: function(repository_metadata, queue_key) {
         var that = this;
         var params = Object();
-        params.install_tool_dependencies =
-            repository_metadata.install_tool_dependencies;
-        params.install_repository_dependencies =
-            repository_metadata.install_repository_dependencies;
-        params.install_resolver_dependencies =
-            repository_metadata.install_resolver_dependencies;
+        params.install_tool_dependencies = repository_metadata.install_tool_dependencies;
+        params.install_repository_dependencies = repository_metadata.install_repository_dependencies;
+        params.install_resolver_dependencies = repository_metadata.install_resolver_dependencies;
         params.tool_panel_section = repository_metadata.tool_panel_section;
         params.shed_tool_conf = repository_metadata.shed_tool_conf;
         params.repositories = JSON.stringify([
-            [
-                repository_metadata.repository.id,
-                repository_metadata.changeset_revision
-            ]
+            [repository_metadata.repository.id, repository_metadata.changeset_revision]
         ]);
-        params.tool_shed_repository_ids = JSON.stringify([
-            repository_metadata.repository.id
-        ]);
+        params.tool_shed_repository_ids = JSON.stringify([repository_metadata.repository.id]);
         params.tool_shed_url = queue_key.split("|")[0];
         params.changeset = repository_metadata.changeset_revision;
         var url = `${Galaxy.root}api/tool_shed_repositories/install?async=True`;
@@ -99,15 +86,9 @@ var View = Backbone.View.extend({
             var iri_params = JSON.parse(data);
             var repositories = iri_params.repositories;
             var new_route = `status/r/${repositories.join("|")}`;
-            $.post(
-                `${Galaxy.root}admin_toolshed/install_repositories`,
-                iri_params,
-                data => {
-                    console.log(
-                        "Initializing repository installation succeeded"
-                    );
-                }
-            );
+            $.post(`${Galaxy.root}admin_toolshed/install_repositories`, iri_params, data => {
+                console.log("Initializing repository installation succeeded");
+            });
             Backbone.history.navigate(new_route, {
                 trigger: true,
                 replace: true

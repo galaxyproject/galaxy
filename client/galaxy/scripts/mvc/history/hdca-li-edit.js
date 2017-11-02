@@ -24,9 +24,7 @@ var HDCAListItemEdit = _super.extend(
                 case "list:list":
                     return DC_VIEW_EDIT.ListOfListsCollectionViewEdit;
             }
-            throw new TypeError(
-                `Uknown collection_type: ${this.model.get("collection_type")}`
-            );
+            throw new TypeError(`Uknown collection_type: ${this.model.get("collection_type")}`);
         },
 
         // ......................................................................... delete
@@ -34,9 +32,7 @@ var HDCAListItemEdit = _super.extend(
         _renderPrimaryActions: function() {
             this.log(`${this}._renderPrimaryActions`);
             // render the display, edit attr and delete icon-buttons
-            return _super.prototype._renderPrimaryActions
-                .call(this)
-                .concat([this._renderDeleteButton()]);
+            return _super.prototype._renderPrimaryActions.call(this).concat([this._renderDeleteButton()]);
         },
 
         /** Render icon-button to delete this collection. */
@@ -44,9 +40,7 @@ var HDCAListItemEdit = _super.extend(
             var self = this;
             var deleted = this.model.get("deleted");
             return faIconButton({
-                title: deleted
-                    ? _l("Dataset collection is already deleted")
-                    : _l("Delete"),
+                title: deleted ? _l("Dataset collection is already deleted") : _l("Delete"),
                 classes: "delete-btn",
                 faIcon: "fa-times",
                 disabled: deleted,

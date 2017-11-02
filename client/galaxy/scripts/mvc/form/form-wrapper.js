@@ -64,9 +64,7 @@ var View = Backbone.View.extend({
                     persistent: false
                 };
                 if (self.redirect) {
-                    window.location = `${Galaxy.root + self.redirect}?${$.param(
-                        success_message
-                    )}`;
+                    window.location = `${Galaxy.root + self.redirect}?${$.param(success_message)}`;
                 } else {
                     form.data.matchModel(response, (input, input_id) => {
                         form.field_list[input_id].value(input.value);
@@ -87,9 +85,7 @@ var View = Backbone.View.extend({
         var $panel = form.$el
             .parents()
             .filter(function() {
-                return (
-                    ["auto", "scroll"].indexOf($(this).css("overflow")) != -1
-                );
+                return ["auto", "scroll"].indexOf($(this).css("overflow")) != -1;
             })
             .first();
         $panel.animate({ scrollTop: 0 }, 500);

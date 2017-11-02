@@ -95,15 +95,7 @@ export default Backbone.View.extend({
             }
         });
         _.each(
-            [
-                this.btnLocal,
-                this.btnFtp,
-                this.btnCreate,
-                this.btnStop,
-                this.btnReset,
-                this.btnStart,
-                this.btnClose
-            ],
+            [this.btnLocal, this.btnFtp, this.btnCreate, this.btnStop, this.btnReset, this.btnStart, this.btnClose],
             button => {
                 self.$(".upload-buttons").prepend(button.$el);
             }
@@ -116,10 +108,7 @@ export default Backbone.View.extend({
                 self._eventAnnounce(index, file);
             },
             initialize: function(index) {
-                return self.app.toData(
-                    [self.collection.get(index)],
-                    self.history_id
-                );
+                return self.app.toData([self.collection.get(index)], self.history_id);
             },
             progress: function(index, percentage) {
                 self._eventProgress(index, percentage);
@@ -217,26 +206,18 @@ export default Backbone.View.extend({
                 message = `You added ${this.counter
                     .announce} file(s) to the queue. Add more files or click 'Start' to proceed.`;
             } else {
-                message = `Please wait...${this.counter.announce} out of ${this
-                    .counter.running} remaining.`;
+                message = `Please wait...${this.counter.announce} out of ${this.counter.running} remaining.`;
             }
         }
         this.$(".upload-top-info").html(message);
         var enable_reset =
-            this.counter.running == 0 &&
-            this.counter.announce + this.counter.success + this.counter.error >
-                0;
-        var enable_start =
-            this.counter.running == 0 && this.counter.announce > 0;
+            this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0;
+        var enable_start = this.counter.running == 0 && this.counter.announce > 0;
         var enable_sources = this.counter.running == 0;
-        var show_table =
-            this.counter.announce + this.counter.success + this.counter.error >
-            0;
+        var show_table = this.counter.announce + this.counter.success + this.counter.error > 0;
         this.btnReset[enable_reset ? "enable" : "disable"]();
         this.btnStart[enable_start ? "enable" : "disable"]();
-        this.btnStart.$el[enable_start ? "addClass" : "removeClass"](
-            "btn-primary"
-        );
+        this.btnStart.$el[enable_start ? "addClass" : "removeClass"]("btn-primary");
         this.btnStop[this.counter.running > 0 ? "enable" : "disable"]();
         this.btnLocal[enable_sources ? "enable" : "disable"]();
         this.btnFtp[enable_sources ? "enable" : "disable"]();
@@ -265,20 +246,14 @@ export default Backbone.View.extend({
     _eventProgress: function(index, percentage) {
         var it = this.collection.get(index);
         it.set("percentage", percentage);
-        this.ui_button.model.set(
-            "percentage",
-            this._uploadPercentage(percentage, it.get("file_size"))
-        );
+        this.ui_button.model.set("percentage", this._uploadPercentage(percentage, it.get("file_size")));
     },
 
     /** Success */
     _eventSuccess: function(index, message) {
         var it = this.collection.get(index);
         it.set({ percentage: 100, status: "success" });
-        this.ui_button.model.set(
-            "percentage",
-            this._uploadPercentage(100, it.get("file_size"))
-        );
+        this.ui_button.model.set("percentage", this._uploadPercentage(100, it.get("file_size")));
         this.upload_completed += it.get("file_size") * 100;
         this.counter.announce--;
         this.counter.success++;
@@ -395,9 +370,7 @@ export default Backbone.View.extend({
     _eventStop: function() {
         if (this.counter.running > 0) {
             this.ui_button.model.set("status", "info");
-            $(".upload-top-info").html(
-                "Queue will pause after completing the current file..."
-            );
+            $(".upload-top-info").html("Queue will pause after completing the current file...");
             this.uploadbox.stop();
         }
     },
@@ -422,8 +395,7 @@ export default Backbone.View.extend({
         this.collection.each(model => {
             if (
                 model.get("status") == "init" &&
-                (model.get("extension") == self.options.default_extension ||
-                    !defaults_only)
+                (model.get("extension") == self.options.default_extension || !defaults_only)
             ) {
                 model.set("extension", extension);
             }
@@ -436,8 +408,7 @@ export default Backbone.View.extend({
         this.collection.each(model => {
             if (
                 model.get("status") == "init" &&
-                (model.get("genome") == self.options.default_genome ||
-                    !defaults_only)
+                (model.get("genome") == self.options.default_genome || !defaults_only)
             ) {
                 model.set("genome", genome);
             }
@@ -449,10 +420,7 @@ export default Backbone.View.extend({
         var self = this;
         var list = [];
         this.collection.each(model => {
-            if (
-                model.get("status") == "queued" &&
-                model.get("file_mode") == "ftp"
-            ) {
+            if (model.get("status") == "queued" && model.get("file_mode") == "ftp") {
                 self.uploadbox.remove(model.id);
                 list.push(model);
             }

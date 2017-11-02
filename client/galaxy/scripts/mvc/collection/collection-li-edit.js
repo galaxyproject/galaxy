@@ -55,10 +55,7 @@ var DatasetDCEListItemEdit = DATASET_LI_EDIT.DatasetListItemEdit.extend(
     /** @lends DatasetDCEListItemEdit.prototype */ {
         /** set up */
         initialize: function(attributes) {
-            DATASET_LI_EDIT.DatasetListItemEdit.prototype.initialize.call(
-                this,
-                attributes
-            );
+            DATASET_LI_EDIT.DatasetListItemEdit.prototype.initialize.call(this, attributes);
         },
 
         // NOTE: this does not inherit from DatasetDCEListItemView - so we duplicate this here

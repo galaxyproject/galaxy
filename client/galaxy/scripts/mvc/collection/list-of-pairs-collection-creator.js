@@ -113,10 +113,7 @@ function autoPairFnBuilder(options) {
     var _regexps = [];
     function getRegExps() {
         if (!_regexps.length) {
-            _regexps = [
-                new RegExp(this.filters[0]),
-                new RegExp(this.filters[1])
-            ];
+            _regexps = [new RegExp(this.filters[0]), new RegExp(this.filters[1])];
         }
         return _regexps;
     }
@@ -147,10 +144,7 @@ function autoPairFnBuilder(options) {
         var paired = [];
         //console.debug( 'params:', JSON.stringify( params, null, '  ' ) );
         this.debug("starting list lens:", listA.length, listB.length);
-        this.debug(
-            "bestMatch (starting):",
-            JSON.stringify(bestMatch, null, "  ")
-        );
+        this.debug("bestMatch (starting):", JSON.stringify(bestMatch, null, "  "));
 
         while (indexA < listA.length) {
             var matchTo = listA[indexA];
@@ -172,10 +166,7 @@ function autoPairFnBuilder(options) {
                             bestMatch: bestMatch
                         })
                     );
-                    this.debug(
-                        "bestMatch:",
-                        JSON.stringify(bestMatch, null, "  ")
-                    );
+                    this.debug("bestMatch:", JSON.stringify(bestMatch, null, "  "));
                     if (bestMatch.score === 1.0) {
                         this.debug("breaking early due to perfect match");
                         break;
@@ -219,8 +210,7 @@ var PairedCollectionCreator = Backbone.View
     .extend({
         _logNamespace: logNamespace,
 
-        className:
-            "list-of-pairs-collection-creator collection-creator flex-row-container",
+        className: "list-of-pairs-collection-creator collection-creator flex-row-container",
 
         /** set up initial options, instance vars, behaviors, and autopair (if set to do so) */
         initialize: function(attributes) {
@@ -243,9 +233,7 @@ var PairedCollectionCreator = Backbone.View
             this.historyId = attributes.historyId;
 
             /** which filters should be used initially? (String[2] or name in commonFilters) */
-            this.filters =
-                this.commonFilters[attributes.filters] ||
-                this.commonFilters[this.DEFAULT_FILTERS];
+            this.filters = this.commonFilters[attributes.filters] || this.commonFilters[this.DEFAULT_FILTERS];
             if (_.isArray(attributes.filters)) {
                 this.filters = attributes.filters;
             }
@@ -254,9 +242,7 @@ var PairedCollectionCreator = Backbone.View
             this.automaticallyPair = attributes.automaticallyPair;
 
             /** what method to use for auto pairing (will be passed aggression level) */
-            this.strategy =
-                this.strategies[attributes.strategy] ||
-                this.strategies[this.DEFAULT_STRATEGY];
+            this.strategy = this.strategies[attributes.strategy] || this.strategies[this.DEFAULT_STRATEGY];
             if (_.isFunction(attributes.strategy)) {
                 this.strategy = attributes.strategy;
             }
@@ -360,9 +346,7 @@ var PairedCollectionCreator = Backbone.View
 
         /** split initial list into two lists, those that pass forward filters & those passing reverse */
         _splitByFilters: function() {
-            var regexFilters = this.filters.map(
-                stringFilter => new RegExp(stringFilter)
-            );
+            var regexFilters = this.filters.map(stringFilter => new RegExp(stringFilter));
 
             var split = [[], []];
 
@@ -393,10 +377,7 @@ var PairedCollectionCreator = Backbone.View
 
                 var mid = Math.floor((hi - low) / 2) + low;
 
-                var compared = naturalSort(
-                    dataset.name,
-                    this.unpaired[mid].name
-                );
+                var compared = naturalSort(dataset.name, this.unpaired[mid].name);
 
                 if (compared < 0) {
                     return binSearchSortedIndex(low, mid);
@@ -404,20 +385,13 @@ var PairedCollectionCreator = Backbone.View
                     return binSearchSortedIndex(mid + 1, hi);
                 }
                 // walk the equal to find the last
-                while (
-                    this.unpaired[mid] &&
-                    this.unpaired[mid].name === dataset.name
-                ) {
+                while (this.unpaired[mid] && this.unpaired[mid].name === dataset.name) {
                     mid++;
                 }
                 return mid;
             };
 
-            this.unpaired.splice(
-                binSearchSortedIndex(0, this.unpaired.length),
-                0,
-                dataset
-            );
+            this.unpaired.splice(binSearchSortedIndex(0, this.unpaired.length), 0, dataset);
         },
 
         // ------------------------------------------------------------------------ auto pairing
@@ -477,15 +451,9 @@ var PairedCollectionCreator = Backbone.View
             match: function _matches(params) {
                 params = params || {};
 
-                var distance = levenshteinDistance(
-                    params.matchTo,
-                    params.possible
-                );
+                var distance = levenshteinDistance(params.matchTo, params.possible);
 
-                var score =
-                    1.0 -
-                    distance /
-                        Math.max(params.matchTo.length, params.possible.length);
+                var score = 1.0 - distance / Math.max(params.matchTo.length, params.possible.length);
 
                 if (score > params.bestMatch.score) {
                     return {
@@ -505,14 +473,9 @@ var PairedCollectionCreator = Backbone.View
             match: function _matches(params) {
                 params = params || {};
 
-                var match = this._naiveStartingAndEndingLCS(
-                    params.matchTo,
-                    params.possible
-                ).length;
+                var match = this._naiveStartingAndEndingLCS(params.matchTo, params.possible).length;
 
-                var score =
-                    match /
-                    Math.max(params.matchTo.length, params.possible.length);
+                var score = match / Math.max(params.matchTo.length, params.possible.length);
 
                 if (score > params.bestMatch.score) {
                     return {
@@ -575,9 +538,7 @@ var PairedCollectionCreator = Backbone.View
         _createPair: function(fwd, rev, name) {
             // ensure existance and don't pair something with itself
             if (!(fwd && rev) || fwd === rev) {
-                throw new Error(
-                    `Bad pairing: ${[JSON.stringify(fwd), JSON.stringify(rev)]}`
-                );
+                throw new Error(`Bad pairing: ${[JSON.stringify(fwd), JSON.stringify(rev)]}`);
             }
             name = name || this._guessNameForPair(fwd, rev);
             return { forward: fwd, name: name, reverse: rev };
@@ -585,10 +546,7 @@ var PairedCollectionCreator = Backbone.View
 
         /** try to find a good pair name for the given fwd and rev datasets */
         _guessNameForPair: function(fwd, rev, removeExtensions) {
-            removeExtensions =
-                removeExtensions !== undefined
-                    ? removeExtensions
-                    : this.removeExtensions;
+            removeExtensions = removeExtensions !== undefined ? removeExtensions : this.removeExtensions;
             var fwdName = fwd.name;
             var revName = rev.name;
 
@@ -664,8 +622,7 @@ var PairedCollectionCreator = Backbone.View
         createList: function(name) {
             var self = this;
 
-            var url = `${Galaxy.root}api/histories/${this
-                .historyId}/contents/dataset_collections`;
+            var url = `${Galaxy.root}api/histories/${this.historyId}/contents/dataset_collections`;
 
             //TODO: use ListPairedCollection.create()
             var ajaxData = {
@@ -673,9 +630,7 @@ var PairedCollectionCreator = Backbone.View
                 collection_type: "list:paired",
                 hide_source_items: self.hideOriginals || false,
                 name: _.escape(name || self.$(".collection-name").val()),
-                element_identifiers: self.paired.map(pair =>
-                    self._pairToJSON(pair)
-                )
+                element_identifiers: self.paired.map(pair => self._pairToJSON(pair))
             };
             //this.debug( JSON.stringify( ajaxData ) );
             self.blocking = true;
@@ -706,18 +661,14 @@ var PairedCollectionCreator = Backbone.View
         _ajaxErrHandler: function(xhr, status, message) {
             this.error(xhr, status, message);
             var self = this;
-            var content = _l(
-                "An error occurred while creating this collection"
-            );
+            var content = _l("An error occurred while creating this collection");
             if (xhr) {
                 if (xhr.readyState === 0 && xhr.status === 0) {
-                    content += `: ${_l(
-                        "Galaxy could not be reached and may be updating."
-                    )}${_l(" Try again in a few minutes.")}`;
+                    content += `: ${_l("Galaxy could not be reached and may be updating.")}${_l(
+                        " Try again in a few minutes."
+                    )}`;
                 } else if (xhr.responseJSON) {
-                    content += `<br /><pre>${JSON.stringify(
-                        xhr.responseJSON
-                    )}</pre>`;
+                    content += `<br /><pre>${JSON.stringify(xhr.responseJSON)}</pre>`;
                 } else {
                     content += `: ${message}`;
                 }
@@ -755,11 +706,7 @@ var PairedCollectionCreator = Backbone.View
         _renderFilters: function() {
             return this.$(".forward-column .column-header input")
                 .val(this.filters[0])
-                .add(
-                    this.$(".reverse-column .column-header input").val(
-                        this.filters[1]
-                    )
-                );
+                .add(this.$(".reverse-column .column-header input").val(this.filters[1]));
         },
 
         /** render the middle including unpaired and paired sections (which may be hidden) */
@@ -789,21 +736,13 @@ var PairedCollectionCreator = Backbone.View
             var $prd = [];
             var split = this._splitByFilters();
             // update unpaired counts
-            this.$(".forward-column .title").text(
-                [split[0].length, _l("unpaired forward")].join(" ")
-            );
+            this.$(".forward-column .title").text([split[0].length, _l("unpaired forward")].join(" "));
             this.$(".forward-column .unpaired-info").text(
-                this._renderUnpairedDisplayStr(
-                    this.unpaired.length - split[0].length
-                )
+                this._renderUnpairedDisplayStr(this.unpaired.length - split[0].length)
             );
-            this.$(".reverse-column .title").text(
-                [split[1].length, _l("unpaired reverse")].join(" ")
-            );
+            this.$(".reverse-column .title").text([split[1].length, _l("unpaired reverse")].join(" "));
             this.$(".reverse-column .unpaired-info").text(
-                this._renderUnpairedDisplayStr(
-                    this.unpaired.length - split[1].length
-                )
+                this._renderUnpairedDisplayStr(this.unpaired.length - split[1].length)
             );
 
             this.$(".unpaired-columns .column-datasets").empty();
@@ -823,9 +762,7 @@ var PairedCollectionCreator = Backbone.View
                 }
                 return self._renderUnpairedDataset(dataset);
             });
-            $fwd = split[0].map(dataset =>
-                self._renderUnpairedDataset(dataset)
-            );
+            $fwd = split[0].map(dataset => self._renderUnpairedDataset(dataset));
 
             if (!$fwd.length && !$rev.length) {
                 this._renderUnpairedNotShown();
@@ -836,16 +773,8 @@ var PairedCollectionCreator = Backbone.View
             //  and swapping out that
             this.$(".unpaired-columns .forward-column .column-datasets")
                 .append($fwd)
-                .add(
-                    this.$(
-                        ".unpaired-columns .paired-column .column-datasets"
-                    ).append($prd)
-                )
-                .add(
-                    this.$(
-                        ".unpaired-columns .reverse-column .column-datasets"
-                    ).append($rev)
-                );
+                .add(this.$(".unpaired-columns .paired-column .column-datasets").append($prd))
+                .add(this.$(".unpaired-columns .reverse-column .column-datasets").append($rev));
             this._adjUnpairedOnScrollbar();
         },
         /** return a string to display the count of filtered out datasets */
@@ -884,9 +813,7 @@ var PairedCollectionCreator = Backbone.View
         /** a message to display when no unpaired left */
         _renderUnpairedEmpty: function() {
             //this.debug( '-- renderUnpairedEmpty' );
-            var $msg = $('<div class="empty-message"></div>').text(
-                `(${_l("no remaining unpaired datasets")})`
-            );
+            var $msg = $('<div class="empty-message"></div>').text(`(${_l("no remaining unpaired datasets")})`);
             this.$(".unpaired-columns .paired-column .column-datasets")
                 .empty()
                 .prepend($msg);
@@ -907,34 +834,25 @@ var PairedCollectionCreator = Backbone.View
         _adjUnpairedOnScrollbar: function() {
             var $unpairedColumns = this.$(".unpaired-columns").last();
 
-            var $firstDataset = this.$(
-                ".unpaired-columns .reverse-column .dataset"
-            ).first();
+            var $firstDataset = this.$(".unpaired-columns .reverse-column .dataset").first();
 
             if (!$firstDataset.length) {
                 return;
             }
 
-            var ucRight =
-                $unpairedColumns.offset().left + $unpairedColumns.outerWidth();
+            var ucRight = $unpairedColumns.offset().left + $unpairedColumns.outerWidth();
 
-            var dsRight =
-                $firstDataset.offset().left + $firstDataset.outerWidth();
+            var dsRight = $firstDataset.offset().left + $firstDataset.outerWidth();
 
             var rightDiff = Math.floor(ucRight) - Math.floor(dsRight);
             //this.debug( 'rightDiff:', ucRight, '-', dsRight, '=', rightDiff );
-            this.$(".unpaired-columns .forward-column").css(
-                "margin-left",
-                rightDiff > 0 ? rightDiff : 0
-            );
+            this.$(".unpaired-columns .forward-column").css("margin-left", rightDiff > 0 ? rightDiff : 0);
         },
 
         /** render the paired section and update counts of paired datasets */
         _renderPaired: function(speed, callback) {
             //this.debug( '-- _renderPaired' );
-            this.$(".paired-column-title .title").text(
-                [this.paired.length, _l("paired")].join(" ")
-            );
+            this.$(".paired-column-title .title").text([this.paired.length, _l("paired")].join(" "));
             // show/hide the unpair all link
             this.$(".unpair-all-link").toggle(this.paired.length !== 0);
             if (this.paired.length === 0) {
@@ -967,9 +885,7 @@ var PairedCollectionCreator = Backbone.View
         },
         /** a message to display when none paired */
         _renderPairedEmpty: function() {
-            var $msg = $('<div class="empty-message"></div>').text(
-                `(${_l("no paired datasets yet")})`
-            );
+            var $msg = $('<div class="empty-message"></div>').text(`(${_l("no paired datasets yet")})`);
             this.$(".paired-columns .column-datasets")
                 .empty()
                 .prepend($msg);
@@ -984,10 +900,7 @@ var PairedCollectionCreator = Backbone.View
         /** add any jQuery/bootstrap/custom plugins to elements rendered */
         _addPluginComponents: function() {
             this._chooseFiltersPopover(".choose-filters-link");
-            this.$(".help-content i").hoverhighlight(
-                ".collection-creator",
-                "rgba( 64, 255, 255, 1.0 )"
-            );
+            this.$(".help-content i").hoverhighlight(".collection-creator", "rgba( 64, 255, 255, 1.0 )");
         },
 
         /** build a filter selection popover allowing selection of common filter pairs */
@@ -1015,14 +928,10 @@ var PairedCollectionCreator = Backbone.View
                     [
                         '<div class="choose-filters">',
                         '<div class="help">',
-                        _l(
-                            "Choose from the following filters to change which unpaired reads are shown in the display"
-                        ),
+                        _l("Choose from the following filters to change which unpaired reads are shown in the display"),
                         ":</div>",
                         _.values(this.commonFilters)
-                            .map(filterSet =>
-                                filterChoice(filterSet[0], filterSet[1])
-                            )
+                            .map(filterSet => filterChoice(filterSet[0], filterSet[1]))
                             .join(""),
                         "</div>"
                     ].join("")
@@ -1042,9 +951,7 @@ var PairedCollectionCreator = Backbone.View
         _validationWarning: function(what, clear) {
             var VALIDATION_CLASS = "validation-warning";
             if (what === "name") {
-                what = this.$(".collection-name").add(
-                    this.$(".collection-name-prompt")
-                );
+                what = this.$(".collection-name").add(this.$(".collection-name-prompt"));
                 this.$(".collection-name")
                     .focus()
                     .select();
@@ -1104,9 +1011,7 @@ var PairedCollectionCreator = Backbone.View
                     msgClass = "alert-success";
                     message = `${this.paired.length} ${_l("pairs created")}`;
                     if (!this.unpaired.length) {
-                        message += `: ${_l(
-                            "all datasets have been successfully paired"
-                        )}`;
+                        message += `: ${_l("all datasets have been successfully paired")}`;
                         this.hideUnpaired();
                         this.$(".collection-name").focus();
                     }
@@ -1170,8 +1075,7 @@ var PairedCollectionCreator = Backbone.View
             // paired - drop target
             //'dragenter .paired-columns'                 : '_dragenterPairedColumns',
             //'dragleave .paired-columns .column-datasets': '_dragleavePairedColumns',
-            "dragover .paired-columns .column-datasets":
-                "_dragoverPairedColumns",
+            "dragover .paired-columns .column-datasets": "_dragoverPairedColumns",
             "drop .paired-columns .column-datasets": "_dropPairedColumns",
 
             "pair.dragstart .paired-columns .column-datasets": "_pairDragstart",
@@ -1242,12 +1146,8 @@ var PairedCollectionCreator = Backbone.View
         /** set the filters based on the data attributes of the button click target */
         _clickFilterChoice: function(ev) {
             var $selected = $(ev.currentTarget);
-            this.$(".forward-unpaired-filter input").val(
-                $selected.data("forward")
-            );
-            this.$(".reverse-unpaired-filter input").val(
-                $selected.data("reverse")
-            );
+            this.$(".forward-unpaired-filter input").val($selected.data("forward"));
+            this.$(".reverse-unpaired-filter input").val($selected.data("reverse"));
             this._hideChooseFilters();
             this.trigger("filter-change");
         },
@@ -1282,10 +1182,7 @@ var PairedCollectionCreator = Backbone.View
             options = options || {};
             var dataset = $dataset.data("dataset");
 
-            var select =
-                options.force !== undefined
-                    ? options.force
-                    : !$dataset.hasClass("selected");
+            var select = options.force !== undefined ? options.force : !$dataset.hasClass("selected");
 
             //this.debug( id, options.force, $dataset, dataset );
             if (!$dataset.length || dataset === undefined) {
@@ -1311,16 +1208,12 @@ var PairedCollectionCreator = Backbone.View
             var fwds = [];
             var revs = [];
             var pairs = [];
-            self
-                .$(".unpaired-columns .forward-column .dataset.selected")
-                .each(function() {
-                    fwds.push($(this).data("dataset"));
-                });
-            self
-                .$(".unpaired-columns .reverse-column .dataset.selected")
-                .each(function() {
-                    revs.push($(this).data("dataset"));
-                });
+            self.$(".unpaired-columns .forward-column .dataset.selected").each(function() {
+                fwds.push($(this).data("dataset"));
+            });
+            self.$(".unpaired-columns .reverse-column .dataset.selected").each(function() {
+                revs.push($(this).data("dataset"));
+            });
             fwds.length = revs.length = Math.min(fwds.length, revs.length);
             //this.debug( fwds );
             //this.debug( revs );
@@ -1341,9 +1234,7 @@ var PairedCollectionCreator = Backbone.View
 
         /** clear the selection on all unpaired datasets */
         clearSelectedUnpaired: function() {
-            this.$(".unpaired-columns .dataset.selected").removeClass(
-                "selected"
-            );
+            this.$(".unpaired-columns .dataset.selected").removeClass("selected");
         },
 
         /** when holding down the shift key on a click, 'paint' the moused over datasets as selected */
@@ -1495,9 +1386,7 @@ var PairedCollectionCreator = Backbone.View
         /** unpair this pair */
         _clickUnpair: function(ev) {
             //if( !ev.currentTarget ){ return true; }
-            var pairIndex = Math.floor(
-                $(ev.currentTarget).index(".unpair-btn")
-            );
+            var pairIndex = Math.floor($(ev.currentTarget).index(".unpair-btn"));
             //this.debug( 'pair:', pairIndex );
             this._unpair(this.paired[pairIndex]);
         },
@@ -1517,14 +1406,10 @@ var PairedCollectionCreator = Backbone.View
             var $list = this.$(".paired-columns .column-datasets");
             this._checkForAutoscroll($list, ev.originalEvent.clientY);
             //this.debug( ev.originalEvent.clientX, ev.originalEvent.clientY );
-            var $nearest = this._getNearestPairedDatasetLi(
-                ev.originalEvent.clientY
-            );
+            var $nearest = this._getNearestPairedDatasetLi(ev.originalEvent.clientY);
 
             $(".element-drop-placeholder").remove();
-            var $placeholder = $(
-                '<div class="element-drop-placeholder"></div>'
-            );
+            var $placeholder = $('<div class="element-drop-placeholder"></div>');
             if (!$nearest.length) {
                 $list.append($placeholder);
             } else {
@@ -1570,16 +1455,12 @@ var PairedCollectionCreator = Backbone.View
             ev.preventDefault();
             ev.dataTransfer.dropEffect = "move";
 
-            var $nearest = this._getNearestPairedDatasetLi(
-                ev.originalEvent.clientY
-            );
+            var $nearest = this._getNearestPairedDatasetLi(ev.originalEvent.clientY);
             if ($nearest.length) {
                 this.$dragging.insertBefore($nearest);
             } else {
                 // no nearest before - insert after last element (unpair button)
-                this.$dragging.insertAfter(
-                    this.$(".paired-columns .unpair-btn").last()
-                );
+                this.$dragging.insertAfter(this.$(".paired-columns .unpair-btn").last());
             }
             // resync the creator's list of paired based on the new DOM order
             this._syncPairsToDom();
@@ -1614,8 +1495,7 @@ var PairedCollectionCreator = Backbone.View
         // ........................................................................ footer
         toggleExtensions: function(force) {
             var self = this;
-            self.removeExtensions =
-                force !== undefined ? force : !self.removeExtensions;
+            self.removeExtensions = force !== undefined ? force : !self.removeExtensions;
 
             _.each(self.paired, pair => {
                 // don't overwrite custom names
@@ -1652,267 +1532,260 @@ var PairedCollectionCreator = Backbone.View
             return "PairedCollectionCreator";
         },
 
-        templates: _.extend(
-            {},
-            baseCreator.CollectionCreatorMixin._creatorTemplates,
-            {
-                /** the header (not including help text) */
-                header: _.template(
-                    [
-                        '<div class="main-help well clear">',
-                        '<a class="more-help" href="javascript:void(0);">',
-                        _l("More help"),
-                        "</a>",
-                        '<div class="help-content">',
-                        '<a class="less-help" href="javascript:void(0);">',
-                        _l("Less"),
-                        "</a>",
-                        "</div>",
-                        "</div>",
-                        '<div class="alert alert-dismissable">',
-                        '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>',
-                        '<span class="alert-message"></span>',
-                        "</div>",
+        templates: _.extend({}, baseCreator.CollectionCreatorMixin._creatorTemplates, {
+            /** the header (not including help text) */
+            header: _.template(
+                [
+                    '<div class="main-help well clear">',
+                    '<a class="more-help" href="javascript:void(0);">',
+                    _l("More help"),
+                    "</a>",
+                    '<div class="help-content">',
+                    '<a class="less-help" href="javascript:void(0);">',
+                    _l("Less"),
+                    "</a>",
+                    "</div>",
+                    "</div>",
+                    '<div class="alert alert-dismissable">',
+                    '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>',
+                    '<span class="alert-message"></span>',
+                    "</div>",
 
-                        '<div class="column-headers vertically-spaced flex-column-container">',
-                        '<div class="forward-column flex-column column">',
-                        '<div class="column-header">',
-                        '<div class="column-title">',
-                        '<span class="title">',
-                        _l("Unpaired forward"),
-                        "</span>",
-                        '<span class="title-info unpaired-info"></span>',
-                        "</div>",
-                        '<div class="unpaired-filter forward-unpaired-filter pull-left">',
-                        '<input class="search-query" placeholder="',
-                        _l("Filter this list"),
-                        '" />',
-                        "</div>",
-                        "</div>",
-                        "</div>",
-                        '<div class="paired-column flex-column no-flex column">',
-                        '<div class="column-header">',
-                        '<a class="choose-filters-link" href="javascript:void(0)">',
-                        _l("Choose filters"),
-                        "</a>",
-                        '<a class="clear-filters-link" href="javascript:void(0);">',
-                        _l("Clear filters"),
-                        "</a><br />",
-                        '<a class="autopair-link" href="javascript:void(0);">',
-                        _l("Auto-pair"),
-                        "</a>",
-                        "</div>",
-                        "</div>",
-                        '<div class="reverse-column flex-column column">',
-                        '<div class="column-header">',
-                        '<div class="column-title">',
-                        '<span class="title">',
-                        _l("Unpaired reverse"),
-                        "</span>",
-                        '<span class="title-info unpaired-info"></span>',
-                        "</div>",
-                        '<div class="unpaired-filter reverse-unpaired-filter pull-left">',
-                        '<input class="search-query" placeholder="',
-                        _l("Filter this list"),
-                        '" />',
-                        "</div>",
-                        "</div>",
-                        "</div>",
-                        "</div>"
-                    ].join("")
-                ),
+                    '<div class="column-headers vertically-spaced flex-column-container">',
+                    '<div class="forward-column flex-column column">',
+                    '<div class="column-header">',
+                    '<div class="column-title">',
+                    '<span class="title">',
+                    _l("Unpaired forward"),
+                    "</span>",
+                    '<span class="title-info unpaired-info"></span>',
+                    "</div>",
+                    '<div class="unpaired-filter forward-unpaired-filter pull-left">',
+                    '<input class="search-query" placeholder="',
+                    _l("Filter this list"),
+                    '" />',
+                    "</div>",
+                    "</div>",
+                    "</div>",
+                    '<div class="paired-column flex-column no-flex column">',
+                    '<div class="column-header">',
+                    '<a class="choose-filters-link" href="javascript:void(0)">',
+                    _l("Choose filters"),
+                    "</a>",
+                    '<a class="clear-filters-link" href="javascript:void(0);">',
+                    _l("Clear filters"),
+                    "</a><br />",
+                    '<a class="autopair-link" href="javascript:void(0);">',
+                    _l("Auto-pair"),
+                    "</a>",
+                    "</div>",
+                    "</div>",
+                    '<div class="reverse-column flex-column column">',
+                    '<div class="column-header">',
+                    '<div class="column-title">',
+                    '<span class="title">',
+                    _l("Unpaired reverse"),
+                    "</span>",
+                    '<span class="title-info unpaired-info"></span>',
+                    "</div>",
+                    '<div class="unpaired-filter reverse-unpaired-filter pull-left">',
+                    '<input class="search-query" placeholder="',
+                    _l("Filter this list"),
+                    '" />',
+                    "</div>",
+                    "</div>",
+                    "</div>",
+                    "</div>"
+                ].join("")
+            ),
 
-                /** the middle: unpaired, divider, and paired */
-                middle: _.template(
-                    [
-                        // contains two flex rows (rows that fill available space) and a divider btwn
-                        '<div class="unpaired-columns flex-column-container scroll-container flex-row">',
-                        '<div class="forward-column flex-column column">',
-                        '<ol class="column-datasets"></ol>',
-                        "</div>",
-                        '<div class="paired-column flex-column no-flex column">',
-                        '<ol class="column-datasets"></ol>',
-                        "</div>",
-                        '<div class="reverse-column flex-column column">',
-                        '<ol class="column-datasets"></ol>',
-                        "</div>",
-                        "</div>",
-                        '<div class="flexible-partition">',
-                        '<div class="flexible-partition-drag" title="',
-                        _l("Drag to change"),
-                        '"></div>',
-                        '<div class="column-header">',
-                        '<div class="column-title paired-column-title">',
-                        '<span class="title"></span>',
-                        "</div>",
-                        '<a class="unpair-all-link" href="javascript:void(0);">',
-                        _l("Unpair all"),
-                        "</a>",
-                        "</div>",
-                        "</div>",
-                        '<div class="paired-columns flex-column-container scroll-container flex-row">',
-                        '<ol class="column-datasets"></ol>',
-                        "</div>"
-                    ].join("")
-                ),
+            /** the middle: unpaired, divider, and paired */
+            middle: _.template(
+                [
+                    // contains two flex rows (rows that fill available space) and a divider btwn
+                    '<div class="unpaired-columns flex-column-container scroll-container flex-row">',
+                    '<div class="forward-column flex-column column">',
+                    '<ol class="column-datasets"></ol>',
+                    "</div>",
+                    '<div class="paired-column flex-column no-flex column">',
+                    '<ol class="column-datasets"></ol>',
+                    "</div>",
+                    '<div class="reverse-column flex-column column">',
+                    '<ol class="column-datasets"></ol>',
+                    "</div>",
+                    "</div>",
+                    '<div class="flexible-partition">',
+                    '<div class="flexible-partition-drag" title="',
+                    _l("Drag to change"),
+                    '"></div>',
+                    '<div class="column-header">',
+                    '<div class="column-title paired-column-title">',
+                    '<span class="title"></span>',
+                    "</div>",
+                    '<a class="unpair-all-link" href="javascript:void(0);">',
+                    _l("Unpair all"),
+                    "</a>",
+                    "</div>",
+                    "</div>",
+                    '<div class="paired-columns flex-column-container scroll-container flex-row">',
+                    '<ol class="column-datasets"></ol>',
+                    "</div>"
+                ].join("")
+            ),
 
-                /** creation and cancel controls */
-                footer: _.template(
-                    [
-                        '<div class="attributes clear">',
-                        '<div class="clear">',
-                        '<label class="setting-prompt pull-right">',
-                        _l("Hide original elements"),
-                        "?",
-                        '<input class="hide-originals pull-right" type="checkbox" />',
-                        "</label>",
-                        '<label class="setting-prompt pull-right">',
-                        _l("Remove file extensions from pair names"),
-                        "?",
-                        '<input class="remove-extensions pull-right" type="checkbox" />',
-                        "</label>",
-                        "</div>",
-                        '<div class="clear">',
-                        '<input class="collection-name form-control pull-right" ',
-                        'placeholder="',
-                        _l("Enter a name for your new list"),
-                        '" />',
-                        '<div class="collection-name-prompt pull-right">',
-                        _l("Name"),
-                        ":</div>",
-                        "</div>",
-                        "</div>",
+            /** creation and cancel controls */
+            footer: _.template(
+                [
+                    '<div class="attributes clear">',
+                    '<div class="clear">',
+                    '<label class="setting-prompt pull-right">',
+                    _l("Hide original elements"),
+                    "?",
+                    '<input class="hide-originals pull-right" type="checkbox" />',
+                    "</label>",
+                    '<label class="setting-prompt pull-right">',
+                    _l("Remove file extensions from pair names"),
+                    "?",
+                    '<input class="remove-extensions pull-right" type="checkbox" />',
+                    "</label>",
+                    "</div>",
+                    '<div class="clear">',
+                    '<input class="collection-name form-control pull-right" ',
+                    'placeholder="',
+                    _l("Enter a name for your new list"),
+                    '" />',
+                    '<div class="collection-name-prompt pull-right">',
+                    _l("Name"),
+                    ":</div>",
+                    "</div>",
+                    "</div>",
 
-                        '<div class="actions clear vertically-spaced">',
-                        '<div class="other-options pull-left">',
-                        '<button class="cancel-create btn" tabindex="-1">',
-                        _l("Cancel"),
-                        "</button>",
-                        '<div class="create-other btn-group dropup">',
-                        '<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
-                        _l("Create a different kind of collection"),
-                        ' <span class="caret"></span>',
-                        "</button>",
-                        '<ul class="dropdown-menu" role="menu">',
-                        '<li><a href="#">',
-                        _l("Create a <i>single</i> pair"),
-                        "</a></li>",
-                        '<li><a href="#">',
-                        _l("Create a list of <i>unpaired</i> datasets"),
-                        "</a></li>",
-                        "</ul>",
-                        "</div>",
-                        "</div>",
+                    '<div class="actions clear vertically-spaced">',
+                    '<div class="other-options pull-left">',
+                    '<button class="cancel-create btn" tabindex="-1">',
+                    _l("Cancel"),
+                    "</button>",
+                    '<div class="create-other btn-group dropup">',
+                    '<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
+                    _l("Create a different kind of collection"),
+                    ' <span class="caret"></span>',
+                    "</button>",
+                    '<ul class="dropdown-menu" role="menu">',
+                    '<li><a href="#">',
+                    _l("Create a <i>single</i> pair"),
+                    "</a></li>",
+                    '<li><a href="#">',
+                    _l("Create a list of <i>unpaired</i> datasets"),
+                    "</a></li>",
+                    "</ul>",
+                    "</div>",
+                    "</div>",
 
-                        '<div class="main-options pull-right">',
-                        '<button class="create-collection btn btn-primary">',
-                        _l("Create list"),
-                        "</button>",
-                        "</div>",
-                        "</div>"
-                    ].join("")
-                ),
+                    '<div class="main-options pull-right">',
+                    '<button class="create-collection btn btn-primary">',
+                    _l("Create list"),
+                    "</button>",
+                    "</div>",
+                    "</div>"
+                ].join("")
+            ),
 
-                /** help content */
-                helpContent: _.template(
-                    [
-                        "<p>",
-                        _l(
-                            [
-                                "Collections of paired datasets are ordered lists of dataset pairs (often forward and reverse reads). ",
-                                "These collections can be passed to tools and workflows in order to have analyses done on each member of ",
-                                "the entire group. This interface allows you to create a collection, choose which datasets are paired, ",
-                                "and re-order the final collection."
-                            ].join("")
-                        ),
-                        "</p>",
-                        "<p>",
-                        _l(
-                            [
-                                'Unpaired datasets are shown in the <i data-target=".unpaired-columns">unpaired section</i> ',
-                                "(hover over the underlined words to highlight below). ",
-                                'Paired datasets are shown in the <i data-target=".paired-columns">paired section</i>.',
-                                "<ul>To pair datasets, you can:",
-                                "<li>Click a dataset in the ",
-                                '<i data-target=".unpaired-columns .forward-column .column-datasets,',
-                                '.unpaired-columns .forward-column">forward column</i> ',
-                                "to select it then click a dataset in the ",
-                                '<i data-target=".unpaired-columns .reverse-column .column-datasets,',
-                                '.unpaired-columns .reverse-column">reverse column</i>.',
-                                "</li>",
-                                '<li>Click one of the "Pair these datasets" buttons in the ',
-                                '<i data-target=".unpaired-columns .paired-column .column-datasets,',
-                                '.unpaired-columns .paired-column">middle column</i> ',
-                                "to pair the datasets in a particular row.",
-                                "</li>",
-                                '<li>Click <i data-target=".autopair-link">"Auto-pair"</i> ',
-                                "to have your datasets automatically paired based on name.",
-                                "</li>",
-                                "</ul>"
-                            ].join("")
-                        ),
-                        "</p>",
-                        "<p>",
-                        _l(
-                            [
-                                "<ul>You can filter what is shown in the unpaired sections by:",
-                                "<li>Entering partial dataset names in either the ",
-                                '<i data-target=".forward-unpaired-filter input">forward filter</i> or ',
-                                '<i data-target=".reverse-unpaired-filter input">reverse filter</i>.',
-                                "</li>",
-                                "<li>Choosing from a list of preset filters by clicking the ",
-                                '<i data-target=".choose-filters-link">"Choose filters" link</i>.',
-                                "</li>",
-                                "<li>Entering regular expressions to match dataset names. See: ",
-                                '<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions"',
-                                ' target="_blank">MDN\'s JavaScript Regular Expression Tutorial</a>. ',
-                                "Note: forward slashes (\\) are not needed.",
-                                "</li>",
-                                "<li>Clearing the filters by clicking the ",
-                                '<i data-target=".clear-filters-link">"Clear filters" link</i>.',
-                                "</li>",
-                                "</ul>"
-                            ].join("")
-                        ),
-                        "</p>",
-                        "<p>",
-                        _l(
-                            [
-                                "To unpair individual dataset pairs, click the ",
-                                '<i data-target=".unpair-btn">unpair buttons ( <span class="fa fa-unlink"></span> )</i>. ',
-                                'Click the <i data-target=".unpair-all-link">"Unpair all" link</i> to unpair all pairs.'
-                            ].join("")
-                        ),
-                        "</p>",
-                        "<p>",
-                        _l(
-                            [
-                                'You can include or remove the file extensions (e.g. ".fastq") from your pair names by toggling the ',
-                                '<i data-target=".remove-extensions-prompt">"Remove file extensions from pair names?"</i> control.'
-                            ].join("")
-                        ),
-                        "</p>",
-                        "<p>",
-                        _l(
-                            [
-                                'Once your collection is complete, enter a <i data-target=".collection-name">name</i> and ',
-                                'click <i data-target=".create-collection">"Create list"</i>. ',
-                                "(Note: you do not have to pair all unpaired datasets to finish.)"
-                            ].join("")
-                        ),
-                        "</p>"
-                    ].join("")
-                )
-            }
-        )
+            /** help content */
+            helpContent: _.template(
+                [
+                    "<p>",
+                    _l(
+                        [
+                            "Collections of paired datasets are ordered lists of dataset pairs (often forward and reverse reads). ",
+                            "These collections can be passed to tools and workflows in order to have analyses done on each member of ",
+                            "the entire group. This interface allows you to create a collection, choose which datasets are paired, ",
+                            "and re-order the final collection."
+                        ].join("")
+                    ),
+                    "</p>",
+                    "<p>",
+                    _l(
+                        [
+                            'Unpaired datasets are shown in the <i data-target=".unpaired-columns">unpaired section</i> ',
+                            "(hover over the underlined words to highlight below). ",
+                            'Paired datasets are shown in the <i data-target=".paired-columns">paired section</i>.',
+                            "<ul>To pair datasets, you can:",
+                            "<li>Click a dataset in the ",
+                            '<i data-target=".unpaired-columns .forward-column .column-datasets,',
+                            '.unpaired-columns .forward-column">forward column</i> ',
+                            "to select it then click a dataset in the ",
+                            '<i data-target=".unpaired-columns .reverse-column .column-datasets,',
+                            '.unpaired-columns .reverse-column">reverse column</i>.',
+                            "</li>",
+                            '<li>Click one of the "Pair these datasets" buttons in the ',
+                            '<i data-target=".unpaired-columns .paired-column .column-datasets,',
+                            '.unpaired-columns .paired-column">middle column</i> ',
+                            "to pair the datasets in a particular row.",
+                            "</li>",
+                            '<li>Click <i data-target=".autopair-link">"Auto-pair"</i> ',
+                            "to have your datasets automatically paired based on name.",
+                            "</li>",
+                            "</ul>"
+                        ].join("")
+                    ),
+                    "</p>",
+                    "<p>",
+                    _l(
+                        [
+                            "<ul>You can filter what is shown in the unpaired sections by:",
+                            "<li>Entering partial dataset names in either the ",
+                            '<i data-target=".forward-unpaired-filter input">forward filter</i> or ',
+                            '<i data-target=".reverse-unpaired-filter input">reverse filter</i>.',
+                            "</li>",
+                            "<li>Choosing from a list of preset filters by clicking the ",
+                            '<i data-target=".choose-filters-link">"Choose filters" link</i>.',
+                            "</li>",
+                            "<li>Entering regular expressions to match dataset names. See: ",
+                            '<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions"',
+                            ' target="_blank">MDN\'s JavaScript Regular Expression Tutorial</a>. ',
+                            "Note: forward slashes (\\) are not needed.",
+                            "</li>",
+                            "<li>Clearing the filters by clicking the ",
+                            '<i data-target=".clear-filters-link">"Clear filters" link</i>.',
+                            "</li>",
+                            "</ul>"
+                        ].join("")
+                    ),
+                    "</p>",
+                    "<p>",
+                    _l(
+                        [
+                            "To unpair individual dataset pairs, click the ",
+                            '<i data-target=".unpair-btn">unpair buttons ( <span class="fa fa-unlink"></span> )</i>. ',
+                            'Click the <i data-target=".unpair-all-link">"Unpair all" link</i> to unpair all pairs.'
+                        ].join("")
+                    ),
+                    "</p>",
+                    "<p>",
+                    _l(
+                        [
+                            'You can include or remove the file extensions (e.g. ".fastq") from your pair names by toggling the ',
+                            '<i data-target=".remove-extensions-prompt">"Remove file extensions from pair names?"</i> control.'
+                        ].join("")
+                    ),
+                    "</p>",
+                    "<p>",
+                    _l(
+                        [
+                            'Once your collection is complete, enter a <i data-target=".collection-name">name</i> and ',
+                            'click <i data-target=".create-collection">"Create list"</i>. ',
+                            "(Note: you do not have to pair all unpaired datasets to finish.)"
+                        ].join("")
+                    ),
+                    "</p>"
+                ].join("")
+            )
+        })
     });
 
 //=============================================================================
 /** a modal version of the paired collection creator */
-var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(
-    datasets,
-    options
-) {
+var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datasets, options) {
     var deferred = jQuery.Deferred();
     var creator;
 

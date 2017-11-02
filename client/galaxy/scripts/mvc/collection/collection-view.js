@@ -73,18 +73,12 @@ var CollectionView = _super.extend(
                 case "dataset_collection":
                     return this.NestedDCDCEViewClass;
             }
-            throw new TypeError(
-                "Unknown element type:",
-                model.get("element_type")
-            );
+            throw new TypeError("Unknown element type:", model.get("element_type"));
         },
 
         /** override to add link target and anon */
         _getItemViewOptions: function(model) {
-            var options = _super.prototype._getItemViewOptions.call(
-                this,
-                model
-            );
+            var options = _super.prototype._getItemViewOptions.call(this, model);
             return _.extend(options, {
                 linkTarget: this.linkTarget,
                 hasUser: this.hasUser,
@@ -143,9 +137,7 @@ var CollectionView = _super.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return `CollectionView(${this.model
-                ? this.model.get("name")
-                : ""})`;
+            return `CollectionView(${this.model ? this.model.get("name") : ""})`;
         }
     }
 );
@@ -208,9 +200,7 @@ var ListCollectionView = CollectionView.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return `ListCollectionView(${this.model
-                ? this.model.get("name")
-                : ""})`;
+            return `ListCollectionView(${this.model ? this.model.get("name") : ""})`;
         }
     }
 );
@@ -222,9 +212,7 @@ var PairCollectionView = ListCollectionView.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return `PairCollectionView(${this.model
-                ? this.model.get("name")
-                : ""})`;
+            return `PairCollectionView(${this.model ? this.model.get("name") : ""})`;
         }
     }
 );
@@ -242,9 +230,7 @@ var ListOfPairsCollectionView = CollectionView.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return `ListOfPairsCollectionView(${this.model
-                ? this.model.get("name")
-                : ""})`;
+            return `ListOfPairsCollectionView(${this.model ? this.model.get("name") : ""})`;
         }
     }
 );
@@ -259,9 +245,7 @@ var ListOfListsCollectionView = CollectionView.extend({
 
     /** string rep */
     toString: function() {
-        return `ListOfListsCollectionView(${this.model
-            ? this.model.get("name")
-            : ""})`;
+        return `ListOfListsCollectionView(${this.model ? this.model.get("name") : ""})`;
     }
 });
 

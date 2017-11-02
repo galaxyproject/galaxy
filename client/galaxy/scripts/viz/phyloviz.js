@@ -15,9 +15,7 @@ var UserMenuBase = Backbone.View.extend({
         //TODO: use better feedback than alert
         var value = $inputKey.val();
 
-        var fieldName =
-            $inputKey.attr("displayLabel") ||
-            $inputKey.attr("id").replace("phyloViz", "");
+        var fieldName = $inputKey.attr("displayLabel") || $inputKey.attr("id").replace("phyloViz", "");
 
         function isNumeric(n) {
             return !isNaN(parseFloat(n)) && isFinite(n);
@@ -165,8 +163,7 @@ function PhyloTreeLayout() {
             }
         });
 
-        leafHeight =
-            layoutMode === "Circular" ? height / numLeaves : leafHeight;
+        leafHeight = layoutMode === "Circular" ? height / numLeaves : leafHeight;
         leafIndex = 0;
         layout(nodes[0], maxDepth, leafHeight, null);
 
@@ -205,12 +202,7 @@ function PhyloTreeLayout() {
             // if it has children, we will visit all its children and calculate its position from its children
             children.forEach(child => {
                 child.parent = node;
-                sumChildVertSeparation += layout(
-                    child,
-                    maxDepth,
-                    vertSeparation,
-                    node
-                );
+                sumChildVertSeparation += layout(child, maxDepth, vertSeparation, node);
             });
             node.x0 = sumChildVertSeparation / children.length;
         }
@@ -383,9 +375,7 @@ var PhylovizLayoutBase = Backbone.View.extend({
         var diagonal = self.diagonal;
         var duration = self.duration;
         var layoutMode = self.layoutMode;
-        var link = self.vis
-            .selectAll("g.completeLink")
-            .data(self.tree.links(self.nodes), d => d.target.id);
+        var link = self.vis.selectAll("g.completeLink").data(self.tree.links(self.nodes), d => d.target.id);
 
         var calcalateLinePos = d => {
             // position of the source node <=> starting location of the line drawn
@@ -457,12 +447,8 @@ var PhylovizLayoutBase = Backbone.View.extend({
                 var d = this.__data__;
                 var annotation = d.annotation || "None";
                 return d
-                    ? `${d.name
-                          ? `${d.name}<br/>`
-                          : ""}Dist: ${d.dist} <br/>Annotation1: ${annotation}${d.bootstrap
-                          ? `<br/>Confidence level: ${Math.round(
-                                100 * d.bootstrap
-                            )}`
+                    ? `${d.name ? `${d.name}<br/>` : ""}Dist: ${d.dist} <br/>Annotation1: ${annotation}${d.bootstrap
+                          ? `<br/>Confidence level: ${Math.round(100 * d.bootstrap)}`
                           : ""}`
                     : "";
             })
@@ -505,19 +491,13 @@ var PhylovizLinearView = PhylovizLayoutBase.extend({
         var fontSize = `${self.model.get("fontSize")}px`;
 
         // assigning properties from models
-        self.tree
-            .separation(self.model.get("separation"))
-            .leafHeight(self.model.get("leafHeight"));
+        self.tree.separation(self.model.get("separation")).leafHeight(self.model.get("leafHeight"));
 
         var duration = 500;
 
-        var nodes = self.tree
-            .separation(self.model.get("separation"))
-            .nodes(self.model.root);
+        var nodes = self.tree.separation(self.model.get("separation")).nodes(self.model.root);
 
-        var node = self.vis
-            .selectAll("g.node")
-            .data(nodes, d => d.name + d.id || (d.id = ++self.i));
+        var node = self.vis.selectAll("g.node").data(nodes, d => d.name + d.id || (d.id = ++self.i));
 
         // These variables has to be passed into update links which are in the base methods
         self.nodes = nodes;
@@ -548,10 +528,7 @@ var PhylovizLinearView = PhylovizLayoutBase.extend({
             // if d is an array, replate with the first object (newick, phyloxml)
             source = source[0];
         }
-        nodeEnter.attr(
-            "transform",
-            d => `translate(${source.y0},${source.x0})`
-        );
+        nodeEnter.attr("transform", d => `translate(${source.y0},${source.x0})`);
 
         nodeEnter
             .append("svg:circle")
@@ -563,10 +540,7 @@ var PhylovizLinearView = PhylovizLayoutBase.extend({
             .attr("class", "nodeLabel")
             .attr("x", d => (d.children || d._children ? -10 : 10))
             .attr("dy", ".35em")
-            .attr(
-                "text-anchor",
-                d => (d.children || d._children ? "end" : "start")
-            )
+            .attr("text-anchor", d => (d.children || d._children ? "end" : "start"))
             .style("fill-opacity", 1e-6);
 
         // ------- D3 TRANSITION --------
@@ -584,12 +558,7 @@ var PhylovizLinearView = PhylovizLayoutBase.extend({
             .select("text")
             .style("fill-opacity", 1)
             .style("font-size", fontSize)
-            .text(
-                d =>
-                    d.name && d.name !== ""
-                        ? d.name
-                        : d.bootstrap ? Math.round(100 * d.bootstrap) : ""
-            );
+            .text(d => (d.name && d.name !== "" ? d.name : d.bootstrap ? Math.round(100 * d.bootstrap) : ""));
 
         // ------- D3 EXIT --------
         // Transition exiting nodes to the parent's new position.
@@ -639,9 +608,7 @@ var PhylovizView = Backbone.View.extend({
         self.phyloTree.root = self.data;
 
         // -- Set up UI functions of main view
-        self.zoomFunc = d3.behavior
-            .zoom()
-            .scaleExtent([self.MIN_SCALE, self.MAX_SCALE]);
+        self.zoomFunc = d3.behavior.zoom().scaleExtent([self.MIN_SCALE, self.MAX_SCALE]);
         self.zoomFunc.translate(self.phyloTree.get("translate"));
         self.zoomFunc.scale(self.phyloTree.get("scaleFactor"));
 
@@ -698,9 +665,7 @@ var PhylovizView = Backbone.View.extend({
         };
 
         // -- Creating Title
-        $("#title").text(
-            `Phylogenetic Tree from ${self.phyloTree.get("title")}:`
-        );
+        $("#title").text(`Phylogenetic Tree from ${self.phyloTree.get("title")}:`);
 
         // -- Create Linear view instance --
         var linearView = new PhylovizLinearView(self.layoutOptions);
@@ -747,8 +712,7 @@ var PhylovizView = Backbone.View.extend({
             return;
         }
         self.zoomFunc.scale(scaleFactor); //update scale Factor
-        zoomStatement = `translate(${self.margins[3]},${self
-            .margins[0]}) scale(${scaleFactor})`;
+        zoomStatement = `translate(${self.margins[3]},${self.margins[0]}) scale(${scaleFactor})`;
 
         // Do manual translation.
         if (d3.event !== null) {
@@ -758,10 +722,7 @@ var PhylovizView = Backbone.View.extend({
                 var x = translateParams.split(",")[0];
                 var y = translateParams.split(",")[1];
                 if (!isNaN(x) && !isNaN(y)) {
-                    translationCoor = [
-                        translationCoor[0] + parseFloat(x),
-                        translationCoor[1] + parseFloat(y)
-                    ];
+                    translationCoor = [translationCoor[0] + parseFloat(x), translationCoor[1] + parseFloat(y)];
                 }
             }
             self.zoomFunc.translate(translationCoor); // update zoomFunc
@@ -833,14 +794,9 @@ var HeaderButtons = Backbone.View.extend({
                     icon_class: "disk",
                     title: "Save visualization",
                     on_click: function() {
-                        var nexSelected = $(
-                            "#phylovizNexSelector option:selected"
-                        ).text();
+                        var nexSelected = $("#phylovizNexSelector option:selected").text();
                         if (nexSelected) {
-                            self.phylovizView.phyloTree.set(
-                                "title",
-                                nexSelected
-                            );
+                            self.phylovizView.phyloTree.set("title", nexSelected);
                         }
                         self.phylovizView.phyloTree.save();
                     }
@@ -856,9 +812,7 @@ var HeaderButtons = Backbone.View.extend({
                     icon_class: "information",
                     title: "Phyloviz Help",
                     on_click: function() {
-                        window.open(
-                            "https://galaxyproject.org/learn/visualization/phylogenetic-tree/"
-                        );
+                        window.open("https://galaxyproject.org/learn/visualization/phylogenetic-tree/");
                         // https://docs.google.com/document/d/1AXFoJgEpxr21H3LICRs3EyMe1B1X_KFPouzIgrCz3zk/edit
                     }
                 }
@@ -1141,9 +1095,7 @@ var PhyloVizSearch = UserMenuBase.extend({
                             return;
                     }
                 } else if (attr === "name" || attr === "annotation") {
-                    return (
-                        attrVal.toLowerCase().indexOf(val.toLowerCase()) !== -1
-                    );
+                    return attrVal.toLowerCase().indexOf(val.toLowerCase()) !== -1;
                 }
             }
         });

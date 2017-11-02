@@ -113,9 +113,7 @@ export default Backbone.View.extend({
     _refreshPercentage: function() {
         var percentage = parseInt(this.model.get("percentage"));
         this.$progress_bar.css({ width: `${percentage}%` });
-        this.$percentage.html(
-            percentage != 100 ? `${percentage}%` : "Adding to history..."
-        );
+        this.$percentage.html(percentage != 100 ? `${percentage}%` : "Adding to history...");
     },
 
     /** Refresh status */
@@ -145,10 +143,7 @@ export default Backbone.View.extend({
 
     /** Remove row */
     _removeRow: function() {
-        if (
-            ["init", "success", "error"].indexOf(this.model.get("status")) !==
-            -1
-        ) {
+        if (["init", "success", "error"].indexOf(this.model.get("status")) !== -1) {
             this.app.collection.remove(this.model);
         }
     },

@@ -101,18 +101,12 @@ var JobListItemView = _super.extend(
         _findRepeatToolInput: function(name, toolInputs) {
             //ADAPTER
             toolInputs = toolInputs || this.tool.inputs;
-            var partialMatch = _.find(
-                toolInputs,
-                i => name.indexOf(i.name) === 0
-            );
+            var partialMatch = _.find(toolInputs, i => name.indexOf(i.name) === 0);
             if (!partialMatch) {
                 return undefined;
             }
 
-            var subMatch = _.find(
-                partialMatch.inputs,
-                i => name.indexOf(i.name) !== -1
-            );
+            var subMatch = _.find(partialMatch.inputs, i => name.indexOf(i.name) !== -1);
             return subMatch;
         },
 

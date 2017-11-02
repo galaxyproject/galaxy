@@ -21,11 +21,7 @@ var ButtonDefault = Backbone.View.extend({
                 .attr("type", "button")
                 .append((this.$icon = $("<i/>")))
                 .append((this.$title = $("<span/>")))
-                .append(
-                    (this.$progress = $("<div/>").append(
-                        (this.$progress_bar = $("<div/>"))
-                    ))
-                )
+                .append((this.$progress = $("<div/>").append((this.$progress_bar = $("<div/>")))))
         );
         this.listenTo(this.model, "change", this.render, this);
         this.render();
@@ -46,12 +42,8 @@ var ButtonDefault = Backbone.View.extend({
                 options.onclick && !self.disabled && options.onclick();
             })
             .tooltip({ title: options.tooltip, placement: "bottom" });
-        this.$progress
-            .addClass("progress")
-            .css("display", options.percentage !== -1 ? "block" : "none");
-        this.$progress_bar
-            .addClass("progress-bar")
-            .css({ width: `${options.percentage}%` });
+        this.$progress.addClass("progress").css("display", options.percentage !== -1 ? "block" : "none");
+        this.$progress_bar.addClass("progress-bar").css({ width: `${options.percentage}%` });
         this.$icon.removeClass().addClass("icon fa");
         this.$title.removeClass().addClass("title");
         if (options.wait) {
@@ -62,9 +54,7 @@ var ButtonDefault = Backbone.View.extend({
             this.$el.addClass(options.cls);
             this.$icon.addClass(options.icon);
             this.$title.html(options.title);
-            options.icon &&
-                options.title &&
-                this.$icon.addClass("ui-margin-right");
+            options.icon && options.title && this.$icon.addClass("ui-margin-right");
         }
     },
 
@@ -149,11 +139,7 @@ var ButtonCheck = Backbone.View.extend({
             new Backbone.Model({
                 id: Utils.uid(),
                 title: "Select/Unselect all",
-                icons: [
-                    "fa-square-o",
-                    "fa-minus-square-o",
-                    "fa-check-square-o"
-                ],
+                icons: ["fa-square-o", "fa-minus-square-o", "fa-check-square-o"],
                 value: 0,
                 onchange: function() {}
             }).set(options);
@@ -173,10 +159,7 @@ var ButtonCheck = Backbone.View.extend({
             .addClass("ui-button-check")
             .off("click")
             .on("click", () => {
-                self.model.set(
-                    "value",
-                    (self.model.get("value") === 0 && 2) || 0
-                );
+                self.model.set("value", (self.model.get("value") === 0 && 2) || 0);
                 options.onclick && options.onclick();
             });
         this.$title.html(options.title);
@@ -241,9 +224,7 @@ var ButtonIcon = ButtonDefault.extend({
                 $(".tooltip").hide();
                 !options.disabled && options.onclick && options.onclick();
             });
-        this.$button
-            .addClass("button")
-            .tooltip({ title: options.tooltip, placement: "bottom" });
+        this.$button.addClass("button").tooltip({ title: options.tooltip, placement: "bottom" });
         this.$icon
             .removeClass()
             .addClass("icon fa")
@@ -282,12 +263,7 @@ var ButtonMenu = ButtonDefault.extend({
             )
         );
         this.listenTo(this.model, "change", this.render, this);
-        this.listenTo(
-            this.collection,
-            "change add remove reset",
-            this.render,
-            this
-        );
+        this.listenTo(this.collection, "change add remove reset", this.render, this);
         this.render();
     },
 
@@ -300,11 +276,7 @@ var ButtonMenu = ButtonDefault.extend({
             .addClass(options.cls)
             .attr("id", options.id)
             .css({
-                display:
-                    options.visible &&
-                    this.collection.where({ visible: true }).length > 0
-                        ? "block"
-                        : "none"
+                display: options.visible && this.collection.where({ visible: true }).length > 0 ? "block" : "none"
             });
         this.$root
             .addClass("root button dropdown-toggle")
@@ -346,10 +318,7 @@ var ButtonMenu = ButtonDefault.extend({
                         $("<i/>")
                             .addClass("fa")
                             .addClass(suboptions.icon)
-                            .css(
-                                "display",
-                                suboptions.icon ? "inline-block" : "none"
-                            )
+                            .css("display", suboptions.icon ? "inline-block" : "none")
                     )
                     .append(suboptions.title)
                     .on("click", e => {
@@ -359,8 +328,7 @@ var ButtonMenu = ButtonDefault.extend({
                         }
                     });
                 self.$menu.append($("<li/>").append($link));
-                suboptions.divider &&
-                    self.$menu.append($("<li/>").addClass("divider"));
+                suboptions.divider && self.$menu.append($("<li/>").addClass("divider"));
             }
         });
     },

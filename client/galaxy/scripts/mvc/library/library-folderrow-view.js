@@ -31,10 +31,7 @@ var FolderRowView = Backbone.View.extend({
         var folder_item = this.options.model;
         var template = null;
 
-        if (
-            folder_item.get("type") === "folder" ||
-            folder_item.get("model_class") === "LibraryFolder"
-        ) {
+        if (folder_item.get("type") === "folder" || folder_item.get("model_class") === "LibraryFolder") {
             this.options.type = "folder";
             this.prepareButtons(folder_item);
             if (folder_item.get("deleted")) {
@@ -44,8 +41,7 @@ var FolderRowView = Backbone.View.extend({
             }
         } else if (
             folder_item.get("type") === "file" ||
-            folder_item.get("model_class") ===
-                "LibraryDatasetDatasetAssociation" ||
+            folder_item.get("model_class") === "LibraryDatasetDatasetAssociation" ||
             folder_item.get("model_class") === "LibraryDataset"
         ) {
             this.options.type = "file";
@@ -56,9 +52,7 @@ var FolderRowView = Backbone.View.extend({
             }
         } else {
             Galaxy.emit.error("Unknown library item type found.");
-            Galaxy.emit.error(
-                folder_item.get("type") || folder_item.get("model_class")
-            );
+            Galaxy.emit.error(folder_item.get("type") || folder_item.get("model_class"));
         }
         this.setElement(
             template({
@@ -104,9 +98,7 @@ var FolderRowView = Backbone.View.extend({
 
     /* Show the page with dataset details. */
     showDatasetDetails: function() {
-        Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView(
-            { id: this.id }
-        );
+        Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({ id: this.id });
     },
 
     /* Undelete the dataset on server and render the row again. */
@@ -116,40 +108,26 @@ var FolderRowView = Backbone.View.extend({
         var dataset_id = $(event.target)
             .closest("tr")
             .data("id");
-        var dataset = Galaxy.libraries.folderListView.collection.get(
-            dataset_id
-        );
+        var dataset = Galaxy.libraries.folderListView.collection.get(dataset_id);
         dataset.url = `${dataset.urlRoot + dataset.id}?undelete=true`;
         dataset.destroy({
             success: function(model, response) {
                 Galaxy.libraries.folderListView.collection.remove(dataset_id);
                 var updated_dataset = new mod_library_model.Item(response);
                 Galaxy.libraries.folderListView.collection.add(updated_dataset);
-                Galaxy.libraries.folderListView.collection.sortFolder(
-                    "name",
-                    "asc"
-                );
-                mod_toastr.success(
-                    "Dataset undeleted. Click this to see it.",
-                    "",
-                    {
-                        onclick: function() {
-                            var folder_id = that.model.get("folder_id");
-                            window.location = `${Galaxy.root}library/list#folders/${folder_id}/datasets/${that.id}`;
-                        }
+                Galaxy.libraries.folderListView.collection.sortFolder("name", "asc");
+                mod_toastr.success("Dataset undeleted. Click this to see it.", "", {
+                    onclick: function() {
+                        var folder_id = that.model.get("folder_id");
+                        window.location = `${Galaxy.root}library/list#folders/${folder_id}/datasets/${that.id}`;
                     }
-                );
+                });
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(
-                        `Dataset was not undeleted. ${response.responseJSON
-                            .err_msg}`
-                    );
+                    mod_toastr.error(`Dataset was not undeleted. ${response.responseJSON.err_msg}`);
                 } else {
-                    mod_toastr.error(
-                        "An error occured! Dataset was not undeleted. Please try again."
-                    );
+                    mod_toastr.error("An error occured! Dataset was not undeleted. Please try again.");
                 }
             }
         });
@@ -167,26 +145,16 @@ var FolderRowView = Backbone.View.extend({
         folder.destroy({
             success: function(model, response) {
                 Galaxy.libraries.folderListView.collection.remove(folder_id);
-                var updated_folder = new mod_library_model.FolderAsModel(
-                    response
-                );
+                var updated_folder = new mod_library_model.FolderAsModel(response);
                 Galaxy.libraries.folderListView.collection.add(updated_folder);
-                Galaxy.libraries.folderListView.collection.sortFolder(
-                    "name",
-                    "asc"
-                );
+                Galaxy.libraries.folderListView.collection.sortFolder("name", "asc");
                 mod_toastr.success("Folder undeleted.");
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(
-                        `Folder was not undeleted. ${response.responseJSON
-                            .err_msg}`
-                    );
+                    mod_toastr.error(`Folder was not undeleted. ${response.responseJSON.err_msg}`);
                 } else {
-                    mod_toastr.error(
-                        "An error occured! Folder was not undeleted. Please try again."
-                    );
+                    mod_toastr.error("An error occured! Folder was not undeleted. Please try again.");
                 }
             }
         });
@@ -205,30 +173,20 @@ var FolderRowView = Backbone.View.extend({
     },
 
     saveModifications: function() {
-        var folder = Galaxy.libraries.folderListView.collection.get(
-            this.$el.data("id")
-        );
+        var folder = Galaxy.libraries.folderListView.collection.get(this.$el.data("id"));
         var is_changed = false;
         var new_name = this.$el.find(".input_folder_name").val();
-        if (
-            typeof new_name !== "undefined" &&
-            new_name !== folder.get("name")
-        ) {
+        if (typeof new_name !== "undefined" && new_name !== folder.get("name")) {
             if (new_name.length > 2) {
                 folder.set("name", new_name);
                 is_changed = true;
             } else {
-                mod_toastr.warning(
-                    "Folder name has to be at least 3 characters long."
-                );
+                mod_toastr.warning("Folder name has to be at least 3 characters long.");
                 return;
             }
         }
         var new_description = this.$el.find(".input_folder_description").val();
-        if (
-            typeof new_description !== "undefined" &&
-            new_description !== folder.get("description")
-        ) {
+        if (typeof new_description !== "undefined" && new_description !== folder.get("description")) {
             folder.set("description", new_description);
             is_changed = true;
         }
@@ -245,9 +203,7 @@ var FolderRowView = Backbone.View.extend({
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error(
-                            "An error occured while attempting to update the folder."
-                        );
+                        mod_toastr.error("An error occured while attempting to update the folder.");
                     }
                 }
             });

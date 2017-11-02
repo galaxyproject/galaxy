@@ -77,9 +77,7 @@ var HistoryPairDatasetCollection = PairDC.extend(hcontentMixin).extend(
 
 //==============================================================================
 /** @class Backbone model for List of Pairs Dataset Collection within a History. */
-var HistoryListPairedDatasetCollection = ListPairedDC.extend(
-    hcontentMixin
-).extend({
+var HistoryListPairedDatasetCollection = ListPairedDC.extend(hcontentMixin).extend({
     defaults: _.extend(_.clone(ListPairedDC.prototype.defaults), {
         history_content_type: "dataset_collection",
         collection_type: "list:paired",
@@ -97,9 +95,7 @@ var HistoryListPairedDatasetCollection = ListPairedDC.extend(
 
 //==============================================================================
 /** @class Backbone model for List of Lists Dataset Collection within a History. */
-var HistoryListOfListsDatasetCollection = ListOfListsDC.extend(
-    hcontentMixin
-).extend({
+var HistoryListOfListsDatasetCollection = ListOfListsDC.extend(hcontentMixin).extend({
     defaults: _.extend(_.clone(ListOfListsDC.prototype.defaults), {
         history_content_type: "dataset_collection",
         collection_type: "list:list",
@@ -111,11 +107,7 @@ var HistoryListOfListsDatasetCollection = ListOfListsDC.extend(
 
     /** String representation. */
     toString: function() {
-        return [
-            "HistoryListOfListsDatasetCollection(",
-            this.get("name"),
-            ")"
-        ].join("");
+        return ["HistoryListOfListsDatasetCollection(", this.get("name"), ")"].join("");
     }
 });
 

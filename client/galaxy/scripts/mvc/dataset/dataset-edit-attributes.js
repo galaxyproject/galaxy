@@ -24,29 +24,22 @@ var View = Backbone.View.extend({
     render: function() {
         var self = this;
         $.ajax({
-            url: `${Galaxy.root}dataset/get_edit?dataset_id=${self.model.get(
-                "dataset_id"
-            )}`,
+            url: `${Galaxy.root}dataset/get_edit?dataset_id=${self.model.get("dataset_id")}`,
             success: function(response) {
                 !self.initial_message && self.message.update(response);
                 self.initial_message = true;
                 _.each(self.forms, (form, key) => {
                     form.model.set("inputs", response[`${key}_inputs`]);
-                    form.model.set(
-                        "hide_operations",
-                        response[`${key}_disable`]
-                    );
+                    form.model.set("hide_operations", response[`${key}_disable`]);
                     form.render();
                 });
                 self.$el.show();
             },
             error: function(response) {
-                var err_msg =
-                    response.responseJSON && response.responseJSON.err_msg;
+                var err_msg = response.responseJSON && response.responseJSON.err_msg;
                 self.message.update({
                     status: "danger",
-                    message:
-                        err_msg || "Error occured while loading the dataset."
+                    message: err_msg || "Error occured while loading the dataset."
                 });
             }
         });
@@ -68,13 +61,10 @@ var View = Backbone.View.extend({
                 self._reloadHistory();
             },
             error: function(response) {
-                var err_msg =
-                    response.responseJSON && response.responseJSON.err_msg;
+                var err_msg = response.responseJSON && response.responseJSON.err_msg;
                 self.message.update({
                     status: "danger",
-                    message:
-                        err_msg ||
-                        "Error occured while editing the dataset attributes."
+                    message: err_msg || "Error occured while editing the dataset attributes."
                 });
             }
         });

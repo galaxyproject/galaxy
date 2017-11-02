@@ -14,15 +14,10 @@ var HistoryDatasetAssociation = _super.extend(
         hcontentMixin,
         /** @lends HistoryDatasetAssociation.prototype */ {
             /** default attributes for a model */
-            defaults: _.extend(
-                {},
-                _super.prototype.defaults,
-                hcontentMixin.defaults,
-                {
-                    history_content_type: "dataset",
-                    model_class: "HistoryDatasetAssociation"
-                }
-            )
+            defaults: _.extend({}, _super.prototype.defaults, hcontentMixin.defaults, {
+                history_content_type: "dataset",
+                model_class: "HistoryDatasetAssociation"
+            })
         }
     )
 );

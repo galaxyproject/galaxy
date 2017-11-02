@@ -57,11 +57,7 @@ var Tool = Backbone.View.extend({
                         type: "tool",
                         inputs: $.extend(true, {}, form.data.create())
                     };
-                    Galaxy.emit.debug(
-                        "tool-form-workflow::postchange()",
-                        "Sending current state.",
-                        current_state
-                    );
+                    Galaxy.emit.debug("tool-form-workflow::postchange()", "Sending current state.", current_state);
                     Utils.request({
                         type: "POST",
                         url: `${Galaxy.root}api/workflows/build_module`,
@@ -76,19 +72,11 @@ var Tool = Backbone.View.extend({
                             // state stored on the client with. User needs to save
                             // for this to take effect.
                             node.update_field_data(data);
-                            Galaxy.emit.debug(
-                                "tool-form-workflow::postchange()",
-                                "Received new model.",
-                                data
-                            );
+                            Galaxy.emit.debug("tool-form-workflow::postchange()", "Received new model.", data);
                             process.resolve();
                         },
                         error: function(response) {
-                            Galaxy.emit.debug(
-                                "tool-form-workflow::postchange()",
-                                "Refresh request failed.",
-                                response
-                            );
+                            Galaxy.emit.debug("tool-form-workflow::postchange()", "Refresh request failed.", response);
                             process.reject();
                         }
                     });
@@ -103,23 +91,19 @@ var Tool = Backbone.View.extend({
             if (input.type) {
                 if (["data", "data_collection"].indexOf(input.type) != -1) {
                     input.type = "hidden";
-                    input.info = `Data input '${input.name}' (${Utils.textify(
-                        input.extensions
-                    )})`;
+                    input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
                     input.value = { __class__: "RuntimeValue" };
                 } else if (!input.fixed) {
                     input.collapsible_value = {
                         __class__: "RuntimeValue"
                     };
                     input.is_workflow =
-                        (input.options && input.options.length == 0) ||
-                        ["integer", "float"].indexOf(input.type) != -1;
+                        (input.options && input.options.length == 0) || ["integer", "float"].indexOf(input.type) != -1;
                 }
             }
         });
         Utils.deepeach(options.inputs, input => {
-            input.type == "conditional" &&
-                (input.test_param.collapsible_value = undefined);
+            input.type == "conditional" && (input.test_param.collapsible_value = undefined);
         });
         _addSections(form);
         _addLabelAnnotation(form);
@@ -138,8 +122,7 @@ function _addLabelAnnotation(form) {
         fixed: true,
         value: node.annotation,
         area: true,
-        help:
-            "Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
+        help: "Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
     });
     options.inputs.unshift({
         type: "text",
@@ -161,8 +144,7 @@ function _addLabelAnnotation(form) {
             var input_element = form.element_list[input_id];
             input_element.model.set(
                 "error_text",
-                duplicate &&
-                    "Duplicate label. Please fix this before saving the workflow."
+                duplicate && "Duplicate label. Please fix this before saving the workflow."
             );
             form.trigger("change");
         }
@@ -177,8 +159,7 @@ function _addSections(form) {
     var node = options.node;
     var workflow = options.workflow;
     var post_job_actions = node.post_job_actions;
-    var output_id =
-        node.output_terminals && Object.keys(node.output_terminals)[0];
+    var output_id = node.output_terminals && Object.keys(node.output_terminals)[0];
 
     /** Visit input nodes and enrich by name/value pairs from server data */
     function visit(head, head_list) {
@@ -194,8 +175,7 @@ function _addSections(form) {
                 }
                 if (input.payload) {
                     for (var p_id in input.payload) {
-                        input.payload[`${input.name}__${p_id}`] =
-                            input.payload[p_id];
+                        input.payload[`${input.name}__${p_id}`] = input.payload[p_id];
                         delete input.payload[p_id];
                     }
                 }
@@ -205,10 +185,7 @@ function _addSections(form) {
                         head_list[j].expanded = true;
                     }
                     if (input.pja_arg) {
-                        input.value =
-                            (d.action_arguments &&
-                                d.action_arguments[input.pja_arg]) ||
-                            input.value;
+                        input.value = (d.action_arguments && d.action_arguments[input.pja_arg]) || input.value;
                     } else {
                         input.value = "true";
                     }
@@ -228,9 +205,7 @@ function _addSections(form) {
         for (key in node.input_terminals) {
             input_terminal_names.push(node.input_terminals[key].name);
         }
-        extensions.sort(
-            (a, b) => (a.label > b.label ? 1 : a.label < b.label ? -1 : 0)
-        );
+        extensions.sort((a, b) => (a.label > b.label ? 1 : a.label < b.label ? -1 : 0));
         extensions.unshift({
             0: "Sequences",
             1: "Sequences"
@@ -252,18 +227,11 @@ function _addSections(form) {
                 {
                     label: "Label",
                     type: "text",
-                    value:
-                        ((output = node.getWorkflowOutput(output_id)) &&
-                            output.label) ||
-                        "",
+                    value: ((output = node.getWorkflowOutput(output_id)) && output.label) || "",
                     help:
                         "This will provide a short name to describe the output - this must be unique across workflows.",
                     onchange: function(new_value) {
-                        workflow.attemptUpdateOutputLabel(
-                            node,
-                            output_id,
-                            new_value
-                        );
+                        workflow.attemptUpdateOutputLabel(node, output_id, new_value);
                     }
                 },
                 {
@@ -285,8 +253,7 @@ function _addSections(form) {
                     ignore: "__empty__",
                     value: "__empty__",
                     options: extensions,
-                    help:
-                        "This action will change the datatype of the output to the indicated value."
+                    help: "This action will change the datatype of the output to the indicated value."
                 },
                 {
                     action: "TagDatasetAction",
@@ -352,8 +319,7 @@ function _addSections(form) {
                             ignore: ""
                         }
                     ],
-                    help:
-                        "This action will set column assignments in the output dataset. Blank fields are ignored."
+                    help: "This action will set column assignments in the output dataset. Blank fields are ignored."
                 }
             ]
         };
@@ -368,8 +334,7 @@ function _addSections(form) {
             type: "boolean",
             value: String(Boolean(post_job_actions[`EmailAction${output_id}`])),
             ignore: "false",
-            help:
-                "An email notification will be sent when the job has completed.",
+            help: "An email notification will be sent when the job has completed.",
             payload: {
                 host: window.location.host
             }
@@ -378,11 +343,7 @@ function _addSections(form) {
             name: `pja__${output_id}__DeleteIntermediatesAction`,
             label: "Output cleanup",
             type: "boolean",
-            value: String(
-                Boolean(
-                    post_job_actions[`DeleteIntermediatesAction${output_id}`]
-                )
-            ),
+            value: String(Boolean(post_job_actions[`DeleteIntermediatesAction${output_id}`])),
             ignore: "false",
             help:
                 "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."

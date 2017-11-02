@@ -35,13 +35,9 @@ var AnnotationEditor = Backbone.View
                 use_textarea: true,
                 on_finish: function(newAnnotation) {
                     view.$annotation().text(newAnnotation);
-                    view.model
-                        .save({ annotation: newAnnotation }, { silent: true })
-                        .fail(() => {
-                            view
-                                .$annotation()
-                                .text(view.model.previous("annotation"));
-                        });
+                    view.model.save({ annotation: newAnnotation }, { silent: true }).fail(() => {
+                        view.$annotation().text(view.model.previous("annotation"));
+                    });
                 }
             });
             return this;

@@ -18,13 +18,7 @@ var BBIDataManager = visualization.GenomeDataManager.extend({
         var self = this;
         var promise = new $.Deferred();
         $.when(bigwig.makeBwg(url)).then((bb, err) => {
-            $.when(
-                bb.readWigData(
-                    region.get("chrom"),
-                    region.get("start"),
-                    region.get("end")
-                )
-            ).then(data => {
+            $.when(bb.readWigData(region.get("chrom"), region.get("start"), region.get("end"))).then(data => {
                 // Transform data into "bigwig" format for LinePainter. "bigwig" format is an array of 2-element arrays
                 // where each element is [position, score]; unlike real bigwig format, no gaps are allowed.
                 var result = [];

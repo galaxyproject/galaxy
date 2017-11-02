@@ -35,10 +35,7 @@ var View = Backbone.View.extend({
     /** Add new repeat block */
     add: function(options) {
         if (!options.id || this.list[options.id]) {
-            Galaxy.emit.debug(
-                "form-repeat::add()",
-                "Duplicate or invalid repeat block id."
-            );
+            Galaxy.emit.debug("form-repeat::add()", "Duplicate or invalid repeat block id.");
             return;
         }
         var button_delete = new Ui.ButtonIcon({
@@ -59,9 +56,7 @@ var View = Backbone.View.extend({
         portlet.$el.addClass("section-row").hide();
         this.list[options.id] = portlet;
         this.$list.append(portlet.$el.fadeIn("fast"));
-        this.options.max > 0 &&
-            this.size() >= this.options.max &&
-            this.button_new.disable();
+        this.options.max > 0 && this.size() >= this.options.max && this.button_new.disable();
         this._refresh();
     },
 
@@ -104,11 +99,7 @@ var View = Backbone.View.extend({
         for (var id in this.list) {
             var portlet = this.list[id];
             portlet.title(`${++index}: ${this.options.title}`);
-            portlet[
-                this.size() > this.options.min
-                    ? "showOperation"
-                    : "hideOperation"
-            ]("button_delete");
+            portlet[this.size() > this.options.min ? "showOperation" : "hideOperation"]("button_delete");
         }
     }
 });

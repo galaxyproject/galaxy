@@ -58,9 +58,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
             // ---- instance vars
             /** how quickly should jquery fx run? */
-            this.fxSpeed = _.has(attributes, "fxSpeed")
-                ? attributes.fxSpeed
-                : this.fxSpeed;
+            this.fxSpeed = _.has(attributes, "fxSpeed") ? attributes.fxSpeed : this.fxSpeed;
 
             /** filters for displaying subviews */
             this.filters = [];
@@ -71,10 +69,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             // this.indicator = new LoadingIndicator( this.$el );
 
             /** currently showing selectors on items? */
-            this.selecting =
-                attributes.selecting !== undefined
-                    ? attributes.selecting
-                    : true;
+            this.selecting = attributes.selecting !== undefined ? attributes.selecting : true;
             //this.selecting = false;
 
             /** cached selected item.model.ids to persist btwn renders */
@@ -91,15 +86,13 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             /** list item views */
             this.views = [];
             /** list item models */
-            this.collection =
-                attributes.collection || this._createDefaultCollection();
+            this.collection = attributes.collection || this._createDefaultCollection();
 
             /** filter fns run over collection items to see if they should show in the list */
             this.filters = attributes.filters || [];
 
             /** override $scrollContainer fn via attributes - fn should return jq for elem to call scrollTo on */
-            this.$scrollContainer =
-                attributes.$scrollContainer || this.$scrollContainer;
+            this.$scrollContainer = attributes.$scrollContainer || this.$scrollContainer;
 
             /** @type {String} generic title */
             this.title = attributes.title || "";
@@ -160,26 +153,15 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
                     var changes = options.changes;
                     // console.info( collection + ', update:', changes, '\noptions:', options );
                     // more than one: render everything
-                    if (
-                        options.renderAll ||
-                        changes.added.length + changes.removed.length > 1
-                    ) {
+                    if (options.renderAll || changes.added.length + changes.removed.length > 1) {
                         return this.renderItems();
                     }
                     // otherwise, let the single add/remove handlers do it
                     if (changes.added.length === 1) {
-                        return this.addItemView(
-                            _.first(changes.added),
-                            collection,
-                            options
-                        );
+                        return this.addItemView(_.first(changes.added), collection, options);
                     }
                     if (changes.removed.length === 1) {
-                        return this.removeItemView(
-                            _.first(changes.removed),
-                            collection,
-                            options
-                        );
+                        return this.removeItemView(_.first(changes.removed), collection, options);
                     }
                 }
             });
@@ -194,9 +176,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             this.on({
                 "view:selected": function(view, ev) {
                     if (ev && ev.shiftKey && this.lastSelected) {
-                        var lastSelectedView = this.viewFromModelId(
-                            this.lastSelected
-                        );
+                        var lastSelectedView = this.viewFromModelId(this.lastSelected);
                         if (lastSelectedView) {
                             this.selectRange(view, lastSelectedView);
                         }
@@ -331,11 +311,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
                 ].join("")
             );
             var $actions = actions.map(action => {
-                var html = [
-                    '<li><a href="javascript:void(0);">',
-                    action.html,
-                    "</a></li>"
-                ].join("");
+                var html = ['<li><a href="javascript:void(0);">', action.html, "</a></li>"].join("");
                 return $(html).click(ev => {
                     ev.preventDefault();
                     return action.func(ev);
@@ -517,9 +493,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             var self = this;
             // console.log( '_attachItems:', $whereTo, this.$list( $whereTo ) );
             //ASSUMES: $list has been emptied
-            this.$list($whereTo).append(
-                this.views.map(view => self._renderItemView$el(view))
-            );
+            this.$list($whereTo).append(this.views.map(view => self._renderItemView$el(view)));
             return this;
         },
 
@@ -591,10 +565,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
             // use the modelIndex to splice into views and insert at the proper index in the DOM
             panel.views.splice(modelIndex, 0, view);
-            panel._insertIntoListAt(
-                modelIndex,
-                panel._renderItemView$el(view).hide()
-            );
+            panel._insertIntoListAt(modelIndex, panel._renderItemView$el(view).hide());
 
             panel.trigger("view:attached", view);
             if (useFx) {
@@ -664,9 +635,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         /** get views based on model properties */
         viewsWhereModel: function(properties) {
-            return this.views.filter(view =>
-                _.isMatch(view.model.attributes, properties)
-            );
+            return this.views.filter(view => _.isMatch(view.model.attributes, properties));
         },
 
         /** A range of views between (and including) viewA and viewB */
@@ -687,9 +656,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             }
             // reverse if indeces are
             //note: end inclusive
-            return indexA < indexB
-                ? this.views.slice(indexA, indexB + 1)
-                : this.views.slice(indexB, indexA + 1);
+            return indexA < indexB ? this.views.slice(indexA, indexB + 1) : this.views.slice(indexB, indexA + 1);
         },
 
         // ------------------------------------------------------------------------ searching
@@ -753,8 +720,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             speed = speed !== undefined ? speed : this.fxSpeed;
             this.selecting = true;
             this.$(".list-actions").slideDown(speed);
-            speed =
-                this.views.length >= this.THROTTLE_SELECTOR_FX_AT ? 0 : speed;
+            speed = this.views.length >= this.THROTTLE_SELECTOR_FX_AT ? 0 : speed;
             _.each(this.views, view => {
                 view.showSelector(speed);
             });
@@ -767,8 +733,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             speed = speed !== undefined ? speed : this.fxSpeed;
             this.selecting = false;
             this.$(".list-actions").slideUp(speed);
-            speed =
-                this.views.length >= this.THROTTLE_SELECTOR_FX_AT ? 0 : speed;
+            speed = this.views.length >= this.THROTTLE_SELECTOR_FX_AT ? 0 : speed;
             _.each(this.views, view => {
                 view.hideSelector(speed);
             });
@@ -817,21 +782,13 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
         /** return a collection of the models of all currenly selected items */
         getSelectedModels: function() {
             // console.log( '(getSelectedModels)' );
-            return new this.collection.constructor(
-                _.map(this.getSelectedViews(), view => view.model)
-            );
+            return new this.collection.constructor(_.map(this.getSelectedViews(), view => view.model));
         },
 
         // ------------------------------------------------------------------------ loading indicator
         /** hide the $el and display a loading indicator (in the $el's parent) when loading new data */
         _showLoadingIndicator: function(msg, speed, callback) {
-            this.debug(
-                "_showLoadingIndicator",
-                this.indicator,
-                msg,
-                speed,
-                callback
-            );
+            this.debug("_showLoadingIndicator", this.indicator, msg, speed, callback);
             speed = speed !== undefined ? speed : this.fxSpeed;
             if (!this.indicator) {
                 this.indicator = new LoadingIndicator(this.$el);
@@ -847,12 +804,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         /** hide the loading indicator */
         _hideLoadingIndicator: function(speed, callback) {
-            this.debug(
-                "_hideLoadingIndicator",
-                this.indicator,
-                speed,
-                callback
-            );
+            this.debug("_hideLoadingIndicator", this.indicator, speed, callback);
             speed = speed !== undefined ? speed : this.fxSpeed;
             if (this.indicator) {
                 this.indicator.hide(speed, callback);
@@ -969,8 +921,7 @@ var ModelListPanel = ListPanel.extend({
 
     initialize: function(attributes) {
         ListPanel.prototype.initialize.call(this, attributes);
-        this.selecting =
-            attributes.selecting !== undefined ? attributes.selecting : false;
+        this.selecting = attributes.selecting !== undefined ? attributes.selecting : false;
 
         this.setModel(this.model, attributes);
     },
@@ -1000,9 +951,7 @@ var ModelListPanel = ListPanel.extend({
             //  the model[ modelCollectionKey ], attributes.collection, or an empty vanilla collection
             this.stopListening(this.collection);
             this.collection =
-                this.model[this.modelCollectionKey] ||
-                attributes.collection ||
-                this._createDefaultCollection();
+                this.model[this.modelCollectionKey] || attributes.collection || this._createDefaultCollection();
             this._setUpCollectionListeners();
 
             if (oldModelId && model.get("id") !== oldModelId) {

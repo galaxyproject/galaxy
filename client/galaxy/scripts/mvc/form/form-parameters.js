@@ -36,18 +36,10 @@ export default Backbone.Model.extend({
     /** Returns an input field for a given field type */
     create: function(input_def) {
         var fieldClass = this.types[input_def.type];
-        var field =
-            typeof this[fieldClass] === "function"
-                ? this[fieldClass].call(this, input_def)
-                : null;
+        var field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
         if (!field) {
-            field = input_def.options
-                ? this._fieldSelect(input_def)
-                : this._fieldText(input_def);
-            Galaxy.emit.debug(
-                "form-parameters::_addRow()",
-                `Auto matched field type (${input_def.type}).`
-            );
+            field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
+            Galaxy.emit.debug("form-parameters::_addRow()", `Auto matched field type (${input_def.type}).`);
         }
         input_def.value === undefined && (input_def.value = null);
         field.value(input_def.value);
@@ -191,10 +183,7 @@ export default Backbone.Model.extend({
     _fieldBoolean: function(input_def) {
         return new Ui.RadioButton.View({
             id: `field-${input_def.id}`,
-            data: [
-                { label: "Yes", value: "true" },
-                { label: "No", value: "false" }
-            ],
+            data: [{ label: "Yes", value: "true" }, { label: "No", value: "false" }],
             onchange: input_def.onchange
         });
     },

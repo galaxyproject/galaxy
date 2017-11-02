@@ -13,9 +13,7 @@ var Manager = Backbone.Model.extend({
             var id = $(this).attr("id");
             var field = self.app.field_list[id];
             if (field) {
-                sum += `${id}:${JSON.stringify(
-                    field.value && field.value()
-                )}:${field.collapsed};`;
+                sum += `${id}:${JSON.stringify(field.value && field.value())}:${field.collapsed};`;
             }
         });
         return sum;
@@ -35,8 +33,7 @@ var Manager = Backbone.Model.extend({
         function add(flat_id, input_id, input_value) {
             self.flat_dict[flat_id] = input_id;
             result_dict[flat_id] = input_value;
-            self.app.element_list[input_id] &&
-                self.app.element_list[input_id].$el.attr("tour_id", flat_id);
+            self.app.element_list[input_id] && self.app.element_list[input_id].$el.attr("tour_id", flat_id);
         }
         // converter between raw dictionary and job dictionary
         function convert(identifier, head) {
@@ -58,39 +55,24 @@ var Manager = Backbone.Model.extend({
                                 var pos = block_label.indexOf(section_label);
                                 if (pos != -1) {
                                     pos += section_label.length;
-                                    block_indices.push(
-                                        parseInt(block_label.substr(pos))
-                                    );
+                                    block_indices.push(parseInt(block_label.substr(pos)));
                                     if (!block_prefix) {
-                                        block_prefix = block_label.substr(
-                                            0,
-                                            pos
-                                        );
+                                        block_prefix = block_label.substr(0, pos);
                                     }
                                 }
                             }
                             block_indices.sort((a, b) => a - b);
                             var index = 0;
                             for (var i in block_indices) {
-                                convert(
-                                    `${flat_id}_${index++}`,
-                                    node[block_prefix + block_indices[i]]
-                                );
+                                convert(`${flat_id}_${index++}`, node[block_prefix + block_indices[i]]);
                             }
                             break;
                         case "conditional":
                             var value = self.app.field_list[input.id].value();
-                            add(
-                                `${flat_id}|${input.test_param.name}`,
-                                input.id,
-                                value
-                            );
+                            add(`${flat_id}|${input.test_param.name}`, input.id, value);
                             var selectedCase = matchCase(input, value);
                             if (selectedCase != -1) {
-                                convert(
-                                    flat_id,
-                                    head[`${input.id}-section-${selectedCase}`]
-                                );
+                                convert(flat_id, head[`${input.id}-section-${selectedCase}`]);
                             }
                             break;
                         case "section":
@@ -100,24 +82,14 @@ var Manager = Backbone.Model.extend({
                             var field = self.app.field_list[input.id];
                             if (field && field.value) {
                                 var value = field.value();
-                                if (
-                                    input.ignore === undefined ||
-                                    input.ignore != value
-                                ) {
-                                    if (
-                                        field.collapsed &&
-                                        input.collapsible_value
-                                    ) {
+                                if (input.ignore === undefined || input.ignore != value) {
+                                    if (field.collapsed && input.collapsible_value) {
                                         value = input.collapsible_value;
                                     }
                                     add(flat_id, input.id, value);
                                     if (input.payload) {
                                         for (var p_id in input.payload) {
-                                            add(
-                                                p_id,
-                                                input.id,
-                                                input.payload[p_id]
-                                            );
+                                            add(p_id, input.id, input.payload[p_id]);
                                         }
                                     }
                                 }
@@ -241,28 +213,15 @@ var visitInputs = (inputs, callback, prefix, context) => {
                 break;
             case "conditional":
                 if (node.test_param) {
-                    callback(
-                        node.test_param,
-                        `${name}|${node.test_param.name}`,
-                        context
-                    );
+                    callback(node.test_param, `${name}|${node.test_param.name}`, context);
                     var selectedCase = matchCase(node, node.test_param.value);
                     if (selectedCase != -1) {
-                        visitInputs(
-                            node.cases[selectedCase].inputs,
-                            callback,
-                            name,
-                            context
-                        );
+                        visitInputs(node.cases[selectedCase].inputs, callback, name, context);
                     } else {
-                        Galaxy.emit.debug(
-                            `form-data::visitInputs() - Invalid case for ${name}.`
-                        );
+                        Galaxy.emit.debug(`form-data::visitInputs() - Invalid case for ${name}.`);
                     }
                 } else {
-                    Galaxy.emit.debug(
-                        `form-data::visitInputs() - Conditional test parameter missing for ${name}.`
-                    );
+                    Galaxy.emit.debug(`form-data::visitInputs() - Conditional test parameter missing for ${name}.`);
                 }
                 break;
             case "section":

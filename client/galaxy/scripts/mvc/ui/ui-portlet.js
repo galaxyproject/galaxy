@@ -73,11 +73,7 @@ var View = Backbone.View.extend({
         }
 
         // make portlet collapsible
-        this.$title_text
-            [options.collapsible ? "addClass" : "removeClass"](
-                "no-highlight collapsible"
-            )
-            .off();
+        this.$title_text[options.collapsible ? "addClass" : "removeClass"]("no-highlight collapsible").off();
         if (options.collapsible) {
             this.$title_text.on("click", () => {
                 self[self.collapsed ? "expand" : "collapse"]();

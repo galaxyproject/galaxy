@@ -129,12 +129,10 @@ var HistoryView = _super.extend(
 
             contentsOptions.silent = true;
             self.trigger("loading");
-            return self.model
-                .fetchWithContents(options, contentsOptions)
-                .always(() => {
-                    self.render();
-                    self.trigger("loading-done");
-                });
+            return self.model.fetchWithContents(options, contentsOptions).always(() => {
+                self.render();
+                self.trigger("loading-done");
+            });
         },
 
         /** convenience alias to the model. Updates the item list only (not the history) */
@@ -165,22 +163,15 @@ var HistoryView = _super.extend(
         /** hide the $el and display a loading indicator (in the $el's parent) when loading new data */
         _showLoadingIndicator: function(msg, speed, callback) {
             var $indicator = $('<div class="loading-indicator"/>');
-            this.$el.html(
-                $indicator
-                    .text(msg)
-                    .slideDown(!_.isUndefined(speed) ? speed : this.fxSpeed)
-            );
+            this.$el.html($indicator.text(msg).slideDown(!_.isUndefined(speed) ? speed : this.fxSpeed));
         },
 
         /** hide the loading indicator */
         _hideLoadingIndicator: function(speed) {
             // make speed a bit slower to compensate for slow rendering of up to 500 contents
-            this.$(".loading-indicator").slideUp(
-                !_.isUndefined(speed) ? speed : this.fxSpeed + 200,
-                function() {
-                    $(this).remove();
-                }
-            );
+            this.$(".loading-indicator").slideUp(!_.isUndefined(speed) ? speed : this.fxSpeed + 200, function() {
+                $(this).remove();
+            });
         },
 
         /** In this override, add a btn to toggle the selectors */
@@ -204,9 +195,7 @@ var HistoryView = _super.extend(
                 return null;
             }
             // don't bother rendering if there's one already
-            var $existing = $where.find(
-                ".controls .actions .show-selectors-btn"
-            );
+            var $existing = $where.find(".controls .actions .show-selectors-btn");
             if ($existing.length) {
                 return $existing;
             }
@@ -229,11 +218,7 @@ var HistoryView = _super.extend(
                     .empty()
                     .append(self.emptyMsg)
                     .show();
-            } else if (
-                self.searchFor &&
-                self.model.contents.haveSearchDetails() &&
-                !self.views.length
-            ) {
+            } else if (self.searchFor && self.model.contents.haveSearchDetails() && !self.views.length) {
                 return $emptyMsg
                     .empty()
                     .append(self.noneFoundMsg)
@@ -257,8 +242,7 @@ var HistoryView = _super.extend(
                     .remove();
             } else {
                 this.$list().html(
-                    '<div class="contents-loading-indicator">' +
-                        '<span class="fa fa-2x fa-spinner fa-spin"/></div>'
+                    '<div class="contents-loading-indicator">' + '<span class="fa fa-2x fa-spinner fa-spin"/></div>'
                 );
             }
         },
@@ -292,11 +276,8 @@ var HistoryView = _super.extend(
 
         /** render pagination controls if not searching and contents says we're paginating */
         _renderPagination: function($whereTo) {
-            var $paginationControls = $whereTo.find(
-                "> .controls .list-pagination"
-            );
-            if (this.searchFor || !this.model.contents.shouldPaginate())
-                return $paginationControls.empty();
+            var $paginationControls = $whereTo.find("> .controls .list-pagination");
+            if (this.searchFor || !this.model.contents.shouldPaginate()) return $paginationControls.empty();
 
             $paginationControls.html(
                 this.templates.pagination(
@@ -354,10 +335,7 @@ var HistoryView = _super.extend(
 
         /** in this override, add a linktarget, and expand if id is in web storage */
         _getItemViewOptions: function(model) {
-            var options = _super.prototype._getItemViewOptions.call(
-                this,
-                model
-            );
+            var options = _super.prototype._getItemViewOptions.call(this, model);
             return _.extend(options, {
                 linkTarget: this.linkTarget,
                 expanded: this.model.contents.storage.isExpanded(model.id),
@@ -426,8 +404,7 @@ var HistoryView = _super.extend(
      * @returns {Boolean} new setting
      */
         toggleShowDeleted: function(show, options) {
-            show =
-                show !== undefined ? show : !this.model.contents.includeDeleted;
+            show = show !== undefined ? show : !this.model.contents.includeDeleted;
             var self = this;
             var contents = self.model.contents;
             contents.setIncludeDeleted(show, options);
@@ -442,8 +419,7 @@ var HistoryView = _super.extend(
      */
         toggleShowHidden: function(show, store, options) {
             // console.log( 'toggleShowHidden', show, store );
-            show =
-                show !== undefined ? show : !this.model.contents.includeHidden;
+            show = show !== undefined ? show : !this.model.contents.includeHidden;
             var self = this;
             var contents = self.model.contents;
             contents.setIncludeHidden(show, options);
@@ -533,9 +509,7 @@ var HistoryView = _super.extend(
 
         /** Remove all messages from the panel. */
         clearMessages: function(ev) {
-            var $target = !_.isUndefined(ev)
-                ? $(ev.currentTarget)
-                : this.$messages().children('[class$="message"]');
+            var $target = !_.isUndefined(ev) ? $(ev.currentTarget) : this.$messages().children('[class$="message"]');
             $target.fadeOut(this.fxSpeed, function() {
                 $(this).remove();
             });
@@ -548,9 +522,7 @@ var HistoryView = _super.extend(
      *  @returns {HistoryView} the panel
      */
         scrollToHid: function(hid) {
-            return this.scrollToItem(
-                _.first(this.viewsWhereModel({ hid: hid }))
-            );
+            return this.scrollToItem(_.first(this.viewsWhereModel({ hid: hid })));
         },
 
         // ........................................................................ misc
@@ -654,9 +626,7 @@ HistoryView.prototype.templates = (() => {
             '<button class="prev" <%- pages.current === 1 ? "disabled" : "" %>>previous</button>',
             '<select class="pages form-control" ',
             'title="',
-            _l(
-                "Click to open and select a page. Begin typing a page number to select it"
-            ),
+            _l("Click to open and select a page. Begin typing a page number to select it"),
             '">',
             "<% _.range( 1, pages.last + 1 ).forEach( function( i ){ %>",
             '<option value="<%- i - 1 %>" <%- i === pages.current ? "selected" : "" %>>',

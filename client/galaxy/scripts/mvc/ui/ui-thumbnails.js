@@ -15,12 +15,7 @@ var View = Backbone.View.extend({
         this.setElement(this.tabs.$el.addClass("ui-thumbnails"));
         this.render();
         this.listenTo(this.model, "change", this.render, this);
-        this.listenTo(
-            this.collection,
-            "reset change add remove",
-            this.render,
-            this
-        );
+        this.listenTo(this.collection, "reset change add remove", this.render, this);
     },
 
     render: function() {
@@ -42,10 +37,7 @@ var View = Backbone.View.extend({
                     $(
                         self._templateThumbnailItem({
                             id: model.id,
-                            title:
-                                title.length < title_length
-                                    ? title
-                                    : `${title.substr(0, title_length)}...`,
+                            title: title.length < title_length ? title : `${title.substr(0, title_length)}...`,
                             title_icon: model.get("title_icon"),
                             image_src: model.get("image_src")
                         })
@@ -106,8 +98,7 @@ var View = Backbone.View.extend({
 
     /** Add double click handler */
     _ondblclick: function(e) {
-        this.model.get("ondblclick") &&
-            this.model.get("ondblclick")(this.value());
+        this.model.get("ondblclick") && this.model.get("ondblclick")(this.value());
     },
 
     /* Thumbnail template with image */

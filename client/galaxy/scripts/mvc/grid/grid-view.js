@@ -20,11 +20,7 @@ export default Backbone.View.extend({
         var self = this;
         window.add_tag_to_grid_filter = (tag_name, tag_value) => {
             // Put tag name and value together.
-            var tag =
-                tag_name +
-                (tag_value !== undefined && tag_value !== ""
-                    ? `:${tag_value}`
-                    : "");
+            var tag = tag_name + (tag_value !== undefined && tag_value !== "" ? `:${tag_value}` : "");
             var advanced_search = $("#advanced-search").is(":visible");
             if (!advanced_search) {
                 $("#standard-search").slideToggle("fast");
@@ -181,10 +177,7 @@ export default Backbone.View.extend({
                     .remove();
 
                 // Remove filter condition.
-                self.remove_filter_condition(
-                    $(this).attr("filter_key"),
-                    $(this).attr("filter_val")
-                );
+                self.remove_filter_condition($(this).attr("filter_key"), $(this).attr("filter_val"));
 
                 // Return
                 return false;
@@ -195,10 +188,7 @@ export default Backbone.View.extend({
         this.$el.find(".categorical-filter > a").each(function() {
             $(this).off();
             $(this).click(function() {
-                self.set_categorical_filter(
-                    $(this).attr("filter_key"),
-                    $(this).attr("filter_val")
-                );
+                self.set_categorical_filter($(this).attr("filter_key"), $(this).attr("filter_val"));
                 return false;
             });
         });
@@ -237,8 +227,7 @@ export default Backbone.View.extend({
         });
 
         // Initialize ratings.
-        if (this.$el.find(".community_rating_star").length !== 0)
-            this.$el.find(".community_rating_star").rating({});
+        if (this.$el.find(".community_rating_star").length !== 0) this.$el.find(".community_rating_star").rating({});
 
         // get options
         var options = this.grid.attributes;
@@ -460,8 +449,7 @@ export default Backbone.View.extend({
         var operation_name = $(operation_button).val();
 
         // verify in any item is selected
-        var number_of_checked_ids = this.$el.find('input[name="id"]:checked')
-            .length;
+        var number_of_checked_ids = this.$el.find('input[name="id"]:checked').length;
         if (!number_of_checked_ids > 0) {
             return false;
         }
@@ -577,9 +565,7 @@ export default Backbone.View.extend({
 
             // Do operation. If operation cannot be performed asynchronously, redirect to location.
             if (target == "top") {
-                window.top.location = `${href}?${$.param(
-                    this.grid.get_url_data()
-                )}`;
+                window.top.location = `${href}?${$.param(this.grid.get_url_data())}`;
             } else if (this.grid.can_async_op(operation) || this.dict_format) {
                 this.update_grid();
             } else {
@@ -619,9 +605,7 @@ export default Backbone.View.extend({
 
         // get default url
         if (!href) {
-            href = `${this.grid.get("url_base")}?${$.param(
-                this.grid.get_url_data()
-            )}`;
+            href = `${this.grid.get("url_base")}?${$.param(this.grid.get_url_data())}`;
         }
 
         // clear grid of transient request attributes.
@@ -661,14 +645,10 @@ export default Backbone.View.extend({
                 // backup
                 var embedded = self.grid.get("embedded");
                 var insert = self.grid.get("insert");
-                var advanced_search = self.$el
-                    .find("#advanced-search")
-                    .is(":visible");
+                var advanced_search = self.$el.find("#advanced-search").is(":visible");
 
                 // request new configuration
-                var json = self.dict_format
-                    ? response_text
-                    : $.parseJSON(response_text);
+                var json = self.dict_format ? response_text : $.parseJSON(response_text);
 
                 // update
                 json.embedded = embedded;

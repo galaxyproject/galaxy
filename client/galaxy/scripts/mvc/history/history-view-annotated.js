@@ -49,12 +49,8 @@ var AnnotatedHistoryView = _super.extend(
 
             var $headers = $('<div class="contents-container headers"/>')
                 .append([
-                    $('<div class="history-content header"/>').text(
-                        _l("Dataset")
-                    ),
-                    $('<div class="additional-info header"/>').text(
-                        _l("Annotation")
-                    )
+                    $('<div class="history-content header"/>').text(_l("Dataset")),
+                    $('<div class="additional-info header"/>').text(_l("Annotation"))
                 ])
                 .appendTo($controls);
 
@@ -66,9 +62,7 @@ var AnnotatedHistoryView = _super.extend(
         _renderItemView$el: function(view) {
             return $('<div class="contents-container"/>').append([
                 view.render(0).$el,
-                $('<div class="additional-info"/>').text(
-                    view.model.get("annotation") || ""
-                )
+                $('<div class="additional-info"/>').text(view.model.get("annotation") || "")
             ]);
         },
 
@@ -87,10 +81,7 @@ var AnnotatedHistoryView = _super.extend(
                 // stopProp will prevent bootstrap from getting the click needed to open a dropdown
                 //  in the case of metafile download buttons - workaround here
                 var $currTarget = $(ev.currentTarget);
-                if (
-                    $currTarget.length &&
-                    $currTarget.attr("data-toggle") === "dropdown"
-                ) {
+                if ($currTarget.length && $currTarget.attr("data-toggle") === "dropdown") {
                     $currTarget.dropdown("toggle");
                 }
             }
@@ -107,9 +98,7 @@ var AnnotatedHistoryView = _super.extend(
         // ........................................................................ misc
         /** Return a string rep of the history */
         toString: function() {
-            return `AnnotatedHistoryView(${this.model
-                ? this.model.get("name")
-                : ""})`;
+            return `AnnotatedHistoryView(${this.model ? this.model.get("name") : ""})`;
         }
     }
 );

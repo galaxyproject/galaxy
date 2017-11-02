@@ -24,8 +24,7 @@ var DatasetListItemEdit = _super.extend(
             /** should the tags editor be shown or hidden initially? */
             this.tagsEditorShown = attributes.tagsEditorShown || false;
             /** should the tags editor be shown or hidden initially? */
-            this.annotationEditorShown =
-                attributes.annotationEditorShown || false;
+            this.annotationEditorShown = attributes.annotationEditorShown || false;
         },
 
         // ......................................................................... titlebar actions
@@ -48,10 +47,7 @@ var DatasetListItemEdit = _super.extend(
             var self = this;
             // don't show edit while uploading, in-accessible
             // DO show if in error (ala previous history panel)
-            if (
-                this.model.get("state") === STATES.DISCARDED ||
-                !this.model.get("accessible")
-            ) {
+            if (this.model.get("state") === STATES.DISCARDED || !this.model.get("accessible")) {
                 return null;
             }
             var purged = this.model.get("purged");
@@ -59,8 +55,7 @@ var DatasetListItemEdit = _super.extend(
 
             var editBtnData = {
                 title: _l("Edit attributes"),
-                href: `${Galaxy.root}datasets/edit?dataset_id=${this.model
-                    .attributes.id}`,
+                href: `${Galaxy.root}datasets/edit?dataset_id=${this.model.attributes.id}`,
                 faIcon: "fa-pencil",
                 classes: "edit-btn",
                 onclick: function(ev) {
@@ -77,19 +72,13 @@ var DatasetListItemEdit = _super.extend(
             if (deleted || purged) {
                 editBtnData.disabled = true;
                 if (purged) {
-                    editBtnData.title = _l(
-                        "Cannot edit attributes of datasets removed from disk"
-                    );
+                    editBtnData.title = _l("Cannot edit attributes of datasets removed from disk");
                 } else if (deleted) {
-                    editBtnData.title = _l(
-                        "Undelete dataset to edit attributes"
-                    );
+                    editBtnData.title = _l("Undelete dataset to edit attributes");
                 }
 
                 // disable if still uploading or new
-            } else if (
-                _.contains([STATES.UPLOAD, STATES.NEW], this.model.get("state"))
-            ) {
+            } else if (_.contains([STATES.UPLOAD, STATES.NEW], this.model.get("state"))) {
                 editBtnData.disabled = true;
                 editBtnData.title = _l("This dataset is not yet editable");
             }
@@ -106,9 +95,7 @@ var DatasetListItemEdit = _super.extend(
             var self = this;
             var deletedAlready = this.model.isDeletedOrPurged();
             return faIconButton({
-                title: !deletedAlready
-                    ? _l("Delete")
-                    : _l("Dataset is already deleted"),
+                title: !deletedAlready ? _l("Delete") : _l("Dataset is already deleted"),
                 disabled: deletedAlready,
                 faIcon: "fa-times",
                 classes: "delete-btn",
@@ -128,10 +115,7 @@ var DatasetListItemEdit = _super.extend(
 
             var state = this.model.get("state");
 
-            if (
-                !this.model.isDeletedOrPurged() &&
-                _.contains([STATES.OK, STATES.FAILED_METADATA], state)
-            ) {
+            if (!this.model.isDeletedOrPurged() && _.contains([STATES.OK, STATES.FAILED_METADATA], state)) {
                 this._renderTags($details);
                 this._renderAnnotation($details);
                 this._makeDbkeyEditLink($details);
@@ -156,8 +140,7 @@ var DatasetListItemEdit = _super.extend(
                     helpString += `<strong>Tool help for ${data.name}</strong><hr/>`;
                     helpString += data.help;
                 } else {
-                    helpString +=
-                        "<strong>Tool help is unavailable for this dataset.</strong><hr/>";
+                    helpString += "<strong>Tool help is unavailable for this dataset.</strong><hr/>";
                 }
                 helpString += "</div>";
                 self.$el.find(".details").append($.parseHTML(helpString));
@@ -213,10 +196,7 @@ var DatasetListItemEdit = _super.extend(
                 case STATES.ERROR:
                     // error button comes first
                     actions.unshift(this._renderErrButton());
-                    return actions.concat([
-                        this._renderRerunButton(),
-                        this._renderToolHelpButton()
-                    ]);
+                    return actions.concat([this._renderRerunButton(), this._renderToolHelpButton()]);
                 case STATES.OK:
                 case STATES.FAILED_METADATA:
                     return actions.concat([
@@ -225,10 +205,7 @@ var DatasetListItemEdit = _super.extend(
                         this._renderToolHelpButton()
                     ]);
             }
-            return actions.concat([
-                this._renderRerunButton(),
-                this._renderToolHelpButton()
-            ]);
+            return actions.concat([this._renderRerunButton(), this._renderToolHelpButton()]);
         },
 
         /** Render icon-button to report an error on this dataset to the galaxy admin. */
@@ -236,8 +213,7 @@ var DatasetListItemEdit = _super.extend(
             var self = this;
             return faIconButton({
                 title: _l("View or report this error"),
-                href: `${Galaxy.root}datasets/error?dataset_id=${this.model
-                    .attributes.id}`,
+                href: `${Galaxy.root}datasets/error?dataset_id=${this.model.attributes.id}`,
                 classes: "report-error-btn",
                 faIcon: "fa-bug",
                 onclick: function(ev) {
@@ -277,12 +253,7 @@ var DatasetListItemEdit = _super.extend(
         _renderVisualizationsButton: function() {
             //TODO: someday - lazyload visualizations
             var visualizations = this.model.get("visualizations");
-            if (
-                this.model.isDeletedOrPurged() ||
-                !this.hasUser ||
-                !this.model.hasData() ||
-                _.isEmpty(visualizations)
-            ) {
+            if (this.model.isDeletedOrPurged() || !this.hasUser || !this.model.hasData() || _.isEmpty(visualizations)) {
                 return null;
             }
             if (!_.isObject(visualizations[0])) {
@@ -290,19 +261,11 @@ var DatasetListItemEdit = _super.extend(
                 return null;
             }
 
-            var $visualizations = $(
-                this.templates.visualizations(visualizations, this)
-            );
+            var $visualizations = $(this.templates.visualizations(visualizations, this));
             //HACK: need to re-write those directed at galaxy_main with linkTarget
-            $visualizations
-                .find('[target="galaxy_main"]')
-                .attr("target", this.linkTarget);
+            $visualizations.find('[target="galaxy_main"]').attr("target", this.linkTarget);
             // use addBack here to include the root $visualizations elem (for the case of 1 visualization)
-            this._addScratchBookFn(
-                $visualizations
-                    .find(".visualization-link")
-                    .addBack(".visualization-link")
-            );
+            this._addScratchBookFn($visualizations.find(".visualization-link").addBack(".visualization-link"));
             return $visualizations;
         },
 
@@ -385,10 +348,7 @@ var DatasetListItemEdit = _super.extend(
         /** If the format/dbkey/genome_build isn't set, make the display a link to the edit page */
         _makeDbkeyEditLink: function($details) {
             // make the dbkey a link to editing
-            if (
-                this.model.get("metadata_dbkey") === "?" &&
-                !this.model.isDeletedOrPurged()
-            ) {
+            if (this.model.get("metadata_dbkey") === "?" && !this.model.isDeletedOrPurged()) {
                 var editableDbkey = $('<a class="value">?</a>')
                     .attr("href", this.model.urls.edit)
                     .attr("target", "_top");
@@ -430,13 +390,7 @@ var DatasetListItemEdit = _super.extend(
 
         /** listener for item purge (in the messages section) */
         _clickPurgeLink: function(ev) {
-            if (
-                confirm(
-                    _l(
-                        "This will permanently remove the data in your dataset. Are you sure?"
-                    )
-                )
-            ) {
+            if (confirm(_l("This will permanently remove the data in your dataset. Are you sure?"))) {
                 this.model.purge();
             }
             return false;

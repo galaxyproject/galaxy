@@ -104,21 +104,15 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             contentsShown: function() {
                 var contentsActive = this.get("contents_active");
                 var shown = contentsActive.active || 0;
-                shown += this.contents.includeDeleted
-                    ? contentsActive.deleted
-                    : 0;
-                shown += this.contents.includeHidden
-                    ? contentsActive.hidden
-                    : 0;
+                shown += this.contents.includeDeleted ? contentsActive.deleted : 0;
+                shown += this.contents.includeHidden ? contentsActive.hidden : 0;
                 return shown;
             },
 
             /** convert size in bytes to a more human readable version */
             nice_size: function() {
                 var size = this.get("size");
-                return size
-                    ? UTILS.bytesToString(size, true, 2)
-                    : _l("(empty)");
+                return size ? UTILS.bytesToString(size, true, 2) : _l("(empty)");
             },
 
             /** override to add nice_size */
@@ -146,10 +140,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     return false;
                 }
                 // user is anon or history isn't owned
-                if (
-                    Galaxy.user.isAnonymous() ||
-                    Galaxy.user.id !== this.get("user_id")
-                ) {
+                if (Galaxy.user.isAnonymous() || Galaxy.user.id !== this.get("user_id")) {
                     return false;
                 }
                 return true;
@@ -168,12 +159,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             // ........................................................................ updates
             _fetchContentRelatedAttributes: function() {
-                var contentRelatedAttrs = [
-                    "size",
-                    "non_ready_jobs",
-                    "contents_active",
-                    "hid_counter"
-                ];
+                var contentRelatedAttrs = ["size", "non_ready_jobs", "contents_active", "hid_counter"];
                 return this.fetch({
                     data: $.param({
                         keys: contentRelatedAttrs.join(",")
@@ -193,16 +179,13 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 this.contents.allFetched = false;
                 var fetchFn =
                     self.contents.currentPage !== 0
-                        ? () =>
-                              self.contents.fetchPage(self.contents.currentPage)
+                        ? () => self.contents.fetchPage(self.contents.currentPage)
                         : () => self.contents.fetchUpdated(lastUpdateTime);
                 // note: if there was no previous update time, all summary contents will be fetched
                 return fetchFn().done((response, status, xhr) => {
                     var serverResponseDatetime;
                     try {
-                        serverResponseDatetime = new Date(
-                            xhr.getResponseHeader("Date")
-                        );
+                        serverResponseDatetime = new Date(xhr.getResponseHeader("Date"));
                     } catch (err) {}
                     self.lastUpdateTime = serverResponseDatetime || new Date();
                     self.checkForUpdates(options);
@@ -259,11 +242,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             // ........................................................................ ajax
             /** override to use actual Dates objects for create/update times */
             parse: function(response, options) {
-                var parsed = Backbone.Model.prototype.parse.call(
-                    this,
-                    response,
-                    options
-                );
+                var parsed = Backbone.Model.prototype.parse.call(this, response, options);
                 if (parsed.create_time) {
                     parsed.create_time = new Date(parsed.create_time);
                 }
@@ -331,9 +310,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             copy: function(current, name, allDatasets) {
                 current = current !== undefined ? current : true;
                 if (!this.id) {
-                    throw new Error(
-                        "You must set the history ID before copying it."
-                    );
+                    throw new Error("You must set the history ID before copying it.");
                 }
 
                 var postData = { history_id: this.id };
@@ -367,9 +344,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             setAsCurrent: function() {
                 var history = this;
 
-                var xhr = jQuery.getJSON(
-                    `${Galaxy.root}history/set_as_current?id=${this.id}`
-                );
+                var xhr = jQuery.getJSON(`${Galaxy.root}history/set_as_current?id=${this.id}`);
 
                 xhr.done(() => {
                     history.trigger("set-as-current", history);
@@ -386,8 +361,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 );
 
 //==============================================================================
-var _collectionSuper =
-    CONTROLLED_FETCH_COLLECTION.InfinitelyScrollingCollection;
+var _collectionSuper = CONTROLLED_FETCH_COLLECTION.InfinitelyScrollingCollection;
 /** @class A collection of histories (per user)
  *      that maintains the current history as the first in the collection.
  *  New or copied histories become the current history.
@@ -430,11 +404,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
             // when a history is deleted, remove it from the collection (if optionally set to do so)
             "change:deleted": function(history) {
                 // TODO: this becomes complicated when more filters are used
-                this.debug(
-                    "change:deleted",
-                    this.includeDeleted,
-                    history.get("deleted")
-                );
+                this.debug("change:deleted", this.includeDeleted, history.get("deleted"));
                 if (!this.includeDeleted && history.get("deleted")) {
                     this.remove(history);
                 }
@@ -454,19 +424,14 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
 
     /** override to change view */
     _buildFetchData: function(options) {
-        return _.extend(
-            _collectionSuper.prototype._buildFetchData.call(this, options),
-            {
-                view: "dev-detailed"
-            }
-        );
+        return _.extend(_collectionSuper.prototype._buildFetchData.call(this, options), {
+            view: "dev-detailed"
+        });
     },
 
     /** override to filter out deleted and purged */
     _buildFetchFilters: function(options) {
-        var superFilters =
-            _collectionSuper.prototype._buildFetchFilters.call(this, options) ||
-            {};
+        var superFilters = _collectionSuper.prototype._buildFetchFilters.call(this, options) || {};
         var filters = {};
         if (!this.includeDeleted) {
             filters.deleted = false;
@@ -524,10 +489,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
         options = options || {};
         var silent = options.silent;
         var currentHistory = this.remove(this.get(this.currentHistoryId));
-        _collectionSuper.prototype.sort.call(
-            this,
-            _.defaults({ silent: true }, options)
-        );
+        _collectionSuper.prototype.sort.call(this, _.defaults({ silent: true }, options));
         this.unshift(currentHistory, { silent: true });
         if (!silent) {
             this.trigger("sort", this, options);
@@ -542,9 +504,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
 
         var xhr = jQuery.getJSON(`${Galaxy.root}history/create_new_current`);
         return xhr.done(newData => {
-            collection.setCurrent(
-                new History(newData, [], historyOptions || {})
-            );
+            collection.setCurrent(new History(newData, [], historyOptions || {}));
         });
     },
 
@@ -564,8 +524,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     toString: function toString() {
-        return `HistoryCollection(${this.length},current:${this
-            .currentHistoryId})`;
+        return `HistoryCollection(${this.length},current:${this.currentHistoryId})`;
     }
 });
 

@@ -70,9 +70,7 @@ var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
         /** key string to store each histories settings under */
         historyStorageKey: function historyStorageKey(historyId) {
             if (!historyId) {
-                throw new Error(
-                    `HistoryPrefs.historyStorageKey needs valid id: ${historyId}`
-                );
+                throw new Error(`HistoryPrefs.historyStorageKey needs valid id: ${historyId}`);
             }
             // single point of change
             return HistoryPrefs.storageKeyPrefix + historyId;

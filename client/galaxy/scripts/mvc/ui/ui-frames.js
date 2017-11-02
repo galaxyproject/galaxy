@@ -60,18 +60,10 @@ var FrameView = Backbone.View.extend({
                 $("<iframe/>")
                     .addClass("f-iframe")
                     .attr("scrolling", "auto")
-                    .attr(
-                        "src",
-                        `${options.url +
-                            (options.url.indexOf("?") === -1
-                                ? "?"
-                                : "&")}widget=True`
-                    )
+                    .attr("src", `${options.url + (options.url.indexOf("?") === -1 ? "?" : "&")}widget=True`)
             );
         } else if (options.content) {
-            _.isFunction(options.content)
-                ? options.content(self.$content)
-                : self.$content.html(options.content);
+            _.isFunction(options.content) ? options.content(self.$content) : self.$content.html(options.content);
         }
     }
 });
@@ -113,16 +105,8 @@ var View = Backbone.View.extend({
             $("<div/>")
                 .addClass("galaxy-frame")
                 .append($("<div/>").addClass("frame-background"))
-                .append(
-                    $("<div/>").addClass(
-                        "frame-menu frame-scroll-up fa fa-chevron-up fa-2x"
-                    )
-                )
-                .append(
-                    $("<div/>").addClass(
-                        "frame-menu frame-scroll-down fa fa-chevron-down fa-2x"
-                    )
-                )
+                .append($("<div/>").addClass("frame-menu frame-scroll-up fa fa-chevron-up fa-2x"))
+                .append($("<div/>").addClass("frame-menu frame-scroll-down fa fa-chevron-down fa-2x"))
         );
 
         // initialize shadow to guiding drag/resize events
@@ -144,12 +128,8 @@ var View = Backbone.View.extend({
 
     /** Render */
     render: function() {
-        this.$(".frame-scroll-up")[
-            (this.top != this.options.top_min && "show") || "hide"
-        ]();
-        this.$(".frame-scroll-down")[
-            (this.top != this.top_max && "show") || "hide"
-        ]();
+        this.$(".frame-scroll-up")[(this.top != this.options.top_min && "show") || "hide"]();
+        this.$(".frame-scroll-down")[(this.top != this.top_max && "show") || "hide"]();
     },
 
     /**
@@ -164,8 +144,7 @@ var View = Backbone.View.extend({
         if (this.frame_counter >= this.options.frame_max) {
             Galaxy.modal.show({
                 title: "Warning",
-                body: `You have reached the maximum number of allowed frames (${this
-                    .options.frame_max}).`,
+                body: `You have reached the maximum number of allowed frames (${this.options.frame_max}).`,
                 buttons: {
                     Close: function() {
                         Galaxy.modal.hide();
@@ -177,8 +156,7 @@ var View = Backbone.View.extend({
             if ($(frame_id).length !== 0) {
                 Galaxy.modal.show({
                     title: "Error",
-                    body:
-                        "This frame already exists. This page might contain multiple frame managers.",
+                    body: "This frame already exists. This page might contain multiple frame managers.",
                     buttons: {
                         Close: function() {
                             Galaxy.modal.hide();
@@ -192,14 +170,8 @@ var View = Backbone.View.extend({
                 this.$el.append(frame.$el);
 
                 // set dimensions
-                options.width = this._toPixelCoord(
-                    "width",
-                    this.options.frame.cols
-                );
-                options.height = this._toPixelCoord(
-                    "height",
-                    this.options.frame.rows
-                );
+                options.width = this._toPixelCoord("width", this.options.frame.cols);
+                options.height = this._toPixelCoord("height", this.options.frame.rows);
 
                 // set default z-index and add to ui and frame list
                 this.frame_z = parseInt(frame.$el.css("z-index"));
@@ -277,10 +249,7 @@ var View = Backbone.View.extend({
     _eventFrameMouseDown: function(e) {
         $(".tooltip").hide();
         if (!this.event.type) {
-            if (
-                $(e.target).hasClass("f-header") ||
-                $(e.target).hasClass("f-title")
-            ) {
+            if ($(e.target).hasClass("f-header") || $(e.target).hasClass("f-title")) {
                 this.event.type = "drag";
             }
             if ($(e.target).hasClass("f-resize")) {
@@ -377,11 +346,7 @@ var View = Backbone.View.extend({
                 e.stopPropagation();
             } else {
                 e.preventDefault();
-                this._panelScroll(
-                    e.originalEvent.detail
-                        ? e.originalEvent.detail
-                        : e.originalEvent.wheelDelta / -3
-                );
+                this._panelScroll(e.originalEvent.detail ? e.originalEvent.detail : e.originalEvent.wheelDelta / -3);
             }
         }
     },
@@ -446,10 +411,7 @@ var View = Backbone.View.extend({
     _toGridCoord: function(type, px) {
         var sign = type == "width" || type == "height" ? 1 : -1;
         type == "top" && (px -= this.top);
-        return parseInt(
-            (px + sign * this.options.margin) / this.options.cell,
-            10
-        );
+        return parseInt((px + sign * this.options.margin) / this.options.cell, 10);
     },
 
     /** Converts a grid to a pixels dimension */
@@ -496,10 +458,7 @@ var View = Backbone.View.extend({
         }
         for (var i in this.frame_list) {
             var frame = this.frame_list[i];
-            if (
-                frame.grid_location !== null &&
-                is_collision_pair(g, frame.grid_location)
-            ) {
+            if (frame.grid_location !== null && is_collision_pair(g, frame.grid_location)) {
                 return true;
             }
         }
@@ -586,16 +545,10 @@ var View = Backbone.View.extend({
         this.top_max = 0;
         _.each(this.frame_list, f => {
             if (f.grid_location !== null) {
-                self.top_max = Math.max(
-                    self.top_max,
-                    f.grid_location.top + f.grid_location.height
-                );
+                self.top_max = Math.max(self.top_max, f.grid_location.top + f.grid_location.height);
             }
         });
-        this.top_max =
-            $(window).height() -
-            this.top_max * this.options.cell -
-            2 * this.options.margin;
+        this.top_max = $(window).height() - this.top_max * this.options.cell - 2 * this.options.margin;
         this.top_max = Math.min(this.top_max, this.options.top_min);
         this.render();
     },

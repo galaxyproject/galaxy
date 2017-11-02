@@ -59,8 +59,7 @@ var HistoryViewEdit = _super.extend(
 
             // states/modes the panel can be in
             /** is the panel currently showing the dataset selection controls? */
-            this.annotationEditorShown =
-                attributes.annotationEditorShown || false;
+            this.annotationEditorShown = attributes.annotationEditorShown || false;
             this.tagsEditorShown = attributes.tagsEditorShown || false;
         },
 
@@ -85,11 +84,7 @@ var HistoryViewEdit = _super.extend(
         /** listening for history and HDA events */
         _setUpModelListeners: function() {
             _super.prototype._setUpModelListeners.call(this);
-            this.listenTo(
-                this.model,
-                "change:size",
-                this.updateHistoryDiskSize
-            );
+            this.listenTo(this.model, "change:size", this.updateHistoryDiskSize);
             return this;
         },
 
@@ -105,14 +100,10 @@ var HistoryViewEdit = _super.extend(
                 },
                 // loading indicators for deleted/hidden
                 "fetching-deleted": function(collection) {
-                    this.$("> .controls .deleted-count").html(
-                        `<i>${_l("loading...")}</i>`
-                    );
+                    this.$("> .controls .deleted-count").html(`<i>${_l("loading...")}</i>`);
                 },
                 "fetching-hidden": function(collection) {
-                    this.$("> .controls .hidden-count").html(
-                        `<i>${_l("loading...")}</i>`
-                    );
+                    this.$("> .controls .hidden-count").html(`<i>${_l("loading...")}</i>`);
                 },
                 "fetching-deleted-done fetching-hidden-done": this._renderCounts
             });
@@ -128,12 +119,7 @@ var HistoryViewEdit = _super.extend(
                 return $newRender;
             }
 
-            if (
-                Galaxy &&
-                Galaxy.user &&
-                Galaxy.user.id &&
-                Galaxy.user.id === this.model.get("user_id")
-            ) {
+            if (Galaxy && Galaxy.user && Galaxy.user.id && Galaxy.user.id === this.model.get("user_id")) {
                 this._renderTags($newRender);
                 this._renderAnnotation($newRender);
             }
@@ -221,11 +207,7 @@ var HistoryViewEdit = _super.extend(
             }
 
             // anon users shouldn't have access to any of the following
-            if (
-                !Galaxy.user ||
-                Galaxy.user.isAnonymous() ||
-                Galaxy.user.id !== this.model.get("user_id")
-            ) {
+            if (!Galaxy.user || Galaxy.user.isAnonymous() || Galaxy.user.id !== this.model.get("user_id")) {
                 return;
             }
 
@@ -241,9 +223,7 @@ var HistoryViewEdit = _super.extend(
                         if (newName && newName !== previousName) {
                             panel.$el.find(nameSelector).text(newName);
                             panel.model.save({ name: newName }).fail(() => {
-                                panel.$el
-                                    .find(nameSelector)
-                                    .text(panel.model.previous("name"));
+                                panel.$el.find(nameSelector).text(panel.model.previous("name"));
                             });
                         } else {
                             panel.$el.find(nameSelector).text(previousName);
@@ -262,36 +242,28 @@ var HistoryViewEdit = _super.extend(
                 {
                     html: _l("Hide datasets"),
                     func: function() {
-                        var action =
-                            HDA_MODEL.HistoryDatasetAssociation.prototype.hide;
+                        var action = HDA_MODEL.HistoryDatasetAssociation.prototype.hide;
                         panel.getSelectedModels().ajaxQueue(action);
                     }
                 },
                 {
                     html: _l("Unhide datasets"),
                     func: function() {
-                        var action =
-                            HDA_MODEL.HistoryDatasetAssociation.prototype
-                                .unhide;
+                        var action = HDA_MODEL.HistoryDatasetAssociation.prototype.unhide;
                         panel.getSelectedModels().ajaxQueue(action);
                     }
                 },
                 {
                     html: _l("Delete datasets"),
                     func: function() {
-                        var action =
-                            HDA_MODEL.HistoryDatasetAssociation.prototype[
-                                "delete"
-                            ];
+                        var action = HDA_MODEL.HistoryDatasetAssociation.prototype["delete"];
                         panel.getSelectedModels().ajaxQueue(action);
                     }
                 },
                 {
                     html: _l("Undelete datasets"),
                     func: function() {
-                        var action =
-                            HDA_MODEL.HistoryDatasetAssociation.prototype
-                                .undelete;
+                        var action = HDA_MODEL.HistoryDatasetAssociation.prototype.undelete;
                         panel.getSelectedModels().ajaxQueue(action);
                     }
                 }
@@ -301,16 +273,8 @@ var HistoryViewEdit = _super.extend(
                 actions.push({
                     html: _l("Permanently delete datasets"),
                     func: function() {
-                        if (
-                            confirm(
-                                _l(
-                                    "This will permanently remove the data in your datasets. Are you sure?"
-                                )
-                            )
-                        ) {
-                            var action =
-                                HDA_MODEL.HistoryDatasetAssociation.prototype
-                                    .purge;
+                        if (confirm(_l("This will permanently remove the data in your datasets. Are you sure?"))) {
+                            var action = HDA_MODEL.HistoryDatasetAssociation.prototype.purge;
                             panel.getSelectedModels().ajaxQueue(action);
                         }
                     }
@@ -356,12 +320,9 @@ var HistoryViewEdit = _super.extend(
             } else if (collectionType == "paired") {
                 createFunc = PAIR_COLLECTION_CREATOR.createPairCollection;
             } else if (collectionType == "list:paired") {
-                createFunc =
-                    LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection;
+                createFunc = LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection;
             } else {
-                console.warn(
-                    `Unknown collectionType encountered ${collectionType}`
-                );
+                console.warn(`Unknown collectionType encountered ${collectionType}`);
             }
             createFunc(selection, hideSourceItems).done(() => {
                 panel.model.refresh();
@@ -371,15 +332,11 @@ var HistoryViewEdit = _super.extend(
         // ------------------------------------------------------------------------ sub-views
         /** In this override, add purgeAllowed and whether tags/annotation editors should be shown */
         _getItemViewOptions: function(model) {
-            var options = _super.prototype._getItemViewOptions.call(
-                this,
-                model
-            );
+            var options = _super.prototype._getItemViewOptions.call(this, model);
             _.extend(options, {
                 purgeAllowed: this.purgeAllowed,
                 tagsEditorShown: this.tagsEditor && !this.tagsEditor.hidden,
-                annotationEditorShown:
-                    this.annotationEditor && !this.annotationEditor.hidden
+                annotationEditorShown: this.annotationEditor && !this.annotationEditor.hidden
             });
             return options;
         },
@@ -480,14 +437,7 @@ var HistoryViewEdit = _super.extend(
         _renderSearchProgress: function(limit, offset) {
             var stop = limit + offset;
             return this.$("> .controls .subtitle").html(
-                [
-                    "<i>",
-                    _l("Searching "),
-                    stop,
-                    "/",
-                    this.model.contentsShown(),
-                    "</i>"
-                ].join("")
+                ["<i>", _l("Searching "), stop, "/", this.model.contentsShown(), "</i>"].join("")
             );
         },
 
@@ -537,9 +487,7 @@ var HistoryViewEdit = _super.extend(
             this.$(".history-drop-target-help").remove();
             return $("<div/>")
                 .addClass("history-drop-target-help")
-                .text(
-                    _l("Drag datasets here to copy them to the current history")
-                );
+                .text(_l("Drag datasets here to copy them to the current history"));
         },
 
         /** shut down drag and drop event handlers and remove drop target */
@@ -609,15 +557,9 @@ var HistoryViewEdit = _super.extend(
         dataDropped: function(data) {
             var self = this;
             // HDA: dropping will copy it to the history
-            if (
-                _.isObject(data) &&
-                data.model_class === "HistoryDatasetAssociation" &&
-                data.id
-            ) {
+            if (_.isObject(data) && data.model_class === "HistoryDatasetAssociation" && data.id) {
                 if (self.contents.currentPage !== 0) {
-                    return self.contents
-                        .fetchPage(0)
-                        .then(() => self.model.contents.copy(data.id));
+                    return self.contents.fetchPage(0).then(() => self.model.contents.copy(data.id));
                 }
                 return self.model.contents.copy(data.id);
             }
@@ -627,9 +569,7 @@ var HistoryViewEdit = _super.extend(
         // ........................................................................ misc
         /** Return a string rep of the history */
         toString: function() {
-            return `HistoryViewEdit(${this.model
-                ? this.model.get("name")
-                : ""})`;
+            return `HistoryViewEdit(${this.model ? this.model.get("name") : ""})`;
         }
     }
 );

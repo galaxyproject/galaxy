@@ -91,15 +91,11 @@ function init_refresh_on_change() {
             var select_val = select_field.val();
             var refresh = false;
 
-            var ref_on_change_vals = select_field.attr(
-                "refresh_on_change_values"
-            );
+            var ref_on_change_vals = select_field.attr("refresh_on_change_values");
 
             if (ref_on_change_vals) {
                 ref_on_change_vals = ref_on_change_vals.split(",");
-                var last_selected_value = select_field.attr(
-                    "last_selected_value"
-                );
+                var last_selected_value = select_field.attr("last_selected_value");
                 if (
                     $.inArray(select_val, ref_on_change_vals) === -1 &&
                     $.inArray(last_selected_value, ref_on_change_vals) === -1
@@ -120,15 +116,11 @@ function init_refresh_on_change() {
             var select_val = select_field.val();
             var refresh = false;
 
-            var ref_on_change_vals = select_field.attr(
-                "refresh_on_change_values"
-            );
+            var ref_on_change_vals = select_field.attr("refresh_on_change_values");
 
             if (ref_on_change_vals) {
                 ref_on_change_vals = ref_on_change_vals.split(",");
-                var last_selected_value = select_field.attr(
-                    "last_selected_value"
-                );
+                var last_selected_value = select_field.attr("last_selected_value");
                 if (
                     $.inArray(select_val, ref_on_change_vals) === -1 &&
                     $.inArray(last_selected_value, ref_on_change_vals) === -1

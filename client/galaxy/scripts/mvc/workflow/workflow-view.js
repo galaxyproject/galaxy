@@ -127,11 +127,7 @@ export default Backbone.View.extend({
                     }
                 },
                 error: function(response) {
-                    window.show_modal(
-                        "Saving workflow failed.",
-                        response.err_msg,
-                        { Ok: hide_modal }
-                    );
+                    window.show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
                 }
             });
         };
@@ -198,10 +194,7 @@ export default Backbone.View.extend({
                                         var next = this_label.next();
                                         var no_visible_tools = true;
                                         // Look through tools following label and, if none are visible, hide label.
-                                        while (
-                                            next.length !== 0 &&
-                                            next.hasClass("toolTitle")
-                                        ) {
+                                        while (next.length !== 0 && next.hasClass("toolTitle")) {
                                             if (next.is(":visible")) {
                                                 no_visible_tools = false;
                                                 break;
@@ -275,8 +268,7 @@ export default Backbone.View.extend({
                         details += `<li>${m}</li>`;
                     });
                     if (details) {
-                        upgrade_message += `<li>Step ${parseInt(step_id, 10) +
-                            1}: ${self.workflow.nodes[step_id]
+                        upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${self.workflow.nodes[step_id]
                             .name}<ul>${details}</ul></li>`;
                     }
                 });
@@ -301,8 +293,7 @@ export default Backbone.View.extend({
                 Save: save_current_workflow,
                 "Save As": workflow_save_as,
                 Run: function() {
-                    window.location = `${Galaxy.root}workflow/run?id=${self
-                        .options.id}`;
+                    window.location = `${Galaxy.root}workflow/run?id=${self.options.id}`;
                 },
                 "Edit Attributes": function() {
                     self.workflow.clear_active_node();
@@ -323,10 +314,7 @@ export default Backbone.View.extend({
                         $("#workflow_rename").val().length > 0
                             ? $("#workflow_rename").val()
                             : `SavedAs_${self.workflow.name}`;
-                    var rename_annotation =
-                        $("#wf_annotation").val().length > 0
-                            ? $("#wf_annotation").val()
-                            : "";
+                    var rename_annotation = $("#wf_annotation").val().length > 0 ? $("#wf_annotation").val() : "";
                     $.ajax({
                         url: self.urls.workflow_save_as,
                         type: "POST",
@@ -334,9 +322,7 @@ export default Backbone.View.extend({
                             workflow_name: rename_name,
                             workflow_annotation: rename_annotation,
                             workflow_data: function() {
-                                return JSON.stringify(
-                                    self.workflow.to_simple()
-                                );
+                                return JSON.stringify(self.workflow.to_simple());
                             }
                         }
                     })
@@ -347,9 +333,7 @@ export default Backbone.View.extend({
                         })
                         .fail(() => {
                             hide_modal();
-                            alert(
-                                "Saving this workflow failed. Please contact this site's administrator."
-                            );
+                            alert("Saving this workflow failed. Please contact this site's administrator.");
                         });
                 },
                 Cancel: hide_modal
@@ -417,10 +401,7 @@ export default Backbone.View.extend({
         $("#overview-border").bind("dragend", function(e, d) {
             var op = $(this).offsetParent();
             var opo = op.offset();
-            var new_size = Math.max(
-                op.width() - (d.offsetX - opo.left),
-                op.height() - (d.offsetY - opo.top)
-            );
+            var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
             $.jStorage.set("overview-size", `${new_size}px`);
         });
 
@@ -476,12 +457,7 @@ export default Backbone.View.extend({
         });
 
         // Rename async.
-        async_save_text(
-            "workflow-name",
-            "workflow-name",
-            self.urls.rename_async,
-            "new_name"
-        );
+        async_save_text("workflow-name", "workflow-name", self.urls.rename_async, "new_name");
 
         // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
         $("#workflow-tag").click(() => {
@@ -532,10 +508,7 @@ export default Backbone.View.extend({
                                     },
                                     Copy: function() {
                                         Galaxy.modal.hide();
-                                        self.copy_into_workflow(
-                                            workflow.id,
-                                            workflow.name
-                                        );
+                                        self.copy_into_workflow(workflow.id, workflow.name);
                                     }
                                 }
                             });
@@ -546,10 +519,7 @@ export default Backbone.View.extend({
                     .attr("href", "#")
                     .html(workflow.name)
                     .on("click", () => {
-                        self.add_node_for_subworkflow(
-                            workflow.latest_id,
-                            workflow.name
-                        );
+                        self.add_node_for_subworkflow(workflow.latest_id, workflow.name);
                     });
                 $section.find(".toolSectionBg").append(
                     $("<div/>")
@@ -571,8 +541,7 @@ export default Backbone.View.extend({
                 // Determine if any parameters were 'upgraded' and provide message
                 var upgrade_message = "";
                 $.each(data.upgrade_messages, (k, v) => {
-                    upgrade_message += `<li>Step ${parseInt(k, 10) + 1}: ${self
-                        .workflow.nodes[k].name}<ul>`;
+                    upgrade_message += `<li>Step ${parseInt(k, 10) + 1}: ${self.workflow.nodes[k].name}<ul>`;
                     $.each(v, (i, vv) => {
                         upgrade_message += `<li>${vv}</li>`;
                     });
@@ -597,10 +566,7 @@ export default Backbone.View.extend({
     // Global state for the whole workflow
     reset: function() {
         this.workflow && this.workflow.remove_all();
-        this.workflow = window.workflow_globals.workflow = new Workflow(
-            this,
-            $("#canvas-container")
-        );
+        this.workflow = window.workflow_globals.workflow = new Workflow(this, $("#canvas-container"));
     },
 
     scroll_to_nodes: function() {
@@ -702,9 +668,7 @@ export default Backbone.View.extend({
                 $.each(node.post_job_actions, (k, pja) => {
                     if (pja.action_arguments) {
                         $.each(pja.action_arguments, (k, action_argument) => {
-                            var arg_matches = action_argument.match(
-                                parameter_re
-                            );
+                            var arg_matches = action_argument.match(parameter_re);
                             if (arg_matches) {
                                 matches = matches.concat(arg_matches);
                             }
@@ -722,10 +686,7 @@ export default Backbone.View.extend({
         });
         if (workflow_parameters && workflow_parameters.length !== 0) {
             $.each(workflow_parameters, (k, element) => {
-                new_parameter_content += `<div>${element.substring(
-                    2,
-                    element.length - 1
-                )}</div>`;
+                new_parameter_content += `<div>${element.substring(2, element.length - 1)}</div>`;
             });
             wf_parm_container.html(new_parameter_content);
             wf_parm_box.show();
@@ -757,10 +718,7 @@ export default Backbone.View.extend({
                 $el.append(new FormWrappers[form_type](content).form.$el);
                 $container.append($el);
             } else {
-                Galaxy.emit.debug(
-                    "workflow-view::initialize()",
-                    "Node not found in workflow."
-                );
+                Galaxy.emit.debug("workflow-view::initialize()", "Node not found in workflow.");
             }
         }
         $(`.${cls}`).hide();
@@ -778,9 +736,7 @@ export default Backbone.View.extend({
     prebuildNode: function(type, title_text, content_id) {
         var self = this;
         var $f = $("<div class='toolForm toolFormInCanvas'/>");
-        var $title = $(
-            `<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</div></div>`
-        );
+        var $title = $(`<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</div></div>`);
         add_node_icon($title.find(".nodeTitle"), type);
         $f.append($title);
         $f.css("left", $(window).scrollLeft() + 20);

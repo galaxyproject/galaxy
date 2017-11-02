@@ -60,10 +60,7 @@ var DatasetListItemView = _super.extend(
                             self.render();
                         });
                     } else {
-                        if (
-                            _.has(model.changed, "tags") &&
-                            _.keys(model.changed).length === 1
-                        ) {
+                        if (_.has(model.changed, "tags") && _.keys(model.changed).length === 1) {
                             // If only the tags have changed, rerender specifically
                             // the titlebar region.  Otherwise default to the full
                             // render.
@@ -133,11 +130,7 @@ var DatasetListItemView = _super.extend(
         _renderDisplayButton: function() {
             // don't show display if not viewable or not accessible
             var state = this.model.get("state");
-            if (
-                state === STATES.NOT_VIEWABLE ||
-                state === STATES.DISCARDED ||
-                !this.model.get("accessible")
-            ) {
+            if (state === STATES.NOT_VIEWABLE || state === STATES.DISCARDED || !this.model.get("accessible")) {
                 return null;
             }
 
@@ -149,16 +142,12 @@ var DatasetListItemView = _super.extend(
             // show a disabled display if the data's been purged
             if (this.model.get("purged")) {
                 displayBtnData.disabled = true;
-                displayBtnData.title = _l(
-                    "Cannot display datasets removed from disk"
-                );
+                displayBtnData.title = _l("Cannot display datasets removed from disk");
 
                 // disable if still uploading
             } else if (state === STATES.UPLOAD) {
                 displayBtnData.disabled = true;
-                displayBtnData.title = _l(
-                    "This dataset must finish uploading before it can be viewed"
-                );
+                displayBtnData.title = _l("This dataset must finish uploading before it can be viewed");
 
                 // disable if still new
             } else if (state === STATES.NEW) {
@@ -205,9 +194,7 @@ var DatasetListItemView = _super.extend(
                 .find(".summary")
                 .html(this._renderSummary())
                 .prepend(this._renderDetailMessages());
-            $details
-                .find(".display-applications")
-                .html(this._renderDisplayApplications());
+            $details.find(".display-applications").html(this._renderDisplayApplications());
 
             this._setUpBehaviors($details);
             return $details;
@@ -217,8 +204,7 @@ var DatasetListItemView = _super.extend(
         _renderSummary: function() {
             var json = this.model.toJSON();
             var summaryRenderFn = this.templates.summaries[json.state];
-            summaryRenderFn =
-                summaryRenderFn || this.templates.summaries.unknown;
+            summaryRenderFn = summaryRenderFn || this.templates.summaries.unknown;
             return summaryRenderFn(json, this);
         },
 
@@ -241,14 +227,8 @@ var DatasetListItemView = _super.extend(
             }
             // render both old and new display apps using the same template
             return [
-                this.templates.displayApplications(
-                    this.model.get("display_apps"),
-                    this
-                ),
-                this.templates.displayApplications(
-                    this.model.get("display_types"),
-                    this
-                )
+                this.templates.displayApplications(this.model.get("display_apps"), this),
+                this.templates.displayApplications(this.model.get("display_types"), this)
             ].join("");
         },
 
@@ -262,10 +242,7 @@ var DatasetListItemView = _super.extend(
                 case STATES.OK:
                 case STATES.FAILED_METADATA:
                 case STATES.ERROR:
-                    return [
-                        this._renderDownloadButton(),
-                        this._renderShowParamsButton()
-                    ];
+                    return [this._renderDownloadButton(), this._renderShowParamsButton()];
             }
             return [this._renderShowParamsButton()];
         },
@@ -468,9 +445,7 @@ DatasetListItemView.prototype.templates = (() => {
 
     //TODO: still toooooooooooooo complex - rework
     var summaryTemplates = {};
-    summaryTemplates[STATES.OK] = summaryTemplates[
-        STATES.FAILED_METADATA
-    ] = BASE_MVC.wrapTemplate(
+    summaryTemplates[STATES.OK] = summaryTemplates[STATES.FAILED_METADATA] = BASE_MVC.wrapTemplate(
         [
             "<% if( dataset.misc_blurb ){ %>",
             '<div class="blurb">',
@@ -507,29 +482,15 @@ DatasetListItemView.prototype.templates = (() => {
         "dataset"
     );
     summaryTemplates[STATES.NEW] = BASE_MVC.wrapTemplate(
-        [
-            "<div>",
-            _l(
-                "This is a new dataset and not all of its data are available yet"
-            ),
-            "</div>"
-        ],
+        ["<div>", _l("This is a new dataset and not all of its data are available yet"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.NOT_VIEWABLE] = BASE_MVC.wrapTemplate(
-        [
-            "<div>",
-            _l("You do not have permission to view this dataset"),
-            "</div>"
-        ],
+        ["<div>", _l("You do not have permission to view this dataset"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.DISCARDED] = BASE_MVC.wrapTemplate(
-        [
-            "<div>",
-            _l("The job creating this dataset was cancelled before completion"),
-            "</div>"
-        ],
+        ["<div>", _l("The job creating this dataset was cancelled before completion"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.QUEUED] = BASE_MVC.wrapTemplate(
@@ -549,13 +510,7 @@ DatasetListItemView.prototype.templates = (() => {
         "dataset"
     );
     summaryTemplates[STATES.PAUSED] = BASE_MVC.wrapTemplate(
-        [
-            "<div>",
-            _l(
-                'This job is paused. Use the "Resume Paused Jobs" in the history menu to resume'
-            ),
-            "</div>"
-        ],
+        ["<div>", _l('This job is paused. Use the "Resume Paused Jobs" in the history menu to resume'), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.ERROR] = BASE_MVC.wrapTemplate(

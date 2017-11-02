@@ -127,12 +127,8 @@ $.extend(Workflow.prototype, {
                                     output_name: ot.name,
                                     action_arguments: {}
                                 };
-                                node.post_job_actions[
-                                    `HideDatasetAction${ot.name}`
-                                ] = null;
-                                node.post_job_actions[
-                                    `HideDatasetAction${ot.name}`
-                                ] = pja;
+                                node.post_job_actions[`HideDatasetAction${ot.name}`] = null;
+                                node.post_job_actions[`HideDatasetAction${ot.name}`] = pja;
                             }
                         });
                     }
@@ -159,12 +155,9 @@ $.extend(Workflow.prototype, {
                             id: c.handle1.node.id,
                             output_name: c.handle1.name
                         };
-                        var input_subworkflow_step_id =
-                            t.attributes.input.input_subworkflow_step_id;
+                        var input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
                         if (input_subworkflow_step_id !== undefined) {
-                            con_dict[
-                                "input_subworkflow_step_id"
-                            ] = input_subworkflow_step_id;
+                            con_dict["input_subworkflow_step_id"] = input_subworkflow_step_id;
                         }
                         cons[i] = con_dict;
                         input_connections[t.name] = cons;
@@ -207,8 +200,7 @@ $.extend(Workflow.prototype, {
         return { steps: nodes };
     },
     from_simple: function(data, initialImport_) {
-        var initialImport =
-            initialImport_ === undefined ? true : initialImport_;
+        var initialImport = initialImport_ === undefined ? true : initialImport_;
         var wf = this;
         var offset = 0;
         if (initialImport) {
@@ -220,11 +212,7 @@ $.extend(Workflow.prototype, {
         // First pass, nodes
         var using_workflow_outputs = false;
         $.each(data.steps, (id, step) => {
-            var node = wf.app.prebuildNode(
-                step.type,
-                step.name,
-                step.content_id
-            );
+            var node = wf.app.prebuildNode(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let
             // Galaxy assign new ones.
             if (!initialImport) {
@@ -269,10 +257,7 @@ $.extend(Workflow.prototype, {
                     $.each(v, (l, x) => {
                         var other_node = wf.nodes[parseInt(x.id) + offset];
                         var c = new Connector();
-                        c.connect(
-                            other_node.output_terminals[x.output_name],
-                            node.input_terminals[k]
-                        );
+                        c.connect(other_node.output_terminals[x.output_name], node.input_terminals[k]);
                         c.redraw();
                     });
                 }
@@ -280,20 +265,10 @@ $.extend(Workflow.prototype, {
             if (using_workflow_outputs) {
                 // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
                 $.each(node.output_terminals, (ot_id, ot) => {
-                    if (
-                        node.post_job_actions[`HideDatasetAction${ot.name}`] ===
-                        undefined
-                    ) {
+                    if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
                         node.addWorkflowOutput(ot.name);
-                        var callout = $(node.element).find(
-                            `.callout.${ot.name}`
-                        );
-                        callout
-                            .find("img")
-                            .attr(
-                                "src",
-                                `${Galaxy.root}static/images/fugue/asterisk-small.png`
-                            );
+                        var callout = $(node.element).find(`.callout.${ot.name}`);
+                        callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
                         wf.has_changes = true;
                     }
                 });
@@ -407,11 +382,7 @@ $.extend(Workflow.prototype, {
         $.each(node_ids_by_level, (i, ids) => {
             // We keep nodes in the same order in a level to give the user
             // some control over ordering
-            ids.sort(
-                (a, b) =>
-                    $(all_nodes[a].element).position().top -
-                    $(all_nodes[b].element).position().top
-            );
+            ids.sort((a, b) => $(all_nodes[a].element).position().top - $(all_nodes[b].element).position().top);
             // Position each node
             var max_width = 0;
             var top = v_pad;

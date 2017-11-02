@@ -18,10 +18,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
         /** are the details of this view expanded/shown or not? */
         this.expanded = attributes.expanded || false;
         this.log("\t expanded:", this.expanded);
-        this.fxSpeed =
-            attributes.fxSpeed !== undefined
-                ? attributes.fxSpeed
-                : this.fxSpeed;
+        this.fxSpeed = attributes.fxSpeed !== undefined ? attributes.fxSpeed : this.fxSpeed;
     },
 
     // ........................................................................ render main
@@ -85,10 +82,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     _swapNewRender: function($newRender) {
         return this.$el
             .empty()
-            .attr(
-                "class",
-                _.isFunction(this.className) ? this.className() : this.className
-            )
+            .attr("class", _.isFunction(this.className) ? this.className() : this.className)
             .append($newRender.children());
     },
 
@@ -221,21 +215,11 @@ var ListItemView = ExpandableView.extend(
         // ........................................................................ rendering
         /** In this override, call methods to build warnings, titlebar and primary actions */
         _buildNewRender: function() {
-            var $newRender = ExpandableView.prototype._buildNewRender.call(
-                this
-            );
-            $newRender
-                .children(".warnings")
-                .replaceWith(this._renderWarnings());
-            $newRender
-                .children(".title-bar")
-                .replaceWith(this._renderTitleBar());
-            $newRender
-                .children(".primary-actions")
-                .append(this._renderPrimaryActions());
-            $newRender
-                .find("> .title-bar .subtitle")
-                .replaceWith(this._renderSubtitle());
+            var $newRender = ExpandableView.prototype._buildNewRender.call(this);
+            $newRender.children(".warnings").replaceWith(this._renderWarnings());
+            $newRender.children(".title-bar").replaceWith(this._renderTitleBar());
+            $newRender.children(".primary-actions").append(this._renderPrimaryActions());
+            $newRender.find("> .title-bar .subtitle").replaceWith(this._renderSubtitle());
             return $newRender;
         },
 
@@ -310,8 +294,7 @@ var ListItemView = ExpandableView.extend(
             if (
                 event &&
                 event.type === "keydown" &&
-                (event.keyCode === KEYCODE_SPACE ||
-                    event.keyCode === KEYCODE_RETURN)
+                (event.keyCode === KEYCODE_SPACE || event.keyCode === KEYCODE_RETURN)
             ) {
                 this.toggleExpanded();
                 event.stopPropagation();
@@ -415,8 +398,7 @@ var FoldoutListItemView = ListItemView.extend({
             this.expanded = false;
         }
         this.foldoutStyle = attributes.foldoutStyle || this.foldoutStyle;
-        this.foldoutPanelClass =
-            attributes.foldoutPanelClass || this.foldoutPanelClass;
+        this.foldoutPanelClass = attributes.foldoutPanelClass || this.foldoutPanelClass;
 
         ListItemView.prototype.initialize.call(this, attributes);
         this.foldout = this._createFoldoutPanel();

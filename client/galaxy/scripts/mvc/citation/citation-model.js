@@ -33,9 +33,7 @@ var Citation = Backbone.Model.extend(baseMVC.LoggableMixin).extend({
         // bibtex returns successfully parsed in .entries and any parsing errors in .errors
         if (parsed.errors.length) {
             // the gen. form of these errors seems to be [ line, col, char, error message ]
-            var errors = parsed.errors.reduce(
-                (all, current) => `${all}; ${current}`
-            );
+            var errors = parsed.errors.reduce((all, current) => `${all}; ${current}`);
             // throw new Error( 'Error parsing bibtex: ' + errors );
             this.log(`Error parsing bibtex: ${errors}`);
         }
@@ -62,16 +60,14 @@ var Citation = Backbone.Model.extend(baseMVC.LoggableMixin).extend({
 //==============================================================================
 /** @class Backbone collection of citations.
  */
-var BaseCitationCollection = Backbone.Collection
-    .extend(baseMVC.LoggableMixin)
-    .extend({
-        _logNamespace: logNamespace,
+var BaseCitationCollection = Backbone.Collection.extend(baseMVC.LoggableMixin).extend({
+    _logNamespace: logNamespace,
 
-        /** root api url */
-        urlRoot: `${Galaxy.root}api`,
-        partial: true, // Assume some tools in history/workflow may not be properly annotated yet.
-        model: Citation
-    });
+    /** root api url */
+    urlRoot: `${Galaxy.root}api`,
+    partial: true, // Assume some tools in history/workflow may not be properly annotated yet.
+    model: Citation
+});
 
 var HistoryCitationCollection = BaseCitationCollection.extend({
     /** complete api url */

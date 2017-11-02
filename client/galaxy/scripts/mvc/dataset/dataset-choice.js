@@ -94,11 +94,7 @@ var DatasetChoiceModal = (datasetJSON, options) => {
         selected: []
     });
     // default title should depend on multiselect
-    options.title =
-        options.title ||
-        (options.multiselect
-            ? _l("Choose datasets:")
-            : _l("Choose a dataset:"));
+    options.title = options.title || (options.multiselect ? _l("Choose datasets:") : _l("Choose a dataset:"));
 
     var modal;
     var list;
@@ -215,10 +211,7 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
 
         this.label = attributes.label !== undefined ? _l(attributes.label) : "";
         this.where = attributes.where;
-        this.datasetsOnly =
-            attributes.datasetsOnly !== undefined
-                ? attributes.datasetsOnly
-                : true;
+        this.datasetsOnly = attributes.datasetsOnly !== undefined ? attributes.datasetsOnly : true;
 
         this.datasetJSON = attributes.datasetJSON || [];
         this.selected = attributes.selected || [];
@@ -244,12 +237,7 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     /** return plain html for the overall control */
     _template: function(json) {
         return _.template(
-            [
-                "<label>",
-                '<span class="prompt"><%- label %></span>',
-                '<div class="selected"></div>',
-                "</label>"
-            ].join("")
+            ["<label>", '<span class="prompt"><%- label %></span>', '<div class="selected"></div>', "</label>"].join("")
         )(json);
     },
 
@@ -275,13 +263,7 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
                 )(json.selected[0])
             );
         }
-        return $(
-            [
-                '<span class="none-selected-msg">(',
-                _l("click to select a dataset"),
-                ")</span>"
-            ].join("")
-        );
+        return $(['<span class="none-selected-msg">(', _l("click to select a dataset"), ")</span>"].join(""));
     },
 
     //TODO:?? why not just pass in view?
@@ -334,10 +316,7 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
 
     /** create and return the modal to use for choosing */
     _createModal: function() {
-        return new DatasetChoiceModal(
-            this.datasetJSON,
-            this._getModalOptions()
-        );
+        return new DatasetChoiceModal(this.datasetJSON, this._getModalOptions());
     },
 
     /** return a plain JSON containing the options to pass to the modal */
@@ -385,10 +364,7 @@ var MultiDatasetChoice = DatasetChoice.extend({
 
     /** in this override, add the showHeaders and cells options */
     initialize: function(attributes) {
-        this.showHeaders =
-            attributes.showHeaders !== undefined
-                ? attributes.showHeaders
-                : true;
+        this.showHeaders = attributes.showHeaders !== undefined ? attributes.showHeaders : true;
         this.cells = attributes.cells || this.cells;
         DatasetChoice.prototype.initialize.call(this, attributes);
     },
@@ -422,13 +398,7 @@ var MultiDatasetChoice = DatasetChoice.extend({
                 )(json)
             );
         }
-        return $(
-            [
-                '<span class="none-selected-msg">(',
-                _l("click to select a dataset"),
-                ")</span>"
-            ].join("")
-        );
+        return $(['<span class="none-selected-msg">(', _l("click to select a dataset"), ")</span>"].join(""));
     },
 
     /** in this override, send the showHeaders and cells options as well */

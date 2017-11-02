@@ -11,11 +11,7 @@ var View = Options.BaseIcons.extend({
     /** Set states for selected values */
     _setValue: function(new_value) {
         Options.BaseIcons.prototype._setValue.call(this, new_value);
-        if (
-            new_value !== undefined &&
-            new_value !== null &&
-            this.header_index
-        ) {
+        if (new_value !== undefined && new_value !== null && this.header_index) {
             var self = this;
             var values = $.isArray(new_value) ? new_value : [new_value];
             _.each(values, v => {

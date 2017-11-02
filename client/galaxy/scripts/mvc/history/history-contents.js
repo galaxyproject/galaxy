@@ -61,25 +61,13 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         } else if (attrs.history_content_type === "dataset_collection") {
             switch (attrs.collection_type) {
                 case "list":
-                    return new HDCA_MODEL.HistoryListDatasetCollection(
-                        attrs,
-                        options
-                    );
+                    return new HDCA_MODEL.HistoryListDatasetCollection(attrs, options);
                 case "paired":
-                    return new HDCA_MODEL.HistoryPairDatasetCollection(
-                        attrs,
-                        options
-                    );
+                    return new HDCA_MODEL.HistoryPairDatasetCollection(attrs, options);
                 case "list:paired":
-                    return new HDCA_MODEL.HistoryListPairedDatasetCollection(
-                        attrs,
-                        options
-                    );
+                    return new HDCA_MODEL.HistoryListPairedDatasetCollection(attrs, options);
                 case "list:list":
-                    return new HDCA_MODEL.HistoryListOfListsDatasetCollection(
-                        attrs,
-                        options
-                    );
+                    return new HDCA_MODEL.HistoryListOfListsDatasetCollection(attrs, options);
             }
             // This is a hack inside a hack:
             // Raise a plain object with validationError to fake a model.validationError
@@ -242,8 +230,7 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
 
     /** override to add deleted/hidden filters */
     _buildFetchFilters: function(options) {
-        var superFilters =
-            _super.prototype._buildFetchFilters.call(this, options) || {};
+        var superFilters = _super.prototype._buildFetchFilters.call(this, options) || {};
         var filters = {};
         if (!this.includeDeleted) {
             filters.deleted = false;
@@ -336,16 +323,14 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         var idAttribute = self.model.prototype.idAttribute;
         var updateArgs = [updateWhat];
 
-        return self
-            .fetch({ filters: filterParams, remove: false })
-            .then(fetched => {
-                // convert filtered json array to model array
-                fetched = fetched.reduce((modelArray, currJson, i) => {
-                    var model = self.get(currJson[idAttribute]);
-                    return model ? modelArray.concat(model) : modelArray;
-                }, []);
-                return self.ajaxQueue("save", updateArgs, fetched);
-            });
+        return self.fetch({ filters: filterParams, remove: false }).then(fetched => {
+            // convert filtered json array to model array
+            fetched = fetched.reduce((modelArray, currJson, i) => {
+                var model = self.get(currJson[idAttribute]);
+                return model ? modelArray.concat(model) : modelArray;
+            }, []);
+            return self.ajaxQueue("save", updateArgs, fetched);
+        });
     },
 
     /** using a queue, perform ajaxFn on each of the models in this collection */
@@ -369,8 +354,7 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         var self = this;
         var limit = options.limitPerCall || self.limitPerProgressiveFetch;
         // TODO: only fetch tags and annotations if specifically requested
-        var searchAttributes =
-            HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes;
+        var searchAttributes = HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes;
         var detailKeys = searchAttributes.join(",");
 
         function _recursivelyFetch(offset) {
@@ -405,14 +389,9 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
 
     /** does some bit of JSON represent something that can be copied into this contents collection */
     isCopyable: function(contentsJSON) {
-        var copyableModelClasses = [
-            "HistoryDatasetAssociation",
-            "HistoryDatasetCollectionAssociation"
-        ];
+        var copyableModelClasses = ["HistoryDatasetAssociation", "HistoryDatasetCollectionAssociation"];
         return (
-            _.isObject(contentsJSON) &&
-            contentsJSON.id &&
-            _.contains(copyableModelClasses, contentsJSON.model_class)
+            _.isObject(contentsJSON) && contentsJSON.id && _.contains(copyableModelClasses, contentsJSON.model_class)
         );
     },
 
@@ -453,27 +432,18 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                 collection.add([response], { parse: true });
             })
             .fail((error, status, message) => {
-                collection.trigger(
-                    "error",
-                    collection,
-                    xhr,
-                    {},
-                    "Error copying contents",
-                    { type: type, id: id, source: contentType }
-                );
+                collection.trigger("error", collection, xhr, {}, "Error copying contents", {
+                    type: type,
+                    id: id,
+                    source: contentType
+                });
             });
 
         return xhr;
     },
 
     /** create a new HDCA in this collection */
-    createHDCA: function(
-        elementIdentifiers,
-        collectionType,
-        name,
-        hideSourceItems,
-        options
-    ) {
+    createHDCA: function(elementIdentifiers, collectionType, name, hideSourceItems, options) {
         // normally collection.create returns the new model, but we need the promise from the ajax, so we fake create
         //precondition: elementIdentifiers is an array of plain js objects
         //  in the proper form to create the collectionType
@@ -521,11 +491,7 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
 
     /** String representation. */
     toString: function() {
-        return [
-            "HistoryContents(",
-            [this.historyId, this.length].join(),
-            ")"
-        ].join("");
+        return ["HistoryContents(", [this.historyId, this.length].join(), ")"].join("");
     }
 });
 

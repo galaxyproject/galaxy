@@ -55,16 +55,11 @@ $.extend(CanvasManager.prototype, {
                 var o_w = self.oc.width();
                 var o_h = self.oc.height();
 
-                var new_x_offset =
-                    e.pageX - self.oc.offset().left - self.ov.width() / 2;
+                var new_x_offset = e.pageX - self.oc.offset().left - self.ov.width() / 2;
 
-                var new_y_offset =
-                    e.pageY - self.oc.offset().top - self.ov.height() / 2;
+                var new_y_offset = e.pageY - self.oc.offset().top - self.ov.height() / 2;
 
-                move(
-                    -(new_x_offset / o_w * in_w),
-                    -(new_y_offset / o_h * in_h)
-                );
+                move(-(new_x_offset / o_w * in_w), -(new_y_offset / o_h * in_h));
                 self.app.workflow.fit_canvas_to_nodes();
                 self.draw_overview();
             }
@@ -78,10 +73,7 @@ $.extend(CanvasManager.prototype, {
                 var o_h = self.oc.height();
                 var new_x_offset = d.offsetX - self.overview.offset().left;
                 var new_y_offset = d.offsetY - self.overview.offset().top;
-                move(
-                    -(new_x_offset / o_w * in_w),
-                    -(new_y_offset / o_h * in_h)
-                );
+                move(-(new_x_offset / o_w * in_w), -(new_y_offset / o_h * in_h));
             })
             .bind("dragend", () => {
                 self.overview.addClass("blockaclick");
@@ -92,10 +84,7 @@ $.extend(CanvasManager.prototype, {
         $("#overview-border").bind("drag", function(e, d) {
             var op = $(this).offsetParent();
             var opo = op.offset();
-            var new_size = Math.max(
-                op.width() - (d.offsetX - opo.left),
-                op.height() - (d.offsetY - opo.top)
-            );
+            var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
             $(this).css({
                 width: new_size,
                 height: new_size
@@ -184,10 +173,7 @@ $.extend(CanvasManager.prototype, {
             if (node.errors) {
                 c.fillStyle = "#FFCCCC";
                 c.strokeStyle = "#AA6666";
-            } else if (
-                node.workflow_outputs !== undefined &&
-                node.workflow_outputs.length > 0
-            ) {
+            } else if (node.workflow_outputs !== undefined && node.workflow_outputs.length > 0) {
                 c.fillStyle = "#E8A92D";
                 c.strokeStyle = "#E8A92D";
             }

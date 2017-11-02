@@ -10,8 +10,7 @@ var ToolPanel = Backbone.View.extend({
         this.root = options.root;
 
         /** @type {Object[]} descriptions of user's workflows to be shown in the tool menu */
-        this.stored_workflow_menu_entries =
-            config.stored_workflow_menu_entries || [];
+        this.stored_workflow_menu_entries = config.stored_workflow_menu_entries || [];
 
         // create tool search, tool panel, and tool panel view.
         var tool_search = new Tools.ToolSearch({

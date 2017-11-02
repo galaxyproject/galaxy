@@ -131,8 +131,7 @@ var View = Backbone.View.extend({
         var left;
         top = left = 0;
         if (["top", "bottom"].indexOf(placement) != -1) {
-            left =
-                container_position.left - width + (container_width + width) / 2;
+            left = container_position.left - width + (container_width + width) / 2;
             switch (placement) {
                 case "top":
                     top = container_position.top - height - 5;
@@ -142,10 +141,7 @@ var View = Backbone.View.extend({
                     break;
             }
         } else {
-            top =
-                container_position.top -
-                height +
-                (container_height + height) / 2;
+            top = container_position.top - height + (container_height + height) / 2;
             switch (placement) {
                 case "right":
                     left = container_position.left + container_width;
@@ -172,11 +168,7 @@ var View = Backbone.View.extend({
      * Returns padding corrected height
     */
     _get_height: function($el) {
-        return (
-            $el.height() +
-            parseInt($el.css("padding-top")) +
-            parseInt($el.css("padding-bottom"))
-        );
+        return $el.height() + parseInt($el.css("padding-top")) + parseInt($el.css("padding-bottom"));
     },
 
     /**

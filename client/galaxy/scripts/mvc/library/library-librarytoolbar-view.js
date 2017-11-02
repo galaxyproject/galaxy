@@ -32,16 +32,10 @@ var LibraryToolbarView = Backbone.View.extend({
             is_admin = Galaxy.user.isAdmin();
             is_anonym = Galaxy.user.isAnonymous();
         }
-        this.$el.html(
-            toolbar_template({ admin_user: is_admin, anon_user: is_anonym })
-        );
+        this.$el.html(toolbar_template({ admin_user: is_admin, anon_user: is_anonym }));
         if (is_admin) {
-            this.$el.find(
-                "#include_deleted_chk"
-            )[0].checked = Galaxy.libraries.preferences.get("with_deleted");
-            this.$el.find(
-                "#exclude_restricted_chk"
-            )[0].checked = Galaxy.libraries.preferences.get(
+            this.$el.find("#include_deleted_chk")[0].checked = Galaxy.libraries.preferences.get("with_deleted");
+            this.$el.find("#exclude_restricted_chk")[0].checked = Galaxy.libraries.preferences.get(
                 "without_restricted"
             );
         }
@@ -59,9 +53,7 @@ var LibraryToolbarView = Backbone.View.extend({
                 page_count: parseInt(this.options.page_count),
                 total_libraries_count: this.options.total_libraries_count,
                 libraries_shown: this.options.libraries_shown,
-                library_page_size: Galaxy.libraries.preferences.get(
-                    "library_page_size"
-                )
+                library_page_size: Galaxy.libraries.preferences.get("library_page_size")
             })
         );
     },
@@ -129,10 +121,7 @@ var LibraryToolbarView = Backbone.View.extend({
             "How many libraries per page do you want to see?",
             Galaxy.libraries.preferences.get("library_page_size")
         );
-        if (
-            library_page_size != null &&
-            library_page_size == parseInt(library_page_size)
-        ) {
+        if (library_page_size != null && library_page_size == parseInt(library_page_size)) {
             Galaxy.libraries.preferences.set({
                 library_page_size: parseInt(library_page_size)
             });

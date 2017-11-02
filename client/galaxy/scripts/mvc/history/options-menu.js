@@ -58,11 +58,7 @@ var menu = [
         html: _l("Delete"),
         anon: true,
         func: function() {
-            if (
-                Galaxy &&
-                Galaxy.currHistoryPanel &&
-                confirm(_l("Really delete the current history?"))
-            ) {
+            if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really delete the current history?"))) {
                 Galaxy.currHistoryPanel.model._delete().done(() => {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 });
@@ -77,11 +73,7 @@ var menu = [
             if (
                 Galaxy &&
                 Galaxy.currHistoryPanel &&
-                confirm(
-                    _l(
-                        "Really delete the current history permanently? This cannot be undone."
-                    )
-                )
+                confirm(_l("Really delete the current history permanently? This cannot be undone."))
             ) {
                 Galaxy.currHistoryPanel.model.purge().done(() => {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
@@ -103,10 +95,7 @@ var menu = [
         html: _l("Dataset Security"),
         func: function() {
             if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
-                Galaxy.router.push(
-                    `/histories/permissions?id=${Galaxy.currHistoryPanel.model
-                        .id}`
-                );
+                Galaxy.router.push(`/histories/permissions?id=${Galaxy.currHistoryPanel.model.id}`);
             }
         }
     },
@@ -128,18 +117,10 @@ var menu = [
         anon: true,
         func: function() {
             // TODO: Deprecate this functionality and replace with group dataset selector and action combination
-            if (
-                Galaxy &&
-                Galaxy.currHistoryPanel &&
-                confirm(_l("Really unhide all hidden datasets?"))
-            ) {
-                $.post(
-                    `${Galaxy.root}history/adjust_hidden`,
-                    { user_action: "unhide" },
-                    () => {
-                        Galaxy.currHistoryPanel.loadCurrentHistory();
-                    }
-                );
+            if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really unhide all hidden datasets?"))) {
+                $.post(`${Galaxy.root}history/adjust_hidden`, { user_action: "unhide" }, () => {
+                    Galaxy.currHistoryPanel.loadCurrentHistory();
+                });
             }
         }
     },
@@ -148,26 +129,16 @@ var menu = [
         anon: true,
         func: function() {
             // TODO: Deprecate this functionality and replace with group dataset selector and action combination
-            if (
-                Galaxy &&
-                Galaxy.currHistoryPanel &&
-                confirm(_l("Really delete all hidden datasets?"))
-            ) {
-                $.post(
-                    `${Galaxy.root}history/adjust_hidden`,
-                    { user_action: "delete" },
-                    () => {
-                        Galaxy.currHistoryPanel.loadCurrentHistory();
-                    }
-                );
+            if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really delete all hidden datasets?"))) {
+                $.post(`${Galaxy.root}history/adjust_hidden`, { user_action: "delete" }, () => {
+                    Galaxy.currHistoryPanel.loadCurrentHistory();
+                });
             }
         }
     },
     {
         html: _l("Purge Deleted Datasets"),
-        confirm: _l(
-            "Really delete all deleted datasets permanently? This cannot be undone."
-        ),
+        confirm: _l("Really delete all deleted datasets permanently? This cannot be undone."),
         href: "history/purge_deleted_datasets",
         purge: true,
         anon: true

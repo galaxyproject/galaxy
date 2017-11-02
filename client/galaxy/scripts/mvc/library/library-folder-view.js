@@ -33,26 +33,17 @@ var FolderView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(
-                        `${response.responseJSON
-                            .err_msg} Click this to go back.`,
-                        "",
-                        {
-                            onclick: function() {
-                                Galaxy.libraries.library_router.back();
-                            }
+                    mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
+                        onclick: function() {
+                            Galaxy.libraries.library_router.back();
                         }
-                    );
+                    });
                 } else {
-                    mod_toastr.error(
-                        "An error occurred. Click this to go back.",
-                        "",
-                        {
-                            onclick: function() {
-                                Galaxy.libraries.library_router.back();
-                            }
+                    mod_toastr.error("An error occurred. Click this to go back.", "", {
+                        onclick: function() {
+                            Galaxy.libraries.library_router.back();
                         }
-                    );
+                    });
                 }
             }
         });
@@ -77,9 +68,7 @@ var FolderView = Backbone.View.extend({
                 });
             })
             .fail(() => {
-                mod_toastr.error(
-                    "An error occurred while attempting to fetch folder permissions."
-                );
+                mod_toastr.error("An error occurred while attempting to fetch folder permissions.");
             });
 
         $("#center [data-toggle]").tooltip();
@@ -100,39 +89,18 @@ var FolderView = Backbone.View.extend({
         var fetched_permissions = this.options.fetched_permissions;
         var self = this;
 
-        var selected_add_item_roles = this._serializeRoles(
-            fetched_permissions.add_library_item_role_list
-        );
-        var selected_manage_folder_roles = this._serializeRoles(
-            fetched_permissions.manage_folder_role_list
-        );
-        var selected_modify_folder_roles = this._serializeRoles(
-            fetched_permissions.modify_folder_role_list
-        );
+        var selected_add_item_roles = this._serializeRoles(fetched_permissions.add_library_item_role_list);
+        var selected_manage_folder_roles = this._serializeRoles(fetched_permissions.manage_folder_role_list);
+        var selected_modify_folder_roles = this._serializeRoles(fetched_permissions.modify_folder_role_list);
 
         self.addSelectObject = new mod_select.View(
-            this._createSelectOptions(
-                this,
-                "add_perm",
-                selected_add_item_roles,
-                false
-            )
+            this._createSelectOptions(this, "add_perm", selected_add_item_roles, false)
         );
         self.manageSelectObject = new mod_select.View(
-            this._createSelectOptions(
-                this,
-                "manage_perm",
-                selected_manage_folder_roles,
-                false
-            )
+            this._createSelectOptions(this, "manage_perm", selected_manage_folder_roles, false)
         );
         self.modifySelectObject = new mod_select.View(
-            this._createSelectOptions(
-                this,
-                "modify_perm",
-                selected_modify_folder_roles,
-                false
-            )
+            this._createSelectOptions(this, "modify_perm", selected_modify_folder_roles, false)
         );
     },
 
@@ -205,23 +173,14 @@ var FolderView = Backbone.View.extend({
    */
     savePermissions: function(event) {
         var self = this;
-        var add_ids = this._extractIds(
-            this.addSelectObject.$el.select2("data")
-        );
-        var manage_ids = this._extractIds(
-            this.manageSelectObject.$el.select2("data")
-        );
-        var modify_ids = this._extractIds(
-            this.modifySelectObject.$el.select2("data")
-        );
-        $.post(
-            `${Galaxy.root}api/folders/${self.id}/permissions?action=set_permissions`,
-            {
-                "add_ids[]": add_ids,
-                "manage_ids[]": manage_ids,
-                "modify_ids[]": modify_ids
-            }
-        )
+        var add_ids = this._extractIds(this.addSelectObject.$el.select2("data"));
+        var manage_ids = this._extractIds(this.manageSelectObject.$el.select2("data"));
+        var modify_ids = this._extractIds(this.modifySelectObject.$el.select2("data"));
+        $.post(`${Galaxy.root}api/folders/${self.id}/permissions?action=set_permissions`, {
+            "add_ids[]": add_ids,
+            "manage_ids[]": manage_ids,
+            "modify_ids[]": modify_ids
+        })
             .done(fetched_permissions => {
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
@@ -229,9 +188,7 @@ var FolderView = Backbone.View.extend({
                 mod_toastr.success("Permissions saved.");
             })
             .fail(() => {
-                mod_toastr.error(
-                    "An error occurred while attempting to set folder permissions."
-                );
+                mod_toastr.error("An error occurred while attempting to set folder permissions.");
             });
     },
 

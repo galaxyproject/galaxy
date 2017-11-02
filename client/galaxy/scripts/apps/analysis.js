@@ -65,10 +65,7 @@ window.app = function app(options, bootstrapped) {
         require_login: ["show_user", "show_user_form", "show_workflows"],
 
         authenticate: function(args, name) {
-            return (
-                (Galaxy.user && Galaxy.user.id) ||
-                this.require_login.indexOf(name) == -1
-            );
+            return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
         show_tours: function(tour_id) {
@@ -103,9 +100,7 @@ window.app = function app(options, bootstrapped) {
         show_visualizations_edit: function() {
             this.page.display(
                 new FormWrapper.View({
-                    url: `visualization/edit?id=${QueryStringParsing.get(
-                        "id"
-                    )}`,
+                    url: `visualization/edit?id=${QueryStringParsing.get("id")}`,
                     redirect: "visualizations/list"
                 })
             );
@@ -136,9 +131,7 @@ window.app = function app(options, bootstrapped) {
         show_histories_permissions: function() {
             this.page.display(
                 new FormWrapper.View({
-                    url: `history/permissions?id=${QueryStringParsing.get(
-                        "id"
-                    )}`,
+                    url: `history/permissions?id=${QueryStringParsing.get("id")}`,
                     redirect: "histories/list"
                 })
             );
@@ -196,11 +189,7 @@ window.app = function app(options, bootstrapped) {
         show_custom_builds: function() {
             var self = this;
             var historyPanel = this.page.historyPanel.historyView;
-            if (
-                !historyPanel ||
-                !historyPanel.model ||
-                !historyPanel.model.id
-            ) {
+            if (!historyPanel || !historyPanel.model || !historyPanel.model.id) {
                 window.setTimeout(() => {
                     self.show_custom_builds();
                 }, 500);
@@ -260,16 +249,12 @@ window.app = function app(options, bootstrapped) {
         _loadWorkflow: function() {
             var self = this;
             Utils.get({
-                url: `${Galaxy.root}api/workflows/${Utils.getQueryString(
-                    "id"
-                )}/download?style=run`,
+                url: `${Galaxy.root}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
                 success: function(response) {
                     self.page.display(new ToolFormComposite.View(response));
                 },
                 error: function(response) {
-                    var error_msg =
-                        response.err_msg ||
-                        "Error occurred while loading the resource.";
+                    var error_msg = response.err_msg || "Error occurred while loading the resource.";
                     var options = {
                         message: error_msg,
                         status: "danger",

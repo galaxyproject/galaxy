@@ -13,8 +13,8 @@ var shedParser = jsondata => {
     var hits = jsondata.hits;
     $.each(hits, hit => {
         var record = hits[hit];
-        var label = `${record.repository.name} by ${record.repository
-            .repo_owner_username}: ${record.repository.description}`;
+        var label = `${record.repository.name} by ${record.repository.repo_owner_username}: ${record.repository
+            .description}`;
         var result = { value: record.repository.id, label: label };
         results.push(result);
     });
@@ -23,10 +23,7 @@ var shedParser = jsondata => {
 
 var addToQueue = metadata => {
     if (metadata.tool_shed_url.substr(-1) == "/") {
-        metadata.tool_shed_url = metadata.tool_shed_url.substr(
-            0,
-            metadata.tool_shed_url.length - 1
-        );
+        metadata.tool_shed_url = metadata.tool_shed_url.substr(0, metadata.tool_shed_url.length - 1);
     }
     var key = `${metadata.tool_shed_url}|${metadata.repository_id}|${metadata.changeset_revision}`;
     var queued_repos = new Object();
