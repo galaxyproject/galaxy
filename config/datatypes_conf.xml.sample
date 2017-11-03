@@ -746,7 +746,6 @@
     <sniffer type="galaxy.datatypes.tabular:Sam"/>
     <sniffer type="galaxy.datatypes.data:Newick"/>
     <sniffer type="galaxy.datatypes.data:Nexus"/>
-    <sniffer type="galaxy.datatypes.data:MaximumLikelihoodDistanceMatrix"/>
     <sniffer type="galaxy.datatypes.data:IQTree"/>
     <sniffer type="galaxy.datatypes.text:Obo"/>
     <sniffer type="galaxy.datatypes.text:Arff"/>
