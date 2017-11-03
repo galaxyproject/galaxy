@@ -66,7 +66,7 @@
             // FIXME: deliberate global required for now due to requireJS integration.
             view = null;
 
-            var ui = new (trackster.TracksterUI)( "${h.url_for('/')}" )
+            var ui = new (trackster.default.TracksterUI)( "${h.url_for('/')}" )
                 container_element = $("#${trans.security.encode_id( visualization.id )}");
 
             $(function() {

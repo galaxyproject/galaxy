@@ -149,8 +149,8 @@
                 var hdaJSON = ${ h.dumps( hda_dicts, indent=( 2 if trans.debug else 0 ) ) };
 
                 window.hdas = hdaJSON.map( function( hda ){
-                    return new hdaEdit.HDAListItemEdit({
-                        model           : new hdaModel.HistoryDatasetAssociation( hda ),
+                    return new hdaEdit.default.HDAListItemEdit({
+                        model           : new hdaModel.default.HistoryDatasetAssociation( hda ),
                         el              : $( '#hda-' + hda.id ),
                         linkTarget      : '_self',
                         purgeAllowed    : Galaxy.config.allow_user_dataset_purge,

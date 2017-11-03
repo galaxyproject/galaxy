@@ -2,6 +2,12 @@
 define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-slider', 'mvc/ui/ui-thumbnails', 'mvc/ui/ui-tabs'
 ], function( QUnit, sinon, testApp, Ui, SelectContent, Drilldown, Slider, Thumbnails, Tabs ){
     'use strict';
+    Ui = Ui.default;
+    SelectContent = SelectContent.default;
+    Drilldown = Drilldown.default;
+    Slider = Slider.default;
+    Thumbnails = Thumbnails.default;
+    Tabs = Tabs.default;
     QUnit.module( 'Ui test', {
         beforeEach: function() {
             testApp.create();

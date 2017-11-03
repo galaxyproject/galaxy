@@ -1,17 +1,17 @@
-var jQuery = require("jquery"),
-    $ = jQuery,
-    GalaxyApp = require("galaxy").GalaxyApp,
-    AdminPanel = require("./panels/admin-panel"),
-    FormWrapper = require("mvc/form/form-wrapper"),
-    GridView = require("mvc/grid/grid-view"),
-    Ui = require("mvc/ui/ui-misc"),
-    QueryStringParsing = require("utils/query-string-parsing"),
-    Router = require("layout/router"),
-    Utils = require("utils/utils"),
-    Page = require("layout/page");
+import jQuery from "jquery";
+var $ = jQuery;
+import GalaxyApp from "galaxy";
+import AdminPanel from "./panels/admin-panel";
+import FormWrapper from "mvc/form/form-wrapper";
+import GridView from "mvc/grid/grid-view";
+import Ui from "mvc/ui/ui-misc";
+import QueryStringParsing from "utils/query-string-parsing";
+import Router from "layout/router";
+import Utils from "utils/utils";
+import Page from "layout/page";
 
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp(options, bootstrapped);
+    window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
     Galaxy.debug("admin app");
 
     /** Routes */
@@ -34,7 +34,7 @@ window.app = function app(options, bootstrapped) {
         show_users: function() {
             this.page.display(
                 new GridView({
-                    url_base: Galaxy.root + "admin/users_list",
+                    url_base: `${Galaxy.root}admin/users_list`,
                     url_data: Galaxy.params,
                     dict_format: true
                 })
@@ -44,7 +44,7 @@ window.app = function app(options, bootstrapped) {
         show_roles: function() {
             this.page.display(
                 new GridView({
-                    url_base: Galaxy.root + "admin/roles_list",
+                    url_base: `${Galaxy.root}admin/roles_list`,
                     url_data: Galaxy.params,
                     dict_format: true
                 })
@@ -54,7 +54,7 @@ window.app = function app(options, bootstrapped) {
         show_groups: function() {
             this.page.display(
                 new GridView({
-                    url_base: Galaxy.root + "admin/groups_list",
+                    url_base: `${Galaxy.root}admin/groups_list`,
                     url_data: Galaxy.params,
                     dict_format: true
                 })
@@ -64,8 +64,7 @@ window.app = function app(options, bootstrapped) {
         show_repositories: function() {
             this.page.display(
                 new GridView({
-                    url_base:
-                        Galaxy.root + "admin_toolshed/browse_repositories",
+                    url_base: `${Galaxy.root}admin_toolshed/browse_repositories`,
                     url_data: Galaxy.params,
                     dict_format: true
                 })
@@ -75,7 +74,7 @@ window.app = function app(options, bootstrapped) {
         show_tool_versions: function() {
             this.page.display(
                 new GridView({
-                    url_base: Galaxy.root + "admin/tool_versions_list",
+                    url_base: `${Galaxy.root}admin/tool_versions_list`,
                     url_data: Galaxy.params,
                     dict_format: true
                 })
@@ -85,7 +84,7 @@ window.app = function app(options, bootstrapped) {
         show_quotas: function() {
             this.page.display(
                 new GridView({
-                    url_base: Galaxy.root + "admin/quotas_list",
+                    url_base: `${Galaxy.root}admin/quotas_list`,
                     url_data: Galaxy.params,
                     dict_format: true
                 })
@@ -95,7 +94,7 @@ window.app = function app(options, bootstrapped) {
         show_forms: function() {
             this.page.display(
                 new GridView({
-                    url_base: Galaxy.root + "forms/forms_list",
+                    url_base: `${Galaxy.root}forms/forms_list`,
                     url_data: Galaxy.params,
                     dict_format: true
                 })
@@ -103,30 +102,30 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_form: function(form_id) {
-            var id = "?id=" + QueryStringParsing.get("id");
+            var id = `?id=${QueryStringParsing.get("id")}`;
             var form_defs = {
                 reset_user_password: {
                     title: "Reset passwords",
-                    url: "admin/reset_user_password" + id,
+                    url: `admin/reset_user_password${id}`,
                     icon: "fa-user",
                     submit_title: "Save new password",
                     redirect: "admin/users"
                 },
                 manage_roles_and_groups_for_user: {
-                    url: "admin/manage_roles_and_groups_for_user" + id,
+                    url: `admin/manage_roles_and_groups_for_user${id}`,
                     icon: "fa-users",
                     redirect: "admin/users"
                 },
                 manage_users_and_groups_for_role: {
-                    url: "admin/manage_users_and_groups_for_role" + id,
+                    url: `admin/manage_users_and_groups_for_role${id}`,
                     redirect: "admin/roles"
                 },
                 manage_users_and_roles_for_group: {
-                    url: "admin/manage_users_and_roles_for_group" + id,
+                    url: `admin/manage_users_and_roles_for_group${id}`,
                     redirect: "admin/groups"
                 },
                 manage_users_and_groups_for_quota: {
-                    url: "admin/manage_users_and_groups_for_quota" + id,
+                    url: `admin/manage_users_and_groups_for_quota${id}`,
                     redirect: "admin/quotas"
                 },
                 create_role: {
@@ -142,23 +141,23 @@ window.app = function app(options, bootstrapped) {
                     redirect: "admin/quotas"
                 },
                 rename_role: {
-                    url: "admin/rename_role" + id,
+                    url: `admin/rename_role${id}`,
                     redirect: "admin/roles"
                 },
                 rename_group: {
-                    url: "admin/rename_group" + id,
+                    url: `admin/rename_group${id}`,
                     redirect: "admin/groups"
                 },
                 rename_quota: {
-                    url: "admin/rename_quota" + id,
+                    url: `admin/rename_quota${id}`,
                     redirect: "admin/quotas"
                 },
                 edit_quota: {
-                    url: "admin/edit_quota" + id,
+                    url: `admin/edit_quota${id}`,
                     redirect: "admin/quotas"
                 },
                 set_quota_default: {
-                    url: "admin/set_quota_default" + id,
+                    url: `admin/set_quota_default${id}`,
                     redirect: "admin/quotas"
                 },
                 create_form: {
@@ -166,7 +165,7 @@ window.app = function app(options, bootstrapped) {
                     redirect: "admin/forms"
                 },
                 edit_form: {
-                    url: "forms/edit_form" + id,
+                    url: `forms/edit_form${id}`,
                     redirect: "admin/forms"
                 }
             };
@@ -174,7 +173,7 @@ window.app = function app(options, bootstrapped) {
         }
     });
 
-    $(function() {
+    $(() => {
         _.extend(options.config, { active_view: "admin" });
         Utils.setWindowTitle("Administration");
         Galaxy.page = new Page.View(

@@ -6,7 +6,7 @@ define([
     'test-data/job-dag-1'
 ], function( JobDAG, $, QUnit, testData ){
     "use strict";
-
+    JobDAG = JobDAG.default;
     QUnit.module( "mvc/history/job-dag.js tests" );
 
     // ------------------------------------------------------------------------

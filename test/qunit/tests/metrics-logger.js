@@ -13,6 +13,7 @@ define([
     QUnit
 ){
     "use strict";
+    metrics = metrics.default;
 
     var MockConsole = function(){
         var self = this;

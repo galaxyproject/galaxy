@@ -2,6 +2,8 @@
 define([ "test-app", "layout/page", "layout/panel", "QUnit"
 ], function( testApp, Page, Panel, QUnit ){
     "use strict";
+    Page = Page.default;
+    Panel = Panel.default;
     QUnit.module( "Page test", {
         beforeEach: function() {
             testApp.create();

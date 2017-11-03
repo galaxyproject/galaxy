@@ -47,7 +47,7 @@
             }
             });
             require([ '${config.get( "app" ).get( "jscript" )}' ], function( groups ){
-                app = new groups.ToolshedGroups();
+                app = new groups.default.ToolshedGroups();
             });
         });
     </script>
