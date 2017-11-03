@@ -1,25 +1,25 @@
-var jQuery = require("jquery"),
-    $ = jQuery,
-    GalaxyApp = require("galaxy").GalaxyApp,
-    Router = require("layout/router"),
-    ToolPanel = require("./panels/tool-panel"),
-    HistoryPanel = require("./panels/history-panel"),
-    Page = require("layout/page"),
-    ToolForm = require("mvc/tool/tool-form"),
-    FormWrapper = require("mvc/form/form-wrapper"),
-    UserPreferences = require("mvc/user/user-preferences"),
-    CustomBuilds = require("mvc/user/user-custom-builds"),
-    Tours = require("mvc/tours"),
-    GridView = require("mvc/grid/grid-view"),
-    GridShared = require("mvc/grid/grid-shared"),
-    Workflows = require("mvc/workflow/workflow"),
-    HistoryList = require("mvc/history/history-list"),
-    ToolFormComposite = require("mvc/tool/tool-form-composite"),
-    QueryStringParsing = require("utils/query-string-parsing"),
-    Utils = require("utils/utils"),
-    Ui = require("mvc/ui/ui-misc"),
-    DatasetError = require("mvc/dataset/dataset-error"),
-    DatasetEditAttributes = require("mvc/dataset/dataset-edit-attributes");
+import jQuery from "jquery";
+var $ = jQuery;
+import GalaxyApp from "galaxy";
+import Router from "layout/router";
+import ToolPanel from "./panels/tool-panel";
+import HistoryPanel from "./panels/history-panel";
+import Page from "layout/page";
+import ToolForm from "mvc/tool/tool-form";
+import FormWrapper from "mvc/form/form-wrapper";
+import UserPreferences from "mvc/user/user-preferences";
+import CustomBuilds from "mvc/user/user-custom-builds";
+import Tours from "mvc/tours";
+import GridView from "mvc/grid/grid-view";
+import GridShared from "mvc/grid/grid-shared";
+import Workflows from "mvc/workflow/workflow";
+import HistoryList from "mvc/history/history-list";
+import ToolFormComposite from "mvc/tool/tool-form-composite";
+import QueryStringParsing from "utils/query-string-parsing";
+import Utils from "utils/utils";
+import Ui from "mvc/ui/ui-misc";
+import DatasetError from "mvc/dataset/dataset-error";
+import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -33,7 +33,7 @@ var jQuery = require("jquery"),
  *      * etc.
  */
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp(options, bootstrapped);
+    window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
     Galaxy.debug("analysis app");
 
     /** Routes */
@@ -65,10 +65,7 @@ window.app = function app(options, bootstrapped) {
         require_login: ["show_user", "show_user_form", "show_workflows"],
 
         authenticate: function(args, name) {
-            return (
-                (Galaxy.user && Galaxy.user.id) ||
-                this.require_login.indexOf(name) == -1
-            );
+            return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
         show_tours: function(tour_id) {
@@ -103,8 +100,7 @@ window.app = function app(options, bootstrapped) {
         show_visualizations_edit: function() {
             this.page.display(
                 new FormWrapper.View({
-                    url:
-                        "visualization/edit?id=" + QueryStringParsing.get("id"),
+                    url: `visualization/edit?id=${QueryStringParsing.get("id")}`,
                     redirect: "visualizations/list"
                 })
             );
@@ -113,7 +109,7 @@ window.app = function app(options, bootstrapped) {
         show_workflows_published: function() {
             this.page.display(
                 new GridView({
-                    url_base: Galaxy.root + "workflow/list_published",
+                    url_base: `${Galaxy.root}workflow/list_published`,
                     dict_format: true
                 })
             );
@@ -126,7 +122,7 @@ window.app = function app(options, bootstrapped) {
         show_histories_rename: function() {
             this.page.display(
                 new FormWrapper.View({
-                    url: "history/rename?id=" + QueryStringParsing.get("id"),
+                    url: `history/rename?id=${QueryStringParsing.get("id")}`,
                     redirect: "histories/list"
                 })
             );
@@ -135,9 +131,7 @@ window.app = function app(options, bootstrapped) {
         show_histories_permissions: function() {
             this.page.display(
                 new FormWrapper.View({
-                    url:
-                        "history/permissions?id=" +
-                        QueryStringParsing.get("id"),
+                    url: `history/permissions?id=${QueryStringParsing.get("id")}`,
                     redirect: "histories/list"
                 })
             );
@@ -146,7 +140,7 @@ window.app = function app(options, bootstrapped) {
         show_datasets: function() {
             this.page.display(
                 new GridView({
-                    url_base: Galaxy.root + "dataset/list",
+                    url_base: `${Galaxy.root}dataset/list`,
                     dict_format: true
                 })
             );
@@ -174,7 +168,7 @@ window.app = function app(options, bootstrapped) {
         show_pages_edit: function() {
             this.page.display(
                 new FormWrapper.View({
-                    url: "page/edit?id=" + QueryStringParsing.get("id"),
+                    url: `page/edit?id=${QueryStringParsing.get("id")}`,
                     redirect: "pages/list"
                 })
             );
@@ -195,12 +189,8 @@ window.app = function app(options, bootstrapped) {
         show_custom_builds: function() {
             var self = this;
             var historyPanel = this.page.historyPanel.historyView;
-            if (
-                !historyPanel ||
-                !historyPanel.model ||
-                !historyPanel.model.id
-            ) {
-                window.setTimeout(function() {
+            if (!historyPanel || !historyPanel.model || !historyPanel.model.id) {
+                window.setTimeout(() => {
                     self.show_custom_builds();
                 }, 500);
                 return;
@@ -233,7 +223,7 @@ window.app = function app(options, bootstrapped) {
                     this._loadWorkflow();
                     // load the center iframe with controller.action: galaxy.org/?m_c=history&m_a=list -> history/list
                 } else if (params.m_c) {
-                    this._loadCenterIframe(params.m_c + "/" + params.m_a);
+                    this._loadCenterIframe(`${params.m_c}/${params.m_a}`);
                     // show the workflow run form
                 } else {
                     this._loadCenterIframe("welcome");
@@ -259,18 +249,12 @@ window.app = function app(options, bootstrapped) {
         _loadWorkflow: function() {
             var self = this;
             Utils.get({
-                url:
-                    Galaxy.root +
-                    "api/workflows/" +
-                    Utils.getQueryString("id") +
-                    "/download?style=run",
+                url: `${Galaxy.root}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
                 success: function(response) {
                     self.page.display(new ToolFormComposite.View(response));
                 },
                 error: function(response) {
-                    var error_msg =
-                        response.err_msg ||
-                        "Error occurred while loading the resource.";
+                    var error_msg = response.err_msg || "Error occurred while loading the resource.";
                     var options = {
                         message: error_msg,
                         status: "danger",
@@ -283,7 +267,7 @@ window.app = function app(options, bootstrapped) {
     });
 
     // render and start the router
-    $(function() {
+    $(() => {
         Galaxy.page = new Page.View(
             _.extend(options, {
                 Left: ToolPanel,

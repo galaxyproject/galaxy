@@ -2,6 +2,8 @@
 define([ "test-app", "mvc/ui/ui-misc", "mvc/ui/ui-popover", "QUnit"
 ], function( testApp, Ui, Popover, QUnit ){
     "use strict";
+    Ui = Ui.default;
+    Popover = Popover.default;
     QUnit.module( "Popover test", {
         beforeEach: function() {
             testApp.create();

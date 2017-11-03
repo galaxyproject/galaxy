@@ -2,6 +2,7 @@
 define([ "test-app", "layout/masthead", "QUnit"
 ], function( testApp, Masthead, QUnit ){
     "use strict";
+    Masthead = Masthead.default;
     QUnit.module( "Masthead test", {
         beforeEach: function() {
             testApp.create();

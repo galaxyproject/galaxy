@@ -23,6 +23,14 @@ define([
     Connector
 ){
     "use strict";
+    Utils = Utils.default;
+    App = App.default;
+    Node = Node.default;
+    NodeView = NodeView.default;
+    Terminals = Terminals.default;
+    TerminalsView = TerminalsView.default;
+    Connector = Connector.default;
+
     window.show_modal = function(a, b, c) {}
     window.hide_modal = function() {}
 

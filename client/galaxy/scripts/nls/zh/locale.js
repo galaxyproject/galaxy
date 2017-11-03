@@ -38,8 +38,7 @@ define({
     //"Undelete datasets" :
     //false,
     "Permanently delete datasets": "永久删除数据集",
-    "This will permanently remove the data in your datasets. Are you sure?":
-        "这将永久在你的数据集删除数据。你确定？",
+    "This will permanently remove the data in your datasets. Are you sure?": "这将永久在你的数据集删除数据。你确定？",
 
     // ---- history-view-annotated
     Dataset: "数据集",
@@ -47,8 +46,7 @@ define({
     //false,
 
     // ---- history-view-edit-current
-    "This history is empty. Click 'Get Data' on the left tool menu to start":
-        "历史已空，请单击左边窗格中‘获取数据’",
+    "This history is empty. Click 'Get Data' on the left tool menu to start": "历史已空，请单击左边窗格中‘获取数据’",
     "You must be logged in to create histories": "你必须登录后才能创建历史",
     //TODO:
     //"You can <% loadYourOwn %> or <% externalSource %>" :

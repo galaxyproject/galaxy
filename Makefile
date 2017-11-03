@@ -131,12 +131,15 @@ node-deps: ## Install NodeJS dependencies.
 client: node-deps ## Rebuild all client-side artifacts
 	cd client && yarn run build
 
-charts: node-deps ## Rebuild charts
-	cd client && yarn run build-charts
+client-format: node-deps ## Reformat client code
+	cd client && yarn run prettier
 
 client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
 	@echo "Remember to 'make client' when finished developing!"
+
+charts: node-deps ## Rebuild charts
+	cd client && yarn run build-charts
 
 
 # Release Targets

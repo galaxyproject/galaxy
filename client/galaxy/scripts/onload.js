@@ -11,16 +11,21 @@ window.Backbone = Backbone;
 // console.debug('globals loaded:', window.jQuery, window.Backbone, '...');
 
 // these are galaxy globals not defined in the provider (although they could be - but why encourage that?)
-window.panels = require("layout/panel");
+import Panel from "layout/panel";
+window.panels = Panel;
+
 // using extend bc there are multiple fns/objs to decorate the window with
-_.extend(window, require("layout/modal"));
-window.async_save_text = require("utils/async-save-text");
-var POPUPMENU = require("ui/popupmenu");
+import layout_modal from "layout/modal";
+_.extend(window, layout_modal);
+import async_save_text from "utils/async-save-text";
+window.async_save_text = async_save_text;
+import POPUPMENU from "ui/popupmenu";
 window.make_popupmenu = POPUPMENU.make_popupmenu;
 window.make_popup_menus = POPUPMENU.make_popup_menus;
-window.init_tag_click_function = require("ui/autocom_tagging");
-var TOURS = require("mvc/tours");
-var QUERY_STRING = require("utils/query-string-parsing");
+import init_tag_click_function from "ui/autocom_tagging";
+window.init_tag_click_function = init_tag_click_function;
+import TOURS from "mvc/tours";
+import QUERY_STRING from "utils/query-string-parsing";
 // console.debug( 'galaxy globals loaded' );
 
 // ============================================================================
@@ -82,17 +87,15 @@ function init_refresh_on_change() {
     $("select[refresh_on_change='true']")
         .off("change")
         .change(function() {
-            var select_field = $(this),
-                select_val = select_field.val(),
-                refresh = false,
-                ref_on_change_vals = select_field.attr(
-                    "refresh_on_change_values"
-                );
+            var select_field = $(this);
+            var select_val = select_field.val();
+            var refresh = false;
+
+            var ref_on_change_vals = select_field.attr("refresh_on_change_values");
+
             if (ref_on_change_vals) {
                 ref_on_change_vals = ref_on_change_vals.split(",");
-                var last_selected_value = select_field.attr(
-                    "last_selected_value"
-                );
+                var last_selected_value = select_field.attr("last_selected_value");
                 if (
                     $.inArray(select_val, ref_on_change_vals) === -1 &&
                     $.inArray(last_selected_value, ref_on_change_vals) === -1
@@ -109,17 +112,15 @@ function init_refresh_on_change() {
     $(":checkbox[refresh_on_change='true']")
         .off("click")
         .click(function() {
-            var select_field = $(this),
-                select_val = select_field.val(),
-                refresh = false,
-                ref_on_change_vals = select_field.attr(
-                    "refresh_on_change_values"
-                );
+            var select_field = $(this);
+            var select_val = select_field.val();
+            var refresh = false;
+
+            var ref_on_change_vals = select_field.attr("refresh_on_change_values");
+
             if (ref_on_change_vals) {
                 ref_on_change_vals = ref_on_change_vals.split(",");
-                var last_selected_value = select_field.attr(
-                    "last_selected_value"
-                );
+                var last_selected_value = select_field.attr("last_selected_value");
                 if (
                     $.inArray(select_val, ref_on_change_vals) === -1 &&
                     $.inArray(last_selected_value, ref_on_change_vals) === -1
@@ -141,7 +142,7 @@ function init_refresh_on_change() {
 // used globally in grid-view
 window.init_refresh_on_change = init_refresh_on_change;
 
-$(document).ready(function() {
+$(document).ready(() => {
     // Refresh events for form fields.
     init_refresh_on_change();
 
@@ -205,10 +206,8 @@ $(document).ready(function() {
     function onloadWebhooks() {
         if (Galaxy.root !== undefined) {
             // Load all webhooks with the type 'onload'
-            $.getJSON(Galaxy.root + "api/webhooks/onload/all", function(
-                webhooks
-            ) {
-                _.each(webhooks, function(webhook) {
+            $.getJSON(`${Galaxy.root}api/webhooks/onload/all`, webhooks => {
+                _.each(webhooks, webhook => {
                     if (webhook.activate && webhook.script) {
                         $("<script/>", { type: "text/javascript" })
                             .text(webhook.script)

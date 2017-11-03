@@ -1,4 +1,4 @@
-var _l = require("utils/localization");
+import _l from "utils/localization";
 
 var AdminPanel = Backbone.View.extend({
     initialize: function(page, options) {
@@ -89,9 +89,7 @@ var AdminPanel = Backbone.View.extend({
                     {
                         title: "Install new tools (Beta)",
                         url: "admin_toolshed/browse_toolsheds",
-                        enabled:
-                            self.settings.is_tool_shed_installed &&
-                            self.config.enable_beta_ts_api_install
+                        enabled: self.settings.is_tool_shed_installed && self.config.enable_beta_ts_api_install
                     },
                     {
                         title: "Monitor installation",
@@ -106,8 +104,7 @@ var AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: "Manage metadata",
-                        url:
-                            "admin_toolshed/reset_metadata_on_selected_installed_repositories",
+                        url: "admin_toolshed/reset_metadata_on_selected_installed_repositories",
                         enabled: self.settings.is_repo_installed
                     },
                     {
@@ -140,16 +137,16 @@ var AdminPanel = Backbone.View.extend({
     render: function() {
         var self = this;
         this.$el.empty();
-        this.categories.each(function(category) {
+        this.categories.each(category => {
             var $section = $(self._templateSection(category.attributes));
             var $entries = $section.find(".ui-side-section-body");
-            _.each(category.get("items"), function(item) {
+            _.each(category.get("items"), item => {
                 if (item.enabled === undefined || item.enabled) {
                     var $link = $("<a/>")
                         .attr({ href: self.root + item.url })
                         .text(_l(item.title));
                     if (item.target == "__use_router__") {
-                        $link.on("click", function(e) {
+                        $link.on("click", e => {
                             e.preventDefault();
                             self.page.router.push(item.url);
                         });
@@ -167,22 +164,13 @@ var AdminPanel = Backbone.View.extend({
         });
         this.page
             .$("#galaxy_main")
-            .prop(
-                "src",
-                this.root +
-                    "admin/center?message=" +
-                    this.message +
-                    "&status=" +
-                    this.status
-            );
+            .prop("src", `${this.root}admin/center?message=${this.message}&status=${this.status}`);
     },
 
     _templateSection: function(options) {
         return [
             "<div>",
-            '<div class="ui-side-section-title">' +
-                _l(options.title) +
-                "</div>",
+            `<div class="ui-side-section-title">${_l(options.title)}</div>`,
             '<div class="ui-side-section-body"/>',
             "</div>"
         ].join("");
@@ -197,4 +185,4 @@ var AdminPanel = Backbone.View.extend({
     }
 });
 
-module.exports = AdminPanel;
+export default AdminPanel;

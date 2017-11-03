@@ -1,7 +1,7 @@
-var Tools = require("mvc/tool/tools"),
-    Upload = require("mvc/upload/upload-view"),
-    _l = require("utils/localization"),
-    ToolForm = require("mvc/tool/tool-form-composite");
+import Tools from "mvc/tool/tools";
+import Upload from "mvc/upload/upload-view";
+import _l from "utils/localization";
+import ToolForm from "mvc/tool/tool-form-composite";
 
 var ToolPanel = Backbone.View.extend({
     initialize: function(page, options) {
@@ -10,8 +10,7 @@ var ToolPanel = Backbone.View.extend({
         this.root = options.root;
 
         /** @type {Object[]} descriptions of user's workflows to be shown in the tool menu */
-        this.stored_workflow_menu_entries =
-            config.stored_workflow_menu_entries || [];
+        this.stored_workflow_menu_entries = config.stored_workflow_menu_entries || [];
 
         // create tool search, tool panel, and tool panel view.
         var tool_search = new Tools.ToolSearch({
@@ -63,13 +62,11 @@ var ToolPanel = Backbone.View.extend({
                 href: "workflow"
             })
         );
-        _.each(this.stored_workflow_menu_entries, function(menu_entry) {
+        _.each(this.stored_workflow_menu_entries, menu_entry => {
             self.$("#internal-workflows").append(
                 self._templateWorkflowLink({
                     title: menu_entry.stored_workflow.name,
-                    href:
-                        "workflow/run?id=" +
-                        menu_entry.encoded_stored_workflow_id
+                    href: `workflow/run?id=${menu_entry.encoded_stored_workflow_id}`
                 })
             );
         });
@@ -108,7 +105,7 @@ var ToolPanel = Backbone.View.extend({
     _templateWorkflowLink: function(wf) {
         return [
             '<div class="toolTitle">',
-            '<a class="' + wf.cls + ' " href="',
+            `<a class="${wf.cls} " href="`,
             Galaxy.root,
             wf.href,
             '">',
@@ -148,4 +145,4 @@ var ToolPanel = Backbone.View.extend({
     }
 });
 
-module.exports = ToolPanel;
+export default ToolPanel;

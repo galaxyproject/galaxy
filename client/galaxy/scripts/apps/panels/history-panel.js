@@ -1,8 +1,7 @@
-var Ui = require("mvc/ui/ui-misc"),
-    historyOptionsMenu = require("mvc/history/options-menu"),
-    CurrentHistoryView = require("mvc/history/history-view-edit-current")
-        .CurrentHistoryView,
-    _l = require("utils/localization");
+import Ui from "mvc/ui/ui-misc";
+import historyOptionsMenu from "mvc/history/options-menu";
+import CurrentHistoryView from "mvc/history/history-view-edit-current";
+import _l from "utils/localization";
 
 /** the right hand panel in the analysis page that shows the current history */
 var HistoryPanel = Backbone.View.extend({
@@ -13,8 +12,8 @@ var HistoryPanel = Backbone.View.extend({
         this.root = options.root;
 
         // view of the current history
-        this.historyView = new CurrentHistoryView({
-            className: CurrentHistoryView.prototype.className + " middle",
+        this.historyView = new CurrentHistoryView.CurrentHistoryView({
+            className: `${CurrentHistoryView.CurrentHistoryView.prototype.className} middle`,
             purgeAllowed: this.allow_user_dataset_purge,
             linkTarget: "galaxy_main"
         });
@@ -39,25 +38,21 @@ var HistoryPanel = Backbone.View.extend({
             cls: "panel-header-button",
             target: "galaxy_main",
             icon: "fa fa-cog",
-            href: this.root + "root/history_options"
+            href: `${this.root}root/history_options`
         });
         this.buttonViewMulti = new Ui.ButtonLink({
             id: "history-view-multi-button",
             title: "View all histories",
             cls: "panel-header-button",
             icon: "fa fa-columns",
-            href: this.root + "history/view_multiple"
+            href: `${this.root}history/view_multiple`
         });
 
         // define components
         this.model = new Backbone.Model({
             cls: "history-right-panel",
             title: _l("History"),
-            buttons: [
-                this.buttonRefresh,
-                this.buttonOptions,
-                this.buttonViewMulti
-            ]
+            buttons: [this.buttonRefresh, this.buttonOptions, this.buttonViewMulti]
         });
 
         // build body template and connect history view
@@ -67,9 +62,9 @@ var HistoryPanel = Backbone.View.extend({
         this.historyView.loadCurrentHistory();
 
         // fetch to update the quota meter adding 'current' for any anon-user's id
-        Galaxy.listenTo(this.historyView, "history-size-change", function() {
+        Galaxy.listenTo(this.historyView, "history-size-change", () => {
             Galaxy.user.fetch({
-                url: Galaxy.user.urlRoot() + "/" + (Galaxy.user.id || "current")
+                url: `${Galaxy.user.urlRoot()}/${Galaxy.user.id || "current"}`
             });
         });
     },
@@ -85,9 +80,7 @@ var HistoryPanel = Backbone.View.extend({
 
     /** add history view div */
     _template: function(data) {
-        return [
-            '<div id="current-history-panel" class="history-panel middle"/>'
-        ].join("");
+        return ['<div id="current-history-panel" class="history-panel middle"/>'].join("");
     },
 
     toString: function() {
@@ -95,4 +88,4 @@ var HistoryPanel = Backbone.View.extend({
     }
 });
 
-module.exports = HistoryPanel;
+export default HistoryPanel;
