@@ -14,7 +14,8 @@ var HDCAListItemEdit = _super.extend(
 
         /** Override to return editable versions of the collection panels */
         _getFoldoutPanelClass: function() {
-            switch (this.model.get("collection_type")) {
+            var collectionType = this.model.get("collection_type");
+            switch (collectionType) {
                 case "list":
                     return DC_VIEW_EDIT.ListCollectionViewEdit;
                 case "paired":
@@ -24,7 +25,7 @@ var HDCAListItemEdit = _super.extend(
                 case "list:list":
                     return DC_VIEW_EDIT.ListOfListsCollectionViewEdit;
             }
-            throw new TypeError(`Uknown collection_type: ${this.model.get("collection_type")}`);
+            throw new TypeError(`Unknown collection_type: ${collectionType}`);
         },
 
         // ......................................................................... delete
@@ -37,17 +38,16 @@ var HDCAListItemEdit = _super.extend(
 
         /** Render icon-button to delete this collection. */
         _renderDeleteButton: function() {
-            var self = this;
             var deleted = this.model.get("deleted");
             return faIconButton({
                 title: deleted ? _l("Dataset collection is already deleted") : _l("Delete"),
                 classes: "delete-btn",
                 faIcon: "fa-times",
                 disabled: deleted,
-                onclick: function() {
+                onclick: () => {
                     // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
-                    self.$el.find(".icon-btn.delete-btn").trigger("mouseout");
-                    self.model["delete"]();
+                    this.$el.find(".icon-btn.delete-btn").trigger("mouseout");
+                    this.model["delete"]();
                 }
             });
         },

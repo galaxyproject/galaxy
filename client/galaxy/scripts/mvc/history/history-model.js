@@ -171,24 +171,23 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             refresh: function(options) {
                 // console.log( this + '.refresh' );
                 options = options || {};
-                var self = this;
 
                 // note if there was no previous update time, all summary contents will be fetched
-                var lastUpdateTime = self.lastUpdateTime;
+                var lastUpdateTime = this.lastUpdateTime;
                 // if we don't flip this, then a fully-fetched list will not be re-checked via fetch
                 this.contents.allFetched = false;
                 var fetchFn =
-                    self.contents.currentPage !== 0
-                        ? () => self.contents.fetchPage(self.contents.currentPage)
-                        : () => self.contents.fetchUpdated(lastUpdateTime);
+                    this.contents.currentPage !== 0
+                        ? () => this.contents.fetchPage(this.contents.currentPage)
+                        : () => this.contents.fetchUpdated(lastUpdateTime);
                 // note: if there was no previous update time, all summary contents will be fetched
                 return fetchFn().done((response, status, xhr) => {
                     var serverResponseDatetime;
                     try {
                         serverResponseDatetime = new Date(xhr.getResponseHeader("Date"));
                     } catch (err) {}
-                    self.lastUpdateTime = serverResponseDatetime || new Date();
-                    self.checkForUpdates(options);
+                    this.lastUpdateTime = serverResponseDatetime || new Date();
+                    this.checkForUpdates(options);
                 });
             },
 
@@ -197,18 +196,17 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 // console.log( this + '.checkForUpdates' );
                 options = options || {};
                 var delay = this.UPDATE_DELAY;
-                var self = this;
-                if (!self.id) {
+                if (!this.id) {
                     return;
                 }
 
-                function _delayThenUpdate() {
+                var _delayThenUpdate = () => {
                     // prevent buildup of updater timeouts by clearing previous if any, then set new and cache id
-                    self.clearUpdateTimeout();
-                    self.updateTimeoutId = setTimeout(() => {
-                        self.refresh(options);
+                    this.clearUpdateTimeout();
+                    this.updateTimeoutId = setTimeout(() => {
+                        this.refresh(options);
                     }, delay);
-                }
+                };
 
                 // if there are still datasets in the non-ready state, recurse into this function with the new time
                 var nonReadyContentCount = this.numOfUnfinishedShownContents();
@@ -219,13 +217,13 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     // no datasets are running, but currently runnning jobs may still produce new datasets
                     // see if the history has any running jobs and continue to update if so
                     // (also update the size for the user in either case)
-                    self._fetchContentRelatedAttributes().done(historyData => {
+                    this._fetchContentRelatedAttributes().done(historyData => {
                         // console.log( 'non_ready_jobs:', historyData.non_ready_jobs );
-                        if (self.numOfUnfinishedJobs() > 0) {
+                        if (this.numOfUnfinishedJobs() > 0) {
                             _delayThenUpdate();
                         } else {
                             // otherwise, let listeners know that all updates have stopped
-                            self.trigger("ready");
+                            this.trigger("ready");
                         }
                     });
                 }
