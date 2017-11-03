@@ -998,13 +998,6 @@ class IQTree(Text):
     """IQ-TREE format"""
     file_ext = 'iqtree'
 
-    def __init__(self, **kwd):
-        """Init mixed format"""
-        Text.__init__(self, **kwd)
-
-    def init_meta(self, dataset, copy_from=None):
-        Text.init_meta(self, dataset, copy_from=copy_from)
-
     def sniff(self, filename):
         """
         Detect the IQTree file
@@ -1017,18 +1010,16 @@ class IQTree(Text):
         >>> IQTree().sniff(fname)
         True
 
-
         >>> fname = get_test_fname('temp.txt')
         >>> IQTree().sniff(fname)
         False
-
 
         >>> fname = get_test_fname('test_tab1.tabular')
         >>> IQTree().sniff(fname)
         False
         """
         with open(filename, 'r') as fio:
-            return fio.readline().split()[0] == "IQ-TREE"
+            return fio.read(7).split()[0] == "IQ-TREE"
 
         return False
 
