@@ -2,13 +2,14 @@ import CONTROLLED_FETCH_COLLECTION from "mvc/base/controlled-fetch-collection";
 import HDA_MODEL from "mvc/history/hda-model";
 import HDCA_MODEL from "mvc/history/hdca-model";
 import HISTORY_PREFS from "mvc/history/history-preferences";
+import JobStatesSummary from "mvc/history/job-states-model";
 import BASE_MVC from "mvc/base-mvc";
 import AJAX_QUEUE from "utils/ajax-queue";
 
 var limitPerPageDefault = 500;
 try {
     limitPerPageDefault = localStorage.getItem("historyContentsLimitPerPageDefault") || limitPerPageDefault;
-} catch(err) { }
+} catch (err) {}
 
 //==============================================================================
 var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
@@ -42,6 +43,10 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
 
     /** Set up */
     initialize: function(models, options) {
+        this.on({
+            "sync add": this.trackJobStates
+        });
+
         options = options || {};
         _super.prototype.initialize.call(this, models, options);
 
@@ -56,6 +61,33 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
         //  manually here - if we don't, contents will not merge but be replaced/swapped.
         this.model.prototype.idAttribute = "type_id";
+    },
+
+    trackJobStates: function() {
+        this.each(historyContent => {
+            if (historyContent.has("job_states_summary")) {
+                return;
+            }
+
+            if (historyContent.attributes.history_content_type === "dataset_collection") {
+                var jobSourceType = historyContent.attributes.job_source_type;
+                var jobSourceId = historyContent.attributes.job_source_id;
+                if (jobSourceType) {
+                    this.jobStateSummariesCollection.add({
+                        id: jobSourceId,
+                        history_id: this.history_id,
+                        collection_id: historyContent.attributes.id
+                    });
+                    var jobStatesSummary = this.jobStateSummariesCollection.get(jobSourceId);
+                    historyContent.jobStatesSummary = jobStatesSummary;
+                    /*
+                    jobStatesSummary.on({
+                        "change": () => { historyContent.fire }
+                    });
+                    */
+                }
+            }
+        });
     },
 
     // ........................................................................ composite collection
@@ -88,16 +120,24 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     setHistoryId: function(newId) {
+        if (this.jobStateSummariesCollection) {
+            this.jobStateSummariesCollection.active = false;
+            this.jobStateSummariesCollection.clearUpdateTimeout();
+        }
         this.historyId = newId;
-        this._setUpWebStorage();
+        if (newId) {
+            // If actually reflecting a history - setup storage and monitor jobs.
+
+            this._setUpWebStorage();
+
+            this.jobStateSummariesCollection = new JobStatesSummary.JobStatesSummaryCollection();
+            this.jobStateSummariesCollection.monitor();
+        }
     },
 
     /** Set up client side storage. Currently PersistanStorage keyed under 'history:<id>' */
     _setUpWebStorage: function(initialSettings) {
         // TODO: use initialSettings
-        if (!this.historyId) {
-            return;
-        }
         this.storage = new HISTORY_PREFS.HistoryPrefs({
             id: HISTORY_PREFS.HistoryPrefs.historyStorageKey(this.historyId)
         });
@@ -305,17 +345,6 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         options = options || {};
         var detailsFlag = { details: "all" };
         options.data = _.extend(options.data || {}, detailsFlag);
-        return this.fetch(options);
-    },
-
-    /** specialty fetch method for retrieving the element_counts of all hdcas in the history */
-    fetchCollectionCounts: function(options) {
-        options = options || {};
-        options.keys = ["type_id", "element_count"].join(",");
-        options.filters = _.extend(options.filters || {}, {
-            history_content_type: "dataset_collection"
-        });
-        options.remove = false;
         return this.fetch(options);
     },
 

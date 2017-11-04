@@ -47,9 +47,6 @@ var HistoryView = _super.extend(
         /** string used for search placeholder */
         searchPlaceholder: _l("search datasets"),
 
-        /** @type {Number} ms to wait after history load to fetch/decorate hdcas with element_count */
-        FETCH_COLLECTION_COUNTS_DELAY: 2000,
-
         // ......................................................................... SET UP
         /** Set up the view, bind listeners.
          *  @param {Object} attributes optional settings for the panel
@@ -60,9 +57,6 @@ var HistoryView = _super.extend(
             // control contents/behavior based on where (and in what context) the panel is being used
             /** where should pages from links be displayed? (default to new tab/window) */
             this.linkTarget = attributes.linkTarget || "_blank";
-
-            /** timeout id for detailed fetch of collection counts, etc... */
-            this.detailedFetchTimeoutId = null;
         },
 
         /** create and return a collection for when none is initially passed */
@@ -79,16 +73,7 @@ var HistoryView = _super.extend(
             if (this.model) {
                 this.model.clearUpdateTimeout();
             }
-            this._clearDetailedFetchTimeout();
             return this;
-        },
-
-        /** clear the timeout and the cached timeout id */
-        _clearDetailedFetchTimeout: function() {
-            if (this.detailedFetchTimeoutId) {
-                clearTimeout(this.detailedFetchTimeoutId);
-                this.detailedFetchTimeoutId = null;
-            }
         },
 
         /** create any event listeners for the panel
@@ -100,13 +85,6 @@ var HistoryView = _super.extend(
             this.on({
                 error: function(model, xhr, options, msg, details) {
                     this.errorHandler(model, xhr, options, msg, details);
-                },
-                "loading-done": () => {
-                    // after the initial load, decorate with more time consuming fields (like HDCA element_counts)
-                    this.detailedFetchTimeoutId = _.delay(() => {
-                        this.detailedFetchTimeoutId = null;
-                        this.model.contents.fetchCollectionCounts();
-                    }, this.FETCH_COLLECTION_COUNTS_DELAY);
                 },
                 "views:ready view:attached view:removed": function(view) {
                     this._renderSelectButton();
