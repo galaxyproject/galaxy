@@ -21,7 +21,7 @@ from galaxy.managers.collections_util import (
     dictify_dataset_collection_instance,
     get_hda_and_element_identifiers
 )
-from galaxy.managers.jobs import summarize_jobs_to_dict
+from galaxy.managers.jobs import fetch_job_states, summarize_jobs_to_dict
 from galaxy.util.json import safe_dumps
 from galaxy.util.streamball import StreamBall
 from galaxy.web import (
@@ -156,11 +156,49 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return self.__show_dataset_collection(trans, id, history_id, **kwd)
 
     @expose_api_anonymous
+    def index_jobs_summary(self, trans, history_id, **kwd):
+        """
+        * GET /api/histories/{history_id}/jobs_summary
+            return detailed information about an HDA or HDCAs jobs
+
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+
+        :type   history_id: str
+        :param  history_id: encoded id string of the HDA's or the HDCA's History
+        :type   ids:        str[]
+        :param  ids:        the encoded ids of job summary objects to return - if ids
+                            is specified types must also be specified and have same length.
+        :type   types:      str[]
+        :param  types:      type of object represented by elements in the ids array - either
+                            Job or ImplicitCollectionJob.
+
+        :rtype:     dict[]
+        :returns:   an array of job summary object dictionaries.
+        """
+        ids = kwd.get("ids", None)
+        types = kwd.get("types", None)
+        if ids is None:
+            assert types is None
+            # TODO: ...
+            pass
+        else:
+            ids = util.listify(ids)
+            types = util.listify(types)
+        return map(lambda s: self.encode_all_ids(trans, s), fetch_job_states(self.app, trans.sa_session, ids, types))
+
+    @expose_api_anonymous
     def show_jobs_summary(self, trans, id, history_id, **kwd):
         """
         * GET /api/histories/{history_id}/contents/{type}/{id}/jobs_summary
             return detailed information about an HDA or HDCAs jobs
-        .. note:: Anonymous users are allowed to get their current history contents
+
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
 
         :type   id:         str
         :param  id:         the encoded id of the HDA to return
@@ -168,7 +206,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         :param  history_id: encoded id string of the HDA's or the HDCA's History
 
         :rtype:     dict
-        :returns:   dictionary containing
+        :returns:   dictionary containing jobs summary object
         """
         contents_type = self.__get_contents_type(trans, kwd)
         # At most one of job or implicit_collection_jobs should be found.
