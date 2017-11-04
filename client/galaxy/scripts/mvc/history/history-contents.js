@@ -6,6 +6,11 @@ import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import BASE_MVC from "mvc/base-mvc";
 import AJAX_QUEUE from "utils/ajax-queue";
 
+var limitPerPageDefault = 500;
+try {
+    limitPerPageDefault = localStorage.getItem("historyContentsLimitPerPageDefault") || limitPerPageDefault;
+} catch (err) {}
+
 //==============================================================================
 var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
 /** @class Backbone collection for history content.
@@ -20,10 +25,10 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     _logNamespace: "history",
 
     // ........................................................................ set up
-    limitPerPage: 500,
+    limitPerPage: limitPerPageDefault,
 
     /** @type {Integer} how many contents per call to fetch when using progressivelyFetchDetails */
-    limitPerProgressiveFetch: 500,
+    limitPerProgressiveFetch: limitPerPageDefault,
 
     /** @type {String} order used here and when fetching from server */
     order: "hid",
