@@ -88,9 +88,16 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         if tags is None:
             raise AssertionError('Failed to find history with name [%s]' % self.history1_name)
 
-        tag_button_selector = '.tag-area > .tag-button:first-child > .tag-name'
-        tag_button = tags.find_element_by_css_selector(tag_button_selector)
-        self.assertEqual(tag_button.text, self.history1_tags[0])
+        tag_button_selector = '.tag-area > .tag-button > .tag-name'
+        tag_buttons = tags.find_elements_by_css_selector(tag_button_selector)
+        tag_button_text = None
+        target_tag_button_text = self.history1_tags[0]
+        for tag_button in tag_buttons:
+            tag_button_text = tag_button.text
+            if tag_button_text == target_tag_button_text:
+                break
+
+        self.assertEqual(tag_button_text, target_tag_button_text)
         tag_button.click()
 
         self.assert_grid_histories_are([self.history1_name, self.history3_name], False)
