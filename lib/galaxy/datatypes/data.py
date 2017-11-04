@@ -1019,7 +1019,7 @@ class IQTree(Text):
         False
         """
         with open(filename, 'r') as fio:
-            return fio.read(7).split()[0] == "IQ-TREE"
+            return fio.read(7) == "IQ-TREE"
 
         return False
 
