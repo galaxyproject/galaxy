@@ -68,6 +68,8 @@ MetricsLogger.defaultOptions = {
      *  note: applies only to the console (not the event/metrics log/cache)
      */
     consoleNamespaceWhitelist: null,
+    /** Force all messages into simple strings. */
+    consoleFlattenMessages: false,
     /** the prefix attached to client-side logs to distinguish them in the metrics db */
     clientPrefix: "client.",
 
@@ -283,6 +285,14 @@ MetricsLogger.prototype._delayPost = function _delayPost() {
     }, self.options.delayPostInMs);
 };
 
+function usefulToString(arg) {
+    var asStr = String(arg);
+    if (asStr == "[object Object]") {
+        asStr = JSON.stringify(arg);
+    }
+    return asStr;
+}
+
 //----------------------------------------------------------------------------- console
 /** output message to console based on level and consoleLogger type */
 MetricsLogger.prototype._emitToConsole = function _emitToConsole(level, namespace, logArguments) {
@@ -300,6 +310,9 @@ MetricsLogger.prototype._emitToConsole = function _emitToConsole(level, namespac
 
     var args = Array.prototype.slice.call(logArguments, 0);
     args.unshift(namespace);
+    if (self.options.consoleFlattenMessages) {
+        args = [args.map(usefulToString).join(" ")];
+    }
     //TODO: script location and/or source maps?
     //TODO: branch on navigator.userAgent == AIIEEE - it only has log
     if (level >= MetricsLogger.METRIC && typeof self.consoleLogger.info === "function") {
