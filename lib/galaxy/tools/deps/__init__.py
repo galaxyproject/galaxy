@@ -13,6 +13,7 @@ from galaxy.util import (
     hash_util,
     plugin_config
 )
+from galaxy.util.oset import OrderedSet
 
 from .requirements import (
     ToolRequirement,
@@ -109,8 +110,9 @@ class DependencyManager(object):
         return value
 
     def dependency_shell_commands(self, requirements, **kwds):
-        requirement_to_dependency = self.requirements_to_dependencies(requirements, **kwds)
-        return [dependency.shell_commands() for dependency in requirement_to_dependency.values()]
+        requirements_to_dependencies = self.requirements_to_dependencies(requirements, **kwds)
+        ordered_dependencies = OrderedSet(requirements_to_dependencies.values())
+        return [dependency.shell_commands() for dependency in ordered_dependencies]
 
     def requirements_to_dependencies(self, requirements, **kwds):
         """
