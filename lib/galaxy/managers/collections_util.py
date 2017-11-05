@@ -67,12 +67,16 @@ def validate_input_element_identifiers(element_identifiers):
 
 def get_hda_and_element_identifiers(dataset_collection_instance):
     name = dataset_collection_instance.name
+    collection = dataset_collection_instance.collection
+    return get_collection(collection, name=name)
+
+
+def get_collection(collection, name=""):
     names = []
     hdas = []
-    collection = dataset_collection_instance.collection
     if collection.has_subcollections:
         for element in collection.elements:
-            subnames, subhdas = get_subcollections(element.child_collection, name="%s/%s" % (name, element.element_identifier))
+            subnames, subhdas = get_collection_elements(element.child_collection, name="%s/%s" % (name, element.element_identifier))
             names.extend(subnames)
             hdas.extend(subhdas)
     else:
@@ -82,12 +86,18 @@ def get_hda_and_element_identifiers(dataset_collection_instance):
     return names, hdas
 
 
-def get_subcollections(collection, name=""):
+def get_collection_elements(collection, name=""):
     names = []
     hdas = []
     for element in collection.elements:
-        names.append("%s/%s" % (name, element.element_identifier))
-        hdas.append(element.dataset_instance)
+        full_element_name = "%s/%s" % (name, element.element_identifier)
+        if element.is_collection:
+            subnames, subhdas = get_collection(element.child_collection, name=full_element_name)
+            names.extend(subnames)
+            hdas.extend(subhdas)
+        else:
+            names.append(full_element_name)
+            hdas.append(element.dataset_instance)
     return names, hdas
 
 
