@@ -17,9 +17,6 @@ Please visit <a href="https://galaxyproject.org/admin" target="_blank">the Galax
                     <strong>Data tables</strong> - See all data tables available in this Galaxy.
                 </li>
                 <li>
-                    <strong>Data libraries</strong> - Data libraries enable authorized Galaxy users to share datasets with other groups or users. Only administrators can create data libraries. See <a href="https://galaxyproject.org/data-libraries" target="_blank">wiki</a> for details.
-                </li>
-                <li>
                     <strong>Display applications</strong> - See all display applications configured in this Galaxy.
                 </li>
                 <li>
