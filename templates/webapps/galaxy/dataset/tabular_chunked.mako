@@ -8,7 +8,7 @@
 
     <script type="text/javascript">
         require([ 'mvc/dataset/data' ], function( data ) {
-            data.createTabularDatasetChunkedView({
+            data.default.createTabularDatasetChunkedView({
                 dataset_config : _.extend( ${ h.dumps( trans.security.encode_dict_ids( dataset.to_dict() ) )}, {
                         first_data_chunk: ${ chunk }
                     }),

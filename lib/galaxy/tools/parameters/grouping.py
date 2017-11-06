@@ -301,7 +301,11 @@ class UploadDataset(Group):
 
     def get_file_count(self, trans, context):
         file_count = context.get("file_count", "auto")
-        return len(self.get_datatype(trans, context).writable_files) if file_count == "auto" else int(file_count)
+        if file_count == "auto":
+            d_type = self.get_datatype(trans, context)
+            return len(d_type.writable_files) if d_type else 1
+        else:
+            return int(file_count)
 
     def get_initial_value(self, trans, context):
         file_count = self.get_file_count(trans, context)

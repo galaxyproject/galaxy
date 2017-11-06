@@ -161,15 +161,14 @@ a.btn {
             if( hasMasthead ){
                 $( '#center' ).addClass( 'flex-vertical-container' );
             }
-
-            var viewClass = viewMod[ viewToUse.className ],
+            var viewClass = viewMod.default[ viewToUse.className ],
                 // history module is already in the dpn chain from the view. We can re-scope it here.
                 HISTORY = require( 'mvc/history/history-model' ),
-                historyModel = new HISTORY.History( historyJSON );
+                historyModel = new HISTORY.default.History( historyJSON );
 
             // attach the copy dialog to the import button now that we have a history
             $( '#import' ).click( function( ev ){
-                historyCopyDialog( historyModel, {
+                historyCopyDialog.default( historyModel, {
                     useImport   : true,
                     // use default datasets option to match the toggle-deleted button
                     allDatasets : $( '#toggle-deleted' ).modeButton( 'getMode' ).mode === 'showing_deleted',

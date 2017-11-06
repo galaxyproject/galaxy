@@ -285,10 +285,6 @@ then
     else
        db_type="sqlite"
     fi
-    if [ "$1" = "--selenium" ]; then
-        DOCKER_RUN_EXTRA_ARGS="-e USE_SELENIUM=1 ${DOCKER_RUN_EXTRA_ARGS}"
-        shift
-    fi
     if [ "$1" = "--external_tmp" ]; then
        # If /tmp is a tmpfs there may be better performance by reusing
        # the parent's temp file system. Also, it seems to decrease the
@@ -301,7 +297,7 @@ then
     fi
     MY_UID=$(id -u)
     DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} ${DOCKER_RUN_EXTRA_ARGS}"
-    echo "Launching docker container for testing..."
+    echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "BUILD_NUMBER=$BUILD_NUMBER" -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?
 fi

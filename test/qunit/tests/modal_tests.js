@@ -2,6 +2,7 @@
 define([ "test-app", "mvc/ui/ui-modal", "QUnit", "sinon"
 ], function( testApp, GalaxyModal, QUnit, sinon ){
     "use strict";
+    GalaxyModal = GalaxyModal.default;
     QUnit.module( "Modal dialog test", {
         beforeEach: function() {
             testApp.create();

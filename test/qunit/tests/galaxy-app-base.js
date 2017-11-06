@@ -9,7 +9,7 @@ define([
     QUnit
 ){
     "use strict";
-
+    appBase = appBase.default;
     QUnit.module( "Galaxy client app tests" );
 
     var options = {

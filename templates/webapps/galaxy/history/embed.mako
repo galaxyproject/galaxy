@@ -60,7 +60,7 @@
             var HISTORY = require( 'mvc/history/history-model' );
             var HISTORY_CONTENTS = require( 'mvc/history/history-contents' );
 
-            var HistoryContentsWithAnnotations = HISTORY_CONTENTS.HistoryContents.extend({
+            var HistoryContentsWithAnnotations = HISTORY_CONTENTS.default.HistoryContents.extend({
                 _buildFetchData : function( options ){
                     console.log( '_buildFetchData:' );
                     options = options || {};
@@ -68,10 +68,10 @@
                         options.view = 'summary';
                         options.keys = 'annotation,tags';
                     }
-                    return HISTORY_CONTENTS.HistoryContents.prototype._buildFetchData.call( this, options );
+                    return HISTORY_CONTENTS.default.HistoryContents.prototype._buildFetchData.call( this, options );
                 }
             });
-            var HistoryWithAnnotations = HISTORY.History.extend({
+            var HistoryWithAnnotations = HISTORY.default.History.extend({
                 contentsClass : HistoryContentsWithAnnotations
             });
 
@@ -80,9 +80,9 @@
                 order           : 'hid-asc',
             });
 
-            var historyView = new viewMod.AnnotatedHistoryView({
+            var historyView = new viewMod.default.AnnotatedHistoryView({
                 el          : $embeddedHistory.find( ".history-panel" ),
-                className   : viewMod.AnnotatedHistoryView.prototype.className + ' wide',
+                className   : viewMod.default.AnnotatedHistoryView.prototype.className + ' wide',
                 model       : historyModel
             });
 
@@ -130,7 +130,7 @@
 
             $embeddedHistory.find( '.import' ).click( function( ev ){
                 var dialogOptions = { useImport: true, allowAll: false, autoClose: false };
-                historyCopyDialog( historyModel, dialogOptions ).done( showConfirmationModal );
+                historyCopyDialog.default( historyModel, dialogOptions ).done( showConfirmationModal );
             })
         });
     });

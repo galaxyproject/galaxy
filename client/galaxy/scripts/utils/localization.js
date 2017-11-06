@@ -9,14 +9,9 @@ define(["i18n!nls/locale"], function(localeStrings) {
         var locale =
             typeof navigator === "undefined"
                 ? "__root"
-                : (navigator.language ||
-                      navigator.userLanguage ||
-                      "__root"
-                  ).toLowerCase();
+                : (navigator.language || navigator.userLanguage || "__root").toLowerCase();
         localeStrings =
-            localeStrings["__" + locale] ||
-            localeStrings["__" + locale.split("-")[0]] ||
-            localeStrings.__root;
+            localeStrings["__" + locale] || localeStrings["__" + locale.split("-")[0]] || localeStrings.__root;
 
         // } else {
         //     console.debug( 'i18n+requirejs localization for ' + locale + ' loaded' );

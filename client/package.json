@@ -37,7 +37,7 @@
     "build-toolshed": "grunt --app=toolshed",
     "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js",
     "build-charts": "webpack -p --config ../config/plugins/visualizations/charts/webpack.config.js",
-    "prettier": "prettier --write --tab-width 4 \"galaxy/scripts/{,!(libs)/**/}/*.js\""
+    "prettier": "prettier --write --tab-width 4 --print-width 120 \"galaxy/scripts/{,!(libs)/**/}/*.js\""
   },
   "devDependencies": {
     "babel-core": "^6.24.0",
@@ -58,7 +58,9 @@
     "grunt-spritesmith": "^4.7.1",
     "gulp": "^3.9.1",
     "gulp-babel": "^7.0.0",
+    "gulp-beautify": "^2.0.1",
     "gulp-cached": "^1.1.1",
+    "gulp-if": "^2.0.2",
     "gulp-plumber": "^1.1.0",
     "gulp-sourcemaps": "^2.5.1",
     "gulp-uglify": "^3.0.0",

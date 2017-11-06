@@ -2,6 +2,7 @@
 define([ 'test-app', 'utils/utils', "QUnit"
 ], function( testApp, Utils, QUnit ){
     'use strict';
+    Utils = Utils.default;
     QUnit.module( 'Utils test', {} );
 
     QUnit.test( 'isEmpty', function(assert) {
