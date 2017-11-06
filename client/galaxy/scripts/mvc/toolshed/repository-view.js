@@ -266,13 +266,12 @@ var ToolShedRepositoryView = Backbone.View.extend({
         if (!localStorage.repositories) {
             return;
         }
-        var repository_queue = JSON.parse(localStorage.repositories);
-        var changeset = metadata.changeset_revision;
         var queue_key = that.queueKey(metadata);
+        var queued_repos;
         if (localStorage.repositories) {
             queued_repos = JSON.parse(localStorage.repositories);
         }
-        if (queued_repos.hasOwnProperty(queue_key)) {
+        if (queued_repos && queued_repos.hasOwnProperty(queue_key)) {
             return true;
         }
         return false;
