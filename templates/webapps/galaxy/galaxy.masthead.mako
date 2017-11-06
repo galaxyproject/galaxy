@@ -66,13 +66,13 @@
         ], function( Masthead, Modal, user ){
             if( !Galaxy.user ) {
                 // this doesn't need to wait for the page being readied
-                Galaxy.user = new user.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
+                Galaxy.user = new user.default.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
             }
 
             $(function() {
                 if (!Galaxy.masthead) {
-                    Galaxy.masthead = new Masthead.View(${ h.dumps( masthead_config ) });
-                    Galaxy.modal = new Modal.View();
+                    Galaxy.masthead = new Masthead.default.View((${ h.dumps( masthead_config ) }));
+                    Galaxy.modal = new Modal.default.View();
                     $('#masthead').replaceWith( Galaxy.masthead.render().$el );
                 }
             });

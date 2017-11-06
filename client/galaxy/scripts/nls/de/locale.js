@@ -85,8 +85,7 @@ define({
     //"An error was encountered while <% where %>" :
     //false,
     "search datasets": "Suchdatensätze",
-    "You are currently viewing a deleted history!":
-        "Du siehst derzeit einen gelöschten Verlauf!",
+    "You are currently viewing a deleted history!": "Du siehst derzeit einen gelöschten Verlauf!",
     "You are over your disk quota": "Du bist über dein Festplatten-Kontingent",
     "Tool execution is on hold until your disk usage drops below your allocated quota":
         "Tool-Ausführung ist in der Warteschleife, bis Ihre Datenträgerverwendung unter Ihrem zugeteilten Kontingent fällt",
@@ -112,8 +111,7 @@ define({
     // ---- history-view-edit-current
     "This history is empty. Click 'Get Data' on the left tool menu to start":
         "Diese Geschichte ist leer. Klicken Sie auf 'Get Data' im linken Tool-Menü, um",
-    "You must be logged in to create histories":
-        "Du musst eingeloggt sein, um Geschichten zu schaffen",
+    "You must be logged in to create histories": "Du musst eingeloggt sein, um Geschichten zu schaffen",
     //TODO:
     //"You can <% loadYourOwn %> or <% externalSource %>" :
     //false,
@@ -133,12 +131,10 @@ define({
     "Unable to purge dataset": "Dataset kann nicht gelöscht werden",
     // ---- hda-base
     // display button
-    "Cannot display datasets removed from disk":
-        "Datasets können nicht von der Festplatte entfernt werden",
+    "Cannot display datasets removed from disk": "Datasets können nicht von der Festplatte entfernt werden",
     "This dataset must finish uploading before it can be viewed":
         "Dieser Datensatz muss das Hochladen beenden, bevor es angezeigt werden kann",
-    "This dataset is not yet viewable":
-        "Dieser Datensatz ist noch nicht sichtbar",
+    "This dataset is not yet viewable": "Dieser Datensatz ist noch nicht sichtbar",
     "View data": "Daten anzeigen",
     // download button
     Download: "Herunterladen",
@@ -151,8 +147,7 @@ define({
     "This is a new dataset and not all of its data are available yet":
         "Dies ist ein neuer Datensatz und nicht alle seine Daten sind noch verfügbar",
     // state: noPermission
-    "You do not have permission to view this dataset":
-        "Sie haben keine Berechtigung, diesen Datensatz anzuzeigen",
+    "You do not have permission to view this dataset": "Sie haben keine Berechtigung, diesen Datensatz anzuzeigen",
     // state: discarded
     "The job creating this dataset was cancelled before completion":
         "Der Job, der diesen Datensatz erstellt hat, wurde vor der Fertigstellung abgebrochen",
@@ -168,8 +163,7 @@ define({
     'This job is paused. Use the "Resume Paused Jobs" in the history menu to resume':
         'Dieser Job wird pausiert. Verwenden Sie die "Resume Paused Jobs " im Verlaufsmenü, um',
     // state: error
-    "An error occurred with this dataset":
-        "Ein Fehler ist mit diesem Datensatz aufgetreten",
+    "An error occurred with this dataset": "Ein Fehler ist mit diesem Datensatz aufgetreten",
     // state: empty
     "No data": "Keine Daten",
     // state: failed_metadata
@@ -189,12 +183,10 @@ define({
     "Edit attributes": "Attribute bearbeiten",
     "Cannot edit attributes of datasets removed from disk":
         "Kann keine Attribute von Datasets aus dem Datenträger entfernen",
-    "Undelete dataset to edit attributes":
-        "Undelete-Dataset zum Bearbeiten von Attributen",
+    "Undelete dataset to edit attributes": "Undelete-Dataset zum Bearbeiten von Attributen",
     "This dataset must finish uploading before it can be edited":
         "Dieser Datensatz muss das Hochladen beenden, bevor es bearbeitet werden kann",
-    "This dataset is not yet editable":
-        "Dieser Datensatz ist noch nicht bearbeitbar",
+    "This dataset is not yet editable": "Dieser Datensatz ist noch nicht bearbeitbar",
     Delete: "Löschen",
     "Dataset is already deleted": "Dataset ist bereits gelöscht",
     "View or report this error": "Diesen Fehler anzeigen oder melden",
@@ -205,8 +197,7 @@ define({
     "Permanently remove it from disk": "Permanent aus der Scheibe entfernen",
     "Unhide it": "Ausblenden",
     "You may be able to": "Sie können in der Lage sein",
-    "set it manually or retry auto-detection":
-        "Manuell einstellen oder Auto-Erkennung wiederholen",
+    "set it manually or retry auto-detection": "Manuell einstellen oder Auto-Erkennung wiederholen",
     "Edit dataset tags": "Dataset-Tags bearbeiten",
     "Edit dataset annotation": "Datensatz-Annotation bearbeiten",
     // ---------------------------------------------------------------------------- misc. MVC

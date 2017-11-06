@@ -1,20 +1,26 @@
-define(["libs/bibtexParse", "mvc/base-mvc", "utils/localization"], function(
-    bibtexParse,
-    baseMVC,
-    _l
-) {
-    var logNamespace = "citation";
-    //==============================================================================
-    /** @class model for tool citations.
+import * as parseBibtex from "libs/bibtex";
+import baseMVC from "mvc/base-mvc";
+import _l from "utils/localization";
+
+/* global Backbone */
+
+_.extend(parseBibtex.ENTRY_TYPES_, {
+    online: 998, // Galaxy MOD: Handle @online entries for preprints.
+    data: 999 // Galaxy MOD: Handle @data citations coming from figshare.
+});
+
+var logNamespace = "citation";
+//==============================================================================
+/** @class model for tool citations.
  *  @name Citation
  *  @augments Backbone.Model
  */
-    var Citation = Backbone.Model.extend(baseMVC.LoggableMixin).extend({
-        _logNamespace: logNamespace,
+var Citation = Backbone.Model.extend(baseMVC.LoggableMixin).extend({
+    _logNamespace: logNamespace,
 
-        defaults: {
-            content: ""
-        },
+    defaults: {
+        content: ""
+    },
 
         initialize: function() {
             var parsed;
@@ -41,45 +47,40 @@ define(["libs/bibtexParse", "mvc/base-mvc", "utils/localization"], function(
         },
         fields: function() {
             return this._fields;
-        }
-    });
-
-    //==============================================================================
-    /** @class Backbone collection of citations.
- */
-    var BaseCitationCollection = Backbone.Collection
-        .extend(baseMVC.LoggableMixin)
-        .extend({
-            _logNamespace: logNamespace,
-
-            /** root api url */
-            urlRoot: Galaxy.root + "api",
-            partial: true, // Assume some tools in history/workflow may not be properly annotated yet.
-            model: Citation
-        });
-
-    var HistoryCitationCollection = BaseCitationCollection.extend({
-        /** complete api url */
-        url: function() {
-            return (
-                this.urlRoot + "/histories/" + this.history_id + "/citations"
-            );
-        }
-    });
-
-    var ToolCitationCollection = BaseCitationCollection.extend({
-        /** complete api url */
-        url: function() {
-            return this.urlRoot + "/tools/" + this.tool_id + "/citations";
-        },
-        partial: false // If a tool has citations, assume they are complete.
-    });
-
-    //==============================================================================
-
-    return {
-        Citation: Citation,
-        HistoryCitationCollection: HistoryCitationCollection,
-        ToolCitationCollection: ToolCitationCollection
-    };
+    }
 });
+
+//==============================================================================
+/** @class Backbone collection of citations.
+ */
+var BaseCitationCollection = Backbone.Collection.extend(baseMVC.LoggableMixin).extend({
+    _logNamespace: logNamespace,
+
+    /** root api url */
+    urlRoot: `${Galaxy.root}api`,
+    partial: true, // Assume some tools in history/workflow may not be properly annotated yet.
+    model: Citation
+});
+
+var HistoryCitationCollection = BaseCitationCollection.extend({
+    /** complete api url */
+    url: function() {
+        return `${this.urlRoot}/histories/${this.history_id}/citations`;
+    }
+});
+
+var ToolCitationCollection = BaseCitationCollection.extend({
+    /** complete api url */
+    url: function() {
+        return `${this.urlRoot}/tools/${this.tool_id}/citations`;
+    },
+    partial: false // If a tool has citations, assume they are complete.
+});
+
+//==============================================================================
+
+export default {
+    Citation: Citation,
+    HistoryCitationCollection: HistoryCitationCollection,
+    ToolCitationCollection: ToolCitationCollection
+};

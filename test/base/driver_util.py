@@ -9,6 +9,7 @@ import os
 import random
 import shutil
 import socket
+import string
 import struct
 import sys
 import tempfile
@@ -19,7 +20,10 @@ import nose.config
 import nose.core
 import nose.loader
 import nose.plugins.manager
+
 from paste import httpserver
+
+from six.moves.urllib.parse import urlparse
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.util import asbool, download_to_file
@@ -120,6 +124,7 @@ def setup_galaxy_config(
     shed_tool_conf=None,
     datatypes_conf=None,
     update_integrated_tool_panel=False,
+    prefer_template_database=False,
 ):
     """Setup environment and build config for test Galaxy instance."""
     if not os.path.exists(tmpdir):
@@ -209,7 +214,7 @@ def setup_galaxy_config(
         user_library_import_dir=user_library_import_dir,
         webhooks_dir=TEST_WEBHOOKS_DIR,
     )
-    config.update(database_conf(tmpdir))
+    config.update(database_conf(tmpdir, prefer_template_database=prefer_template_database))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
     if datatypes_conf is not None:
         config['datatypes_config_file'] = datatypes_conf
@@ -287,12 +292,21 @@ def copy_database_template(source, db_path):
         raise Exception("Failed to copy database template from source %s" % source)
 
 
-def database_conf(db_path, prefix="GALAXY"):
+def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
     """Find (and populate if needed) Galaxy database connection."""
     database_auto_migrate = False
     dburi_var = "%s_TEST_DBURI" % prefix
+    template_name = None
     if dburi_var in os.environ:
         database_connection = os.environ[dburi_var]
+        # only template if postgres - not mysql or sqlite
+        do_template = prefer_template_database and database_connection.startswith("p")
+        if do_template:
+            database_template_parsed = urlparse(database_connection)
+            template_name = database_template_parsed.path[1:]  # drop / from /galaxy
+            actual_db = "gxtest" + ''.join(random.choice(string.ascii_uppercase) for _ in range(10))
+            actual_database_parsed = database_template_parsed._replace(path="/%s" % actual_db)
+            database_connection = actual_database_parsed.geturl()
     else:
         default_db_filename = "%s.sqlite" % prefix.lower()
         template_var = "%s_TEST_DB_TEMPLATE" % prefix
@@ -313,6 +327,8 @@ def database_conf(db_path, prefix="GALAXY"):
     if not database_connection.startswith("sqlite://"):
         config["database_engine_option_max_overflow"] = "20"
         config["database_engine_option_pool_size"] = "10"
+    if template_name:
+        config["database_template"] = template_name
     return config
 
 
@@ -673,6 +689,7 @@ class GalaxyTestDriver(TestDriver):
                     default_install_db_merged=True,
                     default_tool_conf=default_tool_conf,
                     datatypes_conf=datatypes_conf_override,
+                    prefer_template_database=getattr(config_object, "prefer_template_database", False),
                 )
                 galaxy_config = setup_galaxy_config(
                     galaxy_db_path,

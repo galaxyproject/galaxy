@@ -21,9 +21,9 @@
             require(["mvc/citation/citation-model", "mvc/citation/citation-view"
             ], function( citationModel, citationView ){
                 $(function() {
-                    var citations = new citationModel.HistoryCitationCollection();
+                    var citations = new citationModel.default.HistoryCitationCollection();
                     citations.history_id = "${history_id}";
-                    var citation_list_view = new citationView.CitationListView({ collection: citations } );
+                    var citation_list_view = new citationView.default.CitationListView({ collection: citations } );
                     citation_list_view.render();
                     citations.fetch();
                 } );

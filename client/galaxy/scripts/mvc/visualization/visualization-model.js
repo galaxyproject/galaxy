@@ -1,6 +1,3 @@
-//define([
-//], function(){
-
 //==============================================================================
 /** @class Model for a saved Galaxy visualization.
  *
@@ -67,9 +64,9 @@ var Visualization = Backbone.Model.extend(
         toString: function() {
             var idAndTitle = this.get("id") || "";
             if (this.get("title")) {
-                idAndTitle += ":" + this.get("title");
+                idAndTitle += `:${this.get("title")}`;
             }
-            return "Visualization(" + idAndTitle + ")";
+            return `Visualization(${idAndTitle})`;
         }
     }
 );
@@ -88,7 +85,7 @@ var VisualizationCollection = Backbone.Collection.extend(
         //logger              : console,
 
         url: function() {
-            return Galaxy.root + "api/visualizations";
+            return `${Galaxy.root}api/visualizations`;
         },
 
         /** Set up.
@@ -112,7 +109,7 @@ var VisualizationCollection = Backbone.Collection.extend(
             //  and overwrite existing data on the client
             // see Backbone.Collection.set and _prepareModel
             var collection = this;
-            models = _.map(models, function(model) {
+            models = _.map(models, model => {
                 var existing = collection.get(model.id);
                 if (!existing) {
                     return model;
@@ -129,17 +126,7 @@ var VisualizationCollection = Backbone.Collection.extend(
 
         /** String representation. */
         toString: function() {
-            return [
-                "VisualizationCollection(",
-                [this.historyId, this.length].join(),
-                ")"
-            ].join("");
+            return ["VisualizationCollection(", [this.historyId, this.length].join(), ")"].join("");
         }
     }
 );
-
-//==============================================================================
-//return {
-//    Visualization           : Visualization,
-//    VisualizationCollection : VisualizationCollection
-//};});

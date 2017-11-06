@@ -112,8 +112,7 @@ define({
     //"Undelete datasets" :
     //false,
     "Permanently delete datasets": "永久にデータセットを削除",
-    "This will permanently remove the data in your datasets. Are you sure?":
-        "これは永久にあなたのデータセット内のデータを削除します。本当に？",
+    "This will permanently remove the data in your datasets. Are you sure?": "これは永久にあなたのデータセット内のデータを削除します。本当に？",
 
     // ---- history-view-annotated
     Dataset: "データセット",
@@ -121,8 +120,7 @@ define({
     //false,
 
     // ---- history-view-edit-current
-    "This history is empty. Click 'Get Data' on the left tool menu to start":
-        "ヒストリーは空です。解析をはじめるには、左パネルの 'データ取得' をクリック",
+    "This history is empty. Click 'Get Data' on the left tool menu to start": "ヒストリーは空です。解析をはじめるには、左パネルの 'データ取得' をクリック",
     "You must be logged in to create histories": "ヒストリーを作成するためにはログインする必要があります",
     //TODO:
     //"You can <% loadYourOwn %> or <% externalSource %>" :
@@ -196,8 +194,7 @@ define({
     //false,
 
     // purged'd/del'd msg
-    "This dataset has been deleted and removed from disk":
-        "このデータセットは、永続的にディスクから削除されました",
+    "This dataset has been deleted and removed from disk": "このデータセットは、永続的にディスクから削除されました",
     "This dataset has been deleted": "このデータセットは削除されました",
     "This dataset has been hidden": "このデータセットは、非表示にされた",
 
