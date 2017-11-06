@@ -156,7 +156,7 @@ class LmodDependency(Dependency):
     def exact(self):
         return self._exact
 
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         # Get the full module name in the form "tool_name/tool_version"
         module_to_load = self.module_name
         if self.module_version:

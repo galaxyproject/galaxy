@@ -110,7 +110,7 @@ class DependencyManager(object):
 
     def dependency_shell_commands(self, requirements, **kwds):
         requirement_to_dependency = self.requirements_to_dependencies(requirements, **kwds)
-        return [dependency.shell_commands(requirement) for requirement, dependency in requirement_to_dependency.items()]
+        return [dependency.shell_commands() for dependency in requirement_to_dependency.values()]
 
     def requirements_to_dependencies(self, requirements, **kwds):
         """
@@ -252,7 +252,7 @@ class CachedDependencyManager(DependencyManager):
             self.build_cache(requirements, **kwds)
         if os.path.exists(hashed_dependencies_dir):
             [dep.set_cache_path(hashed_dependencies_dir) for dep in cacheable_dependencies]
-        commands = [dep.shell_commands(req) for req, dep in resolved_dependencies.items()]
+        commands = [dep.shell_commands() for dep in resolved_dependencies.values()]
         return commands
 
     def hash_dependencies(self, resolved_dependencies):

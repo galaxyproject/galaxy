@@ -32,7 +32,7 @@ def test_conda_resolution():
         )
         req = ToolRequirement(name="samtools", version=None, type="package")
         dependency = resolver.resolve(req, job_directory=job_dir)
-        assert dependency.shell_commands(None) is not None
+        assert dependency.shell_commands() is not None
     finally:
         shutil.rmtree(base_path)
 
@@ -55,7 +55,7 @@ def test_against_conda_prefix_regression():
         assert len(list(conda_util.installed_conda_targets(conda_context))) == 0
         req = ToolRequirement(name="samtools", version="0.1.16", type="package")
         dependency = resolver.resolve(req, job_directory=job_dir)
-        assert dependency.shell_commands(None) is not None  # install should not fail anymore
+        assert dependency.shell_commands() is not None  # install should not fail anymore
         installed_targets = list(conda_util.installed_conda_targets(conda_context))
         assert len(installed_targets) > 0
     finally:
