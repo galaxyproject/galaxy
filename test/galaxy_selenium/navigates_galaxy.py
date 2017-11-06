@@ -173,7 +173,7 @@ class NavigatesGalaxy(HasDriver):
 
     def api_delete(self, endpoint, raw=False):
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
-        response = requests.get(full_url, cookies=self.selenium_to_requests_cookies())
+        response = requests.delete(full_url, cookies=self.selenium_to_requests_cookies())
         if raw:
             return response
         else:
