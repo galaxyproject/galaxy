@@ -46,6 +46,7 @@ class GraphiteMiddleware(object):
         dt = int((time.time() - start_time) * 1000)
         try:
             self.graphite_client.send(environ.get('controller_action_key', None) or environ.get('PATH_INFO', "NOPATH").strip('/').replace('/', '.'), dt)
+            self.graphite_client.send('__global__', dt)
         except graphitesend.GraphiteSendException:
             log.exception("Graphite Error")
         return req

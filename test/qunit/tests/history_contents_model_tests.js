@@ -1,44 +1,48 @@
+/* global define */
 define([
     "mvc/history/hda-model",
     "jquery",
-    "sinon-qunit"
+    "sinon",
+    "QUnit"
 ], function(
     HDA_MODEL,
     $,
-    sinon
+    sinon,
+    QUnit
 ){
-    module( "History Contents Model Tests" );
+    HDA_MODEL = HDA_MODEL.default;
+    QUnit.module( "History Contents Model QUnit.Tests" );
 
-    test( "HDA Constructions with Default Attributes", function() {
+    QUnit.test( "HDA Constructions with Default Attributes", function(assert) {
         var hda = new HDA_MODEL.HistoryDatasetAssociation({});
-        equal( hda.get( 'name' ), "(unnamed dataset)" );
-        equal( hda.get( 'state' ), "new" );
+        assert.equal( hda.get( 'name' ), "(unnamed dataset)" );
+        assert.equal( hda.get( 'state' ), "new" );
     });
 
-    test( "HDA Construction with Supplied Attributes", function() {
+    QUnit.test( "HDA Construction with Supplied Attributes", function(assert) {
         var hda = new HDA_MODEL.HistoryDatasetAssociation({
             history_content_type : 'dataset',
             name: "my dataset",
             state: "ok"
         });
-        equal( hda.get( 'name' ), "my dataset" );
-        equal( hda.get( 'state' ), "ok" );
+        assert.equal( hda.get( 'name' ), "my dataset" );
+        assert.equal( hda.get( 'state' ), "ok" );
     });
 
-    test( "HDA Deletion", function() {
+    QUnit.test( "HDA Deletion", function(assert) {
         var hda = new HDA_MODEL.HistoryDatasetAssociation({
             history_content_type : 'dataset',
             id: "hda1",
             history_id: "h1",
             deleted: false
         });
-        equal( hda.get( 'deleted' ), false );
+        assert.equal( hda.get( 'deleted' ), false );
 
         sinon.stub( $, "ajax" ).yieldsTo( 'success', { deleted: true });
         hda[ 'delete' ]();
         // to get the url sinon used:
         //console.debug( $.ajax.lastCall.args[0].url )
-        ok( $.ajax.calledWithMatch( { url: "/api/histories/h1/contents/datasets/hda1" } ) );
-        equal( hda.get( 'deleted' ), true );
+        assert.ok( $.ajax.calledWithMatch( { url: "/api/histories/h1/contents/datasets/hda1" } ) );
+        assert.equal( hda.get( 'deleted' ), true );
     });
 });

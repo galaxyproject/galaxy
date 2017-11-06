@@ -42,6 +42,6 @@ module.exports = {
         libraryTarget   : 'amd'
     },
     resolve : {
-        root : root
+        modules: [root]
     }
 };

@@ -179,7 +179,7 @@ class GalaxyRBACAgent(RBACAgent):
         # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
         # only to provide stable sorting, but mainly to eliminate comparison of objects
         # (which can be expensive or prohibited) in case of equal attribute values.
-        intermed = map(None, (getattr(_, attr) for _ in seq), range(len(seq)), seq)
+        intermed = [(getattr(v, attr), i, v) for i, v in enumerate(seq)]
         intermed.sort()
         return [_[-1] for _ in intermed]
 
@@ -238,20 +238,17 @@ class GalaxyRBACAgent(RBACAgent):
         sharing roles and any public role (not private and not sharing).
         """
         roles = []
-        if query is not None:
-            query = query.replace('_', '/_').replace('%', '/%').replace('/', '//')
+        if query not in [None, '']:
+            query = query.strip().replace('_', '/_').replace('%', '/%').replace('/', '//')
             search_query = query + '%'
-            log.debug('search_query: ' + str(search_query))
-
+        else:
+            search_query = None
         # Limit the query only to get the page needed
         if page is not None and page_limit is not None:
-            paginated = True
             limit = page * page_limit
         else:
-            paginated = False
-
+            limit = None
         total_count = None
-
         if isinstance(item, self.model.Library) and self.library_is_public(item):
             is_public_item = True
         elif isinstance(item, self.model.Dataset) and self.dataset_is_public(item):
@@ -260,27 +257,30 @@ class GalaxyRBACAgent(RBACAgent):
             is_public_item = True
         else:
             is_public_item = False
-
-        # For public items and for library access admins can choose from all roles
-        if trans.user_is_admin() and (is_public_item or is_library_access):
-            # Add all non-deleted roles that fit the query
-            db_query = trans.sa_session.query(trans.app.model.Role).filter(self.model.Role.table.c.deleted == false())
-            if query is not None:
+        # Admins can always choose from all non-deleted roles
+        if trans.user_is_admin() or trans.app.config.expose_user_email:
+            if trans.user_is_admin():
+                db_query = trans.sa_session.query(trans.app.model.Role).filter(self.model.Role.table.c.deleted == false())
+            else:
+                # User is not an admin but the configuration exposes all private roles to all users.
+                db_query = trans.sa_session.query(trans.app.model.Role) \
+                    .filter(and_(self.model.Role.table.c.deleted == false(),
+                                 self.model.Role.table.c.type == self.model.Role.types.PRIVATE))
+            if search_query:
                 db_query = db_query.filter(self.model.Role.table.c.name.like(search_query, escape='/'))
             total_count = db_query.count()
-            if paginated:
+            if limit is not None:
                 # Takes the least number of results from beginning that includes the requested page
                 roles = db_query.order_by(self.model.Role.table.c.name).limit(limit).all()
                 page_start = (page * page_limit) - page_limit
                 page_end = page_start + page_limit
-                if total_count < page_start:
+                if total_count < page_start + 1:
                     # Return empty list if there are less results than the requested position
                     roles = []
                 else:
                     roles = roles[page_start:page_end]
             else:
                 roles = db_query.order_by(self.model.Role.table.c.name)
-
         # Non-admin and public item
         elif is_public_item:
             # Add the current user's private role
@@ -291,8 +291,7 @@ class GalaxyRBACAgent(RBACAgent):
             # Add all remaining non-private, non-sharing roles
             for role in self._get_npns_roles(trans):
                 roles.append(role)
-        #  User is not admin and item is not public
-        #  User will see all the roles derived from the access roles on the item
+        # User will see all the roles derived from the access roles on the item
         else:
             # If item has roles associated with the access permission, we need to start with them.
             access_roles = item.get_access_roles(trans)
@@ -886,7 +885,7 @@ class GalaxyRBACAgent(RBACAgent):
                 has_dataset_manage_permissions = True
                 break
         if not has_dataset_manage_permissions:
-            return "At least 1 role must be associated with the <b>manage permissions</b> permission on this dataset."
+            return "At least 1 role must be associated with manage permissions on this dataset."
         flush_needed = False
         # Delete all of the current permissions on the dataset
         if not new:

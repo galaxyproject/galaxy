@@ -1,13 +1,22 @@
-define([ 'jquery' ], function( jQuery ){
-'use_strict';
+import jQuery from "jquery";
+("use_strict");
 
 var $ = jQuery;
 // ============================================================================
 /**
  * Edit and save text asynchronously.
  */
-function async_save_text( click_to_edit_elt, text_elt_id, save_url,
-                          text_parm_name, num_cols, use_textarea, num_rows, on_start, on_finish ) {
+function async_save_text(
+    click_to_edit_elt,
+    text_elt_id,
+    save_url,
+    text_parm_name,
+    num_cols,
+    use_textarea,
+    num_rows,
+    on_start,
+    on_finish
+) {
     // Set defaults if necessary.
     if (num_cols === undefined) {
         num_cols = 30;
@@ -17,42 +26,47 @@ function async_save_text( click_to_edit_elt, text_elt_id, save_url,
     }
 
     // Set up input element.
-    $("#" + click_to_edit_elt).click(function() {
+    $(`#${click_to_edit_elt}`).click(() => {
         // Check if this is already active
-        if ( $("#renaming-active").length > 0) {
+        if ($("#renaming-active").length > 0) {
             return;
         }
-        var text_elt = $("#" + text_elt_id),
-            old_text = text_elt.text(),
-            t;
+        var text_elt = $(`#${text_elt_id}`);
+        var old_text = text_elt.text();
+        var t;
 
         if (use_textarea) {
-            t = $("<textarea></textarea>").attr({ rows: num_rows, cols: num_cols }).text( $.trim(old_text) );
+            t = $("<textarea></textarea>")
+                .attr({ rows: num_rows, cols: num_cols })
+                .text($.trim(old_text));
         } else {
-            t = $("<input type='text'></input>").attr({ value: $.trim(old_text), size: num_cols });
+            t = $("<input type='text'></input>").attr({
+                value: $.trim(old_text),
+                size: num_cols
+            });
         }
         t.attr("id", "renaming-active");
-        t.blur( function() {
+        t.blur(function() {
             $(this).remove();
             text_elt.show();
             if (on_finish) {
                 on_finish(t);
             }
         });
-        t.keyup( function( e ) {
-            if ( e.keyCode === 27 ) {
+        t.keyup(function(e) {
+            if (e.keyCode === 27) {
                 // Escape key
-                $(this).trigger( "blur" );
-            } else if ( e.keyCode === 13 ) {
+                $(this).trigger("blur");
+            } else if (e.keyCode === 13) {
                 // Enter key submits
                 var ajax_data = {};
                 ajax_data[text_parm_name] = $(this).val();
-                $(this).trigger( "blur" );
+                $(this).trigger("blur");
                 $.ajax({
                     url: save_url,
                     data: ajax_data,
                     error: function() {
-                        alert( "Text editing for elt " + text_elt_id + " failed" );
+                        alert(`Text editing for elt ${text_elt_id} failed`);
                         // TODO: call finish or no? For now, let's not because error occurred.
                     },
                     success: function(processed_text) {
@@ -84,6 +98,4 @@ function async_save_text( click_to_edit_elt, text_elt_id, save_url,
 }
 
 // ============================================================================
-    return async_save_text;
-});
-
+export default async_save_text;

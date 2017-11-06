@@ -1,0 +1,9 @@
+{
+  "presets": ["env"],
+  "moduleIds": true,
+  "ignore": [
+    "i18n.js",
+    "utils/localization.js",
+    "nls/*"
+  ]
+}

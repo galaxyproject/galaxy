@@ -62,7 +62,7 @@ class TabularData(data.Text):
                 and dataset.state == dataset.states.OK \
                 and dataset.metadata.columns > 0 \
                 and dataset.metadata.data_lines != 0
-        except:
+        except Exception:
             return False
 
     def get_chunk(self, trans, dataset, offset=0, ck_size=None):
@@ -156,7 +156,7 @@ class TabularData(data.Text):
                 if isinstance(spec.param, metadata.ColumnParameter):
                     try:
                         i = int(getattr(dataset.metadata, name)) - 1
-                    except:
+                    except Exception:
                         i = -1
                     if 0 <= i < columns and column_headers[i] is None:
                         column_headers[i] = column_parameter_alias.get(name, name)
@@ -294,14 +294,14 @@ class Tabular(TabularData):
             try:
                 int(column_text)
                 return True
-            except:
+            except ValueError:
                 return False
 
         def is_float(column_text):
             try:
                 float(column_text)
                 return True
-            except:
+            except ValueError:
                 if column_text.strip().lower() == 'na':
                     return True  # na is special cased to be a float
                 return False
@@ -488,7 +488,7 @@ class Sam(Tabular):
             fh.close()
             if count < 5 and count > 0:
                 return True
-        except:
+        except Exception:
             pass
         return False
 
@@ -521,15 +521,12 @@ class Sam(Tabular):
         Multiple SAM files may each have headers. Since the headers should all be the same, remove
         the headers from files 1-n, keeping them in the first file only
         """
-        cmd = 'mv %s %s' % (split_files[0], output_file)
-        result = os.system(cmd)
-        if result != 0:
-            raise Exception('Result %s from %s' % (result, cmd))
+        shutil.move(split_files[0], output_file)
+
         if len(split_files) > 1:
-            cmd = 'egrep -v -h "^@" %s >> %s' % (' '.join(split_files[1:]), output_file)
-        result = os.system(cmd)
-        if result != 0:
-            raise Exception('Result %s from %s' % (result, cmd))
+            cmd = ['egrep', '-v', '-h', '^@'] + split_files[1:] + ['>>', output_file]
+            subprocess.check_call(cmd, shell=True)
+
     merge = staticmethod(merge)
 
     # Dataproviders
@@ -653,10 +650,10 @@ class Pileup(Tabular):
                         chrom = int(hdr[1])
                         assert chrom >= 0
                         assert hdr[2] in ['A', 'C', 'G', 'T', 'N', 'a', 'c', 'g', 't', 'n']
-                    except:
+                    except Exception:
                         return False
             return True
-        except:
+        except Exception:
             return False
 
     # Dataproviders
@@ -922,14 +919,14 @@ class BaseCSV(TabularData):
         try:
             int(column_text)
             return True
-        except:
+        except ValueError:
             return False
 
     def is_float(self, column_text):
         try:
             float(column_text)
             return True
-        except:
+        except ValueError:
             if column_text.strip().lower() == 'na':
                 return True  # na is special cased to be a float
             return False
@@ -993,7 +990,7 @@ class BaseCSV(TabularData):
             if not csv.Sniffer().has_header(open(filename, 'r').read(self.big_peek_size)):
                 return False
             return True
-        except:
+        except Exception:
             # Not readable by Python's csv using this dialect
             return False
 
@@ -1140,7 +1137,7 @@ class ConnectivityTable(Tabular):
                                     j += 1
                         i += 1
             return False
-        except:
+        except Exception:
             return False
 
     def get_chunk(self, trans, dataset, chunk):

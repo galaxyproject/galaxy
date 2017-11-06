@@ -75,12 +75,16 @@ class UsesTools(object):
         version="1.0",
         profile="16.01",
         tool_id="test_tool",
+        extra_file_contents=None,
+        extra_file_path=None,
     ):
         self._init_app_for_tools()
         self.tool_file = os.path.join(self.test_directory, filename)
         contents_template = string.Template(tool_contents)
         tool_contents = contents_template.safe_substitute(dict(version=version, profile=profile, tool_id=tool_id))
         self.__write_tool(tool_contents)
+        if extra_file_contents and extra_file_path:
+            self.__write_tool(extra_file_contents, path=os.path.join(self.test_directory, extra_file_path))
         return self.__setup_tool()
 
     def _init_app_for_tools(self):
@@ -99,8 +103,9 @@ class UsesTools(object):
             self.tool.tool_action = self.tool_action
         return self.tool
 
-    def __write_tool(self, contents):
-        open(self.tool_file, "w").write(contents)
+    def __write_tool(self, contents, path=None):
+        path = path or self.tool_file
+        open(path, "w").write(contents)
 
 
 class MockContext(object):

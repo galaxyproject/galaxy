@@ -67,7 +67,7 @@ def load_app_properties(
                 config_section = "galaxy"
 
             with open(config_file, "r") as f:
-                raw_properties = yaml.load(f)
+                raw_properties = yaml.safe_load(f)
             properties = raw_properties[config_section] or {}
 
     override_prefix = "%sOVERRIDE_" % config_prefix

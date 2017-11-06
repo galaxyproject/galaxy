@@ -184,7 +184,7 @@ GALAXY_TEST_SAVE                Location to save certain test files (such as
                                 tool outputs).
 GALAXY_TEST_EXTERNAL            Target an external Galaxy as part of testing.
 GALAXY_TEST_JOB_CONFIG_FILE     Job config file to use for the test.
-GALAXY_CONFIG_MASTER_KEY        Master or admin API key to use as part of
+GALAXY_CONFIG_MASTER_API_KEY    Master or admin API key to use as part of
                                 testing with GALAXY_TEST_EXTERNAL.
 GALAXY_TEST_USER_API_KEY        User API key to use as part of testing with
                                 GALAXY_TEST_EXTERNAL.
@@ -263,7 +263,7 @@ ensure_grunt_for_qunit() {
 }
 
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:17.05.0'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.01.4'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
@@ -297,7 +297,7 @@ then
     fi
     MY_UID=$(id -u)
     DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} ${DOCKER_RUN_EXTRA_ARGS}"
-    echo "Launching docker container for testing..."
+    echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "BUILD_NUMBER=$BUILD_NUMBER" -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?
 fi

@@ -1,6 +1,7 @@
-/* global define, QUnit, module, test, ok, equal, deepEqual, notEqual */
+/* global define */
 define([
-    "sinon-qunit",
+    "QUnit",
+    "sinon",
     "test-app",
     'utils/utils',
     "mvc/workflow/workflow-view",
@@ -10,6 +11,7 @@ define([
     "mvc/workflow/workflow-view-terminals",
     "mvc/workflow/workflow-connector"
 ], function(
+    QUnit,
     sinon,
     testApp,
     Utils,
@@ -21,6 +23,14 @@ define([
     Connector
 ){
     "use strict";
+    Utils = Utils.default;
+    App = App.default;
+    Node = Node.default;
+    NodeView = NodeView.default;
+    Terminals = Terminals.default;
+    TerminalsView = TerminalsView.default;
+    Connector = Connector.default;
+
     window.show_modal = function(a, b, c) {}
     window.hide_modal = function() {}
 
@@ -43,15 +53,15 @@ define([
         });
     };
 
-    module( "Input terminal model test", {
-        setup: function( ) {
+    QUnit.module( "Input terminal model test", {
+        beforeEach: function( ) {
             testApp.create();
             this.node = new Node( create_app(), {  } );
             this.input = { extensions: [ "txt" ], multiple: false };
             this.input_terminal = new Terminals.InputTerminal( { input: this.input } );
             this.input_terminal.node = this.node;
         },
-        teardown: function() {
+        afterEach: function() {
             testApp.destroy();
         },
         multiple: function( ) {
@@ -86,214 +96,217 @@ define([
         }
     } );
 
-    test( "test update", function() {
-        deepEqual( this.input_terminal.datatypes, [ 'txt' ] );
-        equal( this.input_terminal.multiple, false );
+    QUnit.test( "test update", function(assert) {
+        assert.deepEqual( this.input_terminal.datatypes, [ 'txt' ] );
+        assert.equal( this.input_terminal.multiple, false );
         this.input_terminal.update( { extensions: [ 'bam' ], multiple: true } );
-        deepEqual( this.input_terminal.datatypes, [ 'bam' ] );
-        equal( this.input_terminal.multiple, true );
+        assert.deepEqual( this.input_terminal.datatypes, [ 'bam' ] );
+        assert.equal( this.input_terminal.multiple, true );
     } );
 
-    test( "test connect", function() {
+    QUnit.test( "test connect", function(assert) {
         this.node.markChanged = sinon.spy();
         var connector = {};
         this.input_terminal.connect( connector );
         // Assert node markChanged called
-        ok( this.node.markChanged.called );
+        assert.ok( this.node.markChanged.called );
         // Assert connectors updated
-        ok( this.input_terminal.connectors[ 0 ] === connector );
+        assert.ok( this.input_terminal.connectors[ 0 ] === connector );
     } );
 
-    test( "test disconnect", function() {
+    QUnit.test( "test disconnect", function(assert) {
         this.node.markChanged = sinon.spy();
         var connector = this.test_connector( );
         this.input_terminal.disconnect( connector );
         // Assert node markChanged called
-        ok( this.node.markChanged.called );
+        assert.ok( this.node.markChanged.called );
         // Assert connectors updated
-        equal( this.input_terminal.connectors.length, 0 );
+        assert.equal( this.input_terminal.connectors.length, 0 );
     } );
 
-    test( "test redraw", function() {
+    QUnit.test( "test redraw", function(assert) {
         var connector = this.test_connector(  );
         connector.redraw = sinon.spy();
         this.input_terminal.redraw();
         // Assert connectors were redrawn
-        ok( connector.redraw.called );
+        assert.ok( connector.redraw.called );
     } );
 
-    test( "test destroy", function() {
+    QUnit.test( "test destroy", function(assert) {
         var connector = this.test_connector();
         connector.destroy = sinon.spy();
         this.input_terminal.destroy();
         // Assert connectors were destroyed
-        ok( connector.destroy.called );
+        assert.ok( connector.destroy.called );
     } );
 
-    test( "can accept exact datatype", function() {
+    QUnit.test( "can accept exact datatype", function(assert) {
         var other = { node: {}, datatypes: [ "txt" ] }; // input also txt
-        ok( this.test_accept( other ) );
+        assert.ok( this.test_accept( other ) );
     } );
 
-    test( "can accept subclass datatype", function() {
+    QUnit.test( "can accept subclass datatype", function(assert) {
         var other = { node: {}, datatypes: [ "tabular" ] }; // tabular subclass of input txt
-        ok( this.test_accept( other ) ) ;
+        assert.ok( this.test_accept( other ) ) ;
     } );
 
-    test( "cannot accept incorrect datatype", function() {
+    QUnit.test( "cannot accept incorrect datatype", function(assert) {
         var other = { node: {}, datatypes: [ "binary" ] }; // binary is not txt
-        ok( ! this.test_accept( other ) );
+        assert.ok( ! this.test_accept( other ) );
     } );
 
-    test( "can accept incorrect datatype if converted with PJA", function() {
+    QUnit.test( "can accept incorrect datatype if converted with PJA", function(assert) {
         var otherNode = this.pja_change_datatype_node( "out1", "txt" );
         var other = { node: otherNode, datatypes: [ "binary" ], name: "out1" }; // Was binary but converted to txt
-        ok( this.test_accept( other ) );
+        assert.ok( this.test_accept( other ) );
     } );
 
-    test( "cannot accept incorrect datatype if converted with PJA to incompatible type", function() {
+    QUnit.test( "cannot accept incorrect datatype if converted with PJA to incompatible type", function(assert) {
         var otherNode = this.pja_change_datatype_node( "out1", "bam" ); // bam's are not txt
         var other = { node: otherNode, datatypes: [ "binary" ], name: "out1" };
-        ok( ! this.test_accept( other ) );
+        assert.ok( ! this.test_accept( other ) );
     } );
 
-    test( "cannot accept incorrect datatype if some other output converted with PJA to compatible type", function() {
+    QUnit.test( "cannot accept incorrect datatype if some other output converted with PJA to compatible type", function(assert) {
         var otherNode = this.pja_change_datatype_node( "out2", "txt" );
         var other = { node: otherNode, datatypes: [ "binary" ], name: "out1" };
-        ok( ! this.test_accept( other ) );
+        assert.ok( ! this.test_accept( other ) );
     } );
 
-    test( "can accept inputs", function() {
+    QUnit.test( "can accept inputs", function(assert) {
         // Other is data input module - always accept (currently - could be
         // more intelligent by looking at what else input is connected to.
         var other = { node: {}, datatypes: [ "input" ] };
-        ok( this.test_accept( other ) );
+        assert.ok( this.test_accept( other ) );
     } );
 
-    test( "input type can accept any datatype", function() {
+    QUnit.test( "input type can accept any datatype", function(assert) {
         this.input.extensions = [ "input" ];
         this.input_terminal.update( this.input );
         var other = { node: {}, datatypes: [ "binary" ] };
-        ok( this.test_accept( other ) );
+        assert.ok( this.test_accept( other ) );
     } );
 
-    test( "cannot accept when already connected", function() {
+    QUnit.test( "cannot accept when already connected", function(assert) {
         var self = this;
         // If other is subtype but already connected, cannot accept
         this.with_test_connector( function() {
-            ok( ! self.test_accept() );
+            assert.ok( ! self.test_accept() );
         } );
     } );
 
-    test( "can accept already connected inputs if input is multiple", function() {
+    QUnit.test( "can accept already connected inputs if input is multiple", function(assert) {
         var self = this;
         this.multiple();
         this.with_test_connector( function() {
-            ok( self.test_accept() );
+            assert.ok( self.test_accept() );
         } );
     } );
 
-    test( "cannot accept already connected inputs if input is multiple but datatypes don't match", function() {
+    QUnit.test( "cannot accept already connected inputs if input is multiple but datatypes don't match", function(assert) {
         var other = { node: {}, datatypes: [ "binary" ] }; // binary is not txt
 
         var self = this;
         this.multiple();
         this.with_test_connector( function() {
-            ok( ! self.test_accept( other ) );
+            assert.ok( ! self.test_accept( other ) );
         } );
     } );
 
-    test( "can accept list collection for multiple input parameters if datatypes match", function() {
+    QUnit.test( "can accept list collection for multiple input parameters if datatypes match", function(assert) {
         var self = this;
         this.multiple();
-        ok( self.test_accept() );
+        assert.ok( self.test_accept() );
     } );
 
-    test( "can accept list collection for empty multiple inputs", function() {
+    QUnit.test( "can accept list collection for empty multiple inputs", function(assert) {
         var other = { node: {}, datatypes: [ "tabular" ], mapOver: function() { return new Terminals.CollectionTypeDescription( "list" ) } };
         var self = this;
         this.multiple();
-        ok( self.test_accept( other ) );
+        assert.ok( self.test_accept( other ) );
     } );
 
-    test( "cannot accept list collection for multiple input if collection already connected", function() {
+    QUnit.test( "cannot accept list collection for multiple input if collection already connected", function(assert) {
         var other = { node: {}, datatypes: [ "tabular" ], mapOver: function() { return new Terminals.CollectionTypeDescription( "list" ) } };
         var self = this;
         this.multiple();
         this.with_test_connector( function() {
-            ok( ! self.test_accept( other ) );
+            assert.ok( ! self.test_accept( other ) );
         } );
     } );
 
-    module( "Connector test", {});
+    QUnit.module( "Connector test", {});
 
-    test( "connects only if both valid handles", function() {
+    QUnit.test( "connects only if both valid handles", function(assert) {
         var input = { connect: sinon.spy() };
         var output = { connect: sinon.spy() };
         new Connector( input, null );
         new Connector( null, output );
         // Not attempts to connect...
-        ok( ! input.connect.called );
-        ok( ! output.connect.called );
+        assert.ok( ! input.connect.called );
+        assert.ok( ! output.connect.called );
         new Connector( input, output );
-        ok( input.connect.called );
-        ok( output.connect.called );
+        assert.ok( input.connect.called );
+        assert.ok( output.connect.called );
     });
 
-    test( "default attributes", function() {
+    QUnit.test( "default attributes", function(assert) {
         var input = { connect: sinon.spy() };
         var output = { connect: sinon.spy() };
         var connector = new Connector( input, output );
-        equal( connector.dragging, false );
-        equal( connector.canvas, null );
-        equal( connector.inner_color, "#FFFFFF" );
-        equal( connector.outer_color, "#D8B365" );
+        assert.equal( connector.dragging, false );
+        assert.equal( connector.canvas, null );
+        assert.equal( connector.inner_color, "#FFFFFF" );
+        assert.equal( connector.outer_color, "#D8B365" );
     } );
 
-    test( "destroy", function() {
+    QUnit.test( "destroy", function(assert) {
         var input = { connect: sinon.spy(), disconnect: sinon.spy() };
         var output = { connect: sinon.spy(), disconnect: sinon.spy() };
         var connector = new Connector( input, output );
         connector.destroy();
-        ok( input.disconnect.called );
-        ok( output.disconnect.called );
+        assert.ok( input.disconnect.called );
+        assert.ok( output.disconnect.called );
     } );
 
-    test( "initial redraw", function() {
+    QUnit.test( "initial redraw", function(assert) {
         var input = { connect: sinon.spy(), element: $("<div>"), isMappedOver: function() { return false; } };
         var output = { connect: sinon.spy(), element: $("<div>"), isMappedOver: function() { return false; } };
         var connector = new Connector( input, output );
         var n = $('#canvas-container').find('canvas').length;
         connector.redraw();
         // Ensure canvas gets set
-        ok( connector.canvas );
+        assert.ok( connector.canvas );
         // Ensure it got added to canvas container
-        equal (n + 1, $('#canvas-container').find('canvas').length);
+        assert.equal (n + 1, $('#canvas-container').find('canvas').length);
     } );
 
-    module( "Input collection terminal model test", {
-        setup: function( ) {
+    QUnit.module( "Input collection terminal model test", {
+        beforeEach: function( ) {
             testApp.create();
             this.node = new Node(  create_app(), {  } );
             this.input = { extensions: [ "txt" ], collection_types: ["list"] };
             this.input_terminal = new Terminals.InputCollectionTerminal( { input: this.input } );
             this.input_terminal.node = this.node;
+        },
+        afterEach: function( ) {
+            testApp.destroy();
         }
     } );
 
-    test( "Collection output can connect to same collection input type", function() {
+    QUnit.test( "Collection output can connect to same collection input type", function(assert) {
         var self = this;
         var inputTerminal = self.input_terminal;
-        ok( inputTerminal );
+        assert.ok( inputTerminal );
         var outputTerminal = new Terminals.OutputCollectionTerminal( {
             datatypes: 'txt',
             collection_type: 'list'
         } );
         outputTerminal.node = {};
-        ok( inputTerminal.canAccept( outputTerminal ), "Input terminal " + inputTerminal + " can not accept " + outputTerminal );
+        assert.ok( inputTerminal.canAccept( outputTerminal ), "Input terminal " + inputTerminal + " can not accept " + outputTerminal );
     } );
 
-    test( "Collection output cannot connect to different collection input type", function() {
+    QUnit.test( "Collection output cannot connect to different collection input type", function(assert) {
         var self = this;
         var inputTerminal = self.input_terminal;
         var outputTerminal = new Terminals.OutputCollectionTerminal( {
@@ -301,11 +314,11 @@ define([
             collection_type: 'paired'
         } );
         outputTerminal.node = {};
-        ok( ! inputTerminal.canAccept( outputTerminal ) );
+        assert.ok( ! inputTerminal.canAccept( outputTerminal ) );
     } );
 
-    module( "Node unit test", {
-        setup: function() {
+    QUnit.module( "Node unit test", {
+        beforeEach: function() {
             testApp.create();
             this.input_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
             this.output_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
@@ -315,14 +328,17 @@ define([
             this.node.input_terminals.i1 = this.input_terminal;
             this.node.output_terminals.o1 = this.output_terminal;
         },
+        afterEach: function() {
+            testApp.destroy();
+        },
         $: function( selector ) {
             return $( this.node.element.find( selector ) );
         },
-        expect_workflow_node_changed: function( f ) {
+        expect_workflow_node_changed: function( assert, f ) {
             var node = this.node;
             var node_changed_spy = sinon.spy( this.app.workflow, "node_changed" );
             f();
-            ok( node_changed_spy.calledWith( node ) );
+            assert.ok( node_changed_spy.calledWith( node ) );
         },
         init_field_data_simple: function(option_overrides) {
             var data = Utils.merge(option_overrides, {
@@ -346,32 +362,32 @@ define([
         }
     } );
 
-    test( "make active", function() {
-        ok( ! this.element.hasClass( "toolForm-active" ) );
+    QUnit.test( "make active", function(assert) {
+        assert.ok( ! this.element.hasClass( "toolForm-active" ) );
         this.node.make_active();
-        ok( this.element.hasClass( "toolForm-active" ) );
+        assert.ok( this.element.hasClass( "toolForm-active" ) );
     } );
 
-    test( "destroy", function() {
+    QUnit.test( "destroy", function(assert) {
         var remove_node_spy = sinon.spy( this.app.workflow, "remove_node" );
         this.node.destroy();
-        ok( this.input_terminal.destroy.called );
-        ok( this.output_terminal.destroy.called );
-        ok( remove_node_spy.calledWith( this.node ) );
+        assert.ok( this.input_terminal.destroy.called );
+        assert.ok( this.output_terminal.destroy.called );
+        assert.ok( remove_node_spy.calledWith( this.node ) );
     } );
 
-    test( "error", function() {
+    QUnit.test( "error", function(assert) {
         // Test body of toolFormBody div updated and workflow notified of change.
         var test = this;
-        this.expect_workflow_node_changed( function() {
+        this.expect_workflow_node_changed( assert, function() {
             test.node.error( "TOOL ERROR" );
-            equal( $( test.$(".toolFormBody").children()[ 0 ] ).html(), "TOOL ERROR" );
+            assert.equal( $( test.$(".toolFormBody").children()[ 0 ] ).html(), "TOOL ERROR" );
         } );
     } );
 
-    test( "init_field_data properties", function() {
+    QUnit.test( "init_field_data properties", function(assert) {
         var node = this.node;
-        this.expect_workflow_node_changed( function( ) {
+        this.expect_workflow_node_changed( assert, function( ) {
             var data = {
                 data_inputs: [],
                 data_outputs: [],
@@ -386,70 +402,70 @@ define([
                 label: "Cat that data.",
             };
             node.init_field_data( data );
-            equal( node.type, "tool" );
-            equal( node.name, "cat1" );
-            equal( node.config_form, "{}" );
-            equal( node.tool_state, "ok" );
-            equal( node.tooltip, "tool tooltip" );
-            equal( node.annotation, "tool annotation" );
-            equal( node.label, "Cat that data." );
-            deepEqual( node.post_job_actions, {} );
-            deepEqual( node.workflow_outputs, [  {"output_name": "out1"} ] );
+            assert.equal( node.type, "tool" );
+            assert.equal( node.name, "cat1" );
+            assert.equal( node.config_form, "{}" );
+            assert.equal( node.tool_state, "ok" );
+            assert.equal( node.tooltip, "tool tooltip" );
+            assert.equal( node.annotation, "tool annotation" );
+            assert.equal( node.label, "Cat that data." );
+            assert.deepEqual( node.post_job_actions, {} );
+            assert.deepEqual( node.workflow_outputs, [  {"output_name": "out1"} ] );
         } );
     } );
 
-    test( "init_field_data data", function() {
+    QUnit.test( "init_field_data data", function(assert) {
         var test = this;
-        this.expect_workflow_node_changed( function( ) {
+        this.expect_workflow_node_changed( assert, function( ) {
             // pre-init not tool form body...
-            equal( test.$( ".output-terminal" ).length, 0 );
-            equal( test.$( ".input-terminal" ).length, 0 );
-            equal( test.$( ".rule" ).length, 0 );
+            assert.equal( test.$( ".output-terminal" ).length, 0 );
+            assert.equal( test.$( ".input-terminal" ).length, 0 );
+            assert.equal( test.$( ".rule" ).length, 0 );
             test.init_field_data_simple();
             // After init tool form should have three "rows"/divs - , inputs div, one output, and rule...
-            equal( test.$( ".output-terminal" ).length, 1 );
-            equal( test.$( ".input-terminal" ).length, 1 );
-            equal( test.$( ".rule" ).length, 1 );
-            equal( test.$( ".toolFormBody" ).children().length, 3 );
-            equal( test.$( ".nodeTitle" ).text(), "newnode" );
-            ok( test.$( ".toolFormTitle" ).find("i").hasClass("fa-wrench") );
+            assert.equal( test.$( ".output-terminal" ).length, 1 );
+            assert.equal( test.$( ".input-terminal" ).length, 1 );
+            assert.equal( test.$( ".rule" ).length, 1 );
+            assert.equal( test.$( ".toolFormBody" ).children().length, 3 );
+            assert.equal( test.$( ".nodeTitle" ).text(), "newnode" );
+            assert.ok( test.$( ".toolFormTitle" ).find("i").hasClass("fa-wrench") );
         } );
     } );
 
-    test( "node title behavior", function() {
+    QUnit.test( "node title behavior", function(assert) {
         var test = this;
-        this.expect_workflow_node_changed( function( ) {
+        this.expect_workflow_node_changed( assert, function( ) {
             // Node created with name newnode
-            equal( test.$( ".nodeTitle" ).text(), "newnode" );
+            assert.equal( test.$( ".nodeTitle" ).text(), "newnode" );
             // init_field_data_simple doesn't change label, so it should
             // remain original name.
             test.init_field_data_simple();
-            equal( test.$( ".nodeTitle" ).text(), "newnode" );
+            assert.equal( test.$( ".nodeTitle" ).text(), "newnode" );
             // Despite awkward name, update does change the label...
             test.update_field_data_with_new_input();
-            equal( test.$( ".nodeTitle" ).text(), "New Label" );
+            assert.equal( test.$( ".nodeTitle" ).text(), "New Label" );
         });
     });
 
-    test( "update_field_data updated data inputs and outputs", function() {
+    QUnit.test( "update_field_data updated data inputs and outputs", function(assert) {
         var test = this;
-        this.expect_workflow_node_changed( function( ) {
+        this.expect_workflow_node_changed( assert, function( ) {
             // Call init with one input and output.
             test.init_field_data_simple();
 
             test.update_field_data_with_new_input();
 
             // Now there are 2 inputs...
-            equal( test.$( ".input-terminal" ).length, 2 );
-            equal( test.$( ".output-terminal" ).length, 1 );
-            equal( test.$( ".rule" ).length, 1 );
+            assert.equal( test.$( ".input-terminal" ).length, 2 );
+            assert.equal( test.$( ".output-terminal" ).length, 1 );
+            assert.equal( test.$( ".rule" ).length, 1 );
         } );
     } );
 
-    test( "update_field_data preserves connectors", function() {
+    QUnit.test( "update_field_data preserves connectors", function(assert) {
         var test = this;
         var node = this.node;
-        this.expect_workflow_node_changed( function( ) {
+        this.expect_workflow_node_changed( assert, function( ) {
             // Call init with one input and output.
             test.init_field_data_simple();
 
@@ -460,19 +476,19 @@ define([
             // Update node, make sure connector still the same...
             test.update_field_data_with_new_input();
             var new_input_terminal = node.input_terminals.input1;
-            equal( connector, new_input_terminal.connectors[ 0 ] );
+            assert.equal( connector, new_input_terminal.connectors[ 0 ] );
 
             // Update a second time, make sure connector still the same...
             test.update_field_data_with_new_input();
             new_input_terminal = node.input_terminals.input1;
-            equal( connector, new_input_terminal.connectors[ 0 ] );
+            assert.equal( connector, new_input_terminal.connectors[ 0 ] );
         } );
     } );
 
-    test( "update_field_data destroys old terminals", function() {
+    QUnit.test( "update_field_data destroys old terminals", function(assert) {
         var test = this;
         var node = this.node;
-        this.expect_workflow_node_changed( function( ) {
+        this.expect_workflow_node_changed( assert, function( ) {
             var data = {
                 data_inputs: [ { name: "input1", extensions: [ "data" ] },
                                { name: "willDisappear", extensions: [ "data" ] } ],
@@ -483,25 +499,29 @@ define([
             var destroy_spy = sinon.spy( old_input_terminal, "destroy" );
             // Update
             test.update_field_data_with_new_input();
-            ok( destroy_spy.called );
+            assert.ok( destroy_spy.called );
         } );
     } );
 
-    module( "create_node", {
-        setup: function() {
+    QUnit.module( "create_node", {
+        beforeEach: function() {
+            testApp.create();
             this.app = create_app();
+        },
+        afterEach: function() {
+            testApp.destroy();
         }
     });
 
-    test( "node added to workflow", function() {
+    QUnit.test( "node added to workflow", function(assert) {
         var add_node_spy = sinon.spy( this.app.workflow, "add_node" );
         var node = this.app.workflow.create_node( "tool", "Cat Files", "cat1" );
-        ok( add_node_spy.calledWith( node ) );
+        assert.ok( add_node_spy.calledWith( node ) );
     } );
 
     // global NodeView
-    module( "Node view ", {
-       setup: function() {
+    QUnit.module( "Node view ", {
+       beforeEach: function() {
             this.set_for_node( { input_terminals: {}, output_terminals: {}, markChanged: function() {}, terminalMapping: { disableMapOver: function() {} } } );
         },
         set_for_node: function( node ) {
@@ -543,67 +563,67 @@ define([
         }
     } );
 
-    test( "tool error styling", function() {
+    QUnit.test( "tool error styling", function(assert) {
         this.set_for_node( { errors: false } );
         this.view.render();
-        ok( ! this.view.$el.hasClass( "tool-node-error" ) );
+        assert.ok( ! this.view.$el.hasClass( "tool-node-error" ) );
         this.set_for_node( { errors: true } );
         this.view.render();
-        ok( this.view.$el.hasClass( "tool-node-error" ) );
+        assert.ok( this.view.$el.hasClass( "tool-node-error" ) );
     } );
 
-    test( "rendering correct width", function() {
+    QUnit.test( "rendering correct width", function(assert) {
         // Default width is 150
         this.view.render();
-        equal( this.view.$el.width(), 150 );
+        assert.equal( this.view.$el.width(), 150 );
 
         // If any data rows are greater, it will update
         this.view.updateMaxWidth( 200 );
         this.view.render();
-        equal( this.view.$el.width(), 200 );
+        assert.equal( this.view.$el.width(), 200 );
 
         // However 250 is the maximum width of node
         this.view.updateMaxWidth( 300 );
         this.view.render();
-        equal( this.view.$el.width(), 250 );
+        assert.equal( this.view.$el.width(), 250 );
 
     } );
 
-    test( "replacing terminal on data input update preserves connections", function() {
+    QUnit.test( "replacing terminal on data input update preserves connections", function(assert) {
         var connector = this.connectAttachedTerminal( "txt", "txt" );
         var newElement = $("<div class='inputs'></div>");
         this.view.addDataInput( { name: "TestName", extensions: ["txt"] }, newElement );
         var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
-        ok( connector.handle2 === terminal );
+        assert.ok( connector.handle2 === terminal );
     } );
 
-    test( "replacing terminal on data multiple input update preserves collection connections", function() {
+    QUnit.test( "replacing terminal on data multiple input update preserves collection connections", function(assert) {
         var connector = this.connectAttachedMultiInputTerminal( "txt", "txt" );
         var connector_destroy_spy = sinon.spy( connector, "destroy" );
         var newElement = $("<div class='inputs'></div>");
         this.view.addDataInput( { name: "TestName", extensions: ["txt"], multiple: true }, newElement );
-        ok( ! connector_destroy_spy.called );
+        assert.ok( ! connector_destroy_spy.called );
     } );
 
-    test( "replacing mapped terminal on data collection input update preserves connections", function() {
+    QUnit.test( "replacing mapped terminal on data collection input update preserves connections", function(assert) {
         var connector = this.connectAttachedMappedOutput();
         var newElement = $("<div class='inputs'></div>");
         this.view.addDataInput( { name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }, newElement );
         var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
-        ok( connector.handle2 === terminal );
+        assert.ok( connector.handle2 === terminal );
     } );
 
-    test( "replacing terminal on data input destroys invalid connections", function() {
+    QUnit.test( "replacing terminal on data input destroys invalid connections", function(assert) {
         var connector = this.connectAttachedTerminal( "txt", "txt" );
         var newElement = $("<div class='inputs'></div>");
         var connector_destroy_spy = sinon.spy( connector, "destroy" );
         // Replacing input with same name - but now of type bam should destroy connection.
         this.view.addDataInput( { name: "TestName", extensions: ["bam"] }, newElement );
         var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
-        ok( connector_destroy_spy.called );
+        assert.ok( connector_destroy_spy.called );
     } );
 
-    test( "replacing terminal on data input with collection changes mapping view type", function() {
+    QUnit.test( "replacing terminal on data input with collection changes mapping view type", function(assert) {
         var connector = this.connectAttachedTerminal( "txt", "txt" );
         var newElement = $("<div class='inputs'></div>");
         var connector_destroy_spy = sinon.spy( connector, "destroy" );
@@ -611,21 +631,21 @@ define([
         // Input type changed to dataset_collection - old connections are reset.
         // Would be nice to preserve these connections and make them map over.
         var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
-        ok( connector_destroy_spy.called );
+        assert.ok( connector_destroy_spy.called );
     } );
 
-    test( "replacing terminal on data collection input with simple input changes mapping view type", function() {
+    QUnit.test( "replacing terminal on data collection input with simple input changes mapping view type", function(assert) {
         var connector = this.connectAttachedMappedOutput();
         var newElement = $("<div class='inputs'></div>");
         var connector_destroy_spy = sinon.spy( connector, "destroy" );
         this.view.addDataInput( { name: "TestName", extensions: ["txt"], input_type: "dataset" }, newElement );
         var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
-        ok( connector_destroy_spy.called );
+        assert.ok( connector_destroy_spy.called );
     } );
 
     // global InputTerminalView
-    module( "Input terminal view", {
-        setup: function() {
+    QUnit.module( "Input terminal view", {
+        beforeEach: function() {
             this.node = { input_terminals: [] };
             this.input = { name: "i1", extensions: "txt", multiple: false };
             this.view = new TerminalsView.InputTerminalView( {
@@ -635,21 +655,21 @@ define([
         }
     } );
 
-    test( "terminal added to node", function() {
-        ok( this.node.input_terminals.i1 );
-        equal( this.node.input_terminals.i1.datatypes, [ "txt" ] );
-        equal( this.node.input_terminals.i1.multiple, false );
+    QUnit.test( "terminal added to node", function(assert) {
+        assert.ok( this.node.input_terminals.i1 );
+        assert.equal( this.node.input_terminals.i1.datatypes, [ "txt" ] );
+        assert.equal( this.node.input_terminals.i1.multiple, false );
     } );
 
-    test( "terminal element", function() {
+    QUnit.test( "terminal element", function(assert) {
         var el = this.view.el;
-        equal( el.tagName, "DIV" );
-        equal( el.className, "terminal input-terminal");
+        assert.equal( el.tagName, "DIV" );
+        assert.equal( el.className, "terminal input-terminal");
     } );
 
     // global OutputTerminalView
-    module( "Output terminal view", {
-        setup: function() {
+    QUnit.module( "Output terminal view", {
+        beforeEach: function() {
             this.node = { output_terminals: [] };
             this.output = { name: "o1", extensions: "txt" };
             this.view = new TerminalsView.OutputTerminalView( {
@@ -659,18 +679,18 @@ define([
         }
     } );
 
-    test( "terminal added to node", function() {
-        ok( this.node.output_terminals.o1 );
-        equal( this.node.output_terminals.o1.datatypes, [ "txt" ] );
+    QUnit.test( "terminal added to node", function(assert) {
+        assert.ok( this.node.output_terminals.o1 );
+        assert.equal( this.node.output_terminals.o1.datatypes, [ "txt" ] );
     } );
 
-    test( "terminal element", function() {
+    QUnit.test( "terminal element", function(assert) {
         var el = this.view.el;
-        equal( el.tagName, "DIV" );
-        equal( el.className, "terminal output-terminal");
+        assert.equal( el.tagName, "DIV" );
+        assert.equal( el.className, "terminal output-terminal");
     } );
 
-    module( "CollectionTypeDescription", {
+    QUnit.module( "CollectionTypeDescription", {
         listType: function() {
             return new Terminals.CollectionTypeDescription( "list" );
         },
@@ -682,92 +702,98 @@ define([
         }
     } );
 
-    test( "canMatch", function() {
-        ok( this.listType().canMatch( this.listType() ) );
-        ok( ! this.listType().canMatch( this.pairedType() ) );
-        ok( ! this.listType().canMatch( this.pairedListType() ) );
+    QUnit.test( "canMatch", function(assert) {
+        assert.ok( this.listType().canMatch( this.listType() ) );
+        assert.ok( ! this.listType().canMatch( this.pairedType() ) );
+        assert.ok( ! this.listType().canMatch( this.pairedListType() ) );
     } );
 
-    test( "canMatch special types", function() {
-        ok( this.listType().canMatch( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.canMatch( this.pairedListType() ) );
+    QUnit.test( "canMatch special types", function(assert) {
+        assert.ok( this.listType().canMatch( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
+        assert.ok( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.canMatch( this.pairedListType() ) );
 
-        ok( ! this.listType().canMatch( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.canMatch( this.pairedListType() ) );
+        assert.ok( ! this.listType().canMatch( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
+        assert.ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.canMatch( this.pairedListType() ) );
     } );
 
-    test( "canMapOver", function() {
-        ok( ! this.listType().canMapOver( this.listType() ) );
-        ok( ! this.listType().canMapOver( this.pairedType() ) );
-        ok( this.pairedListType().canMapOver( this.pairedType() ) );
-        ok( ! this.listType().canMapOver( this.pairedListType() ) );
+    QUnit.test( "canMapOver", function(assert) {
+        assert.ok( ! this.listType().canMapOver( this.listType() ) );
+        assert.ok( ! this.listType().canMapOver( this.pairedType() ) );
+        assert.ok( this.pairedListType().canMapOver( this.pairedType() ) );
+        assert.ok( ! this.listType().canMapOver( this.pairedListType() ) );
     } );
 
-    test( "canMapOver special types", function() {
-        ok( ! this.listType().canMapOver( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.canMapOver( this.pairedListType() ) );
+    QUnit.test( "canMapOver special types", function(assert) {
+        assert.ok( ! this.listType().canMapOver( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
+        assert.ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.canMapOver( this.pairedListType() ) );
 
         // Following two should be able to be relaxed someday maybe - but the
         // tracking gets tricky I think. For now mapping only works for explicitly
         // defined collection types.
-        ok( ! this.listType().canMapOver( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.canMapOver( this.pairedListType() ) );
+        assert.ok( ! this.listType().canMapOver( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
+        assert.ok( ! Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.canMapOver( this.pairedListType() ) );
     } );
 
-    test( "append", function( other ) {
+    QUnit.test( "append", function(assert) {
         var appendedType = this.listType().append( this.pairedType() );
-        equal( appendedType.collectionType, "list:paired" );
+        assert.equal( appendedType.collectionType, "list:paired" );
     } );
 
-    test( "isCollection", function() {
-        ok( this.listType().isCollection );
-        ok( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.isCollection );
-        ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.isCollection );
+    QUnit.test( "isCollection", function(assert) {
+        assert.ok( this.listType().isCollection );
+        assert.ok( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.isCollection );
+        assert.ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.isCollection );
     } );
 
-    test( "equal", function() {
-        ok( ! this.listType().equal( this.pairedType() ) );
-        ok( this.listType().equal( this.listType() ) );
+    QUnit.test( "equal", function(assert) {
+        assert.ok( ! this.listType().equal( this.pairedType() ) );
+        assert.ok( this.listType().equal( this.listType() ) );
 
-        ok( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.equal( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.equal( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.equal( this.pairedType() ) );
-        ok( ! this.pairedType().equal( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
+        assert.ok( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.equal( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
+        assert.ok( ! Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.equal( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
+        assert.ok( ! Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.equal( this.pairedType() ) );
+        assert.ok( ! this.pairedType().equal( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
 
-        ok( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.equal( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.equal( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.equal( this.listType() ) );
-        ok( ! this.listType().equal( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
+        assert.ok( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.equal( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
+        assert.ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.equal( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
+        assert.ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.equal( this.listType() ) );
+        assert.ok( ! this.listType().equal( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
 
     } );
 
-    module( "TerminalMapping", {
+    QUnit.module( "TerminalMapping", {
     } );
 
-    test( "default constructor", function() {
+    QUnit.test( "default constructor", function(assert) {
         var terminal = {};
         var mapping = new Terminals.TerminalMapping( { terminal: terminal } );
-        ok( terminal.terminalMapping === mapping );
-        ok( mapping.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION );
+        assert.ok( terminal.terminalMapping === mapping );
+        assert.ok( mapping.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION );
     } );
 
-    test( "constructing with mapOver", function() {
+    QUnit.test( "constructing with mapOver", function(assert) {
         var terminal = {};
         var mapping = new Terminals.TerminalMapping( { terminal: terminal, mapOver: new Terminals.CollectionTypeDescription( "list" ) } );
-        ok( mapping.mapOver.collectionType == "list" );
+        assert.ok( mapping.mapOver.collectionType == "list" );
     } );
 
-    test( "disableMapOver", function() {
+    QUnit.test( "disableMapOver", function(assert) {
         var terminal = {};
         var mapping = new Terminals.TerminalMapping( { terminal: terminal, mapOver: new Terminals.CollectionTypeDescription( "list" ) } );
         var changeSpy = sinon.spy();
         mapping.bind( "change", changeSpy );
         mapping.disableMapOver();
-        ok( mapping.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION );
-        ok( changeSpy.called );
+        assert.ok( mapping.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION );
+        assert.ok( changeSpy.called );
     } );
 
-    module( "terminal mapping logic", {
+    QUnit.module( "terminal mapping logic", {
+        beforeEach: function() {
+            testApp.create();
+        },
+        afterEach: function() {
+            testApp.destroy();
+        },
         newInputTerminal: function( mapOver, input, node ) {
             input = input || {};
             node = node || this.newNode();
@@ -872,7 +898,7 @@ define([
             }
             terminals[ name ] = terminal;
         },
-        verifyNotAttachable: function( inputTerminal, output ) {
+        verifyNotAttachable: function( assert, inputTerminal, output ) {
             var outputTerminal;
             var outputTerminal;
             if( typeof( output ) == "string" ) {
@@ -882,9 +908,9 @@ define([
                 outputTerminal = output;
             }
 
-            ok( ! inputTerminal.attachable( outputTerminal ) );
+            assert.ok( ! inputTerminal.attachable( outputTerminal ) );
         },
-        verifyAttachable: function( inputTerminal, output ) {
+        verifyAttachable: function( assert, inputTerminal, output ) {
             var outputTerminal;
             if( typeof( output ) == "string" ) {
                 // Just given a collection type... create terminal out of it.
@@ -893,216 +919,216 @@ define([
                 outputTerminal = output;
             }
 
-            ok( inputTerminal.attachable( outputTerminal ), 'Cannot attach '+ outputTerminal + " to " + inputTerminal );
+            assert.ok( inputTerminal.attachable( outputTerminal ), 'Cannot attach '+ outputTerminal + " to " + inputTerminal );
 
             // Go further... make sure datatypes are being enforced
             inputTerminal.datatypes = [ "bam" ];
             outputTerminal.datatypes = [ "txt" ];
-            ok( ! inputTerminal.attachable( outputTerminal ) );
+            assert.ok( ! inputTerminal.attachable( outputTerminal ) );
         },
-        verifyMappedOver: function( terminal ) {
-            ok( terminal.terminalMapping.mapOver.isCollection );
+        verifyMappedOver: function( assert, terminal ) {
+            assert.ok( terminal.terminalMapping.mapOver.isCollection );
         },
-        verifyNotMappedOver: function( terminal ) {
-            ok( ! terminal.terminalMapping.mapOver.isCollection );
+        verifyNotMappedOver: function( assert, terminal ) {
+            assert.ok( ! terminal.terminalMapping.mapOver.isCollection );
         },
     } );
 
-    test( "unconstrained input can be mapped over", function() {
+    QUnit.test( "unconstrained input can be mapped over", function(assert) {
         var inputTerminal1 = this.newInputTerminal();
-        this.verifyAttachable( inputTerminal1, "list" );
+        this.verifyAttachable( assert, inputTerminal1, "list" );
     } );
 
-    test( "unmapped input can be mapped over if matching connected input terminals map type", function() {
+    QUnit.test( "unmapped input can be mapped over if matching connected input terminals map type", function(assert) {
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         var connectedInput2 = this.addConnectedInput( inputTerminal1 );
         connectedInput2.setMapOver( new Terminals.CollectionTypeDescription( "list") );
-        this.verifyAttachable( inputTerminal1, "list" );
+        this.verifyAttachable( assert, inputTerminal1, "list" );
     } );
 
-    test( "unmapped input cannot be mapped over if not matching connected input terminals map type", function() {
+    QUnit.test( "unmapped input cannot be mapped over if not matching connected input terminals map type", function(assert) {
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput = this.addConnectedInput( inputTerminal1 );
         connectedInput.setMapOver( new Terminals.CollectionTypeDescription( "paired" ) );
-        this.verifyNotAttachable( inputTerminal1, "list" );
+        this.verifyNotAttachable( assert, inputTerminal1, "list" );
     } );
 
-    test( "unmapped input can be attached to by output collection if matching connected input terminals map type", function() {
+    QUnit.test( "unmapped input can be attached to by output collection if matching connected input terminals map type", function(assert) {
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         var connectedInput2 = this.addConnectedInput( inputTerminal1 );
         connectedInput2.setMapOver( new Terminals.CollectionTypeDescription( "list") );
         var outputTerminal = this.newOutputCollectionTerminal( "list" );
-        this.verifyAttachable( inputTerminal1, outputTerminal );
+        this.verifyAttachable( assert, inputTerminal1, outputTerminal );
     } );
 
-    test( "unmapped input cannot be attached to by output collection if matching connected input terminals don't match map type", function() {
+    QUnit.test( "unmapped input cannot be attached to by output collection if matching connected input terminals don't match map type", function(assert) {
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         var connectedInput2 = this.addConnectedInput( inputTerminal1 );
         connectedInput2.setMapOver( new Terminals.CollectionTypeDescription( "list") );
         var outputTerminal = this.newOutputCollectionTerminal( "paired" );
-        this.verifyNotAttachable( inputTerminal1, outputTerminal );
+        this.verifyNotAttachable( assert, inputTerminal1, outputTerminal );
     } );
 
-    test( "unmapped input can be attached to by output collection if effective output type (output+mapover) is same as mapped over input", function() {
+    QUnit.test( "unmapped input can be attached to by output collection if effective output type (output+mapover) is same as mapped over input", function(assert) {
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         var connectedInput2 = this.addConnectedInput( inputTerminal1 );
         connectedInput2.setMapOver( new Terminals.CollectionTypeDescription( "list:paired") );
         var outputTerminal = this.newOutputCollectionTerminal( "paired" );
         outputTerminal.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
-        this.verifyAttachable( inputTerminal1, outputTerminal );
+        this.verifyAttachable( assert, inputTerminal1, outputTerminal );
     } );
 
-    test( "unmapped input cannot be attached to by output collection if effective output type (output+mapover) is not same as mapped over input (1)", function() {
+    QUnit.test( "unmapped input cannot be attached to by output collection if effective output type (output+mapover) is not same as mapped over input (1)", function(assert) {
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         var connectedInput2 = this.addConnectedInput( inputTerminal1 );
         connectedInput2.setMapOver( new Terminals.CollectionTypeDescription( "list:paired") );
         var outputTerminal = this.newOutputCollectionTerminal( "list" );
         outputTerminal.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
-        this.verifyNotAttachable( inputTerminal1, outputTerminal );
+        this.verifyNotAttachable( assert, inputTerminal1, outputTerminal );
     } );
 
-    test( "unmapped input cannot be attached to by output collection if effective output type (output+mapover) is not same as mapped over input (2)", function() {
+    QUnit.test( "unmapped input cannot be attached to by output collection if effective output type (output+mapover) is not same as mapped over input (2)", function(assert) {
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         var connectedInput2 = this.addConnectedInput( inputTerminal1 );
         connectedInput2.setMapOver( new Terminals.CollectionTypeDescription( "list:paired") );
         var outputTerminal = this.newOutputCollectionTerminal( "list" );
         outputTerminal.setMapOver( new Terminals.CollectionTypeDescription( "paired" ) );
-        this.verifyNotAttachable( inputTerminal1, outputTerminal );
+        this.verifyNotAttachable( assert, inputTerminal1, outputTerminal );
     } );
 
-    test( "unmapped input with unmapped, connected outputs cannot be mapped over", function() {
+    QUnit.test( "unmapped input with unmapped, connected outputs cannot be mapped over", function(assert) {
         // It would invalidate the connections - someday maybe we could try to
         // recursively map over everything down the DAG - it would be expensive
         // to check that though.
         var inputTerminal1 = this.newInputTerminal();
         this.addConnectedOutput( inputTerminal1 );
-        this.verifyNotAttachable( inputTerminal1, "list" );
+        this.verifyNotAttachable( assert, inputTerminal1, "list" );
     } );
 
-    test( "unmapped input with connected mapped outputs can be mapped over if matching", function() {
+    QUnit.test( "unmapped input with connected mapped outputs can be mapped over if matching", function(assert) {
         // It would invalidate the connections - someday maybe we could try to
         // recursively map over everything down the DAG - it would be expensive
         // to check that though.
         var inputTerminal1 = this.newInputTerminal();
         var connectedOutput = this.addConnectedOutput( inputTerminal1 );
         connectedOutput.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
-        this.verifyAttachable( inputTerminal1, "list" );
+        this.verifyAttachable( assert, inputTerminal1, "list" );
     } );
 
-    test( "unmapped input with connected mapped outputs cannot be mapped over if mapover not matching", function() {
+    QUnit.test( "unmapped input with connected mapped outputs cannot be mapped over if mapover not matching", function(assert) {
         // It would invalidate the connections - someday maybe we could try to
         // recursively map over everything down the DAG - it would be expensive
         // to check that though.
         var inputTerminal1 = this.newInputTerminal();
         var connectedOutput = this.addConnectedOutput( inputTerminal1 );
         connectedOutput.setMapOver( new Terminals.CollectionTypeDescription( "paired" ) );
-        this.verifyNotAttachable( inputTerminal1, "list" );
+        this.verifyNotAttachable( assert, inputTerminal1, "list" );
     } );
 
-    test( "explicitly constrained input can not be mapped over by incompatible collection type", function() {
+    QUnit.test( "explicitly constrained input can not be mapped over by incompatible collection type", function(assert) {
         var inputTerminal1 = this.newInputTerminal();
         inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "paired" ) );
-        this.verifyNotAttachable( inputTerminal1, "list" );
+        this.verifyNotAttachable( assert, inputTerminal1, "list" );
     } );
 
-    test( "explicitly constrained input can be mapped over by compatible collection type", function() {
+    QUnit.test( "explicitly constrained input can be mapped over by compatible collection type", function(assert) {
         var inputTerminal1 = this.newInputTerminal();
         inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
-        this.verifyAttachable( inputTerminal1, "list" );
+        this.verifyAttachable( assert, inputTerminal1, "list" );
     } );
 
-    test( "unconstrained collection input can be mapped over", function() {
+    QUnit.test( "unconstrained collection input can be mapped over", function(assert) {
         var inputTerminal1 = this.newInputCollectionTerminal( { collection_types: ["paired"] } );
-        this.verifyAttachable( inputTerminal1, "list:paired" );
+        this.verifyAttachable( assert, inputTerminal1, "list:paired" );
     } );
 
-    test( "unconstrained collection input cannot be mapped over by incompatible type", function() {
+    QUnit.test( "unconstrained collection input cannot be mapped over by incompatible type", function(assert) {
         var inputTerminal1 = this.newInputCollectionTerminal( { collection_types: ["list"] } ); // Would need to be paired...
-        this.verifyNotAttachable( inputTerminal1, "list:paired" );
+        this.verifyNotAttachable( assert, inputTerminal1, "list:paired" );
     } );
 
-    test( "explicitly mapped over collection input can be attached by explicit mapping", function() {
+    QUnit.test( "explicitly mapped over collection input can be attached by explicit mapping", function(assert) {
         var inputTerminal1 = this.newInputCollectionTerminal( { collection_types: ["paired"] } );
         inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
-        this.verifyAttachable( inputTerminal1, "list:paired" );
+        this.verifyAttachable( assert, inputTerminal1, "list:paired" );
     } );
 
-    test( "explicitly mapped over collection input can be attached by explicit mapping", function() {
+    QUnit.test( "explicitly mapped over collection input can be attached by explicit mapping", function(assert) {
         var inputTerminal1 = this.newInputCollectionTerminal( { collection_types: ["list:paired"] } );
         inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         // effectively input is list:list:paired so shouldn't be able to attach
-        this.verifyNotAttachable( inputTerminal1, "list:paired" );
+        this.verifyNotAttachable( assert, inputTerminal1, "list:paired" );
     } );
 
-    test( "unconnected multiple inputs can be connected to rank 1 collections", function() {
+    QUnit.test( "unconnected multiple inputs can be connected to rank 1 collections", function(assert) {
         var inputTerminal1 = this.newInputTerminal( null, { multiple: true } );
-        this.verifyAttachable( inputTerminal1, "list" );
+        this.verifyAttachable( assert, inputTerminal1, "list" );
     } );
 
-    test( "multiple input attachable by collections", function() {
+    QUnit.test( "multiple input attachable by collections", function(assert) {
         var inputTerminal1 = this.newInputTerminal( null, { multiple: true } );
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         this.addConnectedOutput( connectedInput1 );
-        this.verifyAttachable( inputTerminal1, "list" );
+        this.verifyAttachable( assert, inputTerminal1, "list" );
     } );
 
-    test( "unconnected multiple inputs cannot be connected to rank > 1 collections (yet...)", function() {
+    QUnit.test( "unconnected multiple inputs cannot be connected to rank > 1 collections (yet...)", function(assert) {
         var inputTerminal1 = this.newInputTerminal( null, { multiple: true } );
-        this.verifyNotAttachable( inputTerminal1, "list:paired" );
+        this.verifyNotAttachable( assert, inputTerminal1, "list:paired" );
     } );
 
-    test( "resetMappingIfNeeded does nothing if not mapped", function() {
+    QUnit.test( "resetMappingIfNeeded does nothing if not mapped", function(assert) {
         var inputTerminal1 = this.newInputTerminal();
         inputTerminal1.resetMappingIfNeeded();
-        this.verifyNotMappedOver( inputTerminal1 );
+        this.verifyNotMappedOver( assert, inputTerminal1 );
     } );
 
-    test( "resetMappingIfNeeded resets unconstrained input", function() {
+    QUnit.test( "resetMappingIfNeeded resets unconstrained input", function(assert) {
         var inputTerminal1 = this.newInputTerminal( "list" );
-        this.verifyMappedOver( inputTerminal1 );
+        this.verifyMappedOver( assert, inputTerminal1 );
         inputTerminal1.resetMappingIfNeeded();
-        this.verifyNotMappedOver( inputTerminal1 );
+        this.verifyNotMappedOver( assert, inputTerminal1 );
     } );
 
-    test( "resetMappingIfNeeded does not reset if connected output depends on being mapped", function() {
+    QUnit.test( "resetMappingIfNeeded does not reset if connected output depends on being mapped", function(assert) {
         var inputTerminal1 = this.newInputTerminal( "list" );
         var connectedOutput = this.addConnectedOutput( inputTerminal1 );
         connectedOutput.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         inputTerminal1.resetMappingIfNeeded();
-        this.verifyMappedOver( inputTerminal1 );
+        this.verifyMappedOver( assert, inputTerminal1 );
     } );
 
-    test( "resetMappingIfNeeded resets if node outputs are not connected to anything", function() {
+    QUnit.test( "resetMappingIfNeeded resets if node outputs are not connected to anything", function(assert) {
         var inputTerminal1 = this.newInputTerminal( "list" );
         var output = this.addOutput( inputTerminal1 );
         output.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         inputTerminal1.resetMappingIfNeeded();
-        this.verifyNotMappedOver( inputTerminal1 );
+        this.verifyNotMappedOver( assert, inputTerminal1 );
     } );
 
-    test( "resetMappingIfNeeded an input resets node outputs if they not connected to anything", function() {
+    QUnit.test( "resetMappingIfNeeded an input resets node outputs if they not connected to anything", function(assert) {
         var inputTerminal1 = this.newInputTerminal( "list" );
         var output = this.addOutput( inputTerminal1 );
         output.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         inputTerminal1.resetMappingIfNeeded();
-        this.verifyNotMappedOver( output );
+        this.verifyNotMappedOver( assert, output );
     } );
 
-    test( "resetMappingIfNeeded an input resets node collection outputs if they not connected to anything", function() {
+    QUnit.test( "resetMappingIfNeeded an input resets node collection outputs if they not connected to anything", function(assert) {
         var inputTerminal1 = this.newInputTerminal( "list" );
         var output = this.addCollectionOutput( inputTerminal1 );
         output.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         inputTerminal1.resetMappingIfNeeded();
-        this.verifyNotMappedOver( output );
+        this.verifyNotMappedOver( assert, output );
     } );
 
-    test( "resetMappingIfNeeded resets if not last mapped over input", function() {
+    QUnit.test( "resetMappingIfNeeded resets if not last mapped over input", function(assert) {
         // Idea here is that other nodes are forcing output to still be mapped
         // over so don't need to disconnect output nodes.
         var inputTerminal1 = this.newInputTerminal( "list" );
@@ -1115,12 +1141,12 @@ define([
         // is still forcing connectedOutput to be mapped over,
         // so verify inputTerminal1 is rest and connectedInput1
         // and connectedOutput are untouched.
-        this.verifyNotMappedOver( inputTerminal1 );
-        this.verifyMappedOver( connectedInput1 );
-        this.verifyMappedOver( connectedOutput );
+        this.verifyNotMappedOver( assert, inputTerminal1 );
+        this.verifyMappedOver( assert, connectedInput1 );
+        this.verifyMappedOver( assert, connectedOutput );
     } );
 
-    test( "simple mapping over collection outputs works correctly", function() {
+    QUnit.test( "simple mapping over collection outputs works correctly", function(assert) {
         var inputTerminal1 = this.newInputTerminal();
         var connectedOutput = this.addConnectedCollectionOutput( inputTerminal1 );
         inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
@@ -1129,9 +1155,9 @@ define([
         // over another list to a list:list (because this is what it is) but not
         // to a list:list:list.
         var testTerminal2 = this.newInputTerminal( "list:list" );
-        this.verifyAttachable( testTerminal2, connectedOutput );
+        this.verifyAttachable( assert, testTerminal2, connectedOutput );
 
         var testTerminal1 = this.newInputTerminal( "list:list:list" );
-        this.verifyNotAttachable( testTerminal1, connectedOutput );
+        this.verifyNotAttachable( assert, testTerminal1, connectedOutput );
     } );
 });

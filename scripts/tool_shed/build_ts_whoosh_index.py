@@ -10,23 +10,32 @@ Make sure you adjusted your config to:
 
 This script expects the Tool Shed's runtime virtualenv to be active.
 """
-import ConfigParser
+from __future__ import print_function
+
 import logging
 import os
 import sys
 from optparse import OptionParser
 
+from six.moves import configparser
 from whoosh.fields import Schema, STORED, TEXT
 from whoosh.filedb.filestore import FileStorage
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
-logging.basicConfig(level='DEBUG')
-
 import galaxy.webapps.tool_shed.model.mapping
 from galaxy.tools.loader_directory import load_tool_elements_from_path
-from galaxy.util import directory_hash_id, pretty_print_time_interval
+from galaxy.util import (
+    directory_hash_id,
+    pretty_print_time_interval,
+    unicodify
+)
 from galaxy.webapps.tool_shed import config, model
+
+if sys.version_info > (3,):
+    long = int
+
+logging.basicConfig(level='DEBUG')
 
 repo_schema = Schema(
     id=STORED,
@@ -73,50 +82,43 @@ def build_index(sa_session, whoosh_index_dir, path_to_repositories):
     repo_index_writer = repo_index.writer()
     tool_index_writer = tool_index.writer()
 
-    def to_unicode(a_basestr):
-        if type(a_basestr) is str:
-            return unicode(a_basestr, 'utf-8')
-        else:
-            return a_basestr
-
     repos_indexed = 0
     tools_indexed = 0
 
     for repo in get_repos(sa_session, path_to_repositories):
 
         repo_index_writer.add_document(id=repo.get('id'),
-                             name=to_unicode(repo.get('name')),
-                             description=to_unicode(repo.get('description')),
-                             long_description=to_unicode(repo.get('long_description')),
-                             homepage_url=to_unicode(repo.get('homepage_url')),
-                             remote_repository_url=to_unicode(repo.get('remote_repository_url')),
-                             repo_owner_username=to_unicode(repo.get('repo_owner_username')),
+                             name=unicodify(repo.get('name')),
+                             description=unicodify(repo.get('description')),
+                             long_description=unicodify(repo.get('long_description')),
+                             homepage_url=unicodify(repo.get('homepage_url')),
+                             remote_repository_url=unicodify(repo.get('remote_repository_url')),
+                             repo_owner_username=unicodify(repo.get('repo_owner_username')),
                              times_downloaded=repo.get('times_downloaded'),
                              approved=repo.get('approved'),
                              last_updated=repo.get('last_updated'),
                              full_last_updated=repo.get('full_last_updated'))
         #  Tools get their own index
         for tool in repo.get('tools_list'):
-            # print tool
-            tool_index_writer.add_document(id=to_unicode(tool.get('id')),
-                                           name=to_unicode(tool.get('name')),
-                                           version=to_unicode(tool.get('version')),
-                                           description=to_unicode(tool.get('description')),
-                                           help=to_unicode(tool.get('help')),
-                                           repo_owner_username=to_unicode(repo.get('repo_owner_username')),
-                                           repo_name=to_unicode(repo.get('name')),
+            tool_index_writer.add_document(id=unicodify(tool.get('id')),
+                                           name=unicodify(tool.get('name')),
+                                           version=unicodify(tool.get('version')),
+                                           description=unicodify(tool.get('description')),
+                                           help=unicodify(tool.get('help')),
+                                           repo_owner_username=unicodify(repo.get('repo_owner_username')),
+                                           repo_name=unicodify(repo.get('name')),
                                            repo_id=repo.get('id'))
             tools_indexed += 1
-            print tools_indexed, 'tools (', tool.get('id'), ')'
+            print(tools_indexed, 'tools (', tool.get('id'), ')')
 
         repos_indexed += 1
-        print repos_indexed, 'repos (', repo.get('id'), ')'
+        print(repos_indexed, 'repos (', repo.get('id'), ')')
 
     tool_index_writer.commit()
     repo_index_writer.commit()
 
-    print "TOTAL repos indexed: ", repos_indexed
-    print "TOTAL tools indexed: ", tools_indexed
+    print("TOTAL repos indexed: ", repos_indexed)
+    print("TOTAL tools indexed: ", tools_indexed)
 
 
 def get_repos(sa_session, path_to_repositories):
@@ -200,7 +202,7 @@ def load_one_dir(path):
 
 
 def get_sa_session_and_needed_config_settings(path_to_tool_shed_config):
-    conf_parser = ConfigParser.ConfigParser({'here': os.getcwd()})
+    conf_parser = configparser.ConfigParser({'here': os.getcwd()})
     conf_parser.read(path_to_tool_shed_config)
     kwds = dict()
     for key, value in conf_parser.items("app:main"):

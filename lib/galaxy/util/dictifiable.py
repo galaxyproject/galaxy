@@ -23,7 +23,7 @@ class Dictifiable:
             # first and then default to to_dict?
             try:
                 return item.to_dict(view=view, value_mapper=value_mapper)
-            except:
+            except Exception:
                 if key in value_mapper:
                     return value_mapper.get(key)(item)
                 if type(item) == datetime.datetime:

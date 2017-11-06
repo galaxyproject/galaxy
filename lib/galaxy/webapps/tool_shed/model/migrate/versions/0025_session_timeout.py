@@ -1,6 +1,8 @@
 """
 Migration script to add session update time (used for timeouts)
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -13,7 +15,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     lastaction_column = Column("last_action", DateTime)
@@ -31,8 +33,7 @@ def __add_column(column, table_name, metadata, **kwds):
     try:
         table = Table(table_name, metadata, autoload=True)
         column.create(table, **kwds)
-    except Exception as e:
-        print str(e)
+    except Exception:
         log.exception("Adding column %s failed.", column)
 
 
@@ -40,6 +41,5 @@ def __drop_column(column_name, table_name, metadata):
     try:
         table = Table(table_name, metadata, autoload=True)
         getattr(table.c, column_name).drop()
-    except Exception as e:
-        print str(e)
+    except Exception:
         log.exception("Dropping column %s failed.", column_name)

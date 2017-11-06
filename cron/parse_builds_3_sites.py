@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import xml.etree.ElementTree as ElementTree
 
-from six.moves.urllib.request import urlopen
+import requests
 
 sites = ['http://genome.ucsc.edu/cgi-bin/',
          'http://archaea.ucsc.edu/cgi-bin/',
@@ -20,14 +20,14 @@ def main():
         trackurl = sites[i] + "hgTracks?"
         builds = []
         try:
-            page = urlopen(site)
-        except:
+            text = requests.get(site).text
+        except Exception:
             print("#Unable to connect to " + site)
             continue
-        text = page.read()
+
         try:
             tree = ElementTree.fromstring(text)
-        except:
+        except Exception:
             print("#Invalid xml passed back from " + site)
             continue
         print("#Harvested from", site)

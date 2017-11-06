@@ -1,6 +1,8 @@
 """
 Migration script to create initial tables.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -145,7 +147,7 @@ ToolAnnotationAssociation_table = Table("tool_annotation_association", metadata,
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.create_all()
     Index('ix_tool_annotation_association_annotation', ToolAnnotationAssociation_table.c.annotation, mysql_length=767).create()

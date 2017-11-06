@@ -18,4 +18,4 @@ Then you can start the report server using `sh run_reports.sh` and view the repo
 
 ## Expose Outside
 
-To make your reports available from outside of the localhost using NGINX proxy server you can check out the [blogpost](http://galacticengineer.blogspot.co.uk/2015/06/exposing-galaxy-reports-via-nginx-in.html) by Peter Briggs.
+To make your reports available from outside of the localhost using NGINX proxy server you can check out the [blogpost](http://galacticengineer.blogspot.co.uk/2015/06/exposing-galaxy-reports-via-nginx-in.html) by Peter Briggs and the [Protect Galaxy Reports](https://galaxyproject.org/admin/config/nginx-proxy/#protect-galaxy-reports) section at the [Community Hub](https://galaxyproject.org).

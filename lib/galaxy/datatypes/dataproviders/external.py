@@ -7,7 +7,7 @@ import logging
 import subprocess
 import tempfile
 
-from six.moves.urllib.parse import urlencode
+from six.moves.urllib.parse import urlencode, urlparse
 from six.moves.urllib.request import urlopen
 
 from . import (
@@ -112,6 +112,9 @@ class URLDataProvider(base.DataProvider):
         self.data = data or {}
         encoded_data = urlencode(self.data)
 
+        scheme = urlparse(url).scheme
+        assert scheme in ('http', 'https', 'ftp'), 'Invalid URL scheme: %s' % scheme
+
         if method == 'GET':
             self.url += '?%s' % (encoded_data)
             opened = urlopen(url)
@@ -156,8 +159,8 @@ class TempfileDataProvider(base.DataProvider):
         # TODO:
         raise NotImplementedError()
         # write the file here
-        self.create_file
-        super(TempfileDataProvider, self).__init__(self.tmp_file, **kwargs)
+        # self.create_file
+        # super(TempfileDataProvider, self).__init__(self.tmp_file, **kwargs)
 
     def create_file(self):
         self.tmp_file = tempfile.NamedTemporaryFile()

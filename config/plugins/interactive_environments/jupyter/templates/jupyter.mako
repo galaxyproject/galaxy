@@ -58,16 +58,12 @@ var notebook_login_url = '${ notebook_login_url }';
 var notebook_access_url = '${ notebook_access_url }';
 ${ ie.plugin_require_config() }
 
-// Keep container running
-requirejs(['interactive_environments', 'plugin/jupyter'], function(){
-    keep_alive();
-});
-
-
 // Load notebook
 
-requirejs(['interactive_environments', 'plugin/jupyter'], function(){
-    load_when_ready(ie_readiness_url, function(){
+requirejs(['galaxy.interactive_environments', 'plugin/jupyter'], function(IES){
+    // This global is not awesome, get rid of it when possible (when IES are a part of the build process)
+    window.IES = IES;
+    IES.load_when_ready(ie_readiness_url, function(){
         load_notebook(ie_password, notebook_login_url, notebook_access_url);
     });
 });

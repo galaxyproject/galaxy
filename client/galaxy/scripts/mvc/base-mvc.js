@@ -1,10 +1,7 @@
-define([
-    'libs/underscore',
-    'libs/backbone',
-    'utils/add-logging',
-    'utils/localization'
-], function( _, Backbone, addLogging, _l ){
-'use strict';
+import * as _ from "libs/underscore";
+import * as Backbone from "libs/backbone";
+import addLogging from "utils/add-logging";
+import _l from "utils/localization";
 
 //==============================================================================
 /** @class Mixin to add logging capabilities to an object.
@@ -28,49 +25,49 @@ define([
  *      _.extend( MyModel.prototype, LoggableMixin )
  *
  */
-var LoggableMixin =  /** @lends LoggableMixin# */{
+var LoggableMixin = /** @lends LoggableMixin# */ {
     // replace null with console (if available) to see all logs for a particular view/model
     /** The logging object whose log function will be used to output
      *      messages. Null will supress all logging. Commonly set to console.
      */
-    logger        : null,
+    logger: null,
     /** @type {String} a namespace for filtering/focusing log output */
-    _logNamespace : '.',
-
+    _logNamespace: "."
 };
-addLogging( LoggableMixin );
-
+addLogging(LoggableMixin);
 
 //==============================================================================
 /** Backbone model that syncs to the browser's sessionStorage API.
  *      This all largely happens behind the scenes and no special calls are required.
  */
 var SessionStorageModel = Backbone.Model.extend({
-    initialize : function( initialAttrs ){
+    initialize: function(initialAttrs) {
         // check for sessionStorage and error if no id is provided
         this._checkEnabledSessionStorage();
-        if( !initialAttrs.id ){
-            throw new Error( 'SessionStorageModel requires an id in the initial attributes' );
+        if (!initialAttrs.id) {
+            throw new Error("SessionStorageModel requires an id in the initial attributes");
         }
         this.id = initialAttrs.id;
 
         // load existing from storage (if any), clear any attrs set by bbone before init is called,
         //  layer initial over existing and defaults, and save
-        var existing = ( !this.isNew() )?( this._read( this ) ):( {} );
+        var existing = !this.isNew() ? this._read(this) : {};
         this.clear({ silent: true });
-        this.save( _.extend( {}, this.defaults, existing, initialAttrs ), { silent: true });
+        this.save(_.extend({}, this.defaults, existing, initialAttrs), {
+            silent: true
+        });
 
         // save on any change to it immediately
-        this.on( 'change', function(){
+        this.on("change", function() {
             this.save();
         });
     },
 
-    _checkEnabledSessionStorage : function(){
+    _checkEnabledSessionStorage: function() {
         try {
             return window.sessionStorage.length >= 0;
-        } catch( err ){
-            alert( 'Please enable cookies in your browser for this Galaxy site' );
+        } catch (err) {
+            alert("Please enable cookies in your browser for this Galaxy site");
             return false;
         }
     },
@@ -78,36 +75,48 @@ var SessionStorageModel = Backbone.Model.extend({
     /** override of bbone sync to save to sessionStorage rather than REST
      *      bbone options (success, errror, etc.) should still apply
      */
-    sync : function( method, model, options ){
-        if( !options.silent ){
-            model.trigger( 'request', model, {}, options );
+    sync: function(method, model, options) {
+        if (!options.silent) {
+            model.trigger("request", model, {}, options);
         }
         var returned = {};
-        switch( method ){
-            case 'create'   : returned = this._create( model ); break;
-            case 'read'     : returned = this._read( model );   break;
-            case 'update'   : returned = this._update( model ); break;
-            case 'delete'   : returned = this._delete( model ); break;
+        switch (method) {
+            case "create":
+                returned = this._create(model);
+                break;
+            case "read":
+                returned = this._read(model);
+                break;
+            case "update":
+                returned = this._update(model);
+                break;
+            case "delete":
+                returned = this._delete(model);
+                break;
         }
-        if( returned !== undefined || returned !== null ){
-            if( options.success ){ options.success(); }
+        if (returned !== undefined || returned !== null) {
+            if (options.success) {
+                options.success();
+            }
         } else {
-            if( options.error ){ options.error(); }
+            if (options.error) {
+                options.error();
+            }
         }
         return returned;
     },
 
     /** set storage to the stringified item */
-    _create : function( model ){
+    _create: function(model) {
         try {
-            var json = model.toJSON(),
-                set = sessionStorage.setItem( model.id, JSON.stringify( json ) );
-            return ( set === null )?( set ):( json );
-        // DOMException is thrown in Safari if in private browsing mode and sessionStorage is attempted:
-        // http://stackoverflow.com/questions/14555347
-        // TODO: this could probably use a more general soln - like detecting priv. mode + safari => non-ajaxing Model
-        } catch( err ){
-            if( !( ( err instanceof DOMException ) && ( navigator.userAgent.indexOf("Safari") > -1 ) ) ){
+            var json = model.toJSON();
+            var set = sessionStorage.setItem(model.id, JSON.stringify(json));
+            return set === null ? set : json;
+            // DOMException is thrown in Safari if in private browsing mode and sessionStorage is attempted:
+            // http://stackoverflow.com/questions/14555347
+            // TODO: this could probably use a more general soln - like detecting priv. mode + safari => non-ajaxing Model
+        } catch (err) {
+            if (!(err instanceof DOMException && navigator.userAgent.indexOf("Safari") > -1)) {
                 throw err;
             }
         }
@@ -115,37 +124,35 @@ var SessionStorageModel = Backbone.Model.extend({
     },
 
     /** read and parse json from storage */
-    _read : function( model ){
-        return JSON.parse( sessionStorage.getItem( model.id ) );
+    _read: function(model) {
+        return JSON.parse(sessionStorage.getItem(model.id));
     },
 
     /** set storage to the item (alias to create) */
-    _update : function( model ){
-        return model._create( model );
+    _update: function(model) {
+        return model._create(model);
     },
 
     /** remove the item from storage */
-    _delete : function( model ){
-        return sessionStorage.removeItem( model.id );
+    _delete: function(model) {
+        return sessionStorage.removeItem(model.id);
     },
 
     /** T/F whether sessionStorage contains the model's id (data is present) */
-    isNew : function(){
-        return !sessionStorage.hasOwnProperty( this.id );
+    isNew: function() {
+        return !sessionStorage.hasOwnProperty(this.id);
     },
 
-    _log : function(){
-        return JSON.stringify( this.toJSON(), null, '  ' );
+    _log: function() {
+        return JSON.stringify(this.toJSON(), null, "  ");
     },
-    toString : function(){
-        return 'SessionStorageModel(' + this.id + ')';
+    toString: function() {
+        return `SessionStorageModel(${this.id})`;
     }
-
 });
-(function(){
-    SessionStorageModel.prototype = _.omit( SessionStorageModel.prototype, 'url', 'urlRoot' );
-}());
-
+(() => {
+    SessionStorageModel.prototype = _.omit(SessionStorageModel.prototype, "url", "urlRoot");
+})();
 
 //==============================================================================
 /** Function that allows mixing of hashs into bbone MVC while showing the mixins first
@@ -156,13 +163,12 @@ var SessionStorageModel = Backbone.Model.extend({
  *
  *  NOTE: this does not combine any hashes (like events, etc.) and you're expected to handle that
  */
-function mixin( mixinHash1, /* mixinHash2, etc: ... variadic */ propsHash ){
-    var args = Array.prototype.slice.call( arguments, 0 ),
-        lastArg = args.pop();
-    args.unshift( lastArg );
-    return _.defaults.apply( _, args );
+function mixin(mixinHash1, /* mixinHash2, etc: ... variadic */ propsHash) {
+    var args = Array.prototype.slice.call(arguments, 0);
+    var lastArg = args.pop();
+    args.unshift(lastArg);
+    return _.defaults.apply(_, args);
 }
-
 
 //==============================================================================
 /** A mixin for models that allow T/F/Matching to their attributes - useful when
@@ -173,9 +179,8 @@ function mixin( mixinHash1, /* mixinHash2, etc: ... variadic */ propsHash ){
  *      and see readonly-history-view.searchHdas for how user input is connected to the filtering
  */
 var SearchableModelMixin = {
-
     /** what attributes of an HDA will be used in a text search */
-    searchAttributes : [
+    searchAttributes: [
         // override
     ],
 
@@ -183,44 +188,53 @@ var SearchableModelMixin = {
      *      attribute specifiers ('name="bler"') in a term, allow passing in aliases for the
      *      following attr keys.
      */
-    searchAliases : {
+    searchAliases: {
         // override
     },
 
     /** search the attribute with key attrKey for the string searchFor; T/F if found */
-    searchAttribute : function( attrKey, searchFor ){
-        var attrVal = this.get( attrKey );
+    searchAttribute: function(attrKey, searchFor) {
+        var attrVal = this.get(attrKey);
         //this.debug( 'searchAttribute', attrKey, attrVal, searchFor );
         // bail if empty searchFor or unsearchable values
-        if( !searchFor
-        ||  ( attrVal === undefined || attrVal === null ) ){
+        if (!searchFor || (attrVal === undefined || attrVal === null)) {
             return false;
         }
         // pass to sep. fn for deep search of array attributes
-        if( _.isArray( attrVal ) ){ return this._searchArrayAttribute( attrVal, searchFor ); }
-        return ( attrVal.toString().toLowerCase().indexOf( searchFor.toLowerCase() ) !== -1 );
+        if (_.isArray(attrVal)) {
+            return this._searchArrayAttribute(attrVal, searchFor);
+        }
+        return (
+            attrVal
+                .toString()
+                .toLowerCase()
+                .indexOf(searchFor.toLowerCase()) !== -1
+        );
     },
 
     /** deep(er) search for array attributes; T/F if found */
-    _searchArrayAttribute : function( array, searchFor ){
+    _searchArrayAttribute: function(array, searchFor) {
         //this.debug( '_searchArrayAttribute', array, searchFor );
         searchFor = searchFor.toLowerCase();
         //precondition: searchFor has already been validated as non-empty string
         //precondition: assumes only 1 level array
         //TODO: could possibly break up searchFor more (CSV...)
-        return _.any( array, function( elem ){
-            return ( elem.toString().toLowerCase().indexOf( searchFor.toLowerCase() ) !== -1 );
-        });
+        return _.any(
+            array,
+            elem =>
+                elem
+                    .toString()
+                    .toLowerCase()
+                    .indexOf(searchFor.toLowerCase()) !== -1
+        );
     },
 
     /** search all searchAttributes for the string searchFor,
      *      returning a list of keys of attributes that contain searchFor
      */
-    search : function( searchFor ){
+    search: function(searchFor) {
         var model = this;
-        return _.filter( this.searchAttributes, function( key ){
-            return model.searchAttribute( key, searchFor );
-        });
+        return _.filter(this.searchAttributes, key => model.searchAttribute(key, searchFor));
     },
 
     /** alias of search, but returns a boolean; accepts attribute specifiers where
@@ -231,17 +245,17 @@ var SearchableModelMixin = {
      *  @param {String} term   plain text or ATTR_SPECIFIER sep. key=val pair
      *  @returns {Boolean} was term found in (any) attribute(s)
      */
-    matches : function( term ){
-        var ATTR_SPECIFIER = '=',
-            split = term.split( ATTR_SPECIFIER );
+    matches: function(term) {
+        var ATTR_SPECIFIER = "=";
+        var split = term.split(ATTR_SPECIFIER);
         // attribute is specified - search only that
-        if( split.length >= 2 ){
+        if (split.length >= 2) {
             var attrKey = split[0];
-            attrKey = this.searchAliases[ attrKey ] || attrKey;
-            return this.searchAttribute( attrKey, split[1] );
+            attrKey = this.searchAliases[attrKey] || attrKey;
+            return this.searchAttribute(attrKey, split[1]);
         }
         // no attribute is specified - search all attributes in searchAttributes
-        return !!this.search( term ).length;
+        return !!this.search(term).length;
     },
 
     /** an implicit AND search for all terms; IOW, a model must match all terms given
@@ -250,17 +264,16 @@ var SearchableModelMixin = {
      *          an HDA would have to have attributes containing blah AND bler AND a genome_build == hg19
      *      To include whitespace in terms: wrap the term in double quotations (name="blah bler").
      */
-    matchesAll : function( terms ){
+    matchesAll: function(terms) {
         var model = this;
         // break the terms up by whitespace and filter out the empty strings
-        terms = terms.match( /(".*"|\w*=".*"|\S*)/g ).filter( function( s ){ return !!s; });
-        return _.all( terms, function( term ){
-            term = term.replace( /"/g, '' );
-            return model.matches( term );
+        terms = terms.match(/(".*"|\w*=".*"|\S*)/g).filter(s => !!s);
+        return _.all(terms, term => {
+            term = term.replace(/"/g, "");
+            return model.matches(term);
         });
     }
 };
-
 
 //==============================================================================
 /** A view that renders hidden and shows when some activator is clicked.
@@ -276,73 +289,72 @@ var SearchableModelMixin = {
  *      instance vars:
  *          view.hidden {boolean} is the view in the hidden state
  */
-var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
-//TODO: since this is a mixin, consider moving toggle, hidden into HUAVOptions
+var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */ {
+    //TODO: since this is a mixin, consider moving toggle, hidden into HUAVOptions
 
     /** call this in your initialize to set up the mixin
      *  @param {jQuery} $activator the 'button' that's clicked to show/hide the view
      *  @param {Object} hash with mixin options
      */
-    hiddenUntilActivated : function( $activator, options ){
+    hiddenUntilActivated: function($activator, options) {
         // call this in your view's initialize fn
         options = options || {};
-//TODO: flesh out options - show them all here
+        //TODO: flesh out options - show them all here
         this.HUAVOptions = {
-            $elementShown   : this.$el,
-            showFn          : jQuery.prototype.toggle,
-            showSpeed       : 'fast'
+            $elementShown: this.$el,
+            showFn: jQuery.prototype.toggle,
+            showSpeed: "fast"
         };
-        _.extend( this.HUAVOptions, options || {});
+        _.extend(this.HUAVOptions, options || {});
         /** has this been shown already (and onshowFirstTime called)? */
-        this.HUAVOptions.hasBeenShown = this.HUAVOptions.$elementShown.is( ':visible' );
+        this.HUAVOptions.hasBeenShown = this.HUAVOptions.$elementShown.is(":visible");
         this.hidden = this.isHidden();
 
-        if( $activator ){
+        if ($activator) {
             var mixin = this;
-            $activator.on( 'click', function( ev ){
-                mixin.toggle( mixin.HUAVOptions.showSpeed );
+            $activator.on("click", ev => {
+                mixin.toggle(mixin.HUAVOptions.showSpeed);
             });
         }
     },
 
-//TODO:?? remove? use .hidden?
+    //TODO:?? remove? use .hidden?
     /** returns T/F if the view is hidden */
-    isHidden : function(){
-        return ( this.HUAVOptions.$elementShown.is( ':hidden' ) );
+    isHidden: function() {
+        return this.HUAVOptions.$elementShown.is(":hidden");
     },
 
     /** toggle the hidden state, show/hide $elementShown, call onshow/hide, trigger events */
-    toggle : function(){
-//TODO: more specific name - toggle is too general
+    toggle: function() {
+        //TODO: more specific name - toggle is too general
         // can be called manually as well with normal toggle arguments
         //TODO: better as a callback (when the show/hide is actually done)
         // show
-        if( this.hidden ){
+        if (this.hidden) {
             // fire the optional fns on the first/each showing - good for render()
-            if( !this.HUAVOptions.hasBeenShown ){
-                if( _.isFunction( this.HUAVOptions.onshowFirstTime ) ){
+            if (!this.HUAVOptions.hasBeenShown) {
+                if (_.isFunction(this.HUAVOptions.onshowFirstTime)) {
                     this.HUAVOptions.hasBeenShown = true;
-                    this.HUAVOptions.onshowFirstTime.call( this );
+                    this.HUAVOptions.onshowFirstTime.call(this);
                 }
             }
-            if( _.isFunction( this.HUAVOptions.onshow ) ){
-                this.HUAVOptions.onshow.call( this );
-                this.trigger( 'hiddenUntilActivated:shown', this );
+            if (_.isFunction(this.HUAVOptions.onshow)) {
+                this.HUAVOptions.onshow.call(this);
+                this.trigger("hiddenUntilActivated:shown", this);
             }
             this.hidden = false;
 
-        // hide
+            // hide
         } else {
-            if( _.isFunction( this.HUAVOptions.onhide ) ){
-                this.HUAVOptions.onhide.call( this );
-                this.trigger( 'hiddenUntilActivated:hidden', this );
+            if (_.isFunction(this.HUAVOptions.onhide)) {
+                this.HUAVOptions.onhide.call(this);
+                this.trigger("hiddenUntilActivated:hidden", this);
             }
             this.hidden = true;
         }
-        return this.HUAVOptions.showFn.apply( this.HUAVOptions.$elementShown, arguments );
+        return this.HUAVOptions.showFn.apply(this.HUAVOptions.$elementShown, arguments);
     }
 };
-
 
 //==============================================================================
 /** Mixin for views that can be dragged and dropped
@@ -352,23 +364,22 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
  *      Override '$dragHandle' to define the draggable DOM sub-element.
  */
 var DraggableViewMixin = {
-
     /** set up instance vars to track whether this view is currently draggable */
-    initialize : function( attributes ){
+    initialize: function(attributes) {
         /** is the body of this hda view expanded/not? */
-        this.draggable  = attributes.draggable || false;
+        this.draggable = attributes.draggable || false;
     },
 
     /** what part of the view's DOM triggers the dragging */
-    $dragHandle : function(){
-//TODO: make abstract/general - move this to listItem
+    $dragHandle: function() {
+        //TODO: make abstract/general - move this to listItem
         // override to the element you want to be your view's handle
-        return this.$( '.title-bar' );
+        return this.$(".title-bar");
     },
 
     /** toggle whether this view is draggable */
-    toggleDraggable : function(){
-        if( this.draggable ){
+    toggleDraggable: function() {
+        if (this.draggable) {
             this.draggableOff();
         } else {
             this.draggableOn();
@@ -376,45 +387,48 @@ var DraggableViewMixin = {
     },
 
     /** allow the view to be dragged, set up event handlers */
-    draggableOn : function(){
+    draggableOn: function() {
         this.draggable = true;
-        this.dragStartHandler = _.bind( this._dragStartHandler, this );
-        this.dragEndHandler   = _.bind( this._dragEndHandler,   this );
+        this.dragStartHandler = _.bind(this._dragStartHandler, this);
+        this.dragEndHandler = _.bind(this._dragEndHandler, this);
 
-        var handle = this.$dragHandle().attr( 'draggable', true ).get(0);
-        handle.addEventListener( 'dragstart', this.dragStartHandler, false );
-        handle.addEventListener( 'dragend',   this.dragEndHandler,   false );
+        var handle = this.$dragHandle()
+            .attr("draggable", true)
+            .get(0);
+        handle.addEventListener("dragstart", this.dragStartHandler, false);
+        handle.addEventListener("dragend", this.dragEndHandler, false);
     },
 
     /** turn of view dragging and remove event listeners */
-    draggableOff : function(){
+    draggableOff: function() {
         this.draggable = false;
-        var handle = this.$dragHandle().attr( 'draggable', false ).get(0);
-        handle.removeEventListener( 'dragstart', this.dragStartHandler, false );
-        handle.removeEventListener( 'dragend',   this.dragEndHandler,   false );
+        var handle = this.$dragHandle()
+            .attr("draggable", false)
+            .get(0);
+        handle.removeEventListener("dragstart", this.dragStartHandler, false);
+        handle.removeEventListener("dragend", this.dragEndHandler, false);
     },
 
     /** sets the dataTransfer data to the model's toJSON
      *  @fires draggable:dragstart (bbone event) which is passed the event and this view
      */
-    _dragStartHandler : function( event ){
-        event.dataTransfer.effectAllowed = 'move';
+    _dragStartHandler: function(event) {
+        event.dataTransfer.effectAllowed = "move";
         //ASSUMES: this.model
         //TODO: all except IE: should be 'application/json', IE: must be 'text'
-        event.dataTransfer.setData( 'text', JSON.stringify( this.model.toJSON() ) );
-        this.trigger( 'draggable:dragstart', event, this );
+        event.dataTransfer.setData("text", JSON.stringify(this.model.toJSON()));
+        this.trigger("draggable:dragstart", event, this);
         return false;
     },
 
     /** handle the dragend
      *  @fires draggable:dragend (bbone event) which is passed the event and this view
      */
-    _dragEndHandler : function( event ){
-        this.trigger( 'draggable:dragend', event, this );
+    _dragEndHandler: function(event) {
+        this.trigger("draggable:dragend", event, this);
         return false;
     }
 };
-
 
 //==============================================================================
 /** Mixin that allows a view to be selected (gen. from a list).
@@ -426,31 +440,32 @@ var DraggableViewMixin = {
  *          Both events are passed the view and the (jQuery) event.
  */
 var SelectableViewMixin = {
-
     /** Set up instance state vars for whether the selector is shown and whether the view has been selected */
-    initialize : function( attributes ){
+    initialize: function(attributes) {
         /** is the view currently in selection mode? */
         this.selectable = attributes.selectable || false;
         /** is the view currently selected? */
-        this.selected   = attributes.selected || false;
+        this.selected = attributes.selected || false;
     },
 
     /** $el sub-element where the selector is rendered and what can be clicked to select. */
-    $selector : function(){
-        return this.$( '.selector' );
+    $selector: function() {
+        return this.$(".selector");
     },
 
     /** How the selector is rendered - defaults to font-awesome checkbox */
-    _renderSelected : function(){
+    _renderSelected: function() {
         // override
-        this.$selector().find( 'span' )
-            .toggleClass( 'fa-check-square-o', this.selected ).toggleClass( 'fa-square-o', !this.selected );
+        this.$selector()
+            .find("span")
+            .toggleClass("fa-check-square-o", this.selected)
+            .toggleClass("fa-square-o", !this.selected);
     },
 
     /** Toggle whether the selector is shown */
-    toggleSelector : function(){
-//TODO: use this.selectable
-        if( !this.$selector().is( ':visible' ) ){
+    toggleSelector: function() {
+        //TODO: use this.selectable
+        if (!this.$selector().is(":visible")) {
             this.showSelector();
         } else {
             this.hideSelector();
@@ -461,14 +476,14 @@ var SelectableViewMixin = {
      *  @param {Number} a jQuery fx speed
      *  @fires: selectable which is passed true (IOW, the selector is shown) and the view
      */
-    showSelector : function( speed ){
-        speed = speed !== undefined? speed : this.fxSpeed;
+    showSelector: function(speed) {
+        speed = speed !== undefined ? speed : this.fxSpeed;
         // make sure selected state is represented properly
         this.selectable = true;
-        this.trigger( 'selectable', true, this );
+        this.trigger("selectable", true, this);
         this._renderSelected();
-        if( speed ){
-            this.$selector().show( speed );
+        if (speed) {
+            this.$selector().show(speed);
         } else {
             this.$selector().show();
         }
@@ -478,24 +493,24 @@ var SelectableViewMixin = {
      *  @param {Number} a jQuery fx speed
      *  @fires: selectable which is passed false (IOW, the selector is not shown) and the view
      */
-    hideSelector : function( speed ){
-        speed = speed !== undefined? speed : this.fxSpeed;
+    hideSelector: function(speed) {
+        speed = speed !== undefined ? speed : this.fxSpeed;
         // reverse the process from showSelect
         this.selectable = false;
-        this.trigger( 'selectable', false, this );
-        if( speed ){
-            this.$selector().hide( speed );
+        this.trigger("selectable", false, this);
+        if (speed) {
+            this.$selector().hide(speed);
         } else {
             this.$selector().hide();
         }
     },
 
     /** Toggle whether the view is selected */
-    toggleSelect : function( event ){
-        if( this.selected ){
-            this.deselect( event );
+    toggleSelect: function(event) {
+        if (this.selected) {
+            this.deselect(event);
         } else {
-            this.select( event );
+            this.select(event);
         }
     },
 
@@ -503,10 +518,10 @@ var SelectableViewMixin = {
      *  @param {Event} a jQuery event that caused the selection
      *  @fires: selected which is passed the view and the DOM event that triggered it (optionally)
      */
-    select : function( event ){
+    select: function(event) {
         // switch icon, set selected, and trigger event
-        if( !this.selected ){
-            this.trigger( 'selected', this, event );
+        if (!this.selected) {
+            this.trigger("selected", this, event);
             this.selected = true;
             this._renderSelected();
         }
@@ -517,17 +532,16 @@ var SelectableViewMixin = {
      *  @param {Event} a jQuery event that caused the selection
      *  @fires: de-selected which is passed the view and the DOM event that triggered it (optionally)
      */
-    deselect : function( event ){
+    deselect: function(event) {
         // switch icon, set selected, and trigger event
-        if( this.selected ){
-            this.trigger( 'de-selected', this, event );
+        if (this.selected) {
+            this.trigger("de-selected", this, event);
             this.selected = false;
             this._renderSelected();
         }
         return false;
     }
 };
-
 
 //==============================================================================
 /** Return an underscore template fn from an array of strings.
@@ -552,40 +566,37 @@ var SelectableViewMixin = {
  *  Meant to be called in a View's definition in order to compile only once.
  *
  */
-function wrapTemplate( template, jsonNamespace ){
-    jsonNamespace = jsonNamespace || 'model';
-    var templateFn = _.template( template.join( '' ) );
-    return function( json, view ){
-        var templateVars = { view : view || {}, _l : _l };
-        templateVars[ jsonNamespace ] = json || {};
-        return templateFn( templateVars );
+function wrapTemplate(template, jsonNamespace) {
+    jsonNamespace = jsonNamespace || "model";
+    var templateFn = _.template(template.join(""));
+    return (json, view) => {
+        var templateVars = { view: view || {}, _l: _l };
+        templateVars[jsonNamespace] = json || {};
+        return templateFn(templateVars);
     };
 }
-
 
 //==============================================================================
 /** Return a comparator function for sorted Collections */
-function buildComparator( attribute_name, options ){
+function buildComparator(attribute_name, options) {
     options = options || {};
-    var ascending = options.ascending? 1 : -1;
-    return function __comparator( a, b ){
-        a = a.get( attribute_name );
-        b = b.get( attribute_name );
-        return ( a < b? -1 : ( a > b? 1 : 0 ) ) * ascending;
+    var ascending = options.ascending ? 1 : -1;
+    return function __comparator(a, b) {
+        a = a.get(attribute_name);
+        b = b.get(attribute_name);
+        return (a < b ? -1 : a > b ? 1 : 0) * ascending;
     };
 }
 
-
 //==============================================================================
-    return {
-        LoggableMixin                   : LoggableMixin,
-        SessionStorageModel             : SessionStorageModel,
-        mixin                           : mixin,
-        SearchableModelMixin            : SearchableModelMixin,
-        HiddenUntilActivatedViewMixin   : HiddenUntilActivatedViewMixin,
-        DraggableViewMixin              : DraggableViewMixin,
-        SelectableViewMixin             : SelectableViewMixin,
-        wrapTemplate                    : wrapTemplate,
-        buildComparator                 : buildComparator,
-    };
-});
+export default {
+    LoggableMixin: LoggableMixin,
+    SessionStorageModel: SessionStorageModel,
+    mixin: mixin,
+    SearchableModelMixin: SearchableModelMixin,
+    HiddenUntilActivatedViewMixin: HiddenUntilActivatedViewMixin,
+    DraggableViewMixin: DraggableViewMixin,
+    SelectableViewMixin: SelectableViewMixin,
+    wrapTemplate: wrapTemplate,
+    buildComparator: buildComparator
+};

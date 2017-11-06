@@ -30,7 +30,7 @@ define( 'app', function(){
         'mvc/history/multi-panel'
     ], function( HISTORY_MODEL, MULTI_HISTORY ){
         $(function(){
-            histories = new HISTORY_MODEL.HistoryCollection( [], {
+            histories = new HISTORY_MODEL.default.HistoryCollection( [], {
                 includeDeleted      : bootstrapped.includingDeleted,
                 order               : bootstrapped.order,
                 limitOnFirstFetch   : bootstrapped.limit,
@@ -39,7 +39,7 @@ define( 'app', function(){
                 currentHistoryId    : bootstrapped.current_history_id,
             });
 
-            multipanel = new MULTI_HISTORY.MultiPanelColumns({
+            multipanel = new MULTI_HISTORY.default.MultiPanelColumns({
                 el                          : $( '#center' ).get(0),
                 histories                   : histories,
             })

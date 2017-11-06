@@ -183,12 +183,15 @@ class BaseUIController(BaseController):
         try:
             return BaseController.get_object(self, trans, id, class_name,
                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
-
         except exceptions.MessageException:
             raise       # handled in the caller
-        except:
+        except Exception:
             log.exception("Exception in get_object check for %s %s:", class_name, str(id))
             raise Exception('Server error retrieving %s id ( %s ).' % (class_name, str(id)))
+
+    def message_exception(self, trans, message):
+        trans.response.status = 400
+        return {'err_msg': util.sanitize_text(message)}
 
 
 class BaseAPIController(BaseController):
@@ -634,8 +637,6 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
     Mixin for controllers that use Visualization objects.
     """
 
-    viz_types = ["trackster"]
-
     def get_visualization(self, trans, id, check_ownership=True, check_accessible=False):
         """
         Get a Visualization from the database by id, verifying ownership.
@@ -1009,7 +1010,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                 """
                 encoded_dbkey = dbkey
                 user = visualization.user
-                if 'dbkeys' in user.preferences and dbkey in user.preferences['dbkeys']:
+                if 'dbkeys' in user.preferences and str(dbkey) in user.preferences['dbkeys']:
                     encoded_dbkey = "%s:%s" % (user.username, dbkey)
                 return encoded_dbkey
 
@@ -1083,7 +1084,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
         try:
             data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(dataset_id))
-        except:
+        except Exception:
             raise HTTPRequestRangeNotSatisfiable("Invalid dataset id: %s." % str(dataset_id))
 
         if check_ownership:

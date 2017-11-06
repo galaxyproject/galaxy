@@ -4,21 +4,20 @@ API operations on a jobs.
 .. seealso:: :class:`galaxy.model.Jobs`
 """
 
-import json
 import logging
 
 from six import string_types
-from sqlalchemy import and_, false, or_
-from sqlalchemy.orm import aliased
+from sqlalchemy import or_
 
 from galaxy import exceptions
-from galaxy import managers
 from galaxy import model
 from galaxy import util
+from galaxy.managers.jobs import JobSearch
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesLibraryMixinItems
+from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -27,8 +26,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
 
     def __init__(self, app):
         super(JobController, self).__init__(app)
-        self.hda_manager = managers.hdas.HDAManager(app)
-        self.dataset_manager = managers.datasets.DatasetManager(app)
+        self.job_search = JobSearch(app)
 
     @expose_api
     def index(self, trans, **kwd):
@@ -96,7 +94,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             try:
                 decoded_history_id = self.decode_id(history_id)
                 query = query.filter(trans.app.model.Job.history_id == decoded_history_id)
-            except:
+            except Exception:
                 raise exceptions.ObjectAttributeInvalidException()
 
         out = []
@@ -266,92 +264,33 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
         recycle the old results.
         """
-
-        tool_id = None
-        if 'tool_id' in payload:
-            tool_id = payload.get('tool_id')
+        tool_id = payload.get('tool_id')
         if tool_id is None:
             raise exceptions.ObjectAttributeMissingException("No tool id")
-
         tool = trans.app.toolbox.get_tool(tool_id)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if 'inputs' not in payload:
             raise exceptions.ObjectAttributeMissingException("No inputs defined")
-
-        inputs = payload['inputs']
-
-        input_data = {}
-        input_param = {}
-        for k, v in inputs.items():
-            if isinstance(v, dict):
-                if 'id' in v:
-                    if 'src' not in v or v['src'] == 'hda':
-                        hda_id = self.decode_id(v['id'])
-                        dataset = self.hda_manager.get_accessible(hda_id, trans.user)
-                    else:
-                        dataset = self.get_library_dataset_dataset_association(trans, v['id'])
-                    if dataset is None:
-                        raise exceptions.ObjectNotFound("Dataset %s not found" % (v['id']))
-                    input_data[k] = dataset.dataset_id
-            else:
-                input_param[k] = json.dumps(str(v))
-
-        query = trans.sa_session.query(trans.app.model.Job).filter(
-            trans.app.model.Job.tool_id == tool_id,
-            trans.app.model.Job.user == trans.user
-        )
-
-        if 'state' not in payload:
-            query = query.filter(
-                or_(
-                    trans.app.model.Job.state == 'running',
-                    trans.app.model.Job.state == 'queued',
-                    trans.app.model.Job.state == 'waiting',
-                    trans.app.model.Job.state == 'running',
-                    trans.app.model.Job.state == 'ok',
-                )
-            )
-        else:
-            if isinstance(payload['state'], string_types):
-                query = query.filter(trans.app.model.Job.state == payload['state'])
-            elif isinstance(payload['state'], list):
-                o = []
-                for s in payload['state']:
-                    o.append(trans.app.model.Job.state == s)
-                query = query.filter(
-                    or_(*o)
-                )
-
-        for k, v in input_param.items():
-            a = aliased(trans.app.model.JobParameter)
-            query = query.filter(and_(
-                trans.app.model.Job.id == a.job_id,
-                a.name == k,
-                a.value == v
-            ))
-
-        for k, v in input_data.items():
-            # Here we are attempting to link the inputs to the underlying
-            # dataset (not the dataset association).
-            # This way, if the calculation was done using a copied HDA
-            # (copied from the library or another history), the search will
-            # still find the job
-            a = aliased(trans.app.model.JobToInputDatasetAssociation)
-            b = aliased(trans.app.model.HistoryDatasetAssociation)
-            query = query.filter(and_(
-                trans.app.model.Job.id == a.job_id,
-                a.dataset_id == b.id,
-                b.deleted == false(),
-                b.dataset_id == v
-            ))
-
-        out = []
-        for job in query.all():
-            # check to make sure none of the output files have been deleted
-            if all(list(a.dataset.deleted is False for a in job.output_datasets)):
-                out.append(self.encode_all_ids(trans, job.to_dict('element'), True))
-        return out
+        inputs = payload.get('inputs', {})
+        # Find files coming in as multipart file data and add to inputs.
+        for k, v in payload.iteritems():
+            if k.startswith('files_') or k.startswith('__files_'):
+                inputs[k] = v
+        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
+        all_params, all_errors, _, _ = tool.expand_incoming(trans=trans, incoming=inputs, request_context=request_context)
+        if any(all_errors):
+            return []
+        params_dump = [tool.params_to_strings(param, self.app, nested=True) for param in all_params]
+        jobs = []
+        for param_dump in params_dump:
+            job = self.job_search.by_tool_input(trans=trans,
+                                                tool_id=tool_id,
+                                                param_dump=param_dump,
+                                                job_state=payload.get('state'))
+            if job:
+                jobs.append(job)
+        return [self.encode_all_ids(trans, single_job.to_dict('element'), True) for single_job in jobs]
 
     @expose_api
     def error(self, trans, id, **kwd):

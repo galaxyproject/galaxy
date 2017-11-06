@@ -1,25 +1,27 @@
-/* global define, QUnit, module, test, ok, equal, deepEqual, notEqual */
-define([ "test-app", "layout/page", "layout/panel",
-], function( testApp, Page, Panel ){
+/* global define */
+define([ "test-app", "layout/page", "layout/panel", "QUnit"
+], function( testApp, Page, Panel, QUnit ){
     "use strict";
-    module( "Page test", {
-        setup: function() {
+    Page = Page.default;
+    Panel = Panel.default;
+    QUnit.module( "Page test", {
+        beforeEach: function() {
             testApp.create();
             $( 'body' ).append( this.$container = $( '<div/>' ).css( 'display', 'none' ) );
         },
-        teardown: function() {
+        afterEach: function() {
             testApp.destroy();
         }
     } );
 
-    function _check( page, sidePanels ) {
-        ok( page.$( '#center' ).length == 1, 'Center panel found.' );
+    function _check( assert, page, sidePanels ) {
+        assert.ok( page.$( '#center' ).length == 1, 'Center panel found.' );
         _.each( sidePanels, function( panelVisible, panelId ) {
-            ok( page.$( '#' + panelId ).css( 'display' ) == panelVisible, ( panelVisible ? '' : 'No' ) + ' ' + panelId + ' panel found.' );
+            assert.ok( page.$( '#' + panelId ).css( 'display' ) == panelVisible, ( panelVisible ? '' : 'No' ) + ' ' + panelId + ' panel found.' );
         });
     }
 
-    test( "test center/right", function() {
+    QUnit.test( "test center/right", function(assert) {
         this.$container.empty();
         var page = new Page.View({
             Right   : Backbone.View.extend({
@@ -29,14 +31,14 @@ define([ "test-app", "layout/page", "layout/panel",
                 }
             })
         }).render();
-        _check( page, { left: 'none', right: 'block' } );
+        _check( assert, page, { left: 'none', right: 'block' } );
     });
-    test( "test center", function() {
+    QUnit.test( "test center", function(assert) {
         this.$container.empty();
         var page = new Page.View({}).render();
-        _check( page, { left: 'none', right: 'none' } );
+        _check( assert, page, { left: 'none', right: 'none' } );
     });
-    test( "test left/center", function() {
+    QUnit.test( "test left/center", function(assert) {
         this.$container.empty();
         var page = new Page.View({
             Left   : Backbone.View.extend({
@@ -46,6 +48,6 @@ define([ "test-app", "layout/page", "layout/panel",
                 }
             })
         }).render();
-        _check( page, { left: 'block', right: 'none' } );
+        _check( assert, page, { left: 'block', right: 'none' } );
     });
 });

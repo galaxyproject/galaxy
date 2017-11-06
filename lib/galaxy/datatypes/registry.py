@@ -6,8 +6,8 @@ from __future__ import absolute_import
 import imp
 import logging
 import os
-import tempfile
 from collections import OrderedDict as odict
+from string import Template
 from xml.etree.ElementTree import Element
 
 import yaml
@@ -72,7 +72,7 @@ class Registry(object):
         self.imported_modules = []
         self.datatype_elems = []
         self.sniffer_elems = []
-        self.xml_filename = None
+        self._registry_xml_string = None
         self._edam_formats_mapping = None
         self._edam_data_mapping = None
         self._converters_by_datatype = {}
@@ -359,7 +359,7 @@ class Registry(object):
             build_sites_config_file = getattr(self.config, "build_sites_config_file", None)
             if build_sites_config_file and os.path.exists(build_sites_config_file):
                 with open(build_sites_config_file, "r") as f:
-                    build_sites_config = yaml.load(f)
+                    build_sites_config = yaml.safe_load(f)
                 if not isinstance(build_sites_config, list):
                     self.log.exception("Build sites configuration YAML file does not declare list of sites.")
                     return
@@ -672,7 +672,6 @@ class Registry(object):
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
-        self.to_xml_file()
         set_meta_tool = toolbox.load_hidden_lib_tool("galaxy/datatypes/set_metadata_tool.xml")
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug("Loaded external metadata tool: %s", self.set_external_metadata_tool.id)
@@ -870,43 +869,29 @@ class Registry(object):
             self._edam_data_mapping = dict((k, v.edam_data) for k, v in self.datatypes_by_extension.items())
         return self._edam_data_mapping
 
-    @property
-    def integrated_datatypes_configs(self):
-        if self.xml_filename and os.path.isfile(self.xml_filename):
-            return self.xml_filename
-        return self.xml_filename
-
-    def to_xml_file(self):
-        if self.xml_filename is not None:
-            # If persisted previously, attempt to remove the temporary file in which we were written.
-            try:
-                os.unlink(self.xml_filename)
-            except:
-                pass
-            self.xml_filename = None
-        fd, filename = tempfile.mkstemp()
-        self.xml_filename = os.path.abspath(filename)
-        if self.converters_path_attr:
-            converters_path_str = ' converters_path="%s"' % self.converters_path_attr
-        else:
-            converters_path_str = ''
-        if self.display_path_attr:
-            display_path_str = ' display_path="%s"' % self.display_path_attr
-        else:
-            display_path_str = ''
-        os.write(fd, '<?xml version="1.0"?>\n')
-        os.write(fd, '<datatypes>\n')
-        os.write(fd, '<registration%s%s>\n' % (converters_path_str, display_path_str))
-        for elem in self.datatype_elems:
-            os.write(fd, '%s' % galaxy.util.xml_to_string(elem))
-        os.write(fd, '</registration>\n')
-        os.write(fd, '<sniffers>\n')
-        for elem in self.sniffer_elems:
-            os.write(fd, '%s' % galaxy.util.xml_to_string(elem))
-        os.write(fd, '</sniffers>\n')
-        os.write(fd, '</datatypes>\n')
-        os.close(fd)
-        os.chmod(self.xml_filename, 0o644)
+    def to_xml_file(self, path):
+        if not self._registry_xml_string:
+            registry_string_template = Template("""<?xml version="1.0"?>
+            <datatypes>
+              <registration converters_path="$converters_path" display_path="$display_path">
+                $datatype_elems
+              </registration>
+              <sniffers>
+                $sniffer_elems
+              </sniffers>
+            </datatypes>
+            """)
+            converters_path = self.converters_path_attr or ''
+            display_path = self.display_path_attr or ''
+            datatype_elems = "".join((galaxy.util.xml_to_string(elem) for elem in self.datatype_elems))
+            sniffer_elems = "".join((galaxy.util.xml_to_string(elem) for elem in self.sniffer_elems))
+            self._registry_xml_string = registry_string_template.substitute(converters_path=converters_path,
+                                                                            display_path=display_path,
+                                                                            datatype_elems=datatype_elems,
+                                                                            sniffer_elems=sniffer_elems)
+        with open(os.path.abspath(path), 'w') as registry_xml:
+            os.chmod(path, 0o644)
+            registry_xml.write(self._registry_xml_string)
 
     def get_extension(self, elem):
         """

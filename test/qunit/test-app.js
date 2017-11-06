@@ -1,7 +1,7 @@
 /** Creates a generic/global Galaxy environment, loads shared libraries and a fake server */
 define([
     "jquery",
-    "sinon-qunit",
+    "sinon",
     "libs/bootstrap",
     "test-data/bootstrapped",
     "test-data/fakeserver",
@@ -16,13 +16,14 @@ define([
     serverdata,
     appBase
 ){
+    appBase = appBase.default;
     return {
         create: function() {
             window.Galaxy = new appBase.GalaxyApp( bootstrapped );
             window.Galaxy.currHistoryPanel = { model: new Backbone.Model() };
             window.Galaxy.emit = {
                 debug : function(){},
-                error : function( v ){ window.console.error( v ) }
+                error : function( v ){ window.console.error( v ); }
             };
             window.WAIT_FADE = 300;
             window.fakeserver = sinon.fakeServer.create();

@@ -29,6 +29,7 @@ from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util import unicodify
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.logging import LOGLV_TRACE
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.web.stack import register_postfork_function
 from .version import VERSION_MAJOR
@@ -131,6 +132,8 @@ class Configuration(object):
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get("database_create_tables", "True"))
         self.database_query_profiling_proxy = string_as_bool(kwargs.get("database_query_profiling_proxy", "False"))
+        self.database_template = kwargs.get("database_template", None)
+        self.database_encoding = kwargs.get("database_encoding", None)  # Create new databases with this encoding.
         self.slow_query_log_threshold = float(kwargs.get("slow_query_log_threshold", 0))
 
         # Don't set this to true for production databases, but probably should
@@ -211,7 +214,7 @@ class Configuration(object):
                         self.hours_between_check = 12.0
             else:
                 self.hours_between_check = 12
-        except:
+        except Exception:
             self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get("update_integrated_tool_panel", True)
         self.enable_data_manager_user_view = string_as_bool(kwargs.get("enable_data_manager_user_view", "False"))
@@ -337,6 +340,9 @@ class Configuration(object):
         # Beta containers interface used by GIEs
         self.enable_beta_containers_interface = string_as_bool(kwargs.get('enable_beta_containers_interface', 'False'))
 
+        # Deprecated API for sample tracking
+        self.enable_legacy_sample_tracking_api = string_as_bool(kwargs.get('enable_legacy_sample_tracking_api', 'False'))
+
         # Certain modules such as the pause module will automatically cause
         # workflows to be scheduled in job handlers the way all workflows will
         # be someday - the following two properties can also be used to force this
@@ -367,6 +373,7 @@ class Configuration(object):
         self.use_heartbeat = string_as_bool(kwargs.get('use_heartbeat', 'False'))
         self.heartbeat_interval = int(kwargs.get('heartbeat_interval', 20))
         self.heartbeat_log = kwargs.get('heartbeat_log', None)
+        self.monitor_thread_join_timeout = int(kwargs.get("monitor_thread_join_timeout", 5))
         self.log_actions = string_as_bool(kwargs.get('log_actions', 'False'))
         self.log_events = string_as_bool(kwargs.get('log_events', 'False'))
         self.sanitize_all_html = string_as_bool(kwargs.get('sanitize_all_html', True))
@@ -394,6 +401,7 @@ class Configuration(object):
         self.genomespace_ui_url = kwargs.get('genomespace_ui_url', 'https://gsui.genomespace.org/jsui/')
         self.library_import_dir = kwargs.get('library_import_dir', None)
         self.user_library_import_dir = kwargs.get('user_library_import_dir', None)
+        self.user_library_import_symlink_whitelist = listify(kwargs.get('user_library_import_symlink_whitelist', []), do_strip=True)
         # Searching data libraries
         self.enable_lucene_library_search = string_as_bool(kwargs.get('enable_lucene_library_search', False))
         self.enable_whoosh_library_search = string_as_bool(kwargs.get('enable_whoosh_library_search', False))
@@ -792,7 +800,7 @@ class Configuration(object):
 
         try:
             port = config.getint('server:%s' % self.server_name, 'port')
-        except:
+        except Exception:
             # uWSGI galaxy installations don't use paster and only speak uWSGI not http
             port = None
         return port
@@ -876,6 +884,7 @@ def configure_logging(config):
     or a simple dictionary of configuration variables.
     """
     # Get root logger
+    logging.addLevelName(LOGLV_TRACE, "TRACE")
     root = logging.getLogger()
     # PasteScript will have already configured the logger if the
     # 'loggers' section was found in the config file, otherwise we do
@@ -1019,7 +1028,7 @@ class ConfiguresGalaxyMixin:
 
         # Set up the tool sheds registry
         if os.path.isfile(self.config.tool_sheds_config_file):
-            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry(self.config.root, self.config.tool_sheds_config_file)
+            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry(self.config.tool_sheds_config_file)
         else:
             self.tool_shed_registry = None
 
@@ -1036,6 +1045,10 @@ class ConfiguresGalaxyMixin:
         # database file under the hood.
         combined_install_database = not(install_db_url and install_db_url != db_url)
         install_db_url = install_db_url or db_url
+
+        if getattr(self.config, "max_metadata_value_size", None):
+            from galaxy.model import custom_types
+            custom_types.MAX_METADATA_VALUE_SIZE = self.config.max_metadata_value_size
 
         if check_migrate_databases:
             # Initialize database / check for appropriate schema version.  # If this
