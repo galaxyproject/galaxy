@@ -28,7 +28,15 @@ var ToolShedRepositoryView = Backbone.View.extend({
             tool_shed: this.model.tool_shed,
             queue: toolshed_util.queueLength()
         };
-        var changesets = Object.keys(this.options.repository.metadata);
+        var changesets = Object.keys(this.options.repository.metadata).sort(function (a, b) {
+            return parseInt(a.split(":")[0] - b.split(":")[0])
+        });
+        var ordered_metadata = {};
+        var unordered_metadata = this.options.repository.metadata;
+        changesets.forEach(function(key) {
+            ordered_metadata[key] = unordered_metadata[key];
+        });
+        this.options.repository.metadata = ordered_metadata;
         this.options.current_changeset = this.options.current_changeset || changesets[changesets.length - 1];
         this.options.current_metadata = this.options.repository.metadata[this.options.current_changeset];
         this.options.current_metadata.tool_shed_url = this.model.tool_shed_url;
