@@ -166,8 +166,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 workflow_details = self.workflow_contents_manager.workflow_to_dict(trans, self.__get_stored_workflow(trans, value['id']), style='instance')
                 if 'steps' in workflow_details:
                     for step in workflow_details['steps']:
-                        tool_id = workflow_details['steps'][step]['tool_id']
-                        if tool_id not in tool_ids and self.app.toolbox.is_missing_shed_tool(tool_id):
+                        tool_id = workflow_details['steps'][step].get('tool_id')
+                        if tool_id and tool_id not in tool_ids and self.app.toolbox.is_missing_shed_tool(tool_id):
                             tool_ids.append(tool_id)
                 if len(tool_ids) > 0:
                     value['missing_tools'] = tool_ids
