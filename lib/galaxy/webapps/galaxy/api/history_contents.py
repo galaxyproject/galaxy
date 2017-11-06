@@ -171,9 +171,10 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return {'error': str(e)}
 
     @expose_api_raw_anonymous
-    def download_dataset_collection(self, trans, id, history_id, **kwd):
+    def download_dataset_collection(self, trans, id, history_id=None, **kwd):
         """
         * GET /api/histories/{history_id}/contents/{id}/download
+        * GET /api/dataset_collection/{id}/download
 
         Download the content of a HistoryDatasetCollection as a tgz archive
         while maintaining approximate collection structure.
