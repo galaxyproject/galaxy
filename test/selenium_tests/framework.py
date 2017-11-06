@@ -57,6 +57,14 @@ GALAXY_TEST_SELENIUM_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_USER_P
 GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL", DEFAULT_ADMIN_USER)
 GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD", DEFAULT_ADMIN_PASSWORD)
 
+# JS code to execute in Galaxy JS console to setup localStorage of session for logging and
+# logging "flatten" messages because it seems Selenium (with Chrome at least) only grabs
+# the first argument to console.XXX when recovering the browser log.
+SETUP_LOGGING_JS = '''
+window.localStorage && window.localStorage.setItem("galaxy:debug", true);
+window.localStorage && window.localStorage.setItem("galaxy:debug:flatten", true);
+'''
+
 try:
     from nose.tools import nottest
 except ImportError:
@@ -107,8 +115,11 @@ def dump_test_information(self, name_prefix):
             snapshot.write_to_error_directory(write_file)
 
         for log_type in ["browser", "driver"]:
+            full_log = self.driver.get_log(log_type)
+            trimmed_log = [l for l in full_log if l["level"] not in ["DEBUG", "INFO"]]
             try:
-                write_file("%s.log.json" % log_type, json.dumps(self.driver.get_log(log_type)))
+                write_file("%s.log.json" % log_type, json.dumps(trimmed_log, indent=True))
+                write_file("%s.log.verbose.json" % log_type, json.dumps(full_log, indent=True))
             except Exception:
                 continue
         iframes = self.driver.find_elements_by_css_selector("iframe")
@@ -227,8 +238,14 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         # to increase this.
         self.driver.set_window_size(1280, 900)
 
+        self._setup_galaxy_logging()
+
         if self.ensure_registered:
             self.login()
+
+    def _setup_galaxy_logging(self):
+        self.home()
+        self.driver.execute_script(SETUP_LOGGING_JS)
 
     def login(self):
         if GALAXY_TEST_SELENIUM_USER_EMAIL:
