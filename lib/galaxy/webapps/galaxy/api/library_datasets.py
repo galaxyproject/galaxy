@@ -477,7 +477,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         elif source in ["userdir_file", "importdir_file"]:
             file = os.path.abspath(path)
             abspath_datasets.append(self._make_library_uploaded_dataset(
-                trans, 'api', kwd, os.path.basename(file), file, 'server_dir', library_bunch))
+                trans, kwd, os.path.basename(file), file, 'server_dir', library_bunch))
         # user wants to import whole folder
         elif source == "userdir_folder":
             uploaded_datasets_bunch = self._get_path_paste_uploaded_datasets(
@@ -518,7 +518,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         if _response_code:
             return (uploaded_datasets, _response_code, _message)
         for (path, name, folder) in files_and_folders:
-            uploaded_datasets.append(self._make_library_uploaded_dataset(trans, 'api', params, name, path, 'path_paste', library_bunch, folder))
+            uploaded_datasets.append(self._make_library_uploaded_dataset(trans, params, name, path, 'path_paste', library_bunch, folder))
         return uploaded_datasets, 200, None
 
     def _get_path_files_and_folders(self, params, preserve_dirs):
