@@ -333,10 +333,11 @@ class DatasetCollectionManager(object):
     def __get_history_collection_instance(self, trans, id, check_ownership=False, check_accessible=True):
         instance_id = int(trans.app.security.decode_id(id))
         collection_instance = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(instance_id)
+        history = getattr(trans, 'history', collection_instance.history)
         if check_ownership:
-            self.history_manager.error_unless_owner(collection_instance.history, trans.user, current_history=trans.history)
+            self.history_manager.error_unless_owner(collection_instance.history, trans.user, current_history=history)
         if check_accessible:
-            self.history_manager.error_unless_accessible(collection_instance.history, trans.user, current_history=trans.history)
+            self.history_manager.error_unless_accessible(collection_instance.history, trans.user, current_history=history)
         return collection_instance
 
     def __get_library_collection_instance(self, trans, id, check_ownership=False, check_accessible=True):
