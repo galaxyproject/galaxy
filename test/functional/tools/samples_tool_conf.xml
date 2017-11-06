@@ -157,6 +157,9 @@
 
   <tool file="simple_constructs.yml" />
 
+  <!-- Tools without tool test but useful for hand-crafted, artisanal test cases. -->
+  <tool file="cat_data_and_sleep.xml" />
+
   <!-- Load collection operation tools - I consider these part of the
        "framework" and they are used to in API tests to test the underlying
        ToolActions. -->

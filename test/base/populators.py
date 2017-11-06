@@ -186,6 +186,9 @@ class BaseDatasetPopulator(object):
     def get_job_details(self, job_id, full=False):
         return self._get("jobs/%s?full=%s" % (job_id, full))
 
+    def cancel_job(self, job_id):
+        return self._delete("jobs/%s" % job_id)
+
     def _summarize_history(self, history_id):
         pass
 
@@ -343,6 +346,9 @@ class DatasetPopulator(BaseDatasetPopulator):
 
     def _get(self, route, data={}):
         return self.galaxy_interactor.get(route, data=data)
+
+    def _delete(self, route, data={}):
+        return self.galaxy_interactor.delete(route, data=data)
 
     def _summarize_history(self, history_id):
         self.galaxy_interactor._summarize_history(history_id)
@@ -687,6 +693,11 @@ class GiPostGetMixin:
         data = data.copy()
         data['key'] = self._gi.key
         return requests.post(self.__url(route), data=data)
+
+    def _delete(self, route, data={}):
+        data = data.copy()
+        data['key'] = self._gi.key
+        return requests.delete(self.__url(route), data=data)
 
     def __url(self, route):
         return self._gi.url + "/" + route
