@@ -59,7 +59,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 .text();
             that.options.current_metadata = that.options.repository.metadata[that.options.current_changeset];
             that.checkInstalled(that.options.current_metadata);
-            that.reDraw();
+            that.reDraw(that.options);
         });
         $("#tool_panel_section_select").on("change", () => {
             that.tpsSelection();
@@ -250,7 +250,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
 
     reDraw: function(options) {
         this.$el.empty();
-        this.initialize(options);
+        this.render(options);
     },
 
     repoQueued: function(metadata) {
