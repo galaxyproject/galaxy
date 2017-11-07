@@ -1,6 +1,5 @@
 import * as parseBibtex from "libs/bibtexParse";
 import baseMVC from "mvc/base-mvc";
-import _l from "utils/localization";
 
 /* global Backbone */
 
@@ -22,31 +21,31 @@ var Citation = Backbone.Model.extend(baseMVC.LoggableMixin).extend({
         content: ""
     },
 
-        initialize: function() {
-            var parsed;
-            try {
-                // TODO: to model.parse/.validate
-                parsed = bibtexParse.toJSON(this.attributes.content);
-            } catch (err) {
-                this.log("Error parsing bibtex: " + err);
-            }
+    initialize: function() {
+        var parsed;
+        try {
+            // TODO: to model.parse/.validate
+            parsed = bibtexParse.toJSON(this.attributes.content);
+        } catch (err) {
+            this.log("Error parsing bibtex: " + err);
+        }
 
-            this._fields = {};
-            this.entry = _.first(parsed);
-            if (this.entry) {
-                var rawFields = this.entry.entryTags;
-                for (var key in rawFields) {
-                    var value = rawFields[key];
-                    var lowerKey = key.toLowerCase();
-                    this._fields[lowerKey] = value;
-                }
+        this._fields = {};
+        this.entry = _.first(parsed);
+        if (this.entry) {
+            var rawFields = this.entry.entryTags;
+            for (var key in rawFields) {
+                var value = rawFields[key];
+                var lowerKey = key.toLowerCase();
+                this._fields[lowerKey] = value;
             }
-        },
-        entryType: function() {
-            return this.entry ? this.entry.entryType : undefined;
-        },
-        fields: function() {
-            return this._fields;
+        }
+    },
+    entryType: function() {
+        return this.entry ? this.entry.entryType : undefined;
+    },
+    fields: function() {
+        return this._fields;
     }
 });
 
