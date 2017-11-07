@@ -125,6 +125,7 @@ window.app = function app(options, bootstrapped) {
             var citations = new Citations.HistoryCitationCollection();
             citations.history_id = QueryStringParsing.get("id");
             this.page.display(new Citations.CitationListView({ collection: citations }));
+            citations.fetch();
         },
 
         show_histories_rename: function() {
