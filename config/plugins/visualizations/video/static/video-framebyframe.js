@@ -1,0 +1,1 @@
+../ext/videojs-framebyframe/video-framebyframe.js
