@@ -1,0 +1,16 @@
+{
+    "disallowTrailingWhitespace": true,
+    "disallowMixedSpacesAndTabs": true,
+    "disallowMultipleSpaces": true,
+    "disallowTabs": true,
+    "disallowSpaceBeforeSemicolon": true,
+    "disallowPaddingNewlinesInBlocks": true,
+    "requireNewlineBeforeBlockStatements": true,
+    "validateIndentation": 4,
+    "requireSpacesInForStatement": true,
+    "requireSpacesInConditionalExpression": true,
+    "requireSpaceAfterLineComment": true,
+    "requirePaddingNewLinesInObjects": true,
+    "requireNewlineBeforeBlockStatements": false,
+    "requireBlocksOnNewline": true
+}
