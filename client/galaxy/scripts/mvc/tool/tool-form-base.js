@@ -224,16 +224,14 @@ export default FormBase.extend({
         var options = this.model.attributes;
         var $el = $("<div/>").append(this._templateHelp(options));
         if (options.citations) {
-            var $citations = $("<div/>");
             var citations = new CitationModel.ToolCitationCollection();
             citations.tool_id = options.id;
             var citation_list_view = new CitationView.CitationListView({
-                el: $citations,
                 collection: citations
             });
             citation_list_view.render();
             citations.fetch();
-            $el.append($citations);
+            $el.append(citation_list_view.$el);
         }
         return $el;
     },

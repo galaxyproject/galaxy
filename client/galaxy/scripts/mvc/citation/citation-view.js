@@ -103,12 +103,13 @@ var CitationView = Backbone.View.extend({
 });
 
 var CitationListView = Backbone.View.extend({
-    el: "#citations",
     /**
      * Set up view.
      */
     initialize: function() {
+        this.setElement("<div/>");
         this.listenTo(this.collection, "add", this.renderCitation);
+        this.render();
     },
 
     events: {

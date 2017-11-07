@@ -1,4 +1,4 @@
-import * as parseBibtex from "libs/bibtex";
+import * as parseBibtex from "libs/bibtexParse";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
