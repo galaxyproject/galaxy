@@ -20,8 +20,7 @@ import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
-import CitationModel from "mvc/citation/citation-model";
-import CitationView from "mvc/citation/citation-view";
+import Citations from "mvc/citations";
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -123,9 +122,9 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_history_citations: function() {
-            var citations = new CitationModel.HistoryCitationCollection();
+            var citations = new Citations.HistoryCitationCollection();
             citations.history_id = QueryStringParsing.get("id");
-            this.page.display(new CitationView.CitationListView({ collection: citations }));
+            this.page.display(new Citations.CitationListView({ collection: citations }));
         },
 
         show_histories_rename: function() {

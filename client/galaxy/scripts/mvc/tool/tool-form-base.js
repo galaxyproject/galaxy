@@ -5,8 +5,7 @@ import Utils from "utils/utils";
 import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
-import CitationModel from "mvc/citation/citation-model";
-import CitationView from "mvc/citation/citation-view";
+import Citations from "mvc/citations";
 export default FormBase.extend({
     initialize: function(options) {
         var self = this;
@@ -224,9 +223,9 @@ export default FormBase.extend({
         var options = this.model.attributes;
         var $el = $("<div/>").append(this._templateHelp(options));
         if (options.citations) {
-            var citations = new CitationModel.ToolCitationCollection();
+            var citations = new Citations.ToolCitationCollection();
             citations.tool_id = options.id;
-            var citation_list_view = new CitationView.CitationListView({
+            var citation_list_view = new Citations.CitationListView({
                 collection: citations
             });
             citation_list_view.render();
