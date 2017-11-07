@@ -118,6 +118,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # 'galaxy.model.orm.logging_connection_proxy'
 #database_query_profiling_proxy = False
 
+# If auto-creating a postgres database on startup - it can be based on an existing
+# template database. This will set that. This is probably only useful for testing but
+# documentation is included here for completeness.
+#database_template = None
+
 # Slow query logging.  Queries slower than the threshold indicated below will
 # be logged to debug.  A value of '0' is disabled.  For example, you would set
 # this to .005 to log all queries taking longer than 5 milliseconds.
@@ -844,6 +849,11 @@ nglims_config_file = tool-data/nglims.yaml
 # public site.  Enabled in the sample config for development.
 use_interactive = True
 
+# When stopping Galaxy cleanly, how much time to give various monitoring/polling
+# threads to finish before giving up on joining them. Set to 0 to disable this and
+# restore the pre-18.01 default behavior.
+#monitor_thread_join_timeout = 5
+
 # Write thread status periodically to 'heartbeat.log',  (careful, uses disk
 # space rapidly!).  Useful to determine why your processes may be consuming a
 # lot of CPU.
@@ -931,19 +941,6 @@ use_interactive = True
 # runs outside of Galaxy (but is spawned by it automatically).  Galaxy will
 # communicate with this manager over the port specified here.
 #transfer_manager_port = 8163
-
-# Search data libraries with whoosh
-#enable_whoosh_library_search = True
-# Whoosh indexes are stored in this directory.
-#whoosh_index_dir = database/whoosh_indexes
-
-# Search data libraries with lucene
-#enable_lucene_library_search = False
-# maximum file size to index for searching, in MB
-#fulltext_max_size = 500
-#fulltext_noindex_filetypes = bam,sam,wig,bigwig,fasta,fastq,fastqsolexa,fastqillumina,fastqsanger
-# base URL of server providing search functionality using lucene
-#fulltext_url = http://localhost:8081
 
 # -- Toolbox Search
 

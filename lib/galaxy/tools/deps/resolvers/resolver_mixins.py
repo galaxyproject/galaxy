@@ -71,7 +71,7 @@ class HomebrewDependency(Dependency):
     def exact(self):
         return self._exact
 
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         raw_commands = self.commands.replace("\n", ";")
         return raw_commands
 

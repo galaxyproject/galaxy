@@ -24,6 +24,15 @@ class ToolsUploadTestCase(api.ApiTestCase):
             create_response = self._post("tools", data=payload)
             self._assert_has_keys(create_response.json(), 'outputs')
 
+    def test_upload1_paste_bad_datatype(self):
+        # Check that you get a nice message if you upload an incorrect datatype
+        with self.dataset_populator.test_history() as history_id:
+            file_type = "johnsawesomebutfakedatatype"
+            payload = self.dataset_populator.upload_payload(history_id, 'Hello World', file_type=file_type)
+            create = self._post("tools", data=payload).json()
+            self._assert_has_keys(create, 'err_msg')
+            assert file_type in create['err_msg']
+
     def test_upload_posix_newline_fixes(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content)

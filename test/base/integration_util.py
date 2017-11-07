@@ -15,6 +15,8 @@ NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
     """Unit test case with utilities for spinning up Galaxy."""
 
+    prefer_template_database = True
+
     @classmethod
     def setUpClass(cls):
         """Configure and start Galaxy for a test."""

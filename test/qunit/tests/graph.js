@@ -6,7 +6,7 @@ define([
 ], function( GRAPH, $, QUnit ){
 
     "use strict";
-
+    GRAPH = GRAPH.default;
     QUnit.module( "utils/graph.js library tests" );
 ///*
     function testEmptyObject( assert, o ){

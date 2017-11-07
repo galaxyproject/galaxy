@@ -287,7 +287,7 @@ echo 'FOO="bar"'
 ''')
         resolver = Bunch(modulecmd=mock_modulecmd, modulepath='/something')
         dependency = ModuleDependency(resolver, "foomodule", "1.0")
-        __assert_foo_exported(dependency.shell_commands(Bunch(type="package")))
+        __assert_foo_exported(dependency.shell_commands())
 
 
 def test_lmod_dependency_resolver():
@@ -420,7 +420,7 @@ echo 'FOO="bar"'
 ''')
         resolver = Bunch(lmodexec=mock_lmodexec, settargexec=None, modulepath='/path/to/modulefiles')
         dependency = LmodDependency(resolver, "foomodule", "1.0")
-        __assert_foo_exported(dependency.shell_commands(Bunch(type="package")))
+        __assert_foo_exported(dependency.shell_commands())
 
 
 def __write_script(path, contents):
@@ -435,8 +435,8 @@ def test_galaxy_dependency_object_script():
         # Create env.sh file that just exports variable FOO and verify it
         # shell_commands export it correctly.
         env_path = __setup_galaxy_package_dep(base_path, TEST_REPO_NAME, TEST_VERSION, "export FOO=\"bar\"")
-        dependency = GalaxyPackageDependency(env_path, os.path.dirname(env_path), TEST_REPO_NAME, TEST_VERSION)
-        __assert_foo_exported(dependency.shell_commands(Bunch(type="package")))
+        dependency = GalaxyPackageDependency(env_path, os.path.dirname(env_path), TEST_REPO_NAME, 'package', TEST_VERSION)
+        __assert_foo_exported(dependency.shell_commands())
 
 
 def test_shell_commands_built():
