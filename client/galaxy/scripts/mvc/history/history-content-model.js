@@ -54,9 +54,10 @@ var HistoryContentMixin = {
 
     /** full url spec. for this content */
     url: function() {
-        var url = `${this.urlRoot + this.get("history_id")}/contents/${this.get("history_content_type")}s/${this.get(
-            "id"
-        )}`;
+        var historyContentType = this.get("history_content_type"),
+            historyId = this.get("history_id"),
+            historyContentId = this.get("id");
+        var url = `${this.urlRoot}{this.get("historyId")}/contents/${historyContentType}s/${historyContentId}`;
         return url;
     },
 

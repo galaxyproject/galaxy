@@ -101,13 +101,12 @@ var HistoryView = _super.extend(
                 error: function(model, xhr, options, msg, details) {
                     this.errorHandler(model, xhr, options, msg, details);
                 },
-                "loading-done": function() {
-                    var self = this;
+                "loading-done": () => {
                     // after the initial load, decorate with more time consuming fields (like HDCA element_counts)
-                    self.detailedFetchTimeoutId = _.delay(() => {
-                        self.detailedFetchTimeoutId = null;
-                        self.model.contents.fetchCollectionCounts();
-                    }, self.FETCH_COLLECTION_COUNTS_DELAY);
+                    this.detailedFetchTimeoutId = _.delay(() => {
+                        this.detailedFetchTimeoutId = null;
+                        this.model.contents.fetchCollectionCounts();
+                    }, this.FETCH_COLLECTION_COUNTS_DELAY);
                 },
                 "views:ready view:attached view:removed": function(view) {
                     this._renderSelectButton();
@@ -124,14 +123,13 @@ var HistoryView = _super.extend(
         loadHistory: function(historyId, options, contentsOptions) {
             contentsOptions = _.extend(contentsOptions || { silent: true });
             this.info("loadHistory:", historyId, options, contentsOptions);
-            var self = this;
-            self.setModel(new HISTORY_MODEL.History({ id: historyId }));
+            this.setModel(new HISTORY_MODEL.History({ id: historyId }));
 
             contentsOptions.silent = true;
-            self.trigger("loading");
-            return self.model.fetchWithContents(options, contentsOptions).always(() => {
-                self.render();
-                self.trigger("loading-done");
+            this.trigger("loading");
+            return this.model.fetchWithContents(options, contentsOptions).always(() => {
+                this.render();
+                this.trigger("loading-done");
             });
         },
 
@@ -209,19 +207,17 @@ var HistoryView = _super.extend(
 
         /** override to avoid showing intial empty message using contents_active */
         _renderEmptyMessage: function($whereTo) {
-            var self = this;
-            var $emptyMsg = self.$emptyMessage($whereTo);
-
-            var empty = self.model.get("contents_active").active <= 0;
+            var $emptyMsg = this.$emptyMessage($whereTo);
+            var empty = this.model.get("contents_active").active <= 0;
             if (empty) {
                 return $emptyMsg
                     .empty()
-                    .append(self.emptyMsg)
+                    .append(this.emptyMsg)
                     .show();
-            } else if (self.searchFor && self.model.contents.haveSearchDetails() && !self.views.length) {
+            } else if (this.searchFor && this.model.contents.haveSearchDetails() && !this.views.length) {
                 return $emptyMsg
                     .empty()
-                    .append(self.noneFoundMsg)
+                    .append(this.noneFoundMsg)
                     .show();
             }
             $emptyMsg.hide();
@@ -251,27 +247,26 @@ var HistoryView = _super.extend(
         renderItems: function($whereTo) {
             // console.log( this + '.renderItems-----------------', new Date() );
             $whereTo = $whereTo || this.$el;
-            var self = this;
-            var $list = self.$list($whereTo);
+            var $list = this.$list($whereTo);
 
             // TODO: bootstrap hack to remove orphaned tooltips
             $(".tooltip").remove();
 
             $list.empty();
-            self.views = [];
+            this.views = [];
 
-            var models = self._filterCollection();
+            var models = this._filterCollection();
             if (models.length) {
-                self._renderPagination($whereTo);
-                self.views = self._renderSomeItems(models, $list);
+                this._renderPagination($whereTo);
+                this.views = this._renderSomeItems(models, $list);
             } else {
                 // TODO: consolidate with _renderPagination above by (???) passing in models/length?
                 $whereTo.find("> .controls .list-pagination").empty();
             }
-            self._renderEmptyMessage($whereTo).toggle(!models.length);
+            this._renderEmptyMessage($whereTo).toggle(!models.length);
 
-            self.trigger("views:ready", self.views);
-            return self.views;
+            this.trigger("views:ready", this.views);
+            return this.views;
         },
 
         /** render pagination controls if not searching and contents says we're paginating */
@@ -295,13 +290,12 @@ var HistoryView = _super.extend(
 
         /** render a subset of the entire collection (client-side pagination) */
         _renderSomeItems: function(models, $list) {
-            var self = this;
             var views = [];
             $list.append(
                 models.map(m => {
-                    var view = self._createItemView(m);
+                    var view = this._createItemView(m);
                     views.push(view);
-                    return self._renderItemView$el(view);
+                    return this._renderItemView$el(view);
                 })
             );
             return views;
@@ -310,12 +304,11 @@ var HistoryView = _super.extend(
         // ------------------------------------------------------------------------ sub-views
         /** in this override, check if the contents would also display based on includeDeleted/hidden */
         _filterItem: function(model) {
-            var self = this;
-            var contents = self.model.contents;
+            var contents = this.model.contents;
             return (
                 (contents.includeHidden || !model.hidden()) &&
                 (contents.includeDeleted || !model.isDeletedOrPurged()) &&
-                _super.prototype._filterItem.call(self, model)
+                _super.prototype._filterItem.call(this, model)
             );
         },
 
@@ -405,10 +398,9 @@ var HistoryView = _super.extend(
      */
         toggleShowDeleted: function(show, options) {
             show = show !== undefined ? show : !this.model.contents.includeDeleted;
-            var self = this;
-            var contents = self.model.contents;
+            var contents = this.model.contents;
             contents.setIncludeDeleted(show, options);
-            self.trigger("show-deleted", show);
+            this.trigger("show-deleted", show);
 
             contents.fetchCurrentPage({ renderAll: true });
             return show;
@@ -420,10 +412,9 @@ var HistoryView = _super.extend(
         toggleShowHidden: function(show, store, options) {
             // console.log( 'toggleShowHidden', show, store );
             show = show !== undefined ? show : !this.model.contents.includeHidden;
-            var self = this;
-            var contents = self.model.contents;
+            var contents = this.model.contents;
             contents.setIncludeHidden(show, options);
-            self.trigger("show-hidden", show);
+            this.trigger("show-hidden", show);
 
             contents.fetchCurrentPage({ renderAll: true });
             return show;
@@ -431,48 +422,46 @@ var HistoryView = _super.extend(
 
         /** On the first search, if there are no details - load them, then search */
         _firstSearch: function(searchFor) {
-            var self = this;
             var inputSelector = "> .controls .search-input";
             this.log("onFirstSearch", searchFor);
 
             // if the contents already have enough details to search, search and return now
-            if (self.model.contents.haveSearchDetails()) {
-                self.searchItems(searchFor);
+            if (this.model.contents.haveSearchDetails()) {
+                this.searchItems(searchFor);
                 return;
             }
 
             // otherwise, load the details progressively here
-            self.$(inputSelector).searchInput("toggle-loading");
+            this.$(inputSelector).searchInput("toggle-loading");
             // set this now so that only results will show during progress
-            self.searchFor = searchFor;
-            var xhr = self.model.contents
+            this.searchFor = searchFor;
+            var xhr = this.model.contents
                 .progressivelyFetchDetails({ silent: true })
                 .progress((response, limit, offset) => {
-                    self.renderItems();
-                    self.trigger("search:loading-progress", limit, offset);
+                    this.renderItems();
+                    this.trigger("search:loading-progress", limit, offset);
                 })
                 .always(() => {
-                    self.$el.find(inputSelector).searchInput("toggle-loading");
+                    this.$el.find(inputSelector).searchInput("toggle-loading");
                 })
                 .done(() => {
-                    self.searchItems(searchFor, "force");
+                    this.searchItems(searchFor, "force");
                 });
         },
 
         /** clear the search filters and show all views that are normally shown */
         clearSearch: function(searchFor) {
-            var self = this;
-            if (!self.searchFor) return self;
-            //self.log( 'onSearchClear', self );
-            self.searchFor = "";
-            self.trigger("search:clear", self);
-            self.$("> .controls .search-query").val("");
+            if (!this.searchFor) return this;
+            //this.log( 'onSearchClear', this );
+            this.searchFor = "";
+            this.trigger("search:clear", this);
+            this.$("> .controls .search-query").val("");
             // NOTE: silent + render prevents collection update event with merge only
             // - which causes an empty page due to event handler above
-            self.model.contents.fetchCurrentPage({ silent: true }).done(() => {
-                self.renderItems();
+            this.model.contents.fetchCurrentPage({ silent: true }).done(() => {
+                this.renderItems();
             });
-            return self;
+            return this;
         },
 
         // ........................................................................ error handling
@@ -550,14 +539,12 @@ var HistoryView = _super.extend(
 
 //------------------------------------------------------------------------------ TEMPLATES
 HistoryView.prototype.templates = (() => {
-    var mainTemplate = BASE_MVC.wrapTemplate([
-        // temp container
-        "<div>",
-        '<div class="controls"></div>',
-        '<ul class="list-items"></ul>',
-        '<div class="empty-message infomessagesmall"></div>',
-        "</div>"
-    ]);
+    var mainTemplate = () =>
+        `<div>
+            <div class="controls"></div>
+            <ul class="list-items"></ul>
+            <div class="empty-message infomessagesmall"></div>',
+        </div>`;
 
     var controlsTemplate = BASE_MVC.wrapTemplate(
         [
