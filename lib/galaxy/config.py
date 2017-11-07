@@ -757,8 +757,7 @@ class Configuration(object):
         # Create the directories that it makes sense to create
         for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,
-                     self.nginx_upload_store, self.whoosh_index_dir,
-                     self.object_store_cache_path):
+                     self.nginx_upload_store, self.object_store_cache_path):
             self._ensure_directory(path)
         # Check that required files exist
         tool_configs = self.tool_configs
