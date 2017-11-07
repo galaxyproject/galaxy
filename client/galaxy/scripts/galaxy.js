@@ -27,6 +27,8 @@ addLogging(GalaxyApp, "GalaxyApp");
 var DEBUGGING_KEY = "galaxy:debug";
 
 var NAMESPACE_KEY = `${DEBUGGING_KEY}:namespaces`;
+var FLATTEN_LOG_MESSAGES_KEY = `${DEBUGGING_KEY}:flatten`;
+
 var localDebugging = false;
 try {
     localDebugging = localStorage.getItem(DEBUGGING_KEY) == "true";
@@ -137,6 +139,10 @@ GalaxyApp.prototype._initLogger = function _initLogger(loggerOptions) {
         try {
             loggerOptions.consoleNamespaceWhitelist = localStorage.getItem(NAMESPACE_KEY).split(",");
         } catch (storageErr) {}
+        try {
+            loggerOptions.consoleFlattenMessages = localStorage.getItem(FLATTEN_LOG_MESSAGES_KEY) == "true";
+        } catch (storageErr) {}
+        console.log(loggerOptions.consoleFlattenMessages);
     }
 
     self.logger = new metricsLogger.MetricsLogger(loggerOptions);

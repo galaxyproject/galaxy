@@ -239,7 +239,7 @@ class Dependency(Dictifiable, object):
     cacheable = False
 
     @abstractmethod
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         """
         Return shell commands to enable this dependency.
         """
@@ -273,7 +273,7 @@ class NullDependency(Dependency):
         """
         return "Dependency %s not found." % self.name
 
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         return None
 
 
