@@ -125,7 +125,7 @@ window.app = function app(options, bootstrapped) {
         show_history_citations: function() {
             var citations = new CitationModel.HistoryCitationCollection();
             citations.history_id = QueryStringParsing.get("id");
-            this.page.display(new CitationView.CitationListView({collection: citations}));
+            this.page.display(new CitationView.CitationListView({ collection: citations }));
         },
 
         show_histories_rename: function() {
@@ -196,11 +196,10 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_custom_builds: function() {
-            var self = this;
             var historyPanel = this.page.historyPanel.historyView;
             if (!historyPanel || !historyPanel.model || !historyPanel.model.id) {
                 window.setTimeout(() => {
-                    self.show_custom_builds();
+                    this.show_custom_builds();
                 }, 500);
                 return;
             }
@@ -256,20 +255,19 @@ window.app = function app(options, bootstrapped) {
 
         /** load workflow by its url in run mode */
         _loadWorkflow: function() {
-            var self = this;
             Utils.get({
                 url: `${Galaxy.root}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
-                success: function(response) {
-                    self.page.display(new ToolFormComposite.View(response));
+                success: response => {
+                    this.page.display(new ToolFormComposite.View(response));
                 },
-                error: function(response) {
+                error: response => {
                     var error_msg = response.err_msg || "Error occurred while loading the resource.";
                     var options = {
                         message: error_msg,
                         status: "danger",
                         persistent: true
                     };
-                    self.page.display(new Ui.Message(options));
+                    this.page.display(new Ui.Message(options));
                 }
             });
         }
