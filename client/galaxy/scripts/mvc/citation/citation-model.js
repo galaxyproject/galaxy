@@ -1,12 +1,7 @@
-import * as parseBibtex from "libs/bibtexParse";
+import * as bibtexParse from "libs/bibtexParse";
 import baseMVC from "mvc/base-mvc";
 
 /* global Backbone */
-
-_.extend(parseBibtex.ENTRY_TYPES_, {
-    online: 998, // Galaxy MOD: Handle @online entries for preprints.
-    data: 999 // Galaxy MOD: Handle @data citations coming from figshare.
-});
 
 var logNamespace = "citation";
 //==============================================================================
