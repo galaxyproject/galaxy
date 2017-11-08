@@ -54,36 +54,11 @@ workflow_invocation_step_output_dataset_collection_association_table = Table(
     Column("output_name", String(255), nullable=True),
 )
 
-# workflow_invocation_step_table = Table(
-#     "workflow_invocation_step", metadata,
-#     Column("id", Integer, primary_key=True),
-#     Column("create_time", DateTime, default=now),
-#     Column("update_time", DateTime, default=now, onupdate=now),
-#     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True, nullable=False),
-#     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
-#     Column("action", JSONType, nullable=True),
-#     Column("state", TrimmedString(64), default="new"),
-# )
-
-# workflow_invocation_step_job_association_table = Table(
-#     "workflow_invocation_step_job_association", metadata,
-#     Column("id", Integer, primary_key=True),
-#     Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id"), index=True, nullable=False),
-#     Column("order_index", Integer, nullable=True),
-#     Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=False),
-# )
-
 implicit_collection_jobs_table = Table(
     "implicit_collection_jobs", metadata,
     Column("id", Integer, primary_key=True),
     Column("populated_state", TrimmedString(64), default='new', nullable=False),
 )
-
-# implicit_collection_jobs_history_dataset_collection_association_table = Table(
-#    "implicit_collection_jobs_dataset_collection_association", metadata,
-#    Column("id", Integer, primary_key=True),
-#    Column("history_dataset_collection_association_id", Integer, ForeignKey("history_dataset_collection_association_id.id"), index=True, nullable=False),
-# )
 
 implicit_collection_jobs_job_association_table = Table(
     "implicit_collection_jobs_job_association", metadata,
@@ -100,14 +75,11 @@ def get_new_tables():
     # table exists that we want to recreate.
 
     tables = OrderedDict()
-    # tables["workflow_invocation_step"] = workflow_invocation_step_table
     tables["workflow_invocation_output_dataset_association"] = workflow_invocation_output_dataset_association_table
     tables["workflow_invocation_output_dataset_collection_association"] = workflow_invocation_output_dataset_collection_association_table
     tables["workflow_invocation_step_output_dataset_association"] = workflow_invocation_step_output_dataset_association_table
     tables["workflow_invocation_step_output_dataset_collection_association"] = workflow_invocation_step_output_dataset_collection_association_table
-    # tables["workflow_invocation_step_job_association"] = workflow_invocation_step_job_association_table
     tables["implicit_collection_jobs"] = implicit_collection_jobs_table
-    # tables["implicit_collection_jobs_history_dataset_collection_association"] = implicit_collection_jobs_history_dataset_collection_association_table
     tables["implicit_collection_jobs_job_association"] = implicit_collection_jobs_job_association_table
 
     return tables
@@ -138,14 +110,15 @@ def upgrade(migrate_engine):
     else:
         implicit_collection_jobs_id_column = Column("implicit_collection_jobs_id", Integer, nullable=True)
         job_id_column = Column("job_id", Integer, nullable=True)
+    dataset_collection_element_count_column = Column("element_count", Integer, nullable=True)
+
     __add_column(implicit_collection_jobs_id_column, "history_dataset_collection_association", metadata)
     __add_column(job_id_column, "history_dataset_collection_association", metadata)
+    __add_column(dataset_collection_element_count_column, "dataset_collection", metadata)
 
     implicit_collection_jobs_id_column = Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), nullable=True)
     __add_column(implicit_collection_jobs_id_column, "workflow_invocation_step", metadata)
     __add_column(workflow_invocation_step_state_column, "workflow_invocation_step", metadata)
-
-    # TODO: matching drop... steal from 0131
 
 
 def __add_column(column, table_name, metadata, **kwds):
@@ -172,6 +145,7 @@ def downgrade(migrate_engine):
     __drop_column("job_id", "history_dataset_collection_association", metadata)
     __drop_column("implicit_collection_jobs_id", "workflow_invocation_step", metadata)
     __drop_column("state", "workflow_invocation_step", metadata)
+    __drop_column("element_count", "dataset_collection", metadata)
 
     tables = get_new_tables()
     for table in reversed(tables.values()):

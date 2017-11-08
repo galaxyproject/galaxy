@@ -3354,6 +3354,7 @@ class DatasetCollectionInstance(object, HasName):
             populated=self.populated,
             populated_state=self.collection.populated_state,
             populated_state_message=self.collection.populated_state_message,
+            element_count=self.collection.element_count,
             type="collection",  # contents type (distinguished from file or folder (in case of library))
         )
 
