@@ -34,6 +34,7 @@ var paths = {
         'raven-js': ['dist/raven.js', 'raven.js'],
         'requirejs': [ 'require.js', 'require.js' ],
         'underscore': [ 'underscore.js', 'underscore.js' ],
+        'vue': [ 'dist/vue.js', 'vue.js' ]
     },
     libs: ['galaxy/scripts/libs/**/*.js']
 };

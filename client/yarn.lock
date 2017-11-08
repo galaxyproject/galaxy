@@ -6072,6 +6072,10 @@ vm-browserify@0.0.4:
   dependencies:
     indexof "0.0.1"
 
+vue@^2.5.3:
+  version "2.5.3"
+  resolved "https://registry.yarnpkg.com/vue/-/vue-2.5.3.tgz#e1a3b1f49b6e93e574ce040b95cbc873912fecc1"
+
 watchpack@^0.2.1:
   version "0.2.9"
   resolved "https://registry.yarnpkg.com/watchpack/-/watchpack-0.2.9.tgz#62eaa4ab5e5ba35fdfc018275626e3c0f5e3fb0b"
