@@ -206,11 +206,7 @@ class ToolsTestCase(api.ApiTestCase):
         with self.dataset_populator.test_history() as history_id:
             history_id = self.dataset_populator.new_history()
             ok_hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json()["id"]
-            exit_code_inputs = {
-                "input": {'batch': True, 'values': [{"src": "hdca", "id": ok_hdca_id}]},
-            }
-            response = self._run("exit_code_from_file", history_id, exit_code_inputs, assert_ok=False).json()
-            self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+            response = self.dataset_populator.run_exit_code_from_file(history_id, ok_hdca_id)
 
             mixed_implicit_collections = response["implicit_collections"]
             self.assertEquals(len(mixed_implicit_collections), 1)
