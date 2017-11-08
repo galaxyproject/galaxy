@@ -25,6 +25,7 @@ var commonLibs = [
     "libs/farbtastic",
     "libs/bootstrap",
     "libs/bootstrap-tour",
+    "libs/vue",
     // mvc
     "libs/underscore",
     "libs/backbone",
@@ -76,7 +77,11 @@ module.exports = {
                         options: "$"
                     }
                 ]
-            }
+            },
+              {
+                test: /\.vue$/,
+                loader: 'vue-loader',
+              }
         ]
     },
     node: {
