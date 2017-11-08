@@ -1098,9 +1098,6 @@ use_interactive = True
 
 # -- Beta features
 
-# Enable Galaxy to communicate directly with a sequencer
-#enable_sequencer_communication = False
-
 # Enable the new interface for installing tools from Tool Shed
 # via the API. Admin menu will list both if enabled.
 #enable_beta_ts_api_install = True
