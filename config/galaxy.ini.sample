@@ -1234,6 +1234,7 @@ use_interactive = True
 
 # File where Tool Shed based Data Managers are configured.
 #shed_data_manager_config_file = config/shed_data_manager_conf.xml
+
 # Directory to store Data Manager based tool-data; defaults to tool_data_path.
 #galaxy_data_manager_data_path = tool-data
 
