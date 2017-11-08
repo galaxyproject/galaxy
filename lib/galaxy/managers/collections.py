@@ -76,6 +76,7 @@ class DatasetCollectionManager(object):
                 )
                 elements.append(element)
             dataset_collection.elements = elements
+            dataset_collection.element_count = len(elements)
 
             return dataset_collection
 

@@ -119,6 +119,7 @@ class DCSerializer(base.ModelSerializer):
             'collection_type',
             'populated_state',
             'populated_state_message',
+            'element_count',
         ])
         self.add_view('detailed', [
             'populated',
@@ -130,7 +131,6 @@ class DCSerializer(base.ModelSerializer):
         self.serializers.update({
             'model_class'   : lambda *a, **c: 'DatasetCollection',
             'elements'      : self.serialize_elements,
-            'element_count' : self.serialize_element_count,
         })
 
     def serialize_elements(self, item, key, **context):
@@ -139,14 +139,6 @@ class DCSerializer(base.ModelSerializer):
             serialized = self.dce_serializer.serialize_to_view(element, view='summary', **context)
             returned.append(serialized)
         return returned
-
-    def serialize_element_count(self, item, key, **context):
-        """Return the count of elements for this collection."""
-        # TODO: app.model.context -> session
-        # TODO: to the container interface (dataset_collection_contents)
-        return (self.app.model.context.query(model.DatasetCollectionElement)
-            .filter(model.DatasetCollectionElement.dataset_collection_id == item.id)
-            .count())
 
 
 class DCASerializer(base.ModelSerializer):
@@ -165,6 +157,7 @@ class DCASerializer(base.ModelSerializer):
             'collection_type',
             'populated_state',
             'populated_state_message',
+            'element_count',
         ])
         self.add_view('detailed', [
             'populated',
@@ -223,6 +216,7 @@ class HDCASerializer(
             'collection_type',
             'populated_state',
             'populated_state_message',
+            'element_count',
 
             'job_source_id',
             'job_source_type',

@@ -130,6 +130,7 @@ def dictify_element(element):
             child_collection = element.child_collection
             object_detials["elements"] = [dictify_element(_) for _ in child_collection.elements]
             object_detials["populated"] = child_collection.populated
+            object_detials["element_count"] = child_collection.element_count
     else:
         object_detials = None
 
