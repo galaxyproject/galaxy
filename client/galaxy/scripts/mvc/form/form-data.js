@@ -103,20 +103,20 @@ var Manager = Backbone.Model.extend({
     },
 
     /** Matches flat ids to corresponding input element
-         * @param{string} flat_id - Flat input id to be looked up.
-         */
+     * @param{string} flat_id - Flat input id to be looked up.
+     */
     match: function(flat_id) {
         return this.flat_dict && this.flat_dict[flat_id];
     },
 
     /** Match conditional values to selected cases
-        */
+     */
     matchCase: function(input, value) {
         return matchCase(input, value);
     },
 
     /** Matches a new tool model to the current input elements e.g. used to update dynamic options
-        */
+     */
     matchModel: function(model, callback) {
         var self = this;
         visitInputs(model.inputs, (input, name) => {
@@ -125,7 +125,7 @@ var Manager = Backbone.Model.extend({
     },
 
     /** Matches identifier from api response to input elements e.g. used to display validation errors
-        */
+     */
     matchResponse: function(response) {
         var result = {};
         var self = this;
@@ -152,7 +152,7 @@ var Manager = Backbone.Model.extend({
     },
 
     /** Map dom tree to dictionary tree with input elements.
-        */
+     */
     _iterate: function(parent, dict) {
         var self = this;
         var children = $(parent).children();
@@ -171,9 +171,9 @@ var Manager = Backbone.Model.extend({
 });
 
 /** Match conditional values to selected cases
-     * @param{dict}   input     - Definition of conditional input parameter
-     * @param{dict}   value     - Current value
-     */
+ * @param{dict}   input     - Definition of conditional input parameter
+ * @param{dict}   value     - Current value
+ */
 var matchCase = (input, value) => {
     if (input.test_param.type == "boolean") {
         if (value == "true") {
@@ -191,9 +191,9 @@ var matchCase = (input, value) => {
 };
 
 /** Visits tool inputs
-     * @param{dict}   inputs    - Nested dictionary of input elements
-     * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
-     */
+ * @param{dict}   inputs    - Nested dictionary of input elements
+ * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
+ */
 var visitInputs = (inputs, callback, prefix, context) => {
     context = $.extend(true, {}, context);
     _.each(inputs, input => {

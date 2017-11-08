@@ -642,9 +642,9 @@ var View = Backbone.View.extend({
                 .addClass("donemessagelarge")
                 .append(
                     $("<p/>").html(
-                        `Successfully invoked workflow <b>${Utils.sanitize(
-                            this.model.get("name")
-                        )}</b>${response.length > 1 ? ` <b>${response.length} times</b>` : ""}.`
+                        `Successfully invoked workflow <b>${Utils.sanitize(this.model.get("name"))}</b>${
+                            response.length > 1 ? ` <b>${response.length} times</b>` : ""
+                        }.`
                     )
                 )
                 .append(

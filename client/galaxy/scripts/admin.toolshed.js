@@ -32,11 +32,11 @@ var AdminToolshedRouter = Backbone.Router.extend({
     },
 
     /**
-        * If more than one route has been hit the user did not land on current
-        * page directly so we can go back safely. Otherwise go to the home page.
-        * Use replaceState if available so the navigation doesn't create an
-        * extra history entry
-        */
+     * If more than one route has been hit the user did not land on current
+     * page directly so we can go back safely. Otherwise go to the home page.
+     * Use replaceState if available so the navigation doesn't create an
+     * extra history entry
+     */
     back: function() {
         if (this.routesHit > 1) {
             window.history.back();

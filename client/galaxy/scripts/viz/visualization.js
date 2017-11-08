@@ -739,9 +739,9 @@ var GenomeRegion = Backbone.Model.extend(
         },
 
         /**
-     * Returns true if this region is the same as a given region.
-     * It does not test the genome right now.
-     */
+         * Returns true if this region is the same as a given region.
+         * It does not test the genome right now.
+         */
         same: function(region) {
             return (
                 this.attributes.chrom === region.get("chrom") &&
@@ -751,8 +751,8 @@ var GenomeRegion = Backbone.Model.extend(
         },
 
         /**
-     * If from_str specified, use it to initialize attributes.
-     */
+         * If from_str specified, use it to initialize attributes.
+         */
         initialize: function(options) {
             if (options.from_str) {
                 var pieces = options.from_str.split(":");
@@ -804,9 +804,9 @@ var GenomeRegion = Backbone.Model.extend(
         },
 
         /**
-     * Compute the type of overlap between this region and another region. The overlap is computed relative to the given/second region;
-     * hence, OVERLAP_START indicates that the first region overlaps the start (but not the end) of the second region.
-     */
+         * Compute the type of overlap between this region and another region. The overlap is computed relative to the given/second region;
+         * hence, OVERLAP_START indicates that the first region overlaps the start (but not the end) of the second region.
+         */
         compute_overlap: function(a_region) {
             var first_chrom = this.get("chrom");
             var second_chrom = a_region.get("chrom");
@@ -851,8 +851,8 @@ var GenomeRegion = Backbone.Model.extend(
         },
 
         /**
-     * Trim a region to match genome's constraints.
-     */
+         * Trim a region to match genome's constraints.
+         */
         trim: function(genome) {
             // Assume that all chromosome/contigs start at 0.
             if (this.attributes.start < 0) {
@@ -871,15 +871,15 @@ var GenomeRegion = Backbone.Model.extend(
         },
 
         /**
-     * Returns true if this region contains a given region.
-     */
+         * Returns true if this region contains a given region.
+         */
         contains: function(a_region) {
             return this.compute_overlap(a_region) === GenomeRegion.overlap_results.CONTAINS;
         },
 
         /**
-     * Returns true if regions overlap.
-     */
+         * Returns true if regions overlap.
+         */
         overlaps: function(a_region) {
             return (
                 _.intersection(
@@ -1071,8 +1071,8 @@ var GenomeVisualization = Visualization.extend(CustomToJSON).extend(
         },
 
         /**
-     * Add a track or array of tracks to the visualization.
-     */
+         * Add a track or array of tracks to the visualization.
+         */
         add_tracks: function(tracks) {
             this.get("drawables").add(tracks);
         }

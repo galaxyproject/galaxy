@@ -3,7 +3,7 @@ import Utils from "utils/utils";
 /**
  * A plugin for initializing select2 input items.
  * Make sure the select2 library itself is loaded beforehand.
- * Also the element to which select2 will be appended has to 
+ * Also the element to which select2 will be appended has to
  * be created before select2 initialization (and passed as option).
  */
 var View = Backbone.View.extend({

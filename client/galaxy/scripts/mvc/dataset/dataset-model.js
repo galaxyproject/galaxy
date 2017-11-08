@@ -83,8 +83,8 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** set up any event listeners
-     *  event: state:ready  fired when this DA moves into/is already in a ready state
-     */
+             *  event: state:ready  fired when this DA moves into/is already in a ready state
+             */
             _setUpListeners: function() {
                 // if the state has changed and the new state is a ready state, fire an event
                 this.on("change:state", function(currModel, newState) {
@@ -116,8 +116,8 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** Is this dataset in a 'ready' state; where 'Ready' states are states where no
-     *      processing (for the ds) is left to do on the server.
-     */
+             *      processing (for the ds) is left to do on the server.
+             */
             inReadyState: function() {
                 var ready = _.contains(STATES.READY_STATES, this.get("state"));
                 return this.isDeletedOrPurged() || ready;
@@ -221,9 +221,9 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             searchAttributes: ["name", "file_ext", "genome_build", "misc_blurb", "misc_info", "annotation", "tags"],
 
             /** our attr keys don't often match the labels we display to the user - so, when using
-     *      attribute specifiers ('name="bler"') in a term, allow passing in aliases for the
-     *      following attr keys.
-     */
+             *      attribute specifiers ('name="bler"') in a term, allow passing in aliases for the
+             *      following attr keys.
+             */
             searchAliases: {
                 title: "name",
                 format: "file_ext",
@@ -266,15 +266,15 @@ var DatasetAssociationCollection = Backbone.Collection.extend(BASE_MVC.LoggableM
 
         // ........................................................................ common queries
         /** Get the ids of every item in this collection
-     *  @returns array of encoded ids
-     */
+         *  @returns array of encoded ids
+         */
         ids: function() {
             return this.map(item => item.get("id"));
         },
 
         /** Get contents that are not ready
-     *  @returns array of content models
-     */
+         *  @returns array of content models
+         */
         notReady: function() {
             return this.filter(content => !content.inReadyState());
         },

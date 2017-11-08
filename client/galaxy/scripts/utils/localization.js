@@ -20,10 +20,10 @@ define(["i18n!nls/locale"], function(localeStrings) {
 
     // -----------------------------------------------------------------------------
     /** Attempt to get a localized string for strToLocalize. If not found, return
- *      the original strToLocalize.
- * @param {String} strToLocalize the string to localize
- * @returns either the localized string if found or strToLocalize if not found
- */
+     *      the original strToLocalize.
+     * @param {String} strToLocalize the string to localize
+     * @returns either the localized string if found or strToLocalize if not found
+     */
     var localize = function(strToLocalize) {
         // console.debug( 'amdi18n.localize:', strToLocalize, '->', localeStrings[ strToLocalize ] || strToLocalize );
 

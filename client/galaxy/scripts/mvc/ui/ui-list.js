@@ -154,7 +154,11 @@ var View = Backbone.View.extend({
 
     /** Row Template */
     _templateRow: function(options) {
-        return `<div id="${options.id}" class="ui-list-id"><span class="ui-list-delete fa fa-trash"/><span class="ui-list-name">${options.name}</span></div>`;
+        return `<div id="${
+            options.id
+        }" class="ui-list-id"><span class="ui-list-delete fa fa-trash"/><span class="ui-list-name">${
+            options.name
+        }</span></div>`;
     }
 });
 
