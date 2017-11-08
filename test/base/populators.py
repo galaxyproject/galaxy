@@ -298,6 +298,14 @@ class BaseDatasetPopulator(object):
         self.wait_for_history(history_id, assert_ok=True)
         return self.run_tool("collection_creates_list", inputs, history_id)
 
+    def run_exit_code_from_file(self, history_id, hdca_id):
+        exit_code_inputs = {
+            "input": {'batch': True, 'values': [{"src": "hdca", "id": hdca_id}]},
+        }
+        response = self.run_tool("exit_code_from_file", exit_code_inputs, history_id, assert_ok=False).json()
+        self.wait_for_history(history_id, assert_ok=False)
+        return response
+
     def __history_content_id(self, history_id, wait=True, **kwds):
         if wait:
             assert_ok = kwds.get("assert_ok", True)
