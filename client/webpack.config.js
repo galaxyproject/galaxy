@@ -50,7 +50,7 @@ module.exports = {
         filename: "[name].bundled.js"
     },
     resolve: {
-        modules: [scriptsBase],
+        modules: [scriptsBase, "node_modules"],
         alias: {
             //TODO: correct our imports and remove these rules
             // Backbone looks for these in the same root directory

@@ -1,6 +1,9 @@
 import * as bibtexParse from "libs/bibtexParse";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import {convertLaTeX} from 'latex-to-unicode-converter';
+import {stringifyLaTeX} from 'latex-parser';
+
 
 /* global Backbone */
 
@@ -138,7 +141,7 @@ var CitationView = Backbone.View.extend({
         if (url) {
             ref += `[<a href="${url}" target="_blank">Link</a>]`;
         }
-        return ref;
+        return convertLaTeX({onError: (error, latex) => `\{${stringifyLaTeX(latex)}\}`}, ref);
     },
     _formatBookInfo: function(fields) {
         var info = "";

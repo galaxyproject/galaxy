@@ -3804,6 +3804,18 @@ latest-version@^2.0.0:
   dependencies:
     package-json "^2.0.0"
 
+latex-parser@^0.6.2:
+  version "0.6.2"
+  resolved "https://registry.yarnpkg.com/latex-parser/-/latex-parser-0.6.2.tgz#98546617a0985fbfe74f176b5485a6f1088ecf8e"
+  dependencies:
+    parsimmon "^1.6.2"
+
+latex-to-unicode-converter@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/latex-to-unicode-converter/-/latex-to-unicode-converter-0.5.0.tgz#6c0e9feab8474ab630b098d4f656263c6a2535ea"
+  dependencies:
+    latex-parser "^0.6.2"
+
 layout@~2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/layout/-/layout-2.2.0.tgz#31e44bfc18dd1019b3ffb208e402a4bbfe2e6af4"
@@ -4794,6 +4806,10 @@ parse-ms@^1.0.0:
 parse-passwd@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/parse-passwd/-/parse-passwd-1.0.0.tgz#6d5b934a456993b23d37f40a382d6f1666a8e5c6"
+
+parsimmon@^1.6.2:
+  version "1.6.2"
+  resolved "https://registry.yarnpkg.com/parsimmon/-/parsimmon-1.6.2.tgz#28fbe6b8caa38ab89f52b77f8c7743563c7d9aff"
 
 path-browserify@0.0.0:
   version "0.0.0"
