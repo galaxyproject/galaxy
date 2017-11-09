@@ -1,6 +1,5 @@
-function days_in_month(month, year) {
-    return new Date(year, month, 0).getDate();
-}
+// TODO: get rid of this.
+var d3 = window.d3;
 
 function date_by_subtracting_days(date, days) {
     return new Date(
@@ -32,27 +31,22 @@ function get_utc_time_hours() {
     return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), date.getUTCHours(), 0, 0);
 }
 
-// Refreshes the page for more up to date information
-function refresh() {
-    window.location.reload(true);
-}
-
 // This is commented out until we make Reports more responsive.
 // setTimeout(refresh, 60000); //1 minute = 60000 ms
 
-function create_chart(inp_data, name, time, title) {
+export function create_chart(inp_data, name, time, title) {
     // Initialize starting variables
     var data = inp_data;
 
     var hours_array = [];
     var now = get_utc_time_hours();
-    for (var i = 0; i < 24; i++) {
+    var i;
+    for (i = 0; i < 24; i++) {
         hours_array.push(date_by_subtracting_hours(now, i));
     }
 
     var days_array = [];
-    var now = get_utc_time_hours();
-    for (var i = 0; i < 30; i++) {
+    for (i = 0; i < 30; i++) {
         days_array.push(date_by_subtracting_days(now, i));
     }
 
@@ -297,7 +291,7 @@ function create_chart(inp_data, name, time, title) {
 
         // Append day numbers
         curr_day = "";
-        curr_day_text = "";
+        var curr_day_text = "";
         first = false;
         bar
             .append("text")
@@ -397,7 +391,7 @@ function create_chart(inp_data, name, time, title) {
 
         // Append month numbers
         curr_month = "";
-        curr_month_text = "";
+        var curr_month_text = "";
         first = false;
         bar
             .append("text")
@@ -457,7 +451,7 @@ function create_chart(inp_data, name, time, title) {
 
 //============================================================================================================
 
-function create_histogram(inp_data, name, title) {
+export function create_histogram(inp_data, name, title) {
     // Initialize initial variables
     // inp_data is an array of numbers that are the amount of minutes per run
     var data = inp_data;
