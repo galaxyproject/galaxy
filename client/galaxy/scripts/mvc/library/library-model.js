@@ -6,8 +6,8 @@ var Library = Backbone.Model.extend({
     urlRoot: `${Galaxy.root}api/libraries/`,
 
     /** based on show_deleted would this lib show in the list of lib's?
-       *  @param {Boolean} show_deleted are we including deleted libraries?
-       */
+     *  @param {Boolean} show_deleted are we including deleted libraries?
+     */
     isVisible: function(show_deleted) {
         var isVisible = true;
         if (!show_deleted && this.get("deleted")) {
@@ -42,9 +42,9 @@ var Libraries = Backbone.Collection.extend({
     },
 
     /** Get every 'shown' library in this collection based on deleted filter
-       *  @param {Boolean} show_deleted are we including deleted libraries?
-       *  @returns array of library models
-       */
+     *  @param {Boolean} show_deleted are we including deleted libraries?
+     *  @returns array of library models
+     */
     getVisible: function(show_deleted, filters) {
         filters = filters || [];
         var filteredLibraries = new Libraries(this.filter(item => item.isVisible(show_deleted)));
@@ -137,8 +137,8 @@ var GalaxyHistories = Backbone.Collection.extend({
 // ============================================================================
 // JSTREE MODEL
 /** Represents folder structure parsable by the jstree component.
-     *
-     */
+ *
+ */
 
 var Jstree = Backbone.Model.extend({
     urlRoot: `${Galaxy.root}api/remote_files`

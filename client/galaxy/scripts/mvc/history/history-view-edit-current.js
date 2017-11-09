@@ -421,7 +421,7 @@ var CurrentHistoryView = _super.extend(
         },
 
         /** Show the over quota message (which happens to be in the history panel).
-     */
+         */
         showQuotaMessage: function() {
             var $msg = this.$(".quota-message");
             if ($msg.is(":hidden")) {
@@ -430,7 +430,7 @@ var CurrentHistoryView = _super.extend(
         },
 
         /** Hide the over quota message (which happens to be in the history panel).
-     */
+         */
         hideQuotaMessage: function() {
             var $msg = this.$(".quota-message");
             if (!$msg.is(":hidden")) {

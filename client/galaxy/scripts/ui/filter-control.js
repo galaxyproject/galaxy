@@ -4,17 +4,17 @@ import jQuery from "jquery";
 var $ = jQuery;
 //==============================================================================
 /**
-	 *  Template function that produces a bootstrap dropdown to replace the
-	 *  vanilla HTML select input. Pass in an array of options and an initial selection:
-	 *  $( '.my-div' ).append( dropDownSelect( [ 'option1', 'option2' ], 'option2' );
-	 *
-	 *  When the user changes the selected option a 'change.dropdown-select' event will
-	 *  fire with both the jq event and the new selection text as arguments.
-	 *
-	 *  Get the currently selected choice using:
-	 *  var userChoice = $( '.my-div .dropdown-select .dropdown-select-selected' ).text();
-	 *
-	 */
+ *  Template function that produces a bootstrap dropdown to replace the
+ *  vanilla HTML select input. Pass in an array of options and an initial selection:
+ *  $( '.my-div' ).append( dropDownSelect( [ 'option1', 'option2' ], 'option2' );
+ *
+ *  When the user changes the selected option a 'change.dropdown-select' event will
+ *  fire with both the jq event and the new selection text as arguments.
+ *
+ *  Get the currently selected choice using:
+ *  var userChoice = $( '.my-div .dropdown-select .dropdown-select-selected' ).text();
+ *
+ */
 function dropDownSelect(options, selected) {
     // replacement for vanilla select element using bootstrap dropdowns instead
     selected = selected || (!_.isEmpty(options) ? options[0] : "");
@@ -62,31 +62,31 @@ function dropDownSelect(options, selected) {
 
 //==============================================================================
 /**
-     *  Creates a three part bootstrap button group (key, op, value) meant to
-     *  allow the user control of filters (e.g. { key: 'name', op: 'contains', value: 'my_history' })
-     *
-     *  Each field uses a dropDownSelect (from ui.js) to allow selection
-     *  (with the 'value' field appearing as an input when set to do so).
-     *
-     *  Any change or update in any of the fields will trigger a 'change.filter-control'
-     *  event which will be passed an object containing those fields (as the example above).
-     *
-     *  Pass in an array of possible filter objects to control what the user can select.
-     *  Each filter object should have:
-     *      key : generally the attribute name on which to filter something
-     *      ops : an array of 1 or more filter operations (e.g. [ 'is', '<', 'contains', '!=' ])
-     *      values (optional) : an array of possible values for the filter (e.g. [ 'true', 'false' ])
-     *  @example:
-     *  $( '.my-div' ).filterControl({
-     *      filters : [
-     *          { key: 'name',    ops: [ 'is exactly', 'contains' ] }
-     *          { key: 'deleted', ops: [ 'is' ], values: [ 'true', 'false' ] }
-     *      ]
-     *  });
-     *  // after initialization, you can prog. get the current value using:
-     *  $( '.my-div' ).filterControl( 'val' )
-     *
-     */
+ *  Creates a three part bootstrap button group (key, op, value) meant to
+ *  allow the user control of filters (e.g. { key: 'name', op: 'contains', value: 'my_history' })
+ *
+ *  Each field uses a dropDownSelect (from ui.js) to allow selection
+ *  (with the 'value' field appearing as an input when set to do so).
+ *
+ *  Any change or update in any of the fields will trigger a 'change.filter-control'
+ *  event which will be passed an object containing those fields (as the example above).
+ *
+ *  Pass in an array of possible filter objects to control what the user can select.
+ *  Each filter object should have:
+ *      key : generally the attribute name on which to filter something
+ *      ops : an array of 1 or more filter operations (e.g. [ 'is', '<', 'contains', '!=' ])
+ *      values (optional) : an array of possible values for the filter (e.g. [ 'true', 'false' ])
+ *  @example:
+ *  $( '.my-div' ).filterControl({
+ *      filters : [
+ *          { key: 'name',    ops: [ 'is exactly', 'contains' ] }
+ *          { key: 'deleted', ops: [ 'is' ], values: [ 'true', 'false' ] }
+ *      ]
+ *  });
+ *  // after initialization, you can prog. get the current value using:
+ *  $( '.my-div' ).filterControl( 'val' )
+ *
+ */
 function FilterControl(element, options) {
     return this.init(element, options);
 }
@@ -141,12 +141,12 @@ FilterControl.prototype._renderValueInput = function __renderValueInput() {
     var filterControl = this;
     // if a values attribute is prov. on the filter - make this a dropdown; otherwise, use an input
     if (this.currFilter.values) {
-        this.$valueSelect = dropDownSelect(
-            this.currFilter.values,
-            this.currFilter.values[0]
-        ).on("change.dropdown-select", (event, selection) => {
-            filterControl._triggerChange();
-        });
+        this.$valueSelect = dropDownSelect(this.currFilter.values, this.currFilter.values[0]).on(
+            "change.dropdown-select",
+            (event, selection) => {
+                filterControl._triggerChange();
+            }
+        );
     } else {
         //TODO: allow setting a value type (mainly for which html5 input to use: range, number, etc.)
         this.$valueSelect = $("<input/>")

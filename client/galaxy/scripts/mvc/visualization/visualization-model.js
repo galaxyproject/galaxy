@@ -22,8 +22,8 @@ var Visualization = Backbone.Model.extend(
         },
 
         /** Set up the model, determine if accessible, bind listeners
-     *  @see Backbone.Model#initialize
-     */
+         *  @see Backbone.Model#initialize
+         */
         initialize: function(data) {
             //this.log( this + '.initialize', data, this.attributes );
 
@@ -36,7 +36,7 @@ var Visualization = Backbone.Model.extend(
         },
 
         /** set up any event listeners
-     */
+         */
         _setUpListeners: function() {
             //this.on( 'change', function(){
             //    console.info( 'change:', arguments );
@@ -89,8 +89,8 @@ var VisualizationCollection = Backbone.Collection.extend(
         },
 
         /** Set up.
-     *  @see Backbone.Collection#initialize
-     */
+         *  @see Backbone.Collection#initialize
+         */
         initialize: function(models, options) {
             options = options || {};
             //this._setUpListeners();

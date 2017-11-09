@@ -75,8 +75,8 @@ var DatasetListItemView = _super.extend(
 
         // ......................................................................... expandable
         /** In this override, only get details if in the ready state, get rerunnable if in other states.
-     *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
-     */
+         *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
+         */
         _fetchModelDetails: function() {
             var view = this;
             if (view.model.inReadyState() && !view.model.hasDetails()) {
@@ -87,9 +87,9 @@ var DatasetListItemView = _super.extend(
 
         // ......................................................................... removal
         /** Remove this view's html from the DOM and remove all event listeners.
-     *  @param {Number or String} speed jq effect speed
-     *  @param {Function} callback      an optional function called when removal is done (scoped to this view)
-     */
+         *  @param {Number or String} speed jq effect speed
+         *  @param {Function} callback      an optional function called when removal is done (scoped to this view)
+         */
         remove: function(speed, callback) {
             var view = this;
             speed = speed || this.fxSpeed;
@@ -175,8 +175,8 @@ var DatasetListItemView = _super.extend(
 
         // ......................................................................... rendering details
         /** Render the enclosing div of the hda body and, if expanded, the html in the body
-     *  @returns {jQuery} rendered DOM
-     */
+         *  @returns {jQuery} rendered DOM
+         */
         _renderDetails: function() {
             //TODO: generalize to be allow different details for each state
 
@@ -248,8 +248,8 @@ var DatasetListItemView = _super.extend(
         },
 
         /** Render icon-button to show the input and output (stdout/err) for the job that created this.
-     *  @returns {jQuery} rendered DOM
-     */
+         *  @returns {jQuery} rendered DOM
+         */
         _renderShowParamsButton: function() {
             // gen. safe to show in all cases
             return faIconButton({
@@ -272,8 +272,8 @@ var DatasetListItemView = _super.extend(
         },
 
         /** Render icon-button/popupmenu to download the data (and/or the associated meta files (bai, etc.)) for this.
-     *  @returns {jQuery} rendered DOM
-     */
+         *  @returns {jQuery} rendered DOM
+         */
         _renderDownloadButton: function() {
             // don't show anything if the data's been purged
             if (this.model.get("purged") || !this.model.hasData()) {

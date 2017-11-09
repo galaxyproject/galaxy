@@ -9,7 +9,9 @@ export default Backbone.View.extend({
             class_remove: "upload-icon-button fa fa-check-square-o",
             class_partial: "upload-icon-button fa fa-minus-square-o",
             help_enabled: true,
-            help_text: `This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>${options.ftp_upload_site}</strong> using your Galaxy credentials.`,
+            help_text: `This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>${
+                options.ftp_upload_site
+            }</strong> using your Galaxy credentials.`,
             collection: null,
             onchange: function() {},
             onadd: function() {},
@@ -169,9 +171,9 @@ export default Backbone.View.extend({
     _templateRow: function(options) {
         return `<tr class="upload-ftp-row"><td class="_has_collection" style="display: none;"><div class="icon"/></td><td class="ftp-name">${_.escape(
             options.path
-        )}</td><td class="ftp-size">${Utils.bytesToString(
-            options.size
-        )}</td><td class="ftp-time">${options.ctime}</td></tr>`;
+        )}</td><td class="ftp-size">${Utils.bytesToString(options.size)}</td><td class="ftp-time">${
+            options.ctime
+        }</td></tr>`;
     },
 
     /** Template of main view */

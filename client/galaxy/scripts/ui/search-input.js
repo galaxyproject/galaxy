@@ -7,13 +7,13 @@ var _l = window._l || (s => s);
 //TODO: consolidate with tool menu functionality, use there
 
 /** searchInput: (jQuery plugin)
-     *      Creates a search input, a clear button, and loading indicator
-     *      within the selected node.
-     *
-     *      When the user either presses return or enters some minimal number
-     *      of characters, a callback is called. Pressing ESC when the input
-     *      is focused will clear the input and call a separate callback.
-     */
+ *      Creates a search input, a clear button, and loading indicator
+ *      within the selected node.
+ *
+ *      When the user either presses return or enters some minimal number
+ *      of characters, a callback is called. Pressing ESC when the input
+ *      is focused will clear the input and call a separate callback.
+ */
 function searchInput(parentNode, options) {
     var KEYCODE_ESC = 27;
     var KEYCODE_RETURN = 13;

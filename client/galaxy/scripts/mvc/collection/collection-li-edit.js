@@ -61,8 +61,8 @@ var DatasetDCEListItemEdit = DATASET_LI_EDIT.DatasetListItemEdit.extend(
         // NOTE: this does not inherit from DatasetDCEListItemView - so we duplicate this here
         //TODO: fix
         /** In this override, only get details if in the ready state.
-     *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
-     */
+         *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
+         */
         _fetchModelDetails: function() {
             var view = this;
             if (view.model.inReadyState() && !view.model.hasDetails()) {

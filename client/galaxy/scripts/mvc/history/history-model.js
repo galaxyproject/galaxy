@@ -47,9 +47,9 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             // ........................................................................ set up/tear down
             /** Set up the model
-     *  @param {Object} historyJSON model data for this History
-     *  @param {Object} options     any extra settings including logger
-     */
+             *  @param {Object} historyJSON model data for this History
+             *  @param {Object} options     any extra settings including logger
+             */
             initialize: function(historyJSON, options) {
                 options = options || {};
                 this.logger = options.logger || null;
@@ -70,8 +70,8 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** set up any event listeners for this history including those to the contained HDAs
-     *  events: error:contents  if an error occurred with the contents collection
-     */
+             *  events: error:contents  if an error occurred with the contents collection
+             */
             _setUpListeners: function() {
                 // if the model's id changes ('current' or null -> an actual id), update the contents history_id
                 return this.on({
@@ -132,8 +132,8 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             // ........................................................................ common queries
             /** T/F is this history owned by the current user (Galaxy.user)
-     *      Note: that this will return false for an anon user even if the history is theirs.
-     */
+             *      Note: that this will return false for an anon user even if the history is theirs.
+             */
             ownedByCurrUser: function() {
                 // no currUser
                 if (!Galaxy || !Galaxy.user) {
@@ -302,11 +302,11 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** Make a copy of this history on the server
-     *  @param {Boolean} current    if true, set the copy as the new current history (default: true)
-     *  @param {String} name        name of new history (default: none - server sets to: Copy of <current name>)
-     *  @fires copied               passed this history and the response JSON from the copy
-     *  @returns {xhr}
-     */
+             *  @param {Boolean} current    if true, set the copy as the new current history (default: true)
+             *  @param {String} name        name of new history (default: none - server sets to: Copy of <current name>)
+             *  @fires copied               passed this history and the response JSON from the copy
+             *  @returns {xhr}
+             */
             copy: function(current, name, allDatasets) {
                 current = current !== undefined ? current : true;
                 if (!this.id) {
