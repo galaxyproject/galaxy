@@ -62,10 +62,11 @@ export function create_chart(inp_data, name, time, title) {
 
     var chart_zoom = 1.75;
     var height = 150;
-    if (d3.max(data) != 0) {
-        var zoom = height / d3.max(data);
+    var zoom;
+    if (d3.max(data) !== 0) {
+        zoom = height / d3.max(data);
     } else {
-        var zoom = 1.0;
+        zoom = 1.0;
     }
     var chart_height = height + margin.top + margin.bottom;
 
@@ -111,7 +112,7 @@ export function create_chart(inp_data, name, time, title) {
         .append("g")
         .attr("transform", (d, i) => {
             // Place the bar in the correct place
-            var curr_margin = +margin.left;
+            var curr_margin = margin.left;
             curr_margin += +(i * barWidth);
             return `translate(${curr_margin},${margin.top})`;
         })
@@ -130,7 +131,7 @@ export function create_chart(inp_data, name, time, title) {
                 .select(currentEvent.path[1])
                 .select(".tool_tip")
                 .select("text")
-                .attr("transform", `translate( ${margin.left - 5}, ${height - d * zoom + +margin.top + 10} )`)
+                .attr("transform", `translate( ${margin.left - 5}, ${height - d * zoom + margin.top + 10} )`)
                 .attr("visibility", "visible")
                 .text(d);
 
@@ -140,7 +141,7 @@ export function create_chart(inp_data, name, time, title) {
                 .attr("width", `${wdth}px`)
                 .attr("height", "15px")
                 .select("rect")
-                .attr("transform", `translate( ${+margin.left - wdth}, ${height - d * zoom + +margin.top} )`)
+                .attr("transform", `translate( ${margin.left - wdth}, ${height - d * zoom + margin.top} )`)
                 .attr("width", `${wdth}px`)
                 .attr("height", "15px")
                 .attr("fill", "#ebd9b2");
@@ -169,7 +170,7 @@ export function create_chart(inp_data, name, time, title) {
         .append("text")
         .attr("class", "title")
         .attr("text-anchor", "end")
-        .attr("transform", e => `translate( ${width},15 )`)
+        .attr("transform", () => `translate( ${width},15 )`)
         .text(title);
 
     // Add an x axis line to the chart
@@ -178,9 +179,9 @@ export function create_chart(inp_data, name, time, title) {
         .attr("class", "axis")
         .append("path")
         .attr("class", "x")
-        .attr("d", d => {
+        .attr("d", () => {
             var m_x = margin.left;
-            var m_y = +margin.top + height;
+            var m_y = margin.top + height;
             var l_x = m_x + width;
             var l_y = m_y;
 
@@ -212,10 +213,10 @@ export function create_chart(inp_data, name, time, title) {
         .append("g")
         .append("text")
         .attr("class", "ax_title")
-        .attr("transform", e => {
+        .attr("transform", () => {
             var axis = d3.select(`#y_${name}`).node();
-            var left_pad = +margin.left - axis.getBoundingClientRect().width - 5;
-            var top_pad = +margin.top + axis.getBoundingClientRect().height / 2 - 30;
+            var left_pad = margin.left - axis.getBoundingClientRect().width - 5;
+            var top_pad = margin.top + axis.getBoundingClientRect().height / 2 - 30;
             var trans = `translate(${left_pad},${top_pad})rotate(-90)`;
 
             return trans;
@@ -229,6 +230,8 @@ export function create_chart(inp_data, name, time, title) {
         .attr("height", d => d * zoom)
         .attr("width", barWidth - 1);
 
+    var first = false;
+
     // Append x axis
     if (time == "hours") {
         // Append hour lines
@@ -241,7 +244,7 @@ export function create_chart(inp_data, name, time, title) {
             .attr("stroke", "black")
             .attr("stroke-width", 1)
             .attr("pointer-events", "none")
-            .attr("transform", (d, i) => `translate( ${barWidth / 2}, ${height})`);
+            .attr("transform", () => `translate( ${barWidth / 2}, ${height})`);
 
         // Append hour numbers
         bar
@@ -262,7 +265,7 @@ export function create_chart(inp_data, name, time, title) {
 
         // Append day lines
         var curr_day = "";
-        var first = false;
+        first = false;
         bar
             .append("line")
             .attr("x1", 0)
@@ -287,7 +290,7 @@ export function create_chart(inp_data, name, time, title) {
             .attr("stroke", "black")
             .attr("stroke-width", 1)
             .attr("pointer-events", "none")
-            .attr("transform", (d, i) => `translate( 0, ${height})`);
+            .attr("transform", () => `translate( 0, ${height})`);
 
         // Append day numbers
         curr_day = "";
@@ -341,7 +344,7 @@ export function create_chart(inp_data, name, time, title) {
             .attr("stroke", "black")
             .attr("stroke-width", 1)
             .attr("pointer-events", "none")
-            .attr("transform", (d, i) => `translate( ${barWidth / 2}, ${height})`);
+            .attr("transform", () => `translate( ${barWidth / 2}, ${height})`);
 
         // Append day numbers
         bar
@@ -362,7 +365,7 @@ export function create_chart(inp_data, name, time, title) {
 
         // Append month lines
         var curr_month = "";
-        var first = false;
+        first = false;
         bar
             .append("line")
             .attr("x1", 0)
@@ -387,7 +390,7 @@ export function create_chart(inp_data, name, time, title) {
             .attr("stroke", "black")
             .attr("stroke-width", 1)
             .attr("pointer-events", "none")
-            .attr("transform", (d, i) => `translate( 0, ${height})`);
+            .attr("transform", () => `translate( 0, ${height})`);
 
         // Append month numbers
         curr_month = "";
@@ -473,7 +476,7 @@ export function create_histogram(inp_data, name, title) {
         .range([0, width]);
 
     // Generate a histogram using twenty uniformly-spaced bins.
-    var data = d3.layout.histogram().bins(x.ticks(20))(data);
+    data = d3.layout.histogram().bins(x.ticks(20))(data);
 
     // Create an array of the sizes of the bars
     var lengths = [];
@@ -481,11 +484,12 @@ export function create_histogram(inp_data, name, title) {
         lengths.push(data[i].length);
     }
 
+    var zoom;
     // Find the amount needed to magnify the bars
-    if (d3.max(data) != 0) {
-        var zoom = height / d3.max(lengths);
+    if (d3.max(data) !== 0) {
+        zoom = height / d3.max(lengths);
     } else {
-        var zoom = 1.0;
+        zoom = 1.0;
     }
 
     // Create y axis metadata
@@ -546,7 +550,7 @@ export function create_histogram(inp_data, name, title) {
         .append("g")
         .append("text")
         .attr("class", "title")
-        .attr("transform", e => `translate( ${width},15 )`)
+        .attr("transform", () => `translate( ${width},15 )`)
         .text(title);
 
     // Put bars on chart
@@ -556,7 +560,7 @@ export function create_histogram(inp_data, name, title) {
         .enter()
         .append("g")
         .attr("class", "bar")
-        .attr("transform", d => `translate(${+x(d.x) + +margin.left},${+y(d.y) + +margin.top})`)
+        .attr("transform", d => `translate(${+x(d.x) + margin.left},${+y(d.y) + margin.top})`)
         .on("mouseenter", d => {
             // Show tool tip
             var i = 0;
@@ -572,7 +576,7 @@ export function create_histogram(inp_data, name, title) {
                 .select(currentEvent.path[1])
                 .select(".tool_tip")
                 .select("text")
-                .attr("transform", `translate( ${margin.left - 5}, ${height - d.length * zoom + +margin.top + 10} )`)
+                .attr("transform", `translate( ${margin.left - 5}, ${height - d.length * zoom + margin.top + 10} )`)
                 .attr("visibility", "visible")
                 .text(d.length);
 
@@ -582,12 +586,12 @@ export function create_histogram(inp_data, name, title) {
                 .attr("width", `${wdth}px`)
                 .attr("height", "15px")
                 .select("rect")
-                .attr("transform", `translate( ${+margin.left - wdth}, ${height - d.length * zoom + +margin.top} )`)
+                .attr("transform", `translate( ${margin.left - wdth}, ${height - d.length * zoom + margin.top} )`)
                 .attr("width", `${wdth}px`)
                 .attr("height", "15px")
                 .attr("fill", "#ebd9b2");
         })
-        .on("mouseleave", d => {
+        .on("mouseleave", () => {
             // Remove tool tip
             d3
                 .select(currentEvent.path[1])
@@ -606,7 +610,7 @@ export function create_histogram(inp_data, name, title) {
 
     // Create bar width
     var bar_x;
-    if (data[0] == undefined) {
+    if (data[0] === undefined) {
         bar_x = 1;
     } else {
         bar_x = x(data[0].dx);
@@ -631,7 +635,7 @@ export function create_histogram(inp_data, name, title) {
         .append("g")
         .attr("class", "x axis")
         .attr("id", `x_${name}`)
-        .attr("transform", `translate( ${margin.left},${+height + +margin.top})`)
+        .attr("transform", `translate( ${margin.left},${+height + margin.top})`)
         .call(xAxis);
 
     // Add a title to the x axis
@@ -639,10 +643,10 @@ export function create_histogram(inp_data, name, title) {
         .append("g")
         .append("text")
         .attr("class", "ax_title")
-        .attr("transform", e => {
+        .attr("transform", () => {
             var axis = d3.select(`#x_${name}`).node();
-            var left_pad = +margin.left + axis.getBoundingClientRect().width / 2 + 30;
-            var top_pad = +margin.top + height + axis.getBoundingClientRect().height + 10;
+            var left_pad = margin.left + axis.getBoundingClientRect().width / 2 + 30;
+            var top_pad = margin.top + height + axis.getBoundingClientRect().height + 10;
             var trans = `translate(${left_pad},${top_pad})`;
 
             return trans;
@@ -668,10 +672,10 @@ export function create_histogram(inp_data, name, title) {
         .append("g")
         .append("text")
         .attr("class", "ax_title")
-        .attr("transform", e => {
+        .attr("transform", () => {
             var axis = d3.select(`#y_${name}`).node();
-            var left_pad = +margin.left - axis.getBoundingClientRect().width - 5;
-            var top_pad = +margin.top + axis.getBoundingClientRect().height / 2 - 30;
+            var left_pad = margin.left - axis.getBoundingClientRect().width - 5;
+            var top_pad = margin.top + axis.getBoundingClientRect().height / 2 - 30;
             var trans = `translate(${left_pad},${top_pad})rotate(-90)`;
 
             return trans;
