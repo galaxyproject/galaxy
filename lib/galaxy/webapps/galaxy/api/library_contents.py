@@ -143,7 +143,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             :func:`galaxy.model.LibraryDataset.to_dict` and
             :attr:`galaxy.model.LibraryFolder.dict_element_visible_keys`
         """
-        class_name, content_id = self.__decode_library_content_id(id)
+        class_name, content_id = self._decode_library_content_id(id)
         if class_name == 'LibraryFolder':
             content = self.get_library_folder(trans, content_id, check_ownership=False, check_accessible=True)
             rval = content.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
@@ -223,7 +223,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return "Missing required 'folder_id' parameter."
         else:
             folder_id = payload.pop('folder_id')
-            class_name, folder_id = self.__decode_library_content_id(folder_id)
+            class_name, folder_id = self._decode_library_content_id(folder_id)
         try:
             # security is checked in the downstream controller
             parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
@@ -458,7 +458,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             trans.sa_session.add(assoc)
             trans.sa_session.flush()
 
-    def __decode_library_content_id(self, content_id):
+    def _decode_library_content_id(self, content_id):
         if len(content_id) % 16 == 0:
             return 'LibraryDataset', content_id
         elif content_id.startswith('F'):
