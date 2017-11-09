@@ -35,6 +35,7 @@ class JsonPlugin(ErrorPlugin):
                 'info' : job.info,
                 'id' : job.id,
                 'command_line' : job.command_line,
+                'destination_id': job.destination_id,
                 'stderr' : job.stderr,
                 'traceback': job.traceback,
                 'exit_code': job.exit_code,

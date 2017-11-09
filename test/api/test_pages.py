@@ -1,6 +1,6 @@
 from requests import delete
 
-from base import api
+from base import api  # noqa: I100
 from galaxy.exceptions import error_codes
 
 

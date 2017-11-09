@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 import tempfile
 import xml.etree.ElementTree
@@ -118,6 +119,9 @@ def indent(elem, level=0):
 def parse_xml(file_name):
     """Returns a parsed xml tree with comments intact."""
     error_message = ''
+    if not os.path.exists(file_name):
+        return None, "File does not exist %s" % str(file_name)
+
     fobj = open(file_name, 'r')
     if using_python_27:
         try:

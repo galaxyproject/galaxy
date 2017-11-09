@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml"/>
+  <tool file="test_data_source.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
   <tool file="inheritance_simple.xml" />
@@ -24,6 +25,7 @@
   <tool file="tool_provided_metadata_7.xml" />
   <tool file="tool_provided_metadata_8.xml" />
   <tool file="tool_provided_metadata_9.xml" />
+  <tool file="empty_datasets.xml" />
   <tool file="inputs_as_json.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />

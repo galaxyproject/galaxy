@@ -1,0 +1,14 @@
+<tool id="CONVERTER_biom1_to_biom2" name="Convert Biom1 to Biom2" version="2.1.5">
+    <requirements>
+        <requirement type="package" version="2.1.5">biom-format</requirement>
+    </requirements>
+    <command>biom convert -i '$input' -o '$output' --to-hdf5 </command>
+    <inputs>
+        <param name="input" type="data" format="biom1" label="Biom1 file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="biom2"/>
+    </outputs>
+    <help>
+    </help>
+</tool>

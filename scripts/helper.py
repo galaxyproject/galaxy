@@ -4,6 +4,8 @@ A command line helper for common operations performed by Galaxy maintainers.
 Encodes and decodes IDs, returns Dataset IDs if provided an HDA or LDDA id,
 returns the disk path of a dataset.
 """
+from __future__ import print_function
+
 import os
 import sys
 from ConfigParser import ConfigParser
@@ -26,7 +28,7 @@ parser.add_option('--ldda', dest='ldda_id', help='Display LibraryDatasetDatasetA
 
 try:
     assert options.encode_id or options.decode_id or options.hda_id or options.ldda_id
-except:
+except Exception:
     parser.print_help()
     sys.exit(1)
 
@@ -41,23 +43,23 @@ helper = security.SecurityHelper(id_secret=config.get('app:main', 'id_secret'))
 model = mapping.init(config.get('app:main', 'file_path'), config.get('app:main', 'database_connection'), create_tables=False)
 
 if options.encode_id:
-    print 'Encoded "%s": %s' % (options.encode_id, helper.encode_id(options.encode_id))
+    print('Encoded "%s": %s' % (options.encode_id, helper.encode_id(options.encode_id)))
 
 if options.decode_id:
-    print 'Decoded "%s": %s' % (options.decode_id, helper.decode_id(options.decode_id))
+    print('Decoded "%s": %s' % (options.decode_id, helper.decode_id(options.decode_id)))
 
 if options.hda_id:
     try:
         hda_id = int(options.hda_id)
-    except:
+    except Exception:
         hda_id = int(helper.decode_id(options.hda_id))
     hda = model.context.current.query(model.HistoryDatasetAssociation).get(hda_id)
-    print 'HDA "%s" is Dataset "%s" at: %s' % (hda.id, hda.dataset.id, hda.file_name)
+    print('HDA "%s" is Dataset "%s" at: %s' % (hda.id, hda.dataset.id, hda.file_name))
 
 if options.ldda_id:
     try:
         ldda_id = int(options.ldda_id)
-    except:
+    except Exception:
         ldda_id = int(helper.decode_id(options.ldda_id))
     ldda = model.context.current.query(model.HistoryDatasetAssociation).get(ldda_id)
-    print 'LDDA "%s" is Dataset "%s" at: %s' % (ldda.id, ldda.dataset.id, ldda.file_name)
+    print('LDDA "%s" is Dataset "%s" at: %s' % (ldda.id, ldda.dataset.id, ldda.file_name))

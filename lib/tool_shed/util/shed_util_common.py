@@ -472,7 +472,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
         ctx = repo.changectx(tip_changeset)
         try:
             username = ctx.user().split()[0]
-        except:
+        except Exception:
             username = ctx.user()
         # We'll use 2 template bodies because we only want to send content
         # alerts to tool shed admin users.

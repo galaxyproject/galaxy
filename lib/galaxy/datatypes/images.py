@@ -225,7 +225,7 @@ class Gmaj(data.Data):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "peek unavailable"
 
     def get_mime(self):
@@ -285,5 +285,5 @@ class Laj(data.Text):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "peek unavailable"

@@ -2,29 +2,22 @@
 Visualization plugins: instantiate/deserialize data and models
 from a query string and render a webpage based on those data.
 """
-
-import os
 import copy
+import logging
+import os
 
-import mako
+import mako.lookup
 
 from galaxy.managers import api_keys
-from galaxy.web.base import pluginframework
-from galaxy.web.base import interactive_environments
+from galaxy.visualization.plugins import (
+    interactive_environments,
+    resource_parser,
+    utils
+)
 
-from galaxy.visualization.plugins import resource_parser
-from galaxy.visualization.plugins import utils
-
-import logging
 log = logging.getLogger(__name__)
 
 
-# =============================================================================
-# TODO:
-# move mixins to facade'd objects
-# allow config to override static/template settings
-# allow config detection in alternate places: galaxy-visualization.xml
-# =============================================================================
 class ServesStaticPluginMixin(object):
     """
     An object that serves static files from the server.
@@ -55,7 +48,6 @@ class ServesStaticPluginMixin(object):
         return '/'.join([self.base_url, 'static'])
 
 
-# =============================================================================
 class ServesTemplatesPluginMixin(object):
     """
     An object that renders (mako) template files from the server.
@@ -99,19 +91,20 @@ class ServesTemplatesPluginMixin(object):
             output_encoding=output_encoding)
 
 
-# =============================================================================
-class VisualizationPlugin(pluginframework.Plugin, ServesStaticPluginMixin, ServesTemplatesPluginMixin):
+class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
     """
     A plugin that instantiates resources, serves static files, and uses mako
     templates to render web pages.
     """
     # AKA: MakoVisualizationPlugin
     # config[ 'entry_point' ][ 'type' ] == 'mako'
-# TODO: concept/name collision between plugin config and visualization config
+    # TODO: concept/name collision between plugin config and visualization config
 
     def __init__(self, app, path, name, config, context=None, **kwargs):
-        super(VisualizationPlugin, self).__init__(app, path, name, config, context=None, **kwargs)
         context = context or {}
+        self.app = app
+        self.path = path
+        self.name = name
         self.config = config
 
         base_url = context.get('base_url', '')
@@ -241,7 +234,6 @@ class VisualizationPlugin(pluginframework.Plugin, ServesStaticPluginMixin, Serve
         return embedded
 
 
-# =============================================================================
 class InteractiveEnvironmentPlugin(VisualizationPlugin):
     """
     Serves web-based REPLs such as Jupyter and RStudio.
@@ -276,7 +268,7 @@ class InteractiveEnvironmentPlugin(VisualizationPlugin):
         if self.config.get('plugin_type', 'visualization') == "interactive_environment":
             try:
                 request = self.INTENV_REQUEST_FACTORY(trans, self)
-            except:
+            except Exception:
                 log.exception("IE plugin request handling failed")
                 return trans.fill_template('message.mako',
                     message='Loading the interactive environment failed, please contact the {admin_tag} for assistance'.format(
@@ -290,7 +282,6 @@ class InteractiveEnvironmentPlugin(VisualizationPlugin):
         return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
 
 
-# =============================================================================
 class ScriptVisualizationPlugin(VisualizationPlugin):
     """
     A visualization plugin that starts by loading a single (js) script.
@@ -321,7 +312,6 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
 
 
-# =============================================================================
 class StaticFileVisualizationPlugin(VisualizationPlugin):
     """
     A visualiztion plugin that starts by loading a static html file defined
@@ -341,12 +331,3 @@ class StaticFileVisualizationPlugin(VisualizationPlugin):
         static_file_path = os.path.join(self.path, static_file_path)
         with open(static_file_path, 'r') as outfile:
             return outfile.read()
-
-
-# # =============================================================================
-# class PyGeneratedVisualizationPlugin( VisualizationPlugin ):
-#     """
-#     Selectively import one module and call a specified fn within it to generate the
-#     HTML served.
-#     """
-#     pass

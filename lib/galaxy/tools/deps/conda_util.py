@@ -28,10 +28,8 @@ CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_VERSION = "4.2.13"
-# 2.1.5 is incompatible with 4.2 Conda because of
-# https://github.com/conda/conda-build/pull/1766
-CONDA_BUILD_VERSION = "2.1.4"
+CONDA_VERSION = "4.3.24"
+CONDA_BUILD_VERSION = "2.1.17"
 USE_LOCAL_DEFAULT = False
 
 
@@ -154,7 +152,7 @@ class CondaContext(installable.InstallableContext):
     def ensure_conda_build_installed_if_needed(self):
         if self.use_local and not self.conda_build_available:
             conda_targets = [CondaTarget("conda-build", version=CONDA_BUILD_VERSION)]
-            # Cannot use --use-local during installation fo conda-build.
+            # Cannot use --use-local during installation of conda-build.
             return install_conda_targets(conda_targets, conda_context=self, env_name=None, allow_local=False)
         else:
             return 0
@@ -532,7 +530,8 @@ def build_isolated_environment(
         # Adjust fix if they fix Conda - xref
         # - https://github.com/galaxyproject/galaxy/issues/3635
         # - https://github.com/conda/conda/issues/2035
-        offline_works = conda_context.conda_version < LooseVersion("4.3")
+        offline_works = (conda_context.conda_version < LooseVersion("4.3")) or \
+                        (conda_context.conda_version >= LooseVersion("4.3.18"))
         if offline_works:
             create_args.extend(["--offline"])
         else:

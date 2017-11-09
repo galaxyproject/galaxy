@@ -2,6 +2,8 @@
 """
 Fetch gops_join wherein the use specified minimum coverage is not 1.
 """
+from __future__ import print_function
+
 import ConfigParser
 import os
 import sys
@@ -12,13 +14,13 @@ import sqlalchemy as sa
 import galaxy.app
 import galaxy.model.mapping
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 class TestApplication(object):
     """Encapsulates the state of a Universe application"""
     def __init__(self, database_connection=None, file_path=None):
-        print >> sys.stderr, "python path is: " + ", ".join(sys.path)
+        print("python path is: " + ", ".join(sys.path), file=sys.stderr)
         if database_connection is None:
             raise Exception("CleanupDatasetsApplication requires a database_connection value")
         if file_path is None:
@@ -45,16 +47,16 @@ def main():
                                                 app.model.Job.table.c.state == 'ok',
                                                 app.model.Job.table.c.tool_id == 'gops_join_1',
                                                 sa.not_(app.model.Job.table.c.command_line.like('%-m 1 %')))).all():
-            print "# processing job id %s" % str(job.id)
+            print("# processing job id %s" % str(job.id))
             for jtoda in job.output_datasets:
-                print "# --> processing JobToOutputDatasetAssociation id %s" % str(jtoda.id)
+                print("# --> processing JobToOutputDatasetAssociation id %s" % str(jtoda.id))
                 hda = app.model.HistoryDatasetAssociation.get(jtoda.dataset_id)
-                print "# ----> processing HistoryDatasetAssociation id %s" % str(hda.id)
+                print("# ----> processing HistoryDatasetAssociation id %s" % str(hda.id))
                 if not hda.deleted:
                     # Probably don't need this check, since the job state should suffice, but...
                     if hda.dataset.state == 'ok':
                         history = app.model.History.get(hda.history_id)
-                        print "# ------> processing history id %s" % str(history.id)
+                        print("# ------> processing history id %s" % str(history.id))
                         if history.user_id:
                             cmd_line = str(job.command_line)
                             new_output = tempfile.NamedTemporaryFile('w')
@@ -62,12 +64,12 @@ def main():
                             job_output = cmd_line.split()[4]
                             try:
                                 os.system(new_cmd_line)
-                            except:
+                            except Exception:
                                 pass
                             diff_status = os.system('diff %s %s >> /dev/null' % (new_output.name, job_output))
                             if diff_status == 0:
                                 continue
-                            print "# --------> Outputs differ"
+                            print("# --------> Outputs differ")
                             user = app.model.User.get(history.user_id)
                             jobs[job.id] = {}
                             jobs[job.id]['hda_id'] = hda.id
@@ -78,20 +80,20 @@ def main():
                             jobs[job.id]['history_update_time'] = history.update_time
                             jobs[job.id]['user_email'] = user.email
     except Exception as e:
-        print "# caught exception: %s" % str(e)
+        print("# caught exception: %s" % e)
 
-    print "\n\n# Number of incorrect Jobs: %d\n\n" % (len(jobs))
-    print "#job_id\thda_id\thda_name\thda_info\thistory_id\thistory_name\thistory_update_time\tuser_email"
+    print("\n\n# Number of incorrect Jobs: %d\n\n" % (len(jobs)))
+    print("#job_id\thda_id\thda_name\thda_info\thistory_id\thistory_name\thistory_update_time\tuser_email")
     for jid in jobs:
-        print '%s\t%s\t"%s"\t"%s"\t%s\t"%s"\t"%s"\t%s' % \
+        print('%s\t%s\t"%s"\t"%s"\t%s\t"%s"\t"%s"\t%s' %
             (str(jid),
-              str(jobs[jid]['hda_id']),
-              jobs[jid]['hda_name'],
-              jobs[jid]['hda_info'],
-              str(jobs[jid]['history_id']),
-              jobs[jid]['history_name'],
-              jobs[jid]['history_update_time'],
-              jobs[jid]['user_email'])
+             str(jobs[jid]['hda_id']),
+             jobs[jid]['hda_name'],
+             jobs[jid]['hda_info'],
+             str(jobs[jid]['history_id']),
+             jobs[jid]['history_name'],
+             jobs[jid]['history_update_time'],
+             jobs[jid]['user_email']))
     sys.exit(0)
 
 

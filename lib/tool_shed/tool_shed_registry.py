@@ -10,10 +10,10 @@ log = logging.getLogger(__name__)
 
 class Registry(object):
 
-    def __init__(self, root_dir=None, config=None):
+    def __init__(self, config=None):
         self.tool_sheds = odict()
         self.tool_sheds_auth = odict()
-        if root_dir and config:
+        if config:
             # Parse tool_sheds_conf.xml
             tree, error_message = xml_util.parse_xml(config)
             if tree is None:

@@ -179,7 +179,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             if not trans.user_is_admin():
                 assert trans.user == user
                 assert not user.deleted
-        except:
+        except Exception:
             raise exceptions.RequestParameterInvalidException('Invalid user id specified', id=id)
         return self.user_serializer.serialize_to_view(user, view='detailed')
 
@@ -282,8 +282,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         path = trans.app.config.user_preferences_extra_config_file
         try:
             with open(path, 'r') as stream:
-                config = yaml.load(stream)
-        except:
+                config = yaml.safe_load(stream)
+        except Exception:
             log.warning('Config file (%s) could not be found or is malformed.' % path)
             return {}
 
@@ -889,7 +889,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
                     new_linecount = new_len.get_converted_dataset(trans, 'linecount')
                     build_dict['len'] = new_len.id
                     build_dict['linecount'] = new_linecount.id
-                except:
+                except Exception:
                     raise MessageException('Failed to convert dataset.')
             dbkeys[key] = build_dict
             user.preferences['dbkeys'] = json.dumps(dbkeys)

@@ -2,7 +2,7 @@ import json
 
 from requests import post
 
-from base import api
+from base import api  # noqa: I100
 
 
 class ApiBatchTestCase(api.ApiTestCase):

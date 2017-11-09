@@ -8,7 +8,7 @@ from galaxy.jobs import metrics
 from galaxy.jobs.runners import local
 from galaxy.util import bunch
 
-from tools_support import (
+from ..tools_support import (
     UsesApp,
     UsesTools
 )

@@ -146,7 +146,7 @@ def main():
             out_file = sys.stdout
         binned = bool(options.binned)
         mask_fname = options.mask
-    except:
+    except Exception:
         doc_optparse.exit()
 
     if score_fname == 'None':
@@ -156,7 +156,7 @@ def main():
         chrom_col = int(chrom_col) - 1
         start_col = int(start_col) - 1
         stop_col = int(stop_col) - 1
-    except:
+    except Exception:
         stop_err('Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.')
 
     if chrom_col < 0 or start_col < 0 or stop_col < 0:
@@ -167,7 +167,7 @@ def main():
     else:
         try:
             chrom_buffer = int(options.chrom_buffer)
-        except:
+        except Exception:
             chrom_buffer = 3
         scores_by_chrom = load_scores_wiggle(score_fname, chrom_buffer)
 
@@ -188,7 +188,7 @@ def main():
 
             try:
                 chrom, start, stop = fields[chrom_col], int(fields[start_col]), int(fields[stop_col])
-            except:
+            except Exception:
                 valid = False
                 skipped_lines += 1
                 if not invalid_line:
@@ -213,7 +213,7 @@ def main():
                                 count += 1
                                 max_score = max(score, max_score)
                                 min_score = min(score, min_score)
-                        except:
+                        except Exception:
                             continue
                 if count > 0:
                     avg = total / count

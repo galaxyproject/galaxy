@@ -671,7 +671,7 @@ class HierarchicalObjectStore(NestedObjectStore):
     ObjectStore that defers to a list of backends.
 
     When getting objects the first store where the object exists is used.
-    When creating obects only the first store is used.
+    When creating objects only the first store is used.
     """
 
     def __init__(self, config, config_xml=None, fsmon=False):
@@ -700,7 +700,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     Will use the `object_store_config_file` attribute of the `config` object to
     configure a new object store from the specified XML file.
 
-    Or you can specify the obect store type in the `object_store` attribute of
+    Or you can specify the object store type in the `object_store` attribute of
     the `config` object. Currently 'disk', 's3', 'swift', 'distributed',
     'hierarchical', 'irods', and 'pulsar' are supported values.
 

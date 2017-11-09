@@ -9,6 +9,7 @@ import random
 import shutil
 import signal
 import socket
+import string
 import struct
 import subprocess
 import sys
@@ -20,10 +21,12 @@ import nose.config
 import nose.core
 import nose.loader
 import nose.plugins.manager
+
 from paste import httpserver
 from six.moves import shlex_quote
 
-from functional import database_contexts
+from six.moves.urllib.parse import urlparse
+
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.util import asbool, download_to_file
@@ -56,6 +59,13 @@ INSTALLED_TOOL_PANEL_CONFIGS = [
 DEFAULT_LOCALES = "en"
 
 log = logging.getLogger("test_driver")
+
+
+# Global variables to pass database contexts around - only needed for older
+# Tool Shed twill tests that didn't utilize the API for such interactions.
+galaxy_context = None
+tool_shed_context = None
+install_context = None
 
 
 def setup_tool_shed_tmp_dir():
@@ -118,6 +128,7 @@ def setup_galaxy_config(
     shed_tool_conf=None,
     datatypes_conf=None,
     update_integrated_tool_panel=False,
+    prefer_template_database=False,
     log_format=None,
 ):
     """Setup environment and build config for test Galaxy instance."""
@@ -209,7 +220,7 @@ def setup_galaxy_config(
         webhooks_dir=TEST_WEBHOOKS_DIR,
         logging=LOGGING_CONFIG_DEFAULT,
     )
-    config.update(database_conf(tmpdir))
+    config.update(database_conf(tmpdir, prefer_template_database=prefer_template_database))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
     if datatypes_conf is not None:
         config['datatypes_config_file'] = datatypes_conf
@@ -287,12 +298,21 @@ def copy_database_template(source, db_path):
         raise Exception("Failed to copy database template from source %s" % source)
 
 
-def database_conf(db_path, prefix="GALAXY"):
+def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
     """Find (and populate if needed) Galaxy database connection."""
     database_auto_migrate = False
     dburi_var = "%s_TEST_DBURI" % prefix
+    template_name = None
     if dburi_var in os.environ:
         database_connection = os.environ[dburi_var]
+        # only template if postgres - not mysql or sqlite
+        do_template = prefer_template_database and database_connection.startswith("p")
+        if do_template:
+            database_template_parsed = urlparse(database_connection)
+            template_name = database_template_parsed.path[1:]  # drop / from /galaxy
+            actual_db = "gxtest" + ''.join(random.choice(string.ascii_uppercase) for _ in range(10))
+            actual_database_parsed = database_template_parsed._replace(path="/%s" % actual_db)
+            database_connection = actual_database_parsed.geturl()
     else:
         default_db_filename = "%s.sqlite" % prefix.lower()
         template_var = "%s_TEST_DB_TEMPLATE" % prefix
@@ -313,6 +333,8 @@ def database_conf(db_path, prefix="GALAXY"):
     if not database_connection.startswith("sqlite://"):
         config["database_engine_option_max_overflow"] = "20"
         config["database_engine_option_pool_size"] = "10"
+    if template_name:
+        config["database_template"] = template_name
     return config
 
 
@@ -442,7 +464,7 @@ def cleanup_directory(tempdir):
         log.info("GALAXY_TEST_NO_CLEANUP is on. Temporary files in %s" % tempdir)
         return
     try:
-        if os.path.exists(tempdir) and skip_cleanup:
+        if os.path.exists(tempdir) and not skip_cleanup:
             shutil.rmtree(tempdir)
     except Exception:
         pass
@@ -497,8 +519,12 @@ def build_galaxy_app(simple_kwargs):
     # Build the Universe Application
     app = GalaxyUniverseApplication(**simple_kwargs)
     log.info("Embedded Galaxy application started")
-    database_contexts.galaxy_context = app.model.context
-    database_contexts.install_context = app.install_model.context
+
+    global galaxy_context
+    global install_context
+    galaxy_context = app.model.context
+    install_context = app.install_model.context
+
     return app
 
 
@@ -514,8 +540,11 @@ def build_shed_app(simple_kwargs):
     simple_kwargs['global_conf'] = get_webapp_global_conf()
 
     app = ToolshedUniverseApplication(**simple_kwargs)
-    database_contexts.tool_shed_context = app.model.context
     log.info("Embedded Toolshed application started")
+
+    global tool_shed_context
+    tool_shed_context = app.model.context
+
     return app
 
 
@@ -822,7 +851,8 @@ class GalaxyTestDriver(TestDriver):
                     default_install_db_merged=True,
                     default_tool_conf=default_tool_conf,
                     datatypes_conf=datatypes_conf_override,
-                    log_format=log_format
+                    prefer_template_database=getattr(config_object, "prefer_template_database", False),
+                    log_format=log_format,
                 )
                 galaxy_config = setup_galaxy_config(
                     galaxy_db_path,

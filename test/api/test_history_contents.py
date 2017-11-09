@@ -4,8 +4,12 @@ import json
 
 from requests import delete, put
 
-from base import api
-from base.populators import DatasetCollectionPopulator, LibraryPopulator, TestsDatasets
+from base import api  # noqa: I100
+from base.populators import (  # noqa: I100
+    DatasetCollectionPopulator,
+    LibraryPopulator,
+    TestsDatasets
+)
 
 
 # TODO: Test anonymous access.
@@ -121,16 +125,27 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         assert str(self.__show(hda1).json()["deleted"]).lower() == "true"
         assert str(self.__show(hda1).json()["purged"]).lower() == "true"
 
-    def test_dataset_collections(self):
+    def test_dataset_collection_creation_on_contents(self):
         payload = self.dataset_collection_populator.create_pair_payload(
             self.history_id,
             type="dataset_collection"
         )
+        endpoint = "histories/%s/contents" % self.history_id
+        self._check_pair_creation(endpoint, payload)
+
+    def test_dataset_collection_creation_on_typed_contents(self):
+        payload = self.dataset_collection_populator.create_pair_payload(
+            self.history_id,
+        )
+        endpoint = "histories/%s/contents/dataset_collections" % self.history_id
+        self._check_pair_creation(endpoint, payload)
+
+    def _check_pair_creation(self, endpoint, payload):
         pre_collection_count = self.__count_contents(type="dataset_collection")
         pre_dataset_count = self.__count_contents(type="dataset")
         pre_combined_count = self.__count_contents(type="dataset,dataset_collection")
 
-        dataset_collection_response = self._post("histories/%s/contents" % self.history_id, payload)
+        dataset_collection_response = self._post(endpoint, payload)
 
         dataset_collection = self.__check_create_collection_response(dataset_collection_response)
 

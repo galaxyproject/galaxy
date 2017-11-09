@@ -1,0 +1,204 @@
+# top_level: {global: <components>, workflows: <components>, histories: <components>}
+# components := {<subcomponent_name>: <components>} | <component>
+# component := {selectors: <selectors_map>, labels: <labels_map>, ids: <id_map>}
+# selectors_map := {<selector_name>: <selector>}
+# selector := <str> | {type: <selector_type>, selector: <str>}
+# selector_type := css|xpath|sizzle|id
+# labels_map := {<label_name>: <label>}
+
+_:  # global stuff
+
+  selectors:
+    editable_text: '.editable-text'
+    tooltip_balloon: '.tooltip'
+
+  messages:
+    selectors:
+      all: '[class*="message"]'
+      error: '.errormessage'
+      warning: '.alert-warning'
+      done: '.donemessage'
+      info: '.infomessage'
+      donelarge: '.donemessagelarge'
+      infolarge: '.infomessagelarge'
+
+masthead:
+
+  selectors:
+    _: '#masthead'
+
+    user:
+      type: xpath
+      selector: '//ul[@id="user"]'
+    
+    workflow: 
+      type: xpath
+      selector: '//ul[@id="workflow"]'
+
+    user_email:
+      type: xpath
+      selector: '//a[contains(text(), "Logged in as")]'
+
+    logged_in_only: 'a.loggedin-only'
+
+  labels:
+    # top-level menus
+    analyze: 'Analyze Data'
+    workflow: 'Workflow'
+    shared_data: 'Shared Data'
+    visualization: 'Visualization'
+    help: 'Help'
+    user: 'User'
+
+    # user menu
+    register: 'Register'
+    login: 'Login'
+    logout: 'Logout'
+    custom_builds: 'Custom Builds'
+    saved_histories: 'Saved Histories'
+
+    # Shared data
+    libraries: 'Data Libraries'
+    published_histories: 'Histories'
+
+history_panel:
+  menu:
+    labels:
+      new: 'Create New'
+
+  item:
+    selectors:
+      _: '#${history_content_type}-${id}'
+
+      title: '${_} .title'
+      hid: '${_} .hid'
+      name: '${_} .name'
+      details: '${_} .details'
+      title_button_area: '${_} .primary-actions'
+      primary_action_buttons: '${_} .actions .left'
+      secondary_action_buttons: '${_} .actions .right'
+      summary: '${_} .summary'
+      blurb: '${_} .blurb .value'
+      dbkey: '${_} .dbkey .value'
+      info: '${_} .info .value'
+      peek: '${_} .dataset-peek'
+
+      # Title buttons...
+      display_button: '${_} .icon-btn.display-btn'
+      edit_button: '${_} .icon-btn.edit-btn'
+      delete_button: '${_} .icon-btn.delete-btn'
+
+      # Action buttons...
+      download_button: '${_} .icon-btn.download-btn'
+      info_button: '${_} .icon-btn.params-btn'
+      rerun_button: '${_} .icon-btn.rerun-btn'
+
+  multi_operations:
+    selectors:
+      show_button: '#current-history-panel .actions .show-selectors-btn'
+      action_button: '#current-history-panel .list-action-menu .list-action-menu-btn'
+      action_menu: '.list-action-menu.open'
+
+    labels:
+      build_pair: "Build Dataset Pair"
+      build_list: "Build Dataset List"
+      build_list_pairs: "Build List of Dataset Pairs"
+
+  selectors:
+    _: '#current-history-panel'
+    search: '#current-history-panel input.search-query'
+    refresh_button: '#history-refresh-button'
+    name: '.title .name'
+    name_edit_input: '.name input'
+    contents: '#current-history-panel .list-items div.history-content'
+    
+    empty_message: '.empty-message'
+    size: '.history-size'
+    tag_icon: '.actions .history-tag-btn'
+    tag_area: '.controls .tags-display'
+    tag_area_input: '.controls .tags-display .tags-input input'
+    annotation_icon: '.actions .history-annotate-btn'
+    annotation_area: '.controls .annotation-display'
+    annotation_editable_text: '.controls .annotation-display .annotation.editable-text'
+    annotation_edit: '.controls .annotation-display .annotation textarea'
+    annotation_done: '.controls .annotation-display .annotation button'
+
+    options_button: '#history-options-button'
+    options_button_icon: '#history-options-button span.fa-cog'
+    options_menu: '#history-options-button-menu'
+
+  text:
+    tooltip_name: 'Click to rename history'
+    new_name: 'Unnamed history'
+    new_size: '(empty)'
+
+collection_builders:
+
+  selectors:
+
+    clear_filters: "a.clear-filters-link"
+    forward_datasets: ".forward-column .column-datasets"
+    reverse_datasets: ".reverse-column .column-datasets"
+
+histories:
+  sharing:
+    selectors:
+      user_n_menu: '#user-${n}-popup'
+      share_with_a_user_button: '#share_with_a_user'
+    labels:
+      unshare: 'Unshare'
+
+
+login:
+  selectors:
+     form: 'form#login'
+
+registration:
+  selectors:
+    form: '#registration'
+    submit:
+      type: xpath
+      selector: "//input[@value='Submit']"
+
+workflows:
+
+  selectors:
+    new_button: '#new-workflow'
+    import_button: '#import-workflow'
+
+libraries:
+
+  selectors:
+    _: .library_style_container
+
+  folder:
+    selectors:
+      # There needs to a different class or ID on the dataset button, this isn't
+      # a good selector for that button since .add-library-items also applies to
+      # folder (but it is a button.add-library-items instead).
+      add_items_button: 'div.add-library-items'
+      add_items_menu: 'div.add-library-items .dropdown-menu'
+      add_items_options: 'div.add-library-items .dropdown-menu li a'
+
+      # TODO: Most of these are very good selectors but the same DOM elements
+      # are reused without adding specific classes, IDs, or roles to anything.
+      import_modal: '.modal'
+      import_datasets_ok_button: '.modal-footer .buttons #button-0'
+      import_datasets_cancel_button: '.modal-footer .buttons #button-1'
+      import_progress_bar: '.progress-bar-import'
+      import_history_content: '#selected_history_content'
+      import_history_contents_items: '#selected_history_content ul li'
+      import_from_path_textarea: '#import_paths'
+
+    labels:
+      from_history: 'from History'
+      from_path: 'from Path'
+
+  dataset:
+    selectors:
+      table: '.dataset_table'
+      table_rows: '.dataset_table table tbody tr'
+
+published_grids:
+  selectors:
+    search: '#input-free-text-search-filter'

@@ -2,11 +2,11 @@
 API operations on Group objects.
 """
 import logging
+
 from sqlalchemy import false
 
-from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy import web
-
+from galaxy.web.base.controller import BaseAPIController, url_for
 
 log = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class GroupAPIController(BaseAPIController):
             return "Malformed group id ( %s ) specified, unable to decode." % str(group_id)
         try:
             group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-        except:
+        except Exception:
             group = None
         if not group:
             trans.response.status = 400
@@ -112,7 +112,7 @@ class GroupAPIController(BaseAPIController):
             return "Malformed group id ( %s ) specified, unable to decode." % str(group_id)
         try:
             group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-        except:
+        except Exception:
             group = None
         if not group:
             trans.response.status = 400

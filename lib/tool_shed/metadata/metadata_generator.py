@@ -965,7 +965,7 @@ class MetadataGenerator(object):
                         .filter(and_(self.app.model.Repository.table.c.name == name,
                                      self.app.model.Repository.table.c.user_id == user.id)) \
                         .one()
-                except:
+                except Exception:
                     error_message = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, " % \
                         (toolshed, name, owner)
                     error_message += "changeset revision %s because the name is invalid.  " % changeset_revision

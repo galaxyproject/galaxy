@@ -212,6 +212,7 @@
     color: @base-text-color;
     background: @side-panel-bg;
     padding: 10px;
+    min-height:100%;
     .ui-side-section-title {
         font-weight: bold;
     }
@@ -551,6 +552,9 @@
         .portlet-buttons {
             margin-top: @ui-margin-vertical;
             margin-bottom: @ui-margin-vertical;
+            > .btn {
+                margin-right: 5px;
+            }
         }
     }
     .portlet-content.nopadding, .portlet-body.nopadding {
@@ -992,6 +996,13 @@
     &:extend(.ui-dragover);
     border: 2px solid @state-success-bg;
     background: lighten(@state-success-bg, 10%) !important;
+}
+
+.ui-limitloader {
+    padding: 10px;
+    float: left;
+    font-weight: bold;
+    display: none;
 }
 
 // global select2 adjustments

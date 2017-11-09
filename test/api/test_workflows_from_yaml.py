@@ -55,11 +55,11 @@ steps:
         assert tool_count['random_lines1'] == 1
         assert tool_count['cat1'] == 2
 
-# FIXME:  This test fails on some machines due to (we're guessing) yaml loading
+# FIXME:  This test fails on some machines due to (we're guessing) yaml.safe_loading
 # order being not guaranteed and inconsistent across platforms.  The workflow
-# yaml loader probably needs to enforce order using something like the
+# yaml.safe_loader probably needs to enforce order using something like the
 # approach described here:
-# https://stackoverflow.com/questions/13297744/pyyaml-control-ordering-of-items-called-by-yaml-load
+# https://stackoverflow.com/questions/13297744/pyyaml-control-ordering-of-items-called-by-yaml.safe_load
 #     def test_multiple_input( self ):
 #         history_id = self.dataset_populator.new_history()
 #         self._run_jobs("""

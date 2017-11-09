@@ -58,7 +58,7 @@ def load_app_properties(
                 config_section = "galaxy"
 
             with open(config_file, "r") as f:
-                raw_properties = yaml.load(f)
+                raw_properties = yaml.safe_load(f)
             properties = __default_properties(config_file)
             properties.update(raw_properties.get(config_section) or {})
 

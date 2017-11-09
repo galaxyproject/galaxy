@@ -110,7 +110,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         """Get any native DRM arguments specified by the site configuration"""
         try:
             return url.split('/')[2] or None
-        except:
+        except Exception:
             return None
 
     def queue_job(self, job_wrapper):
@@ -151,7 +151,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file)
         try:
             self.write_executable_script(ajs.job_file, script)
-        except:
+        except Exception:
             job_wrapper.fail("failure preparing job script", exception=True)
             log.exception("(%s) failure writing job script" % galaxy_id_tag)
             return
@@ -183,7 +183,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                     log.warning('(%s) drmaa.Session.runJob() failed, will retry: %s', galaxy_id_tag, e)
                     fail_msg = "Unable to run this job due to a cluster error, please retry it later"
                     time.sleep(5)
-                except:
+                except Exception:
                     log.exception('(%s) drmaa.Session.runJob() failed unconditionally', galaxy_id_tag)
                     trynum = 5
             else:

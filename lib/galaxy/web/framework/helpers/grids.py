@@ -413,7 +413,7 @@ class Grid(object):
                     target = column.target
                     value = column.get_value(trans, self, item)
                     if isinstance(value, str):
-                        value = unicode(value, 'utf-8')
+                        value = text_type(value, 'utf-8')
                         value = value.replace('/', '//')
                     item_dict['column_config'][column.label] = {
                         'link'      : link,
@@ -423,7 +423,8 @@ class Grid(object):
             for operation in self.operations:
                 item_dict['operation_config'][operation.label] = {
                     'allowed'   : operation.allowed(item),
-                    'url_args'  : url(**operation.get_url_args(item))
+                    'url_args'  : url(**operation.get_url_args(item)),
+                    'target'    : operation.target
                 }
             grid_config['items'].append(item_dict)
         trans.log_action(trans.get_user(), text_type("grid.view"), context, params)
@@ -438,8 +439,8 @@ class Grid(object):
                 id = id.split(",")
             # Ensure ids are integers
             try:
-                id = map(int, id)
-            except:
+                id = list(map(int, id))
+            except Exception:
                 decorators.error("Invalid id")
         return id
 

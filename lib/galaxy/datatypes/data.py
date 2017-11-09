@@ -179,7 +179,7 @@ class Data(object):
     def set_max_optional_metadata_filesize(self, max_value):
         try:
             max_value = int(max_value)
-        except:
+        except (TypeError, ValueError):
             return
         self.__class__._max_optional_metadata_filesize = max_value
 
@@ -372,7 +372,7 @@ class Data(object):
                     tmp_file_name = tmp_fh.name
                     dir_items = sorted(os.listdir(file_path))
                     base_path, item_name = os.path.split(file_path)
-                    tmp_fh.write('<html><head><h3>Directory %s contents: %d items</h3></head>\n' % (item_name, len(dir_items)))
+                    tmp_fh.write('<html><head><h3>Directory %s contents: %d items</h3></head>\n' % (escape(item_name), len(dir_items)))
                     tmp_fh.write('<body><p/><table cellpadding="2">\n')
                     for index, fname in enumerate(dir_items):
                         if index % 2 == 0:
@@ -386,18 +386,18 @@ class Data(object):
                         # href = url_for(controller='dataset', action='display',
                         # dataset_id=trans.security.encode_id(data.dataset.id),
                         # preview=preview, filename=fname, to_ext=to_ext)
-                        tmp_fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, fname))
+                        tmp_fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, escape(fname)))
                     tmp_fh.write('</table></body></html>\n')
                     tmp_fh.close()
-                    return open(tmp_file_name)
+                    return self._yield_user_file_content(trans, data, tmp_file_name)
                 mime = mimetypes.guess_type(file_path)[0]
                 if not mime:
                     try:
                         mime = trans.app.datatypes_registry.get_mimetype_by_extension(".".split(file_path)[-1])
-                    except:
+                    except Exception:
                         mime = "text/plain"
                 self._clean_and_set_mime_type(trans, mime)
-                return open(file_path)
+                return self._yield_user_file_content(trans, data, file_path)
             else:
                 return paste.httpexceptions.HTTPNotFound("Could not find '%s' on the extra files path %s." % (filename, file_path))
         self._clean_and_set_mime_type(trans, data.get_mime())
@@ -420,22 +420,28 @@ class Data(object):
             max_peek_size = 10000000  # 10 MB for html
         preview = util.string_as_bool(preview)
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat(data.file_name).st_size < max_peek_size:
-            if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
-                # Sanitize anytime we respond with plain text/html content.
-                # Check to see if this dataset's parent job is whitelisted
-                # We cannot currently trust imported datasets for rendering.
-                if not data.creating_job.imported and data.creating_job.tool_id in trans.app.config.sanitize_whitelist:
-                    return open(data.file_name).read()
-                # This is returning to the browser, it needs to be encoded.
-                # TODO Ideally this happens a layer higher, but this is a bad
-                # issue affecting many tools
-                return sanitize_html(open(data.file_name).read()).encode('utf-8')
-            return open(data.file_name)
+            return self._yield_user_file_content(trans, data, data.file_name)
         else:
             trans.response.set_content_type("text/html")
             return trans.stream_template_mako("/dataset/large_file.mako",
                                               truncated_data=open(data.file_name).read(max_peek_size),
                                               data=data)
+
+    def _yield_user_file_content(self, trans, from_dataset, filename):
+        """This method is responsible for sanitizing the HTML if needed."""
+        if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
+            # Sanitize anytime we respond with plain text/html content.
+            # Check to see if this dataset's parent job is whitelisted
+            # We cannot currently trust imported datasets for rendering.
+            if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id in trans.app.config.sanitize_whitelist:
+                return open(filename)
+
+            # This is returning to the browser, it needs to be encoded.
+            # TODO Ideally this happens a layer higher, but this is a bad
+            # issue affecting many tools
+            return sanitize_html(open(filename).read()).encode('utf-8')
+
+        return open(filename)
 
     def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None):
         def escape(raw_identifier):
@@ -484,7 +490,7 @@ class Data(object):
             info = unicodify(info, 'utf-8')
 
             return info
-        except:
+        except Exception:
             return "info unavailable"
 
     def validate(self, dataset):
@@ -515,7 +521,7 @@ class Data(object):
         self.supported_display_apps = self.supported_display_apps.copy()
         try:
             del self.supported_display_apps[app_id]
-        except:
+        except Exception:
             log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.', type, self.__class__.__name__)
 
     def clear_display_apps(self):
@@ -545,7 +551,7 @@ class Data(object):
         """Returns primary label for display app"""
         try:
             return self.supported_display_apps[type]['label']
-        except:
+        except Exception:
             return 'unknown'
 
     def as_display_type(self, dataset, type, **kwd):
@@ -553,7 +559,7 @@ class Data(object):
         try:
             if type in self.get_display_types():
                 return getattr(self, self.supported_display_apps[type]['file_function'])(dataset, **kwd)
-        except:
+        except Exception:
             log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible', self.supported_display_apps[type]['file_function'], self.__class__.__name__, type)
         return "This display type (%s) is not implemented for this datatype (%s)." % (type, dataset.ext)
 
@@ -567,7 +573,7 @@ class Data(object):
         try:
             if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr(self, self.supported_display_apps[type]['links_function'])(dataset, type, app, base_url, **kwd)
-        except:
+        except Exception:
             log.exception('Function %s is referred to in datatype %s for generating links for type %s, but is not accessible',
                           self.supported_display_apps[type]['links_function'], self.__class__.__name__, type)
         return target_frame, []

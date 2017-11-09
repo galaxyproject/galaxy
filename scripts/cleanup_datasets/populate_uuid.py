@@ -14,7 +14,7 @@ import uuid
 from galaxy.model import mapping
 from galaxy.model.orm.scripts import get_config
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def usage(prog):

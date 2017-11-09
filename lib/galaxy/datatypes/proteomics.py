@@ -62,7 +62,7 @@ class PepXmlReport(Tabular):
 
     def __init__(self, **kwd):
         super(PepXmlReport, self).__init__(**kwd)
-        self.column_names = ['Protein', 'Peptide', 'Assumed Charge', 'Neutral Pep Mass (calculated)', 'Neutral Mass', 'Retention Time', 'Start Scan', 'End Scan', 'Search Engine', 'PeptideProphet Probability', 'Interprophet Probabaility']
+        self.column_names = ['Protein', 'Peptide', 'Assumed Charge', 'Neutral Pep Mass (calculated)', 'Neutral Mass', 'Retention Time', 'Start Scan', 'End Scan', 'Search Engine', 'PeptideProphet Probability', 'Interprophet Probability']
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
@@ -285,7 +285,7 @@ class ThermoRAW(Binary):
             if header.find(finnigan) != -1:
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -299,7 +299,7 @@ class ThermoRAW(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Thermo Finnigan RAW file (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -458,6 +458,52 @@ class ImzML(Binary):
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).iteritems():
             fn = composite_name
             opt_text = ''
+            if composite_file.get('description'):
+                rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+            else:
+                rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+        rval.append('</ul></div></html>')
+        return "\n".join(rval)
+
+
+class Analyze75(Binary):
+    """
+        Mayo Analyze 7.5 files
+        http://www.imzml.org
+    """
+    file_ext = 'analyze75'
+    allow_datatype_change = False
+    composite_type = 'auto_primary_file'
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+
+        """The header file. Provides information about dimensions, identification, and processing history."""
+        self.add_composite_file(
+            'hdr',
+            description='The Analyze75 header file.',
+            is_binary=False)
+
+        """The image file.  Image data, whose data type and ordering are described by the header file."""
+        self.add_composite_file(
+            'img',
+            description='The Analyze75 image file.',
+            is_binary=True)
+
+        """The optional t2m file."""
+        self.add_composite_file(
+            't2m',
+            description='The Analyze75 t2m file.',
+            optional='True', is_binary=True)
+
+    def generate_primary_file(self, dataset=None):
+        rval = ['<html><head><title>Analyze75 Composite Dataset.</title></head><p/>']
+        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).iteritems():
+            fn = composite_name
+            opt_text = ''
+            if composite_file.optional:
+                opt_text = ' (optional)'
             if composite_file.get('description'):
                 rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
             else:

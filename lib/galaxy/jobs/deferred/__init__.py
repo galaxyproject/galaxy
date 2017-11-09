@@ -39,7 +39,7 @@ class DeferredJobQueue(object):
                 module_name = 'galaxy.jobs.deferred.' + name
                 try:
                     module = __import__(module_name)
-                except:
+                except ImportError:
                     log.exception('Deferred job plugin appears to exist but is not loadable: %s', module_name)
                     continue
                 for comp in module_name.split(".")[1:]:
@@ -76,7 +76,7 @@ class DeferredJobQueue(object):
         while self.running:
             try:
                 self.__monitor_step()
-            except:
+            except Exception:
                 log.exception('Exception in monitor_step')
             self.sleeper.sleep(1)
         log.info('job queue stopped')
@@ -100,7 +100,7 @@ class DeferredJobQueue(object):
                 # Recovered jobs are passed in by ID
                 assert type(job) is int
                 job = self.sa_session.query(model.DeferredJob).get(job)
-            except:
+            except Exception:
                 pass
             if job.is_check_time:
                 try:

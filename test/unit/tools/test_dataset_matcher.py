@@ -1,7 +1,6 @@
 from unittest import TestCase
 from xml.etree.ElementTree import XML
 
-import tools_support
 from galaxy import model
 from galaxy.tools.parameters import (
     basic,
@@ -10,9 +9,10 @@ from galaxy.tools.parameters import (
 from galaxy.util import bunch
 
 from .test_data_parameters import MockHistoryDatasetAssociation
+from ..tools_support import UsesApp
 
 
-class DatasetMatcherTestCase(TestCase, tools_support.UsesApp):
+class DatasetMatcherTestCase(TestCase, UsesApp):
 
     def test_hda_accessible(self):
         # Cannot access errored or discard datasets.

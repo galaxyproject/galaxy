@@ -1,13 +1,14 @@
 import logging
 import os
+import subprocess
 from datetime import datetime, timedelta
 from decimal import Decimal
 
 from sqlalchemy import and_, desc, false, null, true
 from sqlalchemy.orm import eagerload
 
-from galaxy.web.base.controller import BaseUIController, web
 from galaxy import model, util
+from galaxy.web.base.controller import BaseUIController, web
 
 log = logging.getLogger(__name__)
 
@@ -95,7 +96,7 @@ class System(BaseUIController):
                         dataset_count += 1
                         try:
                             disk_space += hda.dataset.file_size
-                        except:
+                        except Exception:
                             pass
                 history_count += 1
             message = "%d histories ( including a total of %d datasets ) were deleted more than %d days ago, but have not yet been purged, " \
@@ -120,7 +121,7 @@ class System(BaseUIController):
                 dataset_count += 1
                 try:
                     disk_space += dataset.file_size
-                except:
+                except Exception:
                     pass
             message = "%d datasets were deleted more than %d days ago, but have not yet been purged," \
                 " disk space: %s." % (dataset_count, deleted_datasets_days, nice_size(disk_space, True))
@@ -148,12 +149,11 @@ class System(BaseUIController):
                                    message=message)
 
     def get_disk_usage(self, file_path):
-        df_cmd = 'df -h ' + file_path
         is_sym_link = os.path.islink(file_path)
         file_system = disk_size = disk_used = disk_avail = disk_cap_pct = mount = None
-        df_file = os.popen(df_cmd)
-        while True:
-            df_line = df_file.readline()
+        df_output = subprocess.check_output(['df', '-h', file_path])
+
+        for df_line in df_output:
             df_line = df_line.strip()
             if df_line:
                 df_line = df_line.lower()
@@ -166,17 +166,16 @@ class System(BaseUIController):
                         try:
                             disk_size, disk_used, disk_avail, disk_cap_pct, file_system = df_line.split()
                             break
-                        except:
+                        except Exception:
                             pass
                 else:
                     try:
                         file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_line.split()
                         break
-                    except:
+                    except Exception:
                         pass
             else:
                 break  # EOF
-        df_file.close()
         return (file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount)
 
     @web.expose
@@ -209,6 +208,6 @@ def nice_size(size, include_bytes=False):
             niced = True
         if include_bytes and x != 'bytes':
             nice_string = "%s (%s bytes)" % (nice_string, size)
-    except:
+    except Exception:
         pass
     return nice_string

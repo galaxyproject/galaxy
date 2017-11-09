@@ -97,7 +97,7 @@ class MappableDependencyResolver:
     @staticmethod
     def _mapping_file_to_list(mapping_file):
         with open(mapping_file, "r") as f:
-            raw_mapping = yaml.load(f) or []
+            raw_mapping = yaml.safe_load(f) or []
         return map(RequirementMapping.from_dict, raw_mapping)
 
     def _expand_mappings(self, requirement):
@@ -239,7 +239,7 @@ class Dependency(Dictifiable, object):
     cacheable = False
 
     @abstractmethod
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         """
         Return shell commands to enable this dependency.
         """
@@ -273,7 +273,7 @@ class NullDependency(Dependency):
         """
         return "Dependency %s not found." % self.name
 
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         return None
 
 

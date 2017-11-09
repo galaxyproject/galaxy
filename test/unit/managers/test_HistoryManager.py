@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 """
-import os
-import sys
 import unittest
 
 import sqlalchemy
@@ -24,11 +22,8 @@ from galaxy.managers.histories import (
     HistorySerializer
 )
 
-unit_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-sys.path.insert(1, unit_root)
-from unittest_utils import galaxy_mock
-
 from .base import BaseTestCase
+from ..unittest_utils import galaxy_mock
 
 default_password = '123456'
 user2_data = dict(email='user2@user2.user2', username='user2', password=default_password)
@@ -718,8 +713,6 @@ class HistoryFiltersTestCase(BaseTestCase):
             ('name', 'like', 'history%'),
         ])
         histories = self.history_manager.list(filters=filters)
-        # for h in histories:
-        #    print h.name
         self.assertEqual(histories, [history1, history2, history3])
 
         filters = self.filter_parser.parse_filters([('name', 'like', '%2'), ])

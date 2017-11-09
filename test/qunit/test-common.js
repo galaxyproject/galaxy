@@ -2,7 +2,6 @@ var pathname = location.pathname;
 var qunit_absolute_directory = pathname.substring( 0, pathname.lastIndexOf( "qunit/" ) + 6 );
 var filename = pathname.substr( pathname.lastIndexOf( "/" ) + 1 );
 
-
 function bridge_phantomjs( QUnit ) {
     // Needed because the grunt task will attempt to inject this bridge assuming
     // QUnit is loaded directly - not using require.js.
@@ -30,8 +29,8 @@ function bridge_phantomjs( QUnit ) {
         // What is this I don’t even
         if (obj.message === '[object Object], undefined:undefined') { return; }
         // Parse some stuff before sending it.
-        var actual = QUnit.jsDump.parse(obj.actual);
-        var expected = QUnit.jsDump.parse(obj.expected);
+        var actual = QUnit.dump.parse(obj.actual);
+        var expected = QUnit.dump.parse(obj.expected);
         // Send it.
         sendMessage('qunit.log', obj.result, actual, expected, obj.message, obj.source);
       });
@@ -71,9 +70,8 @@ require.config({
         "jquery": "libs/jquery/jquery",
         "backbone": "libs/backbone",
         // Custom paths for qunit testing dependencies...
-        "QUnit": qunit_absolute_directory + "test-libs/qunit-1.23.1", // .. because baseUrl is scripts to match Galaxy.
-        "sinon": qunit_absolute_directory + "test-libs/sinon-1.17.3",
-        "sinon-qunit": qunit_absolute_directory + "test-libs/sinon-qunit-1.0.0",
+        "QUnit": qunit_absolute_directory + "node_modules/qunitjs/qunit/qunit", // .. because baseUrl is scripts to match Galaxy.
+        "sinon": qunit_absolute_directory + "node_modules/sinon/pkg/sinon",
         // (optional) test data
         "test-data" : qunit_absolute_directory + "test-data/",
         // (optional) test app/environment with server data
@@ -85,12 +83,9 @@ require.config({
         "QUnit": {
             exports: "QUnit",
         },
+        // Not using sinon-qunit, not compat with QUnit 2.0 and doesn't do much.
         "sinon": {
             exports: "sinon"
-        },
-        "sinon-qunit": {
-            deps: [ 'sinon', "QUnit" ],
-            exports: "sinon"  // Odd but seems to work
         },
         "libs/underscore": {
             exports: "_"
@@ -112,11 +107,12 @@ var Galaxy = {
 };
 
 require( [ "jquery", "QUnit" ], function( $, QUnit ) {
+    $.fx.off = true;
     QUnit.config.autostart = false;
     bridge_phantomjs( QUnit );
     // Bootstrap HTML for displaying Qunit results.
     $('head').append( $('<link rel="stylesheet" type="text/css"  />')
-        .attr( "href", qunit_absolute_directory + "test-libs/qunit-1.23.1.css") );
+        .attr( "href", qunit_absolute_directory + "node_modules/qunitjs/qunit/qunit.css") );
     $('body').append( $('<div id="qunit">') );
     $('body').append( $('<div id="qunit-fixture">') );
 
@@ -126,9 +122,13 @@ require( [ "jquery", "QUnit" ], function( $, QUnit ) {
     // much of the Galaxy client code.
     require( [ "libs/underscore", "libs/backbone" ], function( _, Backbone ) {
         require( [ test_module_path ], function( ) {
-            QUnit.load();
             QUnit.start();
         } );
+    }, function(err) {
+        console.warn("Failed to load underscore or backbone.");
+        console.warn(err);
     } );
+}, function(err) {
+    console.warn("Failed to load jquery or QUnit");
+    console.warn(err);
 });
-

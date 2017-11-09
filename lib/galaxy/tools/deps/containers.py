@@ -35,7 +35,13 @@ ALL_CONTAINER_TYPES = [DOCKER_CONTAINER_TYPE, SINGULARITY_CONTAINER_TYPE]
 
 LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = '''
 python << EOF
-import re, tarfile, json, subprocess
+from __future__ import print_function
+
+import json
+import re
+import subprocess
+import tarfile
+
 t = tarfile.TarFile("${cached_image_file}")
 meta_str = t.extractfile('repositories').read()
 meta = json.loads(meta_str)
@@ -50,7 +56,7 @@ for line in stdo.split("\\n"):
     if tmp[0] == tag and tmp[1] == rev and tmp[2] == rev_value:
         found = True
 if not found:
-    print "Loading image"
+    print("Loading image")
     cmd = "cat ${cached_image_file} | ${load_cmd}"
     subprocess.check_call(cmd, shell=True)
 EOF

@@ -156,6 +156,10 @@ class WorkflowInvoker(object):
             # invocations.
             return self.progress.outputs
 
+        if workflow_invocation.history.deleted:
+            log.info("Cancelled workflow evaluation due to deleted history")
+            raise modules.CancelWorkflowEvaluation()
+
         remaining_steps = self.progress.remaining_steps()
         delayed_steps = False
         for step in remaining_steps:

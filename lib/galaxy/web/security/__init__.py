@@ -3,13 +3,20 @@ import os
 import os.path
 import logging
 
-import galaxy.exceptions
-
 from Crypto.Cipher import Blowfish
 from Crypto.Util.randpool import RandomPool
 from Crypto.Util import number
 
+import galaxy.exceptions
+
+from galaxy.util import smart_str
+
 log = logging.getLogger(__name__)
+
+MAXIMUM_ID_SECRET_BITS = 448
+MAXIMUM_ID_SECRET_LENGTH = MAXIMUM_ID_SECRET_BITS / 8
+KIND_TOO_LONG_MESSAGE = "Galaxy coding error, keep encryption 'kinds' smaller to utilize more bites of randomness from id_secret values."
+
 
 if os.path.exists("/dev/urandom"):
     # We have urandom, use it as the source of random data
@@ -37,7 +44,8 @@ else:
 class SecurityHelper(object):
 
     def __init__(self, **config):
-        self.id_secret = config['id_secret']
+        id_secret = config['id_secret']
+        self.id_secret = id_secret
         self.id_cipher = Blowfish.new(self.id_secret)
 
         per_kind_id_secret_base = config.get('per_kind_id_secret_base', self.id_secret)
@@ -127,4 +135,15 @@ class _cipher_cache(collections.defaultdict):
         self.secret_base = secret_base
 
     def __missing__(self, key):
-        return Blowfish.new(self.secret_base + "__" + key)
+        assert len(key) < 15, KIND_TOO_LONG_MESSAGE
+        secret = self.secret_base + "__" + key
+        return Blowfish.new(_last_bits(secret))
+
+
+def _last_bits(secret):
+    """We append the kind at the end, so just use the bits at the end.
+    """
+    last_bits = smart_str(secret)
+    if len(last_bits) > MAXIMUM_ID_SECRET_LENGTH:
+        last_bits = last_bits[-MAXIMUM_ID_SECRET_LENGTH:]
+    return last_bits

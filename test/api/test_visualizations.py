@@ -5,8 +5,8 @@ from requests import (
     put
 )
 
-from base import api
-from base.api_asserts import assert_has_keys
+from base import api  # noqa: I100
+from base.api_asserts import assert_has_keys  # noqa: I100
 
 INDEX_KEYS = [
     'id', 'title', 'type', 'dbkey', 'url'

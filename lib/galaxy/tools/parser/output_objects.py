@@ -21,7 +21,7 @@ class ToolOutput(ToolOutputBase):
       (format, metadata_source, parent)
     """
 
-    dict_collection_visible_keys = ('name', 'format', 'label', 'hidden')
+    dict_collection_visible_keys = ['name', 'format', 'label', 'hidden']
 
     def __init__(self, name, format=None, format_source=None, metadata_source=None,
                  parent=None, label=None, filters=None, actions=None, hidden=False,

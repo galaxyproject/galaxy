@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import os
 import sys
 from ConfigParser import ConfigParser
@@ -36,15 +38,15 @@ def init():
 
 
 if __name__ == '__main__':
-    print 'Loading Galaxy model...'
+    print('Loading Galaxy model...')
     model, object_store = init()
     sa_session = model.context.current
 
     set = 0
     dataset_count = sa_session.query(model.Dataset).count()
-    print 'Processing %i datasets...' % dataset_count
+    print('Processing %i datasets...' % dataset_count)
     percent = 0
-    print 'Completed %i%%' % percent,
+    print('Completed %i%%' % percent, end=' ')
     sys.stdout.flush()
     for i, dataset in enumerate(sa_session.query(model.Dataset).enable_eagerloads(False).yield_per(1000)):
         if dataset.total_size is None:
@@ -55,8 +57,8 @@ if __name__ == '__main__':
         new_percent = int(float(i) / dataset_count * 100)
         if new_percent != percent:
             percent = new_percent
-            print '\rCompleted %i%%' % percent,
+            print('\rCompleted %i%%' % percent, end=' ')
             sys.stdout.flush()
     sa_session.flush()
-    print 'Completed 100%%'
+    print('\rCompleted 100%')
     object_store.shutdown()

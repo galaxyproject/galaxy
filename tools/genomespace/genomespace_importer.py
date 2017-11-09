@@ -124,7 +124,7 @@ def sniff_and_handle_data_type(json_params, output_file):
             output_file,
             datatypes_registry)
         return file_type
-    except:
+    except Exception:
         return None
 
 

@@ -91,7 +91,7 @@ class MetadataCollection(object):
     def get(self, key, default=None):
         try:
             return self.__getattr__(key) or default
-        except:
+        except Exception:
             return default
 
     def items(self):
@@ -781,7 +781,6 @@ class JobExternalOutputMetadataWrapper(object):
             config_root = os.path.abspath(os.getcwd())
         if datatypes_config is None:
             raise Exception('In setup_external_metadata, the received datatypes_config is None.')
-            datatypes_config = 'datatypes_conf.xml'
         metadata_files_list = []
         for dataset in datasets:
             key = self.get_dataset_metadata_key(dataset)
@@ -837,7 +836,7 @@ class JobExternalOutputMetadataWrapper(object):
                 sa_session.add(metadata_files)
                 sa_session.flush()
             metadata_files_list.append(metadata_files)
-        args = '"%s" "%s" %s %s' % (datatypes_config,
+        args = '"%s" "%s" %s %s' % (metadata_path_on_compute(datatypes_config),
                                     job_metadata,
                                     " ".join(map(__metadata_files_list_to_cmd_line, metadata_files_list)),
                                     max_metadata_value_size)

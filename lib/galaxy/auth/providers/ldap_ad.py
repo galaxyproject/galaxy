@@ -95,7 +95,7 @@ class LDAP(AuthProvider):
 
         try:
             import ldap
-        except:
+        except ImportError:
             log.debug('LDAP authenticate: could not load ldap module')
             return (failure_mode, '', '')
 

@@ -1,6 +1,8 @@
 #!/usr/bin/python
-import optparse
+from __future__ import print_function
+
 import ConfigParser
+import optparse
 import os
 import sys
 
@@ -75,7 +77,7 @@ def admin_user_info():
     email = None
     password = None
     if tree is None:
-        print "The XML file ", user_info_config, " seems to be invalid, using defaults."
+        print("The XML file ", user_info_config, " seems to be invalid, using defaults.")
         email = 'admin@test.org'
         password = 'testuser'
         username = 'admin'
@@ -97,7 +99,7 @@ def get_local_tool_shed_url(config_parser):
         if config_parser.has_option('server:main', 'port'):
             port = config_parser.get('server:main', 'port')
     host = '127.0.0.1'
-    print 'http://%s:%s' % (host, port)
+    print('http://%s:%s' % (host, port))
     return 0
 
 
@@ -113,7 +115,7 @@ def main(args):
         return check_db(config_parser)
     elif args.method == 'admin_user_info':
         (username, email, password) = admin_user_info()
-        print '%s__SEP__%s__SEP__%s' % (username, email, password)
+        print('%s__SEP__%s__SEP__%s' % (username, email, password))
         return 0
     elif args.method == 'get_url':
         return get_local_tool_shed_url(config_parser)

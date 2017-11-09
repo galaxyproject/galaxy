@@ -137,7 +137,7 @@ def __main__():
             empty, number_str = condition.split(op)
             try:
                 number = float(number_str)
-            except:
+            except ValueError:
                 number = None
             if empty != "" or not number:
                 print("Invalid condition: %s, cannot filter." % condition, file=sys.stderr)

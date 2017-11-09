@@ -1,5 +1,6 @@
 #!/bin/sh
 
+cd `dirname $0`
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 
 if [ -d "$GALAXY_VIRTUAL_ENV" ];
@@ -8,5 +9,4 @@ then
     . "$GALAXY_VIRTUAL_ENV/bin/activate"
 fi
 
-cd `dirname $0`
 python ./scripts/manage_tools.py $@

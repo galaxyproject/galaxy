@@ -85,7 +85,7 @@ class RepoToolModule(ToolModule):
         if self.tool:
             try:
                 galaxy.tools.parameters.visit_input_values(self.tool.inputs, self.state.inputs, callback)
-            except:
+            except Exception:
                 # TODO have this actually use default parameters?  Fix at
                 # refactor, needs to be discussed wrt: reproducibility though.
                 log.exception("Tool parse failed for %s -- this indicates incompatibility of local tool version with expected version by the workflow.", self.tool.id)

@@ -4,24 +4,23 @@ Lower level of visualization framework which does three main things:
     - create urls to visualizations based on some target object(s)
     - unpack a query string into the desired objects needed for rendering
 """
+import logging
 import os
 import weakref
 
+from galaxy.util import config_directories_from_setting
+from galaxy.util import odict
+from galaxy.util import parse_xml
 from galaxy.web import url_for
-import galaxy.exceptions
-
-from galaxy.web.base import pluginframework
+from galaxy.exceptions import ObjectNotFound
 from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins import plugin as vis_plugins
 from galaxy.visualization.plugins import utils as vis_utils
 
-
-import logging
 log = logging.getLogger(__name__)
 
 
-# -------------------------------------------------------------------
-class VisualizationsRegistry(pluginframework.PageServingPluginManager):
+class VisualizationsRegistry(object):
     """
     Main responsibilities are:
         - discovering visualization plugins in the filesystem
@@ -31,8 +30,10 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
         - validating and parsing params into resources (based on a context)
             used in the visualization template
     """
-    NAMED_ROUTE = 'visualization_plugin'
-    DEFAULT_BASE_URL = 'visualizations'
+    #: base url to controller endpoint
+    BASE_URL = 'visualizations'
+    #: name of files to search for additional template lookup directories
+    TEMPLATE_PATHS_CONFIG = 'additional_template_paths.xml'
     # these should be handled somewhat differently - and be passed onto their resp. methods in ctrl.visualization
     # TODO: change/remove if/when they can be updated to use this system
     #: any built in visualizations that have their own render method in ctrls/visualization
@@ -46,12 +47,108 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
     def __str__(self):
         return self.__class__.__name__
 
-    def __init__(self, app, skip_bad_plugins=True, **kwargs):
+    def __init__(self, app, template_cache_dir=None, directories_setting=None, skip_bad_plugins=True, **kwargs):
+        """
+        Set up the manager and load all visualization plugins.
+
+        :type   app:        UniverseApplication
+        :param  app:        the application (and its configuration) using this manager
+        :type   base_url:   string
+        :param  base_url:   url to prefix all plugin urls with
+        :type   template_cache_dir: string
+        :param  template_cache_dir: filesytem path to the directory where cached
+            templates are kept
+        """
         self.app = weakref.ref(app)
         self.config_parser = config_parser.VisualizationsConfigParser()
-        super(VisualizationsRegistry, self).__init__(app, skip_bad_plugins=skip_bad_plugins, **kwargs)
+        self.base_url = self.BASE_URL
+        self.template_cache_dir = template_cache_dir
+        self.additional_template_paths = []
+        self.directories = []
+        self.skip_bad_plugins = skip_bad_plugins
+        self.plugins = odict.odict()
+        self.directories = config_directories_from_setting(directories_setting, app.config.root)
+        self._load_configuration()
+        self._load_plugins()
 
-    def is_plugin(self, plugin_path):
+    def _load_configuration(self):
+        """
+        Load framework wide configuration, including:
+            additional template lookup directories
+        """
+        for directory in self.directories:
+            possible_path = os.path.join(directory, self.TEMPLATE_PATHS_CONFIG)
+            if os.path.exists(possible_path):
+                added_paths = self._parse_additional_template_paths(possible_path, directory)
+                self.additional_template_paths.extend(added_paths)
+
+    def _parse_additional_template_paths(self, config_filepath, base_directory):
+        """
+        Parse an XML config file at `config_filepath` for template paths
+        (relative to `base_directory`) to add to each plugin's template lookup.
+
+        Allows having a set of common templates for import/inheritance in
+        plugin templates.
+
+        :type   config_filepath:    string
+        :param  config_filepath:    filesystem path to the config file
+        :type   base_directory:     string
+        :param  base_directory:     path prefixed to new, relative template paths
+        """
+        additional_paths = []
+        xml_tree = parse_xml(config_filepath)
+        paths_list = xml_tree.getroot()
+        for rel_path_elem in paths_list.findall('path'):
+            if rel_path_elem.text is not None:
+                additional_paths.append(os.path.join(base_directory, rel_path_elem.text))
+        return additional_paths
+
+    def _load_plugins(self):
+        """
+        Search ``self.directories`` for potential plugins, load them, and cache
+        in ``self.plugins``.
+        :rtype:                 odict
+        :returns:               ``self.plugins``
+        """
+        for plugin_path in self._find_plugins():
+            try:
+                plugin = self._load_plugin(plugin_path)
+
+                if plugin and plugin.name not in self.plugins:
+                    self.plugins[plugin.name] = plugin
+                    log.info('%s, loaded plugin: %s', self, plugin.name)
+                # NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
+                # TODO: overwriting may be desired
+                elif plugin and plugin.name in self.plugins:
+                    log.warning('%s, plugin with name already exists: %s. Skipping...', self, plugin.name)
+
+            except Exception:
+                if not self.skip_bad_plugins:
+                    raise
+                log.exception('Plugin loading raised exception: %s. Skipping...', plugin_path)
+
+        return self.plugins
+
+    def _find_plugins(self):
+        """
+        Return the directory paths of plugins within ``self.directories``.
+
+        Paths are considered a plugin path if they pass ``self.is_plugin``.
+        :rtype:                 string generator
+        :returns:               paths of valid plugins
+        """
+        # due to the ordering of listdir, there is an implicit plugin loading order here
+        # could instead explicitly list on/off in master config file
+        for directory in self.directories:
+            for plugin_dir in sorted(os.listdir(directory)):
+                plugin_path = os.path.join(directory, plugin_dir)
+                if self._is_plugin(plugin_path):
+                    yield plugin_path
+
+    # TODO: add fill_template fn that is able to load extra libraries beforehand (and remove after)
+    # TODO: add template helpers specific to the plugins
+    # TODO: some sort of url_for for these plugins
+    def _is_plugin(self, plugin_path):
         """
         Determines whether the given filesystem path contains a plugin.
 
@@ -74,7 +171,7 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
             return False
         return True
 
-    def load_plugin(self, plugin_path):
+    def _load_plugin(self, plugin_path):
         """
         Create the visualization plugin object, parse its configuration file,
         and return it.
@@ -121,7 +218,7 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
         Wrap to throw error if plugin not in registry.
         """
         if key not in self.plugins:
-            raise galaxy.exceptions.ObjectNotFound('Unknown or invalid visualization: ' + key)
+            raise ObjectNotFound('Unknown or invalid visualization: ' + key)
         return self.plugins[key]
 
     # -- building links to visualizations from objects --
@@ -234,7 +331,7 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
         elif isinstance(visualization, vis_plugins.InteractiveEnvironmentPlugin):
             url = url_for('interactive_environment_plugin', visualization_name=visualization.name, **params)
         else:
-            url = url_for(self.NAMED_ROUTE, visualization_name=visualization.name, **params)
+            url = url_for('visualization_plugin', visualization_name=visualization.name, **params)
 
         # TODO:?? not sure if embedded would fit/used here? or added in client...
         return url

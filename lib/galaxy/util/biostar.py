@@ -1,6 +1,7 @@
 """
 Support for integration with the Biostar application
 """
+from __future__ import absolute_import
 
 import hmac
 import logging

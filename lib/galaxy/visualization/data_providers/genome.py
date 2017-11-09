@@ -11,9 +11,9 @@ import sys
 from json import loads
 
 import pysam
-from bx.interval_index_file import Indexes
 from bx.bbi.bigbed_file import BigBedFile
 from bx.bbi.bigwig_file import BigWigFile
+from bx.interval_index_file import Indexes
 from pysam import ctabix
 
 from galaxy.datatypes.interval import Bed, Gff, Gtf
@@ -237,7 +237,7 @@ class GenomeDataProvider(BaseDataProvider):
         except AttributeError:
             try:
                 column_names = range(self.original_dataset.metadata.columns)
-            except:  # Give up
+            except Exception:  # Give up
                 return []
 
         # Dataset must have column types; if not, cannot create filters.
@@ -276,25 +276,6 @@ class GenomeDataProvider(BaseDataProvider):
 class FilterableMixin:
     def get_filters(self):
         """ Returns a dataset's filters. """
-
-        # is_ functions taken from Tabular.set_meta
-        def is_int(column_text):
-            try:
-                int(column_text)
-                return True
-            except:
-                return False
-
-        def is_float(column_text):
-            try:
-                float(column_text)
-                return True
-            except:
-                if column_text.strip().lower() == 'na':
-                    return True  # na is special cased to be a float
-                return False
-
-        #
         # Get filters.
         # TODOs:
         # (a) might be useful to move this into each datatype's set_meta method;
@@ -449,7 +430,7 @@ class IntervalDataProvider(GenomeDataProvider):
             if length >= 5 and filter_cols and filter_cols[0] == "Score":
                 try:
                     payload.append(float(feature[4]))
-                except:
+                except Exception:
                     payload.append(feature[4])
 
             rval.append(payload)
@@ -540,7 +521,7 @@ class BedDataProvider(GenomeDataProvider):
 
                 try:
                     payload.append(float(feature[4]))
-                except:
+                except Exception:
                     payload.append(feature[4])
 
             rval.append(payload)
@@ -1697,7 +1678,7 @@ def package_gff_feature(feature, no_detail=False, filter_cols=[]):
                 try:
                     f = float(feature.score)
                     payload.append(f)
-                except:
+                except Exception:
                     payload.append(feature.score)
         elif col in feature.attributes:
             if feature.attributes[col] == 'nan':
@@ -1706,7 +1687,7 @@ def package_gff_feature(feature, no_detail=False, filter_cols=[]):
                 try:
                     f = float(feature.attributes[col])
                     payload.append(f)
-                except:
+                except Exception:
                     payload.append(feature.attributes[col])
         else:
             # Dummy value.

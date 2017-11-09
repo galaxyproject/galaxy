@@ -306,7 +306,7 @@ def parse_containers_config(containers_config_file):
     conf = DEFAULT_CONF.copy()
     try:
         with open(containers_config_file) as fh:
-            c = yaml.load(fh)
+            c = yaml.safe_load(fh)
             conf.update(c.get('containers', {}))
     except (OSError, IOError) as exc:
         if exc.errno == errno.ENOENT:

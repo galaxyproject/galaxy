@@ -67,7 +67,6 @@
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
-        'libs/jquery/jquery-ui',
         'libs/d3',
         'libs/require',
     )}
@@ -75,7 +74,9 @@
     <script type="text/javascript">
         // configure require
         // due to our using both script tags and require, we need to access the same jq in both for plugin retention
-        define( 'jquery', [], function(){ return jQuery; })
+        window.jQuery = window.jquery = window.$;
+        define( 'jquery', [], function(){ return window.$; })
+
         require.config({
             baseUrl: "${h.url_for('/static/scripts')}",
             // cache buster based on templated server (re)start time
@@ -105,6 +106,10 @@
         var galaxy_config = ${ h.dumps( self.galaxy_config ) };
     </script>
 
+    ${h.js(
+        'libs/jquery/jquery-ui'
+    )}
+
 </%def>
 
 <%def name="javascript_app()">
@@ -116,7 +121,7 @@
                 require([ jscript ], function( js_lib ){
                     $( function(){
                         // load galaxy module application
-                        var module = new js_lib.GalaxyApp();
+                        var module = new js_lib.default.GalaxyApp();
                     });
                 });
             } else {

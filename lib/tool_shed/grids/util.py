@@ -122,7 +122,7 @@ def get_latest_downloadable_repository_metadata(trans, repository):
         if repository_metadata is not None and repository_metadata.downloadable:
             return repository_metadata
         return None
-    except:
+    except Exception:
         latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(repository,
                                                                                               repo,
                                                                                               tip_ctx,
@@ -161,7 +161,7 @@ def get_latest_repository_metadata(trans, repository):
     try:
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, encoded_repository_id, tip_ctx)
         return repository_metadata
-    except:
+    except Exception:
         latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(repository,
                                                                                               repo,
                                                                                               tip_ctx,

@@ -1,7 +1,7 @@
-import urllib
-import re
-import random
 import logging
+import random
+import re
+import urllib
 
 log = logging.getLogger(__name__)
 

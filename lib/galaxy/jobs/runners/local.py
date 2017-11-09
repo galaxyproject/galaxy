@@ -128,7 +128,7 @@ class LocalJobRunner(BaseJobRunner):
         # Finish the job!
         try:
             job_wrapper.finish(stdout, stderr, exit_code)
-        except:
+        except Exception:
             log.exception("Job wrapper finish method failed")
             self._fail_job_local(job_wrapper, "Unable to finish job")
 

@@ -1,5 +1,5 @@
 $(document).ready(function() {
-    require(['libs/toastr'], function(Toastr){
+    require(['libs/toastr', 'mvc/tours'], function(Toastr, Tours) {
         window.TourGenerator = Backbone.View.extend({
             initialize: function(options) {
                 var me = this;

@@ -78,7 +78,7 @@ class UCSCTrackHub(Html):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Track Hub structure: Visualization in UCSC Track Hub"
 
     def sniff(self, filename):

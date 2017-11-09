@@ -23,6 +23,8 @@ usage: %prog [options]
    -a, --append=a: Append to existing all_fasta.loc file rather than create new
    -p, --sample-text=p: Copy over text from all_fasta.loc.sample file (false if set to append)
 """
+from __future__ import print_function
+
 import optparse
 import os
 import sys
@@ -184,7 +186,7 @@ def __main__():
         for ve in options.variant_exclusions.split(';'):
             v, e = ve.split(':')
             variant_exclusions[v] = e.split(',')
-    except:
+    except Exception:
         sys.stderr.write('Problem parsing the variant exclusion parameter (-n/--variant-exclusion). Make sure it follows the expected format\n')
         sys.exit(1)
     if options.append:
@@ -199,16 +201,16 @@ def __main__():
         paths_to_look_in = [os.path.join(options.genome_dir, '%s')]
 
     # say what we're looking in
-    print '\nLooking in:\n\t%s' % '\n\t'.join([p % '<build_name>' for p in paths_to_look_in])
+    print('\nLooking in:\n\t%s' % '\n\t'.join(p % '<build_name>' for p in paths_to_look_in))
     poss_names = ['<build_name>%s' % _ for _ in variants]
-    print 'for files that are named %s' % ', '.join(poss_names[:-1]),
+    print('for files that are named %s' % ', '.join(poss_names[:-1]), end=' ')
     if len(poss_names) > 1:
-        print 'or %s' % poss_names[-1],
+        print('or %s' % poss_names[-1], end=' ')
     if len(options.fasta_exts) == 1:
-        print 'with the extension %s.' % ', '.join(fasta_exts[:-1])
+        print('with the extension %s.' % ', '.join(fasta_exts[:-1]))
     else:
-        print 'with the extension %s or %s.' % (', '.join(fasta_exts[:-1]), fasta_exts[-1])
-    print '\nSkipping the following:\n\t%s' % '\n\t'.join(exemptions)
+        print('with the extension %s or %s.' % (', '.join(fasta_exts[:-1]), fasta_exts[-1]))
+    print('\nSkipping the following:\n\t%s' % '\n\t'.join(exemptions))
 
     # get column names
     col_values = []
@@ -265,8 +267,8 @@ def __main__():
                             del fasta_locs[tr]
 
     # output results
-    print '\nThere were %s fasta files found that were not included because they did not have the expected file names.' % len(unmatching_fasta_paths)
-    print '%s fasta files were found and listed.\n' % len(fasta_locs.keys())
+    print('\nThere were %s fasta files found that were not included because they did not have the expected file names.' % len(unmatching_fasta_paths))
+    print('%s fasta files were found and listed.\n' % len(fasta_locs.keys()))
 
     # output unmatching fasta files
     if options.unmatching_fasta and unmatching_fasta_paths:

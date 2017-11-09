@@ -1,17 +1,25 @@
-/* global define, QUnit, module, test, ok, equal, deepEqual, notEqual */
-define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-slider', 'mvc/ui/ui-thumbnails', 'mvc/ui/ui-tabs'
-], function( testApp, Ui, SelectContent, Drilldown, Slider, Thumbnails, Tabs ){
+/* global define */
+define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-slider', 'mvc/ui/ui-thumbnails', 'mvc/ui/ui-tabs'
+], function( QUnit, sinon, testApp, Ui, SelectContent, Drilldown, Slider, Thumbnails, Tabs ){
     'use strict';
-    module( 'Ui test', {
-        setup: function() {
+    Ui = Ui.default;
+    SelectContent = SelectContent.default;
+    Drilldown = Drilldown.default;
+    Slider = Slider.default;
+    Thumbnails = Thumbnails.default;
+    Tabs = Tabs.default;
+    QUnit.module( 'Ui test', {
+        beforeEach: function() {
             testApp.create();
+            this.clock = sinon.useFakeTimers();
         },
-        teardown: function() {
+        afterEach: function() {
             testApp.destroy();
+            this.clock.restore();
         }
     } );
 
-    test( 'tabs', function() {
+    QUnit.test( 'tabs', function(assert) {
         var self = this;
         var tabs = new Tabs.View({});
         var collection = tabs.collection;
@@ -22,9 +30,9 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
                 var $tab_element = tabs.$( '#tab-' + model.id );
                 var $tab_content = tabs.$( '#' + model.id );
                 var is_current = model.id == tabs.model.get( 'current' );
-                ok( $tab_content.hasClass( 'active' ) == is_current, 'Active state of content.' );
-                ok( $tab_element.hasClass( 'active' ) == is_current, 'Active state of element.' );
-                ok( $tab_element.css( 'display' ) == ( model.get( 'hidden' ) ? 'none' : 'list-item' ), 'Element visibility.' );
+                assert.ok( $tab_content.hasClass( 'active' ) == is_current, 'Active state of content.' );
+                assert.ok( $tab_element.hasClass( 'active' ) == is_current, 'Active state of element.' );
+                assert.ok( $tab_element.css( 'display' ) == ( model.get( 'hidden' ) ? 'none' : 'list-item' ), 'Element visibility.' );
             });
         };
         $( 'body' ).prepend( tabs.$el );
@@ -43,22 +51,22 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         tabs.model.set( 'visible', false );
         tabs.collection.reset();
         self.clock.tick ( window.WAIT_FADE );
-        ok( tabs.$el.css( 'display', 'none' ), 'Everything hidden.' );
+        assert.ok( tabs.$el.css( 'display', 'none' ), 'Everything hidden.' );
         tabs.model.set( 'visible', true );
         self.clock.tick ( window.WAIT_FADE );
-        ok( tabs.$el.css( 'display', 'block' ), 'Everything shown.' );
+        assert.ok( tabs.$el.css( 'display', 'block' ), 'Everything shown.' );
         collection.add( { id: 'id_c', title: 'title_c', icon: 'icon_c', $el: 'el_c' } );
         tabs.model.set( 'current', 'id_c' );
         _test();
     });
 
-    test( 'thumbnails', function() {
+    QUnit.test( 'thumbnails', function(assert) {
         var _test = function( options ) {
-            ok( thumb.$( '.tab-pane' ).length == options.ntabs, 'Two tabs found.' );
-            ok( thumb.$( '.ui-thumbnails-item' ).length == options.nitems, 'Thumbnail item.' );
-            ok( $(thumb.$( '.ui-thumbnails-image' )[ options.index || 0 ]).attr( 'src' ) == options.image_src, 'Correct image source' );
-            ok( $(thumb.$( '.ui-thumbnails-title' )[ options.index || 0 ]).html() == options.title, 'Correct title with icon' );
-            ok( $(thumb.$( '.ui-thumbnails-description-text' )[ options.index || 0 ]).html() == options.description, 'Correct description' );
+            assert.ok( thumb.$( '.tab-pane' ).length == options.ntabs, 'Two tabs found.' );
+            assert.ok( thumb.$( '.ui-thumbnails-item' ).length == options.nitems, 'Thumbnail item.' );
+            assert.ok( $(thumb.$( '.ui-thumbnails-image' )[ options.index || 0 ]).attr( 'src' ) == options.image_src, 'Correct image source' );
+            assert.ok( $(thumb.$( '.ui-thumbnails-title' )[ options.index || 0 ]).html() == options.title, 'Correct title with icon' );
+            assert.ok( $(thumb.$( '.ui-thumbnails-description-text' )[ options.index || 0 ]).html() == options.description, 'Correct description' );
         };
         var thumb = new Thumbnails.View({
             title_default   : 'title_default',
@@ -100,108 +108,108 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         });
     });
 
-    test( 'button-default', function() {
+    QUnit.test( 'button-default', function(assert) {
         var button = new Ui.Button( { title: 'title' } );
         var model = button.model;
         $( 'body' ).prepend( button.$el );
-        ok( button.$title.html() == 'title', 'Has correct title' );
+        assert.ok( button.$title.html() == 'title', 'Has correct title' );
         model.set( 'title', '_title' );
-        ok( button.$title.html() == '_title', 'Has correct new title' );
-        ok( !button.$el.attr( 'disabled' ), 'Button active' );
+        assert.ok( button.$title.html() == '_title', 'Has correct new title' );
+        assert.ok( !button.$el.attr( 'disabled' ), 'Button active' );
         model.set( 'disabled', true );
-        ok( button.$el.attr( 'disabled' ), 'Button disabled' );
+        assert.ok( button.$el.attr( 'disabled' ), 'Button disabled' );
         model.set( 'disabled', false );
-        ok( !button.$el.attr( 'disabled' ), 'Button active, again' );
+        assert.ok( !button.$el.attr( 'disabled' ), 'Button active, again' );
         model.set( 'wait', true );
-        ok( button.$title.html() == model.get( 'wait_text' ), 'Shows correct wait text' );
+        assert.ok( button.$title.html() == model.get( 'wait_text' ), 'Shows correct wait text' );
         model.set( 'wait_text', 'wait_text' );
-        ok( button.$title.html() == 'wait_text', 'Shows correct new wait text' );
+        assert.ok( button.$title.html() == 'wait_text', 'Shows correct new wait text' );
         model.set( 'wait', false );
-        ok( button.$title.html() == model.get( 'title' ), 'Shows correct regular title' );
+        assert.ok( button.$title.html() == model.get( 'title' ), 'Shows correct regular title' );
     });
-    test( 'button-default', function() {
+    QUnit.test( 'button-default', function(assert) {
         var button = new Ui.Button( { title: 'title' } );
         var model = button.model;
         $( 'body' ).prepend( button.$el );
-        ok( button.$title.html() == 'title', 'Has correct title' );
+        assert.ok( button.$title.html() == 'title', 'Has correct title' );
         model.set( 'title', '_title' );
-        ok( button.$title.html() == '_title', 'Has correct new title' );
-        ok( !button.$el.attr( 'disabled' ), 'Button active' );
+        assert.ok( button.$title.html() == '_title', 'Has correct new title' );
+        assert.ok( !button.$el.attr( 'disabled' ), 'Button active' );
         model.set( 'disabled', true );
-        ok( button.$el.attr( 'disabled' ), 'Button disabled' );
+        assert.ok( button.$el.attr( 'disabled' ), 'Button disabled' );
         model.set( 'disabled', false );
-        ok( !button.$el.attr( 'disabled' ), 'Button active, again' );
+        assert.ok( !button.$el.attr( 'disabled' ), 'Button active, again' );
         model.set( 'wait', true );
-        ok( button.$title.html() == model.get( 'wait_text' ), 'Shows correct wait text' );
+        assert.ok( button.$title.html() == model.get( 'wait_text' ), 'Shows correct wait text' );
         model.set( 'wait_text', 'wait_text' );
-        ok( button.$title.html() == 'wait_text', 'Shows correct new wait text' );
+        assert.ok( button.$title.html() == 'wait_text', 'Shows correct new wait text' );
         model.set( 'wait', false );
-        ok( button.$title.html() == model.get( 'title' ), 'Shows correct regular title' );
+        assert.ok( button.$title.html() == model.get( 'title' ), 'Shows correct regular title' );
     });
 
-    test( 'button-icon', function() {
+    QUnit.test( 'button-icon', function(assert) {
         var button = new Ui.ButtonIcon( { title: 'title' } );
         var model = button.model;
         $( 'body' ).prepend( button.$el );
-        ok( button.$title.html() == 'title', 'Has correct title' );
+        assert.ok( button.$title.html() == 'title', 'Has correct title' );
         model.set( 'title', '_title' );
-        ok( button.$title.html() == '_title', 'Has correct new title' );
-        ok( !button.$el.attr( 'disabled' ), 'Button active' );
+        assert.ok( button.$title.html() == '_title', 'Has correct new title' );
+        assert.ok( !button.$el.attr( 'disabled' ), 'Button active' );
         model.set( 'disabled', true );
-        ok( button.$el.attr( 'disabled' ), 'Button disabled' );
+        assert.ok( button.$el.attr( 'disabled' ), 'Button disabled' );
         model.set( 'disabled', false );
-        ok( !button.$el.attr( 'disabled' ), 'Button active, again' );
+        assert.ok( !button.$el.attr( 'disabled' ), 'Button active, again' );
     });
 
-    test( 'button-check', function() {
+    QUnit.test( 'button-check', function(assert) {
         var button = new Ui.ButtonCheck( { title: 'title' } );
         var model = button.model;
         $( 'body' ).prepend( button.$el );
-        ok( button.$title.html() == 'title', 'Has correct title' );
+        assert.ok( button.$title.html() == 'title', 'Has correct title' );
         model.set( 'title', '_title' );
-        ok( button.$title.html() == '_title', 'Has correct new title' );
-        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value' );
+        assert.ok( button.$title.html() == '_title', 'Has correct new title' );
+        assert.ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value' );
         button.value( 1 );
-        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 1 ] ), 'Has correct ' + model.get( 'value' ) + ' value' );
+        assert.ok( button.$icon.hasClass( button.model.get( 'icons' )[ 1 ] ), 'Has correct ' + model.get( 'value' ) + ' value' );
         button.value( 2 );
-        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 2 ] ), 'Has correct ' + model.get( 'value' ) + ' value' );
+        assert.ok( button.$icon.hasClass( button.model.get( 'icons' )[ 2 ] ), 'Has correct ' + model.get( 'value' ) + ' value' );
         button.value( 0, 100 );
-        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value after fraction' );
+        assert.ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value after fraction' );
         button.value( 10, 100 );
-        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 1 ] ), 'Has correct ' + model.get( 'value' ) + ' value after fraction' );
+        assert.ok( button.$icon.hasClass( button.model.get( 'icons' )[ 1 ] ), 'Has correct ' + model.get( 'value' ) + ' value after fraction' );
         button.value( 100, 100 );
-        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 2 ] ), 'Has correct ' + model.get( 'value' ) + ' value after fraction' );
+        assert.ok( button.$icon.hasClass( button.model.get( 'icons' )[ 2 ] ), 'Has correct ' + model.get( 'value' ) + ' value after fraction' );
         button.$el.trigger( 'click' );
-        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value after click' );
+        assert.ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value after click' );
         button.$el.trigger( 'click' );
-        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 2 ] ), 'Has correct ' + model.get( 'value' ) + ' value after click' );
+        assert.ok( button.$icon.hasClass( button.model.get( 'icons' )[ 2 ] ), 'Has correct ' + model.get( 'value' ) + ' value after click' );
         button.$el.trigger( 'click' );
-        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value after click' );
+        assert.ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value after click' );
     });
 
-    test( 'options', function() {
+    QUnit.test( 'options', function(assert) {
         function _test( obj, options ) {
-            ok( JSON.stringify( obj.value() ) == JSON.stringify( options.value ), 'Selected value is ' + options.value );
-            ok( obj.$menu.css( 'display' ) == ( options.menu_visible ? 'block' : 'none' ), 'Menu visibility: ' + options.menu_visible );
-            ok( obj.$message.css( 'display' ) == ( options.message_visible ? 'block' : 'none' ), 'Message visibility: ' + options.message_visible );
-            ok( obj.$options.css( 'display' ) == ( options.options_visible ? 'inline-block' : 'none' ), 'Options visibility: ' + options.options_visible );
-            options.message_cls && ok( obj.$message.hasClass( options.message_cls ), 'Message has class: ' + options.message_cls );
-            ok( obj.length() === options.length, 'Number of options: ' + options.length );
-            options.message_text && ok( obj.$message.html() === options.message_text, 'Message text is: ' + options.message_text );
-            options.first && ok( obj.first() === options.first, 'First value is: ' + options.first );
-            options.all_icon && ok( obj.all_button.$( '.icon' ).hasClass( options.all_icon ), 'All button in correct state: ' + options.all_icon );
-            ok( obj.$menu.find( '.ui-button-check' ).length === ( Boolean( options.all_icon ) ? 1 : 0 ), 'All button available: ' + Boolean( options.all_active ) );
+            assert.ok( JSON.stringify( obj.value() ) == JSON.stringify( options.value ), 'Selected value is ' + options.value );
+            assert.ok( obj.$menu.css( 'display' ) == ( options.menu_visible ? 'block' : 'none' ), 'Menu visibility: ' + options.menu_visible );
+            assert.ok( obj.$message.css( 'display' ) == ( options.message_visible ? 'block' : 'none' ), 'Message visibility: ' + options.message_visible );
+            assert.ok( obj.$options.css( 'display' ) == ( options.options_visible ? 'inline-block' : 'none' ), 'Options visibility: ' + options.options_visible );
+            options.message_cls && assert.ok( obj.$message.hasClass( options.message_cls ), 'Message has class: ' + options.message_cls );
+            assert.ok( obj.length() === options.length, 'Number of options: ' + options.length );
+            options.message_text && assert.ok( obj.$message.html() === options.message_text, 'Message text is: ' + options.message_text );
+            options.first && assert.ok( obj.first() === options.first, 'First value is: ' + options.first );
+            options.all_icon && assert.ok( obj.all_button.$( '.icon' ).hasClass( options.all_icon ), 'All button in correct state: ' + options.all_icon );
+            assert.ok( obj.$menu.find( '.ui-button-check' ).length === ( Boolean( options.all_icon ) ? 1 : 0 ), 'All button available: ' + Boolean( options.all_active ) );
         }
 
         var radio = new Ui.Radio.View({});
         $( 'body' ).prepend( radio.$el );
         radio.model.set( 'visible', false );
-        ok( radio.value() === null, 'Initial value is `null`.' );
-        ok( radio.$el.css( 'display' ) === 'none', 'Options hidden.' );
+        assert.ok( radio.value() === null, 'Initial value is `null`.' );
+        assert.ok( radio.$el.css( 'display' ) === 'none', 'Options hidden.' );
         radio.model.set( 'visible', true );
-        ok( radio.$el.css( 'display' ) === 'block', 'Options shown.' );
+        assert.ok( radio.$el.css( 'display' ) === 'block', 'Options shown.' );
         radio.model.set( 'value', 'Unavailable.' );
-        ok( radio.value() === null, 'Unavailable value ignored.' );
+        assert.ok( radio.value() === null, 'Unavailable value ignored.' );
         _test( radio, {
             menu_visible: false,
             message_visible: true,
@@ -454,21 +462,21 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         });
     });
 
-    test( 'select-default', function() {
+    QUnit.test( 'select-default', function(assert) {
         function _test( options ) {
-            ok( JSON.stringify( select.value() ) == JSON.stringify( options.value ), 'Selected value is ' + options.value );
-            ok( select.text() == options.label, 'Selected label is ' + options.label );
-            ok( select.$el.display === options.visible ? 'block' : 'none', options.visible ? 'Visible' : 'Hidden' );
-            ok( select.data.length === options.count && select.length(), 'Found ' + options.count + ' option' );
-            options.exists && ok( select.exists( options.exists ), 'Found value: ' + options.exists );
-            ok( select.$select.prop( 'multiple' ) === Boolean( options.multiple ), 'Multiple state set to: ' + options.multiple );
-            ok( Boolean( select.all_button ) === Boolean( options.multiple ), 'Visiblity of select all button correct.' );
-            options.multiple && ok( select.all_button.$( '.icon' ).hasClass( options.all_icon ), 'All button in correct state: ' + options.all_icon );
+            assert.ok( JSON.stringify( select.value() ) == JSON.stringify( options.value ), 'Selected value is ' + options.value );
+            assert.ok( select.text() == options.label, 'Selected label is ' + options.label );
+            assert.ok( select.$el.display === options.visible ? 'block' : 'none', options.visible ? 'Visible' : 'Hidden' );
+            assert.ok( select.data.length === options.count && select.length(), 'Found ' + options.count + ' option' );
+            options.exists && assert.ok( select.exists( options.exists ), 'Found value: ' + options.exists );
+            assert.ok( select.$select.prop( 'multiple' ) === Boolean( options.multiple ), 'Multiple state set to: ' + options.multiple );
+            assert.ok( Boolean( select.all_button ) === Boolean( options.multiple ), 'Visiblity of select all button correct.' );
+            options.multiple && assert.ok( select.all_button.$( '.icon' ).hasClass( options.all_icon ), 'All button in correct state: ' + options.all_icon );
         }
         var select = new Ui.Select.View({});
         $( 'body' ).prepend( select.$el );
-        ok( select.first() === '__null__', 'First select is \'__null__\'' );
-        ok( select.$dropdown.hasClass( 'fa-caret-down' ), 'Caret down shown.' );
+        assert.ok( select.first() === '__null__', 'First select is \'__null__\'' );
+        assert.ok( select.$dropdown.hasClass( 'fa-caret-down' ), 'Caret down shown.' );
         select.model.set( 'data', [ { value: 'value', label: 'label' } ] );
         _test({
             value   : 'value',
@@ -571,124 +579,124 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         });
     } );
 
-    test( 'label', function() {
+    QUnit.test( 'label', function(assert) {
         var label = new Ui.Label({
             title   : '_title'
         });
         $( 'body' ).prepend( label.$el );
-        ok( label.$el.html() === '_title', 'Correct title' );
+        assert.ok( label.$el.html() === '_title', 'Correct title' );
         label.model.set( 'title', '_new_title' );
-        ok( label.$el.html() === '_new_title', 'Correct new title' );
+        assert.ok( label.$el.html() === '_new_title', 'Correct new title' );
     } );
 
-    test( 'slider', function() {
+    QUnit.test( 'slider', function(assert) {
         var input = new Slider.View( { min: 1, max: 100, value: 10 } );
         $( 'body' ).prepend( input.$el );
-        ok( input.$slider.slider( 'value' ) == 10, 'Correct value.' );
-        ok( input.value( 1000 ) == 100, 'Correct upper limit.' );
-        ok( input.$slider.slider( 'value' ) == 100, 'Correct slider value.' );
-        ok( input.$slider.slider( 'option', 'step' ) == 1, 'Correct default step size.' );
+        assert.ok( input.$slider.slider( 'value' ) == 10, 'Correct value.' );
+        assert.ok( input.value( 1000 ) == 100, 'Correct upper limit.' );
+        assert.ok( input.$slider.slider( 'value' ) == 100, 'Correct slider value.' );
+        assert.ok( input.$slider.slider( 'option', 'step' ) == 1, 'Correct default step size.' );
         var input1 = new Slider.View( { value: 10 } );
         $( 'body' ).prepend( input1.$el );
-        ok( input1.$slider.css( 'display' ) == 'none', 'Slider hidden.' );
+        assert.ok( input1.$slider.css( 'display' ) == 'none', 'Slider hidden.' );
         var input2 = new Slider.View( { min: 0, max: 100, value: 10.1, precise: true } );
         $( 'body' ).prepend( input2.$el );
-        ok( input2.$slider.slider( 'option', 'step' ) == 0.01, 'Correct float step size.' );
-        ok( input2.$slider.slider( 'value' ) == 10.1, 'Correct float slider value.' );
+        assert.ok( input2.$slider.slider( 'option', 'step' ) == 0.01, 'Correct float step size.' );
+        assert.ok( input2.$slider.slider( 'value' ) == 10.1, 'Correct float slider value.' );
     } );
 
-    test( 'input', function() {
+    QUnit.test( 'input', function(assert) {
         var input = new Ui.Input();
         $( 'body' ).prepend( input.$el );
-        ok( input.tagName === 'input', 'Created input.' );
-        ok( input.value() === undefined, 'Input empty.' );
+        assert.ok( input.tagName === 'input', 'Created input.' );
+        assert.ok( input.value() === undefined, 'Input empty.' );
         input.model.set( 'value', '_value' );
-        ok( input.$el.val() === '_value', 'Input with value.' );
-        ok( !input.$el.hasClass( '_cls' ), 'Has no custom class.' );
+        assert.ok( input.$el.val() === '_value', 'Input with value.' );
+        assert.ok( !input.$el.hasClass( '_cls' ), 'Has no custom class.' );
         input.model.set( 'cls', '_cls' );
-        ok( input.$el.hasClass( '_cls' ), 'Has custom class.' );
-        ok( !input.$el.attr( 'placeholder' ), 'Has no placeholder' );
+        assert.ok( input.$el.hasClass( '_cls' ), 'Has custom class.' );
+        assert.ok( !input.$el.attr( 'placeholder' ), 'Has no placeholder' );
         input.model.set( 'placeholder', '_placeholder' );
-        ok( input.$el.attr( 'placeholder' ) === '_placeholder', 'Has correct placeholder' );
+        assert.ok( input.$el.attr( 'placeholder' ) === '_placeholder', 'Has correct placeholder' );
         input.model.set( 'disabled', true );
-        ok( input.$el.attr( 'disabled' ), 'Disabled' );
+        assert.ok( input.$el.attr( 'disabled' ), 'Disabled' );
         input.model.set( 'disabled', false );
-        ok( !input.$el.attr( 'disabled' ), 'Enabled' );
+        assert.ok( !input.$el.attr( 'disabled' ), 'Enabled' );
         input.model.set( 'visible', false );
-        ok( input.$el.css( 'display' ) === 'none', 'Hidden' );
+        assert.ok( input.$el.css( 'display' ) === 'none', 'Hidden' );
         input.model.set( 'visible', true );
-        ok( input.$el.css( 'display' ) === 'inline-block', 'Shown' );
+        assert.ok( input.$el.css( 'display' ) === 'inline-block', 'Shown' );
     } );
 
-    test( 'textarea', function() {
+    QUnit.test( 'textarea', function(assert) {
         var input = new Ui.Input( { area: true } );
         $( 'body' ).prepend( input.$el );
-        ok( input.tagName === 'textarea', 'Created textarea.' );
-        ok( input.value() === undefined, 'Unavailable value.' );
+        assert.ok( input.tagName === 'textarea', 'Created textarea.' );
+        assert.ok( input.value() === undefined, 'Unavailable value.' );
         input.model.set( 'value', '_value' );
-        ok( input.value() === '_value', 'Correct new value.' );
-        ok( !input.$el.hasClass( '_cls' ), 'Has no custom class.' );
+        assert.ok( input.value() === '_value', 'Correct new value.' );
+        assert.ok( !input.$el.hasClass( '_cls' ), 'Has no custom class.' );
         input.model.set( 'cls', '_cls' );
-        ok( input.$el.hasClass( '_cls' ), 'Has custom class.' );
+        assert.ok( input.$el.hasClass( '_cls' ), 'Has custom class.' );
     } );
 
-    test( 'message', function() {
+    QUnit.test( 'message', function(assert) {
         var message = new Ui.Message({
             persistent  : true,
             message     : '_message',
             status      : 'danger'
         });
         $( 'body' ).prepend( message.$el );
-        ok( message.$el.hasClass( 'alert-danger' ), 'Alert danger.' );
+        assert.ok( message.$el.hasClass( 'alert-danger' ), 'Alert danger.' );
         message.model.set( 'status', 'info' );
-        ok( !message.$el.hasClass( 'alert-danger' ), 'Alert danger (disabled).' );
-        ok( message.$el.hasClass( 'alert-info' ), 'Alert info.' );
-        ok( message.$el.html() === '_message', 'Correct message.' );
+        assert.ok( !message.$el.hasClass( 'alert-danger' ), 'Alert danger (disabled).' );
+        assert.ok( message.$el.hasClass( 'alert-info' ), 'Alert info.' );
+        assert.ok( message.$el.html() === '_message', 'Correct message.' );
         message.model.set( 'message', '_new_message' );
-        ok( message.$el.html() === '_new_message', 'Correct new message.' );
+        assert.ok( message.$el.html() === '_new_message', 'Correct new message.' );
     } );
 
-    test( 'hidden', function() {
+    QUnit.test( 'hidden', function(assert) {
         var hidden = new Ui.Hidden();
         $( 'body' ).prepend( hidden.$el );
         hidden.model.set( 'info', '_info' );
-        ok( hidden.$info.css( 'display', 'block' ), 'Info shown.' );
-        ok( hidden.$info.html() === '_info', 'Info text correct.' );
+        assert.ok( hidden.$info.css( 'display', 'block' ), 'Info shown.' );
+        assert.ok( hidden.$info.html() === '_info', 'Info text correct.' );
         hidden.model.set( 'info', '' );
-        ok( hidden.$info.css( 'display', 'none' ), 'Info hidden.' );
+        assert.ok( hidden.$info.css( 'display', 'none' ), 'Info hidden.' );
         hidden.model.set( 'value', '_value' );
-        ok( hidden.$hidden.val() === '_value', 'Correct value' );
+        assert.ok( hidden.$hidden.val() === '_value', 'Correct value' );
     } );
 
-    test( 'select-content', function() {
+    QUnit.test( 'select-content', function(assert) {
         var select = new SelectContent.View({});
         $( 'body' ).prepend( select.$el );
         var _testSelect = function( tag, options ) {
             var field = select.fields[ tag == 'first' ? 0 : select.fields.length - 1 ];
             var $select = select.$( '.ui-select:' + tag );
             var $button = select.$( '.ui-radiobutton' ).find( 'label:' + tag );
-            ok ( field.length() == options[ tag + 'length' ], tag + ' one has ' + options[ tag + 'length' ] + ' options' );
-            ok ( field.data[ 0 ].value == options[ tag + 'value' ], tag + ' option has correct value' );
-            ok ( field.data[ 0 ].label == options[ tag + 'label' ], tag + ' option has correct label' );
-            ok ( $select.hasClass( 'ui-select-multiple' ) == options[ tag + 'multiple' ], 'Check multiple option' );
+            assert.ok( field.length() == options[ tag + 'length' ], tag + ' one has ' + options[ tag + 'length' ] + ' options' );
+            assert.ok( field.data[ 0 ].value == options[ tag + 'value' ], tag + ' option has correct value' );
+            assert.ok( field.data[ 0 ].label == options[ tag + 'label' ], tag + ' option has correct label' );
+            assert.ok( $select.hasClass( 'ui-select-multiple' ) == options[ tag + 'multiple' ], 'Check multiple option' );
             $button.trigger( 'mouseover' );
             var tooltip = $( '.tooltip-inner:last' ).text();
             $button.trigger( 'mouseleave' );
-            ok( tooltip.indexOf( 'dataset' ) != -1 || tooltip.indexOf( 'collection' ) != -1, 'Basic tooltip check' );
+            assert.ok( tooltip.indexOf( 'dataset' ) != -1 || tooltip.indexOf( 'collection' ) != -1, 'Basic tooltip check' );
         };
         var _test = function( options ) {
-            ok ( select.button_type.$( '.ui-option:first' ).hasClass( 'active' ), 'First one is toggled' );
-            ok ( select.$( '.ui-select' ).length == options.selectfields, 'Found ' + options.selectfields + ' select fields' );
-            ok ( select.button_type.$( '.ui-option' ).length == options.selectfields, 'Found ' + options.selectfields + ' radio button options' );
-            ok ( select.$( '.ui-select-multiple' ).length == options.totalmultiple, 'Contains ' + options.totalmultiple + ' multiselect fields' );
-            ok ( select.$el.children( '.ui-options' ).find( '.ui-option' ).length === ( options.selectfields > 1 ? options.selectfields : 0 ), 'Radio button count' );
-            ok ( select.$( '.ui-select:first' ).css( 'display' ) == 'block', 'Check select visibility' );
-            ok ( select.$( '.ui-select:last' ).css( 'display' ) == ( options.selectfields == 1 ? 'block' : 'none' ), 'Last select visibility' );
+            assert.ok( select.button_type.$( '.ui-option:first' ).hasClass( 'active' ), 'First one is toggled' );
+            assert.ok( select.$( '.ui-select' ).length == options.selectfields, 'Found ' + options.selectfields + ' select fields' );
+            assert.ok( select.button_type.$( '.ui-option' ).length == options.selectfields, 'Found ' + options.selectfields + ' radio button options' );
+            assert.ok( select.$( '.ui-select-multiple' ).length == options.totalmultiple, 'Contains ' + options.totalmultiple + ' multiselect fields' );
+            assert.ok( select.$el.children( '.ui-options' ).find( '.ui-option' ).length === ( options.selectfields > 1 ? options.selectfields : 0 ), 'Radio button count' );
+            assert.ok( select.$( '.ui-select:first' ).css( 'display' ) == 'block', 'Check select visibility' );
+            assert.ok( select.$( '.ui-select:last' ).css( 'display' ) == ( options.selectfields == 1 ? 'block' : 'none' ), 'Last select visibility' );
             _testSelect( 'first', options );
             _testSelect( 'last', options );
         };
 
-        ok ( select.button_type.value() == 0, 'Initial mode selected by default.' );
+        assert.ok( select.button_type.value() == 0, 'Initial mode selected by default.' );
         select.model.set( 'data', { 'hda':  [{ id: 'id0', name: 'name0', hid: 'hid0' },
                                              { id: 'id1', name: 'name1', hid: 'hid1' }],
                                     'hdca': [{ id: 'id2', name: 'name2', hid: 'hid2' },
@@ -761,33 +769,33 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         _test( initial );
 
         select.model.set( 'wait', true );
-        ok ( select.$( '.icon-dropdown' ).hasClass( 'fa-spinner' ), 'Shows spinner' );
+        assert.ok( select.$( '.icon-dropdown' ).hasClass( 'fa-spinner' ), 'Shows spinner' );
         select.model.set( 'wait', false );
-        ok ( select.$( '.icon-dropdown' ).hasClass( 'fa-caret-down' ), 'Shows caret' );
+        assert.ok( select.$( '.icon-dropdown' ).hasClass( 'fa-caret-down' ), 'Shows caret' );
         select.model.set( 'optional', true );
-        ok ( select.fields[ 0 ].data[ 0 ].value == '__null__', 'First option is optional value' );
+        assert.ok( select.fields[ 0 ].data[ 0 ].value == '__null__', 'First option is optional value' );
         select.model.set( 'optional', false );
-        ok ( select.fields[ 0 ].data[ 0 ].value != '__null__', 'First option is not optional value' );
+        assert.ok( select.fields[ 0 ].data[ 0 ].value != '__null__', 'First option is not optional value' );
 
         select.model.set( 'value', { values: [ { id: 'id1', src: 'hda' } ] } );
-        ok( JSON.stringify( select.value() ) == '{"values":[{"id":"id1","name":"name1","hid":"hid1"}],"batch":false}', 'Checking single value' );
+        assert.ok( JSON.stringify( select.value() ) == '{"values":[{"id":"id1","name":"name1","hid":"hid1"}],"batch":false}', 'Checking single value' );
 
-        ok( select.config[ select.model.get( 'current' ) ].src == 'hda', 'Matched dataset field' );
-        ok( !select.config[ select.model.get( 'current' ) ].multiple, 'Matched single select field' );
+        assert.ok( select.config[ select.model.get( 'current' ) ].src == 'hda', 'Matched dataset field' );
+        assert.ok( !select.config[ select.model.get( 'current' ) ].multiple, 'Matched single select field' );
         select.model.set( 'value', { values: [ { id: 'id0', src: 'hda' }, { id: 'id1', src: 'hda' } ] } );
-        ok( select.config[ select.model.get( 'current' ) ].multiple, 'Matched multiple field' );
-        ok( JSON.stringify( select.value() ) == '{"values":[{"id":"id0","name":"name0","hid":"hid0"},{"id":"id1","name":"name1","hid":"hid1"}],"batch":true}', 'Checking multiple values' );
+        assert.ok( select.config[ select.model.get( 'current' ) ].multiple, 'Matched multiple field' );
+        assert.ok( JSON.stringify( select.value() ) == '{"values":[{"id":"id0","name":"name0","hid":"hid0"},{"id":"id1","name":"name1","hid":"hid1"}],"batch":true}', 'Checking multiple values' );
         select.model.set( 'value', { values: [ { id: 'id2', src: 'hdca' } ] } );
-        ok( select.config[ select.model.get( 'current' ) ].src == 'hdca', 'Matched collection field' );
-        ok( JSON.stringify( select.value() ) == '{"values":[{"id":"id2","name":"name2","hid":"hid2"}],"batch":true}', 'Checking collection value' );
+        assert.ok( select.config[ select.model.get( 'current' ) ].src == 'hdca', 'Matched collection field' );
+        assert.ok( JSON.stringify( select.value() ) == '{"values":[{"id":"id2","name":"name2","hid":"hid2"}],"batch":true}', 'Checking collection value' );
 
         select = new SelectContent.View({});
         $( 'body' ).prepend( select.$el );
         var _testEmptySelect = function( tag, txt_extension, txt_label ) {
             var field = select.fields[ tag == 'first' ? 0 : select.fields.length - 1 ];
             var $select = select.$( '.ui-select:' + tag );
-            ok ( field.data[ 0 ].value == '__null__', tag + ' option has correct empty value.' );
-            ok ( field.data[ 0 ].label == 'No ' + txt_extension + txt_label + ' available.', tag + ' option has correct empty label.' );
+            assert.ok( field.data[ 0 ].value == '__null__', tag + ' option has correct empty value.' );
+            assert.ok( field.data[ 0 ].label == 'No ' + txt_extension + txt_label + ' available.', tag + ' option has correct empty label.' );
         };
 
         var labels = select.model.get( 'src_labels' );

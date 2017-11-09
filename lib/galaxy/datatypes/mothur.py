@@ -605,15 +605,21 @@ class Frequency(Tabular):
         >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.freq' )
         >>> Frequency().sniff( fname )
         False
+
+        # Expression count matrix (EdgeR wrapper)
+        >>> fname = get_test_fname( 'mothur_datatypetest_false_2.mothur.freq' )
+        >>> Frequency().sniff( fname )
+        False
         """
         headers = iter_headers(filename, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@'):
+                # first line should be #<version string>
                 if count == 0:
-                    # first line should be #<version string>
-                    if not line[0].startswith('#') and len(line) == 1:
+                    if not line[0].startswith('#') or len(line) != 1:
                         return False
+
                 else:
                     # all other lines should be <int> <float>
                     if len(line) != 2:
@@ -621,9 +627,13 @@ class Frequency(Tabular):
                     try:
                         int(line[0])
                         float(line[1])
+
+                        if line[1].find('.') == -1:
+                            return False
                     except Exception:
                         return False
                 count += 1
+
         if count > 1:
             return True
 

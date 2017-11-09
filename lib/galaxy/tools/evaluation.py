@@ -91,7 +91,6 @@ class ToolEvaluator(object):
                     self.dataset = dataset
                     self.file_name = dataset.file_name
                     self.metadata = dict()
-                    self.children = []
 
             special = get_special()
             if special:
@@ -134,6 +133,7 @@ class ToolEvaluator(object):
             raise SyntaxError("Unbound variable input.")  # Don't let $input hang Python evaluation process.
 
         param_dict["input"] = input
+        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = os.path.join(job_working_directory, 'registry.xml')
 
         param_dict.update(self.tool.template_macro_params)
         # All parameters go into the param_dict
@@ -302,9 +302,6 @@ class ToolEvaluator(object):
                         dataset_path = input_dataset_paths[real_path]
                         wrapper_kwds['dataset_path'] = dataset_path
                 param_dict[name] = DatasetFilenameWrapper(data, **wrapper_kwds)
-            if data:
-                for child in data.children:
-                    param_dict["_CHILD___%s___%s" % (name, child.designation)] = DatasetFilenameWrapper(child)
 
     def __populate_output_collection_wrappers(self, param_dict, output_collections, output_paths, job_working_directory):
         output_dataset_paths = dataset_path_rewrites(output_paths)
@@ -354,8 +351,6 @@ class ToolEvaluator(object):
             # Provide access to a path to store additional files
             # TODO: path munging for cluster/dataset server relocatability
             param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, "dataset_%s_files" % (hda.dataset.id)))
-            for child in hda.children:
-                param_dict["_CHILD___%s___%s" % (name, child.designation)] = DatasetFilenameWrapper(child)
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
                 # Assume the reason we lack this output is because a filter
@@ -391,7 +386,6 @@ class ToolEvaluator(object):
         # For the upload tool, we need to know the root directory and the
         # datatypes conf path, so we can load the datatypes registry
         param_dict['__root_dir__'] = param_dict['GALAXY_ROOT_DIR'] = os.path.abspath(self.app.config.root)
-        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
         param_dict['__admin_users__'] = self.app.config.admin_users
         param_dict['__user__'] = RawObjectWrapper(param_dict.get('__user__', None))
 

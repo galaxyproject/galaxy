@@ -11,6 +11,7 @@ from galaxy.config import (
 )
 from galaxy.script import main_factory
 from galaxy.tools.deps import CachedDependencyManager, DependencyManager, NullDependencyManager
+from galaxy.util.properties import find_config_file, load_app_properties
 
 DESCRIPTION = "Script to manage tool dependencies (with focus on a Conda environments)."
 

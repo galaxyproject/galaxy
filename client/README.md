@@ -1,123 +1,62 @@
 Client Build System
 ===================
 
-Builds and moves the client-side scripts necessary for running the Galaxy webapps. There's no need to use this system
-unless you are modifying or developing client-side scripts.
+Installs, stages, and builds the client-side scripts necessary for running the
+Galaxy webapp. There's no need to use this system unless you are modifying or
+developing client-side scripts.
 
-The base dependencies you'll need are Node.js and the Node Package Manager
-(npm).  See nodejs.org for more information.
+The base dependencies you will need are Node.js and Yarn.  On OSX the easiest
+way to get set up is using homebrew and the command `brew install nodejs yarn`.
+More information including instructions for other platforms is available  at
+nodejs.org and yarnpkg.com.
 
 
-Simple Full Build
-=================
+Complete Client Build
+================================================
 
-The simplest way to rebuild the entire client to incorporate any local changes
-is to run the 'client' rule in the Galaxy makefile, which is in the repository
-root.  This will also ensure any local node modules are installed.
+There are many moving parts to the client build system, but the entrypoint for
+most people is the 'client' rule in the Makefile at the root of the Galaxy
+repository.  Execute the following to perform a complete build including
+dependency staging, style building, script processing and bundling.
 
     make client
 
 
-Detailed Build Instructions
-===========================
+Automatic Rebuilding (Watch Mode)
+=================================
 
-Once npm is installed, install the grunt task manager and its command line into your global scope:
+When you're actively developing, it is sometimes convenient to have the client
+automatically rebuild every time you save a file.  You can do this using:
 
-    npm install -g grunt grunt-cli
+    make client-watch
 
-Next, from within this directory, install the local build dependencies:
-
-    cd client
-    npm install
-
-You're now ready to re-build the client scripts after modifying them.
-
-
-Rebuilding
-==========
-
-There are two methods for rebuilding: a complete rebuild and automatic, partial rebuilds while you develop.
-
-A complete rebuild can be done with the following (from the `client` directory):
-
-    grunt
-
-This will:
-
-1. compress the files in client/galaxy/scripts and place them in static/scripts
-2. generate source maps and place them in static/maps
-3. rebuild the webpack-based client apps
-
-
-Rebuilding Scripts Only
-=======================
-
-To re-minify all the individual javascript files:
-
-    grunt scripts
-
-
-Rebuilding Webpack Apps
-=======================
-
-To rebuild the webpack bundles for apps (compressed for production):
-
-    grunt webpack
-
-To rebuild the apps without compression:
-
-    grunt webpack-dev
-
-To rebuild without compression and watch and rebuild when scripts change:
-
-    grunt webpack-watch
+This will first stage any dependencies (yarn-installed packages like jquery,
+etc), and then will watch for changes in any of the galaxy client source files.
+When a file is changed, the client will automatically rebuild, after which you
+can usually force refresh your browser to see changes.  Note that it is still
+recommended to run 'make client' after you are finished actively developing
+using 'make client-watch'.
 
 
 Changing Styles/CSS
 ===================
 
-The CSS and styling used by Galaxy is also controlled from this directory. Galaxy uses LESS, a superset of CSS that
-compiles to CSS, for its styling. LESS files are kept in client/galaxy/style/less. Compiled CSS is in static/style/blue.
+The CSS and styling used by Galaxy is also controlled from this directory.
+Galaxy uses LESS, a superset of CSS that compiles to CSS, for its styling. LESS
+files are kept in client/galaxy/style/less. Compiled CSS is in
+static/style/blue.
 
-Use grunt to recompile the LESS in into CSS (from the `client` directory):
+As mentioned above, 'make client' will also rebuild styles.  If you *only* want
+to run the style task, use the following command from the `client` directory:
 
-    grunt style
-
-
-Grunt watch
-===========
-
-Grunt can also do an automatic, partial rebuild of any files you change *as you develop* by:
-
-1. opening a new terminal session
-2. `cd client`
-3. Watch with:
-    1. `grunt watch` to watch the *scripts/* folder
-    2. `grunt watch-style` to watch the *style/* folder
-
-This starts a new grunt watch process that will monitor the files, in the corresponding folder, for changes and copy and
-rebuild them when they change.
-
-You can stop the watch task by pressing `Ctrl+C`. Note: you should also be able to background that task
-if you prefer.
-
-
-Using a Locally Installed Version of Grunt
-==========================================
-
-A non-global version of grunt and the grunt-cli are installed when using 'npm install'. If you'd rather build with that
-version, you'll need to use the full, local path when calling it:
-
-    ./node_modules/.bin/grunt
-    # or
-    ./node_modules/.bin/grunt watch
+    yarn run style
 
 
 The Toolshed Client Build
 =========================
 
-The commands mentioned above in 'Rebuilding' and 'Grunt watch' also can be applied to toolshed scripts by using the
-`--app=toolshed` option:
+The toolshed client is not tightly integrated with the rest of the build
+system.  To build the toolshed client, execute the following command from the
+`client` directory.
 
-	grunt watch --app=toolshed
-	grunt --app=toolshed
+	yarn run build-toolshed

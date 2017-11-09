@@ -7,8 +7,12 @@ import logging
 import os
 import re
 import shutil
-import subprocess
 import tempfile
+
+try:
+    import pysam
+except ImportError:
+    pysam = None
 
 from galaxy.util.compression_utils import get_fileobj
 
@@ -132,10 +136,14 @@ def _bam_to_sam(local_name, temp_name):
     temp_local = tempfile.NamedTemporaryFile(suffix='.sam', prefix='local_bam_converted_to_sam_')
     fd, temp_temp = tempfile.mkstemp(suffix='.sam', prefix='history_bam_converted_to_sam_')
     os.close(fd)
-    command = 'samtools view -h -o "%s" "%s"' % (temp_local.name, local_name)
-    check_command(command, 'Converting local (test-data) bam to sam')
-    command = 'samtools view -h -o "%s" "%s"' % (temp_temp, temp_name)
-    check_command(command, 'Converting history bam to sam ')
+    try:
+        pysam.view('-h', '-o%s' % temp_local.name, local_name)
+    except Exception as e:
+        raise Exception("Converting local (test-data) BAM to SAM failed: %s" % e)
+    try:
+        pysam.view('-h', '-o%s' % temp_temp, temp_name)
+    except Exception as e:
+        raise Exception("Converting history BAM to SAM failed: %s" % e)
     os.remove(temp_name)
     return temp_local, temp_temp
 
@@ -150,18 +158,6 @@ def _verify_checksum(data, checksum_type, expected_checksum_value):
     if expected_checksum_value != actual_checksum_value:
         template = "Output checksum [%s] does not match expected [%s] (using hash algorithm %s)."
         message = template % (actual_checksum_value, expected_checksum_value, checksum_type)
-        raise AssertionError(message)
-
-
-def check_command(command, description):
-    """Verify a command runs with an exit code of 0."""
-    # TODO: also collect ``which samtools`` and ``samtools --version``
-    p = subprocess.Popen(args=command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    (stdout, stderr) = p.communicate()
-    if p.returncode:
-        template = description
-        template += " failed: (cmd=[%s], stdout=[%s], stderr=[%s])"
-        message = template % (command, stdout, stderr)
         raise AssertionError(message)
 
 

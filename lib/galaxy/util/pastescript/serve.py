@@ -16,6 +16,7 @@
 # code here, stripping out uneeded functionality.
 
 # All top level imports from each package moved here and organized
+from __future__ import absolute_import
 from __future__ import print_function
 
 import atexit

@@ -1,11 +1,7 @@
 import logging
 import os
-import sys
 
-galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
-sys.path.insert(1, os.path.join(galaxy_root, 'lib'))
-
-from galaxy.util import parse_xml
+from galaxy.util import galaxy_root_path, parse_xml
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +60,7 @@ def parse_tool_panel_config(config, shed_tools_dict):
                     has_test_data = True
                 if galaxy_test_file_dir != last_galaxy_test_file_dir:
                     if not os.path.isabs(galaxy_test_file_dir):
-                        galaxy_test_file_dir = os.path.join(galaxy_root, galaxy_test_file_dir)
+                        galaxy_test_file_dir = os.path.join(galaxy_root_path, galaxy_test_file_dir)
                 guid = elem.get('guid')
                 shed_tools_dict[guid] = galaxy_test_file_dir
                 last_galaxy_test_file_dir = galaxy_test_file_dir
@@ -83,7 +79,7 @@ def parse_tool_panel_config(config, shed_tools_dict):
                             has_test_data = True
                         if galaxy_test_file_dir != last_galaxy_test_file_dir:
                             if not os.path.isabs(galaxy_test_file_dir):
-                                galaxy_test_file_dir = os.path.join(galaxy_root, galaxy_test_file_dir)
+                                galaxy_test_file_dir = os.path.join(galaxy_root_path, galaxy_test_file_dir)
                         guid = section_elem.get('guid')
                         shed_tools_dict[guid] = galaxy_test_file_dir
                         last_galaxy_test_file_dir = galaxy_test_file_dir

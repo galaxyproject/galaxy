@@ -16,16 +16,16 @@ class ToolParameterSanitizer(object):
     Handles tool parameter specific sanitizing.
 
     >>> from xml.etree.ElementTree import XML
-    >>> sanitizer = ToolParameterSanitizer.from_element( XML(
+    >>> sanitizer = ToolParameterSanitizer.from_element(XML(
     ... '''
     ... <sanitizer invalid_char="">
     ...   <valid initial="string.letters"/>
     ... </sanitizer>
-    ... ''' ) )
-    >>> sanitizer.sanitize_param( ''.join( sorted( [ c for c in string.printable ] ) ) ) == ''.join( sorted( [ c for c in string.letters ] ) )
+    ... '''))
+    >>> sanitizer.sanitize_param(''.join(sorted([c for c in string.printable]))) == ''.join(sorted([c for c in string.letters]))
     True
-    >>> slash = chr( 92 )
-    >>> sanitizer = ToolParameterSanitizer.from_element( XML(
+    >>> slash = chr(92)
+    >>> sanitizer = ToolParameterSanitizer.from_element(XML(
     ... '''
     ... <sanitizer>
     ...   <valid initial="none">
@@ -38,9 +38,9 @@ class ToolParameterSanitizer(object):
     ...     <add source="%s" target="%s%s"/>
     ...   </mapping>
     ... </sanitizer>
-    ... ''' % ( slash, slash, slash, slash, slash ) ) )
+    ... ''' % (slash, slash, slash, slash, slash)))
     >>> text = '%s"$rm&#!' % slash
-    >>> [ c for c in sanitizer.sanitize_param( text ) ] == [ slash, slash, slash, '"', '$', 'r', 'm', '&', '#', '!' ]
+    >>> [c for c in sanitizer.sanitize_param(text)] == [slash, slash, slash, '"', '$', 'r', 'm', '&', '#', '!']
     True
     """
 
