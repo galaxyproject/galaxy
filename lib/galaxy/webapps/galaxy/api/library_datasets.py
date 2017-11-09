@@ -15,6 +15,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.actions.library import LibraryActions
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import (
     base as managers_base,
@@ -31,7 +32,6 @@ from galaxy.web import (
     _future_expose_api_anonymous as expose_api_anonymous
 )
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
-from galaxy.actions.library import LibraryActions
 log = logging.getLogger(__name__)
 
 

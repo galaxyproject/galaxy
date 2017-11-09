@@ -1,10 +1,7 @@
 """
 API operations on the contents of a data library.
 """
-import json
 import logging
-import os.path
-from markupsafe import escape
 from sqlalchemy.orm.exc import (
     MultipleResultsFound,
     NoResultFound,
@@ -15,6 +12,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.actions.library import LibraryActions
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance
@@ -22,13 +20,6 @@ from galaxy.managers.collections_util import (
 from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex
-)
-from galaxy.tools.actions import upload_common
-from galaxy.tools.parameters import populate_state
-from galaxy.util.path import (
-    safe_contains,
-    safe_relpath,
-    unsafe_walk
 )
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import (
@@ -43,7 +34,6 @@ from galaxy.web.form_builder import (
     AddressField,
     CheckboxField,
 )
-from galaxy.actions.library import LibraryActions
 log = logging.getLogger(__name__)
 
 
