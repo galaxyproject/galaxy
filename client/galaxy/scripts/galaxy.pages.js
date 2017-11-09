@@ -153,7 +153,11 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
         }
         show_modal(
             "Create Link",
-            `<div><div><label id='link_attribute_label'>URL <span style='float: right; font-size: 90%'><a href='#' id='set_link_id'>Create in-page anchor</a></span></label><br><input type='text' class='wym_href' value='${curURL}' size='40' /></div><div><label>Title</label><br><input type='text' class='wym_title' value='${curTitle}' size='40' /></div><div>`,
+            `<div><div><label id='link_attribute_label'>URL <span style='float: right; font-size: 90%'><a href='#' id='set_link_id'>Create in-page anchor</a></span></label><br><input type='text' class='wym_href' value='${
+                curURL
+            }' size='40' /></div><div><label>Title</label><br><input type='text' class='wym_title' value='${
+                curTitle
+            }' size='40' /></div><div>`,
             {
                 "Make link": function() {
                     // Get URL, name/title.
@@ -371,7 +375,9 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
                             ) {
                                 // User selected no text; create link from scratch and use default text.
                                 wym.insert(
-                                    `<a href='${returned_item_info.link}'>${item_info.singular} '${returned_item_info.name}'</a>`
+                                    `<a href='${returned_item_info.link}'>${item_info.singular} '${
+                                        returned_item_info.name
+                                    }'</a>`
                                 );
                             } else {
                                 // Link created from selected text; add href and title.
@@ -500,8 +506,12 @@ export default function editor_onload() {
         basePath: editor_base_path,
         iframeBasePath: iframe_base_path,
         // + WYMeditor.HTML
-        boxHtml: `<table class='wym_box' width='100%' height='100%'><tr><td><div class='wym_area_top'>${WYMeditor.TOOLS}</div></td></tr><tr height='100%'><td><div class='wym_area_main' style='height: 100%;'>${// + WYMeditor.HTML
-        WYMeditor.IFRAME}${WYMeditor.STATUS}</div></div></td></tr></table>`,
+        boxHtml: `<table class='wym_box' width='100%' height='100%'><tr><td><div class='wym_area_top'>${
+            WYMeditor.TOOLS
+        }</div></td></tr><tr height='100%'><td><div class='wym_area_main' style='height: 100%;'>${
+            // + WYMeditor.HTML
+            WYMeditor.IFRAME
+        }${WYMeditor.STATUS}</div></div></td></tr></table>`,
         toolsItems: [
             { name: "Bold", title: "Strong", css: "wym_tools_strong" },
             { name: "Italic", title: "Emphasis", css: "wym_tools_emphasis" },

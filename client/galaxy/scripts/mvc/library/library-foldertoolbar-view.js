@@ -89,9 +89,9 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Called from FolderListView when needed.
-   * @param  {object} options common options
-   */
+     * Called from FolderListView when needed.
+     * @param  {object} options common options
+     */
     renderPaginator: function(options) {
         this.options = _.extend(this.options, options);
         var paginator_template = this.templatePaginator();
@@ -250,8 +250,8 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Import all selected datasets into history.
-   */
+     * Import all selected datasets into history.
+     */
     importAllIntoHistory: function() {
         this.modal.disableButton("Import");
         var new_history_name = this.modal.$("input[name=history_name]").val();
@@ -326,8 +326,8 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Update the progress bar in modal window.
-   */
+     * Update the progress bar in modal window.
+     */
     updateProgress: function() {
         this.progress += this.progressStep;
         $(".progress-bar-import").width(`${Math.round(this.progress)}%`);
@@ -336,10 +336,10 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * download selected datasets
-   * @param  {str} folder_id id of the current folder
-   * @param  {str} format    requested archive format
-   */
+     * download selected datasets
+     * @param  {str} folder_id id of the current folder
+     * @param  {str} format    requested archive format
+     */
     download: function(folder_id, format) {
         var dataset_ids = [];
         var folder_ids = [];
@@ -359,12 +359,12 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Create hidden form and submit it through POST
-   * to initialize the download.
-   * @param  {str} url    url to call
-   * @param  {obj} data   data to include in the request
-   * @param  {str} method method of the request
-   */
+     * Create hidden form and submit it through POST
+     * to initialize the download.
+     * @param  {str} url    url to call
+     * @param  {obj} data   data to include in the request
+     * @param  {str} method method of the request
+     */
     processDownload: function(url, data, method) {
         if (url && data) {
             // data can be string of parameters or array/object
@@ -427,9 +427,9 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Create modal for importing from Galaxy path.
-   * This feature is admin-only.
-   */
+     * Create modal for importing from Galaxy path.
+     * This feature is admin-only.
+     */
     importFilesFromPathModal: function() {
         var that = this;
         this.modal = Galaxy.modal;
@@ -457,9 +457,9 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Request all extensions and genomes from Galaxy
-   * and save them sorted in arrays.
-   */
+     * Request all extensions and genomes from Galaxy
+     * and save them sorted in arrays.
+     */
     fetchExtAndGenomes: function() {
         var that = this;
         mod_utils.get({
@@ -516,9 +516,9 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Create modal for importing from given directory
-   * on Galaxy. Bind jQuery events.
-   */
+     * Create modal for importing from given directory
+     * on Galaxy. Bind jQuery events.
+     */
     importFilesFromGalaxyFolderModal: function(options) {
         var that = this;
         var template_modal = this.templateBrowserModal();
@@ -572,11 +572,11 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Fetch the contents of user directory on Galaxy
-   * and render jstree component based on received
-   * data.
-   * @param  {[type]} options [description]
-   */
+     * Fetch the contents of user directory on Galaxy
+     * and render jstree component based on received
+     * data.
+     * @param  {[type]} options [description]
+     */
     renderJstree: function(options) {
         var that = this;
         this.options = _.extend(this.options, options);
@@ -620,10 +620,10 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Take the paths from the textarea, split it, create
-   * a request queue and call a function that starts sending
-   * one by one to be imported on the server.
-   */
+     * Take the paths from the textarea, split it, create
+     * a request queue and call a function that starts sending
+     * one by one to be imported on the server.
+     */
     importFromPathsClicked: function() {
         var preserve_dirs = this.modal.$el.find(".preserve-checkbox").is(":checked");
         var link_data = this.modal.$el.find(".link-checkbox").is(":checked");
@@ -664,10 +664,10 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Initialize the control of chaining requests
-   * in the current modal.
-   * @param {int} length The number of items in the chain call.
-   */
+     * Initialize the control of chaining requests
+     * in the current modal.
+     * @param {int} length The number of items in the chain call.
+     */
     initChainCallControl: function(options) {
         var template;
         switch (options.action) {
@@ -701,13 +701,13 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Take the selected items from the jstree, create a request queue
-   * and send them one by one to the server for importing into
-   * the current folder.
-   *
-   * jstree.js has to be loaded before
-   * @see renderJstree
-   */
+     * Take the selected items from the jstree, create a request queue
+     * and send them one by one to the server for importing into
+     * the current folder.
+     *
+     * jstree.js has to be loaded before
+     * @see renderJstree
+     */
     importFromJstreePath: function(that, options) {
         var all_nodes = $("#jstree_browser")
             .jstree()
@@ -797,8 +797,8 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Import all selected datasets from history into the current folder.
-   */
+     * Import all selected datasets from history into the current folder.
+     */
     addAllDatasetsFromHistory: function() {
         var checked_hdas = this.modal.$el.find("#selected_history_content").find(":checked");
         var history_item_ids = []; // can be hda or hdca
@@ -840,11 +840,11 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Take array of empty history items and make request for each of them
-   * to create it on server. Update progress in between calls.
-   * @param  {array} history_item_set array of empty history items
-   * @param  {str} history_name     name of the history to import to
-   */
+     * Take array of empty history items and make request for each of them
+     * to create it on server. Update progress in between calls.
+     * @param  {array} history_item_set array of empty history items
+     * @param  {str} history_name     name of the history to import to
+     */
     chainCallImportingIntoHistory: function(history_item_set, history_name) {
         var self = this;
         var popped_item = history_item_set.pop();
@@ -891,11 +891,11 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Take the array of paths and create a request for each of them
-   * calling them in chain. Update the progress bar in between each.
-   * @param  {array} paths                    paths relative to user folder on Galaxy
-   * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
-   */
+     * Take the array of paths and create a request for each of them
+     * calling them in chain. Update the progress bar in between each.
+     * @param  {array} paths                    paths relative to user folder on Galaxy
+     * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
+     */
     chainCallImportingUserdirFiles: function(options) {
         var that = this;
         var popped_item = options.paths.pop();
@@ -910,7 +910,13 @@ var FolderToolbarView = Backbone.View.extend({
         }
         var promise = $.when(
             $.post(
-                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${that.id}&source=${options.source}&path=${popped_item}&file_type=${options.file_type}&link_data=${options.link_data}&space_to_tab=${options.space_to_tab}&to_posix_lines=${options.to_posix_lines}&dbkey=${options.dbkey}&tag_using_filenames=${options.tag_using_filenames}`
+                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${that.id}&source=${options.source}&path=${
+                    popped_item
+                }&file_type=${options.file_type}&link_data=${options.link_data}&space_to_tab=${
+                    options.space_to_tab
+                }&to_posix_lines=${options.to_posix_lines}&dbkey=${options.dbkey}&tag_using_filenames=${
+                    options.tag_using_filenames
+                }`
             )
         );
         promise
@@ -926,17 +932,17 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Take the array of paths and create a request for each of them
-   * calling them in series. Update the progress bar in between each.
-   * @param  {array} paths                    paths relative to Galaxy root folder
-   * @param  {boolean} preserve_dirs          indicates whether to preserve folder structure
-   * @param  {boolean} link_data              copy files to Galaxy or link instead
-   * @param  {boolean} to_posix_lines         convert line endings to POSIX standard
-   * @param  {boolean} space_to_tab           convert spaces to tabs
-   * @param  {str} source                     string representing what type of folder
-   *                                          is the source of import
-   * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
-   */
+     * Take the array of paths and create a request for each of them
+     * calling them in series. Update the progress bar in between each.
+     * @param  {array} paths                    paths relative to Galaxy root folder
+     * @param  {boolean} preserve_dirs          indicates whether to preserve folder structure
+     * @param  {boolean} link_data              copy files to Galaxy or link instead
+     * @param  {boolean} to_posix_lines         convert line endings to POSIX standard
+     * @param  {boolean} space_to_tab           convert spaces to tabs
+     * @param  {str} source                     string representing what type of folder
+     *                                          is the source of import
+     * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
+     */
     chainCallImportingFolders: function(options) {
         // TODO need to check which paths to call
         var that = this;
@@ -953,7 +959,13 @@ var FolderToolbarView = Backbone.View.extend({
         }
         var promise = $.when(
             $.post(
-                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${that.id}&source=${options.source}&path=${popped_item}&preserve_dirs=${options.preserve_dirs}&link_data=${options.link_data}&to_posix_lines=${options.to_posix_lines}&space_to_tab=${options.space_to_tab}&file_type=${options.file_type}&dbkey=${options.dbkey}&tag_using_filenames=${options.tag_using_filenames}`
+                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${that.id}&source=${options.source}&path=${
+                    popped_item
+                }&preserve_dirs=${options.preserve_dirs}&link_data=${options.link_data}&to_posix_lines=${
+                    options.to_posix_lines
+                }&space_to_tab=${options.space_to_tab}&file_type=${options.file_type}&dbkey=${
+                    options.dbkey
+                }&tag_using_filenames=${options.tag_using_filenames}`
             )
         );
         promise
@@ -969,10 +981,10 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Take the array of hdas and create a request for each.
-   * Call them in chain and update progress bar in between each.
-   * @param  {array} hdas_set array of empty hda objects
-   */
+     * Take the array of hdas and create a request for each.
+     * Call them in chain and update progress bar in between each.
+     * @param  {array} hdas_set array of empty hda objects
+     */
     chainCallAddingHdas: function(hdas_set) {
         var self = this;
         this.added_hdas = new mod_library_model.Folder();
@@ -1008,10 +1020,10 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Take the array of lddas, create request for each and
-   * call them in chain. Update progress bar in between each.
-   * @param  {array} lddas_set array of lddas to delete
-   */
+     * Take the array of lddas, create request for each and
+     * call them in chain. Update progress bar in between each.
+     * @param  {array} lddas_set array of lddas to delete
+     */
     chainCallDeletingItems: function(items_to_delete) {
         var self = this;
         this.deleted_items = new mod_library_model.Folder();
@@ -1059,8 +1071,8 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Handles the click on 'show deleted' checkbox
-   */
+     * Handles the click on 'show deleted' checkbox
+     */
     checkIncludeDeleted: function(event) {
         if (event.target.checked) {
             Galaxy.libraries.folderListView.fetchFolder({
@@ -1074,8 +1086,8 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Delete the selected items. Atomic. One by one.
-   */
+     * Delete the selected items. Atomic. One by one.
+     */
     deleteSelectedItems: function() {
         var dataset_ids = [];
         var folder_ids = [];
@@ -1203,8 +1215,8 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Show user the prompt to change the number of items shown on page.
-   */
+     * Show user the prompt to change the number of items shown on page.
+     */
     showPageSizePrompt: function(e) {
         e.preventDefault();
         var folder_page_size = prompt(

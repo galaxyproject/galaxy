@@ -217,7 +217,7 @@ export default Backbone.Model.extend({
     },
 
     /** GenomeSpace file select field
-         */
+     */
     _fieldGenomeSpace: function(input_def) {
         var self = this;
         return new SelectGenomeSpace.View({

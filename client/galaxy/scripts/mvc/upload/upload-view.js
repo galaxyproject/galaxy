@@ -150,9 +150,9 @@ export default Backbone.View.extend({
     },
 
     /**
-          * Package API data from array of models
-          * @param{Array} items - Upload items/rows filtered from a collection
-        */
+     * Package API data from array of models
+     * @param{Array} items - Upload items/rows filtered from a collection
+     */
     toData: function(items, history_id) {
         // create dictionary for data submission
         var data = {

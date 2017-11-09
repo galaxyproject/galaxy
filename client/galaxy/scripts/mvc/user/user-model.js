@@ -18,9 +18,9 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
         },
 
         /** Model defaults
-     *  Note: don't check for anon-users with the username as the default is '(anonymous user)'
-     *      a safer method is if( !user.get( 'email' ) ) -> anon user
-     */
+         *  Note: don't check for anon-users with the username as the default is '(anonymous user)'
+         *      a safer method is if( !user.get( 'email' ) ) -> anon user
+         */
         defaults: /** @lends User.prototype */ {
             id: null,
             username: `(${_l("anonymous user")})`,
@@ -32,8 +32,8 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
         },
 
         /** Set up and bind events
-     *  @param {Object} data Initial model data.
-     */
+         *  @param {Object} data Initial model data.
+         */
         initialize: function(data) {
             this.log("User.initialize:", data);
 
@@ -54,12 +54,12 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
         },
 
         /** Load a user with the API using an id.
-     *      If getting an anonymous user or no access to a user id, pass the User.CURRENT_ID_STR
-     *      (e.g. 'current') and the API will return the current transaction's user data.
-     *  @param {String} idOrCurrent encoded user id or the User.CURRENT_ID_STR
-     *  @param {Object} options hash to pass to Backbone.Model.fetch. Can contain success, error fns.
-     *  @fires loaded when the model has been loaded from the API, passing the newModel and AJAX response.
-     */
+         *      If getting an anonymous user or no access to a user id, pass the User.CURRENT_ID_STR
+         *      (e.g. 'current') and the API will return the current transaction's user data.
+         *  @param {String} idOrCurrent encoded user id or the User.CURRENT_ID_STR
+         *  @param {Object} options hash to pass to Backbone.Model.fetch. Can contain success, error fns.
+         *  @fires loaded when the model has been loaded from the API, passing the newModel and AJAX response.
+         */
         loadFromApi: function(idOrCurrent, options) {
             idOrCurrent = idOrCurrent || User.CURRENT_ID_STR;
 
@@ -83,7 +83,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
         },
 
         /** Clears all data from the sessionStorage.
-     */
+         */
         clearSessionStorage: function() {
             for (var key in sessionStorage) {
                 //TODO: store these under the user key so we don't have to do this

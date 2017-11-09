@@ -404,7 +404,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             # Redirect to load galaxy frames.
             return trans.show_ok_message(
                 message="""Visualization "%s" has been imported. <br>You can <a href="%s">start using this visualization</a> or %s."""
-                % (visualization.title, web.url_for(controller='visualization'), referer_message), use_panels=True)
+                % (visualization.title, web.url_for('/visualizations/list'), referer_message), use_panels=True)
 
     @web.expose
     @web.require_login("share Galaxy visualizations")

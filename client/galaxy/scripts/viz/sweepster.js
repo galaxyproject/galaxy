@@ -988,11 +988,9 @@ var SweepsterVisualizationView = Backbone.View.extend({
             if (all_settings.length >= 10) {
                 show_modal(
                     "Whoa there cowboy!",
-                    `You clicked on a node to try ${self.model
-                        .get("tool")
-                        .get(
-                            "name"
-                        )} with ${all_settings.length} different combinations of settings. You can only run 10 jobs at a time.`,
+                    `You clicked on a node to try ${self.model.get("tool").get("name")} with ${
+                        all_settings.length
+                    } different combinations of settings. You can only run 10 jobs at a time.`,
                     {
                         Ok: function() {
                             hide_modal();

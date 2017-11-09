@@ -1,6 +1,6 @@
 /**
  * Popover wrapper
-*/
+ */
 import Utils from "utils/utils";
 var View = Backbone.View.extend({
     optionsDefault: {
@@ -38,7 +38,7 @@ var View = Backbone.View.extend({
 
     /**
      * Render popover
-    */
+     */
     render: function() {
         this.$title.html(this.options.title);
         this.$el
@@ -63,7 +63,7 @@ var View = Backbone.View.extend({
     /**
      * Set the popover title
      * @params{ String }    newTitle    - New popover title
-    */
+     */
     title: function(newTitle) {
         if (newTitle !== undefined) {
             this.options.title = newTitle;
@@ -73,7 +73,7 @@ var View = Backbone.View.extend({
 
     /**
      * Show popover
-    */
+     */
     show: function() {
         this.render();
         this.$el.show();
@@ -82,7 +82,7 @@ var View = Backbone.View.extend({
 
     /**
      * Hide popover
-    */
+     */
     hide: function() {
         this.$el.hide();
         this.visible = false;
@@ -91,21 +91,21 @@ var View = Backbone.View.extend({
     /**
      * Append new content to the popover
      * @params{ Object }  $el - Dom element
-    */
+     */
     append: function($el) {
         this.$body.append($el);
     },
 
     /**
      * Remove all content
-    */
+     */
     empty: function() {
         this.$body.empty();
     },
 
     /**
      * Remove popover
-    */
+     */
     remove: function() {
         $("body").off(`mousedown.${this.uid}`);
         this.$el.remove();
@@ -113,7 +113,7 @@ var View = Backbone.View.extend({
 
     /**
      * Improve popover location/placement
-    */
+     */
     _get_placement: function(placement) {
         // get popover dimensions
         var width = this._get_width(this.$el);
@@ -153,7 +153,7 @@ var View = Backbone.View.extend({
 
     /**
      * Returns padding/margin corrected width
-    */
+     */
     _get_width: function($el) {
         return (
             $el.width() +
@@ -166,14 +166,14 @@ var View = Backbone.View.extend({
 
     /**
      * Returns padding corrected height
-    */
+     */
     _get_height: function($el) {
         return $el.height() + parseInt($el.css("padding-top")) + parseInt($el.css("padding-bottom"));
     },
 
     /**
      * Return the popover template
-    */
+     */
     _template: function(options) {
         return (
             '<div class="ui-popover popover fade in">' +

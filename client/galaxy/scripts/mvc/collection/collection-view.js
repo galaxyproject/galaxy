@@ -28,8 +28,8 @@ var CollectionView = _super.extend(
 
         // ......................................................................... SET UP
         /** Set up the view, set up storage, bind listeners to HistoryContents events
-     *  @param {Object} attributes optional settings for the panel
-     */
+         *  @param {Object} attributes optional settings for the panel
+         */
         initialize: function(attributes) {
             _super.prototype.initialize.call(this, attributes);
             this.linkTarget = attributes.linkTarget || "_blank";

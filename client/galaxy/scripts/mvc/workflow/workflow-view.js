@@ -268,14 +268,17 @@ export default Backbone.View.extend({
                         details += `<li>${m}</li>`;
                     });
                     if (details) {
-                        upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${self.workflow.nodes[step_id]
-                            .name}<ul>${details}</ul></li>`;
+                        upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${
+                            self.workflow.nodes[step_id].name
+                        }<ul>${details}</ul></li>`;
                     }
                 });
                 if (upgrade_message) {
                     window.show_modal(
                         "Issues loading this workflow",
-                        `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${upgrade_message}</ul></p>`,
+                        `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${
+                            upgrade_message
+                        }</ul></p>`,
                         { Continue: hide_modal }
                     );
                 } else {
@@ -347,13 +350,19 @@ export default Backbone.View.extend({
             for (var node_key in self.workflow.nodes) {
                 var node = self.workflow.nodes[node_key];
                 if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
-                    new_content += `<div class='toolForm' style='margin-bottom:5px;'><div class='toolFormTitle'>Step ${node.id} - ${node.name}</div>`;
+                    new_content += `<div class='toolForm' style='margin-bottom:5px;'><div class='toolFormTitle'>Step ${
+                        node.id
+                    } - ${node.name}</div>`;
                     for (var ot_key in node.output_terminals) {
                         var output = node.output_terminals[ot_key];
                         if (node.isWorkflowOutput(output.name)) {
-                            new_content += `<p>${output.name}<input type='checkbox' name='${node.id}|${output.name}' checked /></p>`;
+                            new_content += `<p>${output.name}<input type='checkbox' name='${node.id}|${
+                                output.name
+                            }' checked /></p>`;
                         } else {
-                            new_content += `<p>${output.name}<input type='checkbox' name='${node.id}|${output.name}' /></p>`;
+                            new_content += `<p>${output.name}<input type='checkbox' name='${node.id}|${
+                                output.name
+                            }' /></p>`;
                         }
                     }
                     new_content += "</div>";
@@ -550,7 +559,9 @@ export default Backbone.View.extend({
                 if (upgrade_message) {
                     window.show_modal(
                         "Subworkflow embedded with changes",
-                        `Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>${upgrade_message}</ul>`,
+                        `Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>${
+                            upgrade_message
+                        }</ul>`,
                         { Continue: hide_modal }
                     );
                 } else {
@@ -745,7 +756,9 @@ export default Backbone.View.extend({
         var node = new Node(this, { element: $f });
         node.type = type;
         node.content_id = content_id;
-        var tmp = `<div><img height='16' align='middle' src='${Galaxy.root}static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
+        var tmp = `<div><img height='16' align='middle' src='${
+            Galaxy.root
+        }static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
         $f.find(".toolFormBody").append(tmp);
         // Fix width to computed width
         // Now add floats

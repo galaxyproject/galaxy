@@ -12,8 +12,8 @@ var HDAListItemEdit = _super.extend(
         className: `${_super.prototype.className} history-content`,
 
         /** In this override, only get details if in the ready state, get rerunnable if in other states.
-     *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
-     */
+         *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
+         */
         _fetchModelDetails: function() {
             var view = this;
             if (view.model.inReadyState() && !view.model.hasDetails()) {
