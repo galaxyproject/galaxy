@@ -3,7 +3,6 @@ Code to support database helper scripts (create_db.py, manage_db.py, etc...).
 """
 import logging
 
-from galaxy.util import listify
 from galaxy.util.path import get_ext
 from galaxy.util.properties import find_config_file, load_app_properties
 

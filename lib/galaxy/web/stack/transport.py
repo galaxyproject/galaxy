@@ -116,7 +116,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
                     self.running = False
                 else:
                     self.dispatcher.dispatch(msg)
-            except:
+            except Exception:
                 log.exception('Exception in mule message handling')
             finally:
                 self.__unlock(lock)

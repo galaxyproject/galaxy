@@ -115,6 +115,7 @@ LOGGING_CONFIG_DEFAULT = {
     },
 }
 
+
 def resolve_path(path, root):
     """If 'path' is relative make absolute by prepending 'root'"""
     if not os.path.isabs(path):

@@ -207,7 +207,7 @@ class JobConfiguration(object, ConfiguresHandlers):
         # Determine the default handler(s)
         try:
             self.default_handler_id = self._get_default(self.app.config, handlers_conf, list(self.handlers.keys()))
-        except:
+        except Exception:
             log.info('No default handler specified in job config, will check for job handlers managed by application stack')
         if ((self.default_handler_id is None
                 or (len(self.handlers) == 1 and self.app.config.server_name.startswith(self.handlers.keys()[0])))

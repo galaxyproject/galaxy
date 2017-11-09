@@ -200,7 +200,6 @@ class GalaxyConfigBuilder(object):
                     config_file,
                     dict(__file__=config_file, here=os.path.dirname(config_file))
                 )
-        root = logging.getLogger()
 
 
 def main():

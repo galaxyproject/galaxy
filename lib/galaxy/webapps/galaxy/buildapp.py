@@ -3,13 +3,11 @@ Provides factory methods to assemble the Galaxy web application
 """
 import atexit
 import logging
-import os
 import sys
 import threading
 import traceback
 
 from paste import httpexceptions
-from six.moves import configparser
 
 import galaxy.app
 import galaxy.datatypes.registry

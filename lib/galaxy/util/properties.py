@@ -13,7 +13,6 @@ import yaml
 from six import iteritems, string_types
 from six.moves.configparser import ConfigParser
 
-from galaxy.util import listify
 from galaxy.util.path import has_ext, extensions, joinext
 
 

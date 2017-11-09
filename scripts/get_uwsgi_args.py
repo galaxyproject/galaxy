@@ -11,7 +11,6 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 from galaxy.script import main_factory
 from galaxy.util.path import get_ext
 from galaxy.util.properties import load_app_properties, nice_config_parser
-from galaxy.web.stack import get_app_kwds
 
 
 DESCRIPTION = "Script to determine uWSGI command line arguments"
