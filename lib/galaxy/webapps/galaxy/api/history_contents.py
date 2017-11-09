@@ -220,7 +220,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def create(self, trans, history_id, payload, **kwd):
         """
         create( self, trans, history_id, payload, **kwd )
-        * POST /api/histories/{history_id}/contents/{type}
+        * POST /api/histories/{history_id}/contents
             create a new HDA by copying an accessible LibraryDataset
 
         :type   history_id: str
