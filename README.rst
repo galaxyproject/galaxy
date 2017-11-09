@@ -10,7 +10,7 @@ The latest information about Galaxy is available via `https://galaxyproject.org/
 .. image:: https://img.shields.io/badge/chat-irc.freenode.net%23galaxyproject-blue.svg
     :target: https://webchat.freenode.net/?channels=galaxyproject
     :alt: Chat on irc
-    
+
 .. image:: https://img.shields.io/badge/chat-gitter-blue.svg
     :target: https://gitter.im/galaxyproject/Lobby
     :alt: Chat on gitter
@@ -54,7 +54,7 @@ https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/
 Not all dependencies are included for the tools provided in the sample
 ``tool_conf.xml``. A full list of external dependencies is available at:
 
-https://wiki.galaxyproject.org/Admin/Tools/ToolDependencies
+https://galaxyproject.org/admin/config/tool-dependencies/
 
 Issues and Galaxy Development
 =============================
