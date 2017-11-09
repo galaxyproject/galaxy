@@ -221,7 +221,7 @@ def __splitext_no_sep(path):
 
 def __splitext_ignore(path, ignore=None):
     # note: unlike os.path.splitext this strips extsep from ext
-    ignore = map(__ext_strip_sep, __listify(ignore, split=False))
+    ignore = map(__ext_strip_sep, __listify(ignore))
     root, ext = __splitext_no_sep(path)
     if ext in ignore:
         root, ext = __splitext_no_sep(path)
