@@ -44,17 +44,17 @@ browser at:
 
 http://localhost:8080
 
+Configuration & Tools
+=====================
+
 You may wish to make changes from the default configuration. This can be
-done in the ``config/galaxy.ini`` file. Tools can be either installed
-from the Tool Shed or added manually. For details please see the Galaxy
-wiki:
+done in the ``config/galaxy.ini`` file.
 
-https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/
-
-Not all dependencies are included for the tools provided in the sample
-``tool_conf.xml``. A full list of external dependencies is available at:
-
-https://galaxyproject.org/admin/config/tool-dependencies/
+Tools can be either installed from the Tool Shed or added manually.
+ For details please see the `tutorial <https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/>`__.
+Note that not all dependencies for the tools provided in the
+``tool_conf.xml.sample`` are included. To install them please visit
+"Manage dependencies" in the admin interface.
 
 Issues and Galaxy Development
 =============================
@@ -64,4 +64,4 @@ Please see `CONTRIBUTING.md <CONTRIBUTING.md>`_ .
 Roadmap
 =============================
 
-Interested in the next steps for Galaxy? Take a look here: https://github.com/galaxyproject/galaxy/issues/1928
+Interested in the next steps for Galaxy? Take a look at the `roadmap <https://github.com/galaxyproject/galaxy/issues/1928>`__
