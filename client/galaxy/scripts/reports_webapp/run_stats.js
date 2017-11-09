@@ -128,7 +128,7 @@ export function create_chart(inp_data, name, time, title) {
 
             var wdth = i * 4 + 10;
             d3
-                .select(currentEvent.path[1])
+                .select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("text")
                 .attr("transform", `translate( ${margin.left - 5}, ${height - d * zoom + margin.top + 10} )`)
@@ -136,7 +136,7 @@ export function create_chart(inp_data, name, time, title) {
                 .text(d);
 
             d3
-                .select(currentEvent.path[1])
+                .select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .attr("width", `${wdth}px`)
                 .attr("height", "15px")
@@ -149,13 +149,13 @@ export function create_chart(inp_data, name, time, title) {
         .on("mouseleave", d => {
             // Remove tool tip
             d3
-                .select(currentEvent.path[1])
+                .select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("text")
                 .attr("visibility", "hidden");
 
             d3
-                .select(currentEvent.path[1])
+                .select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("rect")
                 .attr("width", "0")
@@ -573,7 +573,7 @@ export function create_histogram(inp_data, name, title) {
             }
             var wdth = i * 4 + 10;
             d3
-                .select(currentEvent.path[1])
+                .select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("text")
                 .attr("transform", `translate( ${margin.left - 5}, ${height - d.length * zoom + margin.top + 10} )`)
@@ -581,7 +581,7 @@ export function create_histogram(inp_data, name, title) {
                 .text(d.length);
 
             d3
-                .select(currentEvent.path[1])
+                .select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .attr("width", `${wdth}px`)
                 .attr("height", "15px")
@@ -594,13 +594,13 @@ export function create_histogram(inp_data, name, title) {
         .on("mouseleave", () => {
             // Remove tool tip
             d3
-                .select(currentEvent.path[1])
+                .select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("text")
                 .attr("visibility", "hidden");
 
             d3
-                .select(currentEvent.path[1])
+                .select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("rect")
                 .attr("width", "0")
