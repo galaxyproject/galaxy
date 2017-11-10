@@ -840,6 +840,9 @@ class NavigatesGalaxy(HasDriver):
         menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
 
+    def history_panel_click_copy_elements(self):
+        self.click_history_option("Copy Datasets")
+
     @retry_during_transitions
     def histories_click_advanced_search(self):
         search_selector = '#standard-search .advanced-search-toggle'
