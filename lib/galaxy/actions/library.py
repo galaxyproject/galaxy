@@ -1,5 +1,5 @@
 """
-Contains administrative functions
+Contains library functions
 """
 import json
 import logging
