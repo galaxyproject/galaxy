@@ -532,6 +532,32 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.json
     @web.require_admin
+    def data_tables_list(self, trans, **kwd):
+        data = []
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'done')
+        sorted_data_tables = sorted(
+            trans.app.tool_data_tables.get_tables().items()
+        )
+
+        for data_table_elem_name, data_table in sorted_data_tables:
+            for filename, file_dict in data_table.filenames.iteritems():
+                file_missing = ['file missing'] \
+                    if not file_dict.get('found') else []
+                data.append({
+                    'name': data_table.name,
+                    'filename': filename,
+                    'tool_data_path': file_dict.get('tool_data_path'),
+                    'errors': ', '.join(file_missing + [
+                        error for error in file_dict.get('errors', [])
+                    ]),
+                })
+
+        return {'data': data, 'message': message, 'status': status}
+
+    @web.expose
+    @web.json
+    @web.require_admin
     def users_list(self, trans, **kwd):
         message = kwd.get('message', '')
         status = kwd.get('status', '')
@@ -855,13 +881,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         message = escape(util.restore_text(kwd.get('message', '')))
         status = util.restore_text(kwd.get('status', 'done'))
         return trans.fill_template('admin/view_datatypes_registry.mako', message=message, status=status)
-
-    @web.expose
-    @web.require_admin
-    def view_tool_data_tables(self, trans, **kwd):
-        message = escape(util.restore_text(kwd.get('message', '')))
-        status = util.restore_text(kwd.get('status', 'done'))
-        return trans.fill_template('admin/view_data_tables_registry.mako', message=message, status=status)
 
     @web.expose
     @web.require_admin
