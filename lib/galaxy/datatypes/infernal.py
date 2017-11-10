@@ -10,24 +10,24 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
 
 
-class Infernal_CM_1_1( Text ):
+class Infernal_CM_1_1(Text):
     file_ext = "cm"
 
-    MetadataElement( name="number_of_models", default=0, desc="Number of covariance models", readonly=True, visible=True, optional=True, no_value=0 )
+    MetadataElement(name="number_of_models", default=0, desc="Number of covariance models", readonly=True, visible=True, optional=True, no_value=0)
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_models == 1):
                 dataset.blurb = "1 model"
             else:
                 dataset.blurb = "%s models" % dataset.metadata.number_of_models
-            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff( self, filename ):
+    def sniff(self, filename):
         with open('myfile.txt', 'r') as f:
             first_line = f.readline()
 
@@ -37,7 +37,7 @@ class Infernal_CM_1_1( Text ):
             return False
 
 
-    def split( cls, input_datasets, subdir_generator_function, split_params):
+    def split(cls, input_datasets, subdir_generator_function, split_params):
         """
         Split the input files by model records.
         """
@@ -56,7 +56,7 @@ class Infernal_CM_1_1( Text ):
         else:
             raise Exception('Unsupported split mode %s' % split_params['split_mode'])
 
-        def _read_cm_records( filename ):
+        def _read_cm_records(filename):
             lines = []
             with open(filename) as handle:
                 for line in handle:
@@ -64,32 +64,33 @@ class Infernal_CM_1_1( Text ):
                         yield lines
                         lines = [line]
                     else:
-                        lines.append( line )
+                        lines.append(line)
             yield lines
 
-        def _write_part_cm_file( accumulated_lines ):
+        def _write_part_cm_file(accumulated_lines):
             part_dir = subdir_generator_function()
-            part_path = os.path.join( part_dir, os.path.basename( input_files[0] ) )
-            part_file = open( part_path, 'w' )
-            part_file.writelines( accumulated_lines )
+            part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
+            part_file = open(part_path, 'w')
+            part_file.writelines(accumulated_lines)
             part_file.close()
 
         try:
-            cm_records = _read_cm_records( input_files[0] )
+            cm_records = _read_cm_records(input_files[0])
             cm_lines_accumulated = []
-            for counter, cm_record in enumerate( cm_records, start = 1):
-                cm_lines_accumulated.extend( cm_record )
+            for counter, cm_record in enumerate(cm_records, start=1):
+                cm_lines_accumulated.extend(cm_record)
                 if counter % chunk_size == 0:
-                    _write_part_cm_file( cm_lines_accumulated )
+                    _write_part_cm_file(cm_lines_accumulated)
                     cm_lines_accumulated = []
             if cm_lines_accumulated:
-                _write_part_cm_file( cm_lines_accumulated )
-        except Exception,  e:
+                _write_part_cm_file(cm_lines_accumulated)
+        except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
+
     split = classmethod(split)
+
 
 if __name__ == '__main__':
     Infernal_CM_1_1()
     Stockholm_1_0()
-
