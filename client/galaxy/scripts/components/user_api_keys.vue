@@ -30,30 +30,31 @@
 </template>
 
 <script>
-
-import axios from 'axios';
+import axios from "axios";
 
 export default {
-    data () {
+    data() {
         return {
             // Should really do something with errors here.  Eventually.
             users: [],
             errors: []
-        }
+        };
     },
-    created: function () {
-        axios.get(`${Galaxy.root}userskeys/all_users`)
-        .then(response => {
-            this.users = response.data
-        })
-        .catch(e => {
-            this.errors.push(e)
-        })
+    created: function() {
+        axios
+            .get(`${Galaxy.root}userskeys/all_users`)
+            .then(response => {
+                this.users = response.data;
+            })
+            .catch(e => {
+                this.errors.push(e);
+            });
     },
     methods: {
         generateKey: function(id) {
-            axios.get(`${Galaxy.root}userskeys/admin_api_keys`, {params:{uid: id}}).then(
-                response => {
+            axios
+                .get(`${Galaxy.root}userskeys/admin_api_keys`, { params: { uid: id } })
+                .then(response => {
                     this.users = response.data;
                 })
                 .catch(e => {
@@ -61,7 +62,7 @@ export default {
                 });
         }
     }
-}
+};
 </script>
 <style>
 </style>
