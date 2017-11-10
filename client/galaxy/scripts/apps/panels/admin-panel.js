@@ -22,7 +22,8 @@ var AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: "Data tables",
-                        url: "admin/view_tool_data_tables"
+                        url: "admin/data_tables",
+                        target: "__use_router__"
                     },
                     {
                         title: "Data libraries",
@@ -73,7 +74,8 @@ var AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: "API keys",
-                        url: "userskeys/all_users"
+                        url: "admin/api_keys",
+                        target: "__use_router__"
                     },
                     {
                         title: "Impersonate a user",

@@ -98,6 +98,7 @@ def paste_app_factory(global_conf, **kwargs):
     # The following routes don't bootstrap any information, simply provide the
     # base analysis interface at which point the application takes over.
 
+    webapp.add_client_route('/admin/data_tables', 'admin')
     webapp.add_client_route('/admin/users', 'admin')
     webapp.add_client_route('/admin/roles', 'admin')
     webapp.add_client_route('/admin/forms', 'admin')
@@ -105,7 +106,8 @@ def paste_app_factory(global_conf, **kwargs):
     webapp.add_client_route('/admin/repositories', 'admin')
     webapp.add_client_route('/admin/tool_versions', 'admin')
     webapp.add_client_route('/admin/quotas', 'admin')
-    webapp.add_client_route('/admin/form/{form_id}', 'admin')
+    webapp.add_client_route('/admin/forms/{form_id}', 'admin')
+    webapp.add_client_route('/admin/api_keys', 'admin')
     webapp.add_client_route('/tours')
     webapp.add_client_route('/tours/{tour_id}')
     webapp.add_client_route('/user')
@@ -119,6 +121,7 @@ def paste_app_factory(global_conf, **kwargs):
     webapp.add_client_route('/pages/list_published')
     webapp.add_client_route('/pages/create')
     webapp.add_client_route('/pages/edit')
+    webapp.add_client_route('/histories/citations')
     webapp.add_client_route('/histories/list')
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')

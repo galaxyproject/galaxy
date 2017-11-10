@@ -20,6 +20,7 @@ import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
+import Citations from "mvc/citations";
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -52,6 +53,7 @@ window.app = function app(options, bootstrapped) {
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
             "(/)visualizations/(:action_id)": "show_visualizations",
             "(/)workflows/list_published(/)": "show_workflows_published",
+            "(/)histories(/)citations(/)": "show_history_citations",
             "(/)histories(/)rename(/)": "show_histories_rename",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
             "(/)histories(/)(:action_id)": "show_histories",
@@ -117,6 +119,13 @@ window.app = function app(options, bootstrapped) {
 
         show_histories: function(action_id) {
             this.page.display(new HistoryList.View({ action_id: action_id }));
+        },
+
+        show_history_citations: function() {
+            var citations = new Citations.HistoryCitationCollection();
+            citations.history_id = QueryStringParsing.get("id");
+            this.page.display(new Citations.CitationListView({ collection: citations }));
+            citations.fetch();
         },
 
         show_histories_rename: function() {
@@ -187,11 +196,10 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_custom_builds: function() {
-            var self = this;
             var historyPanel = this.page.historyPanel.historyView;
             if (!historyPanel || !historyPanel.model || !historyPanel.model.id) {
                 window.setTimeout(() => {
-                    self.show_custom_builds();
+                    this.show_custom_builds();
                 }, 500);
                 return;
             }
@@ -247,20 +255,19 @@ window.app = function app(options, bootstrapped) {
 
         /** load workflow by its url in run mode */
         _loadWorkflow: function() {
-            var self = this;
             Utils.get({
                 url: `${Galaxy.root}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
-                success: function(response) {
-                    self.page.display(new ToolFormComposite.View(response));
+                success: response => {
+                    this.page.display(new ToolFormComposite.View(response));
                 },
-                error: function(response) {
+                error: response => {
                     var error_msg = response.err_msg || "Error occurred while loading the resource.";
                     var options = {
                         message: error_msg,
                         status: "danger",
                         persistent: true
                     };
-                    self.page.display(new Ui.Message(options));
+                    this.page.display(new Ui.Message(options));
                 }
             });
         }
