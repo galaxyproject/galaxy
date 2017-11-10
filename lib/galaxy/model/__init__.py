@@ -3493,6 +3493,11 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
             name=self.name,
             copied_from_history_dataset_collection_association=self,
         )
+        if self.implicit_collection_jobs_id:
+            hdca.implicit_collection_jobs_id = self.implicit_collection_jobs_id
+        elif self.job_id:
+            hdca.job_id = self.job_id
+
         collection_copy = self.collection.copy(
             destination=hdca,
             element_destination=element_destination,
