@@ -9,8 +9,7 @@ import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
-
-var UserAPIKeys = require( 'mvc/user/user_api_keys' );
+import UserAPIKeysView from "mvc/user/user_api_keys";
 
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
@@ -27,7 +26,7 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)repositories": "show_repositories",
             "(/)admin(/)forms": "show_forms",
             "(/)admin(/)form(/)(:form_id)": "show_form",
-            '(/)admin/api_keys': 'show_user_api_keys'
+            "(/)admin/api_keys": "show_user_api_keys"
         },
 
         authenticate: function(args, name) {
@@ -95,7 +94,7 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_user_api_keys: function() {
-            this.page.display( new UserAPIKeys.View() );
+            this.page.display(new UserAPIKeysView());
         },
 
         show_forms: function() {
