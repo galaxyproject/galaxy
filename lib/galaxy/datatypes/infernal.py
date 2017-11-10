@@ -36,11 +36,6 @@ class Infernal_CM_1_1( Text ):
         else:
             return False
 
-    def set_meta( self, dataset, **kwd ):
-        """
-        Set the number of models in dataset.
-        """
-        dataset.metadata.number_of_models = count_special_lines("^INFERNAL1/a", dataset.file_name)
 
     def split( cls, input_datasets, subdir_generator_function, split_params):
         """
