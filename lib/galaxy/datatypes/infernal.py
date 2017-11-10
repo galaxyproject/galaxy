@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from galaxy.datatypes.data import Text
-from galaxy.datatypes.sniff import get_headers, get_test_fname
 from galaxy.datatypes.data import get_file_peek
-import subprocess
 import os
 
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes import metadata
 
+log = logging.getLogger(__name__)
 
 class Infernal_CM_1_1(Text):
     file_ext = "cm"
@@ -93,4 +91,3 @@ class Infernal_CM_1_1(Text):
 
 if __name__ == '__main__':
     Infernal_CM_1_1()
-    Stockholm_1_0()
