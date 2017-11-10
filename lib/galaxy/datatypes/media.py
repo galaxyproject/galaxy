@@ -1,5 +1,5 @@
 """Video classes"""
-import copy
+import json
 import logging
 import subprocess
 
@@ -9,26 +9,8 @@ log = logging.getLogger(__name__)
 
 
 def ffprobe(path):
-    data = subprocess.check_output(['ffprobe', '-show_format', '-show_streams', path])
-    metadata = {}
-    streams = []
-
-    current_obj = {}
-    for line in data.strip().split('\n'):
-        line = line.strip()
-        if line == '[/STREAM]':
-            streams.append(copy.copy(current_obj))
-            current_obj = {}
-        elif line == '[/FORMAT]':
-            metadata = copy.copy(current_obj)
-            current_obj = {}
-        elif line == '[STREAM]' or line == '[FORMAT]':
-            pass
-        else:
-            # print(line)
-            (key, value) = line.split('=')
-            current_obj[key] = value
-    return metadata, streams
+    data = json.loads(subprocess.check_output(['ffprobe', '-show_format', '-show_streams', '-of', 'json', path]))
+    return data['format'], data['streams']
 
 
 class Video(Binary):
