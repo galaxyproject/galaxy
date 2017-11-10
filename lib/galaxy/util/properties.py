@@ -17,6 +17,39 @@ from galaxy.util.path import has_ext, extensions, joinext
 
 
 def find_config_file(names, exts=None, dirs=None, include_samples=False):
+    """Locate a config file in multiple directories, with multiple extensions.
+
+    >>> from shutil import rmtree
+    >>> from tempfile import mkdtemp
+    >>> def touch(d, f):
+    ...     open(os.path.join(d, f), 'w').close()
+    >>> def _find_config_file(*args, **kwargs):
+    ...     return find_config_file(*args, **kwargs).replace(d, '')
+    >>> d = mkdtemp()
+    >>> d1 = os.path.join(d, 'd1')
+    >>> d2 = os.path.join(d, 'd2')
+    >>> os.makedirs(d1)
+    >>> os.makedirs(d2)
+    >>> touch(d1, 'foo.ini')
+    >>> touch(d1, 'foo.bar')
+    >>> touch(d1, 'baz.ini.sample')
+    >>> touch(d2, 'foo.yaml')
+    >>> touch(d2, 'baz.yml')
+    >>> _find_config_file('foo', dirs=(d1, d2))
+    '/d1/foo.ini'
+    >>> _find_config_file('baz', dirs=(d1, d2))
+    '/d2/baz.yml'
+    >>> _find_config_file('baz', dirs=(d1, d2), include_samples=True)
+    '/d2/baz.yml'
+    >>> _find_config_file('baz', dirs=(d1,), include_samples=True)
+    '/d1/baz.ini.sample'
+    >>> _find_config_file('foo', dirs=(d2, d1))
+    '/d2/foo.yaml'
+    >>> find_config_file('quux', dirs=(d,))
+    >>> _find_config_file('foo', exts=('bar', 'ini'), dirs=(d1,))
+    '/d1/foo.bar'
+    >>> rmtree(d)
+    """
     found = __find_config_files(
         names,
         exts=exts or extensions['yaml'] + extensions['ini'],
@@ -148,8 +181,8 @@ def __find_config_files(names, exts=None, dirs=None, include_samples=False):
     if not dirs:
         dirs = [os.getcwd()]
     if exts:
-        # add exts to names
-        names = starmap(joinext, product(names, exts))
+        # add exts to names, converts back into a list because it's going to be small and we might consume names twice
+        names = list(starmap(joinext, product(names, exts)))
     if include_samples:
         sample_names = map(partial(joinext, ext='sample'), names)
     # check for all names in each dir before moving to the next dir. could do it the other way around but that makes
