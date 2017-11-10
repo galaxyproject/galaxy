@@ -120,6 +120,12 @@ def upgrade(migrate_engine):
     __add_column(implicit_collection_jobs_id_column, "workflow_invocation_step", metadata)
     __add_column(workflow_invocation_step_state_column, "workflow_invocation_step", metadata)
 
+    cmd = \
+        "UPDATE dataset_collection SET element_count = " + \
+        "(SELECT (CASE WHEN count(*) > 0 THEN count(*) ELSE 0 END) FROM dataset_collection_element WHERE " + \
+        "dataset_collection_element.dataset_collection_id = dataset_collection.id)"
+    migrate_engine.execute(cmd)
+
 
 def __add_column(column, table_name, metadata, **kwds):
     try:
