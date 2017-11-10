@@ -9,7 +9,8 @@ import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
-import UserAPIKeysView from "mvc/user/user_api_keys";
+import Vue from "libs/vue";
+import UserAPIKeys from "components/user_api_keys.vue";
 
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
@@ -94,7 +95,14 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_user_api_keys: function() {
-            this.page.display(new UserAPIKeysView());
+            // TODO refactor into a reusable Vue component display mechanism.
+            var z = document.createElement('div');
+            this.page.display(z);
+            new Vue({
+              el: z,
+              template: '<UserAPIKeys/>',
+              components: { UserAPIKeys }
+            });
         },
 
         show_forms: function() {
