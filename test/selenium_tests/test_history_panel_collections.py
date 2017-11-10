@@ -25,7 +25,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
 
         running_inputs = {
             "input1": {'batch': True, 'values': [{"src": "hdca", "id": input_collection["id"]}]},
-            "sleep_time": 60,
+            "sleep_time": 180,
         }
         running_response = self.dataset_populator.run_tool(
             "cat_data_and_sleep",
@@ -73,7 +73,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         failed_hid = failed_response["output_collections"][0]["hid"]
 
         running_inputs = {
-            "sleep_time": 60,
+            "sleep_time": 180,
         }
         running_response = self.dataset_populator.run_tool(
             "collection_creates_dynamic_nested",
