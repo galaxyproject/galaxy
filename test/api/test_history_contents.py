@@ -255,7 +255,42 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         assert len(self._get("histories/%s/contents/dataset_collections" % second_history_id).json()) == 0
         create_response = self._post("histories/%s/contents/dataset_collections" % second_history_id, create_data)
         self.__check_create_collection_response(create_response)
-        assert len(self._get("histories/%s/contents/dataset_collections" % second_history_id).json()) == 1
+        contents = self._get("histories/%s/contents/dataset_collections" % second_history_id).json()
+        assert len(contents) == 1
+        new_forward, _ = self.__get_paired_response_elements(contents[0])
+        self._assert_has_keys(new_forward, "history_id")
+        assert new_forward["history_id"] == self.history_id
+
+    def test_hdca_copy_and_elements(self):
+        hdca = self.dataset_collection_populator.create_pair_in_history(self.history_id).json()
+        hdca_id = hdca["id"]
+        second_history_id = self._new_history()
+        create_data = dict(
+            source='hdca',
+            content=hdca_id,
+            copy_elements=True,
+        )
+        assert len(self._get("histories/%s/contents/dataset_collections" % second_history_id).json()) == 0
+        create_response = self._post("histories/%s/contents/dataset_collections" % second_history_id, create_data)
+        self.__check_create_collection_response(create_response)
+
+        contents = self._get("histories/%s/contents/dataset_collections" % second_history_id).json()
+        assert len(contents) == 1
+        new_forward, _ = self.__get_paired_response_elements(contents[0])
+        self._assert_has_keys(new_forward, "history_id")
+        assert new_forward["history_id"] == second_history_id
+
+    def __get_paired_response_elements(self, contents):
+        hdca = self.__show(contents).json()
+        self._assert_has_keys(hdca, "name", "deleted", "visible", "elements")
+        elements = hdca["elements"]
+        assert len(elements) == 2
+        element0 = elements[0]
+        element1 = elements[1]
+        self._assert_has_keys(element0, "object")
+        self._assert_has_keys(element1, "object")
+
+        return element0["object"], element1["object"]
 
     def __check_create_collection_response(self, response):
         self._assert_status_code_is(response, 200)

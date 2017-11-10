@@ -279,6 +279,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             copy from history dataset collection (for type 'dataset_collection')
             'source'    = 'hdca'
             'content'   = [the encoded id from the HDCA]
+            'copy_elements' = Copy child HDAs into the target history as well,
+                              defaults to False but this is less than ideal and may
+                              be changed in future releases.
 
             create new history dataset collection (for type 'dataset_collection')
             'source'              = 'new_collection' (default 'source' if type is
@@ -414,11 +417,13 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             content = payload.get('content', None)
             if content is None:
                 raise exceptions.RequestParameterMissingException("'content' id of target to copy is missing")
+            copy_elements = payload.get('copy_elements', False)
             dataset_collection_instance = service.copy(
                 trans=trans,
                 parent=history,
                 source="hdca",
                 encoded_source_id=content,
+                copy_elements=copy_elements,
             )
         else:
             message = "Invalid 'source' parameter in request %s" % source
