@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
+import logging
+import os
+
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.data import get_file_peek
-import os
 
 from galaxy.datatypes.metadata import MetadataElement
 
 log = logging.getLogger(__name__)
+
 
 class Infernal_CM_1_1(Text):
     file_ext = "cm"
@@ -33,7 +36,6 @@ class Infernal_CM_1_1(Text):
             return True
         else:
             return False
-
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
