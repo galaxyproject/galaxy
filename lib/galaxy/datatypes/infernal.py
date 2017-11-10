@@ -3,8 +3,8 @@
 import logging
 import os
 
-from galaxy.datatypes.data import Text
 from galaxy.datatypes.data import get_file_peek
+from galaxy.datatypes.data import Text
 
 from galaxy.datatypes.metadata import MetadataElement
 
@@ -14,12 +14,13 @@ log = logging.getLogger(__name__)
 class Infernal_CM_1_1(Text):
     file_ext = "cm"
 
-    MetadataElement(name="number_of_models", default=0, desc="Number of covariance models", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(name="number_of_models", default=0, desc="Number of covariance models",
+                    readonly=True, visible=True, optional=True, no_value=0)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
-            if (dataset.metadata.number_of_models == 1):
+            if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 model"
             else:
                 dataset.blurb = "%s models" % dataset.metadata.number_of_models
@@ -29,10 +30,10 @@ class Infernal_CM_1_1(Text):
             dataset.blurb = 'file purged from disc'
 
     def sniff(self, filename):
-        with open('myfile.txt', 'r') as f:
+        with open(filename, 'r') as f:
             first_line = f.readline()
 
-        if ("INFERNAL1/a" in first_line):
+        if "INFERNAL1/a" in first_line:
             return True
         else:
             return False
