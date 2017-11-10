@@ -13,8 +13,8 @@ from sqlalchemy import and_, false
 import tool_shed.repository_types.util as rt_util
 from galaxy import web
 from galaxy.util import asbool, build_url, CHUNK_SIZE
-from galaxy.util.path import safe_relpath
 from galaxy.util.odict import odict
+from galaxy.util.path import safe_relpath
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.dependencies.repository.relation_builder import RelationBuilder
 from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyInstallManager

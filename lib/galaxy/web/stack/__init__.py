@@ -17,12 +17,12 @@ except ImportError:
 
 from six import string_types
 
-from .message import ApplicationStackMessage, ApplicationStackMessageDispatcher
-from .transport import ApplicationStackTransport, UWSGIFarmMessageTransport
-
 from galaxy.util.bunch import Bunch
 from galaxy.util.facts import get_facts
 from galaxy.util.properties import nice_config_parser
+
+from .message import ApplicationStackMessage, ApplicationStackMessageDispatcher
+from .transport import ApplicationStackTransport, UWSGIFarmMessageTransport
 
 
 log = logging.getLogger(__name__)

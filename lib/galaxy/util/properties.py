@@ -13,7 +13,7 @@ import yaml
 from six import iteritems, string_types
 from six.moves.configparser import ConfigParser
 
-from galaxy.util.path import has_ext, extensions, joinext
+from galaxy.util.path import extensions, has_ext, joinext
 
 
 def find_config_file(names, exts=None, dirs=None, include_samples=False):
