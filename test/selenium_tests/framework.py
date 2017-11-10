@@ -42,6 +42,7 @@ DEFAULT_ADMIN_PASSWORD = "testpass"
 
 TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
+GALAXY_TEST_SCREENSHOTS_DIRECTORY = os.environ.get("GALAXY_TEST_SCREENSHOTS_DIRECTORY", None)
 # Test browser can be ["CHROME", "FIREFOX", "OPERA", "PHANTOMJS"]
 GALAXY_TEST_SELENIUM_BROWSER = os.environ.get("GALAXY_TEST_SELENIUM_BROWSER", DEFAULT_SELENIUM_BROWSER)
 GALAXY_TEST_SELENIUM_REMOTE = os.environ.get("GALAXY_TEST_SELENIUM_REMOTE", DEFAULT_SELENIUM_REMOTE)
@@ -225,7 +226,32 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
             raise exception
 
     def snapshot(self, description):
+        """Create a debug snapshot (DOM, screenshot, etc...) that is written out on tool failure.
+
+        This information will be automatically written to a per-test directory created for all
+        failed tests.
+        """
         self.snapshots.append(TestSnapshot(self.driver, len(self.snapshots), description))
+
+    def screenshot(self, label):
+        """If GALAXY_TEST_SCREENSHOTS_DIRECTORY is set create a screenshot there named <label>.png.
+
+        Unlike the above "snapshot" feature, this will be written out regardless and not in a per-test
+        directory. The above method is used for debugging failures within a specific test. This method
+        if more for creating a set of images to augment automated testing with manual human inspection
+        after a test or test suite has executed.
+        """
+        if GALAXY_TEST_SCREENSHOTS_DIRECTORY is None:
+            return
+        if not os.path.exists(GALAXY_TEST_SCREENSHOTS_DIRECTORY):
+            os.makedirs(GALAXY_TEST_SCREENSHOTS_DIRECTORY)
+        target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, label + ".png")
+        copy = 1
+        while os.path.exists(target):
+            # Maybe previously a test re-run - keep the original.
+            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, "%s-%d.png" % (label, copy))
+            copy += 1
+        self.driver.save_screenshot(target)
 
     def reset_driver_and_session(self):
         self.tear_down_driver()
