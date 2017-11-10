@@ -220,14 +220,16 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def create(self, trans, history_id, payload, **kwd):
         """
         create( self, trans, history_id, payload, **kwd )
-        * POST /api/histories/{history_id}/contents/{type}
-            create a new HDA by copying an accessible LibraryDataset
+        * POST /api/histories/{history_id}/contents/{type}s
+        * POST /api/histories/{history_id}/contents
+            create a new HDA or HDCA
 
         :type   history_id: str
         :param  history_id: encoded id string of the new HDA's History
         :type   type: str
         :param  type: Type of history content - 'dataset' (default) or
-                      'dataset_collection'.
+                      'dataset_collection'. This can be passed in via payload
+                      or parsed from the route.
         :type   payload:    dict
         :param  payload:    dictionary structure containing::
             copy from library (for type 'dataset'):

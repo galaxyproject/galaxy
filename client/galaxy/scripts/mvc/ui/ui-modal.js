@@ -30,7 +30,7 @@ var View = Backbone.View.extend({
 
     /**
      * Displays modal
-    */
+     */
     show: function(options) {
         if (options) {
             this.options = _.defaults(options, this.optionsDefault);
@@ -55,7 +55,7 @@ var View = Backbone.View.extend({
 
     /**
      * Hide modal
-    */
+     */
     hide: function(canceled) {
         this.visible = false;
         this.$el.fadeOut("fast");
@@ -68,7 +68,7 @@ var View = Backbone.View.extend({
 
     /**
      * Render modal
-    */
+     */
     render: function() {
         var self = this;
         this.$el.html(this._template());
@@ -135,7 +135,7 @@ var View = Backbone.View.extend({
     /**
      * Returns the button dom
      * @param{String}   name    - Button name/title
-    */
+     */
     getButton: function(name) {
         return this.buttonList[name];
     },
@@ -143,7 +143,7 @@ var View = Backbone.View.extend({
     /**
      * Enables a button
      * @param{String}   name    - Button name/title
-    */
+     */
     enableButton: function(name) {
         this.getButton(name).prop("disabled", false);
     },
@@ -151,7 +151,7 @@ var View = Backbone.View.extend({
     /**
      * Disables a button
      * @param{String}   name    - Button name/title
-    */
+     */
     disableButton: function(name) {
         this.getButton(name).prop("disabled", true);
     },
@@ -159,7 +159,7 @@ var View = Backbone.View.extend({
     /**
      * Show a button
      * @param{String}   name    - Button name/title
-    */
+     */
     showButton: function(name) {
         this.getButton(name).show();
     },
@@ -167,21 +167,21 @@ var View = Backbone.View.extend({
     /**
      * Hide a button
      * @param{String}   name    - Button name/title
-    */
+     */
     hideButton: function(name) {
         this.getButton(name).hide();
     },
 
     /**
      * Returns scroll top for body element
-    */
+     */
     scrollTop: function() {
         return this.$body.scrollTop();
     },
 
     /**
      * Returns the modal template
-    */
+     */
     _template: function() {
         return (
             '<div class="modal-backdrop fade"/>' +

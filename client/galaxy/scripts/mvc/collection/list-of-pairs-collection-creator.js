@@ -204,8 +204,7 @@ function autoPairFnBuilder(options) {
 // ============================================================================
 /** An interface for building collections of paired datasets.
  */
-var PairedCollectionCreator = Backbone.View
-    .extend(baseMVC.LoggableMixin)
+var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
     .extend(baseCreator.CollectionCreatorMixin)
     .extend({
         _logNamespace: logNamespace,
@@ -396,8 +395,8 @@ var PairedCollectionCreator = Backbone.View
 
         // ------------------------------------------------------------------------ auto pairing
         /** two passes to automatically create pairs:
-     *  use both simpleAutoPair, then the fn mentioned in strategy
-     */
+         *  use both simpleAutoPair, then the fn mentioned in strategy
+         */
         autoPair: function(strategy) {
             // split first using exact matching
             var split = this._splitByFilters();
@@ -617,8 +616,8 @@ var PairedCollectionCreator = Backbone.View
         },
 
         /** create the collection via the API
-     *  @returns {jQuery.xhr Object}    the jquery ajax request
-     */
+         *  @returns {jQuery.xhr Object}    the jquery ajax request
+         */
         createList: function(name) {
             var self = this;
 
@@ -1175,9 +1174,9 @@ var PairedCollectionCreator = Backbone.View
         },
 
         /** Toggle the selection of an unpaired dataset representation.
-     *  @param [jQuery] $dataset        the unpaired dataset dom rep to select
-     *  @param [Boolean] options.force  if defined, force selection based on T/F; otherwise, toggle
-     */
+         *  @param [jQuery] $dataset        the unpaired dataset dom rep to select
+         *  @param [Boolean] options.force  if defined, force selection based on T/F; otherwise, toggle
+         */
         toggleSelectUnpaired: function($dataset, options) {
             options = options || {};
             var dataset = $dataset.data("dataset");
@@ -1433,8 +1432,8 @@ var PairedCollectionCreator = Backbone.View
         },
 
         /** get the nearest *previous* paired dataset PairView based on the mouse's Y coordinate.
-     *      If the y is at the end of the list, return an empty jQuery object.
-     */
+         *      If the y is at the end of the list, return an empty jQuery object.
+         */
         _getNearestPairedDatasetLi: function(y) {
             var WIGGLE = 4;
             var lis = this.$(".paired-columns .column-datasets li").toArray();

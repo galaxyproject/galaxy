@@ -52,8 +52,8 @@ var HistoryView = _super.extend(
 
         // ......................................................................... SET UP
         /** Set up the view, bind listeners.
-     *  @param {Object} attributes optional settings for the panel
-     */
+         *  @param {Object} attributes optional settings for the panel
+         */
         initialize: function(attributes) {
             _super.prototype.initialize.call(this, attributes);
             // ---- instance vars
@@ -92,9 +92,9 @@ var HistoryView = _super.extend(
         },
 
         /** create any event listeners for the panel
-     *  @fires: rendered:initial    on the first render
-     *  @fires: empty-history       when switching to a history with no contents or creating a new history
-     */
+         *  @fires: rendered:initial    on the first render
+         *  @fires: empty-history       when switching to a history with no contents or creating a new history
+         */
         _setUpListeners: function() {
             _super.prototype._setUpListeners.call(this);
             this.on({
@@ -320,8 +320,8 @@ var HistoryView = _super.extend(
         },
 
         /** In this override, since history contents are mixed,
-     *      get the appropo view class based on history_content_type
-     */
+         *      get the appropo view class based on history_content_type
+         */
         _getItemViewClass: function(model) {
             var contentType = model.get("history_content_type");
             switch (contentType) {
@@ -401,8 +401,8 @@ var HistoryView = _super.extend(
         },
 
         /** Toggle and store the deleted visibility and re-render items
-     * @returns {Boolean} new setting
-     */
+         * @returns {Boolean} new setting
+         */
         toggleShowDeleted: function(show, options) {
             show = show !== undefined ? show : !this.model.contents.includeDeleted;
             var self = this;
@@ -415,8 +415,8 @@ var HistoryView = _super.extend(
         },
 
         /** Toggle and store whether to render explicity hidden contents
-     * @returns {Boolean} new setting
-     */
+         * @returns {Boolean} new setting
+         */
         toggleShowHidden: function(show, store, options) {
             // console.log( 'toggleShowHidden', show, store );
             show = show !== undefined ? show : !this.model.contents.includeHidden;
@@ -477,11 +477,11 @@ var HistoryView = _super.extend(
 
         // ........................................................................ error handling
         /** Event handler for errors (from the panel, the history, or the history's contents)
-     *  Alternately use two strings for model and xhr to use custom message and title (respectively)
-     *  @param {Model or View} model    the (Backbone) source of the error
-     *  @param {XMLHTTPRequest} xhr     any ajax obj. assoc. with the error
-     *  @param {Object} options         the options map commonly used with bbone ajax
-     */
+         *  Alternately use two strings for model and xhr to use custom message and title (respectively)
+         *  @param {Model or View} model    the (Backbone) source of the error
+         *  @param {XMLHTTPRequest} xhr     any ajax obj. assoc. with the error
+         *  @param {Object} options         the options map commonly used with bbone ajax
+         */
         errorHandler: function(model, xhr, options) {
             //TODO: to mixin or base model
             // interrupted ajax or no connection
@@ -518,9 +518,9 @@ var HistoryView = _super.extend(
 
         // ........................................................................ scrolling
         /** Scrolls the panel to show the content sub-view with the given hid.
-     *  @param {Integer} hid    the hid of item to scroll into view
-     *  @returns {HistoryView} the panel
-     */
+         *  @param {Integer} hid    the hid of item to scroll into view
+         *  @returns {HistoryView} the panel
+         */
         scrollToHid: function(hid) {
             return this.scrollToItem(_.first(this.viewsWhereModel({ hid: hid })));
         },

@@ -17,7 +17,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.history_panel_multi_operation_action_click(self.navigation.history_panel.multi_operations.labels.build_list)
 
         self.collection_builder_set_name("my cool list")
-
+        self.screenshot("collection_builder_list")
         self.collection_builder_create()
         self.history_panel_wait_for_hid_ok(2)
 
@@ -48,7 +48,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.history_panel_muli_operation_select_hid(2)
         self.history_panel_multi_operation_action_click(self.navigation.history_panel.multi_operations.labels.build_pair)
         self.collection_builder_set_name("my awesome pair")
-
+        self.screenshot("collection_builder_pair")
         self.collection_builder_create()
         self.history_panel_wait_for_hid_ok(3)
 
@@ -67,7 +67,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_click_paired_item("forward", 0)
         self.collection_builder_click_paired_item("reverse", 1)
         self.collection_builder_set_name("my awesome paired list")
-
+        self.screenshot("collection_builder_paired_list")
         self.collection_builder_create()
         self.history_panel_wait_for_hid_ok(3)
 

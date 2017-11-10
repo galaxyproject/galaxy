@@ -41,7 +41,7 @@ var create_action_icon = (title, css_class, on_click_fn) =>
         .click(on_click_fn);
 
 /**
- * Number filters have a min, max as well as a low, high; low and high are used 
+ * Number filters have a min, max as well as a low, high; low and high are used
  */
 var NumberFilter = function(obj_dict) {
     //
@@ -315,7 +315,7 @@ extend(NumberFilter.prototype, {
             }
         }, 25);
     },
-    /** 
+    /**
      * Returns true if filter can be applied to element.
      */
     applies_to: function(element) {
@@ -331,7 +331,7 @@ extend(NumberFilter.prototype, {
         return isNaN(val) || (val >= this.low && val <= this.high);
     },
     /**
-     * Returns true if (a) element's value(s) is in [low, high] (range is inclusive) 
+     * Returns true if (a) element's value(s) is in [low, high] (range is inclusive)
      * or (b) if value is non-numeric and hence unfilterable.
      */
     keep: function(element) {

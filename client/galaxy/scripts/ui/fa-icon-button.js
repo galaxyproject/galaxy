@@ -4,16 +4,16 @@ import jQuery from "jquery";
 var $ = jQuery;
 //============================================================================
 /** Returns a jQuery object containing a clickable font-awesome button.
-     *      options:
-     *          tooltipConfig   : option map for bootstrap tool tip
-     *          classes         : array of class names (will always be classed as icon-btn)
-     *          disabled        : T/F - add the 'disabled' class?
-     *          title           : tooltip/title string
-     *          target          : optional href target
-     *          href            : optional href
-     *          faIcon          : which font awesome icon to use
-     *          onclick         : function to call when the button is clicked
-     */
+ *      options:
+ *          tooltipConfig   : option map for bootstrap tool tip
+ *          classes         : array of class names (will always be classed as icon-btn)
+ *          disabled        : T/F - add the 'disabled' class?
+ *          title           : tooltip/title string
+ *          target          : optional href target
+ *          href            : optional href
+ *          faIcon          : which font awesome icon to use
+ *          onclick         : function to call when the button is clicked
+ */
 var faIconButton = options => {
     options = options || {};
     options.tooltipConfig = options.tooltipConfig || {

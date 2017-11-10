@@ -16,7 +16,9 @@
       <display file="igb/bam.xml" />
       <display file="iobio/bam.xml" />
     </datatype>
-    <datatype extension="cram" type="galaxy.datatypes.binary:CRAM" mimetype="application/octet-stream" display_in_upload="true" description="CRAM is a file format for highly efficient and tunable reference-based compression of alignment data." description_url="http://www.ebi.ac.uk/ena/software/cram-usage"/>
+    <datatype extension="cram" type="galaxy.datatypes.binary:CRAM" mimetype="application/octet-stream" display_in_upload="true" description="CRAM is a file format for highly efficient and tunable reference-based compression of alignment data." description_url="http://www.ebi.ac.uk/ena/software/cram-usage">
+        <converter file="cram_to_bam_converter.xml" target_datatype="bam"/>
+    </datatype>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true" description="BED format provides a flexible way to define the data lines that are displayed in an annotation track. BED lines have three required columns and nine additional optional columns. The three required columns are chrom, chromStart and chromEnd." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Bed">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
       <converter file="bed_to_bgzip_converter.xml" target_datatype="bgzip"/>
@@ -341,6 +343,8 @@
     <datatype extension="phyloxml" type="galaxy.datatypes.xml:Phyloxml" display_in_upload="true" />
     <datatype extension="nhx" type="galaxy.datatypes.data:Newick" display_in_upload="true" />
     <datatype extension="nex" type="galaxy.datatypes.data:Nexus" display_in_upload="true" />
+    <datatype extension="iqtree" type="galaxy.datatypes.text:IQTree" />
+    <datatype extension="mldist" type="galaxy.datatypes.mothur:SquareDistanceMatrix" />
     <!-- Start RGenetics Datatypes -->
     <datatype extension="affybatch" type="galaxy.datatypes.genetics:Affybatch" display_in_upload="true"/>
     <!-- eigenstrat pedigree input file -->
@@ -744,6 +748,7 @@
     <sniffer type="galaxy.datatypes.tabular:Sam"/>
     <sniffer type="galaxy.datatypes.data:Newick"/>
     <sniffer type="galaxy.datatypes.data:Nexus"/>
+    <sniffer type="galaxy.datatypes.text:IQTree"/>
     <sniffer type="galaxy.datatypes.text:Obo"/>
     <sniffer type="galaxy.datatypes.text:Arff"/>
     <sniffer type="galaxy.datatypes.text:Ipynb"/>

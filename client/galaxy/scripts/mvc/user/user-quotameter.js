@@ -36,8 +36,8 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
         },
 
         /** Is the user over their quota (if there is one)?
-     * @returns {Boolean} true if over quota, false if no quota or under quota
-     */
+         * @returns {Boolean} true if over quota, false if no quota or under quota
+         */
         isOverQuota: function() {
             return (
                 this.model.get("quota_percent") !== null &&
@@ -46,13 +46,13 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
         },
 
         /** Render the meter when they have an applicable quota. Will render as a progress bar
-     *      with their percentage of that quota in text over the bar.
-     *  @fires quota:over when user is over quota (>= this.errorAtPercent)
-     *  @fires quota:under when user is under quota
-     *  @fires quota:under:approaching when user is >= this.warnAtPercent of their quota
-     *  @fires quota:under:ok when user is below this.warnAtPercent
-     *  @returns {jQuery} the rendered meter
-     */
+         *      with their percentage of that quota in text over the bar.
+         *  @fires quota:over when user is over quota (>= this.errorAtPercent)
+         *  @fires quota:under when user is under quota
+         *  @fires quota:under:approaching when user is >= this.warnAtPercent of their quota
+         *  @fires quota:under:ok when user is below this.warnAtPercent
+         *  @returns {jQuery} the rendered meter
+         */
         _render_quota: function() {
             var modelJson = this.model.toJSON();
 
@@ -90,9 +90,9 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
         },
 
         /** Render the meter when the user has NO applicable quota. Will render as text
-     *      showing the human readable sum storage their data is using.
-     *  @returns {jQuery} the rendered text
-     */
+         *      showing the human readable sum storage their data is using.
+         *  @returns {jQuery} the rendered text
+         */
         _render_usage: function() {
             //var usage = $( UserQuotaMeter.templates.usage( this.model.toJSON() ) );
             var usage = $(this._templateUsage(this.model.toJSON()));
@@ -101,9 +101,9 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
         },
 
         /** Render either the quota percentage meter or the human readable disk usage
-     *      depending on whether the user model has quota info (quota_percent === null -> no quota)
-     *  @returns {Object} this UserQuotaMeter
-     */
+         *      depending on whether the user model has quota info (quota_percent === null -> no quota)
+         *  @returns {Object} this UserQuotaMeter
+         */
         render: function() {
             //this.log( this + '.rendering' );
             var meterHtml = null;

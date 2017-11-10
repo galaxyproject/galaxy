@@ -53,7 +53,9 @@ export default {
             }
             for (var i in options.global_actions) {
                 var action = options.global_actions[i];
-                tmpl += `<li><a class="action-button use-target" target="${action.target}" href="${action.url_args}" onclick="return false;" >${action.label}</a></li>`;
+                tmpl += `<li><a class="action-button use-target" target="${action.target}" href="${
+                    action.url_args
+                }" onclick="return false;" >${action.label}</a></li>`;
             }
             if (show_popup) {
                 tmpl += "</div>";
@@ -139,7 +141,9 @@ export default {
 
             // Item selection column
             if (options.show_item_checkboxes) {
-                tmpl += `<td style="width: 1.5em;"><input type="checkbox" name="id" value="${encoded_id}" id="${encoded_id}" class="grid-row-select-checkbox" /></td>`;
+                tmpl += `<td style="width: 1.5em;"><input type="checkbox" name="id" value="${encoded_id}" id="${
+                    encoded_id
+                }" class="grid-row-select-checkbox" /></td>`;
             }
 
             // Data columns
@@ -185,13 +189,16 @@ export default {
                         if (options.operations.length != 0) {
                             tmpl += `<div id="${id}" class="${cls}" style="float: left;">`;
                         }
-                        tmpl += `<a class="menubutton-label use-target" target="${target}" href="${link}" onclick="return false;">${value}</a>`;
+                        tmpl += `<a class="menubutton-label use-target" target="${target}" href="${
+                            link
+                        }" onclick="return false;">${value}</a>`;
                         if (options.operations.length != 0) {
                             tmpl += "</div>";
                         }
                     } else {
-                        tmpl += `<div id="${id}" class="${cls}"><label id="${column.label_id_prefix}${encoded_id}" for="${encoded_id}">${value ||
-                            ""}</label></div>`;
+                        tmpl += `<div id="${id}" class="${cls}"><label id="${column.label_id_prefix}${
+                            encoded_id
+                        }" for="${encoded_id}">${value || ""}</label></div>`;
                     }
                     tmpl += "</td>";
                 }
@@ -264,13 +271,21 @@ export default {
                 if (page_index == options.cur_page_num) {
                     tmpl += `<span class="page-link inactive-link" id="page-link-${page_index}">${page_index}</span>`;
                 } else {
-                    tmpl += `<span class="page-link" id="page-link-${page_index}"><a href="javascript:void(0);" onclick="return false;" page_num="${page_index}">${page_index}</a></span>`;
+                    tmpl += `<span class="page-link" id="page-link-${
+                        page_index
+                    }"><a href="javascript:void(0);" onclick="return false;" page_num="${page_index}">${
+                        page_index
+                    }</a></span>`;
                 }
             }
 
             // show last page
             if (max_page < num_pages) {
-                tmpl += `...<span class="page-link" id="page-link-${num_pages}"><a href="javascript:void(0);" onclick="return false;" page_num="${num_pages}">${num_pages}</a></span>`;
+                tmpl += `...<span class="page-link" id="page-link-${
+                    num_pages
+                }"><a href="javascript:void(0);" onclick="return false;" page_num="${num_pages}">${
+                    num_pages
+                }</a></span>`;
             }
             tmpl += "</span>";
 
@@ -295,7 +310,9 @@ export default {
             for (var i in options.operations) {
                 var operation = options.operations[i];
                 if (operation.allow_multiple) {
-                    tmpl += `<input type="button" value="${operation.label}" class="operation-button action-button">&nbsp;`;
+                    tmpl += `<input type="button" value="${
+                        operation.label
+                    }" class="operation-button action-button">&nbsp;`;
                 }
             }
 
@@ -380,7 +397,9 @@ export default {
         //
         // standard search
         //
-        var tmpl = `<div id="standard-search" style="display: ${standard_search_display};"><table><tr><td style="padding: 0;"><table>`;
+        var tmpl = `<div id="standard-search" style="display: ${
+            standard_search_display
+        };"><table><tr><td style="padding: 0;"><table>`;
 
         // add standard filters
         for (var i in options.columns) {
@@ -404,7 +423,9 @@ export default {
         //
         // advanced search
         //
-        tmpl += `<div id="advanced-search" style="display: ${advanced_search_display}; margin-top: 5px; border: 1px solid #ccc;"><table><tr><td style="text-align: left" colspan="100"><a href="" class="advanced-search-toggle">Close Advanced Search</a></td></tr>`;
+        tmpl += `<div id="advanced-search" style="display: ${
+            advanced_search_display
+        }; margin-top: 5px; border: 1px solid #ccc;"><table><tr><td style="text-align: left" colspan="100"><a href="" class="advanced-search-toggle">Close Advanced Search</a></td></tr>`;
 
         // add advanced filters
         for (var i in options.columns) {
@@ -450,7 +471,9 @@ export default {
                         if (temp_column.is_text) {
                             filter_value = JSON.stringify(filter_value);
                         }
-                        tmpl += `<input type="hidden" id="${temp_column.key}" name="f-${temp_column.key}" value="${filter_value}"/>`;
+                        tmpl += `<input type="hidden" id="${temp_column.key}" name="f-${temp_column.key}" value="${
+                            filter_value
+                        }"/>`;
                     }
                 }
             }
@@ -503,7 +526,11 @@ export default {
             }
 
             // print input field for column
-            tmpl += `<span class="search-box"><input class="search-box-input" id="input-${column_key}-filter" name="f-${column_key}" type="text" placeholder="${value}" size="${size}"/><button type="submit" style="background: transparent; border: none; padding: 4px; margin: 0px;"><i class="fa fa-search"></i></button></span></form>`;
+            tmpl += `<span class="search-box"><input class="search-box-input" id="input-${column_key}-filter" name="f-${
+                column_key
+            }" type="text" placeholder="${value}" size="${
+                size
+            }"/><button type="submit" style="background: transparent; border: none; padding: 4px; margin: 0px;"><i class="fa fa-search"></i></button></span></form>`;
         } else {
             // filter criteria
             tmpl += `<span id="${column_key}-filtering-criteria">`;
@@ -533,7 +560,11 @@ export default {
                 if (filter && cf[column_key] && filter == cf_arg) {
                     tmpl += `<span class="categorical-filter ${column_key}-filter current-filter">${cf_label}</span>`;
                 } else {
-                    tmpl += `<span class="categorical-filter ${column_key}-filter"><a href="javascript:void(0);" filter_key="${cf_key}" filter_val="${cf_arg}">${cf_label}</a></span>`;
+                    tmpl += `<span class="categorical-filter ${
+                        column_key
+                    }-filter"><a href="javascript:void(0);" filter_key="${cf_key}" filter_val="${cf_arg}">${
+                        cf_label
+                    }</a></span>`;
                 }
             }
             tmpl += "</span>";
@@ -547,6 +578,10 @@ export default {
     // template for filter items
     filter_element: function(filter_key, filter_value) {
         filter_value = Utils.sanitize(filter_value);
-        return `<span class="text-filter-val">${filter_value}<a href="javascript:void(0);" filter_key="${filter_key}" filter_val="${filter_value}"><i class="fa fa-times" style="padding-left: 5px; padding-bottom: 6px;"/></a></span>`;
+        return `<span class="text-filter-val">${filter_value}<a href="javascript:void(0);" filter_key="${
+            filter_key
+        }" filter_val="${
+            filter_value
+        }"><i class="fa fa-times" style="padding-left: 5px; padding-bottom: 6px;"/></a></span>`;
     }
 };

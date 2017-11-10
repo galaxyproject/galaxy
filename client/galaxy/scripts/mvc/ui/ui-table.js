@@ -165,8 +165,9 @@ var View = Backbone.View.extend({
 
     /** Template */
     _template: function() {
-        return `<div><table class="${this.options.cls}"><thead/><tbody/></table><tmessage>${this.options
-            .content}</tmessage><div>`;
+        return `<div><table class="${this.options.cls}"><thead/><tbody/></table><tmessage>${
+            this.options.content
+        }</tmessage><div>`;
     }
 });
 

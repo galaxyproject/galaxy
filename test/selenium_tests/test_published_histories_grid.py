@@ -15,7 +15,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_history_grid_search_standard(self):
         self.navigate_to_published_histories_page()
-
+        self.screenshot("histories_published_grid")
         self.published_grid_search_for(self.history1_name)
         self.assert_grid_histories_are([self.history1_name])
 
@@ -37,6 +37,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
         # Search by name
         self.set_filter(name_filter_selector, self.history1_name)
+        self.screenshot("histories_published_grid_advanced")
         self.assert_grid_histories_are([self.history1_name])
         self.unset_filter('name', self.history1_name)
 

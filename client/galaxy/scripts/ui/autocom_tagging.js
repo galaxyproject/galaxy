@@ -5,10 +5,10 @@ var $ = jQuery;
 
 // ============================================================================
 /**
-* JQuery extension for tagging with autocomplete.
-* @author: Jeremy Goecks
-* @require: jquery.autocomplete plugin
-*/
+ * JQuery extension for tagging with autocomplete.
+ * @author: Jeremy Goecks
+ * @require: jquery.autocomplete plugin
+ */
 //
 // Initialize "tag click functions" for tags.
 //
