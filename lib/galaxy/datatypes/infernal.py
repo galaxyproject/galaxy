@@ -9,37 +9,6 @@ import os
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
 
-def count_special_lines( word, filename, invert = False ):
-    """
-        searching for special 'words' using the grep tool
-        grep is used to speed up the searching and counting
-        The number of hits is returned.
-    """
-    try:
-        cmd = ["grep", "-c"]
-        if invert:
-            cmd.append('-v')
-        cmd.extend([word, filename])
-        out = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        return int(out.communicate()[0].split()[0])
-    except:
-        pass
-    return 0
-
-def count_lines( filename, non_empty = False):
-    """
-        counting the number of lines from the 'filename' file
-    """
-    try:
-        if non_empty:
-            out = subprocess.Popen(['grep', '-cve', '^\s*$', filename], stdout=subprocess.PIPE)
-        else:
-            out = subprocess.Popen(['wc', '-l', filename], stdout=subprocess.PIPE)
-        return int(out.communicate()[0].split()[0])
-    except:
-        pass
-    return 0
-
 
 class Infernal_CM_1_1( Text ):
     file_ext = "cm"
@@ -59,7 +28,10 @@ class Infernal_CM_1_1( Text ):
             dataset.blurb = 'file purged from disc'
 
     def sniff( self, filename ):
-        if count_special_lines("^INFERNAL1/a", filename) > 0:
+        with open('myfile.txt', 'r') as f:
+            first_line = f.readline()
+
+        if ("INFERNAL1/a" in first_line):
             return True
         else:
             return False
