@@ -10,6 +10,7 @@ from galaxy.util import nice_size
 
 log = logging.getLogger(__name__)
 
+
 class Infernal_CM_1_1(Text):
     file_ext = "cm"
 
@@ -268,7 +269,7 @@ class MauveXmfa(Text):
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
-            if (dataset.metadata.number_of_models == 1):
+            if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 alignment"
             else:
                 dataset.blurb = "%s alignments" % dataset.metadata.number_of_models
