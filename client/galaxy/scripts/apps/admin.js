@@ -10,7 +10,8 @@ import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
 import Vue from "libs/vue";
-import UserAPIKeys from "components/user_api_keys.vue";
+import UserAPIKeys from "components/admin/user-api-keys.vue";
+import DataTables from "components/admin/data-tables.vue";
 
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
@@ -27,7 +28,8 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)repositories": "show_repositories",
             "(/)admin(/)forms": "show_forms",
             "(/)admin(/)form(/)(:form_id)": "show_form",
-            "(/)admin/api_keys": "show_user_api_keys"
+            "(/)admin/api_keys": "show_user_api_keys",
+            "(/)admin/data_tables": "show_data_tables"
         },
 
         authenticate: function(args, name) {
@@ -95,9 +97,15 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_user_api_keys: function() {
-            var vuemount = document.createElement('div');
-            this.page.display(vuemount);
-            new Vue(UserAPIKeys).$mount(vuemount);
+            var vueMount = document.createElement('div');
+            this.page.display(vueMount);
+            new Vue(UserAPIKeys).$mount(vueMount);
+        },
+
+        show_data_tables: function() {
+            var vueMount = document.createElement('div');
+            this.page.display(vueMount);
+            new Vue(DataTables).$mount(vueMount);
         },
 
         show_forms: function() {
