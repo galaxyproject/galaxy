@@ -95,14 +95,9 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_user_api_keys: function() {
-            // TODO refactor into a reusable Vue component display mechanism.
-            var z = document.createElement('div');
-            this.page.display(z);
-            new Vue({
-              el: z,
-              template: '<UserAPIKeys/>',
-              components: { UserAPIKeys }
-            });
+            var vuemount = document.createElement('div');
+            this.page.display(vuemount);
+            new Vue(UserAPIKeys).$mount(vuemount);
         },
 
         show_forms: function() {
