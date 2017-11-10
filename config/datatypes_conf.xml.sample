@@ -494,6 +494,8 @@
     <datatype extension="score" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="srs" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="srspair" type="galaxy.datatypes.data:Text" subclass="true"/>
+    <!--INFERNAL1.1 Datatypes -->
+    <datatype extension="cm" type="galaxy.datatypes.infernal:Infernal_CM_1_1" display_in_upload="False" />
     <!-- Annotation Datatypes -->
     <datatype extension="snaphmm" type="galaxy.datatypes.annotation:SnapHmm" display_in_upload="true" />
     <datatype extension="augustus" type="galaxy.datatypes.annotation:Augustus" display_in_upload="true" />
@@ -764,6 +766,7 @@
     <sniffer type="galaxy.datatypes.msa:Stockholm_1_0" />
     <sniffer type="galaxy.datatypes.msa:MauveXmfa" />
     <sniffer type="galaxy.datatypes.annotation:SnapHmm" />
+    <sniffer type="galaxy.datatypes.infernal:Infernal_CM_1_1"/>
     <sniffer type="galaxy.datatypes.binary:Cel" />
     <sniffer type="galaxy.datatypes.binary:RData" />
     <sniffer type="galaxy.datatypes.images:Jpg"/>
