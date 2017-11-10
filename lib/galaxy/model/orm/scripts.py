@@ -2,6 +2,7 @@
 Code to support database helper scripts (create_db.py, manage_db.py, etc...).
 """
 import logging
+import os.path
 
 from galaxy.util.path import get_ext
 from galaxy.util.properties import find_config_file, load_app_properties
@@ -44,7 +45,7 @@ def read_config_file_arg(argv, config_names, cwd=None):
         argv.pop(pos)
         return argv.pop(pos)
     if cwd:
-        cwd = [cwd]
+        cwd = [cwd, os.path.join(cwd, 'config')]
     return find_config_file(config_names, dirs=cwd)
 
 
@@ -54,6 +55,7 @@ def get_config(argv, cwd=None):
 
     >>> import os
     >>> from ConfigParser import SafeConfigParser
+    >>> from shutil import rmtree
     >>> from tempfile import mkdtemp
     >>> config_dir = mkdtemp()
     >>> os.makedirs(os.path.join(config_dir, 'config'))
@@ -74,6 +76,7 @@ def get_config(argv, cwd=None):
     'sqlite:///moo.sqlite?isolation_level=IMMEDIATE'
     >>> config['repo']
     'lib/galaxy/model/migrate'
+    >>> rmtree(config_dir)
     """
     if argv and (argv[-1] in DATABASE):
         database = argv.pop()  # database name tool_shed, galaxy, or install.
