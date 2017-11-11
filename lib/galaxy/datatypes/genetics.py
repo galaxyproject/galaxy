@@ -956,7 +956,7 @@ class PreMakePed(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = PreMakePed
+        >>> classname = PreMakePed
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
@@ -992,7 +992,7 @@ class Pedfile(PreMakePed):
 
     def sniff(self, filename):
         """
-        >>> cname = Pedfile
+        >>> classname = Pedfile
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
@@ -1054,7 +1054,7 @@ class GenotypeMatrix(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = GenotypeMatrix
+        >>> classname = GenotypeMatrix
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
@@ -1114,7 +1114,7 @@ class MarkerMap(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = MarkerMap
+        >>> classname = MarkerMap
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
@@ -1180,7 +1180,7 @@ class AlohomoraMarkerMap(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = AlohomoraMarkerMap
+        >>> classname = AlohomoraMarkerMap
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
@@ -1233,7 +1233,7 @@ class AlohomoraMAF(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = AlohomoraMAF
+        >>> classname = AlohomoraMAF
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
@@ -1311,7 +1311,7 @@ class DataIn(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = DataIn
+        >>> classname = DataIn
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
@@ -1364,7 +1364,7 @@ class AllegroHaplo(PreMakePed):
 
     def sniff(self, filename):
         """
-        >>> cname = AllegroHaplo
+        >>> classname = AllegroHaplo
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
@@ -1422,7 +1422,7 @@ class AllegroLOD(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = AllegroLOD
+        >>> classname = AllegroLOD
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
