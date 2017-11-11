@@ -848,27 +848,14 @@ class LinkageStudies(Text):
         # iterate whole file without errors
         self.eof_res = True
 
-    @staticmethod
-    def __is_binary_file(fstream):
-        """
-        Private binary file tester
-        """
-        result = False
-        if '\x00' in fstream.readline(512):
-            result = True
-
-        fstream.seek(0)
-        return result
-
-    @staticmethod
-    def tokenizer(line, sep=None):
+    def tokenizer(self, line, sep=None):
         """
         General purpose string tokenizer
         """
         if sep is None:
-            return line.splitlines()[0].split(sep)
+            return line.split(sep)
 
-        return line.splitlines()[0].split(sep)
+        return line.split(sep)
 
     def eof_function(self):
         """
@@ -900,9 +887,6 @@ class LinkageStudies(Text):
 
     def sniffer(self, filename):
         with open(filename, "r") as fio:
-
-            if LinkageStudies.__is_binary_file(fio):
-                return False
 
             if not self.header_check(fio):
                 return False
@@ -937,7 +921,7 @@ class PreMakePed(LinkageStudies):
         self.cols_found = -1
 
     def line_op(self, line):
-        tokens = LinkageStudies.tokenizer(line)
+        tokens = self.tokenizer(line)
 
         if line.startswith("   "):
             return False
@@ -972,11 +956,11 @@ class PreMakePed(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = "PreMakePed"
+        >>> cname = PreMakePed
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> extn_true = eval(cname)().file_ext
+        >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
-        >>> eval(cname)().sniff(file_true)
+        >>> classname().sniff(file_true)
         True
 
         >>> false_files = list(LinkageStudies.test_files)
@@ -984,7 +968,7 @@ class PreMakePed(LinkageStudies):
         >>> result_true = []
         >>> for fname in false_files:
         ...     file_false = get_test_fname(fname)
-        ...     res = eval(cname)().sniff(file_false)
+        ...     res = classname().sniff(file_false)
         ...     if res:
         ...         result_true.append(fname)
         >>>
@@ -1008,11 +992,11 @@ class Pedfile(PreMakePed):
 
     def sniff(self, filename):
         """
-        >>> cname = "Pedfile"
+        >>> cname = Pedfile
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> extn_true = eval(cname)().file_ext
+        >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
-        >>> eval(cname)().sniff(file_true)
+        >>> classname().sniff(file_true)
         True
 
         >>> false_files = list(LinkageStudies.test_files)
@@ -1020,7 +1004,7 @@ class Pedfile(PreMakePed):
         >>> result_true = []
         >>> for fname in false_files:
         ...     file_false = get_test_fname(fname)
-        ...     res = eval(cname)().sniff(file_false)
+        ...     res = classname().sniff(file_false)
         ...     if res:
         ...         result_true.append(fname)
         >>>
@@ -1056,7 +1040,7 @@ class GenotypeMatrix(LinkageStudies):
         return None
 
     def header_check(self, fio):
-        header_elems = LinkageStudies.tokenizer(fio.readline(), '\t')
+        header_elems = self.tokenizer(fio.readline(), '\t')
 
         if header_elems[0] != "Name":
             return False
@@ -1070,11 +1054,11 @@ class GenotypeMatrix(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = "GenotypeMatrix"
+        >>> cname = GenotypeMatrix
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> extn_true = eval(cname)().file_ext
+        >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
-        >>> eval(cname)().sniff(file_true)
+        >>> classname().sniff(file_true)
         True
 
         >>> false_files = list(LinkageStudies.test_files)
@@ -1082,7 +1066,7 @@ class GenotypeMatrix(LinkageStudies):
         >>> result_true = []
         >>> for fname in false_files:
         ...     file_false = get_test_fname(fname)
-        ...     res = eval(cname)().sniff(file_false)
+        ...     res = classname().sniff(file_false)
         ...     if res:
         ...         result_true.append(fname)
         >>>
@@ -1112,7 +1096,7 @@ class MarkerMap(LinkageStudies):
     def line_op(self, line):
 
         try:
-            chrm, gpos, nam, bpos, row = LinkageStudies.tokenizer(line)
+            chrm, gpos, nam, bpos, row = self.tokenizer(line)
 
             float(gpos)
             int(bpos)
@@ -1130,11 +1114,11 @@ class MarkerMap(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = "MarkerMap"
+        >>> cname = MarkerMap
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> extn_true = eval(cname)().file_ext
+        >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
-        >>> eval(cname)().sniff(file_true)
+        >>> classname().sniff(file_true)
         True
 
         >>> false_files = list(LinkageStudies.test_files)
@@ -1142,7 +1126,7 @@ class MarkerMap(LinkageStudies):
         >>> result_true = []
         >>> for fname in false_files:
         ...     file_false = get_test_fname(fname)
-        ...     res = eval(cname)().sniff(file_false)
+        ...     res = classname().sniff(file_false)
         ...     if res:
         ...         result_true.append(fname)
         >>>
@@ -1175,7 +1159,7 @@ class AlohomoraMarkerMap(LinkageStudies):
 
     def line_op(self, line):
         try:
-            chrm, nam1, gpos, bpos, nam2, junk = LinkageStudies.tokenizer(line)
+            chrm, nam1, gpos, bpos, nam2, junk = self.tokenizer(line)
 
             float(gpos)
             int(bpos)
@@ -1196,11 +1180,11 @@ class AlohomoraMarkerMap(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = "AlohomoraMarkerMap"
+        >>> cname = AlohomoraMarkerMap
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> extn_true = eval(cname)().file_ext
+        >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
-        >>> eval(cname)().sniff(file_true)
+        >>> classname().sniff(file_true)
         True
 
         >>> false_files = list(LinkageStudies.test_files)
@@ -1208,7 +1192,7 @@ class AlohomoraMarkerMap(LinkageStudies):
         >>> result_true = []
         >>> for fname in false_files:
         ...     file_false = get_test_fname(fname)
-        ...     res = eval(cname)().sniff(file_false)
+        ...     res = classname().sniff(file_false)
         ...     if res:
         ...         result_true.append(fname)
         >>>
@@ -1249,11 +1233,11 @@ class AlohomoraMAF(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = "AlohomoraMAF"
+        >>> cname = AlohomoraMAF
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> extn_true = eval(cname)().file_ext
+        >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
-        >>> eval(cname)().sniff(file_true)
+        >>> classname().sniff(file_true)
         True
 
         >>> false_files = list(LinkageStudies.test_files)
@@ -1261,7 +1245,7 @@ class AlohomoraMAF(LinkageStudies):
         >>> result_true = []
         >>> for fname in false_files:
         ...     file_false = get_test_fname(fname)
-        ...     res = eval(cname)().sniff(file_false)
+        ...     res = classname().sniff(file_false)
         ...     if res:
         ...         result_true.append(fname)
         >>>
@@ -1288,7 +1272,7 @@ class DataIn(LinkageStudies):
 
     def line_op(self, line):
 
-        tokens = LinkageStudies.tokenizer(line)
+        tokens = self.tokenizer(line)
 
         try:
 
@@ -1327,11 +1311,11 @@ class DataIn(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = "DataIn"
+        >>> cname = DataIn
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> extn_true = eval(cname)().file_ext
+        >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
-        >>> eval(cname)().sniff(file_true)
+        >>> classname().sniff(file_true)
         True
 
         >>> false_files = list(LinkageStudies.test_files)
@@ -1339,7 +1323,7 @@ class DataIn(LinkageStudies):
         >>> result_true = []
         >>> for fname in false_files:
         ...     file_false = get_test_fname(fname)
-        ...     res = eval(cname)().sniff(file_false)
+        ...     res = classname().sniff(file_false)
         ...     if res:
         ...         result_true.append(fname)
         >>>
@@ -1380,11 +1364,11 @@ class AllegroHaplo(PreMakePed):
 
     def sniff(self, filename):
         """
-        >>> cname = "AllegroHaplo"
+        >>> cname = AllegroHaplo
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> extn_true = eval(cname)().file_ext
+        >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
-        >>> eval(cname)().sniff(file_true)
+        >>> classname().sniff(file_true)
         True
 
         >>> false_files = list(LinkageStudies.test_files)
@@ -1392,7 +1376,7 @@ class AllegroHaplo(PreMakePed):
         >>> result_true = []
         >>> for fname in false_files:
         ...     file_false = get_test_fname(fname)
-        ...     res = eval(cname)().sniff(file_false)
+        ...     res = classname().sniff(file_false)
         ...     if res:
         ...         result_true.append(fname)
         >>>
@@ -1422,7 +1406,7 @@ class AllegroLOD(LinkageStudies):
         return False
 
     def line_op(self, line):
-        tokens = LinkageStudies.tokenizer(line)
+        tokens = self.tokenizer(line)
 
         try:
             int(tokens[0])
@@ -1438,11 +1422,11 @@ class AllegroLOD(LinkageStudies):
 
     def sniff(self, filename):
         """
-        >>> cname = "AllegroLOD"
+        >>> cname = AllegroLOD
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> extn_true = eval(cname)().file_ext
+        >>> extn_true = classname().file_ext
         >>> file_true = get_test_fname("linkstudies." + extn_true)
-        >>> eval(cname)().sniff(file_true)
+        >>> classname().sniff(file_true)
         True
 
         >>> false_files = list(LinkageStudies.test_files)
@@ -1450,7 +1434,7 @@ class AllegroLOD(LinkageStudies):
         >>> result_true = []
         >>> for fname in false_files:
         ...     file_false = get_test_fname(fname)
-        ...     res = eval(cname)().sniff(file_false)
+        ...     res = classname().sniff(file_false)
         ...     if res:
         ...         result_true.append(fname)
         >>>
