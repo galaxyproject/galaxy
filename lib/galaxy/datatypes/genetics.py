@@ -835,8 +835,8 @@ class LinkageStudies(Text):
     """
     test_files = [
         'linkstudies.allegro_fparam', 'linkstudies.allegro_ihaplo',
-        'linkstudies.alohomora_gts', 'linkstudies.linkage_pedin',
-        'linkstudies.linkage_datain', 'linkstudies.linkage_map'
+        'linkstudies.linkage_datain', 'linkstudies.linkage_map',
+        'linkstudies.alohomora_gts'
     ]
 
     def __init__(self, **kwd):
@@ -900,80 +900,6 @@ class LinkageStudies(Text):
                     return line_res
 
             return self.eof_function()
-        return False
-
-
-class PreMakePed(LinkageStudies):
-    """
-    Common linkage pedin format
-    Extended linkage pedigree file containing:
-         fam, indiv, fath, moth, gender, affectation, [genotypes]
-    """
-    file_ext = "linkage_pedin"
-
-    def __init__(self, **kwd):
-        LinkageStudies.__init__(self, **kwd)
-        self.num_colns = None
-        self.max_lines = 10
-        self.fam_id = -1
-        self.cols_found = -1
-
-    def line_op(self, line):
-        tokens = self.tokenizer(line)
-
-        if line.startswith("   "):
-            return False
-
-        if self.num_colns is not None:
-            if len(tokens) != self.num_colns:
-                return False
-
-        else:
-            if self.cols_found == -1:
-                self.cols_found = len(tokens)
-                # absolute minimum for pedinfo + alleles
-                if self.cols_found < 7:
-                    return False
-
-            elif self.cols_found != len(tokens):
-                return False
-
-        try:
-            if set([int(val) >= 0 for val in tokens]) != {True}:
-                return False
-
-            if self.fam_id == -1:
-                self.fam_id = int(tokens[0])
-            elif self.fam_id != int(tokens[0]):
-                return False
-
-        except ValueError:
-            return False
-
-        return None
-
-    def sniff(self, filename):
-        """
-        >>> classname = PreMakePed
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> extn_true = classname().file_ext
-        >>> file_true = get_test_fname("linkstudies." + extn_true)
-        >>> classname().sniff(file_true)
-        True
-
-        >>> false_files = list(LinkageStudies.test_files)
-        >>> false_files.remove("linkstudies." + extn_true)
-        >>> result_true = []
-        >>> for fname in false_files:
-        ...     file_false = get_test_fname(fname)
-        ...     res = classname().sniff(file_false)
-        ...     if res:
-        ...         result_true.append(fname)
-        >>>
-        >>> result_true
-        []
-        """
-        return self.sniffer(filename)
 
 
 class GenotypeMatrix(LinkageStudies):
@@ -992,10 +918,8 @@ class GenotypeMatrix(LinkageStudies):
 
         if self.num_cols == -1:
             self.num_cols = len(tokens)
-
         elif self.num_cols != len(tokens):
             return False
-
         if not VALID_GENOTYPES_LINE.match(line):
             return False
 
@@ -1122,16 +1046,12 @@ class DataIn(LinkageStudies):
             if self.lcount == 1:
                 self.num_markers = int(tokens[0])
                 map(int, tokens[1:])
-
             elif self.lcount == 2:
-
                 map(float, tokens)
 
                 if len(tokens) != 4:
                     return False
-
             elif self.lcount == 3:
-
                 map(int, tokens)
                 last_token = int(tokens[-1])
 
@@ -1143,7 +1063,6 @@ class DataIn(LinkageStudies):
 
                 if self.num_markers != last_token:
                     return False
-
             elif tokens[0] == "3" and tokens[1] == "2":
                 self.intermarkers += 1
 
@@ -1176,15 +1095,55 @@ class DataIn(LinkageStudies):
         return self.sniffer(filename)
 
 
-class AllegroHaplo(PreMakePed):
+class AllegroHaplo(LinkageStudies):
     """
     Allegro output format for phased haplotypes
     """
     file_ext = "allegro_ihaplo"
 
+    def __init__(self, **kwd):
+        LinkageStudies.__init__(self, **kwd)
+        self.num_colns = None
+        self.max_lines = 10
+        self.fam_id = -1
+        self.cols_found = -1
+
+    def line_op(self, line):
+        tokens = self.tokenizer(line)
+
+        if line.startswith("   "):
+            return False
+
+        if self.num_colns is not None:
+            if len(tokens) != self.num_colns:
+                return False
+        else:
+            if self.cols_found == -1:
+                self.cols_found = len(tokens)
+                # absolute minimum for pedinfo + alleles
+                if self.cols_found < 7:
+                    return False
+            elif self.cols_found != len(tokens):
+                return False
+
+        try:
+            if set([int(val) >= 0 for val in tokens]) != {True}:
+                return False
+
+            if self.fam_id == -1:
+                self.fam_id = int(tokens[0])
+            elif self.fam_id != int(tokens[0]):
+                return False
+
+        except ValueError:
+            return False
+
+        return None
+
     def header_check(self, fio):
         header = []
         max_line = 0
+        # rsIDs unlikely to exceed 100 chars
         while max_line < 100:
             max_line += 1
             line = fio.readline()
