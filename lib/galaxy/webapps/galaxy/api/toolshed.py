@@ -35,11 +35,12 @@ class ToolShedController(BaseAPIController):
     def __get_tool_dependencies(self, metadata, tool_dependencies=None):
         if tool_dependencies is None:
             tool_dependencies = []
-        for key, dependency_dict in metadata['tool_dependencies'].items():
-            if 'readme' in dependency_dict:
-                del(dependency_dict['readme'])
-            if dependency_dict not in tool_dependencies:
-                tool_dependencies.append(dependency_dict)
+        if metadata['includes_tool_dependencies']:
+            for key, dependency_dict in metadata['tool_dependencies'].items():
+                if 'readme' in dependency_dict:
+                    del(dependency_dict['readme'])
+                if dependency_dict not in tool_dependencies:
+                    tool_dependencies.append(dependency_dict)
         if metadata['has_repository_dependencies']:
             for dependency in metadata['repository_dependencies']:
                 tool_dependencies = self.__get_tool_dependencies(dependency, tool_dependencies)
