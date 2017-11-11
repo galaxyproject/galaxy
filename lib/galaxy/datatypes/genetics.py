@@ -834,9 +834,8 @@ class LinkageStudies(Text):
     superclass for classical linkage analysis suites
     """
     test_files = [
-        'linkstudies.allegro_fparam', 'linkstudies.allegro_ihaplo',
-        'linkstudies.linkage_datain', 'linkstudies.linkage_map',
-        'linkstudies.alohomora_gts'
+        'linkstudies.allegro_fparam', 'linkstudies.alohomora_gts',
+        'linkstudies.linkage_datain', 'linkstudies.linkage_map'
     ]
 
     def __init__(self, **kwd):
@@ -1083,99 +1082,6 @@ class DataIn(LinkageStudies):
         return self.sniffer(filename)
 
 
-class AllegroHaplo(LinkageStudies):
-    """
-    Allegro output format for phased haplotypes
-    """
-    file_ext = "allegro_ihaplo"
-
-    def __init__(self, **kwd):
-        LinkageStudies.__init__(self, **kwd)
-        self.num_colns = None
-        self.max_lines = 10
-        self.fam_id = -1
-        self.cols_found = -1
-
-    def line_op(self, line):
-        tokens = line.split()
-
-        if line.startswith("   "):
-            return False
-
-        if self.num_colns is not None:
-            if len(tokens) != self.num_colns:
-                return False
-        else:
-            if self.cols_found == -1:
-                self.cols_found = len(tokens)
-                # absolute minimum for pedinfo + alleles
-                if self.cols_found < 7:
-                    return False
-            elif self.cols_found != len(tokens):
-                return False
-
-        try:
-            if set([int(val) >= 0 for val in tokens]) != {True}:
-                return False
-
-            if self.fam_id == -1:
-                self.fam_id = int(tokens[0])
-            elif self.fam_id != int(tokens[0]):
-                return False
-
-        except ValueError:
-            return False
-
-        return None
-
-    def header_check(self, fio):
-        header = []
-        max_line = 0
-        # rsIDs unlikely to exceed 100 chars
-        while max_line < 100:
-            max_line += 1
-            line = fio.readline()
-            if line.startswith("          "):
-                header.append(line.splitlines()[0])
-            else:
-                break
-
-        if header == []:
-            return False
-
-        # transpose headers
-        markers = ["".join(x[::-1]).strip() for x in zip(*header)]
-        markers = [mark for mark in markers if mark != ""]
-
-        for mark in markers:
-            if len(mark.split(" ")) > 1:
-                return False
-        return True
-
-    def sniff(self, filename):
-        """
-        >>> classname = AllegroHaplo
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> extn_true = classname().file_ext
-        >>> file_true = get_test_fname("linkstudies." + extn_true)
-        >>> classname().sniff(file_true)
-        True
-
-        >>> false_files = list(LinkageStudies.test_files)
-        >>> false_files.remove("linkstudies." + extn_true)
-        >>> result_true = []
-        >>> for fname in false_files:
-        ...     file_false = get_test_fname(fname)
-        ...     res = classname().sniff(file_false)
-        ...     if res:
-        ...         result_true.append(fname)
-        >>>
-        >>> result_true
-        []
-        """
-        return self.sniffer(filename)
-
-
 class AllegroLOD(LinkageStudies):
     """
     Allegro output format for LOD scores
@@ -1184,12 +1090,10 @@ class AllegroLOD(LinkageStudies):
 
     def header_check(self, fio):
         header = fio.readline().splitlines()[0].split()
-        try:
-            if header[:4] == ["family", "location", "LOD", "marker"]:
-                return True
-
-        except IndexError:
-            pass
+        if len(header) == 4 and header == [
+                "family", "location", "LOD", "marker"
+        ]:
+            return True
 
         return False
 

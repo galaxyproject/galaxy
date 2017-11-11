@@ -648,8 +648,8 @@
     <datatype extension="linkage_datain" type="galaxy.datatypes.genetics:DataIn" />
     <datatype extension="linkage_map" type="galaxy.datatypes.genetics:MarkerMap" />
     <!-- All output linkage is converted into the Allegro output format -->
-    <datatype extension="allegro_ihaplo" type="galaxy.datatypes.genetics:AllegroHaplo" />
-    <datatype extension="allegro_descent" type="galaxy.datatypes.genetics:AllegroHaplo" /><!-- identical to haplo -->
+    <datatype extension="allegro_ihaplo" type="galaxy.datatypes.tabular:Tabular" />
+    <datatype extension="allegro_descent" type="galaxy.datatypes.tabular:Tabular" />
     <datatype extension="allegro_fparam" type="galaxy.datatypes.genetics:AllegroLOD" />
   </registration>
   <sniffers>
@@ -765,7 +765,6 @@
     <sniffer type="galaxy.datatypes.genetics:GenotypeMatrix" />
     <sniffer type="galaxy.datatypes.genetics:DataIn" />
     <sniffer type="galaxy.datatypes.genetics:MarkerMap" />
-    <sniffer type="galaxy.datatypes.genetics:AllegroHaplo" />
     <sniffer type="galaxy.datatypes.genetics:AllegroLOD" />
     <sniffer type="galaxy.datatypes.sequence:RNADotPlotMatrix"/>
     <sniffer type="galaxy.datatypes.sequence:DotBracket"/>
