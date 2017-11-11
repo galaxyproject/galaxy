@@ -13,6 +13,7 @@ import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import Workflows from "mvc/workflow/workflow";
+import HistoryImport from "mvc/history/history-import";
 import HistoryList from "mvc/history/history-list";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -52,6 +53,7 @@ window.app = function app(options, bootstrapped) {
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
             "(/)visualizations/(:action_id)": "show_visualizations",
             "(/)workflows/list_published(/)": "show_workflows_published",
+            "(/)histories(/)import": "show_histories_import",
             "(/)histories(/)rename(/)": "show_histories_rename",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
             "(/)histories(/)(:action_id)": "show_histories",
@@ -125,6 +127,12 @@ window.app = function app(options, bootstrapped) {
                     url: `history/rename?id=${QueryStringParsing.get("id")}`,
                     redirect: "histories/list"
                 })
+            );
+        },
+
+        show_histories_import: function() {
+            this.page.display(
+                new HistoryImport.View()
             );
         },
 
