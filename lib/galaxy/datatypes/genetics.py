@@ -1238,10 +1238,8 @@ class AllegroLOD(LinkageStudies):
     def header_check(self, fio):
         header = fio.readline().splitlines()[0].split()
         try:
-            if header[0] == "family" and header[1] == "location":
-                if header[2] == "LOD" and header[3] == "marker":
-                    # somehow nesting is more pleasing to pep8 and pyunit
-                    return True
+            if header[:4] == ["family", "location", "LOD", "marker"]:
+                return True
 
         except IndexError:
             pass
