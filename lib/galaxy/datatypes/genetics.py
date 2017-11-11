@@ -846,15 +846,6 @@ class LinkageStudies(Text):
         # iterate whole file without errors
         self.eof_res = True
 
-    def tokenizer(self, line, sep=None):
-        """
-        General purpose string tokenizer
-        """
-        if sep is None:
-            return line.split(sep)
-
-        return line.split(sep)
-
     def eof_function(self):
         """
         Overridable end-of-file function
@@ -895,7 +886,6 @@ class LinkageStudies(Text):
                 if line_res == -1:
                     # run eof_function
                     break
-
                 if line_res is not None:
                     return line_res
 
@@ -926,7 +916,7 @@ class GenotypeMatrix(LinkageStudies):
         return None
 
     def header_check(self, fio):
-        header_elems = self.tokenizer(fio.readline(), '\t')
+        header_elems = fio.readline().split('\t')
 
         if header_elems[0] != "Name":
             return False
@@ -982,7 +972,7 @@ class MarkerMap(LinkageStudies):
     def line_op(self, line):
 
         try:
-            chrm, gpos, nam, bpos, row = self.tokenizer(line)
+            chrm, gpos, nam, bpos, row = line.split()
 
             float(gpos)
             int(bpos)
@@ -1039,7 +1029,7 @@ class DataIn(LinkageStudies):
 
     def line_op(self, line):
 
-        tokens = self.tokenizer(line)
+        tokens = line.split()
 
         try:
 
@@ -1057,10 +1047,8 @@ class DataIn(LinkageStudies):
 
                 if self.num_markers is None:
                     return False
-
                 if len(tokens) != last_token:
                     return False
-
                 if self.num_markers != last_token:
                     return False
             elif tokens[0] == "3" and tokens[1] == "2":
@@ -1109,7 +1097,7 @@ class AllegroHaplo(LinkageStudies):
         self.cols_found = -1
 
     def line_op(self, line):
-        tokens = self.tokenizer(line)
+        tokens = line.split()
 
         if line.startswith("   "):
             return False
@@ -1206,7 +1194,7 @@ class AllegroLOD(LinkageStudies):
         return False
 
     def line_op(self, line):
-        tokens = self.tokenizer(line)
+        tokens = line.split()
 
         try:
             int(tokens[0])
