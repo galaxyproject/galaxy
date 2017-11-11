@@ -237,6 +237,7 @@ def populate_api_routes(webapp, app):
                               path_prefix='/api/histories/{history_id}/contents/{history_content_id}')
     webapp.mapper.connect('/api/histories/published', action='published', controller="histories", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/histories/shared_with_me', action='shared_with_me', controller="histories")
+    webapp.mapper.connect('/api/histories/archive_import', action='archive_import', controller="histories", conditions=dict(method=["POST"]))
     _add_item_tags_controller(webapp,
                               name_prefix="history_",
                               path_prefix='/api/histories/{history_id}')

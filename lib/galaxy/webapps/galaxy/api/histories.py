@@ -435,6 +435,27 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     @expose_api
+    def archive_import(self, trans, **kwds):
+        """
+        archive_import(self, trans, **kwds):
+        * POST /api/histories/archive_import:
+            import a history from file
+        """
+        archive_file = kwds.get('archive_file')
+        archive_url = kwds.get('archive_url')
+        archive_source = None
+        if hasattr(archive_file, 'file'):
+            archive_source = archive_file.file.name
+            archive_type = 'file'
+        elif archive_url:
+            archive_source = archive_url
+            archive_type = 'url'
+        else:
+            raise exceptions.MessageException("Specify the archive file or url.")
+        self.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
+        return "Importing history from '%s'. This history will be visible when the import is complete." % archive_source
+
+    @expose_api
     def archive_export(self, trans, id, **kwds):
         """
         export_archive( self, trans, id, payload )
