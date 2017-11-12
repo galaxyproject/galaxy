@@ -47,7 +47,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
             file_contents = ''
             try:
                 while True:
-                    file_contents += fp.read(buffsize)
+                    file_contents += fp.read(buffsize).encode('utf-8')
                     if not file_contents or len(file_contents) % buffsize != 0:
                         break
             except OverflowError:
@@ -88,7 +88,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                 history_attrs = loads(history_attr_str)
 
                 # Create history.
-                new_history = model.History(name='imported from archive: %s' % history_attrs['name'].encode('utf-8'),
+                new_history = model.History(name='imported from archive: %s' % history_attrs['name'],
                                             user=user)
                 new_history.importing = True
                 new_history.hid_counter = history_attrs['hid_counter']
@@ -133,9 +133,9 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                     metadata = dataset_attrs['metadata']
 
                     # Create dataset and HDA.
-                    hda = model.HistoryDatasetAssociation(name=dataset_attrs['name'].encode('utf-8'),
+                    hda = model.HistoryDatasetAssociation(name=dataset_attrs['name'],
                                                           extension=dataset_attrs['extension'],
-                                                          info=dataset_attrs['info'].encode('utf-8'),
+                                                          info=dataset_attrs['info'],
                                                           blurb=dataset_attrs['blurb'],
                                                           peek=dataset_attrs['peek'],
                                                           designation=dataset_attrs['designation'],
