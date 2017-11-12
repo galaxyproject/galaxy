@@ -11,6 +11,7 @@ var View = Backbone.View.extend({
     initialize: function(options) {
         // link this
         var self = this;
+        this.options = options;
 
         // create insert new list element button
         this.browse_button = new Ui.ButtonIcon({
@@ -18,7 +19,7 @@ var View = Backbone.View.extend({
             icon: "fa fa-sign-in",
             tooltip: _l("Browse GenomeSpace"),
             onclick: function() {
-                self.browseGenomeSpace();
+                self.browseGenomeSpace(options);
             }
         });
 
@@ -39,12 +40,18 @@ var View = Backbone.View.extend({
 
     /** Browse GenomeSpace */
     browseGenomeSpace: function(options) {
-        var self = this;
         GenomespaceBrowser.openFileBrowser({
-            successCallback: function(data) {
-                self.value(`${data.destination}^${data.token}`);
-            }
+          action: options.action || 'IMPORT',
+          select_type: options.select_type || 'FILE_OR_FOLDER',
+          multiple: options.multiple || false,
+          successCallback: (data) => this.handleGSDestination(data)
         });
+    },
+
+    handleGSDestination: function(data) {
+        var final_destination = data.destinations ? data.destinations.join(",") : '';
+        final_destination = final_destination || data.destination;
+        this.value(`${final_destination}^${data.token}`);
     },
 
     /** Main Template */
@@ -81,10 +88,11 @@ var View = Backbone.View.extend({
     // set value
     _setValue: function(new_value) {
         if (new_value) {
-            values = new_value.split("^");
+            var values = new_value.split("^");
             this.filename_textbox.value(values[0]);
             this.token_textbox.value(values[1]);
         }
+        this.options.onchange && this.options.onchange(new_value);
     }
 });
 

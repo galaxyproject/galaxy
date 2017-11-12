@@ -636,9 +636,19 @@ class GenomespaceFileToolParameter(ToolParameter):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__(self, tool, input_source)
         self.value = input_source.get('value')
+        self.action = input_source.get('action')
+        self.select_type = input_source.get('select_type')
+        self.multiple = input_source.get_bool('multiple', False)
 
     def get_initial_value(self, trans, other_values):
         return self.value
+
+    def to_dict(self, trans, other_values={}):
+        d = super(GenomespaceFileToolParameter, self).to_dict(trans)
+        d['action'] = self.action
+        d['select_type'] = self.select_type
+        d['multiple'] = self.multiple
+        return d
 
 
 class HiddenToolParameter(ToolParameter):
