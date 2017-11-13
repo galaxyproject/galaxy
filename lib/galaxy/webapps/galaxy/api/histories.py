@@ -320,9 +320,9 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             archive_file = payload.get("archive_file")
             if archive_source:
                 archive_type = payload.get("archive_type", "url")
-            elif hasattr(archive_file, 'file'):
+            elif hasattr(archive_file, "file"):
                 archive_source = payload["archive_file"].file.name
-                archive_type = 'file'
+                archive_type = "file"
             else:
                 raise exceptions.MessageException("Please provide a url or file.")
             self.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
