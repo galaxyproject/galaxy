@@ -127,7 +127,7 @@ var WorkflowItemView = Backbone.View.extend({
         if (this.model.get("owner") === Galaxy.user.attributes.username) {
             return `<ul class="dropdown-menu action-dpd"><li><a href="${Galaxy.root}workflow/editor?id=${
                 this.model.id
-            }">Edit</a></li><li><a href="${Galaxy.root}workflow/run?id=${this.model.id}">Run</a></li><li><a href="${
+            }">Edit</a></li><li><a href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a></li><li><a href="${
                 Galaxy.root
             }workflow/sharing?id=${this.model.id}">Share</a></li><li><a href="${Galaxy.root}api/workflows/${
                 this.model.id
@@ -141,7 +141,7 @@ var WorkflowItemView = Backbone.View.extend({
                 Galaxy.root
             }workflow/display_by_username_and_slug?username=${this.model.get("owner")}&slug=${this.model.get(
                 "slug"
-            )}">View</a></li><li><a href="${Galaxy.root}workflow/run?id=${
+            )}">View</a></li><li><a href="${Galaxy.root}workflows/run?id=${
                 this.model.id
             }">Run</a></li><li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li><li><a class="link-confirm-shared-${
                 this.model.id
@@ -305,9 +305,9 @@ var WorkflowListView = Backbone.View.extend({
     _templateActionButtons: function() {
         return `<ul class="manage-table-actions"><li><input class="search-wf form-control" type="text" autocomplete="off" placeholder="search for workflow..."></li><li><a class="action-button fa fa-plus wf-action" id="new-workflow" title="Create new workflow" href="${
             Galaxy.root
-        }workflow/create"></a></li><li><a class="action-button fa fa-upload wf-action" id="import-workflow" title="Upload or import workflow" href="${
+        }workflows/create"></a></li><li><a class="action-button fa fa-upload wf-action" id="import-workflow" title="Upload or import workflow" href="${
             Galaxy.root
-        }workflow/import_workflow"></a></li></ul>`;
+        }workflows/import_workflow"></a></li></ul>`;
     },
 
     /** Template for workflow table */

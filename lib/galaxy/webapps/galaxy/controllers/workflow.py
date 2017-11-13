@@ -365,7 +365,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # Redirect to load galaxy frames.
         return trans.show_ok_message(
             message="""Workflow "%s" has been imported. <br>You can <a href="%s">start using this workflow</a> or %s."""
-            % (stored.name, web.url_for(controller='workflow'), referer_message), use_panels=True)
+            % (stored.name, web.url_for('workflows/list'), referer_message))
 
     @web.expose
     @web.require_login("use Galaxy workflows")
@@ -510,9 +510,12 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                     'label' : 'Annotation',
                     'help'  : 'A description of the workflow; annotation is shown alongside shared or published workflows.'
                 }]}
-        '''else:
+        else:
             user = trans.get_user()
-            if workflow_name is not None:
+            workflow_name = payload.get('workflow_name')
+            workflow_annotation = payload.get('workflow_annotation')
+            if not workflow_name:
+                return self.message_exception(trans, 'Please provide a workflow name')
             # Create the new stored workflow
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
@@ -530,14 +533,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             session = trans.sa_session
             session.add(stored_workflow)
             session.flush()
-            return self.editor(trans, id=trans.security.encode_id(stored_workflow.id))
-            else:
-            return form(url_for(controller="workflow", action="create"), "Create New Workflow", submit_text="Create", use_panels=True) \
-                .add_text("workflow_name", "Workflow Name", value="Unnamed workflow") \
-                .add_text("workflow_annotation",
-                          "Workflow Annotation",
-                          value="",
-                          help="A description of the workflow; annotation is shown alongside shared or published workflows.")'''
+            return {'message':'Workflow %s has been created.' % workflow_name}
 
     @web.json
     def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation=""):
@@ -890,12 +886,12 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                                                                         id=repository_id,
                                                                         message=message,
                                                                         status=status))
-                    redirect_url = url_for('/') + 'workflow?status=' + status + '&message=%s' % escape(message)
+                    redirect_url = url_for('/') + 'workflows/list?status=' + status + '&message=%s' % escape(message)
                     return trans.response.send_redirect(redirect_url)
         if cntrller == 'api':
             return status, message
         if status == 'error':
-            redirect_url = url_for('/') + 'workflow?status=' + status + '&message=%s' % escape(message)
+            redirect_url = url_for('/') + 'workflows/list?status=' + status + '&message=%s' % escape(message)
             return trans.response.send_redirect(redirect_url)
         else:
             return {
