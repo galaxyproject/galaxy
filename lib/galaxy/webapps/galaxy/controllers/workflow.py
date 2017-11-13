@@ -26,7 +26,7 @@ from galaxy.util import unicodify, FILENAME_VALID_CHARS
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
-from galaxy.web.framework.helpers import grids, time_ago, to_unicode
+from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.extract import summarize
 from galaxy.workflow.modules import module_factory
@@ -533,7 +533,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             session = trans.sa_session
             session.add(stored_workflow)
             session.flush()
-            return {'message':'Workflow %s has been created.' % workflow_name}
+            return {'message': 'Workflow %s has been created.' % workflow_name}
 
     @web.json
     def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation=""):
