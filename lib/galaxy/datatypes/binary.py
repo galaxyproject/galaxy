@@ -206,48 +206,23 @@ class Bam(Binary):
     MetadataElement(name="column_types", default=['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str'], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
     MetadataElement(name="column_names", default=['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'], desc="Column names", readonly=True, visible=False, optional=True, no_value=[])
 
-    def _get_samtools_version(self):
-        version = '0.0.0'
-        samtools_exec = which('samtools')
-        if not samtools_exec:
-            message = 'Attempting to use functionality requiring samtools, but it cannot be located on Galaxy\'s PATH.'
-            raise Exception(message)
-
-        p = subprocess.Popen(['samtools', '--version-only'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output, error = p.communicate()
-        # --version-only is available
-        # Format is <version x.y.z>+htslib-<a.b.c>
-        if p.returncode == 0:
-            version = output.split('+')[0]
-            return version
-
-        output = subprocess.Popen(['samtools'], stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()[1]
-        lines = output.split('\n')
-        for line in lines:
-            if line.lower().startswith('version'):
-                # Assuming line looks something like: version: 0.1.12a (r862)
-                version = line.split()[1]
-                break
-        return version
-
     @staticmethod
     def merge(split_files, output_file):
+        """
+        Merges Bam files
 
-        tmp_dir = tempfile.mkdtemp()
-        stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_merge_stderr").name
-        command = ["samtools", "merge", "-f", output_file] + split_files
-        proc = subprocess.Popen(args=command, stderr=open(stderr_name, 'wb'))
-        exit_code = proc.wait()
-        # Did merge succeed?
-        stderr = open(stderr_name).read().strip()
-        if stderr:
-            if exit_code != 0:
-                shutil.rmtree(tmp_dir)  # clean up
-                raise Exception("Error merging BAM files: %s" % stderr)
-            else:
-                print(stderr)
-        os.unlink(stderr_name)
-        os.rmdir(tmp_dir)
+        :param split_files: list of files to merge
+        :param output_file: Write merge bam file to this location
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> bamfile = get_test_fname('1.bam')
+        >>> out_dir = tempfile.mkdtemp()
+        >>> outpath = os.path.join(out_dir, 'out.bam')
+        >>> merge([bamfile, bamfile], outpath)
+        >>> assert int(pysam.view('-c', outpath).strip()) == 2 * int(pysam.view('-c', bamfile).strip())
+        >>> shutil.rmtree(outpath, ignore_errors=True)
+        """
+        pysam.merge('-O', 'BAM', output_file, *split_files)
 
     def _is_coordinate_sorted(self, file_name):
         """See if the input BAM file is sorted from the header information."""
