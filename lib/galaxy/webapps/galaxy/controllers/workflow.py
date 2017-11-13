@@ -26,7 +26,6 @@ from galaxy.util import unicodify, FILENAME_VALID_CHARS
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
-from galaxy.web.framework.formbuilder import form
 from galaxy.web.framework.helpers import grids, time_ago, to_unicode
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.extract import summarize
@@ -367,27 +366,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return trans.show_ok_message(
             message="""Workflow "%s" has been imported. <br>You can <a href="%s">start using this workflow</a> or %s."""
             % (stored.name, web.url_for(controller='workflow'), referer_message), use_panels=True)
-
-    @web.expose
-    @web.require_login("use Galaxy workflows")
-    def rename(self, trans, id, new_name=None, **kwargs):
-        stored = self.get_stored_workflow(trans, id)
-        if new_name is not None:
-            san_new_name = sanitize_html(new_name)
-            stored.name = san_new_name
-            stored.latest_workflow.name = san_new_name
-            trans.sa_session.flush()
-            message = 'Workflow renamed to: %s' % escape(san_new_name)
-            trans.set_message(message)
-            # Take care of proxy prefix in url as well
-            redirect_url = url_for('/') + 'workflow?status=done&message=%s' % escape(message)
-            return trans.response.send_redirect(redirect_url)
-        else:
-            return form(url_for(controller='workflow', action='rename', id=trans.security.encode_id(stored.id)),
-                        "Rename workflow",
-                        submit_text="Rename",
-                        use_panels=True) \
-                .add_text("new_name", "Workflow Name", value=to_unicode(stored.name))
 
     @web.expose
     @web.require_login("use Galaxy workflows")
