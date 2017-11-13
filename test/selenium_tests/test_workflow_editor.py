@@ -86,17 +86,11 @@ steps:
     def workflow_create_new(self, name=None, annotation=None):
         self.workflow_index_open()
         self.click_button_new_workflow()
-
-        form_element = self.driver.find_element_by_css_selector("#center form")
-        action = form_element.get_attribute("action")
-        assert action.endswith("/workflow/create"), action
-
+        form_element = self.driver.find_element_by_css_selector("#submit")
         name = name or self._get_random_name()
         annotation = annotation or self._get_random_name()
-        self.fill(form_element, {
-            'workflow_name': name,
-            'workflow_annotation': annotation,
-        })
+        self.driver.find_element_by_css_selector("[tour_id=workflow_name] input").setAttribute("value", name);
+        self.driver.find_element_by_css_selector("[tour_id=workflow_annotation] input").setAttribute("value", annotation);
         self.click_submit(form_element)
 
     @retry_assertion_during_transitions
