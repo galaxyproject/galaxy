@@ -126,7 +126,7 @@ def _handle_script_integrity(path, config):
                 script_integrity_verified = True
                 break
 
-            log.debug("Script integrity error: returncode was %d", returncode)
+            log.debug("Script integrity error for file '%s': returncode was %d", path, returncode)
 
             # Else we will sync and wait to see if the script becomes
             # executable.
@@ -144,7 +144,7 @@ def _handle_script_integrity(path, config):
         time.sleep(sleep_amt)
 
     if not script_integrity_verified:
-        raise Exception("Failed to write job script, could not verify job script integrity.")
+        raise Exception("Failed to write job script '%s', could not verify job script integrity." % path)
 
 
 __all__ = (
