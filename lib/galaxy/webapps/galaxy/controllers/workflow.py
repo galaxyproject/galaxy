@@ -515,7 +515,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             workflow_name = payload.get('workflow_name')
             workflow_annotation = payload.get('workflow_annotation')
             if not workflow_name:
-                return self.message_exception(trans, 'Please provide a workflow name')
+                return self.message_exception(trans, 'Please provide a workflow name.')
             # Create the new stored workflow
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
