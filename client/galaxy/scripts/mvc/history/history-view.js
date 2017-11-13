@@ -71,7 +71,7 @@ var HistoryView = _super.extend(
         freeModel: function() {
             _super.prototype.freeModel.call(this);
             if (this.model) {
-                this.model.clearUpdateTimeout();
+                this.model.stopPolling();
             }
             return this;
         },
@@ -356,17 +356,17 @@ var HistoryView = _super.extend(
         }),
 
         _clickPrevPage: function(ev) {
-            this.model.clearUpdateTimeout();
+            this.model.stopPolling();
             this.model.contents.fetchPrevPage();
         },
 
         _clickNextPage: function(ev) {
-            this.model.clearUpdateTimeout();
+            this.model.stopPolling();
             this.model.contents.fetchNextPage();
         },
 
         _changePageSelect: function(ev) {
-            this.model.clearUpdateTimeout();
+            this.model.stopPolling();
             var page = $(ev.currentTarget).val();
             this.model.contents.fetchPage(page);
         },

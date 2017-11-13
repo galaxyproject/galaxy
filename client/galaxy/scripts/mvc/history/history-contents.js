@@ -119,11 +119,15 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         };
     },
 
-    setHistoryId: function(newId) {
+    stopPolling: function() {
         if (this.jobStateSummariesCollection) {
             this.jobStateSummariesCollection.active = false;
             this.jobStateSummariesCollection.clearUpdateTimeout();
         }
+    },
+
+    setHistoryId: function(newId) {
+        this.stopPolling();
         this.historyId = newId;
         if (newId) {
             // If actually reflecting a history - setup storage and monitor jobs.
