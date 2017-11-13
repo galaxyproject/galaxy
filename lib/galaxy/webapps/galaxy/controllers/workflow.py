@@ -365,7 +365,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # Redirect to load galaxy frames.
         return trans.show_ok_message(
             message="""Workflow "%s" has been imported. <br>You can <a href="%s">start using this workflow</a> or %s."""
-            % (stored.name, web.url_for('workflows/list'), referer_message))
+            % (stored.name, web.url_for('/workflows/list'), referer_message))
 
     @web.expose
     @web.require_login("use Galaxy workflows")
