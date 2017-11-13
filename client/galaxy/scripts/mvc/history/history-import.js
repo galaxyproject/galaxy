@@ -15,7 +15,6 @@ var View = Backbone.View.extend({
                 method: 'POST'
             })
             .done(response => {
-                return;
                 window.location = `${Galaxy.root}histories/list?message=${response.message}&status=success`
             })
             .fail(response => {
