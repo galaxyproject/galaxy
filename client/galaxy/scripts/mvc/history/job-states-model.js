@@ -9,7 +9,6 @@ var ERROR_STATES = ["error", "deleted"];
 var FETCH_STATE_ON_ADD = false;
 var BATCH_FETCH_STATE = true;
 
-
 var JobStatesSummary = Backbone.Model.extend({
     url: function() {
         return `${Galaxy.root}api/histories/${this.attributes.history_id}/contents/dataset_collections/${
@@ -104,14 +103,19 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
     },
 
     url: function() {
-        var nonTerminalModels = this.models
-            .filter(model => {
-                return !model.terminal();
-            });
-        console.log(this.models);
-        console.log(nonTerminalModels.map(summary => { return summary.attributes.id; }));
-        var ids = nonTerminalModels.map(summary => { return summary.get("id"); }).join(",");
-        var types = nonTerminalModels.map(summary => { return summary.get("model"); }).join(",");
+        var nonTerminalModels = this.models.filter(model => {
+            return !model.terminal();
+        });
+        var ids = nonTerminalModels
+            .map(summary => {
+                return summary.get("id");
+            })
+            .join(",");
+        var types = nonTerminalModels
+            .map(summary => {
+                return summary.get("model");
+            })
+            .join(",");
         return `${Galaxy.root}api/histories/${this.historyId}/jobs_summary?ids=${ids}&types=${types}`;
     },
 
@@ -127,24 +131,22 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
             }, UPDATE_DELAY);
         };
 
-        var nonTerminalModels = this.models
-            .filter(model => {
-                return !model.terminal();
-            });
+        var nonTerminalModels = this.models.filter(model => {
+            return !model.terminal();
+        });
 
-        if (nonTerminalModels.length > 0 && ! BATCH_FETCH_STATE) {
+        if (nonTerminalModels.length > 0 && !BATCH_FETCH_STATE) {
             // Allow models to fetch their own details.
-            var updateFunctions = nonTerminalModels
-                .map(summary => {
-                    return () => {
-                        return summary.fetch();
-                    };
-                });
+            var updateFunctions = nonTerminalModels.map(summary => {
+                return () => {
+                    return summary.fetch();
+                };
+            });
 
             return new AJAX_QUEUE.AjaxQueue(updateFunctions).done(_delayThenMonitorAgain);
         } else if (nonTerminalModels.length > 0) {
             // Batch fetch updated state...
-            this.fetch({"remove": false}).done(_delayThenMonitorAgain);
+            this.fetch({ remove: false }).done(_delayThenMonitorAgain);
         } else {
             _delayThenMonitorAgain();
         }
@@ -163,4 +165,4 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
     }
 });
 
-export default { JobStatesSummary, JobStatesSummaryCollection };
+export default { JobStatesSummary, JobStatesSummaryCollection, FETCH_STATE_ON_ADD };

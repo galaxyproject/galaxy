@@ -2,7 +2,7 @@ import CONTROLLED_FETCH_COLLECTION from "mvc/base/controlled-fetch-collection";
 import HDA_MODEL from "mvc/history/hda-model";
 import HDCA_MODEL from "mvc/history/hdca-model";
 import HISTORY_PREFS from "mvc/history/history-preferences";
-import JobStatesSummary from "mvc/history/job-states-model";
+import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import BASE_MVC from "mvc/base-mvc";
 import AJAX_QUEUE from "utils/ajax-queue";
 
@@ -130,7 +130,7 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
 
             this._setUpWebStorage();
 
-            this.jobStateSummariesCollection = new JobStatesSummary.JobStatesSummaryCollection();
+            this.jobStateSummariesCollection = new JOB_STATES_MODEL.JobStatesSummaryCollection();
             this.jobStateSummariesCollection.historyId = newId;
             this.jobStateSummariesCollection.monitor();
         }
