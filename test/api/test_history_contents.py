@@ -200,7 +200,7 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
             "input1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
         }
         run = self.dataset_populator.run_tool("cat1", inputs=inputs, history_id=self.history_id)
-        self.dataset_populator.wait_for_history(self.history_id)
+        self.dataset_populator.wait_for_history_jobs(self.history_id)
         collections = run['implicit_collections']
         collection = collections[0]
         jobs_summary_url = "histories/%s/contents/dataset_collections/%s/jobs_summary" % (self.history_id, collection["id"])
