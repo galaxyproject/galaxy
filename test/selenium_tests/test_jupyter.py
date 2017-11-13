@@ -1,3 +1,5 @@
+from base.populators import flakey
+
 from .framework import (
     managed_history,
     selenium_test,
@@ -11,6 +13,7 @@ class JupyterTestCase(SeleniumTestCase):
 
     ensure_registered = True
 
+    @flakey
     @selenium_test
     @managed_history
     def test_jupyter_session(self):

@@ -18,6 +18,7 @@ class LibraryLandingTestCase(SeleniumTestCase):
         num_displayed_libraries = self._num_displayed_libraries()
         self.libraries_index_click_create_new()
         self.wait_for_selector_visible(".ui-modal")
+        self.screenshot("libraries_new")
         close_button = self.wait_for_selector_clickable("#button-1")
         close_button.click()
         self.wait_for_overlays_cleared()
@@ -46,6 +47,7 @@ class LibraryLandingTestCase(SeleniumTestCase):
         name_box = self.wait_for_selector_clickable(".input_library_name")
         name_box.send_keys(new_name)
 
+        self.screenshot("libraries_rename")
         save_button = self.wait_for_selector_clickable(".save_library_btn")
         save_button.click()
 
@@ -71,9 +73,12 @@ class LibraryLandingTestCase(SeleniumTestCase):
         self.wait_for_overlays_cleared()
         self.libraries_index_create(namebase + " c")
 
+        self.screenshot("libraries_index")
+
         self.libraries_index_search_for(namebase)
 
         self._assert_num_displayed_libraries_is(3)
+        self.screenshot("libraries_index_search")
 
         self._assert_names_are([namebase + " a", namebase + " b", namebase + " c"])
         self.libraries_index_sort_click()
