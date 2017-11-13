@@ -129,6 +129,11 @@ class AjaxQueue {
  *    fn:   the deferring fn or ajax call }
  */
 class NamedAjaxQueue extends AjaxQueue {
+    constructor(initialFunctions) {
+        super(initialFunctions);
+        this.names = {};
+    }
+
     /** add the obj.fn to the queue if obj.name hasn't been used before */
     add(obj) {
         if (!(obj.hasOwnProperty("name") && obj.hasOwnProperty("fn"))) {

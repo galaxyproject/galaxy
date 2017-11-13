@@ -2,18 +2,17 @@
 API operations on the contents of a data library.
 """
 import logging
-
 from sqlalchemy.orm.exc import (
     MultipleResultsFound,
     NoResultFound,
 )
-
 from galaxy import (
     exceptions,
     managers,
     util,
     web
 )
+from galaxy.actions.library import LibraryActions
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance
@@ -27,14 +26,18 @@ from galaxy.web.base.controller import (
     BaseAPIController,
     HTTPBadRequest,
     url_for,
+    UsesFormDefinitionsMixin,
     UsesLibraryMixin,
     UsesLibraryMixinItems
 )
-
+from galaxy.web.form_builder import (
+    AddressField,
+    CheckboxField,
+)
 log = logging.getLogger(__name__)
 
 
-class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
+class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesFormDefinitionsMixin, LibraryActions):
 
     def __init__(self, app):
         super(LibraryContentsController, self).__init__(app)
@@ -140,7 +143,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             :func:`galaxy.model.LibraryDataset.to_dict` and
             :attr:`galaxy.model.LibraryFolder.dict_element_visible_keys`
         """
-        class_name, content_id = self.__decode_library_content_id(id)
+        class_name, content_id = self._decode_library_content_id(id)
         if class_name == 'LibraryFolder':
             content = self.get_library_folder(trans, content_id, check_ownership=False, check_accessible=True)
             rval = content.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
@@ -220,7 +223,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return "Missing required 'folder_id' parameter."
         else:
             folder_id = payload.pop('folder_id')
-            class_name, folder_id = self.__decode_library_content_id(folder_id)
+            class_name, folder_id = self._decode_library_content_id(folder_id)
         try:
             # security is checked in the downstream controller
             parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
@@ -244,9 +247,9 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         # Now create the desired content object, either file or folder.
         if create_type == 'file':
-            status, output = trans.webapp.controllers['library_common'].upload_library_dataset(trans, 'api', library_id, real_folder_id, **payload)
+            status, output = self._upload_library_dataset(trans, library_id, real_folder_id, **payload)
         elif create_type == 'folder':
-            status, output = trans.webapp.controllers['library_common'].create_folder(trans, 'api', real_folder_id, library_id, **payload)
+            status, output = self._create_folder(trans, real_folder_id, library_id, **payload)
         elif create_type == 'collection':
             # Not delegating to library_common, so need to check access to parent
             # folder here.
@@ -282,6 +285,121 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                                  name=v.name,
                                  url=url_for('library_content', library_id=library_id, id=encoded_id)))
             return rval
+
+    def _upload_library_dataset(self, trans, library_id, folder_id, **kwd):
+        replace_id = kwd.get('replace_id', None)
+        replace_dataset = None
+        upload_option = kwd.get('upload_option', 'upload_file')
+        dbkey = kwd.get('dbkey', '?')
+        if isinstance(dbkey, list):
+            last_used_build = dbkey[0]
+        else:
+            last_used_build = dbkey
+        roles = kwd.get('roles', '')
+        is_admin = trans.user_is_admin()
+        current_user_roles = trans.get_current_user_roles()
+        widgets = []
+        info_association, inherited = None, None
+        template_id = "None"
+        if replace_id not in ['', None, 'None']:
+            replace_dataset = trans.sa_session.query(trans.app.model.LibraryDataset).get(trans.security.decode_id(replace_id))
+            self._check_access(trans, is_admin, replace_dataset, current_user_roles)
+            self._check_modify(trans, is_admin, replace_dataset, current_user_roles)
+            library = replace_dataset.folder.parent_library
+            folder = replace_dataset.folder
+            info_association, inherited = replace_dataset.library_dataset_dataset_association.get_info_association()
+            if info_association and (not(inherited) or info_association.inheritable):
+                widgets = replace_dataset.library_dataset_dataset_association.get_template_widgets(trans)
+            # The name is stored - by the time the new ldda is created, replace_dataset.name
+            # will point to the new ldda, not the one it's replacing.
+            if not last_used_build:
+                last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
+        else:
+            folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(folder_id))
+            self._check_access(trans, is_admin, folder, current_user_roles)
+            self._check_add(trans, is_admin, folder, current_user_roles)
+            library = folder.parent_library
+        if folder and last_used_build in ['None', None, '?']:
+            last_used_build = folder.genome_build
+        error = False
+        if upload_option == 'upload_paths' and not trans.app.config.allow_library_path_paste:
+            error = True
+            message = '"allow_library_path_paste" is not defined in the Galaxy configuration file'
+        elif upload_option == 'upload_paths' and not is_admin:
+            error = True
+            message = 'Uploading files via filesystem paths can only be performed by administrators'
+        elif upload_option not in ('upload_file', 'upload_directory', 'upload_paths'):
+            error = True
+            message = 'Invalid upload_option'
+        elif roles:
+            # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
+            # on the dataset that would cause accessibility issues.
+            vars = dict(DATASET_ACCESS_in=roles)
+            permissions, in_roles, error, message = \
+                trans.app.security_agent.derive_roles_from_access(trans, library.id, 'api', library=True, **vars)
+        if error:
+            return 400, message
+        else:
+            # See if we have any inherited templates.
+            if not info_association:
+                info_association, inherited = folder.get_info_association(inherited=True)
+            if info_association and info_association.inheritable:
+                template_id = str(info_association.template.id)
+                widgets = folder.get_template_widgets(trans, get_contents=True)
+                processed_widgets = []
+                # The list of widgets may include an AddressField which we need to save if it is new
+                for index, widget_dict in enumerate(widgets):
+                    widget = widget_dict['widget']
+                    if isinstance(widget, AddressField):
+                        value = kwd.get(widget.name, '')
+                        if value == 'new':
+                            if self.field_param_values_ok(widget.name, 'AddressField', **kwd):
+                                # Save the new address
+                                address = trans.app.model.UserAddress(user=trans.user)
+                                self.save_widget_field(trans, address, widget.name, **kwd)
+                                widget.value = str(address.id)
+                                widget_dict['widget'] = widget
+                                processed_widgets.append(widget_dict)
+                                # It is now critical to update the value of 'field_%i', replacing the string
+                                # 'new' with the new address id.  This is necessary because the upload_dataset()
+                                # method below calls the handle_library_params() method, which does not parse the
+                                # widget fields, it instead pulls form values from kwd.  See the FIXME comments in the
+                                # handle_library_params() method, and the CheckboxField code in the next conditional.
+                                kwd[widget.name] = str(address.id)
+                            else:
+                                # The invalid address won't be saved, but we cannot display error
+                                # messages on the upload form due to the ajax upload already occurring.
+                                # When we re-engineer the upload process ( currently under way ), we
+                                # will be able to check the form values before the ajax upload occurs
+                                # in the background.  For now, we'll do nothing...
+                                pass
+                    elif isinstance(widget, CheckboxField):
+                        # We need to check the value from kwd since util.Params would have munged the list if
+                        # the checkbox is checked.
+                        value = kwd.get(widget.name, '')
+                        if CheckboxField.is_checked(value):
+                            widget.value = 'true'
+                            widget_dict['widget'] = widget
+                            processed_widgets.append(widget_dict)
+                            kwd[widget.name] = 'true'
+                    else:
+                        processed_widgets.append(widget_dict)
+                widgets = processed_widgets
+            created_outputs_dict = self._upload_dataset(trans,
+                                                        library_id=trans.security.encode_id(library.id),
+                                                        folder_id=trans.security.encode_id(folder.id),
+                                                        template_id=template_id,
+                                                        widgets=widgets,
+                                                        replace_dataset=replace_dataset,
+                                                        **kwd)
+            if created_outputs_dict:
+                if type(created_outputs_dict) == str:
+                    return 400, created_outputs_dict
+                elif type(created_outputs_dict) == tuple:
+                    return created_outputs_dict[0], created_outputs_dict[1]
+                return 200, created_outputs_dict
+            else:
+                return 400, "Upload failed"
 
     def _scan_json_block(self, meta, prefix=""):
         """
@@ -340,7 +458,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             trans.sa_session.add(assoc)
             trans.sa_session.flush()
 
-    def __decode_library_content_id(self, content_id):
+    def _decode_library_content_id(self, content_id):
         if len(content_id) % 16 == 0:
             return 'LibraryDataset', content_id
         elif content_id.startswith('F'):

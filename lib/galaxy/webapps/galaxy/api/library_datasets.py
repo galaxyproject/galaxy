@@ -15,6 +15,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.actions.library import LibraryActions
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import (
     base as managers_base,
@@ -31,11 +32,10 @@ from galaxy.web import (
     _future_expose_api_anonymous as expose_api_anonymous
 )
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
-
 log = logging.getLogger(__name__)
 
 
-class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
+class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, LibraryActions):
 
     def __init__(self, app):
         super(LibraryDatasetsController, self).__init__(app)
@@ -476,12 +476,12 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         # user wants to import one file only
         elif source in ["userdir_file", "importdir_file"]:
             file = os.path.abspath(path)
-            abspath_datasets.append(trans.webapp.controllers['library_common'].make_library_uploaded_dataset(
-                trans, 'api', kwd, os.path.basename(file), file, 'server_dir', library_bunch))
+            abspath_datasets.append(self._make_library_uploaded_dataset(
+                trans, kwd, os.path.basename(file), file, 'server_dir', library_bunch))
         # user wants to import whole folder
         elif source == "userdir_folder":
-            uploaded_datasets_bunch = trans.webapp.controllers['library_common'].get_path_paste_uploaded_datasets(
-                trans, 'api', kwd, library_bunch, 200, '')
+            uploaded_datasets_bunch = self._get_path_paste_uploaded_datasets(
+                trans, kwd, library_bunch, 200, '')
             uploaded_datasets = uploaded_datasets_bunch[0]
             if uploaded_datasets is None:
                 raise exceptions.ObjectNotFound('Given folder does not contain any datasets.')
@@ -491,8 +491,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         #  user wants to import from path
         if source in ["admin_path", "importdir_folder"]:
             # validate the path is within root
-            uploaded_datasets_bunch = trans.webapp.controllers['library_common'].get_path_paste_uploaded_datasets(
-                trans, 'api', kwd, library_bunch, 200, '')
+            uploaded_datasets_bunch = self._get_path_paste_uploaded_datasets(
+                trans, kwd, library_bunch, 200, '')
             uploaded_datasets = uploaded_datasets_bunch[0]
             if uploaded_datasets is None:
                 raise exceptions.ObjectNotFound('Given folder does not contain any datasets.')
