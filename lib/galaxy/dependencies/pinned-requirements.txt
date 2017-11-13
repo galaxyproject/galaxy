@@ -1,4 +1,6 @@
 # packages with C extensions
+# numpy must come before bx-python when doing source installs to so bx-python
+# is built properly (see #4982).
 numpy==1.9.2
 bx-python==0.7.3
 MarkupSafe==0.23
