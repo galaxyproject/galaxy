@@ -104,7 +104,7 @@ class DatasetCollectionManager( object ):
                 for tag in [t for t in v.tags if t.user_tname == 'name']:
                     tags[tag.value] = tag
         for _, tag in tags.items():
-            dataset_collection_instance.tags.append(tag.copy())
+            dataset_collection_instance.tags.append(tag.copy(cls=model.HistoryDatasetCollectionTagAssociation))
 
         return self.__persist( dataset_collection_instance )
 
