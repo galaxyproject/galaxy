@@ -8,9 +8,9 @@ from six.moves import shlex_quote
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
-from galaxy.script import main_factory
 from galaxy.util.path import get_ext
 from galaxy.util.properties import load_app_properties, nice_config_parser
+from galaxy.util.script import main_factory
 
 
 DESCRIPTION = "Script to determine uWSGI command line arguments"
