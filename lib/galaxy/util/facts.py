@@ -20,7 +20,7 @@ class Facts(MutableMapping):
             'server_name': lambda: config.server_name,
             'server_id': None,
             'process_num': None,
-            'pool_nane': None,
+            'pool_name': None,
             'fqdn': lambda: socket.getfqdn(),
             'hostname': lambda: socket.gethostname().split('.', 1)[0],
         }
