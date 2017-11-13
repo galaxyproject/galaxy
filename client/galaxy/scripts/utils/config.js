@@ -142,9 +142,9 @@ var ConfigSettingCollection = Backbone.Collection.extend(
         model: ConfigSetting,
 
         /**
-     * Save settings as a dictionary of key-value pairs.
-     * This function is needed for backwards compatibility.
-     */
+         * Save settings as a dictionary of key-value pairs.
+         * This function is needed for backwards compatibility.
+         */
         to_key_value_dict: function() {
             var rval = {};
             this.each(setting => {
@@ -155,8 +155,8 @@ var ConfigSettingCollection = Backbone.Collection.extend(
         },
 
         /**
-     * Returns value for a given key. Returns undefined if there is no setting with the specified key.
-     */
+         * Returns value for a given key. Returns undefined if there is no setting with the specified key.
+         */
         get_value: function(key) {
             var s = this.get(key);
             if (s) {
@@ -167,8 +167,8 @@ var ConfigSettingCollection = Backbone.Collection.extend(
         },
 
         /**
-     * Set value for a setting.
-     */
+         * Set value for a setting.
+         */
         set_value: function(key, value, options) {
             var s = this.get(key);
             if (s) {
@@ -179,8 +179,8 @@ var ConfigSettingCollection = Backbone.Collection.extend(
         },
 
         /**
-      * Set default value for a setting.
-      */
+         * Set default value for a setting.
+         */
         set_default_value: function(key, default_value) {
             var s = this.get(key);
             if (s) {
@@ -192,9 +192,9 @@ var ConfigSettingCollection = Backbone.Collection.extend(
     },
     {
         /**
-     * Utility function that creates a ConfigSettingsCollection from a set of models
-     * and a saved_values dictionary.
-     */
+         * Utility function that creates a ConfigSettingsCollection from a set of models
+         * and a saved_values dictionary.
+         */
         from_models_and_saved_values: function(models, saved_values) {
             // If there are saved values, copy models and update with saved values.
             if (saved_values) {

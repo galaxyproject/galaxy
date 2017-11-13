@@ -61,9 +61,9 @@ var LibraryRowView = Backbone.View.extend({
     },
 
     /**
-   * Function modifies the visibility of buttons for
-   * the filling of the row template of given library.
-   */
+     * Function modifies the visibility of buttons for
+     * the filling of the row template of given library.
+     */
     prepareButtons: function(library) {
         var vis_config = this.element_visibility_config;
 

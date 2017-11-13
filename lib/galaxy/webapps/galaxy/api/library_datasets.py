@@ -15,6 +15,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.actions.library import LibraryActions
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import (
     base as managers_base,
@@ -31,11 +32,10 @@ from galaxy.web import (
     _future_expose_api_anonymous as expose_api_anonymous
 )
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
-
 log = logging.getLogger(__name__)
 
 
-class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
+class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, LibraryActions):
 
     def __init__(self, app):
         super(LibraryDatasetsController, self).__init__(app)
@@ -510,96 +510,6 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         job_dict = job.to_dict()
         job_dict['id'] = trans.security.encode_id(job_dict['id'])
         return job_dict
-
-    def _get_path_paste_uploaded_datasets(self, trans, params, library_bunch, response_code, message):
-        preserve_dirs = util.string_as_bool(params.get('preserve_dirs', False))
-        uploaded_datasets = []
-        (files_and_folders, _response_code, _message) = self._get_path_files_and_folders(params, preserve_dirs)
-        if _response_code:
-            return (uploaded_datasets, _response_code, _message)
-        for (path, name, folder) in files_and_folders:
-            uploaded_datasets.append(self._make_library_uploaded_dataset(trans, params, name, path, 'path_paste', library_bunch, folder))
-        return uploaded_datasets, 200, None
-
-    def _get_path_files_and_folders(self, params, preserve_dirs):
-        problem_response = self._check_path_paste_params(params)
-        if problem_response:
-            return problem_response
-        files_and_folders = []
-        for (line, path) in self._paths_list(params):
-            line_files_and_folders = self._get_single_path_files_and_folders(line, path, preserve_dirs)
-            files_and_folders.extend(line_files_and_folders)
-        return files_and_folders, None, None
-
-    def _get_single_path_files_and_folders(self, line, path, preserve_dirs):
-        files_and_folders = []
-        if os.path.isfile(path):
-            name = os.path.basename(path)
-            files_and_folders.append((path, name, None))
-        for basedir, dirs, files in os.walk(line):
-            for file in files:
-                file_path = os.path.abspath(os.path.join(basedir, file))
-                if preserve_dirs:
-                    in_folder = os.path.dirname(file_path.replace(path, '', 1).lstrip('/'))
-                else:
-                    in_folder = None
-                files_and_folders.append((file_path, file, in_folder))
-        return files_and_folders
-
-    def _paths_list(self, params):
-        return [(l.strip(), os.path.abspath(l.strip())) for l in params.get('filesystem_paths', '').splitlines() if l.strip()]
-
-    def _check_path_paste_params(self, params):
-        if params.get('filesystem_paths', '') == '':
-            message = "No paths entered in the upload form"
-            response_code = 400
-            return None, response_code, message
-        bad_paths = []
-        for (_, path) in self._paths_list(params):
-            if not os.path.exists(path):
-                bad_paths.append(path)
-        if bad_paths:
-            message = 'Invalid paths: "%s".' % '", "'.join(bad_paths)
-            response_code = 400
-            return None, response_code, message
-        return None
-
-    def _make_library_uploaded_dataset(self, trans, params, name, path, type, library_bunch, in_folder=None):
-        link_data_only = params.get('link_data_only', 'copy_files')
-        uuid_str = params.get('uuid', None)
-        file_type = params.get('file_type', None)
-        library_bunch.replace_dataset = None  # not valid for these types of upload
-        uploaded_dataset = util.bunch.Bunch()
-        new_name = name
-        # Remove compressed file extensions, if any, but only if
-        # we're copying files into Galaxy's file space.
-        if link_data_only == 'copy_files':
-            if new_name.endswith('.gz'):
-                new_name = new_name.rstrip('.gz')
-            elif new_name.endswith('.zip'):
-                new_name = new_name.rstrip('.zip')
-        uploaded_dataset.name = new_name
-        uploaded_dataset.path = path
-        uploaded_dataset.type = type
-        uploaded_dataset.ext = None
-        uploaded_dataset.file_type = file_type
-        uploaded_dataset.dbkey = params.get('dbkey', None)
-        uploaded_dataset.to_posix_lines = params.get('to_posix_lines', None)
-        uploaded_dataset.space_to_tab = params.get('space_to_tab', None)
-        uploaded_dataset.tag_using_filenames = params.get('tag_using_filenames', True)
-        if in_folder:
-            uploaded_dataset.in_folder = in_folder
-        uploaded_dataset.data = upload_common.new_upload(trans, 'api', uploaded_dataset, library_bunch)
-        uploaded_dataset.link_data_only = link_data_only
-        uploaded_dataset.uuid = uuid_str
-        if link_data_only == 'link_to_files':
-            uploaded_dataset.data.file_name = os.path.abspath(path)
-            # Since we are not copying the file into Galaxy's managed
-            # default file location, the dataset should never be purgable.
-            uploaded_dataset.data.dataset.purgable = False
-            trans.sa_session.add_all((uploaded_dataset.data, uploaded_dataset.data.dataset))
-            trans.sa_session.flush()
-        return uploaded_dataset
 
     @web.expose
     #  TODO convert to expose_api

@@ -3,6 +3,8 @@ import threading
 import time
 from unittest import TestCase
 
+import psutil
+
 from galaxy import model
 from galaxy.jobs import metrics
 from galaxy.jobs.runners import local
@@ -83,18 +85,38 @@ class TestLocalJobRunner(TestCase, UsesApp, UsesTools):
 
         t = threading.Thread(target=queue)
         t.start()
-        while True:
-            if self.job_wrapper.external_id:
-                break
-            time.sleep(.01)
-        external_id = self.job_wrapper.external_id
+        external_id = self.job_wrapper.wait_for_external_id()
         mock_job = bunch.Bunch(
             get_external_output_metadata=lambda: None,
             get_job_runner_external_id=lambda: str(external_id),
             get_id=lambda: 1
         )
+        assert psutil.pid_exists(external_id)
         runner.stop_job(mock_job)
         t.join(1)
+        assert not psutil.pid_exists(external_id)
+
+    def test_shutdown_no_jobs(self):
+        self.app.config.monitor_thread_join_timeout = 5
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.shutdown()
+
+    def test_stopping_job_at_shutdown(self):
+        self.job_wrapper.command_line = '''python -c "import time; time.sleep(15)"'''
+        runner = local.LocalJobRunner(self.app, 1)
+        self.app.config.monitor_thread_join_timeout = 15
+
+        def queue():
+            runner.queue_job(self.job_wrapper)
+
+        t = threading.Thread(target=queue)
+        t.start()
+        external_id = self.job_wrapper.wait_for_external_id()
+        assert psutil.pid_exists(external_id)
+        runner.shutdown()
+        t.join(1)
+        assert not psutil.pid_exists(external_id)
+        assert "job terminated by Galaxy shutdown" in self.job_wrapper.fail_message
 
 
 class MockJobWrapper(object):
@@ -125,6 +147,7 @@ class MockJobWrapper(object):
         self.metadata_command = "touch %s" % self.mock_metadata_path
         self.galaxy_virtual_env = None
         self.shell = "/bin/bash"
+        self.cleanup_job = "never"
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata = bunch.Bunch(
@@ -133,6 +156,16 @@ class MockJobWrapper(object):
         self.app.datatypes_registry.set_external_metadata_tool = bunch.Bunch(
             build_dependency_shell_commands=lambda: []
         )
+
+    def wait_for_external_id(self):
+        """Test method for waiting til an external id has been registered."""
+        external_id = None
+        for i in range(50):
+            external_id = self.external_id
+            if external_id:
+                break
+            time.sleep(.1)
+        return external_id
 
     def prepare(self):
         self.prepare_called = True
@@ -166,6 +199,10 @@ class MockJobWrapper(object):
 
     def has_limits(self):
         return False
+
+    def fail(self, message, exception):
+        self.fail_message = message
+        self.fail_exception = exception
 
     def finish(self, stdout, stderr, exit_code):
         self.stdout = stdout

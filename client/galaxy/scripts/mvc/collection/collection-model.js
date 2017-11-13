@@ -85,8 +85,7 @@ var DatasetCollectionElementMixin = {
 };
 
 /** @class Concrete class of Generic DatasetCollectionElement */
-var DatasetCollectionElement = Backbone.Model
-    .extend(BASE_MVC.LoggableMixin)
+var DatasetCollectionElement = Backbone.Model.extend(BASE_MVC.LoggableMixin)
     .extend(DatasetCollectionElementMixin)
     .extend({ _logNamespace: "collections" });
 
@@ -182,8 +181,7 @@ var DatasetDCECollection = DCECollection.extend(
  *          - passes that json onto the bbone collection
  *          - caches the bbone collection in this.elements
  */
-var DatasetCollection = Backbone.Model
-    .extend(BASE_MVC.LoggableMixin)
+var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
     .extend(BASE_MVC.SearchableModelMixin)
     .extend(
         /** @lends DatasetCollection.prototype */ {
@@ -239,8 +237,8 @@ var DatasetCollection = Backbone.Model
             },
 
             /** Is this collection in a 'ready' state no processing (for the collection) is left
-     *  to do on the server.
-     */
+             *  to do on the server.
+             */
             inReadyState: function() {
                 var populated = this.get("populated");
                 return this.isDeletedOrPurged() || populated;
