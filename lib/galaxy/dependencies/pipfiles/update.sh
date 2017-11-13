@@ -32,13 +32,14 @@ done
 THIS_DIRECTORY="$(cd "$(dirname "$0")" > /dev/null && pwd)"
 ENVS="develop
 flake8
-flake8_imports"
+flake8_imports
+default"
 
 for env in $ENVS
 do
         cd "$THIS_DIRECTORY/$env"
-        pipenv lock
-        pipenv lock -r > pinned-hashed-requirements.txt
+        pipenv lock --two
+        pipenv  --bare lock --two -r | sed 's/^Using.*$//' > pinned-hashed-requirements.txt
         # Strip out hashes and trailing whitespace for unhashed version
         # of this requirements file.
         sed 's/--hash[^[:space:]]*//g' pinned-hashed-requirements.txt | sed 's/[[:space:]]*$//' > pinned-requirements.txt
