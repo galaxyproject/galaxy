@@ -211,7 +211,8 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
 
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting
-        # When running the application without a web stack, this signals the application loop to break and call the shutdown method
+        # When running the application without a web stack, exit == True signals the application loop to break and call
+        # the shutdown method
         self.exit = False
         log.info("Galaxy app startup finished %s" % self.startup_timer)
 

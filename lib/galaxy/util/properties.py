@@ -171,7 +171,7 @@ class NicerConfigParser(ConfigParser):
 
 
 def __get_all_configs(dirs, names):
-    return filter(os.path.exists, starmap(os.path.join, product(dirs, names)))
+    return list(filter(os.path.exists, starmap(os.path.join, product(dirs, names))))
 
 
 def __find_config_files(names, exts=None, dirs=None, include_samples=False):
