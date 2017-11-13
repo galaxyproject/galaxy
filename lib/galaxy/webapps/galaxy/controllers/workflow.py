@@ -496,14 +496,23 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return_url = url_for('/') + 'workflow?status=done&message=%s' % escape(message)
         trans.response.send_redirect(return_url)
 
-    @web.expose
-    @web.require_login("create workflows")
-    def create(self, trans, workflow_name=None, workflow_annotation=""):
-        """
-        Create a new stored workflow with name `workflow_name`.
-        """
-        user = trans.get_user()
-        if workflow_name is not None:
+    @web.expose_api
+    def create(self, trans, payload=None, **kwd):
+        if trans.request.method == 'GET':
+            return {
+                'title'  : 'Create Workflow',
+                'inputs' : [{
+                    'name'  : 'workflow_name',
+                    'label' : 'Name',
+                    'value' : 'Unnamed workflow'
+                }, {
+                    'name'  : 'workflow_annotation',
+                    'label' : 'Annotation',
+                    'help'  : 'A description of the workflow; annotation is shown alongside shared or published workflows.'
+                }]}
+        '''else:
+            user = trans.get_user()
+            if workflow_name is not None:
             # Create the new stored workflow
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
@@ -522,13 +531,13 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             session.add(stored_workflow)
             session.flush()
             return self.editor(trans, id=trans.security.encode_id(stored_workflow.id))
-        else:
+            else:
             return form(url_for(controller="workflow", action="create"), "Create New Workflow", submit_text="Create", use_panels=True) \
                 .add_text("workflow_name", "Workflow Name", value="Unnamed workflow") \
                 .add_text("workflow_annotation",
                           "Workflow Annotation",
                           value="",
-                          help="A description of the workflow; annotation is shown alongside shared or published workflows.")
+                          help="A description of the workflow; annotation is shown alongside shared or published workflows.")'''
 
     @web.json
     def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation=""):
