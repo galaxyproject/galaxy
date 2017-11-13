@@ -870,11 +870,12 @@ def listify(item, do_strip=False):
     If *item* is a list it is returned unchanged. If *item* is a tuple, it is converted to a list and returned. If
     *item* evaluates to False, an empty list is returned.
 
-    :type item:             str or list or tuple or types.NoneType
-    :param item:            object to make a list from
-    :param bool do_strip:   strip whitespace from around split items, if set to ``True``
-    :rtype:                 list
-    :returns:               The input as a list
+    :type  item:        object
+    :param item:        object to make a list from
+    :type  do_strip:    bool
+    :param do_strip:    strip whitespaces from around split items, if set to ``True``
+    :rtype:             list
+    :returns:           The input as a list
     """
     if not item:
         return []
