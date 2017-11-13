@@ -2,11 +2,13 @@ import * as Backbone from "libs/backbone";
 import AJAX_QUEUE from "utils/ajax-queue";
 
 /** ms between fetches when checking running jobs/datasets for updates */
-var UPDATE_DELAY = 4000;
+var UPDATE_DELAY = 2000;
 var NON_TERMINAL_STATES = ["new", "queued", "running"];
 var ERROR_STATES = ["error", "deleted"];
 /** Fetch state on add or just wait for polling to start. */
 var FETCH_STATE_ON_ADD = false;
+var BATCH_FETCH_STATE = true;
+
 
 var JobStatesSummary = Backbone.Model.extend({
     url: function() {
@@ -101,7 +103,19 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
         this.active = true;
     },
 
-    monitor: function(options) {
+    url: function() {
+        var nonTerminalModels = this.models
+            .filter(model => {
+                return !model.terminal();
+            });
+        console.log(this.models);
+        console.log(nonTerminalModels.map(summary => { return summary.attributes.id; }));
+        var ids = nonTerminalModels.map(summary => { return summary.get("id"); }).join(",");
+        var types = nonTerminalModels.map(summary => { return summary.get("model"); }).join(",");
+        return `${Galaxy.root}api/histories/${this.historyId}/jobs_summary?ids=${ids}&types=${types}`;
+    },
+
+    monitor: function() {
         this.clearUpdateTimeout();
         if (!this.active) {
             return;
@@ -109,23 +123,28 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
 
         var _delayThenMonitorAgain = () => {
             this.updateTimeoutId = setTimeout(() => {
-                this.monitor(options);
+                this.monitor();
             }, UPDATE_DELAY);
         };
 
-        var updateFunctions = this.models
+        var nonTerminalModels = this.models
             .filter(model => {
                 return !model.terminal();
-            })
-            .map(summary => {
-                return () => {
-                    console.log("Fetching...");
-                    return summary.fetch();
-                };
             });
 
-        if (updateFunctions.length > 0) {
+        if (nonTerminalModels.length > 0 && ! BATCH_FETCH_STATE) {
+            // Allow models to fetch their own details.
+            var updateFunctions = nonTerminalModels
+                .map(summary => {
+                    return () => {
+                        return summary.fetch();
+                    };
+                });
+
             return new AJAX_QUEUE.AjaxQueue(updateFunctions).done(_delayThenMonitorAgain);
+        } else if (nonTerminalModels.length > 0) {
+            // Batch fetch updated state...
+            this.fetch({"remove": false}).done(_delayThenMonitorAgain);
         } else {
             _delayThenMonitorAgain();
         }

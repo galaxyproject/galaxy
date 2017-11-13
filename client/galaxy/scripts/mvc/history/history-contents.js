@@ -75,16 +75,12 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                 if (jobSourceType) {
                     this.jobStateSummariesCollection.add({
                         id: jobSourceId,
+                        model: jobSourceType,
                         history_id: this.history_id,
                         collection_id: historyContent.attributes.id
                     });
                     var jobStatesSummary = this.jobStateSummariesCollection.get(jobSourceId);
                     historyContent.jobStatesSummary = jobStatesSummary;
-                    /*
-                    jobStatesSummary.on({
-                        "change": () => { historyContent.fire }
-                    });
-                    */
                 }
             }
         });
@@ -135,6 +131,7 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
             this._setUpWebStorage();
 
             this.jobStateSummariesCollection = new JobStatesSummary.JobStatesSummaryCollection();
+            this.jobStateSummariesCollection.historyId = newId;
             this.jobStateSummariesCollection.monitor();
         }
     },

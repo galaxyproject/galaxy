@@ -371,6 +371,11 @@ def populate_api_routes(webapp, app):
                           action='download_dataset_collection',
                           conditions=dict(method=["GET"]))
 
+    webapp.mapper.connect("/api/histories/{history_id}/jobs_summary",
+                          action="index_jobs_summary",
+                          controller='history_contents',
+                          conditions=dict(method=["GET"]))
+
     webapp.mapper.connect("/api/histories/{history_id}/contents/{type:%s}s/{id}/jobs_summary" % "|".join(valid_history_contents_types),
                           action="show_jobs_summary",
                           controller='history_contents',
