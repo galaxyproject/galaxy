@@ -319,7 +319,13 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             archive_source = payload["archive_source"]
             archive_type = payload.get("archive_type", "url")
             self.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
-            return {}
+            return {"message": "Importing history from source '%s'. This history will be visible when the import is complete." % archive_source}
+
+        if "archive_file" in payload:
+            archive_source = payload["archive_file"].file.name
+            archive_type = "file"
+            self.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
+            return {"message": "Importing history from file '%s'. This history will be visible when the import is complete." % archive_source}
 
         new_history = None
         # if a history id was passed, copy that history
@@ -433,27 +439,6 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         self.history_deserializer.deserialize(history, payload, user=trans.user, trans=trans)
         return self.history_serializer.serialize_to_view(history,
             user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
-
-    @expose_api
-    def archive_import(self, trans, **kwds):
-        """
-        archive_import(self, trans, **kwds):
-        * POST /api/histories/archive_import:
-            import a history from file
-        """
-        archive_file = kwds.get('archive_file')
-        archive_url = kwds.get('archive_url')
-        archive_source = None
-        if hasattr(archive_file, 'file'):
-            archive_source = archive_file.file.name
-            archive_type = 'file'
-        elif archive_url:
-            archive_source = archive_url
-            archive_type = 'url'
-        else:
-            raise exceptions.MessageException("Specify the archive file or url.")
-        self.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
-        return "Importing history from '%s'. This history will be visible when the import is complete." % archive_source
 
     @expose_api
     def archive_export(self, trans, id, **kwds):
