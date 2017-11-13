@@ -11,8 +11,7 @@ import time
 from datetime import datetime
 
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
-from galaxy.util import directory_hash_id, umask_fix_perms
-from galaxy.util.path import safe_relpath
+from galaxy.util import directory_hash_id, safe_relpath, umask_fix_perms
 from galaxy.util.sleeper import Sleeper
 from ..objectstore import convert_bytes, ObjectStore
 

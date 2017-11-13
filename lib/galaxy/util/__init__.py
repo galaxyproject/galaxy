@@ -860,21 +860,17 @@ def string_as_bool_or_none(string):
         return False
 
 
-def listify(item, do_strip=None, strip=False, split=True):
+def listify(item, do_strip=False):
     """
     Make a single item a single item list, or return a list if passed a
-    list.  Splits strings on commas unless split=False, strips whitespace
-    from around comma-split elements if strip=True.  Passing a None returns
-    an empty list.  Passing a tuple returns the tuple.
+    list.  Passing a None returns an empty list.
     """
-    if do_strip is not None and strip is False:
-        strip = do_strip
     if not item:
         return []
-    elif isinstance(item, list) or isinstance(item, tuple):
+    elif isinstance(item, list):
         return item
-    elif split and isinstance(item, string_types) and item.count(','):
-        if strip:
+    elif isinstance(item, string_types) and item.count(','):
+        if do_strip:
             return [token.strip() for token in item.split(',')]
         else:
             return item.split(',')
