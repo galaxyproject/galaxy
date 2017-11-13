@@ -36,7 +36,7 @@ var WorkflowItemView = Backbone.View.extend({
         this.model.save();
         // This reloads the whole page, so that the workflow appears in the tool panel.
         // Ideally we would notify only the tool panel of a change
-        window.location = `${Galaxy.root}workflow`;
+        window.location = `${Galaxy.root}workflows/list`;
     },
 
     removeWorkflow: function() {
