@@ -13,7 +13,7 @@ from posixpath import dirname as path_dirname
 from posixpath import join as path_join
 
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
-from galaxy.util import safe_relpath
+from galaxy.util.path import safe_relpath
 
 from ..objectstore import DiskObjectStore, local_extra_dirs
 

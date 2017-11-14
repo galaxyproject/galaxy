@@ -22,9 +22,11 @@ from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
     directory_hash_id,
     force_symlink,
+    umask_fix_perms,
+)
+from galaxy.util.path import (
     safe_makedirs,
     safe_relpath,
-    umask_fix_perms,
 )
 from galaxy.util.odict import odict
 from galaxy.util.sleeper import Sleeper
