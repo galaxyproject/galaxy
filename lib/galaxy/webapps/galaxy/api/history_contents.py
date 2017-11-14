@@ -128,26 +128,33 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api_anonymous
     def show(self, trans, id, history_id, **kwd):
         """
-        show( self, trans, id, history_id, **kwd )
         * GET /api/histories/{history_id}/contents/{id}
-            return detailed information about an HDA within a history
+        * GET /api/histories/{history_id}/contents/{type}/{id}
+            return detailed information about an HDA or HDCA within a history
         .. note:: Anonymous users are allowed to get their current history contents
 
         :type   id:         str
-        :param  id:        the encoded id of the HDA to return
+        :param  id:         the encoded id of the HDA or HDCA to return
+        :type   type:       str
+        :param  id:         'dataset' or 'dataset_collection'
         :type   history_id: str
-        :param  history_id: encoded id string of the HDA's History
+        :param  history_id: encoded id string of the HDA's or HDCA's History
 
         :rtype:     dict
-        :returns:   dictionary containing detailed HDA information
+        :returns:   dictionary containing detailed HDA or HDCA information
         """
-        contents_type = kwd.get('type', 'dataset')
+        contents_type = self.__get_contents_type(trans, kwd)
         if contents_type == 'dataset':
             return self.__show_dataset(trans, id, **kwd)
         elif contents_type == 'dataset_collection':
             return self.__show_dataset_collection(trans, id, history_id, **kwd)
-        else:
-            return self.__handle_unknown_contents_type(trans, contents_type)
+
+    def __get_contents_type(self, trans, kwd):
+        contents_type = kwd.get('type', 'dataset')
+        if contents_type not in ['dataset', 'dataset_collection']:
+            self.__handle_unknown_contents_type(trans, contents_type)
+
+        return contents_type
 
     def __show_dataset(self, trans, id, **kwd):
         hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
@@ -157,18 +164,15 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                                                      **self._parse_serialization_params(kwd, 'detailed'))
 
     def __show_dataset_collection(self, trans, id, history_id, **kwd):
-        try:
-            service = trans.app.dataset_collections_service
-            dataset_collection_instance = service.get_dataset_collection_instance(
-                trans=trans,
-                instance_type='history',
-                id=id,
-            )
-            return self.__collection_dict(trans, dataset_collection_instance, view="element")
-        except Exception as e:
-            log.exception("Error in history API at listing dataset collection")
-            trans.response.status = 500
-            return {'error': str(e)}
+        dataset_collection_instance = self.__get_accessible_collection(trans, id, history_id)
+        return self.__collection_dict(trans, dataset_collection_instance, view="element")
+
+    def __get_accessible_collection(self, trans, id, history_id):
+        return trans.app.dataset_collections_service.get_dataset_collection_instance(
+            trans=trans,
+            instance_type="history",
+            id=id
+        )
 
     @expose_api_raw_anonymous
     def download_dataset_collection(self, trans, id, history_id=None, **kwd):
@@ -183,14 +187,8 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         :param history_id: encoded id string of the HDCA's History
         """
         try:
-            service = trans.app.dataset_collections_service
-            dataset_collection_instance = service.get_dataset_collection_instance(
-                trans=trans,
-                instance_type='history',
-                id=id,
-            )
+            dataset_collection_instance = self.__get_accessible_collection(trans, id, history_id)
             return self.__stream_dataset_collection(trans, dataset_collection_instance)
-
         except Exception as e:
             log.exception("Error in API while creating dataset collection archive")
             trans.response.status = 500
