@@ -2,17 +2,17 @@
     <div class="toolForm">
         <div class="toolFormTitle">
             Citations
-            <button v-if="viewRender" v-on:click="toggleViewRender" type="button" class="btn btn-xs citations-to-bibtex" title="Show all in BibTeX format.">
+            <button v-if="viewRender" v-on:click="toggleViewRender" type="button" class="btn btn-xs" title="Show all in BibTeX format.">
                 <i class="fa fa-pencil-square-o"></i>
                 Show BibTeX
             </button>
-            <button v-else type="button" v-on:click="toggleViewRender" class="btn btn-xs citations-to-formatted" title="Return to formatted citation list.">
+            <button v-else type="button" v-on:click="toggleViewRender" class="btn btn-xs" title="Return to formatted citation list.">
                 <i class="fa fa-times"></i>
                 Hide BibTeX
             </button>
         </div>
-        <div class="toolFormBody" style="padding:5px 10px">
-            <div v-if="source == 'history'" style="padding:5px 10px">
+        <div class="toolFormBody citationPadding">
+            <div v-if="source == 'history'" class="citation-padding">
                 <b>Warning: This is a experimental feature.</b> Most Galaxy
                 tools will not annotate citations explicitly at this time. When
                 writing up your analysis, please manually review your histories
@@ -21,12 +21,12 @@
                 href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
             </div>
         </div>
-        <div class="citations-bibtex toolFormBody" style="padding:5px 10px">
-            <span v-if="viewRender" class="citations-formatted" style="word-wrap: break-word;">
+        <div class="citations-bibtex toolFormBody citation-padding">
+            <span v-if="viewRender" class="citations-formatted">
                 <p v-html="formattedReferences">
                 </p>
             </span>
-            <textarea v-else style="width: 100%; height: 500px;" class="citations-bibtex-text">
+            <textarea v-else class="citations-bibtex-text">
                 {{ content }}
             </textarea>
         </div>
@@ -193,4 +193,16 @@ export default {
 };
 </script>
 <style>
+.citations-formatted{
+    word-wrap: break-word;
+}
+
+.citations-bibtex-text{
+    width: 100%;
+    height: 500px;
+}
+
+.citation-padding{
+    padding:5px 10px;
+}
 </style>
