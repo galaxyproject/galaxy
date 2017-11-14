@@ -102,8 +102,9 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
                 case_error = 'The selected case is unavailable/invalid.'
                 pass
             callback_helper(input.test_param, values, new_name_prefix, label_prefix, parent_prefix=name_prefix, context=context, error=case_error)
-            values['__current_case__'] = input.get_current_case(values[input.test_param.name])
-            visit_input_values(input.cases[values['__current_case__']].inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=name_prefix, **payload)
+            if input.test_param.name in values:
+                values['__current_case__'] = input.get_current_case(values[input.test_param.name])
+                visit_input_values(input.cases[values['__current_case__']].inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=name_prefix, **payload)
         elif isinstance(input, Section):
             values = input_values[input.name] = input_values.get(input.name, {})
             new_name_prefix = name_prefix + input.name + '|'
