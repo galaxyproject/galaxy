@@ -7,8 +7,7 @@ import logging
 import shlex
 from subprocess import PIPE, Popen
 
-from galaxy.auth import _get_bool
-
+from galaxy.util import string_as_bool
 from ..providers import AuthProvider
 
 log = logging.getLogger(__name__)
@@ -65,7 +64,7 @@ class PAM(AuthProvider):
         log.debug("use username: {} use email {} email {} username {}".format(options.get('login-use-username'), options.get('login-use-email', False), email, username))
         # check email based login first because if email exists in Galaxy DB
         # we will be given the "public name" as username
-        if _get_bool(options, 'login-use-email', False) and email is not None:
+        if string_as_bool(options.get('login-use-email', False)) and email is not None:
             if '@' in email:
                 (email_user, email_domain) = email.split('@')
                 pam_username = email_user
@@ -82,7 +81,7 @@ class PAM(AuthProvider):
             else:
                 log.debug('PAM authenticate: email must be used to login, but no valid email found')
                 force_fail = True
-        elif _get_bool(options, 'login-use-username', False):
+        elif string_as_bool(options.get('login-use-username', False)):
             # if we get here via authenticate_user then
             # user will be "public name" and
             # email address will be as per registered user
@@ -106,7 +105,7 @@ class PAM(AuthProvider):
             return None, '', ''
 
         pam_service = options.get('pam-service', 'galaxy')
-        use_helper = _get_bool(options, 'use-external-helper', False)
+        use_helper = string_as_bool(options.get('use-external-helper', False))
         log.debug("PAM auth: will use external helper: {}".format(use_helper))
         authenticated = False
         if use_helper:

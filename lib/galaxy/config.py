@@ -403,9 +403,6 @@ class Configuration(object):
         self.user_library_import_dir = kwargs.get('user_library_import_dir', None)
         self.user_library_import_symlink_whitelist = listify(kwargs.get('user_library_import_symlink_whitelist', []), do_strip=True)
         # Searching data libraries
-        self.enable_lucene_library_search = string_as_bool(kwargs.get('enable_lucene_library_search', False))
-        self.enable_whoosh_library_search = string_as_bool(kwargs.get('enable_whoosh_library_search', False))
-        self.whoosh_index_dir = resolve_path(kwargs.get("whoosh_index_dir", "database/whoosh_indexes"), self.root)
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
         self.ftp_upload_dir_identifier = kwargs.get('ftp_upload_dir_identifier', 'email')  # attribute on user - email, username, id, etc...
         self.ftp_upload_dir_template = kwargs.get('ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep)
@@ -759,8 +756,7 @@ class Configuration(object):
         # Create the directories that it makes sense to create
         for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,
-                     self.nginx_upload_store, self.whoosh_index_dir,
-                     self.object_store_cache_path):
+                     self.nginx_upload_store, self.object_store_cache_path):
             self._ensure_directory(path)
         # Check that required files exist
         tool_configs = self.tool_configs
