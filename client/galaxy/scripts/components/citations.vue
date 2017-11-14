@@ -188,7 +188,6 @@ export default {
         },
         toggleViewRender: function() {
             this.viewRender = !this.viewRender;
-            console.debug(this.viewRender);
         }
     }
 };
