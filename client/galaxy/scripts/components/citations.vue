@@ -12,7 +12,7 @@
             </button>
         </div>
         <div class="toolFormBody citationPadding">
-            <div v-if="source == 'history'" class="citation-padding">
+            <div v-if="source === 'histories'" class="citation-padding">
                 <b>Warning: This is a experimental feature.</b> Most Galaxy
                 tools will not annotate citations explicitly at this time. When
                 writing up your analysis, please manually review your histories
