@@ -37,8 +37,8 @@ FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT = {"dbkey_source|dbkey_source_selector": "ne
                                        "dbkey_source|dbkey_name": "NC_001617.1",
                                        "sequence_name": "NC_001617.1",
                                        "sequence_id": "NC_001617.1",
-                                       "reference_source|reference_source_selector": "ncbi",
-                                       "reference_source|requested_identifier": "NC_001617.1",
+                                       "reference_source|reference_source_selector": "url",
+                                       "reference_source|user_url": "https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/master/NC_001617.1.fasta",
                                        "sorting|sort_selector": "as_is"}
 SAM_FASTA_ID = "toolshed.g2.bx.psu.edu/repos/devteam/data_manager_sam_fasta_index_builder/sam_fasta_index_builder/0.0.2"
 SAM_FASTA_INPUT = {"all_fasta_source": "NC_001617.1", "sequence_name": "", "sequence_id": ""}
