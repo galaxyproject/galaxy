@@ -1,19 +1,29 @@
 import calendar
-from datetime import datetime, date, timedelta
 import logging
+import re
 from collections import namedtuple
+from datetime import (
+    date,
+    datetime,
+    timedelta
+)
+from math import (
+    ceil,
+    floor
+)
+
 import sqlalchemy as sa
-from sqlalchemy import and_
 from markupsafe import escape
+from sqlalchemy import and_
 
 from galaxy import model, util
-from math import floor
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
-import re
-from math import ceil
+from galaxy.webapps.reports.controllers.jobs import (
+    get_spark_time,
+    sorter
+)
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
-from galaxy.webapps.reports.controllers.jobs import sorter, get_spark_time
 
 log = logging.getLogger(__name__)
 

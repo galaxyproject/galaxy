@@ -5,19 +5,28 @@
 import logging
 import os
 import shutil
-from galaxy.exceptions import ObjectInvalid, ObjectNotFound
+
+try:
+    from kamaki.clients import (
+        astakos,
+        Client as KamakiClient,
+        ClientError,
+        pithos,
+        utils
+    )
+except ImportError:
+    KamakiClient = None
+
+from galaxy.exceptions import (
+    ObjectInvalid,
+    ObjectNotFound
+)
 from galaxy.util import (
     directory_hash_id,
     umask_fix_perms,
 )
 from galaxy.util.path import safe_relpath
 from ..objectstore import ObjectStore
-
-try:
-    from kamaki.clients import (
-        astakos, pithos, utils, ClientError, Client as KamakiClient)
-except ImportError:
-    KamakiClient = None
 
 NO_KAMAKI_ERROR_MESSAGE = (
     "ObjectStore configured, but no kamaki.clients dependency available."

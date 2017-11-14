@@ -1,8 +1,9 @@
 # Contains objects for accessing external services applications
 import logging
-from parameters import ExternalServiceParameter
-from actions import ExternalServiceAction
+
 from galaxy.util.bunch import Bunch
+from .actions import ExternalServiceAction
+from .parameters import ExternalServiceParameter
 
 log = logging.getLogger(__name__)
 

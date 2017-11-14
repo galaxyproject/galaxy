@@ -4,11 +4,12 @@ import os
 from galaxy.tools.cwl import tool_proxy
 from galaxy.tools.deps import requirements
 from galaxy.util.odict import odict
-
-from .interface import PageSource
-from .interface import PagesSource
-from .interface import ToolSource
-from .interface import ToolStdioExitCode
+from .interface import (
+    PageSource,
+    PagesSource,
+    ToolSource,
+    ToolStdioExitCode
+)
 from .output_actions import ToolOutputActionGroup
 from .output_objects import ToolOutput
 from .yaml import YamlInputSource

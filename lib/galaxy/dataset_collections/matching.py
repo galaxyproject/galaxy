@@ -1,6 +1,5 @@
 from galaxy import exceptions
 from galaxy.util import bunch
-
 from .structure import (
     get_structure,
     leaf

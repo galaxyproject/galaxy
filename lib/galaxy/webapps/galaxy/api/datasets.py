@@ -1,24 +1,29 @@
 """
 API operations on the contents of a history dataset.
 """
+import logging
+
 from six import string_types
 
-from galaxy import model
-from galaxy import exceptions as galaxy_exceptions
-from galaxy import web
-from galaxy.web.framework.helpers import is_true
-from galaxy import util
-
-from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider
-from galaxy.visualization.data_providers.genome import SamDataProvider
-from galaxy.visualization.data_providers.genome import BamDataProvider
+from galaxy import (
+    exceptions as galaxy_exceptions,
+    managers,
+    model,
+    util,
+    web
+)
 from galaxy.datatypes import dataproviders
+from galaxy.visualization.data_providers.genome import (
+    BamDataProvider,
+    FeatureLocationIndexDataProvider,
+    SamDataProvider
+)
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    UsesVisualizationMixin
+)
+from galaxy.web.framework.helpers import is_true
 
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesVisualizationMixin
-from galaxy import managers
-
-import logging
 log = logging.getLogger(__name__)
 
 

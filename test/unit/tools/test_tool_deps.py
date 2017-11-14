@@ -1,6 +1,5 @@
 import os.path
 import tempfile
-
 from contextlib import contextmanager
 from os import (
     chmod,

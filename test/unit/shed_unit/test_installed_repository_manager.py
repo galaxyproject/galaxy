@@ -1,5 +1,4 @@
 from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
-
 from ..tools.test_toolbox import BaseToolBoxTestCase
 
 

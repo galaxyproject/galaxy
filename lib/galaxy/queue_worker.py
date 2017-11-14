@@ -6,12 +6,12 @@ reloading the toolbox, etc., across multiple processes.
 import logging
 import threading
 
-import galaxy.queues
-from galaxy import util
-
 from kombu import Connection
 from kombu.mixins import ConsumerMixin
 from kombu.pools import producers
+
+import galaxy.queues
+from galaxy import util
 
 logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)

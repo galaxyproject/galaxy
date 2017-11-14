@@ -28,7 +28,6 @@ import galaxy.model.metadata
 import galaxy.model.orm.now
 import galaxy.security.passwords
 import galaxy.util
-
 from galaxy.managers import tags
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.util import pgcalc

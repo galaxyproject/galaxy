@@ -1,9 +1,11 @@
 # Contains actions that are used in External Services
 import logging
+
 import requests
-from galaxy.web import url_for
+
 from galaxy.util.template import fill_template
-from result_handlers.basic import ExternalServiceActionResultHandler
+from galaxy.web import url_for
+from .result_handlers.basic import ExternalServiceActionResultHandler
 
 log = logging.getLogger(__name__)
 

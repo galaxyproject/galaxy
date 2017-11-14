@@ -15,7 +15,6 @@ from base.interactor import build_interactor, RunToolException, stage_data_in_hi
 from galaxy.tools import DataManagerTool
 from galaxy.tools.verify.asserts import verify_assertions
 from galaxy.util import bunch
-
 from .twilltestcase import TwillTestCase
 
 log = logging.getLogger(__name__)

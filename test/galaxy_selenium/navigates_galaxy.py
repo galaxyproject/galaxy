@@ -15,7 +15,6 @@ import requests
 import yaml
 
 from galaxy.util.bunch import Bunch
-
 from . import sizzle
 from .data import (
     NAVIGATION,

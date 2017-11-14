@@ -23,7 +23,6 @@ from galaxy.datatypes.sniff import (
     iter_headers
 )
 from galaxy.util import compression_utils
-
 from . import dataproviders
 
 if sys.version_info > (3,):

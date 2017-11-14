@@ -12,22 +12,21 @@ from galaxy import util
 from galaxy.tools.toolbox import ToolSection
 from galaxy.tools.toolbox.parser import ensure_tool_conf_item
 from galaxy.util.odict import odict
-
 from tool_shed.galaxy_install import install_manager
 from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.tools import tool_panel_manager
-
 from tool_shed.tools import data_table_manager
-
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import hg_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_dependency_util
-from tool_shed.util import tool_util
-from tool_shed.util import xml_util
+from tool_shed.util import (
+    basic_util,
+    common_util,
+    hg_util,
+    repository_util,
+    shed_util_common as suc,
+    tool_dependency_util,
+    tool_util,
+    xml_util
+)
 
 log = logging.getLogger(__name__)
 

@@ -1,6 +1,5 @@
 """This module contains a linting functions for tool inputs."""
 from galaxy.util import string_as_bool
-
 from ..lint_util import is_datasource
 
 

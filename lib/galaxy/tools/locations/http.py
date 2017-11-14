@@ -1,5 +1,4 @@
 from galaxy.util import download_to_file
-
 from ..locations import (
     ToolLocationResolver,
 )
