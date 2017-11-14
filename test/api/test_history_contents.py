@@ -19,6 +19,7 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         super(HistoryContentsApiTestCase, self).setUp()
         self.history_id = self._new_history()
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+        self.library_populator = LibraryPopulator(self)
 
     def test_index_hda_summary(self):
         hda1 = self._new_dataset(self.history_id)
@@ -57,7 +58,7 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         assert self.__count_contents(second_history_id) == 1
 
     def test_library_copy(self):
-        ld = LibraryPopulator(self).new_library_dataset("lda_test_library")
+        ld = self.library_populator.new_library_dataset("lda_test_library")
         create_data = dict(
             source='library',
             content=ld["id"],
@@ -210,6 +211,43 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         create_response = self._post("histories/%s/contents/dataset_collections" % second_history_id, create_data)
         self.__check_create_collection_response(create_response)
         assert len(self._get("histories/%s/contents/dataset_collections" % second_history_id).json()) == 1
+
+    def test_hdca_from_library_datasets(self):
+        ld = self.library_populator.new_library_dataset("el1")
+        ldda_id = ld["ldda_id"]
+        element_identifiers = [{"name": "el1", "src": "ldda", "id": ldda_id}]
+        create_data = dict(
+            history_id=self.history_id,
+            type="dataset_collection",
+            name="Test From Library",
+            element_identifiers=json.dumps(element_identifiers),
+            collection_type="list",
+        )
+        create_response = self._post("histories/%s/contents/dataset_collections" % self.history_id, create_data)
+        hdca = self.__check_create_collection_response(create_response)
+        elements = hdca["elements"]
+        assert len(elements) == 1
+        hda = elements[0]["object"]
+        assert hda["hda_ldda"] == "hda"
+        assert hda["history_content_type"] == "dataset"
+        assert hda["copied_from_ldda_id"] == ldda_id
+
+    def test_hdca_from_inaccessible_library_datasets(self):
+        library, library_dataset = self.library_populator.new_library_dataset_in_private_library("HDCACreateInaccesibleLibrary")
+        ldda_id = library_dataset["id"]
+        element_identifiers = [{"name": "el1", "src": "ldda", "id": ldda_id}]
+        create_data = dict(
+            history_id=self.history_id,
+            type="dataset_collection",
+            name="Test From Library",
+            element_identifiers=json.dumps(element_identifiers),
+            collection_type="list",
+        )
+        with self._different_user():
+            second_history_id = self._new_history()
+            create_response = self._post("histories/%s/contents/dataset_collections" % second_history_id, create_data)
+            # TODO: This should be 403 and a proper JSON response.
+            self._assert_status_code_is(create_response, 400)
 
     def __check_create_collection_response(self, response):
         self._assert_status_code_is(response, 200)
