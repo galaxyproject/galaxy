@@ -1,5 +1,6 @@
 import DATASET_LI from "mvc/dataset/dataset-li";
 import BASE_MVC from "mvc/base-mvc";
+import HISTORY_ITEM_LI from "mvc/history/history-item-li";
 import _l from "utils/localization";
 
 //==============================================================================
@@ -29,28 +30,17 @@ var HDAListItemView = _super.extend(
 // ............................................................................ TEMPLATES
 /** underscore templates */
 HDAListItemView.prototype.templates = (() => {
-    var titleBarTemplate = BASE_MVC.wrapTemplate(
-        [
-            // adding the hid display to the title
-            '<div class="title-bar clear" tabindex="0">',
-            '<span class="state-icon"></span>',
-            '<div class="title">',
-            //TODO: remove whitespace and use margin-right
-            '<span class="hid"><%- dataset.hid %></span> ',
-            '<span class="name"><%- dataset.name %></span>',
-            "</div>",
-            "</br>",
-            '<span class="nametags">',
-            "<% _.each(_.sortBy(_.uniq(dataset.tags), function(x) { return x }), function(tag){ %>",
-            '<% if (tag.indexOf("name:") == 0){ %>',
-            '<span class="label label-info"><%- tag.slice(5) %></span>',
-            "<% } %>",
-            "<% }); %>",
-            "</span>",
-            "</div>"
-        ],
-        "dataset"
-    );
+    var titleBarTemplate = dataset => `
+        <div class="title-bar clear" tabindex="0">
+            <span class="state-icon"></span>
+            <div class="title">
+                <span class="hid">${dataset.hid}</span>
+                <span class="name">${dataset.name}</span>
+            </div>
+            </br>
+            ${HISTORY_ITEM_LI.nametagTemplate(dataset)}
+        </div>
+    `;
 
     var warnings = _.extend({}, _super.prototype.templates.warnings, {
         hidden: BASE_MVC.wrapTemplate(

@@ -173,7 +173,7 @@ class NavigatesGalaxy(HasDriver):
 
     def api_delete(self, endpoint, raw=False):
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
-        response = requests.get(full_url, cookies=self.selenium_to_requests_cookies())
+        response = requests.delete(full_url, cookies=self.selenium_to_requests_cookies())
         if raw:
             return response
         else:
@@ -839,6 +839,9 @@ class NavigatesGalaxy(HasDriver):
         menu_item_sizzle_selector = '#history-options-button-menu > li > a:contains("%s")' % option_label
         menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
+
+    def history_panel_click_copy_elements(self):
+        self.click_history_option("Copy Datasets")
 
     @retry_during_transitions
     def histories_click_advanced_search(self):

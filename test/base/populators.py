@@ -92,6 +92,18 @@ def skip_without_datatype(extension):
     return method_wrapper
 
 
+def summarize_instance_history_on_error(method):
+    @wraps(method)
+    def wrapped_method(api_test_case, *args, **kwds):
+        try:
+            method(api_test_case, *args, **kwds)
+        except Exception:
+            api_test_case.dataset_populator._summarize_history(api_test_case.history_id)
+            raise
+
+    return wrapped_method
+
+
 def _raise_skip_if(check):
     if check:
         from nose.plugins.skip import SkipTest
@@ -151,11 +163,31 @@ class BaseDatasetPopulator(object):
             self._summarize_history(history_id)
             raise
 
+    def wait_for_history_jobs(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
+        query_params = {"history_id": history_id}
+
+        def has_active_jobs():
+            jobs_response = self._get("jobs", query_params)
+            assert jobs_response.status_code == 200
+            active_jobs = [j for j in jobs_response.json() if j["state"] in ["new", "upload", "waiting", "queued", "running"]]
+
+            if len(active_jobs) == 0:
+                return True
+            else:
+                return None
+
+        wait_on(has_active_jobs, "active jobs", timeout=timeout)
+        if assert_ok:
+            return self.wait_for_history(history_id, assert_ok=True, timeout=timeout)
+
     def wait_for_job(self, job_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
         return wait_on_state(lambda: self.get_job_details(job_id), assert_ok=assert_ok, timeout=timeout)
 
     def get_job_details(self, job_id, full=False):
         return self._get("jobs/%s?full=%s" % (job_id, full))
+
+    def cancel_job(self, job_id):
+        return self._delete("jobs/%s" % job_id)
 
     def _summarize_history(self, history_id):
         pass
@@ -259,6 +291,21 @@ class BaseDatasetPopulator(object):
         assert details_response.status_code == 200, details_response.content
         return details_response.json()
 
+    def run_collection_creates_list(self, history_id, hdca_id):
+        inputs = {
+            "input1": {"src": "hdca", "id": hdca_id},
+        }
+        self.wait_for_history(history_id, assert_ok=True)
+        return self.run_tool("collection_creates_list", inputs, history_id)
+
+    def run_exit_code_from_file(self, history_id, hdca_id):
+        exit_code_inputs = {
+            "input": {'batch': True, 'values': [{"src": "hdca", "id": hdca_id}]},
+        }
+        response = self.run_tool("exit_code_from_file", exit_code_inputs, history_id, assert_ok=False).json()
+        self.wait_for_history(history_id, assert_ok=False)
+        return response
+
     def __history_content_id(self, history_id, wait=True, **kwds):
         if wait:
             assert_ok = kwds.get("assert_ok", True)
@@ -267,6 +314,8 @@ class BaseDatasetPopulator(object):
         # the last dataset in the history will be fetched.
         if "dataset_id" in kwds:
             history_content_id = kwds["dataset_id"]
+        elif "content_id" in kwds:
+            history_content_id = kwds["content_id"]
         elif "dataset" in kwds:
             history_content_id = kwds["dataset"]["id"]
         else:
@@ -305,6 +354,9 @@ class DatasetPopulator(BaseDatasetPopulator):
 
     def _get(self, route, data={}):
         return self.galaxy_interactor.get(route, data=data)
+
+    def _delete(self, route, data={}):
+        return self.galaxy_interactor.delete(route, data=data)
 
     def _summarize_history(self, history_id):
         self.galaxy_interactor._summarize_history(history_id)
@@ -365,7 +417,21 @@ class BaseWorkflowPopulator(object):
         """ Wait for a workflow invocation to completely schedule and then history
         to be complete. """
         self.wait_for_invocation(workflow_id, invocation_id, timeout=timeout)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok, timeout=timeout)
+        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok, timeout=timeout)
+
+    def invoke_workflow(self, history_id, workflow_id, inputs={}, request={}, assert_ok=True):
+        request["history"] = "hist_id=%s" % history_id,
+        if inputs:
+            request["inputs"] = json.dumps(inputs)
+            request["inputs_by"] = 'step_index'
+        url = "workflows/%s/usage" % (workflow_id)
+        invocation_response = self._post(url, data=request)
+        if assert_ok:
+            api_asserts.assert_status_code_is(invocation_response, 200)
+            invocation_id = invocation_response.json()["id"]
+            return invocation_id
+        else:
+            return invocation_response
 
 
 class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
@@ -561,7 +627,7 @@ class BaseDatasetCollectionPopulator(object):
         return element_identifiers
 
     def list_identifiers(self, history_id, contents=None):
-        count = 3 if not contents else len(contents)
+        count = 3 if contents is None else len(contents)
         # Contents can be a list of strings (with name auto-assigned here) or a list of
         # 2-tuples of form (name, dataset_content).
         if contents and isinstance(contents[0], tuple):
@@ -635,6 +701,11 @@ class GiPostGetMixin:
         data = data.copy()
         data['key'] = self._gi.key
         return requests.post(self.__url(route), data=data)
+
+    def _delete(self, route, data={}):
+        data = data.copy()
+        data['key'] = self._gi.key
+        return requests.delete(self.__url(route), data=data)
 
     def __url(self, route):
         return self._gi.url + "/" + route

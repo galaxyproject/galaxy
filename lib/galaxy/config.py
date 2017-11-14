@@ -354,6 +354,7 @@ class Configuration(object):
         self.history_local_serial_workflow_scheduling = string_as_bool(kwargs.get('history_local_serial_workflow_scheduling', 'False'))
         self.parallelize_workflow_scheduling_within_histories = string_as_bool(kwargs.get('parallelize_workflow_scheduling_within_histories', 'False'))
         self.maximum_workflow_invocation_duration = int(kwargs.get("maximum_workflow_invocation_duration", 2678400))
+        self.maximum_workflow_jobs_per_scheduling_iteration = int(kwargs.get("maximum_workflow_jobs_per_scheduling_iteration", -1))
 
         # Per-user Job concurrency limitations
         self.cache_user_job_count = string_as_bool(kwargs.get('cache_user_job_count', False))

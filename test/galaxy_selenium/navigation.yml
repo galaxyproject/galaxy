@@ -126,11 +126,32 @@ history_panel:
     options_button: '#history-options-button'
     options_button_icon: '#history-options-button span.fa-cog'
     options_menu: '#history-options-button-menu'
+    multi_view_button: '#history-view-multi-button'
 
   text:
     tooltip_name: 'Click to rename history'
     new_name: 'Unnamed history'
     new_size: '(empty)'
+
+multi_history_view:
+
+  selectors:
+    _: '.multi-panel-history'
+    current_label: '.current-label'
+    create_new_button: '.create-new'
+    drag_drop_help: '.history-drop-target-help'
+
+history_copy_elements:
+
+  selectors:
+    # Following two don't really work as CSS would only work as jQuery/sizzle I think
+    # since the page is dynamically generated.
+    # https://stackoverflow.com/questions/10645552/is-it-possible-to-use-an-input-value-attribute-as-a-css-selector
+    dataset_checkbox: "input[id='dataset|${id}']"
+    collection_checkbox: 'input[id="dataset_collection|${id}"]'
+    new_history_name: '#new_history_name'
+    copy_button: "input[type='submit']"
+    done_link: '.donemessage a'
 
 collection_builders:
 

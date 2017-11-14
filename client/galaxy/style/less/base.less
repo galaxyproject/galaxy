@@ -1108,6 +1108,37 @@ ul.manage-table-actions li {
     margin-left: 0.5em;
 }
 
+.state-progress {
+    border: 1px solid gray;
+    position: relative;
+
+    margin-top: 2px;
+    margin-bottom: 1px;
+
+    .info {
+        color: @black;
+        background: @white;
+    }
+
+    .new {
+        background: @state-default-bg;
+    }
+
+    .running {
+        background: @state-running-bg;
+    }
+
+    .ok {
+        background: @state-success-bg;
+    }
+
+    .note {
+        margin-left: 1em;
+        position: absolute;
+    }
+
+}
+
 // State colors
 
 .state-color-new {

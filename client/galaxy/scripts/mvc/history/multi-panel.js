@@ -1,6 +1,7 @@
 import _l from "utils/localization";
 import HISTORY_MODEL from "mvc/history/history-model";
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
+import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import historyCopyDialog from "mvc/history/copy-dialog";
 import ERROR_MODAL from "mvc/ui/error-modal";
 import baseMVC from "mvc/base-mvc";
@@ -733,9 +734,16 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             this.hdaQueue.add({
                 name: column.model.id,
                 fn: function() {
-                    return contents.fetchCurrentPage(fetchOptions).done(() => {
-                        column.panel.renderItems();
-                    });
+                    return contents
+                        .fetchCurrentPage(fetchOptions)
+                        .done(() => {
+                            column.panel.renderItems();
+                        })
+                        .done(() => {
+                            if (!JOB_STATES_MODEL.FETCH_STATE_ON_ADD) {
+                                contents.jobStateSummariesCollection.fetch();
+                            }
+                        });
                 }
             });
             // the queue is re-used, so if it's not processing requests - start it again

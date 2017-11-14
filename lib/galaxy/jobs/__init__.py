@@ -1065,7 +1065,7 @@ class JobWrapper(object, HasResourceParameters):
         destination_params = job.destination_params
         if "__resubmit_delay_seconds" in destination_params:
             delay = float(destination_params["__resubmit_delay_seconds"])
-            if job.seconds_since_update < delay:
+            if job.seconds_since_updated < delay:
                 return False
 
         return True

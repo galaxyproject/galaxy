@@ -557,6 +557,26 @@ model.ImplicitlyCreatedDatasetCollectionInput.table = Table(
         ForeignKey("history_dataset_collection_association.id"), index=True),
     Column("name", Unicode(255)))
 
+model.ImplicitCollectionJobs.table = Table(
+    "implicit_collection_jobs", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("populated_state", TrimmedString(64), default='new', nullable=False),
+)
+
+# model.ImplicitCollectionJobsHistoryDatasetCollectionAssociation.table = Table(
+#     "implicit_collection_jobs_dataset_collection_association", metadata,
+#     Column("id", Integer, primary_key=True),
+#     Column("history_dataset_collection_association_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True, nullable=False),
+# )
+
+model.ImplicitCollectionJobsJobAssociation.table = Table(
+    "implicit_collection_jobs_job_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True),
+    Column("job_id", Integer, ForeignKey("job.id"), index=True),  # Consider making this nullable...
+    Column("order_index", Integer, nullable=False),
+)
+
 model.JobExternalOutputMetadata.table = Table(
     "job_external_output_metadata", metadata,
     Column("id", Integer, primary_key=True),
@@ -702,6 +722,7 @@ model.DatasetCollection.table = Table(
     Column("collection_type", Unicode(255), nullable=False),
     Column("populated_state", TrimmedString(64), default='ok', nullable=False),
     Column("populated_state_message", TEXT),
+    Column("element_count", Integer, nullable=True),
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
 
@@ -716,7 +737,10 @@ model.HistoryDatasetCollectionAssociation.table = Table(
     Column("deleted", Boolean, default=False),
     Column("copied_from_history_dataset_collection_association_id", Integer,
         ForeignKey("history_dataset_collection_association.id"), nullable=True),
-    Column("implicit_output_name", Unicode(255), nullable=True))
+    Column("implicit_output_name", Unicode(255), nullable=True),
+    Column("job_id", ForeignKey("job.id"), index=True, nullable=True),
+    Column("implicit_collection_jobs_id", ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
+)
 
 model.LibraryDatasetCollectionAssociation.table = Table(
     "library_dataset_collection_association", metadata,
@@ -901,8 +925,45 @@ model.WorkflowInvocationStep.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True, nullable=False),
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
+    Column("state", TrimmedString(64), index=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=True),
+    Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
     Column("action", JSONType, nullable=True))
+
+model.WorkflowInvocationOutputDatasetAssociation.table = Table(
+    "workflow_invocation_output_dataset_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
+    Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
+)
+
+model.WorkflowInvocationOutputDatasetCollectionAssociation.table = Table(
+    "workflow_invocation_output_dataset_collection_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
+    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
+)
+
+model.WorkflowInvocationStepOutputDatasetAssociation.table = Table(
+    "workflow_invocation_step_output_dataset_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id"), index=True),
+    Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("output_name", String(255), nullable=True),
+)
+
+model.WorkflowInvocationStepOutputDatasetCollectionAssociation.table = Table(
+    "workflow_invocation_step_output_dataset_collection_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id"), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
+    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True),
+    Column("output_name", String(255), nullable=True),
+)
 
 model.WorkflowInvocationToSubworkflowInvocationAssociation.table = Table(
     "workflow_invocation_to_subworkflow_invocation_association", metadata,
@@ -2066,6 +2127,31 @@ simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
     ),
 )
 
+simple_mapping(model.ImplicitCollectionJobs)
+
+# simple_mapping(
+#     model.ImplicitCollectionJobsHistoryDatasetCollectionAssociation,
+#     history_dataset_collection_associations=relation(
+#         model.HistoryDatasetCollectionAssociation,
+#         backref=backref("implicit_collection_jobs_association", uselist=False),
+#         uselist=True,
+#     ),
+# )
+
+simple_mapping(
+    model.ImplicitCollectionJobsJobAssociation,
+    implicit_collection_jobs=relation(
+        model.ImplicitCollectionJobs,
+        backref=backref("jobs", uselist=True),
+        uselist=False,
+    ),
+    job=relation(
+        model.Job,
+        backref=backref("implicit_collection_jobs_association", uselist=False),
+        uselist=False,
+    ),
+)
+
 mapper(model.JobParameter, model.JobParameter.table)
 
 mapper(model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table, properties=dict(
@@ -2156,6 +2242,16 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         primaryjoin=((model.HistoryDatasetCollectionAssociation.table.c.id ==
                       model.ImplicitlyCreatedDatasetCollectionInput.table.c.dataset_collection_id)),
         backref="dataset_collection",
+    ),
+    implicit_collection_jobs=relation(
+        model.ImplicitCollectionJobs,
+        backref=backref("history_dataset_collection_associations", uselist=True),
+        uselist=False,
+    ),
+    job=relation(
+        model.Job,
+        backref=backref("history_dataset_collection_associations", uselist=True),
+        uselist=False,
     ),
     tags=relation(model.HistoryDatasetCollectionTagAssociation,
         order_by=model.HistoryDatasetCollectionTagAssociation.table.c.id,
@@ -2310,7 +2406,7 @@ mapper(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict
         uselist=True,
     ),
     steps=relation(model.WorkflowInvocationStep,
-        backref='workflow_invocation'),
+        backref="workflow_invocation"),
     workflow=relation(model.Workflow)
 ))
 
@@ -2323,12 +2419,11 @@ mapper(model.WorkflowInvocationToSubworkflowInvocationAssociation, model.Workflo
     workflow_step=relation(model.WorkflowStep),
 ))
 
-mapper(model.WorkflowInvocationStep, model.WorkflowInvocationStep.table, properties=dict(
+simple_mapping(model.WorkflowInvocationStep,
     workflow_step=relation(model.WorkflowStep),
-    job=relation(model.Job,
-        backref=backref('workflow_invocation_step',
-            uselist=False))
-))
+    job=relation(model.Job, backref=backref('workflow_invocation_step', uselist=False), uselist=False),
+    implicit_collection_jobs=relation(model.ImplicitCollectionJobs, backref=backref('workflow_invocation_step', uselist=False), uselist=False),)
+
 
 simple_mapping(model.WorkflowRequestInputParameter,
     workflow_invocation=relation(model.WorkflowInvocation))
@@ -2357,6 +2452,39 @@ mapper(model.MetadataFile, model.MetadataFile.table, properties=dict(
     history_dataset=relation(model.HistoryDatasetAssociation),
     library_dataset=relation(model.LibraryDatasetDatasetAssociation)
 ))
+
+
+simple_mapping(
+    model.WorkflowInvocationOutputDatasetAssociation,
+    workflow_invocation=relation(model.WorkflowInvocation, backref="output_datasets"),
+    workflow_step=relation(model.WorkflowStep),
+    dataset=relation(model.HistoryDatasetAssociation),
+    workflow_output=relation(model.WorkflowOutput),
+)
+
+
+simple_mapping(
+    model.WorkflowInvocationOutputDatasetCollectionAssociation,
+    workflow_invocation=relation(model.WorkflowInvocation, backref="output_dataset_collections"),
+    workflow_step=relation(model.WorkflowStep),
+    dataset_collection=relation(model.HistoryDatasetCollectionAssociation),
+    workflow_output=relation(model.WorkflowOutput),
+)
+
+
+simple_mapping(
+    model.WorkflowInvocationStepOutputDatasetAssociation,
+    workflow_invocation_step=relation(model.WorkflowInvocationStep, backref="output_datasets"),
+    dataset=relation(model.HistoryDatasetAssociation),
+)
+
+
+simple_mapping(
+    model.WorkflowInvocationStepOutputDatasetCollectionAssociation,
+    workflow_invocation_step=relation(model.WorkflowInvocationStep, backref="output_dataset_collections"),
+    dataset_collection=relation(model.HistoryDatasetCollectionAssociation),
+)
+
 
 mapper(model.PageRevision, model.PageRevision.table)
 

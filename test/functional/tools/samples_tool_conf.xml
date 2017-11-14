@@ -60,6 +60,7 @@
   <tool file="output_format_deprecated_when.xml" />
   <tool file="output_format_collection.xml" />
   <tool file="output_filter.xml" />
+  <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
@@ -138,6 +139,9 @@
   <tool file="for_workflows/mapper.xml" />
   <tool file="for_workflows/mapper2.xml" />
   <tool file="for_workflows/split.xml" />
+  <tool file="for_workflows/empty_list.xml" />
+  <tool file="for_workflows/count_list.xml" />
+  <tool file="for_workflows/count_multi_file.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
 
   <section id="filter" name="For Tours">
@@ -152,6 +156,9 @@
   <tool file="mulled_example_conflict.xml" />
 
   <tool file="simple_constructs.yml" />
+
+  <!-- Tools without tool test but useful for hand-crafted, artisanal test cases. -->
+  <tool file="cat_data_and_sleep.xml" />
 
   <!-- Load collection operation tools - I consider these part of the
        "framework" and they are used to in API tests to test the underlying

@@ -42,7 +42,6 @@ var CollectionView = _super.extend(
             /** foldout or drilldown */
             this.foldoutStyle = attributes.foldoutStyle || "foldout";
             this.downloadUrl = `${Galaxy.root}api/dataset_collections/${this.model.attributes.id}/download`;
-            console.log(this);
         },
 
         _queueNewRender: function($newRender, speed) {
