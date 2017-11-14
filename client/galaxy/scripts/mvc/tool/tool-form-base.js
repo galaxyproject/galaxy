@@ -5,7 +5,8 @@ import Utils from "utils/utils";
 import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
-import Citations from "mvc/citations";
+import Citations from "components/citations.vue";
+import Vue from "libs/vue";
 export default FormBase.extend({
     initialize: function(options) {
         var self = this;
@@ -223,14 +224,14 @@ export default FormBase.extend({
         var options = this.model.attributes;
         var $el = $("<div/>").append(this._templateHelp(options));
         if (options.citations) {
-            var citations = new Citations.ToolCitationCollection();
-            citations.tool_id = options.id;
-            var citation_list_view = new Citations.CitationListView({
-                collection: citations
-            });
-            citation_list_view.render();
-            citations.fetch();
-            $el.append(citation_list_view.$el);
+            var citationInstance = Vue.extend(Citations);
+            var vm = document.createElement('div');
+            $el.append(vm);
+            new citationInstance({
+                propsData: {
+                    id: options.id,
+                    source: 'tools'}})
+                .$mount(vm);
         }
         return $el;
     },

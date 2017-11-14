@@ -20,7 +20,8 @@ import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
-import Citations from "mvc/citations";
+import Citations from "components/citations.vue";
+import Vue from "libs/vue";
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -122,10 +123,10 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_history_citations: function() {
-            var citations = new Citations.HistoryCitationCollection();
-            citations.history_id = QueryStringParsing.get("id");
-            this.page.display(new Citations.CitationListView({ collection: citations }));
-            citations.fetch();
+            var citationInstance = Vue.extend(Citations);
+            var vm = document.createElement('div');
+            this.page.display(vm);
+            new citationInstance({propsData: {id: QueryStringParsing.get("id"), source: 'histories'}}).$mount(vm);
         },
 
         show_histories_rename: function() {
