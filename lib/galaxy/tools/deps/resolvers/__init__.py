@@ -10,7 +10,6 @@ import yaml
 
 from galaxy.util import listify
 from galaxy.util.dictifiable import Dictifiable
-
 from ..requirements import ToolRequirement
 
 

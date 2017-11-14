@@ -4,18 +4,18 @@ Manager and Serializer for HDCAs.
 HistoryDatasetCollectionAssociations (HDCAs) are datasets contained or created in a
 history.
 """
+import logging
 
 from galaxy import model
+from galaxy.managers import (
+    annotatable,
+    base,
+    deletable,
+    hdas,
+    secured,
+    taggable
+)
 
-from galaxy.managers import base
-from galaxy.managers import secured
-from galaxy.managers import deletable
-from galaxy.managers import taggable
-from galaxy.managers import annotatable
-
-from galaxy.managers import hdas
-
-import logging
 log = logging.getLogger(__name__)
 
 

@@ -1,6 +1,5 @@
 import logging
 import threading
-
 from xml.etree import cElementTree as XmlET
 
 from tool_shed.util import basic_util

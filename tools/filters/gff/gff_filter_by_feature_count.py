@@ -8,7 +8,6 @@ Usage:
 from __future__ import print_function
 
 import sys
-
 from ast import Module, parse, walk
 
 from bx.intervals.io import GenomicInterval

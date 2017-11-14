@@ -9,15 +9,12 @@ env:
   - TOX_ENV=py27-unit
   - TOX_ENV=qunit
   - TOX_ENV=first_startup
-  - TOX_ENV=py27-lint-imports
-  - TOX_ENV=py27-lint-imports-include-list
   - TOX_ENV=validate-test-tools
   - TOX_ENV=py27-lint-docstring-include-list
   - TOX_ENV=check-python-dependencies
 
 matrix:
   allow_failures:
-  - env: TOX_ENV=py27-lint-imports
   - env: TOX_ENV=check-python-dependencies
 
 addons:

@@ -8,7 +8,6 @@ from galaxy import (
 )
 from galaxy.tools.parameters.output_collect import LegacyToolProvidedMetadata, NullToolProvidedMetadata
 from galaxy.tools.parser import output_collection_def
-
 from .. import tools_support
 
 DEFAULT_TOOL_OUTPUT = "out1"

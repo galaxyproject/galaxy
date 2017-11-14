@@ -1,5 +1,4 @@
 import yaml
-
 from pkg_resources import resource_string
 
 from .components import Component

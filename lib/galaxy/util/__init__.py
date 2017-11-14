@@ -21,17 +21,17 @@ import sys
 import tempfile
 import threading
 import time
-try:
-    import grp
-except ImportError:
-    # For Pulsar on Windows (which does not use the function that uses grp)
-    grp = None
-
 from datetime import datetime
 from hashlib import md5
 from os.path import relpath
 from xml.etree import ElementInclude, ElementTree
 from xml.etree.ElementTree import ParseError
+
+try:
+    import grp
+except ImportError:
+    # For Pulsar on Windows (which does not use the function that uses grp)
+    grp = None
 
 from six import binary_type, iteritems, string_types, text_type
 from six.moves import email_mime_multipart, email_mime_text, xrange, zip

@@ -10,8 +10,6 @@ from six import iteritems
 from six.moves.urllib.parse import urlparse
 
 from galaxy.exceptions import MessageException, ObjectNotFound
-# Next two are extra tool dependency not used by AbstractToolBox but by
-# BaseGalaxyToolBox.
 from galaxy.tools.deps import build_dependency_manager
 from galaxy.tools.loader_directory import looks_like_a_tool
 from galaxy.util import (
@@ -23,7 +21,6 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
-
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap

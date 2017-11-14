@@ -7,7 +7,6 @@ from galaxy.tools.parameters import (
     dataset_matcher
 )
 from galaxy.util import bunch
-
 from .test_data_parameters import MockHistoryDatasetAssociation
 from ..tools_support import UsesApp
 
