@@ -107,7 +107,7 @@ var HistoryListOfListsDatasetCollection = ListOfListsDC.extend(hcontentMixin).ex
 
     /** String representation. */
     toString: function() {
-        return ["HistoryListOfListsDatasetCollection(", this.get("name"), ")"].join("");
+        return `HistoryListOfListsDatasetCollection(${this.get("name")})`;
     }
 });
 

@@ -129,9 +129,10 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
             ),
 
             _downloadQueryParameters: function() {
-                return `?to_ext=${this.get("file_ext")}&hdca_id=${this.get(
-                    "parent_hdca_id"
-                )}&element_identifier=${this.get("element_identifier")}`;
+                var fileExt = this.get("file_ext");
+                var elementIdentifier = this.get("element_identifier");
+                var parentHdcaId = this.get("parent_hdca_id");
+                return `?to_ext=${fileExt}&hdca_id=${parentHdcaId}&element_identifier=${elementIdentifier}`;
             },
 
             // because all objects have constructors (as this hashmap would even if this next line wasn't present)
@@ -152,7 +153,7 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
             /** String representation. */
             toString: function() {
                 var objStr = this.get("element_identifier");
-                return ["DatasetDCE(", objStr, ")"].join("");
+                return `DatasetDCE({objStr})`;
             }
         }
     )
