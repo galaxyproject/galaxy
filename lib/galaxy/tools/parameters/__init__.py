@@ -82,6 +82,12 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
         if replace:
             input_values[input.name] = new_value
 
+    def get_current_case(input, input_values):
+        try:
+            return input.get_current_case(input_values[input.test_param.name])
+        except (KeyError, ValueError) as e:
+            return -1
+
     context = ExpressionContext(input_values, context)
     payload = {'context': context, 'no_replacement_value': no_replacement_value}
     for input in inputs.values():
@@ -95,15 +101,10 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
         elif isinstance(input, Conditional):
             values = input_values[input.name] = input_values.get(input.name, {})
             new_name_prefix = name_prefix + input.name + '|'
-            case_error = None
-            try:
-                input.get_current_case(values[input.test_param.name])
-            except:
-                case_error = 'The selected case is unavailable/invalid.'
-                pass
+            case_error = None if get_current_case(input, values) >= 0 else 'The selected case is unavailable/invalid.'
             callback_helper(input.test_param, values, new_name_prefix, label_prefix, parent_prefix=name_prefix, context=context, error=case_error)
-            if input.test_param.name in values:
-                values['__current_case__'] = input.get_current_case(values[input.test_param.name])
+            values['__current_case__'] = get_current_case(input, values)
+            if values['__current_case__'] >= 0:
                 visit_input_values(input.cases[values['__current_case__']].inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=name_prefix, **payload)
         elif isinstance(input, Section):
             values = input_values[input.name] = input_values.get(input.name, {})
