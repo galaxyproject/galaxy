@@ -95,7 +95,7 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_user_api_keys: function() {
-            var vuemount = document.createElement('div');
+            var vuemount = document.createElement("div");
             this.page.display(vuemount);
             new Vue(UserAPIKeys).$mount(vuemount);
         },

@@ -225,13 +225,14 @@ export default FormBase.extend({
         var $el = $("<div/>").append(this._templateHelp(options));
         if (options.citations) {
             var citationInstance = Vue.extend(Citations);
-            var vm = document.createElement('div');
+            var vm = document.createElement("div");
             $el.append(vm);
             new citationInstance({
                 propsData: {
                     id: options.id,
-                    source: 'tools'}})
-                .$mount(vm);
+                    source: "tools"
+                }
+            }).$mount(vm);
         }
         return $el;
     },

@@ -124,9 +124,9 @@ window.app = function app(options, bootstrapped) {
 
         show_history_citations: function() {
             var citationInstance = Vue.extend(Citations);
-            var vm = document.createElement('div');
+            var vm = document.createElement("div");
             this.page.display(vm);
-            new citationInstance({propsData: {id: QueryStringParsing.get("id"), source: 'histories'}}).$mount(vm);
+            new citationInstance({ propsData: { id: QueryStringParsing.get("id"), source: "histories" } }).$mount(vm);
         },
 
         show_histories_rename: function() {
