@@ -299,7 +299,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         # copy from library dataset
         hda = None
         if source == 'library':
-            hda = self.__create_hda_from_ldda(trans, content, history, check_ownership=False, check_accessible=False)
+            hda = self.__create_hda_from_ldda(trans, content, history)
 
         # copy an existing, accessible hda
         elif source == 'hda':
@@ -315,9 +315,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         return self.hda_serializer.serialize_to_view(hda,
             user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
-    def __create_hda_from_ldda(self, trans, content, history, check_ownership, check_accessible):
+    def __create_hda_from_ldda(self, trans, content, history, check_ownership=False, check_accessible=True):
         hda = None
-        ld = self.get_library_dataset(trans, content, check_ownership=False, check_accessible=False)
+        ld = self.get_library_dataset(trans, content, check_ownership=check_ownership, check_accessible=check_accessible)
         if type(ld) is not trans.app.model.LibraryDataset:
             raise exceptions.RequestParameterInvalidException(
                 "Library content id ( %s ) is not a dataset" % content)
@@ -410,7 +410,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             for ei in payload.get('element_identifiers'):
                 # Convert lddas to hdas since there is no direct representation of library items in history.
                 if ei['src'] == 'ldda':
-                    hda = self.__create_hda_from_ldda(trans, ei['id'], history, check_ownership=False, check_accessible=False)
+                    hda = self.__create_hda_from_ldda(trans, ei['id'], history)
                     converted_identifiers.append({"name": ei["name"], "src": "hda", "id": trans.security.encode_id(hda.id)})
                     changed = True
                 else:
