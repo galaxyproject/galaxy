@@ -6,7 +6,6 @@ import logging
 import operator
 import os
 import re
-
 from collections import namedtuple
 
 from galaxy import util

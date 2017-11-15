@@ -1,5 +1,6 @@
 import contextlib
 import json
+import os
 import time
 from functools import wraps
 from operator import itemgetter
@@ -22,6 +23,24 @@ workflow_random_x2_str = resource_string(__name__, "data/test_workflow_2.ga")
 
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
+
+SKIP_FLAKEY_TESTS_ON_ERROR = os.environ.get("GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR", None)
+
+
+def flakey(method):
+
+    @wraps(method)
+    def wrapped_method(test_case, *args, **kwargs):
+        try:
+            method(test_case, *args, **kwargs)
+        except Exception:
+            if SKIP_FLAKEY_TESTS_ON_ERROR:
+                from nose.plugins.skip import SkipTest
+                raise SkipTest()
+            else:
+                raise
+
+    return wrapped_method
 
 
 def skip_without_tool(tool_id):

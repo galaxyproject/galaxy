@@ -2,7 +2,6 @@
 API operations on FormDefinition objects.
 """
 import logging
-
 from xml.etree.ElementTree import XML
 
 from galaxy import web

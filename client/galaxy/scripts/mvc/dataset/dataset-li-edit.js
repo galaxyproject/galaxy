@@ -126,9 +126,9 @@ var DatasetListItemEdit = _super.extend(
         },
 
         /**************************************************************************
-     * Render help button to show tool help text without rerunning the tool.
-     * Issue #2100
-     */
+         * Render help button to show tool help text without rerunning the tool.
+         * Issue #2100
+         */
         _renderToolHelpButton: function() {
             var datasetID = this.model.attributes.dataset_id;
             var jobID = this.model.attributes.creating_job;

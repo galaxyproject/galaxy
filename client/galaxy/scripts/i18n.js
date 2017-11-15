@@ -127,7 +127,8 @@
                         locale = masterConfig.locale =
                             typeof navigator === "undefined"
                                 ? "root"
-                                : ((navigator.languages && navigator.languages[0]) ||
+                                : (
+                                      (navigator.languages && navigator.languages[0]) ||
                                       navigator.language ||
                                       navigator.userLanguage ||
                                       "root"

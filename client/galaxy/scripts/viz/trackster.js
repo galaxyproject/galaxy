@@ -24,11 +24,6 @@ import "libs/farbtastic";
 import "libs/jquery/jquery.form";
 import "libs/jquery/jquery.rating";
 import "ui/editable-text";
-mod_utils.cssLoadFile("static/style/jquery.rating.css");
-mod_utils.cssLoadFile("static/style/autocomplete_tagging.css");
-mod_utils.cssLoadFile("static/style/jquery-ui/smoothness/jquery-ui.css");
-mod_utils.cssLoadFile("static/style/library.css");
-mod_utils.cssLoadFile("static/style/trackster.css");
 /**
  * Base Object/Model for inhertiance.
  */
@@ -44,6 +39,11 @@ Base.extend = Backbone.Model.extend;
  */
 var TracksterUI = Base.extend({
     initialize: function(baseURL) {
+        mod_utils.cssLoadFile("static/style/jquery.rating.css");
+        mod_utils.cssLoadFile("static/style/autocomplete_tagging.css");
+        mod_utils.cssLoadFile("static/style/jquery-ui/smoothness/jquery-ui.css");
+        mod_utils.cssLoadFile("static/style/library.css");
+        mod_utils.cssLoadFile("static/style/trackster.css");
         this.baseURL = baseURL;
     },
 
@@ -570,7 +570,9 @@ var TracksterView = Backbone.View.extend({
         }
 
         // close selection/finalize template
-        html += `</select></div><div style="clear: both;"></div></div><div class="form-row">Is the build not listed here? <a href="${Galaxy.root}user/dbkeys?use_panels=True">Add a Custom Build</a></div></form>`;
+        html += `</select></div><div style="clear: both;"></div></div><div class="form-row">Is the build not listed here? <a href="${
+            Galaxy.root
+        }user/dbkeys?use_panels=True">Add a Custom Build</a></div></form>`;
 
         // return
         return html;

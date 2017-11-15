@@ -2,21 +2,22 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import argparse
-from collections import namedtuple
-from collections import OrderedDict
 import copy
 import os
 import shutil
 import string
 import sys
 import tempfile
+from collections import (
+    namedtuple,
+    OrderedDict
+)
 from textwrap import TextWrapper
 
 import requests
 import six
-from six import StringIO
-
 import yaml
+from six import StringIO
 
 try:
     from pykwalify.core import Core
@@ -26,8 +27,8 @@ except ImportError:
 if __name__ == '__main__':
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
-from galaxy.util.properties import nice_config_parser
 from galaxy.util import safe_makedirs
+from galaxy.util.properties import nice_config_parser
 
 DESCRIPTION = "Convert configuration files."
 

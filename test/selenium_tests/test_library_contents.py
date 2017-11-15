@@ -37,6 +37,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
         history_elements[0].find_element_by_css_selector("input").click()
         # Add
         self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot("libraries_dataset_import")
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_ok_button)
         # Let the progress bar disappear...
         self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
@@ -87,6 +88,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.wait_for_selector_clickable(".ui-modal #button-0").click()
         self.wait_for_overlays_cleared()
+        self.screenshot("libraries_show_details")
 
     @retry_assertion_during_transitions
     def _assert_num_displayed_items_is(self, n):

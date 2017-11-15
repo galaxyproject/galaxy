@@ -47,9 +47,9 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             // ........................................................................ set up/tear down
             /** Set up the model
-     *  @param {Object} historyJSON model data for this History
-     *  @param {Object} options     any extra settings including logger
-     */
+             *  @param {Object} historyJSON model data for this History
+             *  @param {Object} options     any extra settings including logger
+             */
             initialize: function(historyJSON, options) {
                 options = options || {};
                 this.logger = options.logger || null;
@@ -70,8 +70,8 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** set up any event listeners for this history including those to the contained HDAs
-     *  events: error:contents  if an error occurred with the contents collection
-     */
+             *  events: error:contents  if an error occurred with the contents collection
+             */
             _setUpListeners: function() {
                 // if the model's id changes ('current' or null -> an actual id), update the contents history_id
                 return this.on({
@@ -132,8 +132,8 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             // ........................................................................ common queries
             /** T/F is this history owned by the current user (Galaxy.user)
-     *      Note: that this will return false for an anon user even if the history is theirs.
-     */
+             *      Note: that this will return false for an anon user even if the history is theirs.
+             */
             ownedByCurrUser: function() {
                 // no currUser
                 if (!Galaxy || !Galaxy.user) {
@@ -171,24 +171,23 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             refresh: function(options) {
                 // console.log( this + '.refresh' );
                 options = options || {};
-                var self = this;
 
                 // note if there was no previous update time, all summary contents will be fetched
-                var lastUpdateTime = self.lastUpdateTime;
+                var lastUpdateTime = this.lastUpdateTime;
                 // if we don't flip this, then a fully-fetched list will not be re-checked via fetch
                 this.contents.allFetched = false;
                 var fetchFn =
-                    self.contents.currentPage !== 0
-                        ? () => self.contents.fetchPage(self.contents.currentPage)
-                        : () => self.contents.fetchUpdated(lastUpdateTime);
+                    this.contents.currentPage !== 0
+                        ? () => this.contents.fetchPage(this.contents.currentPage)
+                        : () => this.contents.fetchUpdated(lastUpdateTime);
                 // note: if there was no previous update time, all summary contents will be fetched
                 return fetchFn().done((response, status, xhr) => {
                     var serverResponseDatetime;
                     try {
                         serverResponseDatetime = new Date(xhr.getResponseHeader("Date"));
                     } catch (err) {}
-                    self.lastUpdateTime = serverResponseDatetime || new Date();
-                    self.checkForUpdates(options);
+                    this.lastUpdateTime = serverResponseDatetime || new Date();
+                    this.checkForUpdates(options);
                 });
             },
 
@@ -197,18 +196,17 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 // console.log( this + '.checkForUpdates' );
                 options = options || {};
                 var delay = this.UPDATE_DELAY;
-                var self = this;
-                if (!self.id) {
+                if (!this.id) {
                     return;
                 }
 
-                function _delayThenUpdate() {
+                var _delayThenUpdate = () => {
                     // prevent buildup of updater timeouts by clearing previous if any, then set new and cache id
-                    self.clearUpdateTimeout();
-                    self.updateTimeoutId = setTimeout(() => {
-                        self.refresh(options);
+                    this.clearUpdateTimeout();
+                    this.updateTimeoutId = setTimeout(() => {
+                        this.refresh(options);
                     }, delay);
-                }
+                };
 
                 // if there are still datasets in the non-ready state, recurse into this function with the new time
                 var nonReadyContentCount = this.numOfUnfinishedShownContents();
@@ -219,13 +217,13 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     // no datasets are running, but currently runnning jobs may still produce new datasets
                     // see if the history has any running jobs and continue to update if so
                     // (also update the size for the user in either case)
-                    self._fetchContentRelatedAttributes().done(historyData => {
+                    this._fetchContentRelatedAttributes().done(historyData => {
                         // console.log( 'non_ready_jobs:', historyData.non_ready_jobs );
-                        if (self.numOfUnfinishedJobs() > 0) {
+                        if (this.numOfUnfinishedJobs() > 0) {
                             _delayThenUpdate();
                         } else {
                             // otherwise, let listeners know that all updates have stopped
-                            self.trigger("ready");
+                            this.trigger("ready");
                         }
                     });
                 }
@@ -302,11 +300,11 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** Make a copy of this history on the server
-     *  @param {Boolean} current    if true, set the copy as the new current history (default: true)
-     *  @param {String} name        name of new history (default: none - server sets to: Copy of <current name>)
-     *  @fires copied               passed this history and the response JSON from the copy
-     *  @returns {xhr}
-     */
+             *  @param {Boolean} current    if true, set the copy as the new current history (default: true)
+             *  @param {String} name        name of new history (default: none - server sets to: Copy of <current name>)
+             *  @fires copied               passed this history and the response JSON from the copy
+             *  @returns {xhr}
+             */
             copy: function(current, name, allDatasets) {
                 current = current !== undefined ? current : true;
                 if (!this.id) {

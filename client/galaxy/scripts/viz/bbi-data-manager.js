@@ -1,14 +1,14 @@
 import visualization from "viz/visualization";
 import * as bigwig from "libs/bbi/bigwig";
 /**
-     * Data manager for BBI datasets/files, including BigWig and BigBed.
-     */
+ * Data manager for BBI datasets/files, including BigWig and BigBed.
+ */
 var BBIDataManager = visualization.GenomeDataManager.extend({
     /**
-         * Load data from server and manage data entries. Adds a Deferred to manager
-         * for region; when data becomes available, replaces Deferred with data.
-         * Returns the Deferred that resolves when data is available.
-         */
+     * Load data from server and manage data entries. Adds a Deferred to manager
+     * for region; when data becomes available, replaces Deferred with data.
+     * Returns the Deferred that resolves when data is available.
+     */
     load_data: function(region, mode, resolution, extra_params) {
         var deferred = $.Deferred();
         this.set_data(region, deferred);

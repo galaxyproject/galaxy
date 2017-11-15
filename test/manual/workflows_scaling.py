@@ -24,7 +24,7 @@ from base.populators import (  # noqa: I100
     GiDatasetPopulator,
     GiWorkflowPopulator,
 )
-from api.workflows_format_2.converter import python_to_workflow  # noqa: I100
+from base.workflows_format_2.converter import python_to_workflow  # noqa: I100
 
 LONG_TIMEOUT = 1000000000
 DESCRIPTION = "Script to exercise the workflow engine."

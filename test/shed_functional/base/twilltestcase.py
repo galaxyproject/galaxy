@@ -20,7 +20,6 @@ from functional.twilltestcase import TwillTestCase  # noqa: I100
 from galaxy.web import security
 from tool_shed.util import hg_util, xml_util
 from tool_shed.util.encoding_util import tool_shed_encode
-
 from . import common, test_db_util
 
 log = logging.getLogger(__name__)

@@ -10,7 +10,6 @@ import os
 import random
 import shutil
 import threading
-
 from xml.etree import ElementTree
 
 try:
@@ -22,11 +21,13 @@ from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
     directory_hash_id,
     force_symlink,
-    safe_makedirs,
-    safe_relpath,
     umask_fix_perms,
 )
 from galaxy.util.odict import odict
+from galaxy.util.path import (
+    safe_makedirs,
+    safe_relpath,
+)
 from galaxy.util.sleeper import Sleeper
 
 NO_SESSION_ERROR_MESSAGE = "Attempted to 'create' object store entity in configuration with no database session present."

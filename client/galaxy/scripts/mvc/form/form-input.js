@@ -85,13 +85,11 @@ export default Backbone.View.extend({
         // render visibility
         this.$el[this.model.get("hidden") ? "hide" : "show"]();
         // render preview view for collapsed fields
-        this.$preview
-            [
-                (this.field.collapsed && this.model.get("collapsible_preview")) || this.model.get("disabled")
-                    ? "show"
-                    : "hide"
-            ]()
-            .html(_.escape(this.model.get("text_value")));
+        this.$preview[
+            (this.field.collapsed && this.model.get("collapsible_preview")) || this.model.get("disabled")
+                ? "show"
+                : "hide"
+        ]().html(_.escape(this.model.get("text_value")));
         // render error messages
         var error_text = this.model.get("error_text");
         this.$error[error_text ? "show" : "hide"]();

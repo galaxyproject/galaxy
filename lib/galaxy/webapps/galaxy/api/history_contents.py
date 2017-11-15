@@ -1,36 +1,41 @@
 """
 API operations on the contents of a history.
 """
+import logging
 import os
 import re
 
-from galaxy import exceptions
-from galaxy import util
-from galaxy.util.streamball import StreamBall
-from galaxy.util.json import safe_dumps
-
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_raw as expose_api_raw
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web import _future_expose_api_raw_anonymous as expose_api_raw_anonymous
-
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesLibraryMixin
-from galaxy.web.base.controller import UsesLibraryMixinItems
-from galaxy.web.base.controller import UsesTagsMixin
-
-from galaxy.managers import histories
-from galaxy.managers import history_contents
-from galaxy.managers import hdas
-from galaxy.managers import hdcas
-from galaxy.managers import folders
+from galaxy import (
+    exceptions,
+    util
+)
+from galaxy.managers import (
+    folders,
+    hdas,
+    hdcas,
+    histories,
+    history_contents
+)
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
     get_hda_and_element_identifiers
 )
+from galaxy.util.json import safe_dumps
+from galaxy.util.streamball import StreamBall
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous as expose_api_anonymous,
+    _future_expose_api_raw as expose_api_raw,
+    _future_expose_api_raw_anonymous as expose_api_raw_anonymous
+)
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    UsesLibraryMixin,
+    UsesLibraryMixinItems,
+    UsesTagsMixin
+)
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -171,9 +176,10 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return {'error': str(e)}
 
     @expose_api_raw_anonymous
-    def download_dataset_collection(self, trans, id, history_id, **kwd):
+    def download_dataset_collection(self, trans, id, history_id=None, **kwd):
         """
         * GET /api/histories/{history_id}/contents/{id}/download
+        * GET /api/dataset_collection/{id}/download
 
         Download the content of a HistoryDatasetCollection as a tgz archive
         while maintaining approximate collection structure.
@@ -219,14 +225,16 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def create(self, trans, history_id, payload, **kwd):
         """
         create( self, trans, history_id, payload, **kwd )
-        * POST /api/histories/{history_id}/contents/{type}
-            create a new HDA by copying an accessible LibraryDataset
+        * POST /api/histories/{history_id}/contents/{type}s
+        * POST /api/histories/{history_id}/contents
+            create a new HDA or HDCA
 
         :type   history_id: str
         :param  history_id: encoded id string of the new HDA's History
         :type   type: str
         :param  type: Type of history content - 'dataset' (default) or
-                      'dataset_collection'.
+                      'dataset_collection'. This can be passed in via payload
+                      or parsed from the route.
         :type   payload:    dict
         :param  payload:    dictionary structure containing::
             copy from library (for type 'dataset'):
@@ -315,9 +323,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         return self.hda_serializer.serialize_to_view(hda,
             user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
-    def __create_hda_from_ldda(self, trans, content, history, check_ownership=False, check_accessible=True):
+    def __create_hda_from_ldda(self, trans, content, history):
         hda = None
-        ld = self.get_library_dataset(trans, content, check_ownership=check_ownership, check_accessible=check_accessible)
+        ld = self.get_library_dataset(trans, content)
         if type(ld) is not trans.app.model.LibraryDataset:
             raise exceptions.RequestParameterInvalidException(
                 "Library content id ( %s ) is not a dataset" % content)

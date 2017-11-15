@@ -1,14 +1,13 @@
 import collections
+import logging
 import os
 import os.path
-import logging
 
 from Crypto.Cipher import Blowfish
-from Crypto.Util.randpool import RandomPool
 from Crypto.Util import number
+from Crypto.Util.randpool import RandomPool
 
 import galaxy.exceptions
-
 from galaxy.util import smart_str
 
 log = logging.getLogger(__name__)

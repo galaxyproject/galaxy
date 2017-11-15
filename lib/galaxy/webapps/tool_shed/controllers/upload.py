@@ -5,28 +5,29 @@ import tarfile
 import tempfile
 
 import requests
+from mercurial import commands
 
-from galaxy import util
-from galaxy import web
+from galaxy import (
+    util,
+    web
+)
 from galaxy.util import checkers
 from galaxy.web.base.controller import BaseUIController
-from tool_shed.util.web_util import escape
-
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
 from tool_shed.tools import data_table_manager
-
-from tool_shed.util import basic_util
-from tool_shed.util import commit_util
-from tool_shed.util import hg_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import repository_content_util
-from tool_shed.util import xml_util
-
-from mercurial import commands
+from tool_shed.util import (
+    basic_util,
+    commit_util,
+    hg_util,
+    repository_content_util,
+    repository_util,
+    shed_util_common as suc,
+    xml_util
+)
+from tool_shed.util.web_util import escape
 
 log = logging.getLogger(__name__)
 

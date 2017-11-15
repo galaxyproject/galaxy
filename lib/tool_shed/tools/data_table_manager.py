@@ -1,7 +1,6 @@
 import logging
 import os
 import shutil
-
 from xml.etree import ElementTree as XmlET
 
 from tool_shed.util import hg_util, xml_util

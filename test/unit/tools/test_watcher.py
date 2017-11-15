@@ -1,6 +1,5 @@
 import tempfile
 import time
-
 from contextlib import contextmanager
 from os import path
 from shutil import rmtree
