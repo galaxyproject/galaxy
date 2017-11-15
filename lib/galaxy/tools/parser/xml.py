@@ -3,13 +3,11 @@ import re
 import sys
 import traceback
 import uuid
-
 from math import isinf
 
 from galaxy.tools.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
-
 from .interface import (
     InputSource,
     PageSource,

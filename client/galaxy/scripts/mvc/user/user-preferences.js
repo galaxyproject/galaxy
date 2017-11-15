@@ -85,7 +85,9 @@ var Model = Backbone.Model.extend({
                                 Galaxy.modal.hide();
                             },
                             "Sign out": function() {
-                                window.location.href = `${Galaxy.root}user/logout?session_csrf_token=${Galaxy.session_csrf_token}`;
+                                window.location.href = `${Galaxy.root}user/logout?session_csrf_token=${
+                                    Galaxy.session_csrf_token
+                                }`;
                             }
                         }
                     });
@@ -157,14 +159,19 @@ var View = Backbone.View.extend({
     },
 
     _templateLink: function(options) {
-        return `<tr><td><div class="ui-panel-icon fa ${options.icon}"></td><td><a class="ui-panel-anchor" href="javascript:void(0)">${options.title}</a><div class="ui-form-info">${options.description}</div></td></tr>`;
+        return `<tr><td><div class="ui-panel-icon fa ${
+            options.icon
+        }"></td><td><a class="ui-panel-anchor" href="javascript:void(0)">${
+            options.title
+        }</a><div class="ui-form-info">${options.description}</div></td></tr>`;
     },
 
     _templateFooter: function(options) {
-        return `<p class="ui-panel-footer">You are using <strong>${options.nice_total_disk_usage}</strong> of disk space in this Galaxy instance. ${Galaxy
-            .config.enable_quotas
-            ? `Your disk quota is: <strong>${options.quota}</strong>. `
-            : ""}Is your usage more than expected? See the <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank">documentation</a> for tips on how to find all of the data in your account.</p>`;
+        return `<p class="ui-panel-footer">You are using <strong>${
+            options.nice_total_disk_usage
+        }</strong> of disk space in this Galaxy instance. ${
+            Galaxy.config.enable_quotas ? `Your disk quota is: <strong>${options.quota}</strong>. ` : ""
+        }Is your usage more than expected? See the <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank">documentation</a> for tips on how to find all of the data in your account.</p>`;
     }
 });
 

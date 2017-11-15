@@ -66,9 +66,9 @@ var FolderRowView = Backbone.View.extend({
     },
 
     /**
-   * Modify the visibility of buttons for
-   * the filling of the row template of a given folder.
-   */
+     * Modify the visibility of buttons for
+     * the filling of the row template of a given folder.
+     */
     prepareButtons: function(folder) {
         var vis_config = this.options.visibility_config;
         if (this.options.edit_mode === false) {

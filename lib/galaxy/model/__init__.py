@@ -28,7 +28,6 @@ import galaxy.model.metadata
 import galaxy.model.orm.now
 import galaxy.security.passwords
 import galaxy.util
-
 from galaxy.managers import tags
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.util import pgcalc
@@ -5104,8 +5103,11 @@ class ItemTagAssociation (object, Dictifiable):
         self.value = None
         self.user_value = None
 
-    def copy(self):
-        new_ta = type(self)()
+    def copy(self, cls=None):
+        if cls:
+            new_ta = cls()
+        else:
+            new_ta = type(self)()
         new_ta.tag_id = self.tag_id
         new_ta.user_tname = self.user_tname
         new_ta.value = self.value

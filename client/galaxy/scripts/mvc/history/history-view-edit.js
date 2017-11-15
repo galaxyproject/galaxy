@@ -38,8 +38,8 @@ var HistoryViewEdit = _super.extend(
 
         // ......................................................................... SET UP
         /** Set up the view, set up storage, bind listeners to HistoryContents events
-     *  @param {Object} attributes
-     */
+         *  @param {Object} attributes
+         */
         initialize: function(attributes) {
             attributes = attributes || {};
             _super.prototype.initialize.call(this, attributes);
@@ -197,8 +197,8 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** Set up HistoryViewEdit js/widget behaviours
-     *  In this override, make the name editable
-     */
+         *  In this override, make the name editable
+         */
         _setUpBehaviors: function($where) {
             $where = $where || this.$el;
             _super.prototype._setUpBehaviors.call(this, $where);
@@ -233,8 +233,8 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** return a new popup menu for choosing a multi selection action
-     *  ajax calls made for multiple datasets are queued
-     */
+         *  ajax calls made for multiple datasets are queued
+         */
         multiselectActions: function() {
             var panel = this;
 
@@ -342,8 +342,8 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** If this item is deleted and we're not showing deleted items, remove the view
-     *  @param {Model} the item model to check
-     */
+         *  @param {Model} the item model to check
+         */
         _handleItemDeletedChange: function(itemModel) {
             if (itemModel.get("deleted")) {
                 this._handleItemDeletion(itemModel);
@@ -373,8 +373,8 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** If this item is hidden and we're not showing hidden items, remove the view
-     *  @param {Model} the item model to check
-     */
+         *  @param {Model} the item model to check
+         */
         _handleItemVisibleChange: function(itemModel) {
             if (itemModel.hidden()) {
                 this._handleItemHidden(itemModel);

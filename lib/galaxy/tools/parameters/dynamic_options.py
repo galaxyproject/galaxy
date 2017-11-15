@@ -14,7 +14,6 @@ from galaxy.model import (
     User
 )
 from galaxy.util import string_as_bool
-
 from . import validation
 
 log = logging.getLogger(__name__)

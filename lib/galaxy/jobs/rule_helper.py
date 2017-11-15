@@ -1,13 +1,15 @@
-from datetime import datetime
 import hashlib
+import logging
 import random
+from datetime import datetime
 
 from sqlalchemy import func
 
-from galaxy import model
-from galaxy import util
+from galaxy import (
+    model,
+    util
+)
 
-import logging
 log = logging.getLogger(__name__)
 
 VALID_JOB_HASH_STRATEGIES = ["job", "user", "history", "workflow_invocation"]

@@ -7,17 +7,14 @@ import os.path
 import shutil
 import string
 import tempfile
-
 from collections import defaultdict
-
-from unittest_utils import galaxy_mock
 
 import galaxy.datatypes.registry
 import galaxy.model
-
 from galaxy.tools import create_tool_from_source
 from galaxy.tools.parser import get_tool_source
 from galaxy.util.bunch import Bunch
+from .unittest_utils import galaxy_mock
 
 
 datatypes_registry = galaxy.datatypes.registry.Registry()

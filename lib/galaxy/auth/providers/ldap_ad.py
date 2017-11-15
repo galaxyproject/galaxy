@@ -6,9 +6,8 @@ Created on 15/07/2014
 
 import logging
 
-from galaxy.auth import _get_bool
 from galaxy.exceptions import ConfigurationError
-
+from galaxy.util import string_as_bool
 from ..providers import AuthProvider
 
 log = logging.getLogger(__name__)
@@ -84,7 +83,7 @@ class LDAP(AuthProvider):
         if options.get('continue-on-failure', 'False') == 'False':
             failure_mode = None  # reject and do not continue
 
-        if _get_bool(options, 'login-use-username', False):
+        if string_as_bool(options.get('login-use-username', False)):
             if username is None:
                 log.debug('LDAP authenticate: username must be used to login, cannot be None')
                 return (failure_mode, '', '')

@@ -1,5 +1,4 @@
 import threading
-
 from distutils.version import LooseVersion
 
 from galaxy.util.tool_version import remove_version_from_guid

@@ -4,8 +4,8 @@ Classes for generating HTML forms
 from __future__ import print_function
 
 import logging
-
 from cgi import escape
+
 from six import string_types
 
 from galaxy.util import restore_text, unicodify

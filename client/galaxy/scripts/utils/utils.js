@@ -1,7 +1,7 @@
 /**
  * Galaxy utilities comprises small functions, which at this point
  * do not require their own classes/files
-*/
+ */
 import _l from "utils/localization";
 /** Builds a basic iframe */
 function iframe(src) {
@@ -48,9 +48,9 @@ function clone(obj) {
 }
 
 /**
-     * Check if a string is a json string
-     * @param{String}   text - Content to be validated
-     */
+ * Check if a string is a json string
+ * @param{String}   text - Content to be validated
+ */
 function isJSON(text) {
     return /^[\],:{}\s]*$/.test(
         text
@@ -61,9 +61,9 @@ function isJSON(text) {
 }
 
 /**
-     * Sanitize/escape a string
-     * @param{String}   content - Content to be sanitized
-     */
+ * Sanitize/escape a string
+ * @param{String}   content - Content to be sanitized
+ */
 function sanitize(content) {
     return $("<div/>")
         .text(content)
@@ -71,10 +71,10 @@ function sanitize(content) {
 }
 
 /**
-     * Checks if a value or list of values is `empty`
-     * usually used for selectable options
-     * @param{String}   value - Value or list to be validated
-     */
+ * Checks if a value or list of values is `empty`
+ * usually used for selectable options
+ * @param{String}   value - Value or list to be validated
+ */
 function isEmpty(value) {
     if (!(value instanceof Array)) {
         value = [value];
@@ -91,9 +91,9 @@ function isEmpty(value) {
 }
 
 /**
-     * Convert list to pretty string
-     * @param{String}   lst - List of strings to be converted in human readable list sentence
-     */
+ * Convert list to pretty string
+ * @param{String}   lst - List of strings to be converted in human readable list sentence
+ */
 function textify(lst) {
     if ($.isArray(lst)) {
         var lst = lst.toString().replace(/,/g, ", ");
@@ -107,12 +107,12 @@ function textify(lst) {
 }
 
 /**
-     * Request handler for GET
-     * @param{String}   url     - Url request is made to
-     * @param{Function} success - Callback on success
-     * @param{Function} error   - Callback on error
-     * @param{Boolean}  cache   - Use cached data if available
-     */
+ * Request handler for GET
+ * @param{String}   url     - Url request is made to
+ * @param{Function} success - Callback on success
+ * @param{Function} error   - Callback on error
+ * @param{Boolean}  cache   - Use cached data if available
+ */
 function get(options) {
     top.__utils__get__ = top.__utils__get__ || {};
     var cache_key = JSON.stringify(options);
@@ -135,13 +135,13 @@ function get(options) {
 }
 
 /**
-     * Request handler
-     * @param{String}   method  - Request method ['GET', 'POST', 'DELETE', 'PUT']
-     * @param{String}   url     - Url request is made to
-     * @param{Object}   data    - Data send to url
-     * @param{Function} success - Callback on success
-     * @param{Function} error   - Callback on error
-     */
+ * Request handler
+ * @param{String}   method  - Request method ['GET', 'POST', 'DELETE', 'PUT']
+ * @param{String}   url     - Url request is made to
+ * @param{Object}   data    - Data send to url
+ * @param{Function} success - Callback on success
+ * @param{Function} error   - Callback on error
+ */
 function request(options) {
     // prepare ajax
     var ajaxConfig = {
@@ -191,10 +191,10 @@ function request(options) {
 }
 
 /**
-     * Read a property value from CSS
-     * @param{String}   classname   - CSS class
-     * @param{String}   name        - CSS property
-     */
+ * Read a property value from CSS
+ * @param{String}   classname   - CSS class
+ * @param{String}   name        - CSS property
+ */
 function cssGetAttribute(classname, name) {
     var el = $(`<div class="${classname}"></div>`);
     el.appendTo(":eq(0)");
@@ -204,9 +204,9 @@ function cssGetAttribute(classname, name) {
 }
 
 /**
-     * Load a CSS file
-     * @param{String}   url - Url of CSS file
-     */
+ * Load a CSS file
+ * @param{String}   url - Url of CSS file
+ */
 function cssLoadFile(url) {
     if (!$(`link[href^="${url}"]`).length) {
         $(`<link href="${Galaxy.root}${url}" rel="stylesheet">`).appendTo("head");
@@ -214,10 +214,10 @@ function cssLoadFile(url) {
 }
 
 /**
-     * Safely merge to dictionaries
-     * @param{Object}   options         - Target dictionary
-     * @param{Object}   optionsDefault  - Source dictionary
-     */
+ * Safely merge to dictionaries
+ * @param{Object}   options         - Target dictionary
+ * @param{Object}   optionsDefault  - Source dictionary
+ */
 function merge(options, optionsDefault) {
     if (options) {
         return _.defaults(options, optionsDefault);
@@ -227,10 +227,10 @@ function merge(options, optionsDefault) {
 }
 
 /**
-     * Round floaing point 'number' to 'numPlaces' number of decimal places.
-     * @param{Object}   number      a floaing point number
-     * @param{Object}   numPlaces   number of decimal places
-     */
+ * Round floaing point 'number' to 'numPlaces' number of decimal places.
+ * @param{Object}   number      a floaing point number
+ * @param{Object}   numPlaces   number of decimal places
+ */
 function roundToDecimalPlaces(number, numPlaces) {
     var placesMultiplier = 1;
     for (var i = 0; i < numPlaces; i++) {
@@ -246,10 +246,10 @@ var mb = kb * kb;
 var gb = mb * kb;
 var tb = gb * kb;
 /**
-     * Format byte size to string with units
-     * @param{Integer}   size           - Size in bytes
-     * @param{Boolean}   normal_font    - Switches font between normal and bold
-     */
+ * Format byte size to string with units
+ * @param{Integer}   size           - Size in bytes
+ * @param{Boolean}   normal_font    - Switches font between normal and bold
+ */
 function bytesToString(size, normal_font, numberPlaces) {
     numberPlaces = numberPlaces !== undefined ? numberPlaces : 1;
     // identify unit

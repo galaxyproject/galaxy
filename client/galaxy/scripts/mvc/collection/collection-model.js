@@ -85,8 +85,7 @@ var DatasetCollectionElementMixin = {
 };
 
 /** @class Concrete class of Generic DatasetCollectionElement */
-var DatasetCollectionElement = Backbone.Model
-    .extend(BASE_MVC.LoggableMixin)
+var DatasetCollectionElement = Backbone.Model.extend(BASE_MVC.LoggableMixin)
     .extend(DatasetCollectionElementMixin)
     .extend({ _logNamespace: "collections" });
 
@@ -130,9 +129,10 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
             ),
 
             _downloadQueryParameters: function() {
-                return `?to_ext=${this.get("file_ext")}&hdca_id=${this.get(
-                    "parent_hdca_id"
-                )}&element_identifier=${this.get("element_identifier")}`;
+                var fileExt = this.get("file_ext");
+                var elementIdentifier = this.get("element_identifier");
+                var parentHdcaId = this.get("parent_hdca_id");
+                return `?to_ext=${fileExt}&hdca_id=${parentHdcaId}&element_identifier=${elementIdentifier}`;
             },
 
             // because all objects have constructors (as this hashmap would even if this next line wasn't present)
@@ -153,7 +153,7 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
             /** String representation. */
             toString: function() {
                 var objStr = this.get("element_identifier");
-                return ["DatasetDCE(", objStr, ")"].join("");
+                return `DatasetDCE({objStr})`;
             }
         }
     )
@@ -182,8 +182,7 @@ var DatasetDCECollection = DCECollection.extend(
  *          - passes that json onto the bbone collection
  *          - caches the bbone collection in this.elements
  */
-var DatasetCollection = Backbone.Model
-    .extend(BASE_MVC.LoggableMixin)
+var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
     .extend(BASE_MVC.SearchableModelMixin)
     .extend(
         /** @lends DatasetCollection.prototype */ {
@@ -239,8 +238,8 @@ var DatasetCollection = Backbone.Model
             },
 
             /** Is this collection in a 'ready' state no processing (for the collection) is left
-     *  to do on the server.
-     */
+             *  to do on the server.
+             */
             inReadyState: function() {
                 var populated = this.get("populated");
                 return this.isDeletedOrPurged() || populated;

@@ -1,10 +1,15 @@
 from __future__ import absolute_import
 
 import logging
+import os
 from json import loads
 
+import yaml
 from markupsafe import escape
-from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
+from paste.httpexceptions import (
+    HTTPBadRequest,
+    HTTPNotFound
+)
 from six import string_types
 from sqlalchemy import and_, desc, false, or_, true
 
@@ -19,11 +24,12 @@ from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.visualization.plugins import registry
 from galaxy.web import error
-from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
+from galaxy.web.base.controller import (
+    BaseUIController,
+    SharableMixin,
+    UsesVisualizationMixin
+)
 from galaxy.web.framework.helpers import grids, time_ago
-
-import os
-import yaml
 
 log = logging.getLogger(__name__)
 
@@ -404,7 +410,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             # Redirect to load galaxy frames.
             return trans.show_ok_message(
                 message="""Visualization "%s" has been imported. <br>You can <a href="%s">start using this visualization</a> or %s."""
-                % (visualization.title, web.url_for(controller='visualization'), referer_message), use_panels=True)
+                % (visualization.title, web.url_for('/visualizations/list'), referer_message), use_panels=True)
 
     @web.expose
     @web.require_login("share Galaxy visualizations")

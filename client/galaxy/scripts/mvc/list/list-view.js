@@ -46,8 +46,8 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         // ......................................................................... SET UP
         /** Set up the view, set up storage, bind listeners to HistoryContents events
-     *  @param {Object} attributes optional settings for the list
-     */
+         *  @param {Object} attributes optional settings for the list
+         */
         initialize: function(attributes, options) {
             attributes = attributes || {};
             // set the logger if requested
@@ -195,8 +195,8 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         // ------------------------------------------------------------------------ rendering
         /** Render this content, set up ui.
-     *  @param {Number or String} speed   the speed of the render
-     */
+         *  @param {Number or String} speed   the speed of the render
+         */
         render: function(speed) {
             this.log(`${this}.render`, speed);
             var $newRender = this._buildNewRender();
@@ -238,9 +238,9 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
         },
 
         /** Fade out the old el, swap in the new contents, then fade in.
-     *  @param {Number or String} speed   jq speed to use for rendering effects
-     *  @fires rendered when rendered
-     */
+         *  @param {Number or String} speed   jq speed to use for rendering effects
+         *  @fires rendered when rendered
+         */
         _queueNewRender: function($newRender, speed) {
             speed = speed === undefined ? this.fxSpeed : speed;
             var panel = this;
@@ -277,8 +277,8 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
         },
 
         /** Set up any behaviors, handlers (ep. plugins) that need to be called when the entire view has been built but
-     *  not attached to the page yet.
-     */
+         *  not attached to the page yet.
+         */
         _setUpBehaviors: function($where) {
             $where = $where || this.$el;
             this.$controls($where)
@@ -323,9 +323,9 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
         },
 
         /** return a list of plain objects used to render multiselect actions menu. Each object should have:
-     *      html: an html string used as the anchor contents
-     *      func: a function called when the anchor is clicked (passed the click event)
-     */
+         *      html: an html string used as the anchor contents
+         *      func: a function called when the anchor is clicked (passed the click event)
+         */
         multiselectActions: function() {
             return [];
         },
@@ -394,8 +394,8 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
         },
 
         /** Should the model be viewable in the current state?
-     *     Checks against this.filters and this.searchFor
-     */
+         *     Checks against this.filters and this.searchFor
+         */
         _filterItem: function(model) {
             // override this
             var panel = this;
@@ -661,12 +661,12 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         // ------------------------------------------------------------------------ searching
         /** render a search input for filtering datasets shown
-     *      (see SearchableMixin in base-mvc for implementation of the actual searching)
-     *      return will start the search
-     *      esc will clear the search
-     *      clicking the clear button will clear the search
-     *      uses searchInput in ui.js
-     */
+         *      (see SearchableMixin in base-mvc for implementation of the actual searching)
+         *      return will start the search
+         *      esc will clear the search
+         *      clicking the clear button will clear the search
+         *      uses searchInput in ui.js
+         */
         _renderSearch: function($where) {
             $where.find(".controls .search-input").searchInput({
                 placeholder: this.searchPlaceholder,

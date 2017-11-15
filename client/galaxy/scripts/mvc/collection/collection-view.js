@@ -28,8 +28,8 @@ var CollectionView = _super.extend(
 
         // ......................................................................... SET UP
         /** Set up the view, set up storage, bind listeners to HistoryContents events
-     *  @param {Object} attributes optional settings for the panel
-     */
+         *  @param {Object} attributes optional settings for the panel
+         */
         initialize: function(attributes) {
             _super.prototype.initialize.call(this, attributes);
             this.linkTarget = attributes.linkTarget || "_blank";
@@ -41,7 +41,7 @@ var CollectionView = _super.extend(
             this.parentName = attributes.parentName;
             /** foldout or drilldown */
             this.foldoutStyle = attributes.foldoutStyle || "foldout";
-            this.downloadUrl = `${this.model.attributes.url}/download`;
+            this.downloadUrl = `${Galaxy.root}api/dataset_collections/${this.model.attributes.id}/download`;
         },
 
         _queueNewRender: function($newRender, speed) {

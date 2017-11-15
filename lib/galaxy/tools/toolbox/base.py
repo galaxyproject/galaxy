@@ -2,6 +2,7 @@ import logging
 import os
 import string
 import time
+from errno import ENOENT
 from xml.etree.ElementTree import ParseError
 
 from markupsafe import escape
@@ -9,8 +10,6 @@ from six import iteritems
 from six.moves.urllib.parse import urlparse
 
 from galaxy.exceptions import MessageException, ObjectNotFound
-# Next two are extra tool dependency not used by AbstractToolBox but by
-# BaseGalaxyToolBox.
 from galaxy.tools.deps import build_dependency_manager
 from galaxy.tools.loader_directory import looks_like_a_tool
 from galaxy.util import (
@@ -22,7 +21,6 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
-
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
@@ -544,7 +542,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
             concrete_path = os.path.join(tool_path, path)
             if not os.path.exists(concrete_path):
                 # This is a lot faster than attempting to load a non-existing tool
-                raise IOError
+                raise IOError(ENOENT, os.strerror(ENOENT))
             tool_shed_repository = None
             can_load_into_panel_dict = True
 
@@ -585,8 +583,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
             labels = item.labels
             if labels is not None:
                 tool.labels = labels
-        except IOError:
-            log.error("Error reading tool configuration file from path: %s" % path)
+        except (IOError, OSError) as exc:
+            log.error("Error reading tool configuration file from path '%s': %s", path, exc)
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 

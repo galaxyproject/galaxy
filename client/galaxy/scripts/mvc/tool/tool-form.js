@@ -150,9 +150,9 @@ var View = Backbone.View.extend({
     },
 
     /** Submit a regular job.
-         * @param{dict}     options   - Specifies tool id and version
-         * @param{function} callback  - Called when request has completed
-         */
+     * @param{dict}     options   - Specifies tool id and version
+     * @param{function} callback  - Called when request has completed
+     */
     submit: function(options, callback) {
         var self = this;
         var job_def = {
@@ -230,8 +230,8 @@ var View = Backbone.View.extend({
     },
 
     /** Validate job dictionary.
-         * @param{dict}     job_def   - Job execution dictionary
-        */
+     * @param{dict}     job_def   - Job execution dictionary
+     */
     validate: function(job_def) {
         var job_inputs = job_def.inputs;
         var batch_n = -1;
@@ -268,7 +268,9 @@ var View = Backbone.View.extend({
                 } else if (batch_n !== n) {
                     this.form.highlight(
                         input_id,
-                        `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batch_n}</b>.`
+                        `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${
+                            n
+                        }</b> selection(s) while a previous field contains <b>${batch_n}</b>.`
                     );
                     return false;
                 }

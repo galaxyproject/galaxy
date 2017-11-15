@@ -37,8 +37,9 @@ var View = Backbone.View.extend({
                     "</table>"
             );
             _.each(options.shared_by_others, (it, index) => {
-                var display_url = `${Galaxy.root +
-                    self.item}/display_by_username_and_slug?username=${it.username}&slug=${it.slug}`;
+                var display_url = `${Galaxy.root + self.item}/display_by_username_and_slug?username=${
+                    it.username
+                }&slug=${it.slug}`;
                 $table.append(
                     `<tr><td><a href="${display_url}">${_.escape(it.title)}</a></td><td>${_.escape(
                         it.username

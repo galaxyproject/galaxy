@@ -1,11 +1,11 @@
 /**
-     * Create alphabetical based two-argument comparator
-     * that takes into account that Folder comes before Dataset.
-     * If sort_key is not present it is set to ''.
-     * @param  {str} sort_key   key to sort by
-     * @param  {str} sort_order order to sort by (asc, desc)
-     * @return {function} two-argument comparator function
-     */
+ * Create alphabetical based two-argument comparator
+ * that takes into account that Folder comes before Dataset.
+ * If sort_key is not present it is set to ''.
+ * @param  {str} sort_key   key to sort by
+ * @param  {str} sort_order order to sort by (asc, desc)
+ * @return {function} two-argument comparator function
+ */
 var generateFolderComparator = (sort_key, sort_order) => (itemA, itemB) => {
     if (itemA.get("type") === itemB.get("type")) {
         if (!itemA.has(sort_key) && !itemB.has(sort_key)) {
@@ -30,11 +30,11 @@ var generateFolderComparator = (sort_key, sort_order) => (itemA, itemB) => {
     }
 };
 /**
-     * Create alphabetical based two-argument comparator
-     * @param  {str} sort_key   key to sort by
-     * @param  {str} sort_order order to sort by (asc, desc)
-     * @return {function} two-argument comparator function
-     */
+ * Create alphabetical based two-argument comparator
+ * @param  {str} sort_key   key to sort by
+ * @param  {str} sort_order order to sort by (asc, desc)
+ * @return {function} two-argument comparator function
+ */
 var generateLibraryComparator = (sort_key, sort_order) => (libraryA, libraryB) => {
     if (libraryA.get(sort_key).toLowerCase() > libraryB.get(sort_key).toLowerCase()) {
         return sort_order === "asc" ? 1 : -1;

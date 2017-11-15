@@ -3,7 +3,6 @@ import os.path
 import shutil
 import tempfile
 import unittest
-
 from math import isinf
 
 from galaxy.tools.parser.factory import get_tool_source

@@ -9,7 +9,6 @@ import sqlalchemy
 from six import string_types
 
 from galaxy.managers.users import UserManager
-
 from ..unittest_utils import galaxy_mock
 
 # =============================================================================

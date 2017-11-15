@@ -13,8 +13,9 @@ var shedParser = jsondata => {
     var hits = jsondata.hits;
     $.each(hits, hit => {
         var record = hits[hit];
-        var label = `${record.repository.name} by ${record.repository.repo_owner_username}: ${record.repository
-            .description}`;
+        var label = `${record.repository.name} by ${record.repository.repo_owner_username}: ${
+            record.repository.description
+        }`;
         var result = { value: record.repository.id, label: label };
         results.push(result);
     });
