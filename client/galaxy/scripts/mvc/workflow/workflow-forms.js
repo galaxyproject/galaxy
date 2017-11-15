@@ -155,6 +155,7 @@ function _addLabelAnnotation(form) {
 
 /** Visit input nodes and enrich by name/value pairs from server data */
 function _visit(head, head_list, output_id, options) {
+    var post_job_actions = options.node.post_job_actions;
     head_list = head_list || [];
     head_list.push(head);
     for (var i in head.inputs) {
@@ -171,7 +172,7 @@ function _visit(head, head_list, output_id, options) {
                     delete input.payload[p_id];
                 }
             }
-            var d = options.node.post_job_actions[input.action + output_id];
+            var d = post_job_actions[input.action + output_id];
             if (d) {
                 for (var j in head_list) {
                     head_list[j].expanded = true;
@@ -190,14 +191,18 @@ function _visit(head, head_list, output_id, options) {
 }
 
 /** Builds sub section with step actions/annotation */
-function _makeSection(output_id, datatypes, options) {
+function _makeSection(output_id, options) {
     var extensions = [];
     var input_terminal_names = [];
+    var datatypes = options.datatypes;
+    var node = options.node;
+    var workflow = options.workflow;
+
     for (var key in datatypes) {
         extensions.push({ 0: datatypes[key], 1: datatypes[key] });
     }
-    for (key in options.node.input_terminals) {
-        input_terminal_names.push(options.node.input_terminals[key].name);
+    for (key in node.input_terminals) {
+        input_terminal_names.push(node.input_terminals[key].name);
     }
     extensions.sort((a, b) => (a.label > b.label ? 1 : a.label < b.label ? -1 : 0));
     extensions.unshift({
@@ -221,10 +226,10 @@ function _makeSection(output_id, datatypes, options) {
             {
                 label: "Label",
                 type: "text",
-                value: ((output = options.node.getWorkflowOutput(output_id)) && output.label) || "",
+                value: ((output = node.getWorkflowOutput(output_id)) && output.label) || "",
                 help: "This will provide a short name to describe the output - this must be unique across workflows.",
                 onchange: function(new_value) {
-                    options.workflow.attemptUpdateOutputLabel(options.node, output_id, new_value);
+                    workflow.attemptUpdateOutputLabel(node, output_id, new_value);
                 }
             },
             {
@@ -324,7 +329,6 @@ function _makeSection(output_id, datatypes, options) {
 function _addSections(form) {
     var options = form.model.attributes;
     var inputs = options.inputs;
-    var datatypes = options.datatypes;
     var node = options.node;
     var post_job_actions = node.post_job_actions;
     var output_id = node.output_terminals && Object.keys(node.output_terminals)[0];
@@ -351,7 +355,7 @@ function _addSections(form) {
                 "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."
         });
         for (var i in node.output_terminals) {
-            inputs.push(_makeSection(i, datatypes, options));
+            inputs.push(_makeSection(i, options));
         }
     }
 }
