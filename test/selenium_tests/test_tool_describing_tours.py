@@ -4,29 +4,66 @@ from .framework import selenium_test, SeleniumTestCase
 
 
 class ToolDescribingToursTestCase(SeleniumTestCase):
+
     def setUp(self):
         super(ToolDescribingToursTestCase, self).setUp()
         self.home()
 
     @selenium_test
-    def test_generate_tour(self):
-        """ Ensure generate a tour behaves correctly. """
+    def test_generate_tour_no_data(self):
+        """Ensure a tour without data is generated and pops up."""
         self._ensure_tdt_available()
 
-        self.wait_for_and_click_selector('#title_textutil a')
-        self.tool_open('Cut1')
+        self.tool_open('environment_variables')
 
-        # Run Tour generation
-        self.wait_for_and_click_selector('#options .dropdown-toggle')
-        self.click_label('Generate Tour')
-        self.history_panel_wait_for_hid_ok(1)
+        self.tool_form_generate_tour()
 
-        tour_popup_selector = '#step-0.popover.tour-tour'
-        self.wait_for_selector_visible(tour_popup_selector)
-        self.assert_selector(tour_popup_selector)
+        popover_component = self.components.tour.popover._
+        popover_component.wait_for_visible()
+
+        title = popover_component.title.wait_for_visible().text
+        assert title == "environment_variables Tour", title
 
         # Run tool
-        self.tool_execute()
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+
+    @selenium_test
+    def test_generate_tour_with_data(self):
+        """Ensure a tour with data populates history."""
+        self._ensure_tdt_available()
+
+        self.tool_open('md5sum')
+
+        self.tool_form_generate_tour()
+
+        self.history_panel_wait_for_hid_ok(1)
+
+        popover_component = self.components.tour.popover._
+        popover_component.wait_for_visible()
+
+        title = popover_component.title.wait_for_visible().text
+        assert title == "md5sum Tour", title
+
+        popover_component.next.wait_for_and_click()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        text = popover_component.content.wait_for_visible().text
+        assert "Select dataset" in text, text
+
+        popover_component.next.wait_for_and_click()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        title = popover_component.title.wait_for_visible().text
+        assert title == "Execute tool"
+
+        popover_component.end.wait_for_and_click()
+        popover_component.wait_for_absent_or_hidden()
+
+        # Run tool
+        self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(2)
 
     def _ensure_tdt_available(self):
