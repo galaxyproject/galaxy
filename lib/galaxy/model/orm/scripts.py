@@ -21,6 +21,12 @@ DATABASE = {
             'default_sqlite_file': './database/universe.sqlite',
             'config_override': 'GALAXY_CONFIG_',
         },
+    "tools":
+        {
+            'repo': 'lib/tool_shed/galaxy_install/migrate',
+            'default_sqlite_file': './database/universe.sqlite',
+            'config_override': 'GALAXY_CONFIG_',
+        },
     "tool_shed":
         {
             'repo': 'lib/galaxy/webapps/tool_shed/model/migrate',
