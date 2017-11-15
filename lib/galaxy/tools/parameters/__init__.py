@@ -74,7 +74,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|j, prefixed_label=b 1 > d 1 > j,value=j
     The selected case is unavailable/invalid.
 
-    >>> # Conditional test parameter missing from state, value error
+    >>> # Test parameter missing in state, value error
     >>> del nested['b'][0]['d'][0]['f']['j']
     >>> visit_input_values( inputs, nested, visitor )
     name=a, prefix=, prefixed_name=a, prefixed_label=a,value=1
@@ -83,7 +83,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|j, prefixed_label=b 1 > d 1 > j,value=None
     No value found for 'b 1 > d 1 > j'.
 
-    >>> # Conditional parameter missing from state, value error
+    >>> # Conditional parameter missing in state, value error
     >>> del nested['b'][0]['d'][0]['f']
     >>> visit_input_values( inputs, nested, visitor )
     name=a, prefix=, prefixed_name=a, prefixed_label=a,value=1
@@ -92,7 +92,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|j, prefixed_label=b 1 > d 1 > j,value=None
     No value found for 'b 1 > d 1 > j'.
 
-    >>> # Conditional input name has changed due to version change, key error
+    >>> # Conditional input name has changed e.g. due to tool changes, key error
     >>> f.name = 'f_1'
     >>> visit_input_values( inputs, nested, visitor )
     name=a, prefix=, prefixed_name=a, prefixed_label=a,value=1
@@ -101,7 +101,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f_1|j, prefixed_label=b 1 > d 1 > j,value=None
     No value found for 'b 1 > d 1 > j'.
 
-    >>> # Other parameters are missing from state
+    >>> # Other parameters are missing in state
     >>> nested = odict([ ('b', [ odict([ ( 'd', [odict([ ('f', odict([ ('g', True), ('h', 7) ])) ]) ])]) ]) ])
     >>> visit_input_values( inputs, nested, visitor )
     name=a, prefix=, prefixed_name=a, prefixed_label=a,value=None
