@@ -951,19 +951,6 @@ use_interactive = True
 # communicate with this manager over the port specified here.
 #transfer_manager_port = 8163
 
-# Search data libraries with whoosh
-#enable_whoosh_library_search = True
-# Whoosh indexes are stored in this directory.
-#whoosh_index_dir = database/whoosh_indexes
-
-# Search data libraries with lucene
-#enable_lucene_library_search = False
-# maximum file size to index for searching, in MB
-#fulltext_max_size = 500
-#fulltext_noindex_filetypes = bam,sam,wig,bigwig,fasta,fastq,fastqsolexa,fastqillumina,fastqsanger
-# base URL of server providing search functionality using lucene
-#fulltext_url = http://localhost:8081
-
 # -- Toolbox Search
 
 # The following boosts are used to customize this instance's toolbox search.
@@ -1118,6 +1105,8 @@ use_interactive = True
 # stable API.
 #enable_beta_workflow_modules = False
 
+# Following options only apply to workflows scheduled using the legacy workflow
+# run API (running workflows via a POST to /api/workflows).
 # Force usage of Galaxy's beta workflow scheduler under certain circumstances -
 # this workflow scheduling forces Galaxy to schedule workflows in the background
 # so initial submission of the workflows is significantly sped up. This does

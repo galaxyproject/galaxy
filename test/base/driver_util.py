@@ -21,10 +21,8 @@ import nose.config
 import nose.core
 import nose.loader
 import nose.plugins.manager
-
 from paste import httpserver
 from six.moves import shlex_quote
-
 from six.moves.urllib.parse import urlparse
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
@@ -33,7 +31,6 @@ from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
 from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
-
 from .api_util import get_master_api_key, get_user_api_key
 from .instrument import StructuredTestDataPlugin
 from .nose_util import run

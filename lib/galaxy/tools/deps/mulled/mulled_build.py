@@ -24,9 +24,7 @@ except ImportError:
     yaml = None
 
 from galaxy.tools.deps import commands, installable
-
 from galaxy.util import safe_makedirs
-
 from ._cli import arg_parser
 from .util import (
     build_target,

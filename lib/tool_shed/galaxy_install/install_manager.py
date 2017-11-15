@@ -19,8 +19,8 @@ from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment impor
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import StepManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
 from tool_shed.galaxy_install.tools import data_manager, tool_panel_manager
-from tool_shed.tools import data_table_manager, tool_version_manager
-from tool_shed.util import basic_util, common_util, encoding_util, hg_util, repository_util
+from tool_shed.tools import data_table_manager
+from tool_shed.util import basic_util, encoding_util, hg_util, repository_util
 from tool_shed.util import shed_util_common as suc, tool_dependency_util
 from tool_shed.util import tool_util, xml_util
 
@@ -536,12 +536,6 @@ class InstallRepositoryManager(object):
                                                                            self.app.config.shed_tool_data_table_config,
                                                                            persist=True)
         if 'tools' in irmm_metadata_dict:
-            # Get the tool_versions from the Tool Shed for each tool in the installed change set.
-            self.update_tool_shed_repository_status(tool_shed_repository,
-                                                    self.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS)
-            tool_version_dicts = fetch_tool_versions(self.app, tool_shed_repository)
-            tvm = tool_version_manager.ToolVersionManager(self.app)
-            tvm.handle_tool_versions(tool_version_dicts, tool_shed_repository)
             tool_panel_dict = self.tpm.generate_tool_panel_dict_for_new_install(irmm_metadata_dict['tools'], tool_section)
             sample_files = irmm_metadata_dict.get('sample_files', [])
             tool_index_sample_files = tdtm.get_tool_index_sample_files(sample_files)
@@ -1012,24 +1006,3 @@ class RepositoriesInstalledException(exceptions.RequestParameterInvalidException
 
     def __init__(self):
         super(RepositoriesInstalledException, self).__init__('All repositories that you are attempting to install have been previously installed.')
-
-
-def fetch_tool_versions(app, tool_shed_repository):
-    """ Fetch a data structure describing tool shed versions from the tool shed
-    corresponding to a tool_shed_repository object.
-    """
-    try:
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, str(tool_shed_repository.tool_shed))
-        params = dict(name=str(tool_shed_repository.name),
-                      owner=str(tool_shed_repository.owner),
-                      changeset_revision=str(tool_shed_repository.changeset_revision))
-        pathspec = ['repository', 'get_tool_versions']
-        url = util.build_url(tool_shed_url, pathspec=pathspec, params=params)
-        text = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
-        if text:
-            return json.loads(text)
-        else:
-            raise Exception("No content returned from Tool Shed repository version request to %s" % url)
-    except Exception:
-        log.exception("Failed to fetch tool version information for Tool Shed repository.")
-        raise

@@ -1,6 +1,6 @@
-from __future__ import with_statement
-from newickparser import Newick_Parser
 import re
+
+from .newickparser import Newick_Parser
 
 MAX_READLINES = 200000
 

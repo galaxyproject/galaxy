@@ -34,6 +34,8 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.assert_item_info_includes(1, 'uploaded fasta file')
         self.assert_item_peek_includes(1, ">hg17")
 
+        self.screenshot("history_panel_dataset_expanded")
+
         self._assert_action_buttons(1)
 
     def _assert_title_buttons(self, hid, expected_buttons=['display', 'edit', 'delete']):

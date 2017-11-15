@@ -1,36 +1,41 @@
 """
 API operations on the contents of a history.
 """
+import logging
 import os
 import re
 
-from galaxy import exceptions
-from galaxy import util
-from galaxy.util.streamball import StreamBall
-from galaxy.util.json import safe_dumps
-
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_raw as expose_api_raw
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web import _future_expose_api_raw_anonymous as expose_api_raw_anonymous
-
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesLibraryMixin
-from galaxy.web.base.controller import UsesLibraryMixinItems
-from galaxy.web.base.controller import UsesTagsMixin
-
-from galaxy.managers import histories
-from galaxy.managers import history_contents
-from galaxy.managers import hdas
-from galaxy.managers import hdcas
-from galaxy.managers import folders
+from galaxy import (
+    exceptions,
+    util
+)
+from galaxy.managers import (
+    folders,
+    hdas,
+    hdcas,
+    histories,
+    history_contents
+)
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
     get_hda_and_element_identifiers
 )
+from galaxy.util.json import safe_dumps
+from galaxy.util.streamball import StreamBall
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous as expose_api_anonymous,
+    _future_expose_api_raw as expose_api_raw,
+    _future_expose_api_raw_anonymous as expose_api_raw_anonymous
+)
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    UsesLibraryMixin,
+    UsesLibraryMixinItems,
+    UsesTagsMixin
+)
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -302,7 +307,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         # copy from library dataset
         hda = None
         if source == 'library':
-            ld = self.get_library_dataset(trans, content, check_ownership=False, check_accessible=False)
+            ld = self.get_library_dataset(trans, content)
             # TODO: why would get_library_dataset NOT return a library dataset?
             if type(ld) is not trans.app.model.LibraryDataset:
                 raise exceptions.RequestParameterInvalidException(

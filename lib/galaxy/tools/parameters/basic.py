@@ -23,7 +23,6 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.web import url_for
-
 from . import validation
 from .dataset_matcher import (
     DatasetCollectionMatcher,

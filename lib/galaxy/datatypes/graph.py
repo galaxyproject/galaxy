@@ -4,7 +4,6 @@ Graph content classes.
 import logging
 
 from galaxy.util import simplegraph
-
 from . import (
     data,
     dataproviders,

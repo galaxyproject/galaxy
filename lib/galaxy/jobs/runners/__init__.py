@@ -30,7 +30,6 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.monitors import Monitors
-
 from .state_handler_factory import build_state_handlers
 
 log = logging.getLogger(__name__)

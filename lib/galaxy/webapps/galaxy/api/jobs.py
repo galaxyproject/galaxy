@@ -171,7 +171,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
     @expose_api
     def outputs(self, trans, id, **kwd):
         """
-        show( trans, id )
+        outputs( trans, id )
         * GET /api/jobs/{id}/outputs
             returns output datasets created by job
 
@@ -183,6 +183,25 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         """
         job = self.__get_job(trans, id)
         return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+
+    @expose_api
+    def delete(self, trans, id, **kwd):
+        """
+        delete( trans, id )
+        * Delete /api/jobs/{id}
+            cancels specified job
+
+        :type   id: string
+        :param  id: Encoded job id
+        """
+        job = self.__get_job(trans, id)
+        if not job.finished:
+            job.mark_deleted(self.app.config.track_jobs_in_database)
+            trans.sa_session.flush()
+            self.app.job_manager.job_stop_queue.put(job.id)
+            return True
+        else:
+            return False
 
     @expose_api_anonymous
     def build_for_rerun(self, trans, id, **kwd):

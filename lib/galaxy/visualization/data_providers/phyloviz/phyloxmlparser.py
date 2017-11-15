@@ -1,5 +1,10 @@
-from baseparser import Base_Parser, PhyloTree, Node
 from xml.etree import ElementTree
+
+from .baseparser import (
+    Base_Parser,
+    Node,
+    PhyloTree
+)
 
 
 class Phyloxml_Parser(Base_Parser):

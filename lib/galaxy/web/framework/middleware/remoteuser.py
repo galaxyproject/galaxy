@@ -1,10 +1,11 @@
 """
 Middleware for handling $REMOTE_USER if use_remote_user is enabled.
 """
-
-import socket
-from galaxy.util import safe_str_cmp
 import logging
+import socket
+
+from galaxy.util import safe_str_cmp
+
 log = logging.getLogger(__name__)
 
 errorpage = """

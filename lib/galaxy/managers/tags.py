@@ -1,11 +1,12 @@
 import logging
 import re
-import galaxy.model
 
-from galaxy.util import unicodify
 from six import string_types
 from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
+
+import galaxy.model
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
