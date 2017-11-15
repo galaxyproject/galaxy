@@ -250,7 +250,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         # copy from library dataset
         hda = None
         if source == 'library':
-            ld = self.get_library_dataset( trans, content, check_ownership=False, check_accessible=False )
+            ld = self.get_library_dataset( trans, content )
             # TODO: why would get_library_dataset NOT return a library dataset?
             if type( ld ) is not trans.app.model.LibraryDataset:
                 raise exceptions.RequestParameterInvalidException(
