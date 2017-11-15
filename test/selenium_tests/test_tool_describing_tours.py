@@ -44,6 +44,7 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
 
         title = popover_component.title.wait_for_visible().text
         assert title == "md5sum Tour", title
+        self.screenshot("tool_describing_tour_0_start")
 
         popover_component.next.wait_for_and_click()
 
@@ -51,6 +52,7 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
 
         text = popover_component.content.wait_for_visible().text
         assert "Select dataset" in text, text
+        self.screenshot("tool_describing_tour_1_select")
 
         popover_component.next.wait_for_and_click()
 
@@ -58,6 +60,7 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
 
         title = popover_component.title.wait_for_visible().text
         assert title == "Execute tool"
+        self.screenshot("tool_describing_tour_2_execute")
 
         popover_component.end.wait_for_and_click()
         popover_component.wait_for_absent_or_hidden()
@@ -65,6 +68,7 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
         # Run tool
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(2)
+        self.screenshot("tool_describing_tour_3_after_execute")
 
     def _ensure_tdt_available(self):
         """ Skip a test if the webhook TDT doesn't appear. """
