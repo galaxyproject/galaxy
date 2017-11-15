@@ -16,8 +16,9 @@ class Facts(MutableMapping):
         self.__dict__.update(dict(**kwargs))
 
     def __set_defaults(self, config):
+        # config here may be a Galaxy config object, or it may just be a dict
         defaults = {
-            'server_name': lambda: config.server_name,
+            'server_name': lambda: config.get('server_name', None),
             'server_id': None,
             'process_num': None,
             'pool_name': None,
@@ -52,6 +53,12 @@ class Facts(MutableMapping):
 
     def __len__(self):
         return self.__dict__.__len__()
+
+    def __str__(self):
+        return self.__dict__.__str__()
+
+    def __repr__(self):
+        return self.__dict__.__repr__()
 
 
 def get_facts(config=None, **kwargs):

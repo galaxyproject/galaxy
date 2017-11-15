@@ -937,8 +937,6 @@ def configure_logging(config):
         # configure logging with logging dict in config, template *FileHandler handler filenames with the `filename_template` option
         for name, conf in logging_conf.get('handlers', {}).items():
             if conf['class'].startswith('logging.') and conf['class'].endswith('FileHandler') and 'filename_template' in conf:
-                # FIXME: this seems to be broken because python is claiming double-star doesn't work on Facts, but
-                # Facts is a MutableMapping, which double-star works on, soo...
                 conf['filename'] = conf.pop('filename_template').format(**get_stack_facts(config=config))
                 logging_conf['handlers'][name] = conf
         logging.config.dictConfig(logging_conf)
