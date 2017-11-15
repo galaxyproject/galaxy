@@ -803,8 +803,12 @@ class NavigatesGalaxy(HasDriver):
             input_element.clear()
             input_element.send_keys(value)
 
-    def tool_execute(self):
-        self.wait_for_and_click_selector("button#execute")
+    def tool_form_generate_tour(self):
+        self.components.tool_form.options.wait_for_and_click()
+        self.components.tool_form.generate_tour.wait_for_and_click()
+
+    def tool_form_execute(self):
+        self.components.tool_form.execute.wait_for_and_click()
 
     def click_masthead_user(self):
         self.components.masthead.user.wait_for_and_click()
