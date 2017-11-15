@@ -21,6 +21,7 @@ from galaxy.managers.collections_util import (
     dictify_dataset_collection_instance,
     get_hda_and_element_identifiers
 )
+from galaxy.managers.jobs import summarize_jobs_to_dict
 from galaxy.util.json import safe_dumps
 from galaxy.util.streamball import StreamBall
 from galaxy.web import (
@@ -153,6 +154,39 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return self.__show_dataset(trans, id, **kwd)
         elif contents_type == 'dataset_collection':
             return self.__show_dataset_collection(trans, id, history_id, **kwd)
+
+    @expose_api_anonymous
+    def show_jobs_summary(self, trans, id, history_id, **kwd):
+        """
+        * GET /api/histories/{history_id}/contents/{type}/{id}/jobs_summary
+            return detailed information about an HDA or HDCAs jobs
+        .. note:: Anonymous users are allowed to get their current history contents
+
+        :type   id:         str
+        :param  id:         the encoded id of the HDA to return
+        :type   history_id: str
+        :param  history_id: encoded id string of the HDA's or the HDCA's History
+
+        :rtype:     dict
+        :returns:   dictionary containing
+        """
+        contents_type = self.__get_contents_type(trans, kwd)
+        # At most one of job or implicit_collection_jobs should be found.
+        job = None
+        implicit_collection_jobs = None
+        if contents_type == 'dataset':
+            hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
+            job = hda.creating_job
+        elif contents_type == 'dataset_collection':
+            dataset_collection_instance = self.__get_accessible_collection(trans, id, history_id)
+            job_source_type = dataset_collection_instance.job_source_type
+            if job_source_type == "Job":
+                job = dataset_collection_instance.job
+            elif job_source_type == "ImplicitCollectionJobs":
+                implicit_collection_jobs = dataset_collection_instance.implicit_collection_jobs
+
+        assert job is None or implicit_collection_jobs is None
+        return self.encode_all_ids(trans, summarize_jobs_to_dict(trans.sa_session, job or implicit_collection_jobs))
 
     def __get_contents_type(self, trans, kwd):
         contents_type = kwd.get('type', 'dataset')

@@ -47,10 +47,12 @@ class DatasetCollectionManager(object):
         self.ldda_manager = lddas.LDDAManager(app)
 
     def precreate_dataset_collection_instance(self, trans, parent, name, implicit_inputs, implicit_output_name, structure):
+        # TODO: prebuild all required HIDs and send them in so no need to flush in between.
         dataset_collection = self.precreate_dataset_collection(structure)
-        return self._create_instance_for_collection(
-            trans, parent, name, dataset_collection, implicit_inputs=implicit_inputs, implicit_output_name=implicit_output_name,
+        instance = self._create_instance_for_collection(
+            trans, parent, name, dataset_collection, implicit_inputs=implicit_inputs, implicit_output_name=implicit_output_name, flush=False
         )
+        return instance
 
     def precreate_dataset_collection(self, structure):
         if structure.is_leaf or not structure.children_known:
@@ -111,7 +113,7 @@ class DatasetCollectionManager(object):
             trans, parent, name, dataset_collection, implicit_inputs=implicit_inputs, implicit_output_name=implicit_output_name, tags=tags
         )
 
-    def _create_instance_for_collection(self, trans, parent, name, dataset_collection, implicit_output_name=None, implicit_inputs=None, tags=None):
+    def _create_instance_for_collection(self, trans, parent, name, dataset_collection, implicit_output_name=None, implicit_inputs=None, tags=None, flush=True):
         if isinstance(parent, model.History):
             dataset_collection_instance = self.model.HistoryDatasetCollectionAssociation(
                 collection=dataset_collection,
@@ -141,7 +143,7 @@ class DatasetCollectionManager(object):
             raise MessageException(message)
 
         tags = self._append_tags(dataset_collection_instance, implicit_inputs, tags)
-        return self.__persist(dataset_collection_instance)
+        return self.__persist(dataset_collection_instance, flush=flush)
 
     def create_dataset_collection(self, trans, collection_type, element_identifiers=None, elements=None,
                                   hide_source_items=None):
@@ -285,10 +287,11 @@ class DatasetCollectionManager(object):
         collections = list(filter(query.direct_match, collections))
         return collections
 
-    def __persist(self, dataset_collection_instance):
+    def __persist(self, dataset_collection_instance, flush=True):
         context = self.model.context
         context.add(dataset_collection_instance)
-        context.flush()
+        if flush:
+            context.flush()
         return dataset_collection_instance
 
     def __recursively_create_collections(self, trans, element_identifiers):

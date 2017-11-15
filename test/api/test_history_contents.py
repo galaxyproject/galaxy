@@ -6,9 +6,11 @@ from requests import delete, put
 
 from base import api  # noqa: I100
 from base.populators import (  # noqa: I100
+    DatasetPopulator,
     DatasetCollectionPopulator,
     LibraryPopulator,
-    TestsDatasets
+    skip_without_tool,
+    TestsDatasets,
 )
 
 
@@ -18,6 +20,7 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
     def setUp(self):
         super(HistoryContentsApiTestCase, self).setUp()
         self.history_id = self._new_history()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.library_populator = LibraryPopulator(self)
 
@@ -176,6 +179,38 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         show_response = self._get(collection_url)
         dataset_collection = show_response.json()
         assert dataset_collection["deleted"]
+
+    @skip_without_tool("collection_creates_list")
+    def test_jobs_summary_simple_hdca(self):
+        create_response = self.dataset_collection_populator.create_list_in_history(self.history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"])
+        hdca_id = create_response.json()["id"]
+        run = self.dataset_populator.run_collection_creates_list(self.history_id, hdca_id)
+        collections = run['output_collections']
+        collection = collections[0]
+        jobs_summary_url = "histories/%s/contents/dataset_collections/%s/jobs_summary" % (self.history_id, collection["id"])
+        jobs_summary_response = self._get(jobs_summary_url)
+        self._assert_status_code_is(jobs_summary_response, 200)
+        jobs_summary = jobs_summary_response.json()
+        self._assert_has_keys(jobs_summary, "populated_state", "states")
+
+    @skip_without_tool("cat1")
+    def test_jobs_summary_implicit_hdca(self):
+        create_response = self.dataset_collection_populator.create_pair_in_history(self.history_id, contents=["123", "456"])
+        hdca_id = create_response.json()["id"]
+        inputs = {
+            "input1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
+        }
+        run = self.dataset_populator.run_tool("cat1", inputs=inputs, history_id=self.history_id)
+        self.dataset_populator.wait_for_history_jobs(self.history_id)
+        collections = run['implicit_collections']
+        collection = collections[0]
+        jobs_summary_url = "histories/%s/contents/dataset_collections/%s/jobs_summary" % (self.history_id, collection["id"])
+        jobs_summary_response = self._get(jobs_summary_url)
+        self._assert_status_code_is(jobs_summary_response, 200)
+        jobs_summary = jobs_summary_response.json()
+        self._assert_has_keys(jobs_summary, "populated_state", "states")
+        states = jobs_summary["states"]
+        assert states.get("ok") == 2, states
 
     def test_dataset_collection_hide_originals(self):
         payload = self.dataset_collection_populator.create_pair_payload(

@@ -433,20 +433,15 @@ class ToolsTestCase(api.ApiTestCase):
 
     @skip_without_tool("collection_creates_list")
     def test_list_collection_output(self):
-        history_id = self.dataset_populator.new_history()
-        create_response = self.dataset_collection_populator.create_list_in_history(history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"])
-        hdca_id = create_response.json()["id"]
-        inputs = {
-            "input1": {"src": "hdca", "id": hdca_id},
-        }
-        # TODO: real problem here - shouldn't have to have this wait.
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        create = self._run("collection_creates_list", history_id, inputs, assert_ok=True)
-        output_collection = self._assert_one_job_one_collection_run(create)
-        element0, element1 = self._assert_elements_are(output_collection, "data1", "data2")
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        self._verify_element(history_id, element0, contents="identifier is data1\n", file_ext="txt")
-        self._verify_element(history_id, element1, contents="identifier is data2\n", file_ext="txt")
+        with self.dataset_populator.test_history() as history_id:
+            create_response = self.dataset_collection_populator.create_list_in_history(history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"])
+            hdca_id = create_response.json()["id"]
+            create = self.dataset_populator.run_collection_creates_list(history_id, hdca_id)
+            output_collection = self._assert_one_job_one_collection_run(create)
+            element0, element1 = self._assert_elements_are(output_collection, "data1", "data2")
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            self._verify_element(history_id, element0, contents="identifier is data1\n", file_ext="txt")
+            self._verify_element(history_id, element1, contents="identifier is data2\n", file_ext="txt")
 
     @skip_without_tool("collection_creates_list_2")
     def test_list_collection_output_format_source(self):

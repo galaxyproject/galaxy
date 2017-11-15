@@ -598,6 +598,7 @@ class DefaultToolAction(object):
             job.add_implicit_output_dataset_collection(name, dataset_collection)
         for name, dataset_collection_instance in out_collection_instances.items():
             job.add_output_dataset_collection(name, dataset_collection_instance)
+            dataset_collection_instance.job = job
 
     def _check_input_data_access(self, trans, job, inp_data, current_user_roles):
         access_timer = ExecutionTimer()

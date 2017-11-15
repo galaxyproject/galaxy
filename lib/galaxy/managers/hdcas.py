@@ -117,12 +117,12 @@ class DCSerializer(base.ModelSerializer):
             'create_time',
             'update_time',
             'collection_type',
-            'populated',
             'populated_state',
             'populated_state_message',
         ])
         self.add_view('detailed', [
-            'elements'
+            'populated',
+            'elements',
         ], include_keys_from='summary')
 
     def add_serializers(self):
@@ -130,7 +130,7 @@ class DCSerializer(base.ModelSerializer):
         self.serializers.update({
             'model_class'   : lambda *a, **c: 'DatasetCollection',
             'elements'      : self.serialize_elements,
-            'element_count' : self.serialize_element_count
+            'element_count' : self.serialize_element_count,
         })
 
     def serialize_elements(self, item, key, **context):
@@ -163,12 +163,12 @@ class DCASerializer(base.ModelSerializer):
             'id',
             'create_time', 'update_time',
             'collection_type',
-            'populated',
             'populated_state',
             'populated_state_message',
         ])
         self.add_view('detailed', [
-            'elements'
+            'populated',
+            'elements',
         ], include_keys_from='summary')
 
     def add_serializers(self):
@@ -184,7 +184,7 @@ class DCASerializer(base.ModelSerializer):
             'populated_state',
             'populated_state_message',
             'elements',
-            'element_count'
+            'element_count',
         ]
         for key in collection_keys:
             self.serializers[key] = self._proxy_to_dataset_collection(key=key)
@@ -221,15 +221,14 @@ class HDCASerializer(
             'history_content_type',
 
             'collection_type',
-            'populated',
             'populated_state',
             'populated_state_message',
 
+            'job_source_id',
+            'job_source_type',
+
             'name',
             'type_id',
-            'history_id',
-            'hid',
-            'history_content_type',
             'deleted',
             # 'purged',
             'visible',
@@ -238,6 +237,7 @@ class HDCASerializer(
             'tags',  # TODO: detail view only (maybe)
         ])
         self.add_view('detailed', [
+            'populated',
             'elements'
         ], include_keys_from='summary')
 
@@ -254,6 +254,7 @@ class HDCASerializer(
             'history_id'                : self.serialize_id,
             'history_content_type'      : lambda *a, **c: self.hdca_manager.model_class.content_type,
             'type_id'                   : self.serialize_type_id,
+            'job_source_id'             : self.serialize_id,
 
             'url'   : lambda i, k, **c: self.url_for('history_content_typed',
                                                      history_id=self.app.security.encode_id(i.history_id),
