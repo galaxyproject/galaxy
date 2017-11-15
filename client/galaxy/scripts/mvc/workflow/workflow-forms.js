@@ -103,7 +103,7 @@ var Tool = Backbone.View.extend({
             }
         });
         Utils.deepeach(options.inputs, input => {
-            if (input.type === "conditional"){
+            if (input.type === "conditional") {
                 input.test_param.collapsible_value = undefined;
             }
         });
@@ -153,7 +153,6 @@ function _addLabelAnnotation(form) {
     });
 }
 
-
 /** Visit input nodes and enrich by name/value pairs from server data */
 function _visit(head, head_list, output_id, options) {
     head_list = head_list || [];
@@ -184,7 +183,7 @@ function _visit(head, head_list, output_id, options) {
                 }
             }
         }
-        if (input.inputs){
+        if (input.inputs) {
             _visit(input, head_list.slice(0), output_id, options);
         }
     }
@@ -223,8 +222,7 @@ function _makeSection(output_id, datatypes, options) {
                 label: "Label",
                 type: "text",
                 value: ((output = options.node.getWorkflowOutput(output_id)) && output.label) || "",
-                help:
-                    "This will provide a short name to describe the output - this must be unique across workflows.",
+                help: "This will provide a short name to describe the output - this must be unique across workflows.",
                 onchange: function(new_value) {
                     options.workflow.attemptUpdateOutputLabel(options.node, output_id, new_value);
                 }
@@ -330,7 +328,6 @@ function _addSections(form) {
     var node = options.node;
     var post_job_actions = node.post_job_actions;
     var output_id = node.output_terminals && Object.keys(node.output_terminals)[0];
-
 
     if (output_id) {
         inputs.push({
