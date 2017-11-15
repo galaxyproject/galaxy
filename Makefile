@@ -119,8 +119,11 @@ release-check-blocking-prs: ## Check github for release blocking PRs
 release-bootstrap-history: ## bootstrap history for a new release
 	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
 
-update-linting-requirements:  ## update linting dependencies
-	sh .ci/tox_envs/update.sh
+update-dependencies:  ## update linting + dev dependencies
+	sh lib/galaxy/dependencies/pipfiles/update.sh
+
+update-and-commit-dependencies:  ## update and commit linting + dev dependencies
+	sh lib/galaxy/dependencies/pipfiles/update.sh -c
 
 node-deps: ## Install NodeJS dependencies.
 	cd client && yarn install --check-files
@@ -128,12 +131,15 @@ node-deps: ## Install NodeJS dependencies.
 client: node-deps ## Rebuild all client-side artifacts
 	cd client && yarn run build
 
-charts: node-deps ## Rebuild charts
-	cd client && yarn run build-charts
+client-format: node-deps ## Reformat client code
+	cd client && yarn run prettier
 
 client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
 	@echo "Remember to 'make client' when finished developing!"
+
+charts: node-deps ## Rebuild charts
+	cd client && yarn run build-charts
 
 
 # Release Targets

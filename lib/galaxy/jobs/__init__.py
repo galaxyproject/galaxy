@@ -32,7 +32,6 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.handlers import ConfiguresHandlers
 from galaxy.util.xml_macros import load
-
 from .datasets import (DatasetPath, NullDatasetPathRewriter,
     OutputsToWorkingDirectoryPathRewriter, TaskPathRewriter)
 from .output_checker import check_output
@@ -991,7 +990,7 @@ class JobWrapper(object, HasResourceParameters):
                 etype, evalue, tb = sys.exc_info()
 
             outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
-            if outputs_to_working_directory:
+            if outputs_to_working_directory and not self.__link_file_check():
                 for dataset_path in self.get_output_fnames():
                     try:
                         shutil.move(dataset_path.false_path, dataset_path.real_path)

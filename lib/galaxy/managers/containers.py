@@ -6,14 +6,13 @@ and other (nested) containers.
 """
 # Histories should be DatasetCollections.
 # Libraries should be DatasetCollections.
-
+import logging
 import operator
 
-from galaxy import model
 import galaxy.exceptions
 import galaxy.util
+from galaxy import model
 
-import logging
 log = logging.getLogger(__name__)
 
 

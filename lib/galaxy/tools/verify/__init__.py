@@ -15,7 +15,6 @@ except ImportError:
     pysam = None
 
 from galaxy.util.compression_utils import get_fileobj
-
 from .asserts import verify_assertions
 from .test_data import TestDataResolver
 

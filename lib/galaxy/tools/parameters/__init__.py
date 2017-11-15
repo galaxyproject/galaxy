@@ -9,7 +9,6 @@ from json import dumps
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import json_fix
 from galaxy.util.json import safe_loads
-
 from .basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue, SelectToolParameter
 from .grouping import Conditional, Repeat, Section, UploadDataset
 

@@ -106,7 +106,7 @@ class HistorySharingTestCase(SeleniumTestCase):
         with self.main_panel():
             self.components.histories.sharing.share_with_a_user_button.wait_for_and_click()
 
-    def share_history_with_user(self, user_id=None, user_email=None, assert_valid=False):
+    def share_history_with_user(self, user_id=None, user_email=None, assert_valid=False, screenshot=False):
         """Share the current history with a target user by ID or email.
 
         ``user_email`` will be used to enter in the share form unless ``user_id``
@@ -121,6 +121,8 @@ class HistorySharingTestCase(SeleniumTestCase):
             # line, in future dispatch on actual select2 div present or not.
             # self.select2_set_value(form_selector, email)
             self.fill(form, {"email": user_id or user_email})
+            if screenshot:
+                self.screenshot("history_sharing_user")
             self.click_submit(form)
         if assert_valid:
             with self.main_panel():

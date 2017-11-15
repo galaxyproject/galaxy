@@ -12,7 +12,6 @@ from six import string_types
 from galaxy import exceptions, model
 from galaxy.managers import base as base_manager
 from galaxy.managers import histories, users
-
 from .base import BaseTestCase
 
 

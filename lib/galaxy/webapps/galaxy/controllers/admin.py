@@ -2,28 +2,37 @@ import imp
 import logging
 import os
 from datetime import datetime, timedelta
-import six
 from string import punctuation as PUNCTUATION
+
+import six
 from sqlalchemy import and_, false, func, or_
 
 import galaxy.queue_worker
-from galaxy import util
-from galaxy import model
-from galaxy import web
+from galaxy import (
+    model,
+    util,
+    web
+)
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError, MessageException
 from galaxy.model import tool_shed_install as install_model
-from galaxy.util import nice_size, sanitize_text, url_get
+from galaxy.tools import global_tool_errors
+from galaxy.util import (
+    nice_size,
+    sanitize_text,
+    url_get
+)
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base import controller
 from galaxy.web.base.controller import UsesQuotaMixin
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
-from galaxy.tools import global_tool_errors
-from tool_shed.util import common_util
-from tool_shed.util import encoding_util
-from tool_shed.util import repository_util
+from tool_shed.util import (
+    common_util,
+    encoding_util,
+    repository_util
+)
 from tool_shed.util.web_util import escape
 
 
@@ -887,48 +896,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         return trans.fill_template('/webapps/galaxy/admin/center.mako',
                                    is_repo_installed=is_repo_installed,
                                    installing_repository_ids=installing_repository_ids,
-                                   message=message,
-                                   status=status)
-
-    @web.expose
-    @web.require_admin
-    def package_tool(self, trans, **kwd):
-        params = util.Params(kwd)
-        message = util.restore_text(params.get('message', ''))
-        toolbox = self.app.toolbox
-        tool_id = None
-        if params.get('package_tool_button', False):
-            tool_id = params.get('tool_id', None)
-            try:
-                tool_tarball = trans.app.toolbox.package_tool(trans, tool_id)
-                trans.response.set_content_type('application/x-gzip')
-                download_file = open(tool_tarball)
-                os.unlink(tool_tarball)
-                tarball_path, filename = os.path.split(tool_tarball)
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.tgz"' % (tool_id)
-                return download_file
-            except Exception:
-                return trans.fill_template('/admin/package_tool.mako',
-                                           tool_id=tool_id,
-                                           toolbox=toolbox,
-                                           message=message,
-                                           status='error')
-
-    @web.expose
-    @web.require_admin
-    def reload_tool(self, trans, **kwd):
-        params = util.Params(kwd)
-        message = util.restore_text(params.get('message', ''))
-        status = params.get('status', 'done')
-        toolbox = self.app.toolbox
-        tool_id = None
-        if params.get('reload_tool_button', False):
-            tool_id = kwd.get('tool_id', None)
-            galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id})
-            message, status = trans.app.toolbox.reload_tool_by_id(tool_id)
-        return trans.fill_template('/admin/reload_tool.mako',
-                                   tool_id=tool_id,
-                                   toolbox=toolbox,
                                    message=message,
                                    status=status)
 

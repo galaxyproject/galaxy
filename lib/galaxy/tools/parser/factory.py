@@ -7,12 +7,10 @@ import yaml
 
 from galaxy.tools.loader import load_tool_with_refereces
 from galaxy.util.odict import odict
-
 from .cwl import CwlToolSource
 from .interface import InputSource
 from .xml import XmlInputSource, XmlToolSource
 from .yaml import YamlToolSource
-
 from ..fetcher import ToolLocationFetcher
 
 log = logging.getLogger(__name__)

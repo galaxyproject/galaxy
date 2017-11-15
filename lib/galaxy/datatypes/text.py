@@ -549,3 +549,33 @@ class SnpSiftDbNSFP(Text):
             else:
                 dataset.peek = 'file does not exist'
                 dataset.blurb = 'file purged from disc'
+
+
+class IQTree(Text):
+    """IQ-TREE format"""
+    file_ext = 'iqtree'
+
+    def sniff(self, filename):
+        """
+        Detect the IQTree file
+
+        Scattered text file containing various headers and data
+        types.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('example.iqtree')
+        >>> IQTree().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('temp.txt')
+        >>> IQTree().sniff(fname)
+        False
+
+        >>> fname = get_test_fname('test_tab1.tabular')
+        >>> IQTree().sniff(fname)
+        False
+        """
+        with open(filename, 'r') as fio:
+            return fio.read(7) == "IQ-TREE"
+
+        return False

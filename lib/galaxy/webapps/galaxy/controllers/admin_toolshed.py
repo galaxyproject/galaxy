@@ -22,7 +22,6 @@ from tool_shed.galaxy_install.tools import (
     data_manager,
     tool_panel_manager
 )
-from tool_shed.tools import tool_version_manager
 from tool_shed.util import (
     common_util,
     encoding_util,
@@ -35,7 +34,6 @@ from tool_shed.util import (
     workflow_util
 )
 from tool_shed.util.web_util import escape
-
 from .admin import AdminGalaxy
 
 log = logging.getLogger(__name__)
@@ -1537,45 +1535,6 @@ class AdminToolshed(AdminGalaxy):
         return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                         action='manage_repository',
                                                         id=repository_id))
-
-    @web.expose
-    @web.require_admin
-    def set_tool_versions(self, trans, **kwd):
-        """
-        Get the tool_versions from the tool shed for each tool in the installed revision of a selected tool shed
-        repository and update the metadata for the repository's revision in the Galaxy database.
-        """
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, kwd['id'])
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, str(repository.tool_shed))
-        params = dict(name=repository.name, owner=repository.owner, changeset_revision=repository.changeset_revision)
-        pathspec = ['repository', 'get_tool_versions']
-        text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
-        if text:
-            tool_version_dicts = json.loads(text)
-            tvm = tool_version_manager.ToolVersionManager(trans.app)
-            tvm.handle_tool_versions(tool_version_dicts, repository)
-            message = "Tool versions have been set for all included tools."
-            status = 'done'
-        else:
-            message = ("Version information for the tools included in the <b>%s</b> repository is missing.  "
-                       "Reset all of this reppository's metadata in the tool shed, then set the installed tool versions "
-                       "from the installed repository's <b>Repository Actions</b> menu.  " % escape(repository.name))
-            status = 'error'
-        shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(trans.app, repository)
-        repo_files_dir = os.path.abspath(os.path.join(relative_install_dir, repository.name))
-        dd = dependency_display.DependencyDisplayer(trans.app)
-        containers_dict = dd.populate_containers_dict_from_repository_metadata(tool_shed_url=tool_shed_url,
-                                                                               tool_path=tool_path,
-                                                                               repository=repository,
-                                                                               reinstalling=False,
-                                                                               required_repo_info_dicts=None)
-        return trans.fill_template('/admin/tool_shed_repository/manage_repository.mako',
-                                   repository=repository,
-                                   description=repository.description,
-                                   repo_files_dir=repo_files_dir,
-                                   containers_dict=containers_dict,
-                                   message=message,
-                                   status=status)
 
     @web.json
     def tool_dependency_status_updates(self, trans, ids=None, status_list=None):

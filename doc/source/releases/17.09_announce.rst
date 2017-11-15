@@ -143,7 +143,7 @@ Disclosed on the `mailing list <https://lists.galaxyproject.org/pipermail/galaxy
 
 Vulnerabilities were found by Eric Rasche and Manabu Ishii respectively. Detailed descriptions of these categories of vulnerabilities can be found at:
 
-- https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)
+- `<https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)>`__
 - https://www.owasp.org/index.php/Session_fixation
 
 The fix for these issues has been applied to Galaxy releases back to 16.10 and can be found in this `diff <https://gist.githubusercontent.com/jmchilton/760bf8ba6055b9a47a48529fcc49a493/raw/01bc98e5a8067a435f38d7cf4fda4e304c4425a2/2017augsecurity_1610.patch>`__

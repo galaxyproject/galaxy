@@ -23,6 +23,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.workflow_index_open()
         self.workflow_index_click_option("Run")
 
+        self.screenshot("workflow_manage_run_simple")
         self.workflow_run_submit()
 
         self.history_panel_wait_for_hid_ok(2, allowed_force_refreshes=1)
@@ -39,3 +40,4 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # Check that this tool form contains a warning about different versions.
         self.assert_warning_message(contains="different versions")
+        self.screenshot("workflow_manage_run_tool_upgrade")

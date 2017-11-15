@@ -95,7 +95,10 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.home()
         self.tool_open("head")
         self.tool_set_value("input", "1.fasta", expected_type="data")
+
+        self.screenshot("tool_form_simple_data")
         self.tool_form_execute()
+
         self.history_panel_wait_for_hid_ok(3)
 
         latest_hda = self.latest_history_item()

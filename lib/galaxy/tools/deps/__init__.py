@@ -6,14 +6,13 @@ import json
 import logging
 import os.path
 import shutil
-
 from collections import OrderedDict
 
 from galaxy.util import (
     hash_util,
     plugin_config
 )
-
+from galaxy.util.oset import OrderedSet
 from .requirements import (
     ToolRequirement,
     ToolRequirements
@@ -109,8 +108,9 @@ class DependencyManager(object):
         return value
 
     def dependency_shell_commands(self, requirements, **kwds):
-        requirement_to_dependency = self.requirements_to_dependencies(requirements, **kwds)
-        return [dependency.shell_commands(requirement) for requirement, dependency in requirement_to_dependency.items()]
+        requirements_to_dependencies = self.requirements_to_dependencies(requirements, **kwds)
+        ordered_dependencies = OrderedSet(requirements_to_dependencies.values())
+        return [dependency.shell_commands() for dependency in ordered_dependencies]
 
     def requirements_to_dependencies(self, requirements, **kwds):
         """
@@ -252,7 +252,7 @@ class CachedDependencyManager(DependencyManager):
             self.build_cache(requirements, **kwds)
         if os.path.exists(hashed_dependencies_dir):
             [dep.set_cache_path(hashed_dependencies_dir) for dep in cacheable_dependencies]
-        commands = [dep.shell_commands(req) for req, dep in resolved_dependencies.items()]
+        commands = [dep.shell_commands() for dep in resolved_dependencies.values()]
         return commands
 
     def hash_dependencies(self, resolved_dependencies):

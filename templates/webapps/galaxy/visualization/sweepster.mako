@@ -128,10 +128,10 @@
             var viz;
             $(function() {
                 // -- Viz set up. --
-                var viz = new sweepster.SweepsterVisualization(
+                var viz = new sweepster.default.SweepsterVisualization(
                     ${ h.dumps( config )}
                 );
-                var viz_view = new sweepster.SweepsterVisualizationView({ model: viz });
+                var viz_view = new sweepster.default.SweepsterVisualizationView({ model: viz });
                 viz_view.render();
             });
         });

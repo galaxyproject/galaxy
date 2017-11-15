@@ -1,18 +1,23 @@
 import json
 import logging
 import re
-from six.moves.urllib.parse import quote as urlquote
-from six.moves.urllib.parse import unquote as urlunquote
 
-from galaxy import util
-from galaxy import web
+from six.moves.urllib.parse import (
+    quote as urlquote,
+    unquote as urlunquote
+)
 
+from galaxy import (
+    util,
+    web
+)
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
-
-from tool_shed.util import common_util
-from tool_shed.util import repository_util
-from tool_shed.util import tool_util
+from tool_shed.util import (
+    common_util,
+    repository_util,
+    tool_util
+)
 
 log = logging.getLogger(__name__)
 

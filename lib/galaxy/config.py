@@ -16,7 +16,6 @@ import sys
 import tempfile
 import threading
 import time
-
 from datetime import timedelta
 
 from six import string_types
@@ -132,6 +131,8 @@ class Configuration(object):
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get("database_create_tables", "True"))
         self.database_query_profiling_proxy = string_as_bool(kwargs.get("database_query_profiling_proxy", "False"))
+        self.database_template = kwargs.get("database_template", None)
+        self.database_encoding = kwargs.get("database_encoding", None)  # Create new databases with this encoding.
         self.slow_query_log_threshold = float(kwargs.get("slow_query_log_threshold", 0))
 
         # Don't set this to true for production databases, but probably should
@@ -371,6 +372,7 @@ class Configuration(object):
         self.use_heartbeat = string_as_bool(kwargs.get('use_heartbeat', 'False'))
         self.heartbeat_interval = int(kwargs.get('heartbeat_interval', 20))
         self.heartbeat_log = kwargs.get('heartbeat_log', None)
+        self.monitor_thread_join_timeout = int(kwargs.get("monitor_thread_join_timeout", 5))
         self.log_actions = string_as_bool(kwargs.get('log_actions', 'False'))
         self.log_events = string_as_bool(kwargs.get('log_events', 'False'))
         self.sanitize_all_html = string_as_bool(kwargs.get('sanitize_all_html', True))
@@ -400,9 +402,6 @@ class Configuration(object):
         self.user_library_import_dir = kwargs.get('user_library_import_dir', None)
         self.user_library_import_symlink_whitelist = listify(kwargs.get('user_library_import_symlink_whitelist', []), do_strip=True)
         # Searching data libraries
-        self.enable_lucene_library_search = string_as_bool(kwargs.get('enable_lucene_library_search', False))
-        self.enable_whoosh_library_search = string_as_bool(kwargs.get('enable_whoosh_library_search', False))
-        self.whoosh_index_dir = resolve_path(kwargs.get("whoosh_index_dir", "database/whoosh_indexes"), self.root)
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
         self.ftp_upload_dir_identifier = kwargs.get('ftp_upload_dir_identifier', 'email')  # attribute on user - email, username, id, etc...
         self.ftp_upload_dir_template = kwargs.get('ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep)
@@ -756,8 +755,7 @@ class Configuration(object):
         # Create the directories that it makes sense to create
         for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,
-                     self.nginx_upload_store, self.whoosh_index_dir,
-                     self.object_store_cache_path):
+                     self.nginx_upload_store, self.object_store_cache_path):
             self._ensure_directory(path)
         # Check that required files exist
         tool_configs = self.tool_configs

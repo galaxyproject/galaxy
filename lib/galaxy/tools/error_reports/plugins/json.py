@@ -7,7 +7,6 @@ import os
 import tempfile
 
 from galaxy.util import string_as_bool
-
 from ..plugins import ErrorPlugin
 
 log = logging.getLogger(__name__)

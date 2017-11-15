@@ -1,10 +1,10 @@
 """
 This module manages loading/etc of Galaxy interactive tours.
 """
-
-import os
-import yaml
 import logging
+import os
+
+import yaml
 
 from galaxy import util
 

@@ -32,6 +32,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.wait_for_selector_visible("#__workflow__inputs__ .toolTitle")
         input_links = self.driver.find_elements_by_css_selector("#__workflow__inputs__ .toolTitle a")
         input_links[0].click()
+        self.screenshot("workflow_editor_data_input")
         # TODO: verify box is highlighted and side panel is a form describing input.
         # More work needs to be done to develop testing abstractions for doing these things.
 
@@ -42,6 +43,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.workflow_index_open()
         self.workflow_index_click_option("Edit")
         self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot("workflow_editor_edit_menu")
         self.workflow_editor_click_option("Save As")
 
     @selenium_test
@@ -51,6 +53,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.workflow_index_open()
         self.workflow_index_click_option("Edit")
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
+        self.screenshot("workflow_editor_tool_upgrade")
 
     @selenium_test
     def test_editor_invalid_tool_state(self):
@@ -60,6 +63,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.workflow_index_click_option("Edit")
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
         self.assert_modal_has_text("Using default: '1'")
+        self.screenshot("workflow_editor_invalid_state")
 
     @selenium_test
     def test_missing_tools(self):
@@ -77,6 +81,7 @@ steps:
         self.workflow_index_open()
         self.workflow_index_click_option("Edit")
         self.assert_modal_has_text("Tool is not installed")
+        self.screenshot("workflow_editor_missing_tool")
 
     def workflow_create_new(self, name=None, annotation=None):
         self.workflow_index_open()

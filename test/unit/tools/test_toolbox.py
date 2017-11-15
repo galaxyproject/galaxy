@@ -13,7 +13,6 @@ from galaxy.model.tool_shed_install import mapping
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
 from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
-
 from .test_tool_loader import (
     SIMPLE_MACRO,
     SIMPLE_TOOL_WITH_MACRO
