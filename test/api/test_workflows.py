@@ -1355,6 +1355,29 @@ test_data:
         name = content["name"]
         assert name == "my new name", name
 
+    @skip_without_tool("create_2")
+    def test_run_rename_multiple_outputs(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs: []
+steps:
+  - tool_id: create_2
+    state:
+      sleep_time: 0
+    outputs:
+      out_file1:
+        rename: "my new name"
+      out_file2:
+        rename: "my other new name"
+test_data: {}
+""", history_id=history_id)
+        details1 = self.dataset_populator.get_history_dataset_details(history_id, hid=1, wait=True, assert_ok=True)
+        details2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
+
+        assert details1["name"] == "my new name"
+        assert details2["name"] == "my other new name"
+
     @skip_without_tool("cat")
     def test_run_rename_based_on_input(self):
         history_id = self.dataset_populator.new_history()
