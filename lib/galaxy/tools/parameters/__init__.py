@@ -40,26 +40,84 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     >>> g = BooleanToolParameter( None, XML( '<param name="g"/>' ) )
     >>> h = TextToolParameter( None, XML( '<param name="h"/>' ) )
     >>> i = TextToolParameter( None, XML( '<param name="i"/>' ) )
-    >>> b.name = 'b'
+    >>> j = TextToolParameter( None, XML( '<param name="j"/>' ) )
+    >>> a.name = 'a'
+    >>> b.name = b.title = 'b'
+    >>> c.name = 'c'
+    >>> d.name = d.title = 'd'
+    >>> e.name = 'e'
+    >>> f.name = 'f'
+    >>> g.name = 'g'
+    >>> h.name = 'h'
+    >>> j.name = 'j'
     >>> b.inputs = odict([ ('c', c), ('d', d) ])
-    >>> d.name = 'd'
     >>> d.inputs = odict([ ('e', e), ('f', f) ])
     >>> f.test_param = g
-    >>> f.name = 'f'
     >>> f.cases = [ Bunch( value='true', inputs= { 'h': h } ), Bunch( value='false', inputs= { 'i': i } ) ]
     >>>
-    >>> def visitor( input, value, prefix, prefixed_name, **kwargs ):
-    ...     print 'name=%s, prefix=%s, prefixed_name=%s, value=%s' % ( input.name, prefix, prefixed_name, value )
-    >>> inputs = odict([('a',a),('b',b)])
+    >>> def visitor( input, value, prefix, prefixed_name, prefixed_label, error, **kwargs ):
+    ...     print 'name=%s, prefix=%s, prefixed_name=%s, prefixed_label=%s,value=%s' % ( input.name, prefix, prefixed_name, prefixed_label, value )
+    ...     if error:
+    ...         print error
+    >>> inputs = odict([('a', a),('b', b)])
     >>> nested = odict([ ('a', 1), ('b', [ odict([('c', 3), ( 'd', [odict([ ('e', 5), ('f', odict([ ('g', True), ('h', 7) ])) ]) ])]) ]) ])
     >>> visit_input_values( inputs, nested, visitor )
-    name=a, prefix=, prefixed_name=a, value=1
-    name=c, prefix=b_0|, prefixed_name=b_0|c, value=3
-    name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, value=5
-    name=g, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|g, value=True
-    name=h, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|h, value=7
+    name=a, prefix=, prefixed_name=a, prefixed_label=a,value=1
+    name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c,value=3
+    name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, prefixed_label=b 1 > d 1 > e,value=5
+    name=g, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|g, prefixed_label=b 1 > d 1 > g,value=True
+    name=h, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|h, prefixed_label=b 1 > d 1 > h,value=7
     >>> params_from_strings( inputs, params_to_strings( inputs, nested, None ), None )[ 'b' ][ 0 ][ 'd' ][ 0 ][ 'f' ][ 'g' ] is True
     True
+
+    >>> # Conditional test parameter value does not match any case, warning is shown and child values are not visited
+    >>> f.test_param = j
+    >>> nested['b'][0]['d'][0]['f']['j'] = 'j'
+    >>> visit_input_values( inputs, nested, visitor )
+    name=a, prefix=, prefixed_name=a, prefixed_label=a,value=1
+    name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c,value=3
+    name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, prefixed_label=b 1 > d 1 > e,value=5
+    name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|j, prefixed_label=b 1 > d 1 > j,value=j
+    The selected case is unavailable/invalid.
+
+    >>> # Conditional test parameter missing from state, value error
+    >>> del nested['b'][0]['d'][0]['f']['j']
+    >>> visit_input_values( inputs, nested, visitor )
+    name=a, prefix=, prefixed_name=a, prefixed_label=a,value=1
+    name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c,value=3
+    name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, prefixed_label=b 1 > d 1 > e,value=5
+    name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|j, prefixed_label=b 1 > d 1 > j,value=None
+    No value found for 'b 1 > d 1 > j'.
+
+    >>> # Conditional parameter missing from state, value error
+    >>> del nested['b'][0]['d'][0]['f']
+    >>> visit_input_values( inputs, nested, visitor )
+    name=a, prefix=, prefixed_name=a, prefixed_label=a,value=1
+    name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c,value=3
+    name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, prefixed_label=b 1 > d 1 > e,value=5
+    name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|j, prefixed_label=b 1 > d 1 > j,value=None
+    No value found for 'b 1 > d 1 > j'.
+
+    >>> # Conditional input name has changed due to version change, key error
+    >>> f.name = 'f_1'
+    >>> visit_input_values( inputs, nested, visitor )
+    name=a, prefix=, prefixed_name=a, prefixed_label=a,value=1
+    name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c,value=3
+    name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, prefixed_label=b 1 > d 1 > e,value=5
+    name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f_1|j, prefixed_label=b 1 > d 1 > j,value=None
+    No value found for 'b 1 > d 1 > j'.
+
+    >>> # Other parameters are missing from state
+    >>> nested = odict([ ('b', [ odict([ ( 'd', [odict([ ('f', odict([ ('g', True), ('h', 7) ])) ]) ])]) ]) ])
+    >>> visit_input_values( inputs, nested, visitor )
+    name=a, prefix=, prefixed_name=a, prefixed_label=a,value=None
+    No value found for 'a'.
+    name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c,value=None
+    No value found for 'b 1 > c'.
+    name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, prefixed_label=b 1 > d 1 > e,value=None
+    No value found for 'b 1 > d 1 > e'.
+    name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f_1|j, prefixed_label=b 1 > d 1 > j,value=None
+    No value found for 'b 1 > d 1 > j'.
     """
     def callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None):
         args = {
@@ -85,7 +143,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     def get_current_case(input, input_values):
         try:
             return input.get_current_case(input_values[input.test_param.name])
-        except (KeyError, ValueError) as e:
+        except (KeyError, ValueError):
             return -1
 
     context = ExpressionContext(input_values, context)
