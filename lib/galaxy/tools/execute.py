@@ -24,12 +24,16 @@ class PartialJobExecution(Exception):
         self.jobs = jobs
 
 
-def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, invocation_step=None, max_num_jobs=None):
+MappingParameters = collections.namedtuple("MappingParameters", ["param_template", "param_combinations"])
+
+
+def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, invocation_step=None, max_num_jobs=None):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
     """
     all_jobs_timer = ExecutionTimer()
+    param_combinations = mapping_params.param_combinations
     execution_tracker = ToolExecutionTracker(tool, param_combinations, collection_info)
     app = trans.app
     execution_cache = ToolExecutionCache(trans)
@@ -120,12 +124,8 @@ def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, c
     log.debug("Executed %d job(s) for tool %s request: %s" % (job_count, tool.id, all_jobs_timer))
     if collection_info:
         history = history or tool.get_default_history_by_trans(trans)
-        if len(param_combinations) == 0:
-            template = "Attempting to map over an empty collection, this is not yet implemented. collection_info is [%s]"
-            message = template % collection_info
-            log.warning(message)
-            raise Exception(message)
-        params = param_combinations[0]
+        # TODO: this perhaps should always just be the param_template. Going to try to be safe first. -John
+        params = param_combinations[0] if param_combinations else mapping_params.param_template
         execution_tracker.create_output_collections(trans, history, params)
 
     return execution_tracker
@@ -196,13 +196,13 @@ class ToolExecutionTracker(object):
         collections = {}
 
         implicit_inputs = list(self.collection_info.collections.items())
-        for output_name, outputs in self.outputs_by_output_name.items():
+        for output_name, output in self.tool.outputs.items():
+            outputs = self.outputs_by_output_name[output_name]
             if not len(structure) == len(outputs):
                 # Output does not have the same structure, if all jobs were
                 # successfully submitted this shouldn't have happened.
                 log.warning("Problem matching up datasets while attempting to create implicit dataset collections")
                 continue
-            output = self.tool.outputs[output_name]
 
             element_identifiers = None
             if hasattr(output, "default_identifier_source"):
