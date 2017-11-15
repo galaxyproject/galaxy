@@ -41,18 +41,12 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     >>> h = TextToolParameter( None, XML( '<param name="h"/>' ) )
     >>> i = TextToolParameter( None, XML( '<param name="i"/>' ) )
     >>> j = TextToolParameter( None, XML( '<param name="j"/>' ) )
-    >>> a.name = 'a'
     >>> b.name = b.title = 'b'
-    >>> c.name = 'c'
-    >>> d.name = d.title = 'd'
-    >>> e.name = 'e'
-    >>> f.name = 'f'
-    >>> g.name = 'g'
-    >>> h.name = 'h'
-    >>> j.name = 'j'
     >>> b.inputs = odict([ ('c', c), ('d', d) ])
+    >>> d.name = d.title = 'd'
     >>> d.inputs = odict([ ('e', e), ('f', f) ])
     >>> f.test_param = g
+    >>> f.name = 'f'
     >>> f.cases = [ Bunch( value='true', inputs= { 'h': h } ), Bunch( value='false', inputs= { 'i': i } ) ]
     >>>
     >>> def visitor( input, value, prefix, prefixed_name, prefixed_label, error, **kwargs ):
