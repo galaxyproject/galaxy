@@ -92,6 +92,18 @@ class ConfigurationController(BaseAPIController):
 
     @expose_api
     @require_admin
+    def decode_id(self, trans, encoded_id, **kwds):
+        """Decode a given id."""
+        decoded_id = None
+        # Handle the special case for library folders
+        if ((len(encoded_id) % 16 == 1) and encoded_id.startswith('F')):
+            decoded_id = trans.security.decode_id(encoded_id[1:])
+        else:
+            decoded_id = trans.security.decode_id(encoded_id)
+        return {"decoded_id": decoded_id}
+
+    @expose_api
+    @require_admin
     def tool_lineages(self, trans):
         rval = []
         for id, tool in self.app.toolbox.tools():
