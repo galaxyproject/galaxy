@@ -12,13 +12,13 @@ def __main__():
     base_dir = os.path.join(os.getcwd(), "bacteria")
     try:
         base_dir = sys.argv[1]
-    except:
+    except IndexError:
         print("using default base_dir:", base_dir)
 
     loc_out = os.path.join(base_dir, "seq.loc")
     try:
         loc_out = os.path.join(base_dir, sys.argv[2])
-    except:
+    except Exception:
         print("using default seq.loc:", loc_out)
 
     organisms = {}
@@ -53,7 +53,7 @@ def __main__():
         org = organisms[org]
         try:
             build = org['genome project id']
-        except:
+        except KeyError:
             continue
         if 'build' in org:
             build = org['build']
@@ -64,7 +64,7 @@ def __main__():
         # TODO: add better checking, i.e. for updating
         try:
             os.mkdir(seq_path)
-        except:
+        except Exception:
             print("Skipping", build)
             # continue
 

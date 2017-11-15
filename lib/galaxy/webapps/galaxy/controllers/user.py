@@ -9,21 +9,33 @@ import urllib
 from datetime import datetime, timedelta
 
 from markupsafe import escape
-from sqlalchemy import and_, or_, func, true
-from galaxy import model
-from galaxy import util
-from galaxy import web
+from sqlalchemy import (
+    and_,
+    func,
+    or_,
+    true
+)
+
+from galaxy import (
+    model,
+    util,
+    web
+)
 from galaxy.queue_worker import send_local_control_task
-from galaxy.security.validate_user_input import (transform_publicname,
-                                                 validate_email,
-                                                 validate_password,
-                                                 validate_publicname)
+from galaxy.security.validate_user_input import (
+    transform_publicname,
+    validate_email,
+    validate_password,
+    validate_publicname
+)
 from galaxy.util import biostar, hash_util
 from galaxy.web import url_for
-from galaxy.web.base.controller import (BaseUIController,
-                                        CreatesApiKeysMixin,
-                                        CreatesUsersMixin,
-                                        UsesFormDefinitionsMixin)
+from galaxy.web.base.controller import (
+    BaseUIController,
+    CreatesApiKeysMixin,
+    CreatesUsersMixin,
+    UsesFormDefinitionsMixin
+)
 from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids, time_ago
 

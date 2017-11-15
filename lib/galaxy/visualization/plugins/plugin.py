@@ -268,7 +268,7 @@ class InteractiveEnvironmentPlugin(VisualizationPlugin):
         if self.config.get('plugin_type', 'visualization') == "interactive_environment":
             try:
                 request = self.INTENV_REQUEST_FACTORY(trans, self)
-            except:
+            except Exception:
                 log.exception("IE plugin request handling failed")
                 return trans.fill_template('message.mako',
                     message='Loading the interactive environment failed, please contact the {admin_tag} for assistance'.format(

@@ -16,16 +16,19 @@ import six
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
-from galaxy.util import compression_utils
-from galaxy.util import FILENAME_VALID_CHARS
-from galaxy.util import inflector
-from galaxy.util import unicodify
+from galaxy.util import (
+    compression_utils,
+    FILENAME_VALID_CHARS,
+    inflector,
+    unicodify
+)
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
-
-from . import dataproviders
-from . import metadata
+from . import (
+    dataproviders,
+    metadata
+)
 
 XSS_VULNERABLE_MIME_TYPES = [
     'image/svg+xml',  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.
@@ -179,7 +182,7 @@ class Data(object):
     def set_max_optional_metadata_filesize(self, max_value):
         try:
             max_value = int(max_value)
-        except:
+        except (TypeError, ValueError):
             return
         self.__class__._max_optional_metadata_filesize = max_value
 
@@ -394,7 +397,7 @@ class Data(object):
                 if not mime:
                     try:
                         mime = trans.app.datatypes_registry.get_mimetype_by_extension(".".split(file_path)[-1])
-                    except:
+                    except Exception:
                         mime = "text/plain"
                 self._clean_and_set_mime_type(trans, mime)
                 return self._yield_user_file_content(trans, data, file_path)
@@ -490,7 +493,7 @@ class Data(object):
             info = unicodify(info, 'utf-8')
 
             return info
-        except:
+        except Exception:
             return "info unavailable"
 
     def validate(self, dataset):
@@ -521,7 +524,7 @@ class Data(object):
         self.supported_display_apps = self.supported_display_apps.copy()
         try:
             del self.supported_display_apps[app_id]
-        except:
+        except Exception:
             log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.', type, self.__class__.__name__)
 
     def clear_display_apps(self):
@@ -551,7 +554,7 @@ class Data(object):
         """Returns primary label for display app"""
         try:
             return self.supported_display_apps[type]['label']
-        except:
+        except Exception:
             return 'unknown'
 
     def as_display_type(self, dataset, type, **kwd):
@@ -559,7 +562,7 @@ class Data(object):
         try:
             if type in self.get_display_types():
                 return getattr(self, self.supported_display_apps[type]['file_function'])(dataset, **kwd)
-        except:
+        except Exception:
             log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible', self.supported_display_apps[type]['file_function'], self.__class__.__name__, type)
         return "This display type (%s) is not implemented for this datatype (%s)." % (type, dataset.ext)
 
@@ -573,7 +576,7 @@ class Data(object):
         try:
             if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr(self, self.supported_display_apps[type]['links_function'])(dataset, type, app, base_url, **kwd)
-        except:
+        except Exception:
             log.exception('Function %s is referred to in datatype %s for generating links for type %s, but is not accessible',
                           self.supported_display_apps[type]['links_function'], self.__class__.__name__, type)
         return target_frame, []

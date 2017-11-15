@@ -123,12 +123,12 @@ class ColumnDataProvider(BaseDataProvider):
             if type == 'int':
                 try:
                     val = int(val)
-                except:
+                except ValueError:
                     return None
             elif type == 'float':
                 try:
                     val = float(val)
-                except:
+                except ValueError:
                     return None
             return val
 

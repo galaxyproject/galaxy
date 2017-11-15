@@ -4,8 +4,10 @@ galaxyFS_base_dir: /opt/galaxy
 # TODO: use GALAXY_ROOT via cmd line instead
 galaxy_server_dir: "/galaxy"
 galaxy_venv_dir: "{{ galaxyFS_base_dir }}/.venv"
-galaxy_repo: https://bitbucket.org/galaxy/galaxy-central
-galaxy_changeset_id: stable
+galaxy_vcs: git
+galaxy_git_repo: https://github.com/galaxyproject/galaxy.git
+galaxy_changeset_id: dev
+galaxy_download_url: https://codeload.github.com/galaxyproject/galaxy/tar.gz/dev
 galaxy_manage_clone: no
 galaxy_manage_download: yes
 galaxy_root: "{{ galaxy_server_dir}}"
@@ -15,7 +17,7 @@ galaxy_db_log: /tmp/pSQL.log
 psql_galaxyftp_password: ignoredthis
 galaxy_config_file: "{{ galaxy_server_dir }}/config/galaxy.ini"
 configure_docker: no
-postgresql_bin_dir: /usr/lib/postgresql/9.3/bin
+postgresql_bin_dir: /usr/lib/postgresql/9.5/bin
 galaxy_manage_database: no
 
 galaxy_user_name: "root"

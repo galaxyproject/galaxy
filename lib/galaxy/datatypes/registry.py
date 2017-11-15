@@ -13,7 +13,6 @@ from xml.etree.ElementTree import Element
 import yaml
 
 import galaxy.util
-
 from . import (
     binary,
     coverage,

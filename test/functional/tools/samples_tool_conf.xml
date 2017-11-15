@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml"/>
+  <tool file="test_data_source.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
   <tool file="inheritance_simple.xml" />
@@ -151,6 +152,9 @@
   <tool file="mulled_example_conflict.xml" />
 
   <tool file="simple_constructs.yml" />
+
+  <!-- Tools without tool test but useful for hand-crafted, artisanal test cases. -->
+  <tool file="cat_data_and_sleep.xml" />
 
   <!-- Load collection operation tools - I consider these part of the
        "framework" and they are used to in API tests to test the underlying

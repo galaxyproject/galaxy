@@ -20,7 +20,6 @@ from functional.twilltestcase import TwillTestCase  # noqa: I100
 from galaxy.web import security
 from tool_shed.util import hg_util, xml_util
 from tool_shed.util.encoding_util import tool_shed_encode
-
 from . import common, test_db_util
 
 log = logging.getLogger(__name__)
@@ -339,21 +338,21 @@ class ShedTwillTestCase(TwillTestCase):
         invalid_username = False
         try:
             self.check_page_for_string("Created new user account")
-        except:
+        except Exception:
             try:
                 # May have created the account in a previous test run...
                 self.check_page_for_string("User with that email already exists")
                 previously_created = True
-            except:
+            except Exception:
                 try:
                     self.check_page_for_string('Public name is taken; please choose another')
                     username_taken = True
-                except:
+                except Exception:
                     try:
                         # Note that we're only checking if the usr name is >< 4 chars here...
                         self.check_page_for_string('Public name must be at least 4 characters in length')
                         invalid_username = True
-                    except:
+                    except Exception:
                         pass
         return previously_created, username_taken, invalid_username
 
@@ -740,7 +739,7 @@ class ShedTwillTestCase(TwillTestCase):
         lhs = "repos/%s/%s" % (repository.user.username, repository.name)
         try:
             return self.hgweb_config_manager.get_entry(lhs)
-        except:
+        except Exception:
             raise Exception("Entry for repository %s missing in hgweb config file %s." % (lhs, self.hgweb_config_manager.hgweb_config))
 
     def get_repository_changelog_tuples(self, repository):
@@ -921,7 +920,7 @@ class ShedTwillTestCase(TwillTestCase):
             repository_ids = re.sub('[^a-fA-F0-9,]+', '', repository_ids)
             encoded_kwd = install_parameters.group(2)
             reinstalling = install_parameters.group(3)
-            url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
+            url = '/admin_toolshed/install_repositories?tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
                 (','.join(galaxy.util.listify(repository_ids)), encoded_kwd, reinstalling)
             self.visit_galaxy_url(url)
             return galaxy.util.listify(repository_ids)

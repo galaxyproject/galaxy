@@ -15,6 +15,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.actions.library import LibraryActions
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import (
     base as managers_base,
@@ -31,11 +32,10 @@ from galaxy.web import (
     _future_expose_api_anonymous as expose_api_anonymous
 )
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
-
 log = logging.getLogger(__name__)
 
 
-class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
+class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, LibraryActions):
 
     def __init__(self, app):
         super(LibraryDatasetsController, self).__init__(app)
@@ -428,7 +428,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
                 # the reasoning here is that galaxy admins may not have direct filesystem access or can only access
                 # library_import_dir via FTP (which cannot create symlinks), and may rely on sysadmins to set up the
                 # import directory. if they have filesystem access, all bets are off.
-                raise exceptions.RequestParameterInvalidException( 'The given path is invalid.' )
+                raise exceptions.RequestParameterInvalidException('The given path is invalid.')
             path = os.path.join(import_base_dir, path)
         elif source in ['userdir_file', 'userdir_folder']:
             unsafe = None
@@ -476,12 +476,12 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         # user wants to import one file only
         elif source in ["userdir_file", "importdir_file"]:
             file = os.path.abspath(path)
-            abspath_datasets.append(trans.webapp.controllers['library_common'].make_library_uploaded_dataset(
-                trans, 'api', kwd, os.path.basename(file), file, 'server_dir', library_bunch))
+            abspath_datasets.append(self._make_library_uploaded_dataset(
+                trans, kwd, os.path.basename(file), file, 'server_dir', library_bunch))
         # user wants to import whole folder
         elif source == "userdir_folder":
-            uploaded_datasets_bunch = trans.webapp.controllers['library_common'].get_path_paste_uploaded_datasets(
-                trans, 'api', kwd, library_bunch, 200, '')
+            uploaded_datasets_bunch = self._get_path_paste_uploaded_datasets(
+                trans, kwd, library_bunch, 200, '')
             uploaded_datasets = uploaded_datasets_bunch[0]
             if uploaded_datasets is None:
                 raise exceptions.ObjectNotFound('Given folder does not contain any datasets.')
@@ -491,8 +491,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         #  user wants to import from path
         if source in ["admin_path", "importdir_folder"]:
             # validate the path is within root
-            uploaded_datasets_bunch = trans.webapp.controllers['library_common'].get_path_paste_uploaded_datasets(
-                trans, 'api', kwd, library_bunch, 200, '')
+            uploaded_datasets_bunch = self._get_path_paste_uploaded_datasets(
+                trans, kwd, library_bunch, 200, '')
             uploaded_datasets = uploaded_datasets_bunch[0]
             if uploaded_datasets is None:
                 raise exceptions.ObjectNotFound('Given folder does not contain any datasets.')
@@ -725,7 +725,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
                 try:
                     return open(dataset.file_name)
-                except:
+                except Exception:
                     raise exceptions.InternalServerError("This dataset contains no content.")
         else:
             raise exceptions.RequestParameterInvalidException("Wrong format parameter specified")

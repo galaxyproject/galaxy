@@ -31,7 +31,7 @@ def safe_contains(prefix, path, whitelist=None):
 
     Given any two filesystem paths, ensure that ``path`` is contained in ``prefix``. If ``path`` exists (either as an
     absolute path or relative to ``prefix``), it is canonicalized with :func:`os.path.realpath` to ensure it is not a
-    symbolic link that points outside of ``path``. If it is a symbolic link and ``whitelist`` is set, the symbolic link
+    symbolic link that points outside of ``prefix``. If it is a symbolic link and ``whitelist`` is set, the symbolic link
     may also point inside a ``whitelist`` path.
 
     The ``path`` is checked against ``whitelist`` using either its absolute pathname (if passed in as absolute) or

@@ -1,16 +1,16 @@
+/* global define */
 define([
     "galaxy",
     "jquery",
-    "sinon-qunit"
+    "QUnit"
 ], function(
     appBase,
     $,
-    sinon
+    QUnit
 ){
-    /*globals equal test module expect deepEqual strictEqual throws ok */
     "use strict";
-
-    module( "Galaxy client app tests" );
+    appBase = appBase.default;
+    QUnit.module( "Galaxy client app tests" );
 
     var options = {
         config : {
@@ -42,69 +42,66 @@ define([
         }
     };
 
-    test( "App base construction/initializiation defaults", function() {
+    QUnit.test( "App base construction/initializiation defaults", function(assert) {
         var app = new appBase.GalaxyApp({});
-        ok( app.hasOwnProperty( 'options' )     && typeof app.options === 'object' );
-        ok( app.hasOwnProperty( 'logger' )      && typeof app.logger === 'object' );
-        ok( app.hasOwnProperty( 'localize' )    && typeof app.localize === 'function' );
-        ok( app.hasOwnProperty( 'config' )      && typeof app.config === 'object' );
-        ok( app.hasOwnProperty( 'user' )        && typeof app.config === 'object' );
-
-        // equal( true );
-        equal( app.localize, window._l );
+        assert.ok( app.hasOwnProperty( 'options' )     && typeof app.options === 'object' );
+        assert.ok( app.hasOwnProperty( 'logger' )      && typeof app.logger === 'object' );
+        assert.ok( app.hasOwnProperty( 'localize' )    && typeof app.localize === 'function' );
+        assert.ok( app.hasOwnProperty( 'config' )      && typeof app.config === 'object' );
+        assert.ok( app.hasOwnProperty( 'user' )        && typeof app.config === 'object' );
+        assert.equal( app.localize, window._l );
     });
 
-    test( "App base default options", function() {
+    QUnit.test( "App base default options", function(assert) {
         var app = new appBase.GalaxyApp({});
-        ok( app.hasOwnProperty( 'options' ) && typeof app.options === 'object' );
-        equal( app.options.root,            '/' );
-        equal( app.options.patchExisting,   true );
+        assert.ok( app.hasOwnProperty( 'options' ) && typeof app.options === 'object' );
+        assert.equal( app.options.root,            '/' );
+        assert.equal( app.options.patchExisting,   true );
     });
 
-    test( "App base extends from Backbone.Events", function() {
+    QUnit.test( "App base extends from Backbone.Events", function(assert) {
         var app = new appBase.GalaxyApp({});
         [ 'on', 'off', 'trigger', 'listenTo', 'stopListening' ].forEach( function( fn ){
-            ok( app.hasOwnProperty( fn ) && typeof app[ fn ] === 'function' );
+            assert.ok( app.hasOwnProperty( fn ) && typeof app[ fn ] === 'function' );
         });
     });
 
-    test( "App base has logging methods from utils/add-logging.js", function() {
+    QUnit.test( "App base has logging methods from utils/add-logging.js", function(assert) {
         var app = new appBase.GalaxyApp({});
         [ 'debug', 'info', 'warn', 'error', 'metric' ].forEach( function( fn ){
-            ok( typeof app[ fn ] === 'function' );
+            assert.ok( typeof app[ fn ] === 'function' );
         });
-        ok( app._logNamespace === 'GalaxyApp' );
+        assert.ok( app._logNamespace === 'GalaxyApp' );
     });
 
-    test( 'App base will patch in attributes from existing Galaxy objects', function(){
+    QUnit.test( 'App base will patch in attributes from existing Galaxy objects', function(assert) {
         window.Galaxy = {
             attribute : {
                 subattr : 1
             }
         };
         var app = new appBase.GalaxyApp({});
-        ok( typeof app.attribute === 'object' && app.attribute.subattr === 1 );
+        assert.ok( typeof app.attribute === 'object' && app.attribute.subattr === 1 );
     });
 
-    test( "App base logger", function() {
+    QUnit.test( "App base logger", function(assert) {
         var app = new appBase.GalaxyApp({});
-        ok( app.hasOwnProperty( 'logger' ) && typeof app.config === 'object' );
+        assert.ok( app.hasOwnProperty( 'logger' ) && typeof app.config === 'object' );
     });
 
-    test( "App base config", function() {
+    QUnit.test( "App base config", function(assert) {
         var app = new appBase.GalaxyApp( options );
-        ok( app.hasOwnProperty( 'config' ) && typeof app.config === 'object' );
-        equal( app.config.allow_user_deletion,  false );
-        equal( app.config.allow_user_creation,  true );
-        equal( app.config.wiki_url,             "https://galaxyproject.org/" );
-        equal( app.config.ftp_upload_site,      null );
-        //...
+        assert.ok( app.hasOwnProperty( 'config' ) && typeof app.config === 'object' );
+        assert.equal( app.config.allow_user_deletion,  false );
+        assert.equal( app.config.allow_user_creation,  true );
+        assert.equal( app.config.wiki_url,             "https://galaxyproject.org/" );
+        assert.equal( app.config.ftp_upload_site,      null );
     });
 
-    test( "App base user", function() {
+    QUnit.test( "App base user", function(assert) {
         var app = new appBase.GalaxyApp({});
-        ok( app.hasOwnProperty( 'user' ) && typeof app.user === 'object' );
-        ok( app.user.isAdmin() === false );
+        assert.ok( app.hasOwnProperty( 'user' ) && typeof app.user === 'object' );
+        assert.ok( app.user.isAdmin() === false );
     });
 
 });

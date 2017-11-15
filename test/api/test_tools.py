@@ -1,5 +1,6 @@
 # Test tools API.
 import json
+import os
 
 from base import api
 from base.populators import (
@@ -77,6 +78,55 @@ class ToolsTestCase(api.ApiTestCase):
         self._assert_has_keys(f2_info, "min", "max")
         assert f2_info["min"] is None
         assert f2_info["max"] is None
+
+    @skip_without_tool("test_data_source")
+    def test_data_source_ok_request(self):
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.run_tool_payload(
+                tool_id="test_data_source",
+                inputs={
+                    "URL": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                    "URL_method": "get",
+                    "data_type": "bed",
+                },
+                history_id=history_id,
+            )
+            create_response = self._post("tools", data=payload)
+            self._assert_status_code_is(create_response, 200)
+            create_object = create_response.json()
+            self._assert_has_keys(create_object, "outputs")
+            assert len(create_object["outputs"]) == 1
+            output = create_object["outputs"][0]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+            assert output_content.startswith("chr1\t147962192\t147962580")
+
+            output_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output)
+            assert output_details["file_ext"] == "bed"
+
+    @skip_without_tool("test_data_source")
+    def test_data_sources_block_file_parameters(self):
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.run_tool_payload(
+                tool_id="test_data_source",
+                inputs={
+                    "URL": "file://%s" % os.path.join(os.getcwd(), "README.rst"),
+                    "URL_method": "get",
+                    "data_type": "bed",
+                },
+                history_id=history_id,
+            )
+            create_response = self._post("tools", data=payload)
+            self._assert_status_code_is(create_response, 200)
+            create_object = create_response.json()
+            self._assert_has_keys(create_object, "outputs")
+            assert len(create_object["outputs"]) == 1
+            output = create_object["outputs"][0]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+
+            output_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, wait=False)
+            assert output_details["state"] == "error", output_details
+            assert "has not sent back a URL parameter" in output_details["misc_info"], output_details
 
     def _show_valid_tool(self, tool_id):
         tool_show_response = self._get("tools/%s" % tool_id, data=dict(io_details=True))

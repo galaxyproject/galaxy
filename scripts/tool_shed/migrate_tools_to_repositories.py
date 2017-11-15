@@ -255,7 +255,7 @@ def tool_archive_extension(file_name):
         try:
             assert head[:2] == '\037\213'
             extension = 'tar.gz'
-        except:
+        except Exception:
             pass
     if extension is None:
         extension = 'tar'

@@ -22,6 +22,10 @@ module.exports = function( grunt ){
         grunt.log.writeln( '(only testing ' + grunt.config.get( 'qunit.all' ) + ')' );
     }
 
+    if( grunt.option( 'verbose' ) ) {
+        grunt.config.set( 'qunit.options.console', true );
+    }
+
     grunt.loadNpmTasks( 'grunt-contrib-qunit' );
 
     // use 'grunt watch' to have the qunit tests run when scripts or tests are changed

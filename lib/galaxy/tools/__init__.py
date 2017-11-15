@@ -20,7 +20,6 @@ from six.moves.urllib.parse import unquote_plus
 
 import tool_shed.util.repository_util as repository_util
 import tool_shed.util.shed_util_common
-
 from galaxy import (
     exceptions,
     model
@@ -85,7 +84,6 @@ from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.work.context import WorkRequestContext
 from tool_shed.util import common_util
-
 from .execute import execute as execute_job
 from .loader import (
     imported_macro_paths,
@@ -794,7 +792,7 @@ class Tool(object, Dictifiable):
             if tests_source:
                 try:
                     self.__tests = parse_tests(self, tests_source)
-                except:
+                except Exception:
                     self.__tests = None
                     log.exception("Failed to parse tool tests")
             else:
@@ -1011,7 +1009,7 @@ class Tool(object, Dictifiable):
                         group.cases.append(case)
                         try:
                             possible_cases.remove(case.value)
-                        except:
+                        except Exception:
                             log.warning("Tool %s: a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." %
                                         (self.id, group.name, group.test_param.name, case.value))
                     for unspecified_case in possible_cases:
@@ -1131,8 +1129,8 @@ class Tool(object, Dictifiable):
                 self.__help = Template(rst_to_html(help_text), input_encoding='utf-8',
                                        output_encoding='utf-8', default_filters=['decode.utf8'],
                                        encoding_errors='replace')
-            except:
-                log.exception("error in help for tool %s", self.name)
+            except Exception:
+                log.exception("Exception while parsing help for tool with id '%s'", self.id)
 
             # Handle deprecated multi-page help text in XML case.
             if hasattr(tool_source, "root"):
@@ -1151,8 +1149,8 @@ class Tool(object, Dictifiable):
                                                     default_filters=['decode.utf8'],
                                                     encoding_errors='replace')
                                            for x in self.__help_by_page]
-                except:
-                    log.exception("error in multi-page help for tool %s", self.name)
+                except Exception:
+                    log.exception("Exception while parsing multi-page help for tool with id '%s'", self.id)
         # Pad out help pages to match npages ... could this be done better?
         while len(self.__help_by_page) < self.npages:
             self.__help_by_page.append(self.__help)
@@ -1422,7 +1420,7 @@ class Tool(object, Dictifiable):
                         if not prefixed_name.startswith('__'):
                             messages[prefixed_name] = error if previous_value == value else '%s Using default: \'%s\'.' % (error, value)
                         parent[input.name] = value
-                    except:
+                    except Exception:
                         messages[prefixed_name] = 'Attempt to replace invalid value for \'%s\' failed.' % (prefixed_label)
                 else:
                     messages[prefixed_name] = error

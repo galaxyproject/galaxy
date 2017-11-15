@@ -8,14 +8,14 @@ from galaxy.tools import (
     Tool
 )
 from galaxy.tools.parameters import dynamic_options
-
 from tool_shed.tools import data_table_manager
-
-from tool_shed.util import basic_util
-from tool_shed.util import hg_util
-from tool_shed.util import repository_util
-from tool_shed.util import tool_util
-from tool_shed.util import xml_util
+from tool_shed.util import (
+    basic_util,
+    hg_util,
+    repository_util,
+    tool_util,
+    xml_util
+)
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class ToolValidator(object):
         can_use_disk_file = filecmp.cmp(file_path, latest_version_of_file)
         try:
             os.unlink(latest_version_of_file)
-        except:
+        except Exception:
             pass
         return can_use_disk_file
 
@@ -325,10 +325,10 @@ class ToolValidator(object):
             for tmp_code_file in tmp_code_files:
                 try:
                     os.unlink(tmp_code_file)
-                except:
+                except Exception:
                     pass
             try:
                 os.unlink(tmp_tool_config)
-            except:
+            except Exception:
                 pass
         return tool, message

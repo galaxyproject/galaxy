@@ -3,8 +3,8 @@ import logging
 from datetime import date, timedelta
 
 import sqlalchemy as sa
-from sqlalchemy import and_
 from markupsafe import escape
+from sqlalchemy import and_
 
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, web

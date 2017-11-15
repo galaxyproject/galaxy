@@ -176,7 +176,7 @@ def get_precreated_datasets(trans, params, data_obj, controller='root'):
     for id in async_datasets:
         try:
             data = trans.sa_session.query(data_obj).get(int(id))
-        except:
+        except Exception:
             log.exception('Unable to load precreated dataset (%s) sent in upload form' % id)
             continue
         if data_obj is trans.app.model.HistoryDatasetAssociation:

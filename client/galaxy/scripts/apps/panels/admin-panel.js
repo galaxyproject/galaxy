@@ -1,4 +1,4 @@
-var _l = require("utils/localization");
+import _l from "utils/localization";
 
 var AdminPanel = Backbone.View.extend({
     initialize: function(page, options) {
@@ -17,11 +17,11 @@ var AdminPanel = Backbone.View.extend({
                 title: "Server",
                 items: [
                     {
-                        title: "Data types registry",
+                        title: "Data types",
                         url: "admin/view_datatypes_registry"
                     },
                     {
-                        title: "Data tables registry",
+                        title: "Data tables",
                         url: "admin/view_tool_data_tables"
                     },
                     {
@@ -31,71 +31,10 @@ var AdminPanel = Backbone.View.extend({
                     {
                         title: "Manage jobs",
                         url: "admin/jobs"
-                    }
-                ]
-            },
-            {
-                title: "Tools and Tool Shed",
-                items: [
-                    {
-                        title: "Search Tool Shed",
-                        url: "admin_toolshed/browse_tool_sheds",
-                        enabled: self.settings.is_tool_shed_installed
                     },
                     {
-                        title: "Search Tool Shed (Beta)",
-                        url: "admin_toolshed/browse_toolsheds",
-                        enabled:
-                            self.settings.is_tool_shed_installed &&
-                            self.config.enable_beta_ts_api_install
-                    },
-                    {
-                        title: "Monitor installing repositories",
-                        url:
-                            "admin_toolshed/monitor_repository_installation?installing_repository_ids=" +
-                            self.settings.installing_repository_ids,
-                        enabled: self.settings.installing_repository_ids
-                    },
-                    {
-                        title: "Manage installed tools",
-                        url: "admin/repositories",
-                        enabled: self.settings.is_repo_installed,
-                        target: "__use_router__"
-                    },
-                    {
-                        title: "Reset metadata",
-                        url:
-                            "admin_toolshed/reset_metadata_on_selected_installed_repositories",
-                        enabled: self.settings.is_repo_installed
-                    },
-                    {
-                        title: "Download local tool",
-                        url: "admin/package_tool"
-                    },
-                    {
-                        title: "Tool lineage",
-                        url: "admin/tool_versions",
-                        target: "__use_router__"
-                    },
-                    {
-                        title: "Reload a tool's configuration",
-                        url: "admin/reload_tool"
-                    },
-                    {
-                        title: "Review tool migration stages",
-                        url: "admin/review_tool_migration_stages"
-                    },
-                    {
-                        title: "View Tool Error Logs",
-                        url: "admin/tool_errors"
-                    },
-                    {
-                        title: "Manage Display Whitelist",
-                        url: "admin/sanitize_whitelist"
-                    },
-                    {
-                        title: "Manage Tool Dependencies",
-                        url: "admin/manage_tool_dependencies"
+                        title: "Local data",
+                        url: "data_manager"
                     }
                 ]
             },
@@ -108,6 +47,12 @@ var AdminPanel = Backbone.View.extend({
                         target: "__use_router__"
                     },
                     {
+                        title: "Quotas",
+                        url: "admin/quotas",
+                        target: "__use_router__",
+                        enabled: self.config.enable_quotas
+                    },
+                    {
                         title: "Groups",
                         url: "admin/groups",
                         target: "__use_router__"
@@ -115,6 +60,11 @@ var AdminPanel = Backbone.View.extend({
                     {
                         title: "Roles",
                         url: "admin/roles",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: "Forms",
+                        url: "admin/forms",
                         target: "__use_router__"
                     },
                     {
@@ -129,58 +79,54 @@ var AdminPanel = Backbone.View.extend({
                 ]
             },
             {
-                title: "Data",
+                title: "Tool Management",
                 items: [
                     {
-                        title: "Quotas",
-                        url: "admin/quotas",
-                        target: "__use_router__",
-                        enabled: self.config.enable_quotas
+                        title: "Install new tools",
+                        url: "admin_toolshed/browse_tool_sheds",
+                        enabled: self.settings.is_tool_shed_installed
                     },
                     {
-                        title: "Data libraries",
-                        url: "library_admin/browse_libraries"
+                        title: "Install new tools (Beta)",
+                        url: "admin_toolshed/browse_toolsheds",
+                        enabled: self.settings.is_tool_shed_installed && self.config.enable_beta_ts_api_install
                     },
                     {
-                        title: "Roles",
-                        url: "admin/roles",
+                        title: "Monitor installation",
+                        url: "admin_toolshed/monitor_repository_installation",
+                        enabled: self.settings.installing_repository_ids
+                    },
+                    {
+                        title: "Manage tools",
+                        url: "admin/repositories",
+                        enabled: self.settings.is_repo_installed,
                         target: "__use_router__"
                     },
                     {
-                        title: "Local data",
-                        url: "data_manager"
-                    }
-                ]
-            },
-            {
-                title: "Form Definitions",
-                items: [
+                        title: "Manage metadata",
+                        url: "admin_toolshed/reset_metadata_on_selected_installed_repositories",
+                        enabled: self.settings.is_repo_installed
+                    },
                     {
-                        title: "Form definitions",
-                        url: "admin/forms",
+                        title: "Manage whitelist",
+                        url: "admin/sanitize_whitelist"
+                    },
+                    {
+                        title: "Manage dependencies",
+                        url: "admin/manage_tool_dependencies"
+                    },
+                    {
+                        title: "View lineage",
+                        url: "admin/tool_versions",
                         target: "__use_router__"
-                    }
-                ]
-            },
-            {
-                title: "Sample Tracking",
-                items: [
-                    {
-                        title: "Sequencers and external services",
-                        url: "external_service/browse_external_services"
                     },
                     {
-                        title: "Request types",
-                        url: "request_type/browse_request_types"
+                        title: "View migration stages",
+                        url: "admin/review_tool_migration_stages"
                     },
                     {
-                        title: "Sequencing requests",
-                        url: "requests_admin/browse_requests"
-                    },
-                    {
-                        title: "Find samples",
-                        url:
-                            "requests_common/find_samples?cntrller=requests_admin"
+                        title: "View error logs",
+                        url: "admin/tool_errors"
                     }
                 ]
             }
@@ -191,16 +137,16 @@ var AdminPanel = Backbone.View.extend({
     render: function() {
         var self = this;
         this.$el.empty();
-        this.categories.each(function(category) {
+        this.categories.each(category => {
             var $section = $(self._templateSection(category.attributes));
             var $entries = $section.find(".ui-side-section-body");
-            _.each(category.get("items"), function(item) {
+            _.each(category.get("items"), item => {
                 if (item.enabled === undefined || item.enabled) {
                     var $link = $("<a/>")
                         .attr({ href: self.root + item.url })
                         .text(_l(item.title));
                     if (item.target == "__use_router__") {
-                        $link.on("click", function(e) {
+                        $link.on("click", e => {
                             e.preventDefault();
                             self.page.router.push(item.url);
                         });
@@ -218,22 +164,13 @@ var AdminPanel = Backbone.View.extend({
         });
         this.page
             .$("#galaxy_main")
-            .prop(
-                "src",
-                this.root +
-                    "admin/center?message=" +
-                    this.message +
-                    "&status=" +
-                    this.status
-            );
+            .prop("src", `${this.root}admin/center?message=${this.message}&status=${this.status}`);
     },
 
     _templateSection: function(options) {
         return [
             "<div>",
-            '<div class="ui-side-section-title">' +
-                _l(options.title) +
-                "</div>",
+            `<div class="ui-side-section-title">${_l(options.title)}</div>`,
             '<div class="ui-side-section-body"/>',
             "</div>"
         ].join("");
@@ -248,4 +185,4 @@ var AdminPanel = Backbone.View.extend({
     }
 });
 
-module.exports = AdminPanel;
+export default AdminPanel;

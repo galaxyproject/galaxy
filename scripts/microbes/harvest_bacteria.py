@@ -57,7 +57,7 @@ def iter_genome_projects(url="http://www.ncbi.nlm.nih.gov/genomes/lproks.cgi?vie
         # seems some things donot have an ftp url, try and except it here:
         try:
             ftp_url = fields[22].split("href=\"")[1].split("\"")[0]
-        except:
+        except Exception:
             print("FAILED TO AQUIRE FTP ADDRESS:", org_num, info_url)
             ftp_url = None
 
@@ -74,7 +74,7 @@ def get_chroms_by_project_id(org_num, base_url="http://www.ncbi.nlm.nih.gov/entr
         url = "%s%s" % (base_url, org_num)
         try:
             html = requests.get(url).text
-        except:
+        except Exception:
             print("GENOME PROJECT FAILED:", html_count, "org:", org_num, url)
             html = None
             time.sleep(1)  # Throttle Connection
@@ -104,7 +104,7 @@ def get_ftp_contents(ftp_url):
             ftp.cwd(ftp_url.split(ftp_url.split("/")[2])[-1])
             ftp_contents = ftp.nlst()
             ftp.close()
-        except:
+        except Exception:
             ftp_contents = None
             time.sleep(1)  # Throttle Connection
     return ftp_contents
@@ -123,7 +123,7 @@ def scrape_ftp(ftp_contents, org_dir, org_num, refseq, ftp_url):
                 url_count += 1
                 try:
                     results = urlretrieve(url, target_filename)
-                except:
+                except Exception:
                     results = None
                     time.sleep(1)  # Throttle Connection
             if results is None:
@@ -152,15 +152,15 @@ def process_FASTA(filename, org_num, refseq):
     chrom_info_file.write("chromosome=%s\nname=%s\nlength=%s\norganism=%s\n" % (refseq, chr_name, len(fasta), org_num))
     try:
         chrom_info_file.write("gi=%s\n" % accesions['gi'])
-    except:
+    except Exception:
         chrom_info_file.write("gi=None\n")
     try:
         chrom_info_file.write("gb=%s\n" % accesions['gb'])
-    except:
+    except Exception:
         chrom_info_file.write("gb=None\n")
     try:
         chrom_info_file.write("refseq=%s\n" % refseq)
-    except:
+    except Exception:
         chrom_info_file.write("refseq=None\n")
     chrom_info_file.close()
 
@@ -213,13 +213,13 @@ def __main__():
     base_dir = os.path.join(os.getcwd(), "bacteria")
     try:
         base_dir = sys.argv[1]
-    except:
+    except IndexError:
         print("using default base_dir:", base_dir)
 
     try:
         os.mkdir(base_dir)
         print("path '%s' has been created" % base_dir)
-    except:
+    except Exception:
         print("path '%s' seems to already exist" % base_dir)
 
     for org_num, name, chroms, kingdom, group, org_genbank, org_refseq, info_url, ftp_url in iter_genome_projects():
@@ -229,7 +229,7 @@ def __main__():
         try:
             org_dir = os.path.join(base_dir, org_num)
             os.mkdir(org_dir)
-        except:
+        except Exception:
             print("Organism %s already exists on disk, skipping" % org_num)
             continue
 

@@ -185,7 +185,7 @@ class BaseUIController(BaseController):
                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
         except exceptions.MessageException:
             raise       # handled in the caller
-        except:
+        except Exception:
             log.exception("Exception in get_object check for %s %s:", class_name, str(id))
             raise Exception('Server error retrieving %s id ( %s ).' % (class_name, str(id)))
 
@@ -1084,7 +1084,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
         try:
             data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(dataset_id))
-        except:
+        except Exception:
             raise HTTPRequestRangeNotSatisfiable("Invalid dataset id: %s." % str(dataset_id))
 
         if check_ownership:

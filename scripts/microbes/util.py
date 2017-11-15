@@ -155,7 +155,7 @@ def get_bed_from_GeneMark(geneMark_filename, chr):
             avg_prob = float(fields.pop(0))
             try:
                 start_prob = float(fields.pop(0))
-            except:
+            except Exception:
                 start_prob = 0
             name = "orf_" + str(ctr) + "_" + str(ctr2)
             if avg_prob >= best_block['avg_prob']:

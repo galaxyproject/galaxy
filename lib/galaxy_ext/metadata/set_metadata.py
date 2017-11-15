@@ -107,7 +107,7 @@ def set_metadata():
                     existing_job_metadata_dict[line['dataset_id']] = line
                 elif line['type'] == 'new_primary_dataset':
                     new_job_metadata_dict[line['filename']] = line
-            except:
+            except Exception:
                 continue
 
     for filenames in sys.argv[1:]:

@@ -2,10 +2,14 @@
 API for searching Galaxy Datasets
 """
 import logging
+
 from galaxy import web
-from galaxy.web.base.controller import SharableItemSecurityMixin, BaseAPIController
-from galaxy.model.search import GalaxySearchEngine
 from galaxy.exceptions import ItemAccessibilityException
+from galaxy.model.search import GalaxySearchEngine
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    SharableItemSecurityMixin
+)
 
 log = logging.getLogger(__name__)
 

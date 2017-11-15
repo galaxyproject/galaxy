@@ -542,7 +542,7 @@ class DefaultToolAction(object):
         try:
             # For backward compatibility, some tools may not have versions yet.
             job.tool_version = tool.version
-        except:
+        except AttributeError:
             job.tool_version = "1.0.0"
         return job, galaxy_session
 
@@ -837,7 +837,7 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
                             check = '${%s}' % check
                         if str(fill_template(check, context=parameter_context)) == when_elem.get('value', None):
                             ext = when_elem.get('format', ext)
-                    except:  # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
+                    except Exception:  # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
                         continue
                 else:
                     check = when_elem.get('input_dataset', None)

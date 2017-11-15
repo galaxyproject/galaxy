@@ -1,14 +1,14 @@
 """
 API operations allowing clients to determine datatype supported by Galaxy.
 """
-
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
-from galaxy import exceptions
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.util import asbool
-from galaxy.datatypes.data import Data
-
 import logging
+
+from galaxy import exceptions
+from galaxy.datatypes.data import Data
+from galaxy.util import asbool
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web.base.controller import BaseAPIController
+
 log = logging.getLogger(__name__)
 
 

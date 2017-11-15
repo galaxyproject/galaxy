@@ -1,9 +1,10 @@
+import logging
+
 from six import string_types
 
 import galaxy.model
 from galaxy import util
 
-import logging
 log = logging.getLogger(__name__)
 
 

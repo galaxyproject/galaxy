@@ -54,7 +54,7 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
     is_multi_byte = False
     try:
         codecs.lookup(target_encoding)
-    except:
+    except Exception:
         target_encoding = util.DEFAULT_ENCODING  # utf-8
     if not source_encoding:
         source_encoding = util.DEFAULT_ENCODING  # sys.getdefaultencoding() would mimic old behavior (defaults to ascii)
@@ -70,7 +70,7 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
                 try:
                     if text_type(chunk[:2]) == text_type(util.gzip_magic):
                         is_compressed = True
-                except:
+                except Exception:
                     pass
             if not is_compressed:
                 # See if we have a multi-byte character file
@@ -408,7 +408,7 @@ def guess_ext(fname, sniff_order, is_multi_byte=False):
             if datatype.sniff(fname):
                 file_ext = datatype.file_ext
                 break
-        except:
+        except Exception:
             pass
     # Ugly hack for tsv vs tabular sniffing, we want to prefer tabular
     # to tsv but it doesn't have a sniffer - is TSV was sniffed just check

@@ -157,6 +157,8 @@ Extra options:
  --external_master_key Master API key used to configure external tests.
  --external_user_key   User API used for external tests - not required if
                        external_master_key is specified.
+  --skip_flakey_fails  Skip flakey tests on error (sets
+                       GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR=1).
 
 Environment Variables:
 
@@ -210,6 +212,8 @@ GALAXY_TEST_FETCH_DATA          Fetch remote test data to
                                 command-line.
 GALAXY_TEST_DATA_REPO_CACHE     Where to cache remote test data to (default to
                                 test-data-cache).
+GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR
+                                Skip tests annotated with @flakey on test errors.
 HTTP_ACCEPT_LANGUAGE            Defaults to 'en'
 GALAXY_TEST_NO_CLEANUP          Do not cleanup main test directory after tests,
                                 the deprecated option TOOL_SHED_TEST_NO_CLEANUP
@@ -263,7 +267,7 @@ ensure_grunt_for_qunit() {
 }
 
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:17.05.0'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.01.4'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
@@ -297,7 +301,7 @@ then
     fi
     MY_UID=$(id -u)
     DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} ${DOCKER_RUN_EXTRA_ARGS}"
-    echo "Launching docker container for testing..."
+    echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "BUILD_NUMBER=$BUILD_NUMBER" -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?
 fi
@@ -378,6 +382,11 @@ do
       -clean_pyc|--clean_pyc)
           find lib -iname '*pyc' -exec rm -rf {} \;
           find test -iname '*pyc' -exec rm -rf {} \;
+          shift
+          ;;
+      -skip_flakey_fails|--skip_flakey_fails)
+          GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR=1
+          export GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR
           shift
           ;;
       -with_framework_test_tools|--with_framework_test_tools)

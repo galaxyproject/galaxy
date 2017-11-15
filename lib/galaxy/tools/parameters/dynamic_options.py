@@ -14,7 +14,6 @@ from galaxy.model import (
     User
 )
 from galaxy.util import string_as_bool
-
 from . import validation
 
 log = logging.getLogger(__name__)
@@ -72,7 +71,7 @@ class StaticValueFilter(Filter):
         filter_value = self.value
         try:
             filter_value = User.expand_user_properties(trans.user, filter_value)
-        except:
+        except Exception:
             pass
         for fields in options:
             if (self.keep and fields[self.column] == filter_value) or (not self.keep and fields[self.column] != filter_value):

@@ -8,7 +8,6 @@ from galaxy.util import checkers
 from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
-
 from tool_shed.util import basic_util
 
 log = logging.getLogger(__name__)
@@ -249,7 +248,7 @@ def new_state(trans, tool, invalid=False):
     for input in inputs.values():
         try:
             state.inputs[input.name] = input.get_initial_value(trans, context)
-        except:
+        except Exception:
             # FIXME: not all values should be an empty list
             state.inputs[input.name] = []
     return state

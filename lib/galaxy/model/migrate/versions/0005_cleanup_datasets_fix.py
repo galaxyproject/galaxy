@@ -692,7 +692,7 @@ def __guess_dataset_by_filename(filename):
         if fields:
             if fields[-1].startswith('dataset_') and fields[-1].endswith('.dat'):  # dataset_%d.dat
                 return Dataset.get(int(fields[-1][len('dataset_'): -len('.dat')]))
-    except:
+    except Exception:
         pass  # some parsing error, we can't guess Dataset
     return None
 

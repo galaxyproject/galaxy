@@ -74,7 +74,7 @@ def main():
                                 job_output = cmd_line.split()[3]
                             try:
                                 os.system(new_cmd_line)
-                            except:
+                            except Exception:
                                 pass
                             diff_status = os.system('diff %s %s >> /dev/null' % (new_output.name, job_output))
                             if diff_status == 0:

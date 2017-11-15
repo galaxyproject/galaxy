@@ -31,7 +31,6 @@ from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
-
 from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 
 log = logging.getLogger(__name__)
@@ -600,7 +599,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __api_import_shared_workflow(self, trans, workflow_id, payload, **kwd):
         try:
             stored_workflow = self.get_stored_workflow(trans, workflow_id, check_ownership=False)
-        except:
+        except Exception:
             raise exceptions.ObjectNotFound("Malformed workflow id ( %s ) specified." % workflow_id)
         if stored_workflow.importable is False:
             raise exceptions.ItemAccessibilityException('The owner of this workflow has disabled imports via this link.')

@@ -57,19 +57,19 @@ def __main__():
 
     try:
         float(min_iden)
-    except:
+    except ValueError:
         stop_err('Invalid value for minimal identity.')
 
     try:
         test = int(tile_size)
         assert test >= 6 and test <= 18
-    except:
+    except Exception:
         stop_err('Invalid value for tile size. DNA word size must be between 6 and 18.')
 
     try:
         test = int(one_off)
         assert test >= 0 and test <= int(tile_size)
-    except:
+    except Exception:
         stop_err('Invalid value for mismatch numbers in the word')
 
     GALAXY_DATA_INDEX_DIR = sys.argv[8]

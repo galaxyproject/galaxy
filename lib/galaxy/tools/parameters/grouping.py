@@ -212,6 +212,11 @@ class UploadDataset(Group):
         if dataset_name is None:
             dataset_name = context.get('files_metadata', {}).get('base_name', None)
         if dataset_name is None:
+            filenames = list()
+            for composite_file in context.get('files', []):
+                filenames.append(composite_file.get('file_data', {}).get('filename', ''))
+            dataset_name = os.path.commonprefix(filenames).rstrip('.') or None
+        if dataset_name is None:
             dataset_name = 'Uploaded Composite Dataset (%s)' % self.get_file_type(context)
         return dataset_name
 
@@ -296,7 +301,11 @@ class UploadDataset(Group):
 
     def get_file_count(self, trans, context):
         file_count = context.get("file_count", "auto")
-        return len(self.get_datatype(trans, context).writable_files) if file_count == "auto" else int(file_count)
+        if file_count == "auto":
+            d_type = self.get_datatype(trans, context)
+            return len(d_type.writable_files) if d_type else 1
+        else:
+            return int(file_count)
 
     def get_initial_value(self, trans, context):
         file_count = self.get_file_count(trans, context)
@@ -322,7 +331,7 @@ class UploadDataset(Group):
                 if not dataset_name and 'filename' in data_file:
                     dataset_name = get_file_name(data_file['filename'])
                 return Bunch(type='file', path=data_file['local_filename'], name=dataset_name, purge_source=purge)
-            except:
+            except Exception:
                 # The uploaded file should've been persisted by the upload tool action
                 return Bunch(type=None, path=None, name=None)
 

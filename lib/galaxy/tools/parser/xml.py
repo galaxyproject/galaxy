@@ -3,13 +3,11 @@ import re
 import sys
 import traceback
 import uuid
-
 from math import isinf
 
 from galaxy.tools.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
-
 from .interface import (
     InputSource,
     PageSource,
@@ -726,7 +724,7 @@ class StdioParser(object):
                 else:
                     try:
                         exit_code.range_start = int(code_range)
-                    except:
+                    except Exception:
                         log.error(code_range)
                         log.warning("Invalid range start for tool's exit_code %s: exit_code ignored" % code_range)
                         continue

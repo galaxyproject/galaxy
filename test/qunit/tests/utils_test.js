@@ -1,20 +1,21 @@
-/* global define, QUnit, module, test, ok, equal, deepEqual, notEqual */
-define([ 'test-app', 'utils/utils',
-], function( testApp, Utils ){
+/* global define */
+define([ 'test-app', 'utils/utils', "QUnit"
+], function( testApp, Utils, QUnit ){
     'use strict';
-    module( 'Utils test', {} );
+    Utils = Utils.default;
+    QUnit.module( 'Utils test', {} );
 
-    test( 'isEmpty', function() {
-        ok( Utils.isEmpty( [] ), 'Empty array' );
-        ok( Utils.isEmpty( [ 'data', undefined ] ), 'Array contains `undefined`' );
-        ok( Utils.isEmpty( [ 'data', null ] ), 'Array contains `null`' );
-        ok( Utils.isEmpty( [ 'data', '__null__' ] ), 'Array contains `__null__`' );
-        ok( Utils.isEmpty( [ 'data', '__undefined__' ] ), 'Array contains `__undefined__`' );
-        ok( Utils.isEmpty( null ), 'Array is null' );
-        ok( Utils.isEmpty( '__null__' ), 'Array is __null__' );
-        ok( Utils.isEmpty( '__undefined__' ), 'Array is __undefined__' );
-        ok( !Utils.isEmpty( [ 'data' ] ), 'Array contains `data`' );
-        ok( !Utils.isEmpty( 1 ), 'Value is int' );
-        ok( !Utils.isEmpty( 0 ), 'Value is zero' );
+    QUnit.test( 'isEmpty', function(assert) {
+        assert.ok( Utils.isEmpty( [] ), 'Empty array' );
+        assert.ok( Utils.isEmpty( [ 'data', undefined ] ), 'Array contains `undefined`' );
+        assert.ok( Utils.isEmpty( [ 'data', null ] ), 'Array contains `null`' );
+        assert.ok( Utils.isEmpty( [ 'data', '__null__' ] ), 'Array contains `__null__`' );
+        assert.ok( Utils.isEmpty( [ 'data', '__undefined__' ] ), 'Array contains `__undefined__`' );
+        assert.ok( Utils.isEmpty( null ), 'Array is null' );
+        assert.ok( Utils.isEmpty( '__null__' ), 'Array is __null__' );
+        assert.ok( Utils.isEmpty( '__undefined__' ), 'Array is __undefined__' );
+        assert.ok( !Utils.isEmpty( [ 'data' ] ), 'Array contains `data`' );
+        assert.ok( !Utils.isEmpty( 1 ), 'Value is int' );
+        assert.ok( !Utils.isEmpty( 0 ), 'Value is zero' );
     });
 });

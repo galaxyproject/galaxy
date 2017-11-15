@@ -1,15 +1,20 @@
 """
 API operations on the contents of a library folder.
 """
-from galaxy import util
-from galaxy import exceptions
-from galaxy import managers
+import logging
+
+from galaxy import (
+    exceptions,
+    managers,
+    util
+)
 from galaxy.managers import folders
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous as expose_api_anonymous
+)
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -109,6 +114,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                                         is_unrestricted=is_unrestricted,
                                         is_private=is_private,
                                         can_manage=can_manage,
+                                        state=library_dataset_dict['state'],
                                         file_size=nice_size))
                 if content_item.library_dataset_dataset_association.message:
                     return_item.update(dict(message=content_item.library_dataset_dataset_association.message))

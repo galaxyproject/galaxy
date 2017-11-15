@@ -46,7 +46,7 @@ inp_name = os.path.join('database', 'import', fname)
 
 try:
     inp = open(inp_name, 'rt')
-except:
+except Exception:
     print('Could not find file %s' % inp_name)
     sys.exit()
 

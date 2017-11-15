@@ -55,7 +55,7 @@ class Html(Text):
                 if hdr and hdr[0].lower().find('<html>') >= 0:
                     return True
             return False
-        except:
+        except Exception:
             return True
 
 
@@ -104,7 +104,7 @@ class Json(Text):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "JSON file (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -130,7 +130,7 @@ class Ipynb(Json):
                     return True
                 else:
                     return False
-            except:
+            except Exception:
                 return False
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
@@ -420,7 +420,7 @@ class SnpEffDb(Text):
             if m:
                 snpeff_version = m.groups()[0] + m.groups()[1]
             fh.close()
-        except:
+        except Exception:
             pass
         return snpeff_version
 
@@ -465,7 +465,7 @@ class SnpEffDb(Text):
                         fh.write("annotations: %s\n" % ','.join(annotations))
                     if regulations:
                         fh.write("regulations: %s\n" % ','.join(regulations))
-            except:
+            except Exception:
                 pass
 
 
@@ -549,3 +549,33 @@ class SnpSiftDbNSFP(Text):
             else:
                 dataset.peek = 'file does not exist'
                 dataset.blurb = 'file purged from disc'
+
+
+class IQTree(Text):
+    """IQ-TREE format"""
+    file_ext = 'iqtree'
+
+    def sniff(self, filename):
+        """
+        Detect the IQTree file
+
+        Scattered text file containing various headers and data
+        types.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('example.iqtree')
+        >>> IQTree().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('temp.txt')
+        >>> IQTree().sniff(fname)
+        False
+
+        >>> fname = get_test_fname('test_tab1.tabular')
+        >>> IQTree().sniff(fname)
+        False
+        """
+        with open(filename, 'r') as fio:
+            return fio.read(7) == "IQ-TREE"
+
+        return False

@@ -147,7 +147,7 @@ try:
     in_columns = int(sys.argv[4])
     assert sys.argv[5]  # check to see that the column types variable isn't null
     in_column_types = sys.argv[5].split(',')
-except:
+except Exception:
     stop_err("Data does not appear to be tabular.  This tool can only be used with tab-delimited data.")
 num_header_lines = int(sys.argv[6])
 
@@ -173,7 +173,7 @@ operands = get_operands(cond_text)
 for operand in operands:
     try:
         check = int(operand)
-    except:
+    except ValueError:
         if operand in secured:
             stop_err("Illegal value '%s' in condition '%s'" % (operand, cond_text))
 
@@ -232,7 +232,7 @@ for i, line in enumerate( open( in_fname ) ):
         if %s:
             lines_kept += 1
             print( line, file=out )
-    except:
+    except Exception:
         invalid_lines += 1
         if not invalid_line:
             first_invalid_line = i + 1

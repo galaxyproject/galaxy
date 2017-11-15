@@ -1,9 +1,11 @@
-/* global define, QUnit, module, test, ok, equal, deepEqual, notEqual */
-define([ "test-app", "mvc/ui/ui-misc", "mvc/ui/ui-popover"
-], function( testApp, Ui, Popover ){
+/* global define */
+define([ "test-app", "mvc/ui/ui-misc", "mvc/ui/ui-popover", "QUnit"
+], function( testApp, Ui, Popover, QUnit ){
     "use strict";
-    module( "Popover test", {
-        setup: function() {
+    Ui = Ui.default;
+    Popover = Popover.default;
+    QUnit.module( "Popover test", {
+        beforeEach: function() {
             testApp.create();
             var self = this;
             this.button = new Ui.Button({
@@ -21,20 +23,20 @@ define([ "test-app", "mvc/ui/ui-misc", "mvc/ui/ui-popover"
             });
             $( 'body' ).append( this.$parent );
         },
-        teardown: function() {
+        afterEach: function() {
             testApp.destroy();
         }
     } );
 
-    test( "test popover visibility", function() {
-        ok( this.popover.$el.css( 'display' ) == 'none', 'Popover is hidden.' );
+    QUnit.test( "test popover visibility", function( assert ) {
+        assert.ok( this.popover.$el.css( 'display' ) == 'none', 'Popover is hidden.' );
         this.button.$el.trigger( 'click' );
-        ok( this.popover.$el.css( 'display' ) == 'block', 'Popover is shown.' );
-        ok( this.popover.$el.hasClass( 'bottom' ), 'Popover at bottom.' );
+        assert.ok( this.popover.$el.css( 'display' ) == 'block', 'Popover is shown.' );
+        assert.ok( this.popover.$el.hasClass( 'bottom' ), 'Popover at bottom.' );
         this.popover.hide();
-        ok( this.popover.$el.css( 'display' ) == 'none', 'Popover is hidden manually.' );
-        ok( this.popover.$title.html() == 'Test Title', 'Initial title correct.' );
+        assert.ok( this.popover.$el.css( 'display' ) == 'none', 'Popover is hidden manually.' );
+        assert.ok( this.popover.$title.html() == 'Test Title', 'Initial title correct.' );
         this.popover.title( 'New Title' );
-        ok( this.popover.$title.html() == 'New Title', 'New title correct.' );
+        assert.ok( this.popover.$title.html() == 'New Title', 'New title correct.' );
     } );
 });

@@ -1,39 +1,40 @@
 from __future__ import absolute_import
+
 import logging
 import signal
 import sys
 import time
 
-from galaxy import config, jobs
 import galaxy.model
-import galaxy.security
 import galaxy.queues
-from galaxy.managers.collections import DatasetCollectionManager
 import galaxy.quota
+import galaxy.security
+from galaxy import config, jobs
+from galaxy.jobs import metrics as job_metrics
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.tags import GalaxyTagManager
-from galaxy.visualization.genomes import Genomes
-from galaxy.visualization.data_providers.registry import DataProviderRegistry
-from galaxy.visualization.plugins.registry import VisualizationsRegistry
-from galaxy.tools.special_tools import load_lib_tools
-from galaxy.tours import ToursRegistry
-from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
-from galaxy.webhooks import WebhooksRegistry
-from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
-from galaxy.tools.data_manager.manager import DataManagers
+from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.sample_tracking import external_service_types
 from galaxy.tools.cache import (
     ToolCache,
     ToolShedRepositoryCache
 )
-from galaxy.jobs import metrics as job_metrics
+from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
-from galaxy.web.proxy import ProxyManager
-from galaxy.web.stack import application_stack_instance
-from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.tools.special_tools import load_lib_tools
+from galaxy.tours import ToursRegistry
 from galaxy.util import (
     ExecutionTimer,
     heartbeat
 )
+from galaxy.visualization.data_providers.registry import DataProviderRegistry
+from galaxy.visualization.genomes import Genomes
+from galaxy.visualization.plugins.registry import VisualizationsRegistry
+from galaxy.web.proxy import ProxyManager
+from galaxy.web.stack import application_stack_instance
+from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
+from galaxy.webhooks import WebhooksRegistry
 from tool_shed.galaxy_install import update_repository_manager
 
 
@@ -212,17 +213,53 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         log.info("Galaxy app startup finished %s" % self.startup_timer)
 
     def shutdown(self):
-        self.workflow_scheduling_manager.shutdown()
-        self.job_manager.shutdown()
-        self.object_store.shutdown()
-        if self.heartbeat:
-            self.heartbeat.shutdown()
-        self.update_repository_manager.shutdown()
+        exception = None
+        try:
+            self.watchers.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown configuration watchers cleanly")
+        try:
+            self.workflow_scheduling_manager.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown workflow scheduling manager cleanly")
+        try:
+            self.job_manager.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown job manager cleanly")
+        try:
+            self.object_store.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown object store cleanly")
+        try:
+            if self.heartbeat:
+                self.heartbeat.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown heartbeat cleanly")
+        try:
+            self.update_repository_manager.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown update repository manager cleanly")
+
         try:
             self.control_worker.shutdown()
-        except AttributeError:
-            # There is no control_worker
-            pass
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown control worker cleanly")
+
+        try:
+            self.model.engine.dispose()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown SA database engine cleanly")
+
+        if exception:
+            raise exception
 
     def configure_fluent_log(self):
         if self.config.fluent_log:

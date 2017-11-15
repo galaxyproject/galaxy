@@ -5,16 +5,19 @@ import string
 import tempfile
 from datetime import date
 
-from mercurial import mdiff
-from mercurial import patch
+from mercurial import (
+    mdiff,
+    patch
+)
 from sqlalchemy import and_, false, null
 
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
-
-from galaxy import util
-from galaxy import web
+from galaxy import (
+    util,
+    web
+)
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids
@@ -23,19 +26,23 @@ from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
-from tool_shed.tools import tool_validator
-from tool_shed.tools import tool_version_manager
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import encoding_util
-from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
-from tool_shed.util import readme_util
-from tool_shed.util import repository_util
-from tool_shed.util import search_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_util
-from tool_shed.util import workflow_util
+from tool_shed.tools import (
+    tool_validator,
+    tool_version_manager
+)
+from tool_shed.util import (
+    basic_util,
+    common_util,
+    encoding_util,
+    hg_util,
+    metadata_util,
+    readme_util,
+    repository_util,
+    search_util,
+    shed_util_common as suc,
+    tool_util,
+    workflow_util
+)
 from tool_shed.util.web_util import escape
 from tool_shed.utility_containers import ToolShedUtilityContainerManager
 
@@ -103,7 +110,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     repository_name = kwd['id']
                     repository = repository_util.get_repository_by_name(trans.app, repository_name)
                     kwd['id'] = trans.security.encode_id(repository.id)
-                except:
+                except Exception:
                     pass
             return trans.response.send_redirect(web.url_for(controller='repository',
                                                             action='browse_repositories',
@@ -507,7 +514,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     name = kwd['id']
                     repository = repository_util.get_repository_by_name(trans.app, name)
                     kwd['id'] = trans.security.encode_id(repository.id)
-                except:
+                except Exception:
                     pass
             return self.browse_valid_repositories(trans, **kwd)
         if 'operation' in kwd:
@@ -2519,7 +2526,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """Support for sharable URL for each repository owner's tools, e.g. http://example.org/view/owner."""
         try:
             user = common_util.get_user_by_username(trans, owner)
-        except:
+        except Exception:
             user = None
         if user:
             user_id = trans.security.encode_id(user.id)
@@ -2535,7 +2542,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """Support for sharable URL for a specified repository, e.g. http://example.org/view/owner/name."""
         try:
             repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-        except:
+        except Exception:
             repository = None
         if repository:
             repository_id = trans.security.encode_id(repository.id)
@@ -2546,7 +2553,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             # If the owner is valid, then show all of their repositories.
             try:
                 user = common_util.get_user_by_username(trans, owner)
-            except:
+            except Exception:
                 user = None
             if user:
                 user_id = trans.security.encode_id(user.id)
@@ -2565,7 +2572,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """Support for sharable URL for a specified repository revision, e.g. http://example.org/view/owner/name/changeset_revision."""
         try:
             repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-        except:
+        except Exception:
             repository = None
         if repository:
             repository_id = trans.security.encode_id(repository.id)

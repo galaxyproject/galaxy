@@ -9,7 +9,7 @@ try:
 except ImportError:
     try:
         from PIL import Image as PIL
-    except:
+    except ImportError:
         PIL = None
 
 log = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ def image_type(filename):
             im = PIL.open(filename)
             fmt = im.format
             im.close()
-        except:
+        except Exception:
             # We continue to try with imghdr, so this is a rare case of an
             # exception we expect to happen frequently, so we're not logging
             pass

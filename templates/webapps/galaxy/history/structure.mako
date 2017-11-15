@@ -69,23 +69,24 @@ ${ parent.stylesheets() }
 <script type="text/javascript">
 define( 'app', function(){
     require([
-        'mvc/job/job-model',
         'mvc/history/history-model',
         'mvc/history/history-structure-view'
-    ], function( JOB, HISTORY, StructureView ){
+    ], function( HISTORY, StructureView ){
+        console.debug(HISTORY);
+        console.debug(StructureView);
+        var historyModel = new HISTORY.default.History( bootstrapped.history, bootstrapped.contents );
+        console.debug("Got here?");
+        window.historymodel = historyModel;
+        window.jobs = bootstrapped.jobs;
+        window.tools = bootstrapped.tools;
 
-        var historyModel = new HISTORY.History( bootstrapped.history, bootstrapped.contents );
-window.historymodel = historyModel;
-window.jobs = bootstrapped.jobs;
-window.tools = bootstrapped.tools;
-
-        var structure = new StructureView({
+        var structure = new StructureView.default({
             model   : historyModel,
             jobs    : bootstrapped.jobs,
             tools   : bootstrapped.tools
         });
-window.structure = structure;
-       structure.render().$el.appendTo( 'body' );
+        window.structure = structure;
+        structure.render().$el.appendTo( 'body' );
     });
 });
 </script>

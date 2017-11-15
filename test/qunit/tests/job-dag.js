@@ -1,68 +1,63 @@
+/* global define */
 define([
     "mvc/history/job-dag",
     "jquery",
-    "sinon-qunit",
+    "QUnit",
     'test-data/job-dag-1'
-], function( JobDAG, $, sinon, testData ){
-    /*globals equal ok, test module expect deepEqual strictEqual */
+], function( JobDAG, $, QUnit, testData ){
     "use strict";
-
-    module( "mvc/history/job-dag.js tests" );
-///*
-    function testEmptyObject( o ){
-        ok( typeof o === 'object' );
-        ok( Object.keys( o ).length === 0 );
-    }
+    JobDAG = JobDAG.default;
+    QUnit.module( "mvc/history/job-dag.js tests" );
 
     // ------------------------------------------------------------------------
-    test( "Empty JobDAG construction", function() {
+    QUnit.test( "Empty JobDAG construction", function(assert) {
         var dag = new JobDAG();
-        ok( dag instanceof JobDAG );
+        assert.ok( dag instanceof JobDAG );
 
         // default options
-        deepEqual( dag.filters, [] );
-        deepEqual( dag.options, {
+        assert.deepEqual( dag.filters, [] );
+        assert.deepEqual( dag.options, {
             excludeSetMetadata : false
         });
 
         // test (empty) instance vars
-        deepEqual( dag._jobsData, [] );
-        deepEqual( dag._historyContentsMap, {} );
-        deepEqual( dag._toolMap, {} );
-        equal( dag.noInputJobs.length, 0 );
-        equal( dag.noOutputJobs.length, 0 );
+        assert.deepEqual( dag._jobsData, [] );
+        assert.deepEqual( dag._historyContentsMap, {} );
+        assert.deepEqual( dag._toolMap, {} );
+        assert.equal( dag.noInputJobs.length, 0 );
+        assert.equal( dag.noOutputJobs.length, 0 );
 
         // logging
-        equal( typeof dag.debug, 'function' );
-        equal( typeof dag.info, 'function' );
-        equal( typeof dag.warn, 'function' );
-        equal( typeof dag.error, 'function' );
+        assert.equal( typeof dag.debug, 'function' );
+        assert.equal( typeof dag.info, 'function' );
+        assert.equal( typeof dag.warn, 'function' );
+        assert.equal( typeof dag.error, 'function' );
     });
 
-    test( "Empty JobDAG construction - changing options", function() {
+    QUnit.test( "Empty JobDAG construction - changing options", function(assert) {
         var dag;
         dag = new JobDAG({
             excludeSetMetadata : true
         });
 
         // excludeSetMetadata
-        deepEqual( dag.options, {
+        assert.deepEqual( dag.options, {
             excludeSetMetadata : true
         });
-        equal( dag.filters.length, 1 );
-        equal( typeof dag.filters[0], 'function' );
+        assert.equal( dag.filters.length, 1 );
+        assert.equal( typeof dag.filters[0], 'function' );
 
         // filters
         function testFilter( job, index, jobData ){ return true; }
         dag = new JobDAG({
             filters : [ testFilter ]
         });
-        equal( dag.filters[0], testFilter );
+        assert.equal( dag.filters[0], testFilter );
     });
 
-    test( "JobDAG construction with history and jobs", function() {
-        equal( testData.jobs1.length, 3 );
-        equal( testData.historyContents1.length, 3 );
+    QUnit.test( "JobDAG construction with history and jobs", function(assert) {
+        assert.equal( testData.jobs1.length, 3 );
+        assert.equal( testData.historyContents1.length, 3 );
 
         var history = testData.historyContents1,
             jobs = testData.jobs1,
@@ -73,12 +68,12 @@ define([
             jobs : jobs
         });
 
-        deepEqual( dag._outputIdToJobMap, {
+        assert.deepEqual( dag._outputIdToJobMap, {
             "8c959c9304a2bc4b": "8a81cf6f989c4467",
             "132016f833b57406": "6505e875ddb66fd2",
             "846fb0a2a64137c0": "77f74776fd03cbc5"
         });
-        deepEqual( dag._jobsData, [
+        assert.deepEqual( dag._jobsData, [
             {
                 "job": _.findWhere( jobs, { id : "8a81cf6f989c4467" }),
                 "inputs": {},
@@ -115,7 +110,7 @@ define([
         ]);
 
         var jobsDataMap = dag._jobsDataMap();
-        deepEqual( dag.toNodesAndLinks(), {
+        assert.deepEqual( dag.toNodesAndLinks(), {
             "nodes": [
                 { "name": "8a81cf6f989c4467", "data": jobsDataMap[ "8a81cf6f989c4467" ] },
                 { "name": "6505e875ddb66fd2", "data": jobsDataMap[ "6505e875ddb66fd2" ] },
@@ -127,7 +122,7 @@ define([
             ]
         });
 
-        deepEqual( dag.toVerticesAndEdges(), {
+        assert.deepEqual( dag.toVerticesAndEdges(), {
             "vertices": [
                 { "name": "8a81cf6f989c4467", "data": jobsDataMap[ "8a81cf6f989c4467" ] },
                 { "name": "6505e875ddb66fd2", "data": jobsDataMap[ "6505e875ddb66fd2" ] },
@@ -144,9 +139,9 @@ define([
         // test cloning
     });
 
-    test( "JobDAG removal of __SET_METADATA__ jobs", function() {
-        equal( testData.jobs2.length, 3 );
-        equal( testData.historyContents2.length, 2 );
+    QUnit.test( "JobDAG removal of __SET_METADATA__ jobs", function(assert) {
+        assert.equal( testData.jobs2.length, 3 );
+        assert.equal( testData.historyContents2.length, 2 );
 
         var history = testData.historyContents2,
             jobs = testData.jobs2,
@@ -159,7 +154,7 @@ define([
         });
 
         var jobsDataMap = dag._jobsDataMap();
-        deepEqual( dag.toNodesAndLinks(), {
+        assert.deepEqual( dag.toNodesAndLinks(), {
             "nodes": [
                 { "name": "bf60fd5f5f7f44bf", "data": jobsDataMap[ "bf60fd5f5f7f44bf" ] },
                 { "name": "90240358ebde1489", "data": jobsDataMap[ "90240358ebde1489" ] }
@@ -171,9 +166,9 @@ define([
     });
 
     //TODO: test filtering out errored jobs
-    test( "JobDAG construction with history and jobs", function() {
-        equal( testData.jobs3.length, 5 );
-        equal( testData.historyContents3.length, 5 );
+    QUnit.test( "JobDAG construction with history and jobs", function(assert) {
+        assert.equal( testData.jobs3.length, 5 );
+        assert.equal( testData.historyContents3.length, 5 );
 
         var history = testData.historyContents3,
             jobs = testData.jobs3,
@@ -185,7 +180,7 @@ define([
         });
 
         var jobsDataMap = dag._jobsDataMap();
-        deepEqual( dag.toVerticesAndEdges(), {
+        assert.deepEqual( dag.toVerticesAndEdges(), {
             "vertices": [
                 { "name": "8c959c9304a2bc4b", "data": jobsDataMap[ "8c959c9304a2bc4b" ] },
                 { "name": "132016f833b57406", "data": jobsDataMap[ "132016f833b57406" ] },
@@ -204,7 +199,7 @@ define([
         });
 
         var components = dag.weakComponents();
-        deepEqual( components, [
+        assert.deepEqual( components, [
             {
                 "vertices": [
                     { "name": "8c959c9304a2bc4b", "data": jobsDataMap[ "8c959c9304a2bc4b" ] },
@@ -230,9 +225,9 @@ define([
     });
 
     //TODO: test filtering out errored jobs
-    test( "JobDAG construction with copied history contents", function() {
-        equal( testData.jobs4.length, 1 );
-        equal( testData.historyContents4.length, 3 );
+    QUnit.test( "JobDAG construction with copied history contents", function(assert) {
+        assert.equal( testData.jobs4.length, 1 );
+        assert.equal( testData.historyContents4.length, 3 );
 
         var history = testData.historyContents4,
             jobs = testData.jobs4,
@@ -244,7 +239,7 @@ define([
         });
 
         var jobsDataMap = dag._jobsDataMap();
-        deepEqual( dag.toVerticesAndEdges(), {
+        assert.deepEqual( dag.toVerticesAndEdges(), {
             "vertices": [
                 { "name": "92b83968e0b52980", "data": jobsDataMap[ "92b83968e0b52980" ] },
                 { "name": "copy-422eef6b1b545329", "data": _.findWhere( history, { id: '422eef6b1b545329' }) },

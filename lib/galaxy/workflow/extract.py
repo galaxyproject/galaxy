@@ -15,7 +15,6 @@ from galaxy.tools.parameters.grouping import (
 )
 from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.util.odict import odict
-
 from .steps import (
     attach_ordered_steps,
     order_workflow_steps_with_levels

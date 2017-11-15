@@ -1,33 +1,35 @@
 // This file isn't really testing anything useful yet, it is just testing
 // (or demonstrating) qunit+backbone interactions.
+/* global define */
 define([
     "mvc/history/hda-model",
     "mvc/history/hda-li",
     "jquery",
-    "sinon-qunit"
+    "QUnit"
 ], function(
     HDA_MODEL,
     HDA_BASE,
     $,
-    sinon
+    QUnit
 ){
-    /*globals equal test module expect deepEqual strictEqual */
     "use strict";
-    module( "HDA base backbone view tests" );
+    HDA_MODEL = HDA_MODEL.default;
+    HDA_BASE = HDA_BASE.default;
+    QUnit.module( "HDA base backbone view tests" );
 
-    test( "Base HDA view default construction, initialize", function() {
+    QUnit.test( "Base HDA view default construction, initialize", function(assert) {
         var hda = new HDA_MODEL.HistoryDatasetAssociation({
                     id          : '123'
                 }),
             view = new HDA_BASE.HDAListItemView({ model: hda });
 
-        strictEqual( view.model, hda );
+        assert.strictEqual( view.model, hda );
 
-        equal( view.linkTarget, '_blank' );
-        equal( view.selectable, false );
-        equal( view.selected,   false );
-        equal( view.expanded,   false );
-        equal( view.draggable,  false );
-        equal( view.id(), 'dataset-123' );
+        assert.equal( view.linkTarget, '_blank' );
+        assert.equal( view.selectable, false );
+        assert.equal( view.selected,   false );
+        assert.equal( view.expanded,   false );
+        assert.equal( view.draggable,  false );
+        assert.equal( view.id(), 'dataset-123' );
     });
 });

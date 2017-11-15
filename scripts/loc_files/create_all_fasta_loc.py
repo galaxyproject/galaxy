@@ -186,7 +186,7 @@ def __main__():
         for ve in options.variant_exclusions.split(';'):
             v, e = ve.split(':')
             variant_exclusions[v] = e.split(',')
-    except:
+    except Exception:
         sys.stderr.write('Problem parsing the variant exclusion parameter (-n/--variant-exclusion). Make sure it follows the expected format\n')
         sys.exit(1)
     if options.append:

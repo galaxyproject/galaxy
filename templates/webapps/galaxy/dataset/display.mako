@@ -17,7 +17,7 @@
             //
             $('.page-body').children().remove();
 
-            data.createTabularDatasetChunkedView({
+            data.default.createTabularDatasetChunkedView({
                 // TODO: encode id.
                 dataset_config:
                     _.extend( ${h.dumps( item.to_dict() )}, {

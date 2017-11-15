@@ -18,7 +18,7 @@ class Smat(Text):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "ESTScan scores matrices (%s)" % (nice_size(dataset.get_size()))
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -98,7 +98,7 @@ class PlantTribesKsComponents(Tabular):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Significant components in the Ks distribution (%s)" % (nice_size(dataset.get_size()))
 
     def set_meta(self, dataset, **kwd):

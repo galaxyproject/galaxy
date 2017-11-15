@@ -1,31 +1,43 @@
 from __future__ import absolute_import
 
-from six import string_types
-
-from collections import namedtuple
-import logging
 import json
+import logging
 import uuid
+from collections import namedtuple
 
+from six import string_types
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload, subqueryload
 
-from galaxy import model
-from galaxy import util
-from galaxy import exceptions
-from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.util.json import safe_loads
-from galaxy.workflow import modules
-from .base import decode_id
-
-# For WorkflowContentManager
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.workflow.steps import attach_ordered_steps
-from galaxy.workflow.modules import module_factory, is_tool_module_type, ToolModule, WorkflowModuleInjector
-from galaxy.tools.parameters.basic import DataToolParameter, DataCollectionToolParameter, RuntimeValue, workflow_building_modes
-from galaxy.tools.parameters import visit_input_values, params_to_incoming
+from galaxy import (
+    exceptions,
+    model,
+    util
+)
 from galaxy.jobs.actions.post import ActionBox
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.tools.parameters import (
+    params_to_incoming,
+    visit_input_values
+)
+from galaxy.tools.parameters.basic import (
+    DataCollectionToolParameter,
+    DataToolParameter,
+    RuntimeValue,
+    workflow_building_modes
+)
+from galaxy.util.json import safe_loads
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
+from galaxy.workflow import modules
+from galaxy.workflow.modules import (
+    is_tool_module_type,
+    module_factory,
+    ToolModule,
+    WorkflowModuleInjector
+)
+from galaxy.workflow.steps import attach_ordered_steps
+from .base import decode_id
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +68,7 @@ class WorkflowsManager(object):
                 filter(trans.app.model.StoredWorkflow.id == workflow_id)
         stored_workflow = workflow_query.options(joinedload('annotations'),
                                                  joinedload('tags'),
-                                                 subqueryload('workflows').joinedload('steps').joinedload('*')).first()
+                                                 subqueryload('latest_workflow').joinedload('steps').joinedload('*')).first()
         if stored_workflow is None:
             raise exceptions.ObjectNotFound("No such workflow found.")
         return stored_workflow

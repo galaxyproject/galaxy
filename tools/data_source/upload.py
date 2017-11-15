@@ -49,7 +49,7 @@ def file_err(msg, dataset, json_file):
         return
     try:
         os.remove(dataset.path)
-    except:
+    except Exception:
         pass
 
 
