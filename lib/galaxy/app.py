@@ -22,7 +22,6 @@ from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.queue_worker import GalaxyQueueWorker
-from galaxy.sample_tracking import external_service_types
 from galaxy.tools.cache import (
     ToolCache,
     ToolShedRepositoryCache
