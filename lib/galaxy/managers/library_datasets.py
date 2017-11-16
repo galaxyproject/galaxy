@@ -2,11 +2,12 @@
 import logging
 
 from galaxy import util
-
-from galaxy.exceptions import InternalServerError
-from galaxy.exceptions import InsufficientPermissionsException
-from galaxy.exceptions import ObjectNotFound
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    InsufficientPermissionsException,
+    InternalServerError,
+    ObjectNotFound,
+    RequestParameterInvalidException
+)
 from galaxy.managers import tags
 from galaxy.util import validation
 

@@ -2,11 +2,11 @@
 API operations allowing clients to determine Tool Shed instance's
 capabilities and configuration settings.
 """
+import logging
 
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 
-import logging
 log = logging.getLogger(__name__)
 
 

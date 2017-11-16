@@ -1,13 +1,15 @@
 """
 API operations related to tagging items.
 """
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesTagsMixin
-
-from galaxy.web import _future_expose_api as expose_api
-from galaxy import exceptions
-
 import logging
+
+from galaxy import exceptions
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    UsesTagsMixin
+)
+
 log = logging.getLogger(__name__)
 
 

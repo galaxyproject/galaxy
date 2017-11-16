@@ -8,7 +8,6 @@ from galaxy.util import checkers
 from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
-
 from tool_shed.util import basic_util
 
 log = logging.getLogger(__name__)

@@ -1,12 +1,18 @@
 """Module for searching the toolshed tools within all repositories"""
-import os
 import logging
-from galaxy import exceptions
-from galaxy.exceptions import ObjectNotFound
+import os
+
 import whoosh.index
 from whoosh import scoring
-from whoosh.fields import Schema, STORED, TEXT
+from whoosh.fields import (
+    Schema,
+    STORED,
+    TEXT
+)
 from whoosh.qparser import MultifieldParser
+
+from galaxy import exceptions
+from galaxy.exceptions import ObjectNotFound
 
 log = logging.getLogger(__name__)
 

@@ -8,7 +8,6 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
-
 from .base import BaseTestCase, CreatesCollectionsMixin
 
 # =============================================================================

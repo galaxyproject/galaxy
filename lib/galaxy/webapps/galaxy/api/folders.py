@@ -1,13 +1,16 @@
 """
 API operations on library folders.
 """
-from galaxy import util
-from galaxy import exceptions
+import logging
+
+from galaxy import (
+    exceptions,
+    util
+)
 from galaxy.managers import folders, roles
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 
-import logging
 log = logging.getLogger(__name__)
 
 

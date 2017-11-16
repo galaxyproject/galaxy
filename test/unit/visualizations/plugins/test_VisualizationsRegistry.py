@@ -10,7 +10,6 @@ from six import string_types
 from galaxy import model
 from galaxy.visualization.plugins import plugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
-
 from ...unittest_utils import galaxy_mock, utility
 
 glx_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir))

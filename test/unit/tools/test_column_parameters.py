@@ -3,7 +3,6 @@ test_select_parameters.py.
 """
 from galaxy import model
 from galaxy.util import bunch
-
 from .test_parameter_parsing import BaseParameterTestCase
 from ..tools_support import datatypes_registry
 

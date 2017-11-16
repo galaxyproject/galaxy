@@ -1,19 +1,22 @@
 """
 Manager and Serializer for Users.
 """
+import logging
 
 import sqlalchemy
 
-from galaxy import model
-from galaxy import exceptions
-from galaxy import util
-
-from galaxy.managers import base
-from galaxy.managers import deletable
-from galaxy.managers import api_keys
+from galaxy import (
+    exceptions,
+    model,
+    util
+)
+from galaxy.managers import (
+    api_keys,
+    base,
+    deletable
+)
 from galaxy.security import validate_user_input
 
-import logging
 log = logging.getLogger(__name__)
 
 

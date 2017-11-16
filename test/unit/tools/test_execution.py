@@ -8,7 +8,6 @@ import galaxy.model
 from galaxy.tools.parameters import params_to_incoming
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
-
 from .. import tools_support
 
 BASE_REPEAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">

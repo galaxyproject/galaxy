@@ -1,19 +1,23 @@
 from __future__ import print_function
+
 import calendar
 import logging
+import re
 from collections import namedtuple
-from datetime import datetime, date, timedelta
+from datetime import (
+    date,
+    datetime,
+    timedelta
+)
+from math import ceil, floor
 
 import sqlalchemy as sa
-from sqlalchemy import and_, not_, or_
-
 from markupsafe import escape
+from sqlalchemy import and_, not_, or_
 
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
-import re
-from math import ceil, floor
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 
 log = logging.getLogger(__name__)

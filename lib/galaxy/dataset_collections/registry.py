@@ -1,5 +1,4 @@
 from galaxy import model
-
 from .types import (
     list,
     paired

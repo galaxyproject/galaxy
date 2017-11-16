@@ -6,32 +6,34 @@ import json
 import logging
 import os
 import sgmllib
-import requests
 
+import requests
+from markupsafe import escape
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
-from markupsafe import escape
 
-from tool_shed.util import encoding_util
-
-from galaxy import model
-from galaxy import util
-from galaxy import web
+from galaxy import (
+    model,
+    util,
+    web
+)
 from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.tools.parameters.basic import workflow_building_modes
-from galaxy.util import unicodify, FILENAME_VALID_CHARS
+from galaxy.util import (
+    FILENAME_VALID_CHARS,
+    unicodify
+)
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
 from galaxy.web.framework.helpers import grids, time_ago
-from galaxy.workflow.extract import extract_workflow
-from galaxy.workflow.extract import summarize
-from galaxy.workflow.modules import module_factory
-from galaxy.workflow.modules import WorkflowModuleInjector
+from galaxy.workflow.extract import extract_workflow, summarize
+from galaxy.workflow.modules import module_factory, WorkflowModuleInjector
 from galaxy.workflow.render import WorkflowCanvas, STANDALONE_SVG_TEMPLATE
+from tool_shed.util import encoding_util
 
 log = logging.getLogger(__name__)
 
