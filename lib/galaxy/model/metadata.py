@@ -130,13 +130,6 @@ class MetadataCollection(object):
     def element_is_set(self, name):
         return bool(self.parent._metadata.get(name, False))
 
-    def get_html_by_name(self, name, **kwd):
-        if name in self.spec:
-            rval = self.spec[name].param.get_html(value=getattr(self, name), context=self, **kwd)
-            if rval is None:
-                return self.spec[name].no_value
-            return rval
-
     def get_metadata_parameter(self, name, **kwd):
         if name in self.spec:
             field = self.spec[name].param.get_field(getattr(self, name), self, None, **kwd)
