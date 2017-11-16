@@ -152,7 +152,7 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
         var output_id        = node.output_terminals && Object.keys( node.output_terminals )[ 0 ];
 
         /** Visit input nodes and enrich by name/value pairs from server data */
-        function visit( head, head_list ) {
+        function visit( head, head_list, output_id ) {
             head_list = head_list || [];
             head_list.push( head );
             for ( var i in head.inputs ) {
@@ -182,7 +182,7 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                         }
                     }
                 }
-                input.inputs && visit( input, head_list.slice( 0 ) );
+                input.inputs && visit( input, head_list.slice( 0 ), output_id );
             }
         }
 
@@ -300,7 +300,7 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                     help    : 'This action will set column assignments in the output dataset. Blank fields are ignored.'
                 }]
             };
-            visit( input_config );
+            visit( input_config, [], output_id );
             return input_config;
         }
 
