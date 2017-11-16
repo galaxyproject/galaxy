@@ -92,18 +92,9 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                     return new HDCA_MODEL.HistoryListDatasetCollection(attrs, options);
                 case "paired":
                     return new HDCA_MODEL.HistoryPairDatasetCollection(attrs, options);
-                case "list:paired":
-                    return new HDCA_MODEL.HistoryListPairedDatasetCollection(attrs, options);
-                case "list:list":
-                    return new HDCA_MODEL.HistoryListOfListsDatasetCollection(attrs, options);
+                default:
+                    return new HDCA_MODEL.HistoryNestedDatasetCollection(attrs, options);
             }
-            // This is a hack inside a hack:
-            // Raise a plain object with validationError to fake a model.validationError
-            // (since we don't have a model to use validate with)
-            // (the outer hack being the mixed content/model function in this collection)
-            var msg = `Unknown collection_type: ${attrs.collection_type}`;
-            console.warn(msg, attrs);
-            return { validationError: msg };
         }
         return {
             validationError: `Unknown history_content_type: ${attrs.history_content_type}`

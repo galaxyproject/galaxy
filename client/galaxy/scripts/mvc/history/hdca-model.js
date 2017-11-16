@@ -75,10 +75,9 @@ var HistoryPairDatasetCollection = FlatDC.extend(hcontentMixin).extend(
 
 //==============================================================================
 /** @class Backbone model for List of Pairs Dataset Collection within a History. */
-var HistoryListPairedDatasetCollection = NestedDC.extend(hcontentMixin).extend({
+var HistoryNestedDatasetCollection = NestedDC.extend(hcontentMixin).extend({
     defaults: _.extend(_.clone(NestedDC.prototype.defaults), {
         history_content_type: "dataset_collection",
-        collection_type: "list:paired",
         model_class: "HistoryDatasetCollectionAssociation"
     }),
 
@@ -91,28 +90,10 @@ var HistoryListPairedDatasetCollection = NestedDC.extend(hcontentMixin).extend({
     }
 });
 
-//==============================================================================
-/** @class Backbone model for List of Lists Dataset Collection within a History. */
-var HistoryListOfListsDatasetCollection = NestedDC.extend(hcontentMixin).extend({
-    defaults: _.extend(_.clone(NestedDC.prototype.defaults), {
-        history_content_type: "dataset_collection",
-        collection_type: "list:list",
-        model_class: "HistoryDatasetCollectionAssociation"
-    }),
-
-    /** Override to post to contents route w/o id. */
-    save: buildHDCASave(NestedDC.prototype.save),
-
-    /** String representation. */
-    toString: function() {
-        return `HistoryListOfListsDatasetCollection(${this.get("name")})`;
-    }
-});
 
 //==============================================================================
 export default {
     HistoryListDatasetCollection: HistoryListDatasetCollection,
     HistoryPairDatasetCollection: HistoryPairDatasetCollection,
-    HistoryListPairedDatasetCollection: HistoryListPairedDatasetCollection,
-    HistoryListOfListsDatasetCollection: HistoryListOfListsDatasetCollection
+    HistoryNestedDatasetCollection: HistoryNestedDatasetCollection
 };
