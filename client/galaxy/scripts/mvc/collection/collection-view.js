@@ -191,8 +191,8 @@ CollectionView.prototype.templates = (() => {
 
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection. */
-var ListCollectionView = CollectionView.extend(
-    /** @lends ListCollectionView.prototype */ {
+var FlatCollectionView = CollectionView.extend(
+    /** @lends FlatCollectionView.prototype */ {
         //TODO: not strictly needed - due to switch in CollectionView._getContentClass
         /** sub view class used for datasets */
         DatasetDCEViewClass: DC_LI.DatasetDCEListItemView,
@@ -200,7 +200,7 @@ var ListCollectionView = CollectionView.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return `ListCollectionView(${this.model ? this.model.get("name") : ""})`;
+            return `FlatCollectionView(${this.model ? this.model.get("name") : ""})`;
         }
     }
 );
@@ -212,7 +212,7 @@ var ListOfPairsCollectionView = CollectionView.extend(
         //TODO: not strictly needed - due to switch in CollectionView._getContentClass
         /** sub view class used for nested collections */
         NestedDCDCEViewClass: DC_LI.NestedDCDCEListItemView.extend({
-            foldoutPanelClass: ListCollectionView
+            foldoutPanelClass: FlatCollectionView
         }),
 
         // ........................................................................ misc
@@ -228,7 +228,7 @@ var ListOfPairsCollectionView = CollectionView.extend(
 var ListOfListsCollectionView = CollectionView.extend({
     /** sub view class used for nested collections */
     NestedDCDCEViewClass: DC_LI.NestedDCDCEListItemView.extend({
-        foldoutPanelClass: ListCollectionView
+        foldoutPanelClass: FlatCollectionView
     }),
 
     /** string rep */
@@ -240,7 +240,7 @@ var ListOfListsCollectionView = CollectionView.extend({
 //==============================================================================
 export default {
     CollectionView: CollectionView,
-    ListCollectionView: ListCollectionView,
+    FlatCollectionView: FlatCollectionView,
     ListOfPairsCollectionView: ListOfPairsCollectionView,
     ListOfListsCollectionView: ListOfListsCollectionView
 };
