@@ -78,7 +78,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         # These form entries seem to be replaced/updated occasionally
         # causing stale elements.
         retry_call_during_transitions(check_recorded_val)
-        self.tool_execute()
+        self.tool_form_execute()
 
         self.history_panel_wait_for_hid_ok(2)
         self._check_dataset_details_for_inttest_value(2)
@@ -95,8 +95,10 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.home()
         self.tool_open("head")
         self.tool_set_value("input", "1.fasta", expected_type="data")
+
         self.screenshot("tool_form_simple_data")
-        self.tool_execute()
+        self.tool_form_execute()
+
         self.history_panel_wait_for_hid_ok(3)
 
         latest_hda = self.latest_history_item()
@@ -118,4 +120,4 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.home()
         self.tool_open("environment_variables")
         self.tool_set_value("inttest", inttest_value)
-        self.tool_execute()
+        self.tool_form_execute()

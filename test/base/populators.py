@@ -157,6 +157,9 @@ class BaseDatasetPopulator(object):
     def get_job_details(self, job_id, full=False):
         return self._get("jobs/%s?full=%s" % (job_id, full))
 
+    def cancel_job(self, job_id):
+        return self._delete("jobs/%s" % job_id)
+
     def _summarize_history(self, history_id):
         pass
 
@@ -305,6 +308,9 @@ class DatasetPopulator(BaseDatasetPopulator):
 
     def _get(self, route, data={}):
         return self.galaxy_interactor.get(route, data=data)
+
+    def _delete(self, route, data={}):
+        return self.galaxy_interactor.delete(route, data=data)
 
     def _summarize_history(self, history_id):
         self.galaxy_interactor._summarize_history(history_id)
@@ -464,6 +470,26 @@ class LibraryPopulator(object):
 
         wait_on_state(show, timeout=DEFAULT_TIMEOUT)
         return show().json()
+
+    def show_ldda(self, library_id, library_dataset_id):
+        return self.api_test_case.galaxy_interactor.get("libraries/%s/contents/%s" % (library_id, library_dataset_id))
+
+    def new_library_dataset_in_private_library(self, library_name="private_dataset", wait=True):
+        library = self.new_private_library(library_name)
+        payload, files = self.create_dataset_request(library, file_type="txt", contents="create_test")
+        create_response = self.api_test_case.galaxy_interactor.post("libraries/%s/contents" % library["id"], payload, files=files)
+        api_asserts.assert_status_code_is(create_response, 200)
+        library_datasets = create_response.json()
+        assert len(library_datasets) == 1
+        library_dataset = library_datasets[0]
+        if wait:
+            def show():
+                return self.show_ldda(library["id"], library_dataset["id"])
+
+            wait_on_state(show, assert_ok=True)
+            library_dataset = show().json()
+
+        return library, library_dataset
 
 
 class BaseDatasetCollectionPopulator(object):
@@ -635,6 +661,11 @@ class GiPostGetMixin:
         data = data.copy()
         data['key'] = self._gi.key
         return requests.post(self.__url(route), data=data)
+
+    def _delete(self, route, data={}):
+        data = data.copy()
+        data['key'] = self._gi.key
+        return requests.delete(self.__url(route), data=data)
 
     def __url(self, route):
         return self._gi.url + "/" + route

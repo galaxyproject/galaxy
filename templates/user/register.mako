@@ -173,7 +173,7 @@ def inherit(context):
                         <% subscribe_check_box.checked = True %>
                     %endif
                     ${subscribe_check_box.get_html()}
-                    <p>See <a href="http://galaxyproject.org/wiki/Mailing%20Lists" target="_blank">
+                    <p>See <a href="https://galaxyproject.org/mailing-lists/" target="_blank">
                     all Galaxy project mailing lists</a>.</p>
                 </div>
             %endif

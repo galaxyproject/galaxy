@@ -31,8 +31,7 @@ done
 
 THIS_DIRECTORY="$(cd "$(dirname "$0")" > /dev/null && pwd)"
 ENVS="develop
-flake8
-flake8_imports"
+flake8"
 
 for env in $ENVS
 do

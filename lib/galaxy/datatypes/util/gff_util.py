@@ -5,7 +5,6 @@ import copy
 
 from bx.intervals.io import GenomicInterval, GenomicIntervalReader, MissingFieldError, NiceReaderWrapper, ParseError
 from bx.tabular.io import Comment, Header
-
 from six import Iterator
 
 from galaxy.util.odict import odict

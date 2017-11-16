@@ -1,5 +1,4 @@
 import logging
-
 from os import listdir
 from os.path import (
     basename,
@@ -11,7 +10,6 @@ from os.path import (
 )
 
 from .resolver_mixins import UsesToolDependencyDirMixin
-
 from ..resolvers import (
     Dependency,
     DependencyResolver,

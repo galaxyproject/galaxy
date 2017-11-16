@@ -20,7 +20,6 @@ from galaxy.datatypes.sniff import (
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.gff_util import parse_gff3_attributes, parse_gff_attributes
 from galaxy.web import url_for
-
 from . import (
     data,
     dataproviders

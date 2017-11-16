@@ -9,7 +9,6 @@ import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, true
 
 import galaxy.tools.deps.requirements
-
 from galaxy import util
 from galaxy.util import checkers
 from galaxy.web import url_for

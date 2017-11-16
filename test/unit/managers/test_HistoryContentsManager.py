@@ -10,7 +10,6 @@ from sqlalchemy.sql import text
 
 from galaxy.managers import collections, hdas, history_contents
 from galaxy.managers.histories import HistoryManager
-
 from .base import BaseTestCase
 from .base import CreatesCollectionsMixin
 

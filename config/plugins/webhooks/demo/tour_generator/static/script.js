@@ -58,7 +58,7 @@ $(document).ready(function() {
             },
 
             _generateTour: function(data) {
-                var tourData = Tours.hooked_tour_from_data(data);
+                var tourData = Tours.default.hooked_tour_from_data(data);
                 sessionStorage.setItem('activeGalaxyTour', JSON.stringify(data));
 
                 // Generate and run the tour

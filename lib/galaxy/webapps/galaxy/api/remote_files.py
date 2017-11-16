@@ -1,16 +1,17 @@
 """
 API operations on remote files.
 """
+import hashlib
+import logging
 import os
 import time
-import hashlib
-from galaxy import exceptions
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.util import jstree, unicodify
-from galaxy.web.base.controller import BaseAPIController
 from operator import itemgetter
 
-import logging
+from galaxy import exceptions
+from galaxy.util import jstree, unicodify
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web.base.controller import BaseAPIController
+
 log = logging.getLogger(__name__)
 
 

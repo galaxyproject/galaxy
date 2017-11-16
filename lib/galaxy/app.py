@@ -1,15 +1,17 @@
 from __future__ import absolute_import
+
 import logging
 import signal
 import sys
 import time
 
-from galaxy import config, jobs
 import galaxy.model
-import galaxy.security
 import galaxy.queues
-from galaxy.managers.collections import DatasetCollectionManager
 import galaxy.quota
+import galaxy.security
+from galaxy import config, jobs
+from galaxy.jobs import metrics as job_metrics
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.tags import GalaxyTagManager
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
@@ -19,20 +21,20 @@ from galaxy.tours import ToursRegistry
 from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.openid.providers import OpenIDProviders
-from galaxy.tools.data_manager.manager import DataManagers
+from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.sample_tracking import external_service_types
 from galaxy.tools.cache import (
     ToolCache,
     ToolShedRepositoryCache
 )
-from galaxy.jobs import metrics as job_metrics
+from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
-from galaxy.web.proxy import ProxyManager
-from galaxy.web.stack import application_stack_instance
-from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.util import (
     ExecutionTimer,
     heartbeat
 )
+from galaxy.web.proxy import ProxyManager
+from galaxy.web.stack import application_stack_instance
 from tool_shed.galaxy_install import update_repository_manager
 
 

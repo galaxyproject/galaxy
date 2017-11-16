@@ -1,5 +1,4 @@
 import os
-
 from contextlib import contextmanager
 from shutil import rmtree
 from string import Template

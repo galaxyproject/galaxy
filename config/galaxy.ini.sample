@@ -1096,6 +1096,8 @@ use_interactive = True
 # stable API.
 #enable_beta_workflow_modules = False
 
+# Following options only apply to workflows scheduled using the legacy workflow
+# run API (running workflows via a POST to /api/workflows).
 # Force usage of Galaxy's beta workflow scheduler under certain circumstances -
 # this workflow scheduling forces Galaxy to schedule workflows in the background
 # so initial submission of the workflows is significantly sped up. This does
