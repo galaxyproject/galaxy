@@ -318,18 +318,6 @@ var ListDatasetCollection = DatasetCollection.extend(
     }
 );
 
-//==============================================================================
-/** Model for a DatasetCollection containing fwd/rev datasets (a list of 2).
- */
-var PairDatasetCollection = ListDatasetCollection.extend(
-    /** @lends PairDatasetCollection.prototype */ {
-        /** String representation. */
-        toString: function() {
-            return `Pair${DatasetCollection.prototype.toString.call(this)}`;
-        }
-    }
-);
-
 //_________________________________________________________________________________________________ NESTED COLLECTIONS
 // this is where things get weird, man. Weird.
 //TODO: it might be possible to compact all the following...I think.
@@ -377,7 +365,7 @@ var NestedDCDCECollection = DCECollection.extend(
 //==============================================================================
 /** @class Backbone model for a paired dataset collection within a list:paired dataset collection.
  */
-var NestedPairDCDCE = PairDatasetCollection.extend(
+var NestedPairDCDCE = ListDatasetCollection.extend(
     BASE_MVC.mixin(
         DatasetCollectionElementMixin,
         /** @lends NestedPairDCDCE.prototype */ {
@@ -480,7 +468,6 @@ var ListOfListsDatasetCollection = DatasetCollection.extend({
 //==============================================================================
 export default {
     ListDatasetCollection: ListDatasetCollection,
-    PairDatasetCollection: PairDatasetCollection,
     ListPairedDatasetCollection: ListPairedDatasetCollection,
     ListOfListsDatasetCollection: ListOfListsDatasetCollection
 };

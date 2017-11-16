@@ -14,7 +14,6 @@ TODO:
 var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin;
 
 var ListDC = DC_MODEL.ListDatasetCollection;
-var PairDC = DC_MODEL.PairDatasetCollection;
 var ListPairedDC = DC_MODEL.ListPairedDatasetCollection;
 var ListOfListsDC = DC_MODEL.ListOfListsDatasetCollection;
 
@@ -57,20 +56,20 @@ var HistoryListDatasetCollection = ListDC.extend(hcontentMixin).extend(
 /** @class Backbone model for Pair Dataset Collection within a History.
  *  @constructs
  */
-var HistoryPairDatasetCollection = PairDC.extend(hcontentMixin).extend(
+var HistoryPairDatasetCollection = ListDC.extend(hcontentMixin).extend(
     /** @lends HistoryPairDatasetCollection.prototype */ {
-        defaults: _.extend(_.clone(PairDC.prototype.defaults), {
+        defaults: _.extend(_.clone(ListDC.prototype.defaults), {
             history_content_type: "dataset_collection",
             collection_type: "paired",
             model_class: "HistoryDatasetCollectionAssociation"
         }),
 
         /** Override to post to contents route w/o id. */
-        save: buildHDCASave(PairDC.prototype.save),
+        save: buildHDCASave(ListDC.prototype.save),
 
         /** String representation. */
         toString: function() {
-            return `History${PairDC.prototype.toString.call(this)}`;
+            return `History${ListDC.prototype.toString.call(this)}`;
         }
     }
 );
