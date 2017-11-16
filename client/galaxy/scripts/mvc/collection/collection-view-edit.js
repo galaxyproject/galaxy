@@ -91,26 +91,10 @@ var CollectionViewEdit = _super.extend(
 );
 
 // =============================================================================
-/** @class non-editable, read-only View/Controller for a dataset collection. */
-var FlatCollectionViewEdit = CollectionViewEdit.extend(
-    /** @lends ListCollectionView.prototype */ {
-        //TODO: not strictly needed - due to switch in CollectionView._getContentClass
-        /** sub view class used for datasets */
-        DatasetDCEViewClass: DC_EDIT.DatasetDCEListItemEdit,
-
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `FlatCollectionViewEdit(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
-// =============================================================================
 /** @class Editable (roughly since these collections are immutable),
  *  View/Controller for a dataset collection.
  */
-var NestedCollectionElementViewEdit = FlatCollectionViewEdit.extend(
+var NestedCollectionElementViewEdit = CollectionViewEdit.extend(
     /** @lends NestedCollectionElementViewEdit.prototype */ {
         /** Override to remove the editable text from the name/identifier - these collections are considered immutable */
         _setUpBehaviors: function($where) {
@@ -146,6 +130,5 @@ var NestedCollectionViewEdit = CollectionViewEdit.extend(
 //==============================================================================
 export default {
     CollectionViewEdit: CollectionViewEdit,
-    FlatCollectionViewEdit: FlatCollectionViewEdit,
     NestedCollectionViewEdit: NestedCollectionViewEdit
 };

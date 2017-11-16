@@ -190,27 +190,11 @@ CollectionView.prototype.templates = (() => {
 })();
 
 // =============================================================================
-/** @class non-editable, read-only View/Controller for a dataset collection. */
-var FlatCollectionView = CollectionView.extend(
-    /** @lends FlatCollectionView.prototype */ {
-        //TODO: not strictly needed - due to switch in CollectionView._getContentClass
-        /** sub view class used for datasets */
-        DatasetDCEViewClass: DC_LI.DatasetDCEListItemView,
-
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `FlatCollectionView(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
-// =============================================================================
 /** @class non-editable, read-only View/Controller for a list of lists dataset collection. */
 var NestedCollectionView = CollectionView.extend({
     /** sub view class used for nested collections */
     NestedDCDCEViewClass: DC_LI.NestedDCDCEListItemView.extend({
-        foldoutPanelClass: FlatCollectionView
+        foldoutPanelClass: CollectionView
     }),
 
     /** string rep */
@@ -222,6 +206,5 @@ var NestedCollectionView = CollectionView.extend({
 //==============================================================================
 export default {
     CollectionView: CollectionView,
-    FlatCollectionView: FlatCollectionView,
     NestedCollectionView: NestedCollectionView
 };

@@ -32,9 +32,9 @@ var HDCAListItemView = _super.extend(
             var collectionType = this.model.get("collection_type");
             switch (collectionType) {
                 case "list":
-                    return DC_VIEW.FlatCollectionView;
+                    return DC_VIEW.CollectionView;
                 case "paired":
-                    return DC_VIEW.FlatCollectionView;
+                    return DC_VIEW.CollectionView;
                 default:
                     return DC_VIEW.NestedCollectionView;
             }
