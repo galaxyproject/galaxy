@@ -19,7 +19,7 @@ var HDCAListItemEdit = _super.extend(
                 case "list":
                     return DC_VIEW_EDIT.ListCollectionViewEdit;
                 case "paired":
-                    return DC_VIEW_EDIT.PairCollectionViewEdit;
+                    return DC_VIEW_EDIT.ListCollectionViewEdit;
                 case "list:paired":
                     return DC_VIEW_EDIT.ListOfPairsCollectionViewEdit;
                 case "list:list":

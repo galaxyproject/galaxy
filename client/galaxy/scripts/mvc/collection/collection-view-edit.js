@@ -107,22 +107,10 @@ var ListCollectionViewEdit = CollectionViewEdit.extend(
 );
 
 // =============================================================================
-/** @class Editable, read-only View/Controller for a dataset collection. */
-var PairCollectionViewEdit = ListCollectionViewEdit.extend(
-    /** @lends PairCollectionViewEdit.prototype */ {
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `PairCollectionViewEdit(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
-// =============================================================================
 /** @class Editable (roughly since these collections are immutable),
  *  View/Controller for a dataset collection.
  */
-var NestedPairCollectionViewEdit = PairCollectionViewEdit.extend(
+var NestedPairCollectionViewEdit = ListCollectionViewEdit.extend(
     /** @lends NestedPairCollectionViewEdit.prototype */ {
         /** Override to remove the editable text from the name/identifier - these collections are considered immutable */
         _setUpBehaviors: function($where) {
@@ -177,7 +165,6 @@ var ListOfListsCollectionViewEdit = CollectionViewEdit.extend(
 export default {
     CollectionViewEdit: CollectionViewEdit,
     ListCollectionViewEdit: ListCollectionViewEdit,
-    PairCollectionViewEdit: PairCollectionViewEdit,
     ListOfPairsCollectionViewEdit: ListOfPairsCollectionViewEdit,
     ListOfListsCollectionViewEdit: ListOfListsCollectionViewEdit
 };
