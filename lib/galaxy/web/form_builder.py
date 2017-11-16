@@ -8,7 +8,7 @@ from cgi import escape
 
 from six import string_types
 
-from galaxy.util import restore_text, unicodify
+from galaxy.util import restore_text, unicodify, asbool
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class BaseField(object):
         self.value = value
         self.disabled = kwds.get('disabled', False)
         if 'optional' in kwds:
-            self.optional = kwds.get('optional', True)
+            self.optional = asbool(kwds.get('optional'))
         else:
             self.optional = kwds.get('required', 'optional') == 'optional'
         self.help = kwds.get('helptext')
