@@ -67,6 +67,7 @@
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
+        'bundled/masthead.bundled',
         'libs/d3',
         'libs/require',
     )}
