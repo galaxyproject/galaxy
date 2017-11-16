@@ -43,7 +43,8 @@ module.exports = {
         libs: commonLibs,
         login: "./galaxy/scripts/apps/login.js",
         analysis: "./galaxy/scripts/apps/analysis.js",
-        admin: "./galaxy/scripts/apps/admin.js"
+        admin: "./galaxy/scripts/apps/admin.js",
+        workflow: "./galaxy/scripts/apps/workflow.js"
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),

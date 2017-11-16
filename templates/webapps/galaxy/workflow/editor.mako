@@ -44,14 +44,13 @@
         "libs/jquery/jquery.form",
         "libs/jquery/jstorage",
         "libs/jquery/jquery.autocomplete",
+        "bundled/workflow.bundled"
     )}
 
     <script type='text/javascript'>
-        workflow_view = null;
         $( function() {
-            require(['mvc/workflow/workflow-view'], function(Workflow){
-                workflow_view = new Workflow.default(${h.dumps(self.editor_config)});
-            });
+            workflow_view = null;
+            workflowApp(${h.dumps(self.editor_config)});
         });
     </script>
 </%def>
