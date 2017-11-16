@@ -323,7 +323,7 @@ var FlatDatasetCollection = DatasetCollection.extend(
 //TODO: it might be possible to compact all the following...I think.
 //==============================================================================
 /** @class Backbone model for a Generic DatasetCollectionElement that is also a DatasetCollection
- *      (a nested collection). Currently only list:paired.
+ *      (a nested collection).
  */
 var NestedDCDCE = DatasetCollection.extend(
     BASE_MVC.mixin(
@@ -399,7 +399,7 @@ var NestedListDCDCECollection = NestedDCDCECollection.extend({
 //==============================================================================
 /** @class Backbone Model for a DatasetCollection (list) that contains other lists. */
 var NestedDatasetCollection = DatasetCollection.extend({
-    /** list:paired is the only collection that itself contains collections */
+
     collectionClass: NestedListDCDCECollection,
 
     /** String representation. */
