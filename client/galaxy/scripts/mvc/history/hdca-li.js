@@ -34,7 +34,7 @@ var HDCAListItemView = _super.extend(
                 case "list":
                     return DC_VIEW.ListCollectionView;
                 case "paired":
-                    return DC_VIEW.PairCollectionView;
+                    return DC_VIEW.ListCollectionView;
                 case "list:paired":
                     return DC_VIEW.ListOfPairsCollectionView;
                 case "list:list":
