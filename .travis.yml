@@ -15,7 +15,8 @@ env:
 
 matrix:
   allow_failures:
-  - env: TOX_ENV=check-python-dependencies TOX_ENV=qunit
+  - env: TOX_ENV=check-python-dependencies
+  - env: TOX_ENV=qunit
 
 addons:
   apt:
