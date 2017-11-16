@@ -92,6 +92,7 @@ history_panel:
       download_button: '${_} .icon-btn.download-btn'
       info_button: '${_} .icon-btn.params-btn'
       rerun_button: '${_} .icon-btn.rerun-btn'
+      nametags: '${_} .nametags .label'
 
   multi_operations:
     selectors:
@@ -103,6 +104,16 @@ history_panel:
       build_pair: "Build Dataset Pair"
       build_list: "Build Dataset List"
       build_list_pairs: "Build List of Dataset Pairs"
+
+  collection_view:
+    selectors:
+      _: '.list-panel.dataset-collection-panel'
+      back: '.navigation .back'
+      title: '.dataset-collection-panel .controls .title .editable-text'
+      title_input: '.dataset-collection-panel .controls .title  input'
+      subtitle: '.dataset-collection-panel .controls .title .subtitle'
+      tag_area_input: '.controls .tags-display .tags-input input'
+      list_items: '.dataset-collection-panel .list-items .list-item'
 
   selectors:
     _: '#current-history-panel'
