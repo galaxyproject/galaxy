@@ -35,9 +35,7 @@ var HDCAListItemView = _super.extend(
                     return DC_VIEW.FlatCollectionView;
                 case "paired":
                     return DC_VIEW.FlatCollectionView;
-                case "list:paired":
-                    return DC_VIEW.ListOfPairsCollectionView;
-                case "list:list":
+                default:
                     return DC_VIEW.ListOfListsCollectionView;
             }
             throw new TypeError(`Unknown collection_type: ${collectionType}`);
