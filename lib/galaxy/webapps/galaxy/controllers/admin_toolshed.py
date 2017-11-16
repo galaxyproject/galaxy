@@ -34,7 +34,6 @@ from tool_shed.util import (
     workflow_util
 )
 from tool_shed.util.web_util import escape
-
 from .admin import AdminGalaxy
 
 log = logging.getLogger(__name__)

@@ -14,7 +14,6 @@ from bx import (
 )
 
 from galaxy.util import sqlite
-
 from . import (
     base,
     column,

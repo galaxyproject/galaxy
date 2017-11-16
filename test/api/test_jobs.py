@@ -2,19 +2,18 @@ import datetime
 import json
 import os
 import time
-
 from operator import itemgetter
 
-from base import api
-from base.api_asserts import assert_status_code_is_ok
-from base.populators import (
+from requests import put
+
+from base import api  # noqa: I100
+from base.api_asserts import assert_status_code_is_ok  # noqa: I100
+from base.populators import (  # noqa: I100
     DatasetCollectionPopulator,
     DatasetPopulator,
     wait_on,
     wait_on_state,
 )
-
-from requests import put
 
 
 class JobsApiTestCase(api.ApiTestCase):

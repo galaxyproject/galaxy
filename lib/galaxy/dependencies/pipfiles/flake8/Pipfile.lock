@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "23a9dc7e33425cf99801df781bf42cfb2ee9a72cfc8bbf725e1008ae543a821f"
+            "sha256": "fd536e5360456866463f669e38bd7977303b59f1995671fcc2508dfdc744fd6b"
         },
         "host-environment-markers": {
             "implementation_name": "cpython",
@@ -9,12 +9,12 @@
             "os_name": "posix",
             "platform_machine": "x86_64",
             "platform_python_implementation": "CPython",
-            "platform_release": "16.7.0",
-            "platform_system": "Darwin",
-            "platform_version": "Darwin Kernel Version 16.7.0: Thu Jun 15 17:36:27 PDT 2017; root:xnu-3789.70.16~2/RELEASE_X86_64",
-            "python_full_version": "2.7.12",
+            "platform_release": "3.13.0-133-generic",
+            "platform_system": "Linux",
+            "platform_version": "#182-Ubuntu SMP Tue Sep 19 15:49:21 UTC 2017",
+            "python_full_version": "2.7.6",
             "python_version": "2.7",
-            "sys_platform": "darwin"
+            "sys_platform": "linux2"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -27,6 +27,13 @@
         ]
     },
     "default": {
+        "asttokens": {
+            "hashes": [
+                "sha256:af77320626fbe29b8f5c6c43f82d5012a145a1dadbd2de286ea9398c640c072b",
+                "sha256:3d630eb1532e6877bc01c0a933570693783b7c97ece3260bd3ad964aaf7d566b"
+            ],
+            "version": "==1.1.7"
+        },
         "configparser": {
             "hashes": [
                 "sha256:5308b47021bc2340965c371f0f058cc6971a04502638d4244225c49d80db273a"
@@ -51,6 +58,13 @@
             ],
             "version": "==3.5.0"
         },
+        "flake8-import-order": {
+            "hashes": [
+                "sha256:26c052d93d8b2d17c5e31bdcf0cdcb513c0b039d2671905dc9ddb5bcec8f72e1",
+                "sha256:a025f6d691e6ca3a749ebcb9dea8ee3aa341407d767dda1c263060f80f6b377e"
+            ],
+            "version": "==0.14.3"
+        },
         "mccabe": {
             "hashes": [
                 "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42",
@@ -71,6 +85,13 @@
                 "sha256:8d616a382f243dbf19b54743f280b80198be0bca3a5396f1d2e1fca6223e8805"
             ],
             "version": "==1.6.0"
+        },
+        "six": {
+            "hashes": [
+                "sha256:832dc0e10feb1aa2c68dcc57dbb658f1c7e65b9b61af69048abc87a2db00a0eb",
+                "sha256:70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9"
+            ],
+            "version": "==1.11.0"
         }
     },
     "develop": {}

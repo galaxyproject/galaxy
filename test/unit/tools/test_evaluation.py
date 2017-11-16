@@ -27,7 +27,6 @@ from galaxy.tools.parameters.grouping import (
 )
 from galaxy.tools.parser.output_objects import ToolOutput
 from galaxy.util.bunch import Bunch
-
 # Test fixtures for Galaxy infrastructure.
 from ..tools_support import UsesApp
 

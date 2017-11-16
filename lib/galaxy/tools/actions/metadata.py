@@ -5,7 +5,6 @@ from json import dumps
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.jobs.datasets import DatasetPath
 from galaxy.util.odict import odict
-
 from . import ToolAction
 
 log = logging.getLogger(__name__)

@@ -1,16 +1,13 @@
 import logging
-
 from datetime import datetime
+
+from galaxy import model
+from galaxy.jobs.runners import JobState
+from ._safe_eval import safe_eval
 
 __all__ = ('failure', )
 
 log = logging.getLogger(__name__)
-
-from galaxy import model
-from galaxy.jobs.runners import JobState
-
-from ._safe_eval import safe_eval
-
 
 MESSAGES = dict(
     walltime_reached='it reached the walltime',

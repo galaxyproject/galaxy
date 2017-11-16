@@ -9,19 +9,21 @@ A sharable Galaxy object:
     can be published effectively making it available to all other Users
     can be rated
 """
+import logging
+import re
 
 from sqlalchemy import true
-import re
+
 from galaxy import exceptions
+from galaxy.managers import (
+    annotatable,
+    base,
+    ratable,
+    secured,
+    taggable,
+    users
+)
 
-from galaxy.managers import base
-from galaxy.managers import secured
-from galaxy.managers import taggable
-from galaxy.managers import annotatable
-from galaxy.managers import ratable
-from galaxy.managers import users
-
-import logging
 log = logging.getLogger(__name__)
 
 

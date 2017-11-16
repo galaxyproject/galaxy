@@ -1,7 +1,6 @@
 import os
 
 from galaxy.util import galaxy_root_path
-
 from .framework import (
     selenium_test,
     SeleniumTestCase

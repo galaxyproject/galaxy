@@ -1,13 +1,13 @@
-import galaxy.model
 import collections
 import logging
+
 import sqlalchemy as sa
-
-from galaxy import util
-from galaxy.web.base.controller import BaseUIController, web
-
 from markupsafe import escape
 from sqlalchemy import and_
+
+import galaxy.model
+from galaxy import util
+from galaxy.web.base.controller import BaseUIController, web
 
 log = logging.getLogger(__name__)
 

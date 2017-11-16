@@ -16,7 +16,6 @@ from galaxy.util import (
     DATABASE_MAX_STRING_SIZE,
     shrink_stream_by_size
 )
-
 from ..runners import (
     BaseJobRunner,
     JobState

@@ -16,7 +16,6 @@ import sys
 import tempfile
 import threading
 import time
-
 from datetime import timedelta
 
 from six import string_types

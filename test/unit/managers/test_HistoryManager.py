@@ -21,7 +21,6 @@ from galaxy.managers.histories import (
     HistoryManager,
     HistorySerializer
 )
-
 from .base import BaseTestCase
 from ..unittest_utils import galaxy_mock
 
