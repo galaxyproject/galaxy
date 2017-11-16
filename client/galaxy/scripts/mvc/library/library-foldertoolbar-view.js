@@ -4,12 +4,14 @@ import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_select from "mvc/ui/ui-select";
 import "libs/jquery/jstree";
+
+
 var FolderToolbarView = Backbone.View.extend({
     el: "#center",
 
     events: {
         "click #toolbtn_create_folder": "createFolderFromModal",
-        "click #toolbtn_bulk_import": "modalBulkImport",
+        "click #toolbtn_bulk_import": "historyImportModal",
         "click #include_deleted_datasets_chk": "checkIncludeDeleted",
         "click #toolbtn_bulk_delete": "deleteSelectedItems",
         "click .toolbtn-show-locinfo": "showLocInfo",
@@ -141,9 +143,6 @@ var FolderToolbarView = Backbone.View.extend({
     createFolderFromModal: function(event) {
         event.preventDefault();
         event.stopPropagation();
-
-        // create modal
-        var self = this;
         var template = this.templateNewFolderInModal();
         this.modal = Galaxy.modal;
         this.modal.show({
@@ -151,10 +150,10 @@ var FolderToolbarView = Backbone.View.extend({
             title: _l("Create New Folder"),
             body: template(),
             buttons: {
-                Create: function() {
-                    self.create_new_folder_event();
+                Create: () => {
+                    this.create_new_folder_event();
                 },
-                Close: function() {
+                Close: () => {
                     Galaxy.modal.hide();
                 }
             }
@@ -210,30 +209,29 @@ var FolderToolbarView = Backbone.View.extend({
         return folderDetails.name !== "";
     },
 
-    // show bulk import modal
-    modalBulkImport: function() {
+    // show history import modal
+    historyImportModal: function() {
         var $checkedValues = this.findCheckedRows();
         if ($checkedValues.length === 0) {
             mod_toastr.info("You must select some datasets first.");
         } else {
-            var that = this;
             this.histories = new mod_library_model.GalaxyHistories();
             this.histories
                 .fetch()
                 .done(() => {
-                    var template = that.templateBulkImportInModal();
-                    that.modal = Galaxy.modal;
-                    that.modal.show({
+                    var template = this.templateBulkImportInModal();
+                    this.modal = Galaxy.modal;
+                    this.modal.show({
                         closing_events: true,
                         title: _l("Import into History"),
                         body: template({
-                            histories: that.histories.models
+                            histories: this.histories.models
                         }),
                         buttons: {
-                            Import: function() {
-                                that.importAllIntoHistory();
+                            Import: () => {
+                                this.importAllIntoHistory();
                             },
-                            Close: function() {
+                            Close: () => {
                                 Galaxy.modal.hide();
                             }
                         }
@@ -255,20 +253,19 @@ var FolderToolbarView = Backbone.View.extend({
     importAllIntoHistory: function() {
         this.modal.disableButton("Import");
         var new_history_name = this.modal.$("input[name=history_name]").val();
-        var that = this;
         if (new_history_name !== "") {
             $.post(`${Galaxy.root}api/histories`, {
                 name: new_history_name
             })
                 .done(new_history => {
-                    that.options.last_used_history_id = new_history.id;
-                    that.processImportToHistory(new_history.id, new_history.name);
+                    this.options.last_used_history_id = new_history.id;
+                    this.processImportToHistory(new_history.id, new_history.name);
                 })
                 .fail((xhr, status, error) => {
                     mod_toastr.error("An error occurred.");
                 })
                 .always(() => {
-                    that.modal.enableButton("Import");
+                    this.modal.enableButton("Import");
                 });
         } else {
             var history_id = $("select[name=dataset_import_bulk] option:selected").val();
@@ -371,7 +368,7 @@ var FolderToolbarView = Backbone.View.extend({
             data = typeof data === "string" ? data : $.param(data);
             // split params into form inputs
             var inputs = "";
-            $.each(data.split("&"), function() {
+            $.each(data.split("&"), () => {
                 var pair = this.split("=");
                 inputs += `<input type="hidden" name="${pair[0]}" value="${pair[1]}" />`;
             });
@@ -388,33 +385,32 @@ var FolderToolbarView = Backbone.View.extend({
 
     addFilesFromHistoryModal: function() {
         this.histories = new mod_library_model.GalaxyHistories();
-        var self = this;
         this.histories
             .fetch()
             .done(() => {
-                self.modal = Galaxy.modal;
-                var template_modal = self.templateAddFilesFromHistory();
-                self.modal.show({
+                this.modal = Galaxy.modal;
+                var template_modal = this.templateAddFilesFromHistory();
+                this.modal.show({
                     closing_events: true,
                     title: _l("Adding datasets from your history"),
                     body: template_modal({
-                        histories: self.histories.models
+                        histories: this.histories.models
                     }),
                     buttons: {
-                        Add: function() {
-                            self.addAllDatasetsFromHistory();
+                        Add: () => {
+                            this.addAllDatasetsFromHistory();
                         },
-                        Close: function() {
+                        Close: () => {
                             Galaxy.modal.hide();
                         }
                     },
-                    closing_callback: function() {
-                        Galaxy.libraries.library_router.navigate(`folders/${self.id}`, { trigger: true });
+                    closing_callback: () => {
+                        Galaxy.libraries.library_router.navigate(`folders/${this.id}`, { trigger: true });
                     }
                 });
-                self.fetchAndDisplayHistoryContents(self.histories.models[0].id);
+                this.fetchAndDisplayHistoryContents(this.histories.models[0].id);
                 $("#dataset_add_bulk").change(event => {
-                    self.fetchAndDisplayHistoryContents(event.target.value);
+                    this.fetchAndDisplayHistoryContents(event.target.value);
                 });
             })
             .fail((model, response) => {
@@ -431,7 +427,6 @@ var FolderToolbarView = Backbone.View.extend({
      * This feature is admin-only.
      */
     importFilesFromPathModal: function() {
-        var that = this;
         this.modal = Galaxy.modal;
         var template_modal = this.templateImportPathModal();
         this.modal.show({
@@ -439,16 +434,16 @@ var FolderToolbarView = Backbone.View.extend({
             title: _l("Please enter paths to import"),
             body: template_modal({}),
             buttons: {
-                Import: function() {
-                    that.importFromPathsClicked(that);
+                Import: () => {
+                    this.importFromPathsClicked(this);
                 },
-                Close: function() {
+                Close: () => {
                     Galaxy.modal.hide();
                 }
             },
-            closing_callback: function() {
+            closing_callback: () => {
                 //  TODO: should not trigger routes outside of the router
-                Galaxy.libraries.library_router.navigate(`folders/${that.id}`, {
+                Galaxy.libraries.library_router.navigate(`folders/${this.id}`, {
                     trigger: true
                 });
             }
@@ -461,35 +456,34 @@ var FolderToolbarView = Backbone.View.extend({
      * and save them sorted in arrays.
      */
     fetchExtAndGenomes: function() {
-        var that = this;
         mod_utils.get({
             url: `${Galaxy.root}api/datatypes?extension_only=False`,
-            success: function(datatypes) {
-                that.list_extensions = [];
+            success: datatypes => {
+                this.list_extensions = [];
                 for (var key in datatypes) {
-                    that.list_extensions.push({
+                    this.list_extensions.push({
                         id: datatypes[key].extension,
                         text: datatypes[key].extension,
                         description: datatypes[key].description,
                         description_url: datatypes[key].description_url
                     });
                 }
-                that.list_extensions.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
-                that.list_extensions.unshift(that.auto);
+                this.list_extensions.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
+                this.list_extensions.unshift(this.auto);
             },
             cache: true
         });
         mod_utils.get({
             url: `${Galaxy.root}api/genomes`,
-            success: function(genomes) {
-                that.list_genomes = [];
+            success: genomes => {
+                this.list_genomes = [];
                 for (var key in genomes) {
-                    that.list_genomes.push({
+                    this.list_genomes.push({
                         id: genomes[key][1],
                         text: genomes[key][0]
                     });
                 }
-                that.list_genomes.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
+                this.list_genomes.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
             },
             cache: true
         });
@@ -500,16 +494,15 @@ var FolderToolbarView = Backbone.View.extend({
         // See this.fetchExtAndGenomes()
         // TODO switch to common resources:
         // https://trello.com/c/dIUE9YPl/1933-ui-common-resources-and-data-into-galaxy-object
-        var that = this;
         this.select_genome = new mod_select.View({
             css: "library-genome-select",
-            data: that.list_genomes,
+            data: this.list_genomes,
             container: Galaxy.modal.$el.find("#library_genome_select"),
             value: "?"
         });
         this.select_extension = new mod_select.View({
             css: "library-extension-select",
-            data: that.list_extensions,
+            data: this.list_extensions,
             container: Galaxy.modal.$el.find("#library_extension_select"),
             value: "auto"
         });
@@ -520,7 +513,6 @@ var FolderToolbarView = Backbone.View.extend({
      * on Galaxy. Bind jQuery events.
      */
     importFilesFromGalaxyFolderModal: function(options) {
-        var that = this;
         var template_modal = this.templateBrowserModal();
         this.modal = Galaxy.modal;
         this.modal.show({
@@ -528,16 +520,16 @@ var FolderToolbarView = Backbone.View.extend({
             title: _l("Please select folders or files"),
             body: template_modal({}),
             buttons: {
-                Import: function() {
-                    that.importFromJstreePath(that, options);
+                Import: () => {
+                    this.importFromJstreePath(this, options);
                 },
-                Close: function() {
+                Close: () => {
                     Galaxy.modal.hide();
                 }
             },
-            closing_callback: function() {
+            closing_callback: () => {
                 //  TODO: should not trigger routes outside of the router
-                Galaxy.libraries.library_router.navigate(`folders/${that.id}`, {
+                Galaxy.libraries.library_router.navigate(`folders/${this.id}`, {
                     trigger: true
                 });
             }
@@ -557,7 +549,7 @@ var FolderToolbarView = Backbone.View.extend({
         $("input[type=radio]").change(event => {
             if (event.target.value === "jstree-disable-folders") {
                 options.disabled_jstree_element = "folders";
-                that.renderJstree(options);
+                this.renderJstree(options);
                 $(".jstree-folders-message").hide();
                 $(".jstree-preserve-structure").hide();
                 $(".jstree-files-message").show();
@@ -566,7 +558,7 @@ var FolderToolbarView = Backbone.View.extend({
                 $(".jstree-folders-message").show();
                 $(".jstree-preserve-structure").show();
                 options.disabled_jstree_element = "files";
-                that.renderJstree(options);
+                this.renderJstree(options);
             }
         });
     },
@@ -578,14 +570,13 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {[type]} options [description]
      */
     renderJstree: function(options) {
-        var that = this;
         this.options = _.extend(this.options, options);
         var target = options.source || "userdir";
         var disabled_jstree_element = this.options.disabled_jstree_element;
         this.jstree = new mod_library_model.Jstree();
         this.jstree.url = `${this.jstree.urlRoot}?target=${target}&format=jstree&disable=${disabled_jstree_element}`;
         this.jstree.fetch({
-            success: function(model, response) {
+            success: (model, response) => {
                 $("#jstree_browser").jstree("destroy");
                 $("#jstree_browser").jstree({
                     core: {
@@ -605,7 +596,7 @@ var FolderToolbarView = Backbone.View.extend({
                     }
                 });
             },
-            error: function(model, response) {
+            error: (model, response) => {
                 if (typeof response.responseJSON !== "undefined") {
                     if (response.responseJSON.err_code === 404001) {
                         mod_toastr.warning(response.responseJSON.err_msg);
@@ -769,24 +760,23 @@ var FolderToolbarView = Backbone.View.extend({
         var history_contents = new mod_library_model.HistoryContents({
             id: history_id
         });
-        var self = this;
         history_contents.fetch({
-            success: function(history_contents) {
-                var history_contents_template = self.templateHistoryContents();
-                self.histories.get(history_id).set({ contents: history_contents });
-                self.modal.$el.find("#selected_history_content").html(
+            success: history_contents => {
+                var history_contents_template = this.templateHistoryContents();
+                this.histories.get(history_id).set({ contents: history_contents });
+                this.modal.$el.find("#selected_history_content").html(
                     history_contents_template({
                         history_contents: history_contents.models.reverse()
                     })
                 );
-                self.modal.$el.find(".history-import-select-all").bind("click", () => {
+                this.modal.$el.find(".history-import-select-all").bind("click", () => {
                     $("#selected_history_content [type=checkbox]").prop("checked", true);
                 });
-                self.modal.$el.find(".history-import-unselect-all").bind("click", () => {
+                this.modal.$el.find(".history-import-unselect-all").bind("click", () => {
                     $("#selected_history_content [type=checkbox]").prop("checked", false);
                 });
             },
-            error: function(model, response) {
+            error: (model, response) => {
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(response.responseJSON.err_msg);
                 } else {
@@ -808,7 +798,7 @@ var FolderToolbarView = Backbone.View.extend({
             mod_toastr.info("You must select some datasets first.");
         } else {
             this.modal.disableButton("Add");
-            checked_hdas.each(function() {
+            checked_hdas.each(() => {
                 var hid = $(this)
                     .closest("li")
                     .data("id");
@@ -846,12 +836,11 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {str} history_name     name of the history to import to
      */
     chainCallImportingIntoHistory: function(history_item_set, history_name) {
-        var self = this;
         var popped_item = history_item_set.pop();
         if (typeof popped_item == "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
                 mod_toastr.success("Selected datasets imported into history. Click this to start analyzing it.", "", {
-                    onclick: function() {
+                    onclick: () => {
                         window.location = Galaxy.root;
                     }
                 });
@@ -862,7 +851,7 @@ var FolderToolbarView = Backbone.View.extend({
                     "Some of the datasets could not be imported into history. Click this to see what was imported.",
                     "",
                     {
-                        onclick: function() {
+                        onclick: () => {
                             window.location = Galaxy.root;
                         }
                     }
@@ -880,13 +869,13 @@ var FolderToolbarView = Backbone.View.extend({
 
         promise
             .done(() => {
-                self.updateProgress();
-                self.chainCallImportingIntoHistory(history_item_set, history_name);
+                this.updateProgress();
+                this.chainCallImportingIntoHistory(history_item_set, history_name);
             })
             .fail(() => {
-                self.options.chain_call_control.failed_number += 1;
-                self.updateProgress();
-                self.chainCallImportingIntoHistory(history_item_set, history_name);
+                this.options.chain_call_control.failed_number += 1;
+                this.updateProgress();
+                this.chainCallImportingIntoHistory(history_item_set, history_name);
             });
     },
 
@@ -897,7 +886,6 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
      */
     chainCallImportingUserdirFiles: function(options) {
-        var that = this;
         var popped_item = options.paths.pop();
         if (typeof popped_item === "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
@@ -910,9 +898,9 @@ var FolderToolbarView = Backbone.View.extend({
         }
         var promise = $.when(
             $.post(
-                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${that.id}&source=${
-                    options.source
-                }&path=${popped_item}&file_type=${options.file_type}&link_data=${options.link_data}&space_to_tab=${
+                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${this.id}&source=${options.source}&path=${
+                    popped_item
+                }&file_type=${options.file_type}&link_data=${options.link_data}&space_to_tab=${
                     options.space_to_tab
                 }&to_posix_lines=${options.to_posix_lines}&dbkey=${options.dbkey}&tag_using_filenames=${
                     options.tag_using_filenames
@@ -921,13 +909,13 @@ var FolderToolbarView = Backbone.View.extend({
         );
         promise
             .done(response => {
-                that.updateProgress();
-                that.chainCallImportingUserdirFiles(options);
+                this.updateProgress();
+                this.chainCallImportingUserdirFiles(options);
             })
             .fail(() => {
-                that.options.chain_call_control.failed_number += 1;
-                that.updateProgress();
-                that.chainCallImportingUserdirFiles(options);
+                this.options.chain_call_control.failed_number += 1;
+                this.updateProgress();
+                this.chainCallImportingUserdirFiles(options);
             });
     },
 
@@ -945,7 +933,6 @@ var FolderToolbarView = Backbone.View.extend({
      */
     chainCallImportingFolders: function(options) {
         // TODO need to check which paths to call
-        var that = this;
         var popped_item = options.paths.pop();
         if (typeof popped_item == "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
@@ -959,24 +946,24 @@ var FolderToolbarView = Backbone.View.extend({
         }
         var promise = $.when(
             $.post(
-                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${that.id}&source=${
-                    options.source
-                }&path=${popped_item}&preserve_dirs=${options.preserve_dirs}&link_data=${
-                    options.link_data
-                }&to_posix_lines=${options.to_posix_lines}&space_to_tab=${options.space_to_tab}&file_type=${
-                    options.file_type
-                }&dbkey=${options.dbkey}&tag_using_filenames=${options.tag_using_filenames}`
+                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${this.id}&source=${options.source}&path=${
+                    popped_item
+                }&preserve_dirs=${options.preserve_dirs}&link_data=${options.link_data}&to_posix_lines=${
+                    options.to_posix_lines
+                }&space_to_tab=${options.space_to_tab}&file_type=${options.file_type}&dbkey=${
+                    options.dbkey
+                }&tag_using_filenames=${options.tag_using_filenames}`
             )
         );
         promise
             .done(response => {
-                that.updateProgress();
-                that.chainCallImportingFolders(options);
+                this.updateProgress();
+                this.chainCallImportingFolders(options);
             })
             .fail(() => {
-                that.options.chain_call_control.failed_number += 1;
-                that.updateProgress();
-                that.chainCallImportingFolders(options);
+                this.options.chain_call_control.failed_number += 1;
+                this.updateProgress();
+                this.chainCallImportingFolders(options);
             });
     },
 
@@ -986,7 +973,6 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {array} hdas_set array of empty hda objects
      */
     chainCallAddingHdas: function(hdas_set) {
-        var self = this;
         this.added_hdas = new mod_library_model.Folder();
         var popped_item = hdas_set.pop();
         if (typeof popped_item == "undefined") {
@@ -1009,13 +995,13 @@ var FolderToolbarView = Backbone.View.extend({
         promise
             .done(model => {
                 Galaxy.libraries.folderListView.collection.add(model);
-                self.updateProgress();
-                self.chainCallAddingHdas(hdas_set);
+                this.updateProgress();
+                this.chainCallAddingHdas(hdas_set);
             })
             .fail(() => {
-                self.options.chain_call_control.failed_number += 1;
-                self.updateProgress();
-                self.chainCallAddingHdas(hdas_set);
+                this.options.chain_call_control.failed_number += 1;
+                this.updateProgress();
+                this.chainCallAddingHdas(hdas_set);
             });
     },
 
@@ -1025,7 +1011,6 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {array} lddas_set array of lddas to delete
      */
     chainCallDeletingItems: function(items_to_delete) {
-        var self = this;
         this.deleted_items = new mod_library_model.Folder();
         var item_to_delete = items_to_delete.pop();
         if (typeof item_to_delete === "undefined") {
@@ -1047,7 +1032,7 @@ var FolderToolbarView = Backbone.View.extend({
             .destroy()
             .done(item => {
                 Galaxy.libraries.folderListView.collection.remove(item_to_delete.id);
-                self.updateProgress();
+                this.updateProgress();
                 // add the deleted item to collection, triggers rendering
                 if (Galaxy.libraries.folderListView.options.include_deleted) {
                     var updated_item = null;
@@ -1061,12 +1046,12 @@ var FolderToolbarView = Backbone.View.extend({
                     }
                     Galaxy.libraries.folderListView.collection.add(updated_item);
                 }
-                self.chainCallDeletingItems(items_to_delete);
+                this.chainCallDeletingItems(items_to_delete);
             })
             .fail(() => {
-                self.options.chain_call_control.failed_number += 1;
-                self.updateProgress();
-                self.chainCallDeletingItems(items_to_delete);
+                this.options.chain_call_control.failed_number += 1;
+                this.updateProgress();
+                this.chainCallDeletingItems(items_to_delete);
             });
     },
 
@@ -1102,7 +1087,7 @@ var FolderToolbarView = Backbone.View.extend({
                 title: _l("Deleting selected items"),
                 body: template({}),
                 buttons: {
-                    Close: function() {
+                    Close: () => {
                         Galaxy.modal.hide();
                     }
                 }
@@ -1110,7 +1095,7 @@ var FolderToolbarView = Backbone.View.extend({
             // init the control counters
             this.options.chain_call_control.total_number = 0;
             this.options.chain_call_control.failed_number = 0;
-            $checkedValues.each(function() {
+            $checkedValues.each(() => {
                 var row_id = $(this)
                     .closest("tr")
                     .data("id");
@@ -1150,7 +1135,6 @@ var FolderToolbarView = Backbone.View.extend({
 
     showLocInfo: function() {
         var library = null;
-        var that = this;
         if (Galaxy.libraries.libraryListView !== null) {
             library = Galaxy.libraries.libraryListView.collection.get(this.options.parent_library_id);
             this.showLocInfoModal(library);
@@ -1159,8 +1143,8 @@ var FolderToolbarView = Backbone.View.extend({
                 id: this.options.parent_library_id
             });
             library.fetch({
-                success: function() {
-                    that.showLocInfoModal(library);
+                success: () => {
+                    this.showLocInfoModal(library);
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
@@ -1174,15 +1158,14 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     showLocInfoModal: function(library) {
-        var that = this;
         var template = this.templateLocInfoInModal();
         this.modal = Galaxy.modal;
         this.modal.show({
             closing_events: true,
             title: _l("Location Details"),
-            body: template({ library: library, options: that.options }),
+            body: template({ library: library, options: this.options }),
             buttons: {
-                Close: function() {
+                Close: () => {
                     Galaxy.modal.hide();
                 }
             }
