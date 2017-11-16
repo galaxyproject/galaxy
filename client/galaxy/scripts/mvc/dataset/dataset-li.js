@@ -252,21 +252,14 @@ var DatasetListItemView = _super.extend(
          */
         _renderShowParamsButton: function() {
             // gen. safe to show in all cases
+            let self = this;
             return faIconButton({
                 title: _l("View details"),
                 classes: "params-btn",
-                href: this.model.urls.show_params,
-                target: this.linkTarget,
                 faIcon: "fa-info-circle",
                 onclick: function(ev) {
-                    if (Galaxy.frame && Galaxy.frame.active) {
-                        Galaxy.frame.add({
-                            title: "Dataset details",
-                            url: this.href
-                        });
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                    }
+                    ev.preventDefault();
+                    window.location.href = Galaxy.root + 'datasets/show_params?dataset_id=' + self.model.get( "id" );
                 }
             });
         },

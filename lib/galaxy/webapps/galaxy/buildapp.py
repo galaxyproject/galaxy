@@ -127,6 +127,7 @@ def paste_app_factory(global_conf, **kwargs):
     webapp.add_client_route('/datasets/list')
     webapp.add_client_route('/datasets/edit')
     webapp.add_client_route('/datasets/error')
+    webapp.add_client_route('/datasets/show_params')
     webapp.add_client_route('/workflow/run')
     webapp.add_client_route('/workflow/import_workflow')
     webapp.add_client_route('/custom_builds')

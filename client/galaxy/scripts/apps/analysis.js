@@ -20,6 +20,8 @@ import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
+import Vue from "libs/vue";
+import ShowParams from "components/show_params.vue";
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -59,7 +61,8 @@ window.app = function app(options, bootstrapped) {
             "(/)workflow/import_workflow": "show_import_workflow",
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
-            "(/)datasets/error": "show_dataset_error"
+            "(/)datasets/error": "show_dataset_error",
+            "(/)datasets/show_params": "show_dataset_params",
         },
 
         require_login: ["show_user", "show_user_form", "show_workflows"],
@@ -204,6 +207,13 @@ window.app = function app(options, bootstrapped) {
 
         show_dataset_error: function() {
             this.page.display(new DatasetError.View());
+        },
+
+        show_dataset_params: function() { 
+            let showParamsInstance = Vue.extend( ShowParams ),
+                mountView = document.createElement( "div" );
+            this.page.display( mountView );
+            new showParamsInstance({ propsData: { metadataId: Utils.getQueryString( "dataset_id" ) } }).$mount( mountView );
         },
 
         /**  */

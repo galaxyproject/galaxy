@@ -25,6 +25,7 @@ var commonLibs = [
     "libs/farbtastic",
     "libs/bootstrap",
     "libs/bootstrap-tour",
+    "libs/vue",
     // mvc
     "libs/underscore",
     "libs/backbone",
@@ -49,7 +50,7 @@ module.exports = {
         filename: "[name].bundled.js"
     },
     resolve: {
-        modules: [scriptsBase],
+        modules: [scriptsBase, "node_modules"],
         alias: {
             //TODO: correct our imports and remove these rules
             // Backbone looks for these in the same root directory
@@ -76,8 +77,15 @@ module.exports = {
                         options: "$"
                     }
                 ]
+            },
+            {
+                test: /\.vue$/,
+                loader: 'vue-loader',
             }
         ]
+    },
+    node: {
+        setImmediate: false
     },
     resolveLoader: {
         alias: {
