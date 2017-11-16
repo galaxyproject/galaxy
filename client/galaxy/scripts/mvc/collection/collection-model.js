@@ -398,18 +398,18 @@ var NestedListDCDCECollection = NestedDCDCECollection.extend({
 
 //==============================================================================
 /** @class Backbone Model for a DatasetCollection (list) that contains other lists. */
-var ListOfListsDatasetCollection = DatasetCollection.extend({
+var NestedDatasetCollection = DatasetCollection.extend({
     /** list:paired is the only collection that itself contains collections */
     collectionClass: NestedListDCDCECollection,
 
     /** String representation. */
     toString: function() {
-        return ["ListOfListsDatasetCollection(", this.get("name"), ")"].join("");
+        return ["NestedDatasetCollection(", this.get("name"), ")"].join("");
     }
 });
 
 //==============================================================================
 export default {
     FlatDatasetCollection: FlatDatasetCollection,
-    ListOfListsDatasetCollection: ListOfListsDatasetCollection
+    NestedDatasetCollection: NestedDatasetCollection
 };

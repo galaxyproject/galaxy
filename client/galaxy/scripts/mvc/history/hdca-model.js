@@ -14,7 +14,7 @@ TODO:
 var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin;
 
 var FlatDC = DC_MODEL.FlatDatasetCollection;
-var ListOfListsDC = DC_MODEL.ListOfListsDatasetCollection;
+var NestedDC = DC_MODEL.NestedDatasetCollection;
 
 //==============================================================================
 /** Override to post to contents route w/o id. */
@@ -75,33 +75,33 @@ var HistoryPairDatasetCollection = FlatDC.extend(hcontentMixin).extend(
 
 //==============================================================================
 /** @class Backbone model for List of Pairs Dataset Collection within a History. */
-var HistoryListPairedDatasetCollection = ListOfListsDC.extend(hcontentMixin).extend({
-    defaults: _.extend(_.clone(ListOfListsDC.prototype.defaults), {
+var HistoryListPairedDatasetCollection = NestedDC.extend(hcontentMixin).extend({
+    defaults: _.extend(_.clone(NestedDC.prototype.defaults), {
         history_content_type: "dataset_collection",
         collection_type: "list:paired",
         model_class: "HistoryDatasetCollectionAssociation"
     }),
 
     /** Override to post to contents route w/o id. */
-    save: buildHDCASave(ListOfListsDC.prototype.save),
+    save: buildHDCASave(NestedDC.prototype.save),
 
     /** String representation. */
     toString: function() {
-        return `History${ListOfListsDC.prototype.toString.call(this)}`;
+        return `History${NestedDC.prototype.toString.call(this)}`;
     }
 });
 
 //==============================================================================
 /** @class Backbone model for List of Lists Dataset Collection within a History. */
-var HistoryListOfListsDatasetCollection = ListOfListsDC.extend(hcontentMixin).extend({
-    defaults: _.extend(_.clone(ListOfListsDC.prototype.defaults), {
+var HistoryListOfListsDatasetCollection = NestedDC.extend(hcontentMixin).extend({
+    defaults: _.extend(_.clone(NestedDC.prototype.defaults), {
         history_content_type: "dataset_collection",
         collection_type: "list:list",
         model_class: "HistoryDatasetCollectionAssociation"
     }),
 
     /** Override to post to contents route w/o id. */
-    save: buildHDCASave(ListOfListsDC.prototype.save),
+    save: buildHDCASave(NestedDC.prototype.save),
 
     /** String representation. */
     toString: function() {
