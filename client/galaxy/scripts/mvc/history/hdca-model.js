@@ -13,8 +13,7 @@ TODO:
 ==============================================================================*/
 var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin;
 
-var FlatDC = DC_MODEL.FlatDatasetCollection;
-var NestedDC = DC_MODEL.NestedDatasetCollection;
+var DC = DC_MODEL.DatasetCollection;
 
 //==============================================================================
 /** Override to post to contents route w/o id. */
@@ -33,20 +32,20 @@ function buildHDCASave(_super) {
 //==============================================================================
 /** @class Backbone model for List Dataset Collection within a History.
  */
-var HistoryListDatasetCollection = FlatDC.extend(hcontentMixin).extend(
+var HistoryListDatasetCollection = DC.extend(hcontentMixin).extend(
     /** @lends HistoryListDatasetCollection.prototype */ {
-        defaults: _.extend(_.clone(FlatDC.prototype.defaults), {
+        defaults: _.extend(_.clone(DC.prototype.defaults), {
             history_content_type: "dataset_collection",
             collection_type: "list",
             model_class: "HistoryDatasetCollectionAssociation"
         }),
 
         /** Override to post to contents route w/o id. */
-        save: buildHDCASave(FlatDC.prototype.save),
+        save: buildHDCASave(DC.prototype.save),
 
         /** String representation. */
         toString: function() {
-            return `History${FlatDC.prototype.toString.call(this)}`;
+            return `History${DC.prototype.toString.call(this)}`;
         }
     }
 );
@@ -55,38 +54,38 @@ var HistoryListDatasetCollection = FlatDC.extend(hcontentMixin).extend(
 /** @class Backbone model for Pair Dataset Collection within a History.
  *  @constructs
  */
-var HistoryPairDatasetCollection = FlatDC.extend(hcontentMixin).extend(
+var HistoryPairDatasetCollection = DC.extend(hcontentMixin).extend(
     /** @lends HistoryPairDatasetCollection.prototype */ {
-        defaults: _.extend(_.clone(FlatDC.prototype.defaults), {
+        defaults: _.extend(_.clone(DC.prototype.defaults), {
             history_content_type: "dataset_collection",
             collection_type: "paired",
             model_class: "HistoryDatasetCollectionAssociation"
         }),
 
         /** Override to post to contents route w/o id. */
-        save: buildHDCASave(FlatDC.prototype.save),
+        save: buildHDCASave(DC.prototype.save),
 
         /** String representation. */
         toString: function() {
-            return `History${FlatDC.prototype.toString.call(this)}`;
+            return `History${DC.prototype.toString.call(this)}`;
         }
     }
 );
 
 //==============================================================================
 /** @class Backbone model for List of Pairs Dataset Collection within a History. */
-var HistoryNestedDatasetCollection = NestedDC.extend(hcontentMixin).extend({
-    defaults: _.extend(_.clone(NestedDC.prototype.defaults), {
+var HistoryNestedDatasetCollection = DC.extend(hcontentMixin).extend({
+    defaults: _.extend(_.clone(DC.prototype.defaults), {
         history_content_type: "dataset_collection",
         model_class: "HistoryDatasetCollectionAssociation"
     }),
 
     /** Override to post to contents route w/o id. */
-    save: buildHDCASave(NestedDC.prototype.save),
+    save: buildHDCASave(DC.prototype.save),
 
     /** String representation. */
     toString: function() {
-        return `History${NestedDC.prototype.toString.call(this)}`;
+        return `History${DC.prototype.toString.call(this)}`;
     }
 });
 

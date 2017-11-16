@@ -197,7 +197,13 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
             },
 
             /** Which class to use for elements */
-            collectionClass: DCECollection,
+            collectionClass: function() {
+                if (this.attributes.collection_type.indexOf(":") > 0) {
+                    return NestedListDCDCECollection;
+                } else {
+                    return DatasetDCECollection;
+                }
+            },
 
             /** set up: create elements instance var and (on changes to elements) update them  */
             initialize: function(model, options) {
@@ -212,7 +218,8 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
 
             /** move elements model attribute to full collection */
             _createElementsModel: function() {
-                this.debug(`${this}._createElementsModel`, this.collectionClass, this.get("elements"), this.elements);
+                var collectionClass = this.collectionClass();
+                this.debug(`${this}._createElementsModel`, collectionClass, this.get("elements"), this.elements);
                 //TODO: same patterns as DatasetCollectionElement _createObjectModel - refactor to BASE_MVC.hasSubModel?
                 var elements = this.get("elements") || [];
                 this.unset("elements", { silent: true });
@@ -222,7 +229,7 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
                         parent_hdca_id: self.get("id")
                     });
                 });
-                this.elements = new this.collectionClass(elements);
+                this.elements = new collectionClass(elements);
                 //this.debug( 'collectionClass:', this.collectionClass + '', this.elements );
                 return this.elements;
             },
@@ -303,21 +310,6 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
         }
     );
 
-//==============================================================================
-/** Model for a DatasetCollection containing datasets (non-nested).
- */
-var FlatDatasetCollection = DatasetCollection.extend(
-    /** @lends FlatDatasetCollection.prototype */ {
-        /** override since we know the collection will only contain datasets */
-        collectionClass: DatasetDCECollection,
-
-        /** String representation. */
-        toString: function() {
-            return `List${DatasetCollection.prototype.toString.call(this)}`;
-        }
-    }
-);
-
 //_________________________________________________________________________________________________ NESTED COLLECTIONS
 // this is where things get weird, man. Weird.
 //TODO: it might be possible to compact all the following...I think.
@@ -365,7 +357,7 @@ var NestedDCDCECollection = DCECollection.extend(
 
 //==============================================================================
 /** @class Backbone model for a list dataset collection within a list:list dataset collection. */
-var NestedListDCDCE = FlatDatasetCollection.extend(
+var NestedListDCDCE = DatasetCollection.extend(
     BASE_MVC.mixin(
         DatasetCollectionElementMixin,
         /** @lends NestedListDCDCE.prototype */ {
@@ -396,20 +388,8 @@ var NestedListDCDCECollection = NestedDCDCECollection.extend({
     }
 });
 
-//==============================================================================
-/** @class Backbone Model for a DatasetCollection (list) that contains other lists. */
-var NestedDatasetCollection = DatasetCollection.extend({
-
-    collectionClass: NestedListDCDCECollection,
-
-    /** String representation. */
-    toString: function() {
-        return ["NestedDatasetCollection(", this.get("name"), ")"].join("");
-    }
-});
 
 //==============================================================================
 export default {
-    FlatDatasetCollection: FlatDatasetCollection,
-    NestedDatasetCollection: NestedDatasetCollection
+    DatasetCollection: DatasetCollection,
 };
