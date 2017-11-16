@@ -17,9 +17,9 @@ var HDCAListItemEdit = _super.extend(
             var collectionType = this.model.get("collection_type");
             switch (collectionType) {
                 case "list":
-                    return DC_VIEW_EDIT.ListCollectionViewEdit;
+                    return DC_VIEW_EDIT.FlatCollectionViewEdit;
                 case "paired":
-                    return DC_VIEW_EDIT.ListCollectionViewEdit;
+                    return DC_VIEW_EDIT.FlatCollectionViewEdit;
                 case "list:paired":
                     return DC_VIEW_EDIT.ListOfPairsCollectionViewEdit;
                 case "list:list":
