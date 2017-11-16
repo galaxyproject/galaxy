@@ -207,7 +207,7 @@ var FlatCollectionView = CollectionView.extend(
 
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a list of lists dataset collection. */
-var ListOfListsCollectionView = CollectionView.extend({
+var NestedCollectionView = CollectionView.extend({
     /** sub view class used for nested collections */
     NestedDCDCEViewClass: DC_LI.NestedDCDCEListItemView.extend({
         foldoutPanelClass: FlatCollectionView
@@ -215,7 +215,7 @@ var ListOfListsCollectionView = CollectionView.extend({
 
     /** string rep */
     toString: function() {
-        return `ListOfListsCollectionView(${this.model ? this.model.get("name") : ""})`;
+        return `NestedCollectionView(${this.model ? this.model.get("name") : ""})`;
     }
 });
 
@@ -223,5 +223,5 @@ var ListOfListsCollectionView = CollectionView.extend({
 export default {
     CollectionView: CollectionView,
     FlatCollectionView: FlatCollectionView,
-    ListOfListsCollectionView: ListOfListsCollectionView
+    NestedCollectionView: NestedCollectionView
 };

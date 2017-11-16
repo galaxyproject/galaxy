@@ -127,8 +127,8 @@ var NestedPairCollectionViewEdit = FlatCollectionViewEdit.extend(
 
 // =============================================================================
 /** @class View/Controller for a list of lists dataset collection. */
-var ListOfListsCollectionViewEdit = CollectionViewEdit.extend(
-    /** @lends ListOfListsCollectionView.prototype */ {
+var NestedCollectionViewEdit = CollectionViewEdit.extend(
+    /** @lends CollectionViewEdit.prototype */ {
         //TODO: not strictly needed - due to switch in CollectionView._getContentClass
         /** sub view class used for nested collections */
         NestedDCDCEViewClass: DC_EDIT.NestedDCDCEListItemEdit.extend({
@@ -138,7 +138,7 @@ var ListOfListsCollectionViewEdit = CollectionViewEdit.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return `ListOfListsCollectionViewEdit(${this.model ? this.model.get("name") : ""})`;
+            return `NestedCollectionViewEdit(${this.model ? this.model.get("name") : ""})`;
         }
     }
 );
@@ -147,5 +147,5 @@ var ListOfListsCollectionViewEdit = CollectionViewEdit.extend(
 export default {
     CollectionViewEdit: CollectionViewEdit,
     FlatCollectionViewEdit: FlatCollectionViewEdit,
-    ListOfListsCollectionViewEdit: ListOfListsCollectionViewEdit
+    NestedCollectionViewEdit: NestedCollectionViewEdit
 };

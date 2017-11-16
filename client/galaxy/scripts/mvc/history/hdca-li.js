@@ -36,9 +36,8 @@ var HDCAListItemView = _super.extend(
                 case "paired":
                     return DC_VIEW.FlatCollectionView;
                 default:
-                    return DC_VIEW.ListOfListsCollectionView;
+                    return DC_VIEW.NestedCollectionView;
             }
-            throw new TypeError(`Unknown collection_type: ${collectionType}`);
         },
 
         /** In this override, add the state as a class for use with state-based CSS */
