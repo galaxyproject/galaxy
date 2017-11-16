@@ -20,9 +20,7 @@ var HDCAListItemEdit = _super.extend(
                     return DC_VIEW_EDIT.FlatCollectionViewEdit;
                 case "paired":
                     return DC_VIEW_EDIT.FlatCollectionViewEdit;
-                case "list:paired":
-                    return DC_VIEW_EDIT.ListOfPairsCollectionViewEdit;
-                case "list:list":
+                default:
                     return DC_VIEW_EDIT.ListOfListsCollectionViewEdit;
             }
             throw new TypeError(`Unknown collection_type: ${collectionType}`);
