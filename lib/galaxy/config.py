@@ -92,6 +92,14 @@ LOGGING_CONFIG_DEFAULT = {
             'propagate': 0,
             'qualname': 'galaxy',
         },
+        'paste.httpserver.ThreadPool': {
+            'level': 'WARN',
+            'qualname': 'paste.httpserver.ThreadPool',
+        },
+        'routes.middleware': {
+            'level': 'WARN',
+            'qualname': 'routes.middleware',
+        },
     },
     'filters': {
         'stack': {
