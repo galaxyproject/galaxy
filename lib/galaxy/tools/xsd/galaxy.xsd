@@ -471,8 +471,8 @@ This function is called before the tool is executed. If it raises any exceptions
 ```python
 def validate(incoming):
     """Validator for the plotting program"""
-    
-    
+
+
     bins = incoming.get("bins","")
     col = incoming.get("col","")
 
@@ -523,8 +523,8 @@ This code executes after the background process running the tool finishes its ru
 from galaxy import datatypes
 def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
     ext = param_dict.get('extension', 'text')
-    items = out_data.items()   
-    for name, data in items: 
+    items = out_data.items()
+    for name, data in items:
         newdata = datatypes.factory(ext)(id=data.id)
         for key, value in data. __dict__.items():
             setattr(newdata, key, value)
@@ -2120,7 +2120,7 @@ effectively be a list with one ``None``-like entity in it.
 
 The following idiom can be used to iterate over such a list and build a hypothetical ``-B``
 parameter for each file - the ``if`` block is used to handle the case where a ``None``-like
-entity appears in the list because no files were selected: 
+entity appears in the list because no files were selected:
 
 ```
 #for $input in $input1
@@ -2830,7 +2830,7 @@ exclusively use ``filter``s to populate options.
 ### ``from_data_table``
 
 See Galaxy's
-[data tables documentation](https://wiki.galaxyproject.org/Admin/Tools/Data%20Tables)
+[data tables documentation](https://galaxyproject.org/admin/tools/data-tables)
 for information on setting up data tables.
 
 Once a data table has been configured and populated, these can be easily
@@ -3132,7 +3132,7 @@ specified by the ``skip`` attribute.</xs:documentation>
           <xs:annotation>
             <xs:documentation xml:lang="en">Tool data table name to check against
 if ``type`` is ``dataset_metadata_in_tool_data``. See the documentation for
-[tool data tables](https://wiki.galaxyproject.org/Admin/Tools/Data%20Tables)
+[tool data tables](https://galaxyproject.org/admin/tools/data-tables)
 and [data managers](https://galaxyproject.org/admin/tools/data-managers/) for
 more information.</xs:documentation>
           </xs:annotation>
