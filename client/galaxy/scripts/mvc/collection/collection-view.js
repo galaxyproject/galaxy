@@ -21,8 +21,7 @@ var CollectionView = _super.extend(
 
         /** sub view class used for datasets */
         DatasetDCEViewClass: DC_LI.DatasetDCEListItemView,
-        /** sub view class used for nested collections */
-        NestedDCDCEViewClass: DC_LI.NestedDCDCEListItemView,
+
         /** key of attribute in model to assign to this.collection */
         modelCollectionKey: "elements",
 
@@ -42,6 +41,12 @@ var CollectionView = _super.extend(
             /** foldout or drilldown */
             this.foldoutStyle = attributes.foldoutStyle || "foldout";
             this.downloadUrl = `${Galaxy.root}api/dataset_collections/${this.model.attributes.id}/download`;
+        },
+
+        getNestedDCDCEViewClass: function() {
+            return DC_LI.NestedDCDCEListItemView.extend({
+                foldoutPanelClass: CollectionView
+            });
         },
 
         _queueNewRender: function($newRender, speed) {
@@ -71,7 +76,7 @@ var CollectionView = _super.extend(
                 case "hda":
                     return this.DatasetDCEViewClass;
                 case "dataset_collection":
-                    return this.NestedDCDCEViewClass;
+                    return this.getNestedDCDCEViewClass();
             }
             throw new TypeError("Unknown element type:", model.get("element_type"));
         },
@@ -189,22 +194,8 @@ CollectionView.prototype.templates = (() => {
     });
 })();
 
-// =============================================================================
-/** @class non-editable, read-only View/Controller for a list of lists dataset collection. */
-var NestedCollectionView = CollectionView.extend({
-    /** sub view class used for nested collections */
-    NestedDCDCEViewClass: DC_LI.NestedDCDCEListItemView.extend({
-        foldoutPanelClass: CollectionView
-    }),
-
-    /** string rep */
-    toString: function() {
-        return `NestedCollectionView(${this.model ? this.model.get("name") : ""})`;
-    }
-});
 
 //==============================================================================
 export default {
     CollectionView: CollectionView,
-    NestedCollectionView: NestedCollectionView
 };

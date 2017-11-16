@@ -26,6 +26,12 @@ var CollectionViewEdit = _super.extend(
         /** sub view class used for nested collections */
         NestedDCDCEViewClass: DC_EDIT.NestedDCDCEListItemEdit,
 
+        getNestedDCDCEViewClass: function() {
+            return DC_EDIT.NestedDCDCEListItemEdit.extend({
+                foldoutPanelClass: NestedCollectionElementViewEdit
+            });
+        },
+
         // ......................................................................... SET UP
         /** Set up the view, set up storage, bind listeners to HistoryContents events
          *  @param {Object} attributes optional settings for the panel
@@ -109,26 +115,7 @@ var NestedCollectionElementViewEdit = CollectionViewEdit.extend(
     }
 );
 
-// =============================================================================
-/** @class View/Controller for a list of lists dataset collection. */
-var NestedCollectionViewEdit = CollectionViewEdit.extend(
-    /** @lends CollectionViewEdit.prototype */ {
-        //TODO: not strictly needed - due to switch in CollectionView._getContentClass
-        /** sub view class used for nested collections */
-        NestedDCDCEViewClass: DC_EDIT.NestedDCDCEListItemEdit.extend({
-            foldoutPanelClass: NestedCollectionElementViewEdit
-        }),
-
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `NestedCollectionViewEdit(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
 //==============================================================================
 export default {
     CollectionViewEdit: CollectionViewEdit,
-    NestedCollectionViewEdit: NestedCollectionViewEdit
 };
