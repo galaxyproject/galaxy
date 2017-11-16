@@ -110,8 +110,8 @@ var FlatCollectionViewEdit = CollectionViewEdit.extend(
 /** @class Editable (roughly since these collections are immutable),
  *  View/Controller for a dataset collection.
  */
-var NestedPairCollectionViewEdit = FlatCollectionViewEdit.extend(
-    /** @lends NestedPairCollectionViewEdit.prototype */ {
+var NestedCollectionElementViewEdit = FlatCollectionViewEdit.extend(
+    /** @lends NestedCollectionElementViewEdit.prototype */ {
         /** Override to remove the editable text from the name/identifier - these collections are considered immutable */
         _setUpBehaviors: function($where) {
             _super.prototype._setUpBehaviors.call(this, $where);
@@ -120,7 +120,7 @@ var NestedPairCollectionViewEdit = FlatCollectionViewEdit.extend(
         // ........................................................................ misc
         /** string rep */
         toString: function() {
-            return `NestedPairCollectionViewEdit(${this.model ? this.model.get("name") : ""})`;
+            return `NestedCollectionElementViewEdit(${this.model ? this.model.get("name") : ""})`;
         }
     }
 );
@@ -132,7 +132,7 @@ var NestedCollectionViewEdit = CollectionViewEdit.extend(
         //TODO: not strictly needed - due to switch in CollectionView._getContentClass
         /** sub view class used for nested collections */
         NestedDCDCEViewClass: DC_EDIT.NestedDCDCEListItemEdit.extend({
-            foldoutPanelClass: NestedPairCollectionViewEdit
+            foldoutPanelClass: NestedCollectionElementViewEdit
         }),
 
         // ........................................................................ misc
