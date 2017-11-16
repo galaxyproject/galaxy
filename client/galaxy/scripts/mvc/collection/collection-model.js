@@ -306,8 +306,8 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
 //==============================================================================
 /** Model for a DatasetCollection containing datasets (non-nested).
  */
-var ListDatasetCollection = DatasetCollection.extend(
-    /** @lends ListDatasetCollection.prototype */ {
+var FlatDatasetCollection = DatasetCollection.extend(
+    /** @lends FlatDatasetCollection.prototype */ {
         /** override since we know the collection will only contain datasets */
         collectionClass: DatasetDCECollection,
 
@@ -365,7 +365,7 @@ var NestedDCDCECollection = DCECollection.extend(
 //==============================================================================
 /** @class Backbone model for a paired dataset collection within a list:paired dataset collection.
  */
-var NestedPairDCDCE = ListDatasetCollection.extend(
+var NestedPairDCDCE = FlatDatasetCollection.extend(
     BASE_MVC.mixin(
         DatasetCollectionElementMixin,
         /** @lends NestedPairDCDCE.prototype */ {
@@ -422,7 +422,7 @@ var ListPairedDatasetCollection = DatasetCollection.extend(
 
 //==============================================================================
 /** @class Backbone model for a list dataset collection within a list:list dataset collection. */
-var NestedListDCDCE = ListDatasetCollection.extend(
+var NestedListDCDCE = FlatDatasetCollection.extend(
     BASE_MVC.mixin(
         DatasetCollectionElementMixin,
         /** @lends NestedListDCDCE.prototype */ {
@@ -467,7 +467,7 @@ var ListOfListsDatasetCollection = DatasetCollection.extend({
 
 //==============================================================================
 export default {
-    ListDatasetCollection: ListDatasetCollection,
+    FlatDatasetCollection: FlatDatasetCollection,
     ListPairedDatasetCollection: ListPairedDatasetCollection,
     ListOfListsDatasetCollection: ListOfListsDatasetCollection
 };
