@@ -362,63 +362,6 @@ var NestedDCDCECollection = DCECollection.extend(
     }
 );
 
-//==============================================================================
-/** @class Backbone model for a paired dataset collection within a list:paired dataset collection.
- */
-var NestedPairDCDCE = FlatDatasetCollection.extend(
-    BASE_MVC.mixin(
-        DatasetCollectionElementMixin,
-        /** @lends NestedPairDCDCE.prototype */ {
-            //TODO:?? possibly rename to NestedDatasetCollection?
-
-            // because all objects have constructors (as this hashmap would even if this next line wasn't present)
-            //  the constructor in hcontentMixin won't be attached by BASE_MVC.mixin to this model
-            //  - re-apply manually it now
-            /** This is both a collection and a collection element - call the constructor */
-            constructor: function(attributes, options) {
-                this.debug("\t NestedPairDCDCE.constructor:", attributes, options);
-                //DatasetCollection.constructor.call( this, attributes, options );
-                DatasetCollectionElementMixin.constructor.call(this, attributes, options);
-            },
-
-            /** String representation. */
-            toString: function() {
-                var objStr = this.object ? `${this.object}` : this.get("element_identifier");
-                return ["NestedPairDCDCE(", objStr, ")"].join("");
-            }
-        }
-    )
-);
-
-//==============================================================================
-/** @class Backbone collection for a backbone collection containing paired dataset collections.
- */
-var NestedPairDCDCECollection = NestedDCDCECollection.extend(
-    /** @lends PairDCDCECollection.prototype */ {
-        /** We know this collection is composed of only nested pair collections */
-        model: NestedPairDCDCE,
-
-        /** String representation. */
-        toString: function() {
-            return ["NestedPairDCDCECollection(", this.length, ")"].join("");
-        }
-    }
-);
-
-//==============================================================================
-/** @class Backbone Model for a DatasetCollection (list) that contains DatasetCollections (pairs).
- */
-var ListPairedDatasetCollection = DatasetCollection.extend(
-    /** @lends ListPairedDatasetCollection.prototype */ {
-        /** list:paired is the only collection that itself contains collections */
-        collectionClass: NestedPairDCDCECollection,
-
-        /** String representation. */
-        toString: function() {
-            return ["ListPairedDatasetCollection(", this.get("name"), ")"].join("");
-        }
-    }
-);
 
 //==============================================================================
 /** @class Backbone model for a list dataset collection within a list:list dataset collection. */
@@ -468,6 +411,5 @@ var ListOfListsDatasetCollection = DatasetCollection.extend({
 //==============================================================================
 export default {
     FlatDatasetCollection: FlatDatasetCollection,
-    ListPairedDatasetCollection: ListPairedDatasetCollection,
     ListOfListsDatasetCollection: ListOfListsDatasetCollection
 };
