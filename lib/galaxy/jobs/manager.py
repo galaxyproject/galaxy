@@ -25,7 +25,7 @@ class JobManager(object):
         self.app = app
         self.job_lock = False
         if self.app.is_job_handler():
-            log.debug("Starting job handler")
+            log.debug("Initializing job handler")
             self.job_handler = handler.JobHandler(app)
             self.job_stop_queue = self.job_handler.job_stop_queue
         elif app.application_stack.has_pool(app.application_stack.pools.JOB_HANDLERS):

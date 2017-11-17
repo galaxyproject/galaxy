@@ -51,6 +51,7 @@ class JobHandler(object):
 
     def start(self):
         self.job_queue.start()
+        self.job_stop_queue.start()
 
     def shutdown(self):
         self.job_queue.shutdown()
@@ -91,6 +92,7 @@ class JobHandlerQueue(Monitors, object):
         """
         Starts the JobHandler's thread after checking for any unhandled jobs.
         """
+        log.debug('Handler queue starting for jobs assigned to handler: %s', self.app.config.server_name)
         # Recover jobs at startup
         self.__check_jobs_at_startup()
         # Start the queue
@@ -721,7 +723,12 @@ class JobHandlerStopQueue(Monitors):
         self.waiting = []
 
         name = "JobHandlerStopQueue.monitor_thread"
-        self._init_monitor_thread(name, start=True, config=app.config)
+        self._init_monitor_thread(name, config=app.config)
+        log.info("job handler stop queue started")
+
+    def start(self):
+        # Start the queue
+        self.monitor_thread.start()
         log.info("job handler stop queue started")
 
     def monitor(self):

@@ -216,6 +216,7 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
 
     def __start_request_monitor(self):
         self.request_monitor = WorkflowRequestMonitor(self.app, self)
+        self.app.application_stack.register_postfork_function(self.request_monitor.start)
 
 
 class WorkflowRequestMonitor(Monitors, object):
@@ -223,7 +224,7 @@ class WorkflowRequestMonitor(Monitors, object):
     def __init__(self, app, workflow_scheduling_manager):
         self.app = app
         self.workflow_scheduling_manager = workflow_scheduling_manager
-        self._init_monitor_thread(name="WorkflowRequestMonitor.monitor_thread", target=self.__monitor, start=True, config=app.config)
+        self._init_monitor_thread(name="WorkflowRequestMonitor.monitor_thread", target=self.__monitor, config=app.config)
 
     def __monitor(self):
         to_monitor = self.workflow_scheduling_manager.active_workflow_schedulers
@@ -275,6 +276,9 @@ class WorkflowRequestMonitor(Monitors, object):
             scheduler=scheduler_id,
             handler=handler,
         )
+
+    def start(self):
+        self.monitor_thread.start()
 
     def shutdown(self):
         self.shutdown_monitor()
