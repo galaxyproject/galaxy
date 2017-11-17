@@ -212,12 +212,10 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
 
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting
-        # When running the application without a web stack, exit == True signals the application loop to break and call
-        # the shutdown method
-        self.exit = False
         log.info("Galaxy app startup finished %s" % self.startup_timer)
 
     def shutdown(self):
+        log.debug('Shutting down')
         exception = None
         try:
             self.watchers.shutdown()
@@ -263,12 +261,17 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
             exception = exception or e
             log.exception("Failed to shutdown SA database engine cleanly")
 
-        self.application_stack.shutdown()
-        # This is used to signal the webless application loop to terminate
-        self.exit = True
+        try:
+            self.application_stack.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown application stack interface cleanly")
 
         if exception:
             raise exception
+        else:
+            log.debug('Finished shutting down')
+
 
     def configure_fluent_log(self):
         if self.config.fluent_log:

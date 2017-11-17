@@ -5,7 +5,6 @@ from __future__ import absolute_import
 import inspect
 import logging
 import os
-import signal
 
 # The uwsgi module is automatically injected by the parent uwsgi
 # process and only exists that way.  If anything works, this is a
@@ -209,21 +208,6 @@ class UWSGIApplicationStack(MessageApplicationStack):
         self._farms_dict = None
         self._mules_list = None
         super(UWSGIApplicationStack, self).__init__(app=app, config=config)
-
-    def __register_signal_handlers(self):
-        for name in ('TERM', 'INT', 'HUP'):
-            sig = getattr(signal, 'SIG%s' % name)
-            signal.signal(sig, self._handle_signal)
-
-    def _handle_signal(self, signum, frame):
-        # uWSGI always sends SIGINT even if the master received SIGTERM
-        if signum in (signal.SIGTERM, signal.SIGINT):
-            log.info('Received SIGTERM/SIGINT, shutting down gracefully')
-        elif signum == signal.SIGHUP:
-            log.debug('Received SIGHUP, restarting')
-        self.shutdown()
-        # this terminates the application loop in the mule script, in the case of HUP, uWSGI will restart the mule
-        self.app.exit = True
 
     @property
     def _configured_mules(self):
