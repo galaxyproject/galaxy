@@ -1,10 +1,10 @@
 /* global define */
 define([
+    "qunit/test-app",
     "mvc/history/job-dag",
     "jquery",
-    "QUnit",
-    'test-data/job-dag-1'
-], function( JobDAG, $, QUnit, testData ){
+    'qunit/test-data/job-dag-1'
+], function( testApp, JobDAG, $, testData ){
     "use strict";
     JobDAG = JobDAG.default;
     QUnit.module( "mvc/history/job-dag.js tests" );

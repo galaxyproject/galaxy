@@ -1,16 +1,16 @@
 /* global define */
 define([
+    "qunit/test-app",
     "mvc/collection/list-of-pairs-collection-creator",
-    "test-data/paired-collection-creator.data",
+    "qunit/test-data/paired-collection-creator.data",
     "jquery",
-    "sinon",
-    "QUnit"
+    "sinon"
 ], function(
+    testApp,
     PAIRED_COLLECTION_CREATOR,
     DATA,
     $,
     sinon,
-    QUnit
 ){
     "use strict";
     PAIRED_COLLECTION_CREATOR = PAIRED_COLLECTION_CREATOR.default;

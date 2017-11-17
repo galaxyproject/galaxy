@@ -1,6 +1,7 @@
 /* global define */
-define([ "test-app", "mvc/ui/ui-modal", "QUnit", "sinon"
-], function( testApp, GalaxyModal, QUnit, sinon ){
+
+define([ "qunit/test-app", "mvc/ui/ui-modal", "sinon"
+], function( testApp, GalaxyModal, sinon ){
     "use strict";
     GalaxyModal = GalaxyModal.default;
     QUnit.module( "Modal dialog test", {

@@ -2,15 +2,15 @@
 // (or demonstrating) qunit+backbone interactions.
 /* global define */
 define([
+    "qunit/test-app",
     "mvc/history/hda-model",
     "mvc/history/hda-li",
-    "jquery",
-    "QUnit"
+    "jquery"
 ], function(
+    testApp,
     HDA_MODEL,
     HDA_BASE,
-    $,
-    QUnit
+    $
 ){
     "use strict";
     HDA_MODEL = HDA_MODEL.default;

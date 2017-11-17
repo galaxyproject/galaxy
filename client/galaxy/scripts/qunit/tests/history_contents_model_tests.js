@@ -1,14 +1,14 @@
 /* global define */
 define([
+    "qunit/test-app",
     "mvc/history/hda-model",
     "jquery",
-    "sinon",
-    "QUnit"
+    "sinon"
 ], function(
+    testApp,
     HDA_MODEL,
     $,
-    sinon,
-    QUnit
+    sinon
 ){
     HDA_MODEL = HDA_MODEL.default;
     QUnit.module( "History Contents Model QUnit.Tests" );

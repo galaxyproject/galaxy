@@ -2,15 +2,15 @@
 // (or demonstrating) qunit+backbone interactions.
 /* global define */
 define([
+    "qunit/test-app",
     "utils/metrics-logger",
     "jquery",
-    "sinon",
-    "QUnit"
+    "sinon"
 ], function(
+    testApp,
     metrics,
     $,
-    sinon,
-    QUnit
+    sinon
 ){
     "use strict";
     metrics = metrics.default;

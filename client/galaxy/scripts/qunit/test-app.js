@@ -3,11 +3,12 @@ define([
     "jquery",
     "sinon",
     "libs/bootstrap",
-    "test-data/bootstrapped",
-    "test-data/fakeserver",
+    "qunit/test-data/bootstrapped",
+    "qunit/test-data/fakeserver",
     "galaxy",
     "libs/jquery/select2",
-    "libs/jquery/jstorage"
+    "libs/jquery/jstorage",
+    "libs/jquery/jquery-ui"
 ], function(
     $,
     sinon,
@@ -16,6 +17,15 @@ define([
     serverdata,
     appBase
 ){
+    var Galaxy = {
+        root: '/'
+    };
+
+    window.Galaxy = Galaxy;
+
+    $('head').append( $('<link rel="stylesheet" type="text/css"  />')
+        .attr( "href", "/base/galaxy/scripts/qunit/assets/base.css") );
+
     appBase = appBase.default;
     return {
         create: function() {
@@ -28,7 +38,7 @@ define([
             window.WAIT_FADE = 300;
             window.fakeserver = sinon.fakeServer.create();
             for (var route in serverdata) {
-                window.fakeserver.respondWith('GET', Galaxy.root + route, [ 200, { 'Content-Type': 'application/json' }, serverdata[ route ].data ]);
+                window.fakeserver.respondWith('GET', window.Galaxy.root + route, [ 200, { 'Content-Type': 'application/json' }, serverdata[ route ].data ]);
             }
         },
         destroy: function() {
