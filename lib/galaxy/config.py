@@ -288,8 +288,6 @@ class Configuration(object):
         self.collect_outputs_from = [x.strip() for x in kwargs.get('collect_outputs_from', 'new_file_path,job_working_directory').lower().split(',')]
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
         self.template_cache = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates"), self.root)
-        self.local_job_queue_workers = int(kwargs.get("local_job_queue_workers", "5"))
-        self.cluster_job_queue_workers = int(kwargs.get("cluster_job_queue_workers", "3"))
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
         self.cluster_files_directory = os.path.abspath(kwargs.get("cluster_files_directory", "database/pbs"))
 
@@ -312,11 +310,6 @@ class Configuration(object):
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
         self.retry_job_output_collection = int(kwargs.get('retry_job_output_collection', 0))
         self.check_job_script_integrity = string_as_bool(kwargs.get("check_job_script_integrity", True))
-        self.job_walltime = kwargs.get('job_walltime', None)
-        self.job_walltime_delta = None
-        if self.job_walltime is not None:
-            h, m, s = [int(v) for v in self.job_walltime.split(':')]
-            self.job_walltime_delta = timedelta(0, s, 0, 0, m, h)
         self.admin_users = kwargs.get("admin_users", "")
         self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
         self.mailing_join_addr = kwargs.get('mailing_join_addr', 'galaxy-announce-join@bx.psu.edu')
@@ -349,7 +342,6 @@ class Configuration(object):
         self.smtp_password = kwargs.get('smtp_password', None)
         self.smtp_ssl = kwargs.get('smtp_ssl', None)
         self.track_jobs_in_database = string_as_bool(kwargs.get('track_jobs_in_database', 'True'))
-        self.start_job_runners = listify(kwargs.get('start_job_runners', ''))
         self.expose_dataset_path = string_as_bool(kwargs.get('expose_dataset_path', 'False'))
         self.expose_potentially_sensitive_job_metrics = string_as_bool(kwargs.get('expose_potentially_sensitive_job_metrics', 'False'))
         self.enable_communication_server = string_as_bool(kwargs.get('enable_communication_server', 'False'))
@@ -397,12 +389,7 @@ class Configuration(object):
         self.parallelize_workflow_scheduling_within_histories = string_as_bool(kwargs.get('parallelize_workflow_scheduling_within_histories', 'False'))
         self.maximum_workflow_invocation_duration = int(kwargs.get("maximum_workflow_invocation_duration", 2678400))
 
-        # Per-user Job concurrency limitations
         self.cache_user_job_count = string_as_bool(kwargs.get('cache_user_job_count', False))
-        self.user_job_limit = int(kwargs.get('user_job_limit', 0))
-        self.registered_user_job_limit = int(kwargs.get('registered_user_job_limit', self.user_job_limit))
-        self.anonymous_user_job_limit = int(kwargs.get('anonymous_user_job_limit', self.user_job_limit))
-        self.default_cluster_job_runner = kwargs.get('default_cluster_job_runner', 'local:///')
         self.pbs_application_server = kwargs.get('pbs_application_server', "")
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "")
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "")
@@ -592,12 +579,8 @@ class Configuration(object):
         self.galaxy_infrastructure_url_set = galaxy_infrastructure_url_set
 
         # Store advanced job management config
-        self.job_manager = kwargs.get('job_manager', self.server_name).strip()
         self.job_handlers = [x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',')]
         self.default_job_handlers = [x.strip() for x in kwargs.get('default_job_handlers', ','.join(self.job_handlers)).split(',')]
-        # Store per-tool runner configs
-        self.tool_handlers = self.__read_tool_job_config(global_conf_parser, 'galaxy:tool_handlers', 'name')
-        self.tool_runners = self.__read_tool_job_config(global_conf_parser, 'galaxy:tool_runners', 'url')
         # Galaxy messaging (AMQP) configuration options
         self.amqp = {}
         try:
@@ -733,41 +716,6 @@ class Configuration(object):
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file
         self.tool_configs = self.tool_config_file
-
-    def __read_tool_job_config(self, global_conf_parser, section, key):
-        try:
-            tool_runners_config = global_conf_parser.items(section)
-
-            # Process config to group multiple configs for the same tool.
-            rval = {}
-            for entry in tool_runners_config:
-                tool_config, val = entry
-                tool = None
-                runner_dict = {}
-                if tool_config.find("[") != -1:
-                    # Found tool with additional params; put params in dict.
-                    tool, params = tool_config[:-1].split("[")
-                    param_dict = {}
-                    for param in params.split(","):
-                        name, value = param.split("@")
-                        param_dict[name] = value
-                    runner_dict['params'] = param_dict
-                else:
-                    tool = tool_config
-
-                # Add runner URL.
-                runner_dict[key] = val
-
-                # Create tool entry if necessary.
-                if tool not in rval:
-                    rval[tool] = []
-
-                # Add entry to runners.
-                rval[tool].append(runner_dict)
-
-            return rval
-        except configparser.NoSectionError:
-            return {}
 
     def get(self, key, default):
         return self.config_dict.get(key, default)

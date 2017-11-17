@@ -195,7 +195,6 @@ def setup_galaxy_config(
         galaxy_data_manager_data_path=galaxy_data_manager_data_path,
         id_secret='changethisinproductiontoo',
         job_config_file=job_config_file,
-        job_queue_workers=5,
         job_working_directory=job_working_directory,
         library_import_dir=library_import_dir,
         log_destination="stdout",
