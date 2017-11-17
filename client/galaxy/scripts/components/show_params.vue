@@ -1,6 +1,7 @@
 <template>
     <div id="show-dataset-params" class="dataset-metadata">
-        <p v-html="datasetId">
+        <p>
+            {{ datasetId }}
         </p>
     </div>
 </template>
@@ -21,7 +22,7 @@ export default {
     },
     computed: {
         datasetId: function() {
-            return this.metadataId
+            return this.metadataId;
         }
     }
 }

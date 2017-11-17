@@ -3,6 +3,8 @@ import STATES from "mvc/dataset/states";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import Vue from "libs/vue";
+import ShowParams from "components/show_params.vue";
 
 var logNamespace = "dataset";
 /*==============================================================================
@@ -259,7 +261,22 @@ var DatasetListItemView = _super.extend(
                 faIcon: "fa-info-circle",
                 onclick: function(ev) {
                     ev.preventDefault();
-                    window.location.href = Galaxy.root + 'datasets/show_params?dataset_id=' + self.model.get( "id" );
+                    let showParamsInstance = Vue.extend( ShowParams ),
+                        mountView = document.createElement( "div" );
+                    if ( Galaxy.frame && Galaxy.frame.active ) {
+                        Galaxy.frame.add({
+                            title: "Dataset details"
+                        });
+                        let $elFrame = $( ".corner.frame" ),
+                            $elLatestFrame = $( $elFrame[ $elFrame.length - 1 ] ).find( ".f-content" );
+                        // open metadata in a scratchbook
+                        $elLatestFrame.html( mountView );
+                    }
+                    else {
+                        // open metadata in the center panel of the Galaxy 
+                        Galaxy.page.center.display( mountView );
+                    }
+                    new showParamsInstance({ propsData: { metadataId: self.model.get( "id" ) } }).$mount( mountView );
                 }
             });
         },
