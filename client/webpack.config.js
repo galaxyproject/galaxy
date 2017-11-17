@@ -45,7 +45,8 @@ module.exports = {
         analysis: "./galaxy/scripts/apps/analysis.js",
         admin: "./galaxy/scripts/apps/admin.js",
         workflow: "./galaxy/scripts/apps/workflow.js",
-        masthead: "./galaxy/scripts/apps/masthead.js"
+        masthead: "./galaxy/scripts/apps/masthead.js",
+        trackster: "./galaxy/scripts/apps/trackster.js"
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
