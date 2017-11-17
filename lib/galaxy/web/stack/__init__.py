@@ -255,7 +255,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
         # Does a generalized `is_worker` attribute make sense? Hard to say w/o other stack paradigms.
         if self._is_mule and self._farm_name:
             # used by main.py to send a shutdown message on termination
-            os.environ['_GALAXY_UWSGI_FARM_NAME'] = self._farm_name
+            os.environ['_GALAXY_UWSGI_FARM_NAMES'] = ','.join(self._farms)
         super(UWSGIApplicationStack, self).start()
 
     def has_pool(self, pool_name):
