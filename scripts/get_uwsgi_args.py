@@ -23,7 +23,7 @@ ALIASES = {
 }
 DEFAULT_ARGS = {
     '_all_': ('virtualenv', 'pythonpath', 'master', 'threads', 'http', 'static-map', 'die-on-term', 'hook-master-start', 'enable-threads'),
-    'galaxy': ('py-call-osafterfork', 'mule', 'farm'),
+    'galaxy': ('py-call-osafterfork',),
     'reports': (),
     'tool_shed': (),
 }
@@ -84,7 +84,6 @@ def _get_uwsgi_args(cliargs, kwargs):
     # it'd be nice if we didn't have to reparse here but we need things out of more than one section
     config_file = cliargs.config_file or kwargs.get('__file__')
     uwsgi_kwargs = load_app_properties(config_file=config_file, config_section='uwsgi')
-    handlerct = int(kwargs.get('job_handler_count', 1))
     args = []
     __add_config_file_arg(args, config_file, cliargs.app)
     defaults = {
@@ -100,10 +99,6 @@ def _get_uwsgi_args(cliargs, kwargs):
         'hook-master-start': ('unix_signal:2 gracefully_kill_them_all',
                               'unix_signal:15 gracefully_kill_them_all'),
         'py-call-osafterfork': True,
-        'mule': ('=lib/galaxy/main.py',) * handlerct,
-        'farm': '={name}:{mules}'.format(
-            name=kwargs.get('job_handler_pool_name', 'job-handlers'),
-            mules=','.join([str(x) for x in range(1, handlerct + 1)])) if handlerct > 0 else '',
     }
     for arg in DEFAULT_ARGS['_all_'] + DEFAULT_ARGS[cliargs.app]:
         if not __arg_set(arg, uwsgi_kwargs):
