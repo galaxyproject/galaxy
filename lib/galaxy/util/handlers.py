@@ -102,7 +102,9 @@ class ConfiguresHandlers:
 
         :return: bool
         """
-        if self.app.application_stack.in_pool(self.app.application_stack.pools.JOB_HANDLERS):
+        if (self.app.application_stack.in_pool(self.app.application_stack.pools.JOB_HANDLERS) or
+                (not self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS) and
+                 self.app.job_config.is_default)):
             # Handlers started as uWSGI mules do not require configuration in the job conf
             return True
         for collection in self.handlers.values():
