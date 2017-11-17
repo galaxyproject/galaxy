@@ -22,6 +22,8 @@ module.exports = function(config) {
       'galaxy/scripts/qunit/tests/metrics-logger.js',
       'galaxy/scripts/qunit/tests/popover_tests.js',
       'galaxy/scripts/qunit/tests/utils_test.js',
+      'galaxy/scripts/qunit/tests/page_tests.js',
+      'galaxy/scripts/qunit/tests/workflow_editor_tests.js',
 
       // The following tests don't work for state reasons:
 
@@ -34,9 +36,7 @@ module.exports = function(config) {
       // 'galaxy/scripts/qunit/tests/upload_dialog_tests.js',
       // Error: Cannot find module "libs/bibtexParse"
       // 'galaxy/scripts/qunit/tests/form_tests.js',
-      // 'galaxy/scripts/qunit/tests/page_tests.js',
       // 'galaxy/scripts/qunit/tests/masthead_tests.js',
-      // 'galaxy/scripts/qunit/tests/workflow_editor_tests.js',
 
       // Non-test assets that will be served by web server.
       // CSS needed by tests.
@@ -46,9 +46,10 @@ module.exports = function(config) {
     plugins: [
       'karma-webpack',
       'karma-qunit',
+      'karma-polyfill',
       'karma-phantomjs-launcher',
     ],
-
+    polyfill: [ 'Object.assign' ],
     browsers: [ 'PhantomJS' ],
     // logLevel: config.LOG_DEBUG,
 
@@ -60,7 +61,7 @@ module.exports = function(config) {
       'galaxy/scripts/qunit/tests/*.js': ['webpack'],
     },
 
-    frameworks: ['qunit'],
+    frameworks: ['polyfill', 'qunit'],
 
     webpack: webpackConfig,
     webpackMiddleware: { noInfo: false }
