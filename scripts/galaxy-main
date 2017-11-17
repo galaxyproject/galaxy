@@ -28,7 +28,6 @@ import os
 import signal
 import sys
 import threading
-import time
 from argparse import ArgumentParser
 from logging.config import fileConfig
 
@@ -44,7 +43,7 @@ except ImportError:
 
 try:
     import uwsgi
-except:
+except ImportError:
     uwsgi = None
 
 REQUIRES_DAEMONIZE_MESSAGE = "Attempted to use Galaxy in daemon mode, but daemonize is unavailable."

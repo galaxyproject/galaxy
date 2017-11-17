@@ -272,7 +272,6 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         else:
             log.debug('Finished shutting down')
 
-
     def configure_fluent_log(self):
         if self.config.fluent_log:
             from galaxy.util.logging.fluent_log import FluentTraceLogger
