@@ -1,6 +1,6 @@
 /* global define */
-define([ 'QUnit', 'sinon', 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-slider', 'mvc/ui/ui-thumbnails', 'mvc/ui/ui-tabs'
-], function( QUnit, sinon, testApp, Ui, SelectContent, Drilldown, Slider, Thumbnails, Tabs ){
+define([ 'qunit/test-app', 'sinon', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-slider', 'mvc/ui/ui-thumbnails', 'mvc/ui/ui-tabs'
+], function( testApp, sinon, Ui, SelectContent, Drilldown, Slider, Thumbnails, Tabs ){
     'use strict';
     Ui = Ui.default;
     SelectContent = SelectContent.default;

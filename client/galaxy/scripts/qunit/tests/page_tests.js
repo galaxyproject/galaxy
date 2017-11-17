@@ -1,6 +1,7 @@
 /* global define */
-define([ "test-app", "layout/page", "layout/panel", "QUnit"
-], function( testApp, Page, Panel, QUnit ){
+
+define([ "qunit/test-app", "layout/page", "layout/panel"
+], function( testApp, Page, Panel ){
     "use strict";
     Page = Page.default;
     Panel = Panel.default;

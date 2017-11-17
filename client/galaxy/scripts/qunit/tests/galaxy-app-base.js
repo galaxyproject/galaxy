@@ -1,12 +1,12 @@
 /* global define */
 define([
+    "qunit/test-app",
     "galaxy",
-    "jquery",
-    "QUnit"
+    "jquery"
 ], function(
+    testApp,
     appBase,
-    $,
-    QUnit
+    $
 ){
     "use strict";
     appBase = appBase.default;

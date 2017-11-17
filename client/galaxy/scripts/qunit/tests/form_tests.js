@@ -1,6 +1,6 @@
 /* global define */
-define([ 'test-app', 'QUnit', 'sinon', 'mvc/form/form-input', 'mvc/ui/ui-misc', 'mvc/form/form-data', 'mvc/tool/tool-form', 'utils/utils',
-], function( testApp, QUnit, sinon, InputElement, Ui, FormData, ToolForm, Utils ){
+define([ 'qunit/test-app', 'sinon', 'mvc/form/form-input', 'mvc/ui/ui-misc', 'mvc/form/form-data', 'mvc/tool/tool-form', 'utils/utils',
+], function( testApp, sinon, InputElement, Ui, FormData, ToolForm, Utils ){
     'use strict';
     InputElement = InputElement.default;
     Ui = Ui.default;

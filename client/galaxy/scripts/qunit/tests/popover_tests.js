@@ -1,6 +1,6 @@
 /* global define */
-define([ "test-app", "mvc/ui/ui-misc", "mvc/ui/ui-popover", "QUnit"
-], function( testApp, Ui, Popover, QUnit ){
+define([ "qunit/test-app", "mvc/ui/ui-misc", "mvc/ui/ui-popover"
+], function( testApp, Ui, Popover ){
     "use strict";
     Ui = Ui.default;
     Popover = Popover.default;

@@ -1,9 +1,9 @@
 /* global define */
 define([
+    "qunit/test-app",
     "utils/graph",
-    "jquery",
-    "QUnit"
-], function( GRAPH, $, QUnit ){
+    "jquery"
+], function( testApp, GRAPH, $ ){
 
     "use strict";
     GRAPH = GRAPH.default;

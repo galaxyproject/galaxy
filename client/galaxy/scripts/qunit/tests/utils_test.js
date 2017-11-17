@@ -1,6 +1,6 @@
 /* global define */
-define([ 'test-app', 'utils/utils', "QUnit"
-], function( testApp, Utils, QUnit ){
+define([ 'qunit/test-app', 'utils/utils'
+], function( testApp, Utils ){
     'use strict';
     Utils = Utils.default;
     QUnit.module( 'Utils test', {} );

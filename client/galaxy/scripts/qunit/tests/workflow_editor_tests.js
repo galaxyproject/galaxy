@@ -1,8 +1,7 @@
 /* global define */
 define([
-    "QUnit",
+    "qunit/test-app",
     "sinon",
-    "test-app",
     'utils/utils',
     "mvc/workflow/workflow-view",
     "mvc/workflow/workflow-node",
@@ -11,9 +10,8 @@ define([
     "mvc/workflow/workflow-view-terminals",
     "mvc/workflow/workflow-connector"
 ], function(
-    QUnit,
-    sinon,
     testApp,
+    sinon,
     Utils,
     App,
     Node,

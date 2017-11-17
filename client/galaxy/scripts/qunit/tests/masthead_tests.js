@@ -1,6 +1,6 @@
 /* global define */
-define([ "test-app", "layout/masthead", "QUnit"
-], function( testApp, Masthead, QUnit ){
+define([ "qunit/test-app", "layout/masthead", "galaxy"
+], function( testApp, Masthead, Galaxy ){
     "use strict";
     Masthead = Masthead.default;
     QUnit.module( "Masthead test", {

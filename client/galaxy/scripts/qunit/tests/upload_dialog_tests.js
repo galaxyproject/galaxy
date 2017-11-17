@@ -1,6 +1,6 @@
 /* global define */
-define([ "test-app", "mvc/upload/upload-view", "QUnit"
-], function( testApp, GalaxyUpload, QUnit ){
+define([ "qunit/test-app", "mvc/upload/upload-view"
+], function( testApp, GalaxyUpload ){
     "use strict";
     GalaxyUpload = GalaxyUpload.default;
     QUnit.module( "Upload dialog test", {
