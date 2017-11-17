@@ -16,8 +16,9 @@ var paths = {
     node_modules: './node_modules',
     scripts: [
         'galaxy/scripts/**/*.js',
-        '!galaxy/scripts/apps/**/*.js',
-        '!galaxy/scripts/libs/**/*.js'
+        '!galaxy/scripts/qunit/**/*',
+        '!galaxy/scripts/apps/**/*',
+        '!galaxy/scripts/libs/**/*'
     ],
     lib_locs: {
         // This is a stepping stone towards having all this staged
