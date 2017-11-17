@@ -11,10 +11,13 @@ from galaxy.util import nice_size
 log = logging.getLogger(__name__)
 
 
-class Infernal_CM_1_1(Text):
+class InfernalCM(Text):
     file_ext = "cm"
 
     MetadataElement(name="number_of_models", default=0, desc="Number of covariance models",
+                    readonly=True, visible=True, optional=True, no_value=0)
+
+    MetadataElement(name="cm_version", default=1.1, desc="Infernal Covariance Model version",
                     readonly=True, visible=True, optional=True, no_value=0)
 
     def set_peek(self, dataset, is_multi_byte=False):
