@@ -53,7 +53,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
             sys.exit(1)
     # Call app's shutdown method when the interpeter exits, this cleanly stops
     # the various Galaxy application daemon threads
-    atexit.register(app.shutdown)
+    app.application_stack.register_postfork_function(atexit.register, app.shutdown)
     # Create the universe WSGI application
     webapp = GalaxyWebApplication(app, session_cookie='galaxysession', name='galaxy')
 

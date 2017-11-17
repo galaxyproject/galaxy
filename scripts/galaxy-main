@@ -42,6 +42,11 @@ try:
 except ImportError:
     Daemonize = None
 
+try:
+    import uwsgi
+except:
+    uwsgi = None
+
 REQUIRES_DAEMONIZE_MESSAGE = "Attempted to use Galaxy in daemon mode, but daemonize is unavailable."
 
 log = logging.getLogger(__name__)
@@ -58,6 +63,8 @@ DEFAULT_VERBOSE = True
 DESCRIPTION = "Daemonized entry point for Galaxy."
 
 SHUTDOWN_MSG = '__SHUTDOWN__'
+UWSGI_FARM_VAR = '_GALAXY_UWSGI_FARM_NAME'
+
 
 exit = threading.Event()
 
@@ -96,6 +103,12 @@ def load_galaxy_app(
 
 def handle_signal(signum, frame):
     log.info('Received signal %d, exiting', signum)
+    if uwsgi and 'mule_id' in dir(uwsgi) and uwsgi.mule_id() > 0:
+        farm = os.environ.get(UWSGI_FARM_VAR, None)
+        if farm:
+            uwsgi.farm_msg(farm, SHUTDOWN_MSG)
+        else:
+            uwsgi.mule_msg(SHUTDOWN_MSG, uwsgi.mule_id())
     exit.set()
 
 

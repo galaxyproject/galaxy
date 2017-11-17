@@ -72,6 +72,7 @@ class ApplicationStack(object):
     def __init__(self, app=None, config=None):
         self.app = app
         self.config = config or (app and app.config)
+        self.running = False
 
     def start(self):
         # TODO: with a stack config the pools could be parsed here
@@ -127,7 +128,9 @@ class MessageApplicationStack(ApplicationStack):
 
     def start(self):
         super(MessageApplicationStack, self).start()
-        self.transport.start()
+        if not self.running:
+            self.transport.start()
+            self.running = True
 
     def register_message_handler(self, func, name=None):
         self.dispatcher.register_func(func, name)
@@ -148,7 +151,10 @@ class MessageApplicationStack(ApplicationStack):
         self.transport.send_message(msg.encode(), dest)
 
     def shutdown(self):
-        self.transport.shutdown()
+        if self.running:
+            log.info('Application stack interface shutting down')
+            self.transport.shutdown()
+            self.running = False
 
 
 class UWSGIApplicationStack(MessageApplicationStack):
@@ -247,8 +253,9 @@ class UWSGIApplicationStack(MessageApplicationStack):
 
     def start(self):
         # Does a generalized `is_worker` attribute make sense? Hard to say w/o other stack paradigms.
-        if self._is_mule:
-            self.__register_signal_handlers()
+        if self._is_mule and self._farm_name:
+            # used by main.py to send a shutdown message on termination
+            os.environ['_GALAXY_UWSGI_FARM_NAME'] = self._farm_name
         super(UWSGIApplicationStack, self).start()
 
     def has_pool(self, pool_name):

@@ -25,7 +25,10 @@ class ApplicationStackMessageDispatcher(object):
 
     def deregister_func(self, func=None, name=None):
         name = self.__func_name(func, name)
-        del self.__funcs[name]
+        try:
+            del self.__funcs[name]
+        except KeyError:
+            pass
 
     @property
     def handler_count(self):

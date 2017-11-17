@@ -22,7 +22,7 @@ ALIASES = {
     'http': ('httprouter', 'socket', 'uwsgi-socket', 'suwsgi-socket', 'ssl-socket'),
 }
 DEFAULT_ARGS = {
-    '_all_': ('virtualenv', 'pythonpath', 'master', 'threads', 'http', 'static-map', 'die-on-term', 'enable-threads'),
+    '_all_': ('virtualenv', 'pythonpath', 'master', 'threads', 'http', 'static-map', 'die-on-term', 'hook-master-start', 'enable-threads'),
     'galaxy': ('py-call-osafterfork', 'mule', 'farm'),
     'reports': (),
     'tool_shed': (),
@@ -97,6 +97,8 @@ def _get_uwsgi_args(cliargs, kwargs):
                        '/static={here}/static'.format(here=os.getcwd())),
         'die-on-term': True,
         'enable-threads': True,
+        'hook-master-start': ('unix_signal:2 gracefully_kill_them_all',
+                              'unix_signal:15 gracefully_kill_them_all'),
         'py-call-osafterfork': True,
         'mule': ('=lib/galaxy/main.py',) * handlerct,
         'farm': '={name}:{mules}'.format(

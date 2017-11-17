@@ -58,6 +58,7 @@ class ApplicationStackTransport(object):
     def shutdown(self):
         self.running = False
         if self.dispatcher_thread:
+            log.info('Joining application stack transport dispatcher thread')
             self.dispatcher_thread.join()
             self.dispatcher_thread = None
 
@@ -143,12 +144,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
             super(UWSGIFarmMessageTransport, self).start()
 
     def shutdown(self):
-        if not self.stack._is_mule:
-            for farm in self.stack._configured_farms.keys():
-                for mule in self.stack._configured_mules:
-                    # this could possibly generate more than we need, but that's ok
-                    self.send_message(self.SHUTDOWN_MSG, farm)
-        else:
+        if self.stack._is_mule:
             super(UWSGIFarmMessageTransport, self).shutdown()
 
     def send_message(self, msg, dest):
