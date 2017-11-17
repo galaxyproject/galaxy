@@ -37,7 +37,7 @@
     "webpack-dev-watch": "webpack -d --watch",
     "style": "grunt style",
     "style-watch": "grunt watch-style",
-    "test": "node_modules/.bin/karma start --verbose --single-run --no-auto-watch karma.config.js",
+    "test": "karma start --verbose --single-run --no-auto-watch karma.config.js",
     "gulp": "gulp",
     "build-toolshed": "grunt --app=toolshed",
     "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js",
