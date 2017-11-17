@@ -8,7 +8,11 @@ from cgi import escape
 
 from six import string_types
 
-from galaxy.util import restore_text, unicodify, asbool
+from galaxy.util import (
+    asbool,
+    restore_text,
+    unicodify
+)
 
 log = logging.getLogger(__name__)
 
