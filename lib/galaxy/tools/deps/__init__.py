@@ -109,25 +109,26 @@ class DependencyManager(object):
 
     def dependency_shell_commands(self, requirements, **kwds):
         requirements_to_dependencies = self.requirements_to_dependencies(requirements, **kwds)
-        ordered_dependencies = OrderedSet(requirements_to_dependencies.values())
-        return [dependency.shell_commands() for dependency in ordered_dependencies]
+        shell_commands = []
+        for dependencies in requirements_to_dependencies:
+            ordered_dependencies = OrderedSet(dependencies.values())
+            try:
+                shell_commands = [dependency.shell_commands() for dependency in ordered_dependencies]
+                if 'tool_instance' in kwds:
+                    # We log the dependencies on the tool instance,
+                    # which subsequently is used to log the used dependencies for this job.
+                    kwds['tool_instance'].dependencies = [dep.to_dict() for dep in ordered_dependencies]
+            except Exception as e:
+                log.exception(e)
+        return shell_commands
 
     def requirements_to_dependencies(self, requirements, **kwds):
         """
-        Takes a list of requirements and returns a dictionary
-        with requirements as key and dependencies as value caching
-        these on the tool instance if supplied.
+        Takes a list of requirements and returns a list of dictionaries
+        with requirements as key and dependencies as value.
+        Each dictionary corresponds to one dependency resolver.
         """
-        requirement_to_dependency = self._requirements_to_dependencies_dict(requirements, **kwds)
-
-        if 'tool_instance' in kwds:
-            kwds['tool_instance'].dependencies = [dep.to_dict() for dep in requirement_to_dependency.values()]
-
-        return requirement_to_dependency
-
-    def _requirements_to_dependencies_dict(self, requirements, **kwds):
-        """Build simple requirements to dependencies dict for resolution."""
-        requirement_to_dependency = OrderedDict()
+        resolver_requirements = []
         index = kwds.get('index', None)
         require_exact = kwds.get('exact', False)
         return_null_dependencies = kwds.get('return_null', False)
@@ -135,12 +136,15 @@ class DependencyManager(object):
         resolvable_requirements = requirements.resolvable
 
         for i, resolver in enumerate(self.dependency_resolvers):
+            requirement_to_dependency = OrderedDict()
+
             if index is not None and i != index:
                 continue
 
             if len(requirement_to_dependency) == len(resolvable_requirements):
                 # Shortcut - resolution complete.
-                break
+                resolver_requirements.append(requirement_to_dependency)
+                continue
 
             # Check requirements all at once
             all_unmet = len(requirement_to_dependency) == 0
@@ -153,8 +157,9 @@ class DependencyManager(object):
                         log.debug(dependency.resolver_msg)
                         requirement_to_dependency[requirement] = dependency
 
-                    # Shortcut - resolution complete.
-                    break
+                    # Shortcut - resolution complete for this resolver.
+                    resolver_requirements.append(requirement_to_dependency)
+                    continue
 
             # Check individual requirements
             for requirement in resolvable_requirements:
@@ -171,8 +176,12 @@ class DependencyManager(object):
                 elif return_null_dependencies and (resolver == self.dependency_resolvers[-1] or i == index):
                     log.debug(dependency.resolver_msg)
                     requirement_to_dependency[requirement] = dependency
-
-        return requirement_to_dependency
+            if requirement_to_dependency:
+                resolver_requirements.append(requirement_to_dependency)
+        if not resolver_requirements:
+            # Have at least a single empty dict
+            resolver_requirements.append(OrderedDict())
+        return resolver_requirements
 
     def uses_tool_shed_dependencies(self):
         return any(map(lambda r: isinstance(r, ToolShedPackageDependencyResolver), self.dependency_resolvers))
@@ -180,9 +189,9 @@ class DependencyManager(object):
     def find_dep(self, name, version=None, type='package', **kwds):
         log.debug('Find dependency %s version %s' % (name, version))
         requirements = ToolRequirements([ToolRequirement(name=name, version=version, type=type)])
-        dep_dict = self._requirements_to_dependencies_dict(requirements, **kwds)
-        if len(dep_dict) > 0:
-            return dep_dict.values()[0]
+        dependencies = self.requirements_to_dependencies(requirements, **kwds)[0]
+        if len(dependencies) > 0:
+            return dependencies.values()[0]
         else:
             return NullDependency(name=name, version=version)
 
@@ -221,7 +230,7 @@ class CachedDependencyManager(DependencyManager):
         self.tool_dependency_cache_dir = self.get_app_option("tool_dependency_cache_dir")
 
     def build_cache(self, requirements, **kwds):
-        resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
+        resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)[0]
         cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
         hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
         if os.path.exists(hashed_dependencies_dir):
@@ -244,7 +253,7 @@ class CachedDependencyManager(DependencyManager):
         If cached environment exists or is successfully created, will generate
         commands to activate it.
         """
-        resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
+        resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)[0]
         cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
         hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
         if not os.path.exists(hashed_dependencies_dir) and self.get_app_option("precache_dependencies", False):
