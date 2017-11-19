@@ -1087,8 +1087,11 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
 
         # transform hda object to be passed as json
         hda_data = dict()
-        hda_data[ "encoded_hda_id" ] = trans.security.encode_id( hda.id )
-        hda_data[ "encoded_history_id" ] = trans.security.encode_id( hda.history_id )
+        encoded_id = trans.security.encode_id( hda.id )
+        encoded_history_id = trans.security.encode_id( hda.history_id )
+
+        hda_data[ "encoded_hda_id" ] = encoded_id
+        hda_data[ "encoded_history_id" ] = encoded_history_id
         hda_data[ "number" ] = hda.hid
         hda_data[ "name" ] = hda.name
         hda_data[ "created_time" ] = unicodify( hda.create_time.strftime( trans.app.config.pretty_datetime_format ) )
@@ -1096,9 +1099,29 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         hda_data[ "db_key" ] = hda.dbkey
         hda_data[ "format" ] = hda.ext
 
+        job_data = dict()
+        job_data[ "tool_id" ] = job.tool_id
+        job_data[ "tool_job_version" ] = job.tool_version
+        job_data[ "tool_hda_version" ] = hda.tool_version
+        job_data[ "tool_std_output" ] = url_for( controller='dataset', action='stdout', dataset_id=encoded_id )
+        job_data[ "tool_std_error" ] = url_for( controller='dataset', action='stderr', dataset_id=encoded_id )
+        job_data[ "tool_exit_code" ] = job.exit_code
+        job_data[ "user_is_admin" ] = trans.user_is_admin()
+        job_data[ "hda_id" ] = hda.id
+        job_data[ "encoded_hda_id" ] = encoded_id
+        job_data[ "job_id" ] = job.id
+        job_data[ "encoded_job_id" ] = trans.security.encode_id( job.id )
+        job_data[ "history_id" ] = hda.history_id
+        job_data[ "encoded_history_id" ] = encoded_history_id
+        job_data[ "hda_dataset_uuid" ] = str( hda.dataset.uuid )
+        job_data[ "tool_path" ] = trans.user_is_admin() or trans.app.config.expose_dataset_path
+        job_data[ "hda_purged" ] = hda.purged
+        job_data[ "hda_filename" ] = hda.file_name
+
         return {
             'tool_name': tool.name if tool else 'Unknown tool',
-            'hda': hda_data
+            'hda': hda_data,
+            'job': job_data
         }
 
     @web.expose
