@@ -159,6 +159,9 @@ class DependencyManager(object):
 
                     # Shortcut - resolution complete for this resolver.
                     resolver_requirements.append(requirement_to_dependency)
+                    # We have a complete set of dependencies, don't install
+                    # via lower-ranked resolvers
+                    kwds['install'] = False
                     continue
 
             # Check individual requirements
@@ -178,6 +181,11 @@ class DependencyManager(object):
                     requirement_to_dependency[requirement] = dependency
             if requirement_to_dependency:
                 resolver_requirements.append(requirement_to_dependency)
+                if (len(requirement_to_dependency) == len(resolvable_requirements) and
+                        all(True for d in requirement_to_dependency if not isinstance(d, NullDependency))):
+                    # We resolved all individual requirements, no need to further install dependencies
+                    # resolved by subsequent resolvers.
+                    kwds['install'] = False
         if not resolver_requirements:
             # Have at least a single empty dict
             resolver_requirements.append(OrderedDict())
