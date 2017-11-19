@@ -14,6 +14,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.util import nice_size, unicodify
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
@@ -1033,6 +1034,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             raise Exception(message)
 
     @web.expose
+    @web.json
     def show_params(self, trans, dataset_id=None, from_noframe=None, **kwd):
         """
         Show the parameters used for the job associated with an HDA
@@ -1082,15 +1084,22 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if job is None:
             return trans.show_error_message("Job information is not available for this dataset.")
         # TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
-        return trans.fill_template("show_params.mako",
-                                   inherit_chain=inherit_chain,
-                                   history=trans.get_history(),
-                                   hda=hda,
-                                   job=job,
-                                   tool=tool,
-                                   params_objects=params_objects,
-                                   upgrade_messages=upgrade_messages,
-                                   has_parameter_errors=has_parameter_errors)
+
+        # transform hda object to be passed as json
+        hda_data = dict()
+        hda_data[ "encoded_hda_id" ] = trans.security.encode_id( hda.id )
+        hda_data[ "encoded_history_id" ] = trans.security.encode_id( hda.history_id )
+        hda_data[ "number" ] = hda.hid
+        hda_data[ "name" ] = hda.name
+        hda_data[ "created_time" ] = unicodify( hda.create_time.strftime( trans.app.config.pretty_datetime_format ) )
+        hda_data[ "file_size" ] = nice_size( hda.dataset.file_size )
+        hda_data[ "db_key" ] = hda.dbkey
+        hda_data[ "format" ] = hda.ext
+
+        return {
+            'tool_name': tool.name if tool else 'Unknown tool',
+            'hda': hda_data
+        }
 
     @web.expose
     def copy_datasets(self, trans, source_history=None, source_content_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd):
