@@ -14,7 +14,7 @@ var Node = Backbone.Model.extend({
         });
     },
     isWorkflowOutput: function(outputName) {
-        return this.getWorkflowOutput(outputName) != undefined;
+        return this.getWorkflowOutput(outputName) !== undefined;
     },
     removeWorkflowOutput: function(outputName) {
         while (this.isWorkflowOutput(outputName)) {
@@ -25,7 +25,7 @@ var Node = Backbone.Model.extend({
         if (!this.isWorkflowOutput(outputName)) {
             var output = { output_name: outputName };
             if (label) {
-                output["label"] = label;
+                output.label = label;
             }
             this.workflow_outputs.push(output);
             return true;
@@ -37,8 +37,8 @@ var Node = Backbone.Model.extend({
         var oldLabel = null;
         if (this.isWorkflowOutput(outputName)) {
             var workflowOutput = this.getWorkflowOutput(outputName);
-            oldLabel = workflowOutput["label"];
-            workflowOutput["label"] = label;
+            oldLabel = workflowOutput.label;
+            workflowOutput.label = label;
             changed = oldLabel != label;
         } else {
             changed = this.addWorkflowOutput(outputName, label);
@@ -239,7 +239,7 @@ var Node = Backbone.Model.extend({
         this.config_form = data.config_form;
         this.tool_version = this.config_form && this.config_form.version;
         this.errors = data.errors;
-        this.annotation = data["annotation"];
+        this.annotation = data.annotation;
         this.label = data.label;
         if ("post_job_actions" in data) {
             // Won't be present in response for data inputs
@@ -271,7 +271,7 @@ var Node = Backbone.Model.extend({
         old_body.replaceWith(new_body);
         if ("workflow_outputs" in data) {
             // Won't be present in response for data inputs
-            this.workflow_outputs = workflow_outputs ? workflow_outputs : [];
+            this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
         }
         // If active, reactivate with new config_form
         this.markChanged();

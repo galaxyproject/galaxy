@@ -19,6 +19,7 @@ pysam>=0.13
 
 # pure Python packages
 bz2file==0.98; python_version < '3.3'
+ipaddress==1.0.18; python_version < '3.3'
 boltons==17.1.0
 Paste==2.0.2
 PasteDeploy==1.5.2
