@@ -1815,7 +1815,7 @@ class ICM(Binary):
         return False
 
 
-Binary.register_sniffable_binary_ext("icm", "icm", ICM)
+Binary.register_sniffable_binary_format("icm", "icm", ICM)
 
 
 if __name__ == '__main__':
