@@ -86,14 +86,14 @@ steps:
     def workflow_create_new(self, name=None, annotation=None):
         self.workflow_index_open()
         self.click_button_new_workflow()
-        form_element = self.driver.find_element_by_css_selector("#submit")
+        form_element = self.driver.find_element_by_id("submit")
         name = name or self._get_random_name()
         annotation = annotation or self._get_random_name()
         el_name = self.driver.find_element_by_css_selector("[tour_id=workflow_name] input")
         el_name.send_keys(name)
         el_annotation = self.driver.find_element_by_css_selector("[tour_id=workflow_annotation] input")
-        el_annotation.send_keys(annotation);
-        self.click_submit(form_element)
+        el_annotation.send_keys(annotation)
+        form_element.click()
 
     @retry_assertion_during_transitions
     def assert_modal_has_text(self, expected_text):
