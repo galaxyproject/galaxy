@@ -430,3 +430,21 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         # not specified or if resulting collection is empty.
         return self.__input_supplied and bool(self.__element_instance_list)
     __nonzero__ = __bool__
+
+
+class ElementIdentifierMapper(object):
+    """Track mapping of dataset collection elements datasets to element identifiers."""
+
+    def __init__(self, input_datasets=None):
+        if input_datasets is not None:
+            self.identifier_key_dict = dict((v, "%s|__identifier__" % k) for k, v in input_datasets.items())
+        else:
+            self.identifier_key_dict = {}
+
+    def identifier(self, dataset_value, input_values):
+        identifier_key = self.identifier_key_dict.get(dataset_value, None)
+        element_identifier = None
+        if identifier_key:
+            element_identifier = input_values.get(identifier_key, None)
+
+        return element_identifier
