@@ -90,7 +90,10 @@ var DatasetCollectionElement = Backbone.Model.extend(BASE_MVC.LoggableMixin)
     .extend({ _logNamespace: "collections" });
 
 //==============================================================================
-/** @class Base/Abstract Backbone collection for Generic DCEs. */
+/** @class Base/Abstract Backbone collection for Generic DCEs - 
+    current may be associated with a dataset (DatasetDCECollection)
+    or another collection (NestedDCDCECollection).
+*/
 var DCECollection = Backbone.Collection.extend(BASE_MVC.LoggableMixin).extend(
     /** @lends DCECollection.prototype */ {
         _logNamespace: "collections",
@@ -199,7 +202,7 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
             /** Which class to use for elements */
             collectionClass: function() {
                 if (this.attributes.collection_type.indexOf(":") > 0) {
-                    return NestedListDCDCECollection;
+                    return NestedDCDCECollection;
                 } else {
                     return DatasetDCECollection;
                 }
@@ -353,40 +356,6 @@ var NestedDCDCECollection = DCECollection.extend(
         }
     }
 );
-
-
-//==============================================================================
-/** @class Backbone model for a list dataset collection within a list:list dataset collection. */
-var NestedListDCDCE = DatasetCollection.extend(
-    BASE_MVC.mixin(
-        DatasetCollectionElementMixin,
-        /** @lends NestedListDCDCE.prototype */ {
-            /** This is both a collection and a collection element - call the constructor */
-            constructor: function(attributes, options) {
-                this.debug("\t NestedListDCDCE.constructor:", attributes, options);
-                DatasetCollectionElementMixin.constructor.call(this, attributes, options);
-            },
-
-            /** String representation. */
-            toString: function() {
-                var objStr = this.object ? `${this.object}` : this.get("element_identifier");
-                return ["NestedListDCDCE(", objStr, ")"].join("");
-            }
-        }
-    )
-);
-
-//==============================================================================
-/** @class Backbone collection containing list dataset collections. */
-var NestedListDCDCECollection = NestedDCDCECollection.extend({
-    /** We know this collection is composed of only nested pair collections */
-    model: NestedListDCDCE,
-
-    /** String representation. */
-    toString: function() {
-        return ["NestedListDCDCECollection(", this.length, ")"].join("");
-    }
-});
 
 
 //==============================================================================
