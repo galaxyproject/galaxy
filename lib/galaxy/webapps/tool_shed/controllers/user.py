@@ -1,13 +1,15 @@
 from datetime import datetime
 
 from markupsafe import escape
+from sqlalchemy import (
+    and_,
+    true
+)
 
-from sqlalchemy import and_
-from sqlalchemy import true
-
-from galaxy import util
-from galaxy import web
-
+from galaxy import (
+    util,
+    web
+)
 from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
 from galaxy.web import url_for
 from galaxy.webapps.galaxy.controllers.user import User as BaseUser

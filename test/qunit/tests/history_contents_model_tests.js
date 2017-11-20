@@ -10,6 +10,7 @@ define([
     sinon,
     QUnit
 ){
+    HDA_MODEL = HDA_MODEL.default;
     QUnit.module( "History Contents Model QUnit.Tests" );
 
     QUnit.test( "HDA Constructions with Default Attributes", function(assert) {

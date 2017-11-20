@@ -16,7 +16,9 @@
       <display file="igb/bam.xml" />
       <display file="iobio/bam.xml" />
     </datatype>
-    <datatype extension="cram" type="galaxy.datatypes.binary:CRAM" mimetype="application/octet-stream" display_in_upload="true" description="CRAM is a file format for highly efficient and tunable reference-based compression of alignment data." description_url="http://www.ebi.ac.uk/ena/software/cram-usage"/>
+    <datatype extension="cram" type="galaxy.datatypes.binary:CRAM" mimetype="application/octet-stream" display_in_upload="true" description="CRAM is a file format for highly efficient and tunable reference-based compression of alignment data." description_url="http://www.ebi.ac.uk/ena/software/cram-usage">
+        <converter file="cram_to_bam_converter.xml" target_datatype="bam"/>
+    </datatype>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true" description="BED format provides a flexible way to define the data lines that are displayed in an annotation track. BED lines have three required columns and nine additional optional columns. The three required columns are chrom, chromStart and chromEnd." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Bed">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
       <converter file="bed_to_bgzip_converter.xml" target_datatype="bgzip"/>
@@ -37,7 +39,7 @@
     <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
       <converter file="len_to_linecount.xml" target_datatype="linecount" />
     </datatype>
-    <datatype extension="dmnd" type="galaxy.datatypes.binary:Binary:DMND" subclass="True" display_in_upload="false"/>
+    <datatype extension="dmnd" type="galaxy.datatypes.binary:Binary:DMND" display_in_upload="false"/>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigbed.xml" />
       <display file="igb/bb.xml" />
@@ -144,6 +146,7 @@
     <datatype extension="toolshed.gz" type="galaxy.datatypes.binary:Binary" mimetype="multipart/x-gzip" subclass="true" />
     <datatype extension="h5" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="mz5" type="galaxy.datatypes.binary:H5" subclass="true" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="cool" type="galaxy.datatypes.binary:Cool" subclass="true" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="html" type="galaxy.datatypes.text:Html" mimetype="text/html"/>
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true" description="File must start with definition line in the following format (columns may be in any order)." >
       <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
@@ -341,6 +344,8 @@
     <datatype extension="phyloxml" type="galaxy.datatypes.xml:Phyloxml" display_in_upload="true" />
     <datatype extension="nhx" type="galaxy.datatypes.data:Newick" display_in_upload="true" />
     <datatype extension="nex" type="galaxy.datatypes.data:Nexus" display_in_upload="true" />
+    <datatype extension="iqtree" type="galaxy.datatypes.text:IQTree" />
+    <datatype extension="mldist" type="galaxy.datatypes.mothur:SquareDistanceMatrix" />
     <!-- Start RGenetics Datatypes -->
     <datatype extension="affybatch" type="galaxy.datatypes.genetics:Affybatch" display_in_upload="true"/>
     <!-- eigenstrat pedigree input file -->
@@ -673,6 +678,7 @@
     <sniffer type="galaxy.datatypes.binary:MzSQlite"/>
     <sniffer type="galaxy.datatypes.binary:IdpDB"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
+    <sniffer type="galaxy.datatypes.binary:Cool"/>
     <sniffer type="galaxy.datatypes.binary:Biom2"/>
     <sniffer type="galaxy.datatypes.binary:H5"/>
     <sniffer type="galaxy.datatypes.binary:Bam"/>
@@ -744,6 +750,7 @@
     <sniffer type="galaxy.datatypes.tabular:Sam"/>
     <sniffer type="galaxy.datatypes.data:Newick"/>
     <sniffer type="galaxy.datatypes.data:Nexus"/>
+    <sniffer type="galaxy.datatypes.text:IQTree"/>
     <sniffer type="galaxy.datatypes.text:Obo"/>
     <sniffer type="galaxy.datatypes.text:Arff"/>
     <sniffer type="galaxy.datatypes.text:Ipynb"/>

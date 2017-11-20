@@ -1,7 +1,5 @@
-
 from galaxy.tools.deps import requirements
 from galaxy.util.odict import odict
-
 from .interface import InputSource
 from .interface import PageSource
 from .interface import PagesSource

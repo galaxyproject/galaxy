@@ -1,6 +1,5 @@
 import logging
 import sys
-
 from copy import deepcopy
 
 from galaxy.util import listify

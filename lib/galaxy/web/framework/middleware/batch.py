@@ -20,14 +20,14 @@ API tasks. IOW, this ain't about batching jobs.
 ..warning: this endpoint is experimental is likely to change.
 """
 import io
-from urlparse import urlparse
 import json
-import re
-
-from paste import httpexceptions
-import routes
-
 import logging
+import re
+from urlparse import urlparse
+
+import routes
+from paste import httpexceptions
+
 log = logging.getLogger(__name__)
 
 

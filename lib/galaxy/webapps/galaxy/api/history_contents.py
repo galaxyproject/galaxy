@@ -1,36 +1,41 @@
 """
 API operations on the contents of a history.
 """
+import logging
 import os
 import re
 
-from galaxy import exceptions
-from galaxy import util
-from galaxy.util.streamball import StreamBall
-from galaxy.util.json import safe_dumps
-
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_raw as expose_api_raw
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web import _future_expose_api_raw_anonymous as expose_api_raw_anonymous
-
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesLibraryMixin
-from galaxy.web.base.controller import UsesLibraryMixinItems
-from galaxy.web.base.controller import UsesTagsMixin
-
-from galaxy.managers import histories
-from galaxy.managers import history_contents
-from galaxy.managers import hdas
-from galaxy.managers import hdcas
-from galaxy.managers import folders
+from galaxy import (
+    exceptions,
+    util
+)
+from galaxy.managers import (
+    folders,
+    hdas,
+    hdcas,
+    histories,
+    history_contents
+)
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
     get_hda_and_element_identifiers
 )
+from galaxy.util.json import safe_dumps
+from galaxy.util.streamball import StreamBall
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous as expose_api_anonymous,
+    _future_expose_api_raw as expose_api_raw,
+    _future_expose_api_raw_anonymous as expose_api_raw_anonymous
+)
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    UsesLibraryMixin,
+    UsesLibraryMixinItems,
+    UsesTagsMixin
+)
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -171,9 +176,10 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return {'error': str(e)}
 
     @expose_api_raw_anonymous
-    def download_dataset_collection(self, trans, id, history_id, **kwd):
+    def download_dataset_collection(self, trans, id, history_id=None, **kwd):
         """
         * GET /api/histories/{history_id}/contents/{id}/download
+        * GET /api/dataset_collection/{id}/download
 
         Download the content of a HistoryDatasetCollection as a tgz archive
         while maintaining approximate collection structure.
@@ -219,14 +225,16 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def create(self, trans, history_id, payload, **kwd):
         """
         create( self, trans, history_id, payload, **kwd )
-        * POST /api/histories/{history_id}/contents/{type}
-            create a new HDA by copying an accessible LibraryDataset
+        * POST /api/histories/{history_id}/contents/{type}s
+        * POST /api/histories/{history_id}/contents
+            create a new HDA or HDCA
 
         :type   history_id: str
         :param  history_id: encoded id string of the new HDA's History
         :type   type: str
         :param  type: Type of history content - 'dataset' (default) or
-                      'dataset_collection'.
+                      'dataset_collection'. This can be passed in via payload
+                      or parsed from the route.
         :type   payload:    dict
         :param  payload:    dictionary structure containing::
             copy from library (for type 'dataset'):
@@ -244,6 +252,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             copy from history dataset collection (for type 'dataset_collection')
             'source'    = 'hdca'
             'content'   = [the encoded id from the HDCA]
+            'copy_elements' = Copy child HDAs into the target history as well,
+                              defaults to False but this is less than ideal and may
+                              be changed in future releases.
 
             create new history dataset collection (for type 'dataset_collection')
             'source'              = 'new_collection' (default 'source' if type is
@@ -299,13 +310,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         # copy from library dataset
         hda = None
         if source == 'library':
-            ld = self.get_library_dataset(trans, content, check_ownership=False, check_accessible=False)
-            # TODO: why would get_library_dataset NOT return a library dataset?
-            if type(ld) is not trans.app.model.LibraryDataset:
-                raise exceptions.RequestParameterInvalidException(
-                    "Library content id ( %s ) is not a dataset" % content)
-            # insert into history
-            hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
+            hda = self.__create_hda_from_ldda(trans, content, history)
 
         # copy an existing, accessible hda
         elif source == 'hda':
@@ -320,6 +325,15 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return None
         return self.hda_serializer.serialize_to_view(hda,
             user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+
+    def __create_hda_from_ldda(self, trans, content, history):
+        hda = None
+        ld = self.get_library_dataset(trans, content)
+        if type(ld) is not trans.app.model.LibraryDataset:
+            raise exceptions.RequestParameterInvalidException(
+                "Library content id ( %s ) is not a dataset" % content)
+        hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
+        return hda
 
     def __create_datasets_from_library_folder(self, trans, history, payload, **kwd):
         rval = []
@@ -366,10 +380,54 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         return rval
 
     def __create_dataset_collection(self, trans, history, payload, **kwd):
+        """Create hdca in a history from the list of element identifiers
+
+        :param history: history the new hdca should be added to
+        :type  history: History
+        :param source: whether to create a new collection or copy existing one
+        :type  source: str
+        :param payload: dictionary structure containing:
+            :param collection_type: type (and depth) of the new collection
+            :type name: str
+            :param element_identifiers: list of elements that should be in the new collection
+                :param element: one member of the collection
+                    :param name: name of the element
+                    :type name: str
+                    :param src: source of the element (hda/ldda)
+                    :type src: str
+                    :param id: identifier
+                    :type id: str
+                :type element: dict
+            :type name: list
+            :param name: name of the collection
+            :type name: str
+            :param hide_source_items: whether to mark the original hdas as hidden
+            :type name: bool
+        :type  payload: dict
+
+       .. note:: Elements may be nested depending on the collection_type
+
+        :returns:   dataset collection information
+        :rtype:     dict
+
+        :raises: RequestParameterInvalidException, RequestParameterMissingException
+        """
         source = kwd.get("source", payload.get("source", "new_collection"))
         service = trans.app.dataset_collections_service
         if source == "new_collection":
             create_params = api_payload_to_create_params(payload)
+            converted_identifiers = []
+            changed = False
+            for ei in payload.get('element_identifiers'):
+                # Convert lddas to hdas since there is no direct representation of library items in history.
+                if ei['src'] == 'ldda':
+                    hda = self.__create_hda_from_ldda(trans, ei['id'], history)
+                    converted_identifiers.append({"name": ei["name"], "src": "hda", "id": trans.security.encode_id(hda.id)})
+                    changed = True
+                else:
+                    converted_identifiers.append(ei)
+            if changed:
+                create_params['element_identifiers'] = converted_identifiers
             dataset_collection_instance = service.create(
                 trans,
                 parent=history,
@@ -379,11 +437,13 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             content = payload.get('content', None)
             if content is None:
                 raise exceptions.RequestParameterMissingException("'content' id of target to copy is missing")
+            copy_elements = payload.get('copy_elements', False)
             dataset_collection_instance = service.copy(
                 trans=trans,
                 parent=history,
                 source="hdca",
                 encoded_source_id=content,
+                copy_elements=copy_elements,
             )
         else:
             message = "Invalid 'source' parameter in request %s" % source

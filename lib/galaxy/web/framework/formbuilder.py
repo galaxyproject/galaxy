@@ -1,6 +1,7 @@
+import logging
+
 from galaxy.util import bunch
 
-import logging
 log = logging.getLogger(__name__)
 
 

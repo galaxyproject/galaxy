@@ -5,7 +5,6 @@ from six import iteritems
 from galaxy.util import bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
-
 from .parser import ensure_tool_conf_item
 
 

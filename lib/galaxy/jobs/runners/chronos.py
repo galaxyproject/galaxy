@@ -1,6 +1,8 @@
 from __future__ import absolute_import
+
 import functools
 import logging
+
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobRunner, AsynchronousJobState
 

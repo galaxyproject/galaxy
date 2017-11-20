@@ -16,7 +16,6 @@ import os
 
 from galaxy import util
 from galaxy.util import plugin_config
-
 from ..metrics import formatting
 
 log = logging.getLogger(__name__)

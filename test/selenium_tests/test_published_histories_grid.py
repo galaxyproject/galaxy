@@ -15,7 +15,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_history_grid_search_standard(self):
         self.navigate_to_published_histories_page()
-
+        self.screenshot("histories_published_grid")
         self.published_grid_search_for(self.history1_name)
         self.assert_grid_histories_are([self.history1_name])
 
@@ -37,6 +37,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
         # Search by name
         self.set_filter(name_filter_selector, self.history1_name)
+        self.screenshot("histories_published_grid_advanced")
         self.assert_grid_histories_are([self.history1_name])
         self.unset_filter('name', self.history1_name)
 
@@ -88,9 +89,16 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         if tags is None:
             raise AssertionError('Failed to find history with name [%s]' % self.history1_name)
 
-        tag_button_selector = '.tag-area > .tag-button:first-child > .tag-name'
-        tag_button = tags.find_element_by_css_selector(tag_button_selector)
-        self.assertEqual(tag_button.text, self.history1_tags[0])
+        tag_button_selector = '.tag-area > .tag-button > .tag-name'
+        tag_buttons = tags.find_elements_by_css_selector(tag_button_selector)
+        tag_button_text = None
+        target_tag_button_text = self.history1_tags[0]
+        for tag_button in tag_buttons:
+            tag_button_text = tag_button.text
+            if tag_button_text == target_tag_button_text:
+                break
+
+        self.assertEqual(tag_button_text, target_tag_button_text)
         tag_button.click()
 
         self.assert_grid_histories_are([self.history1_name, self.history3_name], False)

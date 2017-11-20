@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import struct
+import subprocess
 import tempfile
 from datetime import datetime
 from time import gmtime
@@ -10,7 +11,6 @@ from mercurial import cmdutil, commands, hg, ui
 from mercurial.changegroup import readexactly
 from mercurial.exchange import readbundle
 
-from galaxy.util import listify
 from tool_shed.util import basic_util
 
 log = logging.getLogger(__name__)
@@ -55,15 +55,12 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev):
     present in the cloned repository.
     """
     try:
-        commands.clone(get_configured_ui(),
-                       str(repository_clone_url),
-                       dest=str(repository_file_dir),
-                       pull=True,
-                       noupdate=False,
-                       rev=listify(str(ctx_rev)))
+        stdouterr = subprocess.check_output(['hg', 'clone', '-r', ctx_rev, repository_clone_url, repository_file_dir], stderr=subprocess.STDOUT)
         return True, None
     except Exception as e:
-        error_message = 'Error cloning repository: %s' % str(e)
+        error_message = 'Error cloning repository: %s' % e
+        if isinstance(e, subprocess.CalledProcessError):
+            error_message += "\nOutput was:\n%s" % stdouterr
         log.debug(error_message)
         return False, error_message
 

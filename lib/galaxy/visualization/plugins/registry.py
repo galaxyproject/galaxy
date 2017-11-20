@@ -8,14 +8,18 @@ import logging
 import os
 import weakref
 
-from galaxy.util import config_directories_from_setting
-from galaxy.util import odict
-from galaxy.util import parse_xml
-from galaxy.web import url_for
 from galaxy.exceptions import ObjectNotFound
-from galaxy.visualization.plugins import config_parser
-from galaxy.visualization.plugins import plugin as vis_plugins
-from galaxy.visualization.plugins import utils as vis_utils
+from galaxy.util import (
+    config_directories_from_setting,
+    odict,
+    parse_xml
+)
+from galaxy.visualization.plugins import (
+    config_parser,
+    plugin as vis_plugins,
+    utils as vis_utils
+)
+from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 

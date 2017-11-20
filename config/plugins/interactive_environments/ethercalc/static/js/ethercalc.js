@@ -1,6 +1,10 @@
+//Globals to be rid of
+var IES = window.IES;
+var toastr = window.toastr;
+
 function load_notebook(url){
-    test_ie_availability(url, function(){
-        append_notebook(url)
+    IES.test_ie_availability(url, function(){
+        IES.append_notebook(url);
     });
 }
 
@@ -12,7 +16,7 @@ function keep_alive(notebook_access_url){
     */
 
     var request_count = 0;
-    interval = setInterval(function(){
+    var interval = window.setInterval(function(){
         $.ajax({
             url: notebook_access_url,
             xhrFields: {
@@ -27,8 +31,8 @@ function keep_alive(notebook_access_url){
                 request_count++;
                 console.log("Request " + request_count);
                 if(request_count > 30){
-                    clearInterval(interval);
-                    clear_main_area();
+                    window.clearInterval(interval);
+                    IES.clear_main_area();
                     toastr.error(
                         "Could not connect to IE, contact your administrator",
                         "Error",

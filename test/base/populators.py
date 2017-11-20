@@ -1,5 +1,6 @@
 import contextlib
 import json
+import os
 import time
 from functools import wraps
 from operator import itemgetter
@@ -22,6 +23,24 @@ workflow_random_x2_str = resource_string(__name__, "data/test_workflow_2.ga")
 
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
+
+SKIP_FLAKEY_TESTS_ON_ERROR = os.environ.get("GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR", None)
+
+
+def flakey(method):
+
+    @wraps(method)
+    def wrapped_method(test_case, *args, **kwargs):
+        try:
+            method(test_case, *args, **kwargs)
+        except Exception:
+            if SKIP_FLAKEY_TESTS_ON_ERROR:
+                from nose.plugins.skip import SkipTest
+                raise SkipTest()
+            else:
+                raise
+
+    return wrapped_method
 
 
 def skip_without_tool(tool_id):
@@ -137,6 +156,9 @@ class BaseDatasetPopulator(object):
 
     def get_job_details(self, job_id, full=False):
         return self._get("jobs/%s?full=%s" % (job_id, full))
+
+    def cancel_job(self, job_id):
+        return self._delete("jobs/%s" % job_id)
 
     def _summarize_history(self, history_id):
         pass
@@ -286,6 +308,9 @@ class DatasetPopulator(BaseDatasetPopulator):
 
     def _get(self, route, data={}):
         return self.galaxy_interactor.get(route, data=data)
+
+    def _delete(self, route, data={}):
+        return self.galaxy_interactor.delete(route, data=data)
 
     def _summarize_history(self, history_id):
         self.galaxy_interactor._summarize_history(history_id)
@@ -446,12 +471,38 @@ class LibraryPopulator(object):
         wait_on_state(show, timeout=DEFAULT_TIMEOUT)
         return show().json()
 
+    def show_ldda(self, library_id, library_dataset_id):
+        return self.api_test_case.galaxy_interactor.get("libraries/%s/contents/%s" % (library_id, library_dataset_id))
+
+    def new_library_dataset_in_private_library(self, library_name="private_dataset", wait=True):
+        library = self.new_private_library(library_name)
+        payload, files = self.create_dataset_request(library, file_type="txt", contents="create_test")
+        create_response = self.api_test_case.galaxy_interactor.post("libraries/%s/contents" % library["id"], payload, files=files)
+        api_asserts.assert_status_code_is(create_response, 200)
+        library_datasets = create_response.json()
+        assert len(library_datasets) == 1
+        library_dataset = library_datasets[0]
+        if wait:
+            def show():
+                return self.show_ldda(library["id"], library_dataset["id"])
+
+            wait_on_state(show, assert_ok=True)
+            library_dataset = show().json()
+
+        return library, library_dataset
+
 
 class BaseDatasetCollectionPopulator(object):
 
     def create_list_from_pairs(self, history_id, pairs, name="Dataset Collection from pairs"):
+        return self.create_nested_collection(history_id=history_id,
+                                             collection=pairs,
+                                             collection_type='list:paired',
+                                             name=name)
+
+    def create_nested_collection(self, history_id, collection, collection_type, name):
         element_identifiers = []
-        for i, pair in enumerate(pairs):
+        for i, pair in enumerate(collection):
             element_identifiers.append(dict(
                 name="test%d" % i,
                 src="hdca",
@@ -462,7 +513,7 @@ class BaseDatasetCollectionPopulator(object):
             instance_type="history",
             history_id=history_id,
             element_identifiers=json.dumps(element_identifiers),
-            collection_type="list:paired",
+            collection_type=collection_type,
             name=name,
         )
         return self.__create(payload)
@@ -470,6 +521,20 @@ class BaseDatasetCollectionPopulator(object):
     def create_list_of_pairs_in_history(self, history_id, **kwds):
         pair1 = self.create_pair_in_history(history_id, **kwds).json()["id"]
         return self.create_list_from_pairs(history_id, [pair1])
+
+    def create_list_of_list_in_history(self, history_id, **kwds):
+        collection_type = kwds.pop('collection_type', 'list:list')
+        collection_types = collection_type.split(':')
+        list = self.create_list_in_history(history_id, **kwds).json()['id']
+        current_collection_type = 'list'
+        for collection_type in collection_types[1:]:
+            current_collection_type = "%s:%s" % (current_collection_type, collection_type)
+            response = self.create_nested_collection(history_id=history_id,
+                                                     collection=[list],
+                                                     collection_type=current_collection_type,
+                                                     name=current_collection_type)
+            list = response.json()['id']
+        return response
 
     def create_pair_in_history(self, history_id, **kwds):
         payload = self.create_pair_payload(
@@ -596,6 +661,11 @@ class GiPostGetMixin:
         data = data.copy()
         data['key'] = self._gi.key
         return requests.post(self.__url(route), data=data)
+
+    def _delete(self, route, data={}):
+        data = data.copy()
+        data['key'] = self._gi.key
+        return requests.delete(self.__url(route), data=data)
 
     def __url(self, route):
         return self._gi.url + "/" + route

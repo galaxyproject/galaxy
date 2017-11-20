@@ -121,7 +121,7 @@
                 require([ jscript ], function( js_lib ){
                     $( function(){
                         // load galaxy module application
-                        var module = new js_lib.GalaxyApp();
+                        var module = new js_lib.default.GalaxyApp();
                     });
                 });
             } else {

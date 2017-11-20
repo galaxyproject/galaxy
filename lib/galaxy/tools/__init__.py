@@ -20,7 +20,6 @@ from six.moves.urllib.parse import unquote_plus
 
 import tool_shed.util.repository_util as repository_util
 import tool_shed.util.shed_util_common
-
 from galaxy import (
     exceptions,
     model
@@ -85,7 +84,6 @@ from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.work.context import WorkRequestContext
 from tool_shed.util import common_util
-
 from .execute import execute as execute_job
 from .loader import (
     imported_macro_paths,

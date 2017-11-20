@@ -10,7 +10,6 @@ from galaxy.visualization.plugins import (
     resource_parser,
     utils as vis_utils
 )
-
 from ...unittest_utils import galaxy_mock, utility
 
 

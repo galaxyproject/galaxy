@@ -6,7 +6,6 @@ import os
 import re
 import shutil
 import tempfile
-
 from distutils.version import LooseVersion
 from sys import platform as _platform
 

@@ -1,20 +1,19 @@
 from __future__ import print_function
 
-__version__ = '1.0.0'
-
-from yaml import load
-
 import argparse
+import collections
+import copy
+import json
 import logging
 import os
-import sys
-import copy
-import collections
 import re
-import json
+import sys
 from functools import reduce
 from galaxy import util
 
+from yaml import load
+
+__version__ = '1.0.0'
 
 # log to galaxy's logger
 log = logging.getLogger(__name__)

@@ -196,8 +196,7 @@ define({
     //false,
 
     // purged'd/del'd msg
-    "This dataset has been deleted and removed from disk":
-        "このデータセットは、永続的にディスクから削除されました",
+    "This dataset has been deleted and removed from disk": "このデータセットは、永続的にディスクから削除されました",
     "This dataset has been deleted": "このデータセットは削除されました",
     "This dataset has been hidden": "このデータセットは、非表示にされた",
 

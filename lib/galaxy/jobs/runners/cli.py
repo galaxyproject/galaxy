@@ -12,7 +12,6 @@ from galaxy.jobs.runners import (
     AsynchronousJobState
 )
 from galaxy.util import asbool
-
 from .util.cli import CliInterface, split_params
 
 log = logging.getLogger(__name__)

@@ -7,14 +7,12 @@ import hmac
 import logging
 import re
 import urlparse
-
 from unicodedata import normalize
 
 from six import text_type
 
 from galaxy.tools.errors import ErrorReporter
 from galaxy.web.base.controller import url_for
-
 from . import smart_str
 
 log = logging.getLogger(__name__)

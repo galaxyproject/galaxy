@@ -111,7 +111,7 @@ class DatasetCollectionManager(object):
                 for tag in [t for t in v.tags if t.user_tname == 'name']:
                     tags[tag.value] = tag
         for _, tag in tags.items():
-            dataset_collection_instance.tags.append(tag.copy())
+            dataset_collection_instance.tags.append(tag.copy(cls=model.HistoryDatasetCollectionTagAssociation))
 
         return self.__persist(dataset_collection_instance)
 
@@ -187,14 +187,17 @@ class DatasetCollectionManager(object):
         changed = self._set_from_dict(trans, dataset_collection_instance, payload)
         return changed
 
-    def copy(self, trans, parent, source, encoded_source_id):
+    def copy(self, trans, parent, source, encoded_source_id, copy_elements=False):
         """
         PRECONDITION: security checks on ability to add to parent occurred
         during load.
         """
         assert source == "hdca"  # for now
         source_hdca = self.__get_history_collection_instance(trans, encoded_source_id)
-        new_hdca = source_hdca.copy()
+        copy_kwds = {}
+        if copy_elements:
+            copy_kwds["element_destination"] = parent
+        new_hdca = source_hdca.copy(**copy_kwds)
         tags_str = self.tag_manager.get_tags_str(source_hdca.tags)
         self.tag_manager.apply_item_tags(trans.get_user(), new_hdca, tags_str)
         parent.add_dataset_collection(new_hdca)
@@ -333,10 +336,11 @@ class DatasetCollectionManager(object):
     def __get_history_collection_instance(self, trans, id, check_ownership=False, check_accessible=True):
         instance_id = int(trans.app.security.decode_id(id))
         collection_instance = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(instance_id)
+        history = getattr(trans, 'history', collection_instance.history)
         if check_ownership:
-            self.history_manager.error_unless_owner(collection_instance.history, trans.user, current_history=trans.history)
+            self.history_manager.error_unless_owner(collection_instance.history, trans.user, current_history=history)
         if check_accessible:
-            self.history_manager.error_unless_accessible(collection_instance.history, trans.user, current_history=trans.history)
+            self.history_manager.error_unless_accessible(collection_instance.history, trans.user, current_history=history)
         return collection_instance
 
     def __get_library_collection_instance(self, trans, id, check_ownership=False, check_accessible=True):

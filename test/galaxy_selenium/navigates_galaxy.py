@@ -15,7 +15,6 @@ import requests
 import yaml
 
 from galaxy.util.bunch import Bunch
-
 from . import sizzle
 from .data import (
     NAVIGATION,
@@ -173,7 +172,7 @@ class NavigatesGalaxy(HasDriver):
 
     def api_delete(self, endpoint, raw=False):
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
-        response = requests.get(full_url, cookies=self.selenium_to_requests_cookies())
+        response = requests.delete(full_url, cookies=self.selenium_to_requests_cookies())
         if raw:
             return response
         else:
@@ -804,8 +803,12 @@ class NavigatesGalaxy(HasDriver):
             input_element.clear()
             input_element.send_keys(value)
 
-    def tool_execute(self):
-        self.wait_for_and_click_selector("button#execute")
+    def tool_form_generate_tour(self):
+        self.components.tool_form.options.wait_for_and_click()
+        self.components.tool_form.generate_tour.wait_for_and_click()
+
+    def tool_form_execute(self):
+        self.components.tool_form.execute.wait_for_and_click()
 
     def click_masthead_user(self):
         self.components.masthead.user.wait_for_and_click()
