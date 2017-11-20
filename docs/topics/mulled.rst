@@ -124,7 +124,10 @@ called ~/tokens/quay-oauth-token.
 .. code-block:: bash
 
    $ cd my-recipes-repo
+   ##Using Travis
    $ travis encrypt QUAY_OAUTH_TOKEN=`cat ~/tokens/quay-oauth-token`  --add
+   ##Local Builds
+   $ export QUAY_OAUTH_TOKEN=`cat ~/tokens/quay-oauth-token`
 
 
 For more information on encrypting keys using travis see
@@ -143,7 +146,10 @@ it to a plain text file called ~/tokens/involucro-auth .
 .. code-block:: bash
 
    $ cd my-recipes-repo
+   ##Using Travis
    $ travis encrypt INVOLUCRO_AUTH=`cat ~/tokens/involucro-auth`  --add
+   ##Local Builds
+   $ export INVOLUCRO_AUTH=`cat ~/tokens/involucro-auth`
 
 You can also export these variables to your own environment and try it out.
 
@@ -153,4 +159,4 @@ You can also export these variables to your own environment and try it out.
    $ export INVOLUCRO_AUTH=`cat ~/tokens/involucro-auth`
    $ export QUAY_OAUTH_TOKEN=`cat ~/tokens/quay-oauth-token`
    $ mulled-build build-and-test 'pandoc=1.17.2--0' --test 'pandoc --help' -n MY_QUAY
-   $ mulled-build push 'pandoc=1.17.2--0' --test 'pandoc --help' -n MY_QUAY 
+   $ mulled-build push 'pandoc=1.17.2--0' --test 'pandoc --help' -n MY_QUAY
