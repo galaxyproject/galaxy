@@ -87,18 +87,12 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         if (attrs.history_content_type === "dataset") {
             return new HDA_MODEL.HistoryDatasetAssociation(attrs, options);
         } else if (attrs.history_content_type === "dataset_collection") {
-            switch (attrs.collection_type) {
-                case "list":
-                    return new HDCA_MODEL.HistoryListDatasetCollection(attrs, options);
-                case "paired":
-                    return new HDCA_MODEL.HistoryPairDatasetCollection(attrs, options);
-                default:
-                    return new HDCA_MODEL.HistoryNestedDatasetCollection(attrs, options);
-            }
+            return new HDCA_MODEL.HistoryDatasetCollection(attrs, options);
+        } else {
+            return {
+                validationError: `Unknown history_content_type: ${attrs.history_content_type}`
+            };
         }
-        return {
-            validationError: `Unknown history_content_type: ${attrs.history_content_type}`
-        };
     },
 
     stopPolling: function() {
