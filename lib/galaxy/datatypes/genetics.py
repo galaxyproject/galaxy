@@ -845,50 +845,11 @@ class LinkageStudies(Text):
         # iterate whole file without errors
         self.eof_res = True
 
-    def eof_function(self):
-        """
-        Overridable end-of-file function
-        """
-        return self.eof_res
-
-    def __per_line_op(self, line):
-        """
-        Private per-line operation and line counter
-        """
-        self.lcount += 1
-        if self.lcount > self.max_lines:
-            return -1
-
-        return self.line_op(line)
-
-    def line_op(self, line):
-        """
-        Overridable per line operation
-        """
-        return None
-
     def header_check(self, fio):
         """
         Overrideable post-binary file check function
         """
         return True
-
-    def sniffer(self, filename):
-        with open(filename, "r") as fio:
-
-            if not self.header_check(fio):
-                return False
-
-            for line in fio:
-                line_res = self.__per_line_op(line)
-
-                if line_res == -1:
-                    # run eof_function
-                    break
-                if line_res is not None:
-                    return line_res
-
-            return self.eof_function()
 
 
 class GenotypeMatrix(LinkageStudies):
@@ -901,18 +862,6 @@ class GenotypeMatrix(LinkageStudies):
     def __init__(self, **kwd):
         LinkageStudies.__init__(self, **kwd)
         self.num_cols = -1
-
-    def line_op(self, line):
-        tokens = line.split('\t')
-
-        if self.num_cols == -1:
-            self.num_cols = len(tokens)
-        elif self.num_cols != len(tokens):
-            return False
-        if not VALID_GENOTYPES_LINE.match(line):
-            return False
-
-        return None
 
     def header_check(self, fio):
         header_elems = fio.readline().split('\t')
@@ -948,7 +897,26 @@ class GenotypeMatrix(LinkageStudies):
         >>> result_true
         []
         """
-        return self.sniffer(filename)
+        with open(filename, "r") as fio:
+
+            if not self.header_check(fio):
+                return False
+
+            for line in fio:
+                self.lcount += 1
+                if self.lcount > self.max_lines:
+                    return self.eof_res
+
+                tokens = line.split('\t')
+
+                if self.num_cols == -1:
+                    self.num_cols = len(tokens)
+                elif self.num_cols != len(tokens):
+                    return False
+                if not VALID_GENOTYPES_LINE.match(line):
+                    return False
+
+            return self.eof_res
 
 
 class MarkerMap(LinkageStudies):
@@ -967,25 +935,6 @@ class MarkerMap(LinkageStudies):
             return True
 
         return False
-
-    def line_op(self, line):
-
-        try:
-            chrm, gpos, nam, bpos, row = line.split()
-
-            float(gpos)
-            int(bpos)
-
-            try:
-                int(chrm)
-            except ValueError:
-                if not chrm.lower()[0] in ('x', 'y', 'm'):
-                    return False
-
-        except ValueError:
-            return False
-
-        return None
 
     def sniff(self, filename):
         """
@@ -1008,7 +957,32 @@ class MarkerMap(LinkageStudies):
         >>> result_true
         []
         """
-        return self.sniffer(filename)
+        with open(filename, "r") as fio:
+
+            if not self.header_check(fio):
+                return False
+
+            for line in fio:
+                self.lcount += 1
+                if self.lcount > self.max_lines:
+                    return self.eof_res
+
+                try:
+                    chrm, gpos, nam, bpos, row = line.split()
+
+                    float(gpos)
+                    int(bpos)
+
+                    try:
+                        int(chrm)
+                    except ValueError:
+                        if not chrm.lower()[0] in ('x', 'y', 'm'):
+                            return False
+
+                except ValueError:
+                    return False
+
+            return self.eof_res
 
 
 class DataIn(LinkageStudies):
@@ -1025,38 +999,6 @@ class DataIn(LinkageStudies):
 
     def eof_function(self):
         return self.intermarkers > 0
-
-    def line_op(self, line):
-
-        tokens = line.split()
-
-        try:
-
-            if self.lcount == 1:
-                self.num_markers = int(tokens[0])
-                map(int, tokens[1:])
-            elif self.lcount == 2:
-                map(float, tokens)
-
-                if len(tokens) != 4:
-                    return False
-            elif self.lcount == 3:
-                map(int, tokens)
-                last_token = int(tokens[-1])
-
-                if self.num_markers is None:
-                    return False
-                if len(tokens) != last_token:
-                    return False
-                if self.num_markers != last_token:
-                    return False
-            elif tokens[0] == "3" and tokens[1] == "2":
-                self.intermarkers += 1
-
-            return None
-
-        except (ValueError, IndexError):
-            return False
 
     def sniff(self, filename):
         """
@@ -1079,7 +1021,43 @@ class DataIn(LinkageStudies):
         >>> result_true
         []
         """
-        return self.sniffer(filename)
+        with open(filename, "r") as fio:
+
+            if not self.header_check(fio):
+                return False
+
+            for line in fio:
+                self.lcount += 1
+                if self.lcount > self.max_lines:
+                    return self.eof_function()
+
+                tokens = line.split()
+                try:
+                    if self.lcount == 1:
+                        self.num_markers = int(tokens[0])
+                        map(int, tokens[1:])
+                    elif self.lcount == 2:
+                        map(float, tokens)
+
+                        if len(tokens) != 4:
+                            return False
+                    elif self.lcount == 3:
+                        map(int, tokens)
+                        last_token = int(tokens[-1])
+
+                        if self.num_markers is None:
+                            return False
+                        if len(tokens) != last_token:
+                            return False
+                        if self.num_markers != last_token:
+                            return False
+                    elif tokens[0] == "3" and tokens[1] == "2":
+                        self.intermarkers += 1
+
+                except (ValueError, IndexError):
+                    return False
+
+            return self.eof_function()
 
 
 class AllegroLOD(LinkageStudies):
@@ -1096,21 +1074,6 @@ class AllegroLOD(LinkageStudies):
             return True
 
         return False
-
-    def line_op(self, line):
-        tokens = line.split()
-
-        try:
-            int(tokens[0])
-            float(tokens[1])
-
-            if tokens[2] != "-inf":
-                float(tokens[2])
-
-        except (ValueError, IndexError):
-            return False
-
-        return None
 
     def sniff(self, filename):
         """
@@ -1133,7 +1096,29 @@ class AllegroLOD(LinkageStudies):
         >>> result_true
         []
         """
-        return self.sniffer(filename)
+        with open(filename, "r") as fio:
+
+            if not self.header_check(fio):
+                return False
+
+            for line in fio:
+                self.lcount += 1
+                if self.lcount > self.max_lines:
+                    return self.eof_res
+
+                tokens = line.split()
+
+                try:
+                    int(tokens[0])
+                    float(tokens[1])
+
+                    if tokens[2] != "-inf":
+                        float(tokens[2])
+
+                except (ValueError, IndexError):
+                    return False
+
+            return self.eof_res
 
 
 if __name__ == '__main__':
