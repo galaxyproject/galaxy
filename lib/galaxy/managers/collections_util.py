@@ -102,7 +102,8 @@ def get_collection_elements(collection, name=""):
 
 
 def dictify_dataset_collection_instance(dataset_collection_instance, parent, security, view="element"):
-    dict_value = dataset_collection_instance.to_dict(view=view)
+    hdca_view = "element" if view in ["element", "element-reference"] else "collection"
+    dict_value = dataset_collection_instance.to_dict(view=hdca_view)
     encoded_id = security.encode_id(dataset_collection_instance.id)
     if isinstance(parent, model.History):
         encoded_history_id = security.encode_id(parent.id)
@@ -116,8 +117,41 @@ def dictify_dataset_collection_instance(dataset_collection_instance, parent, sec
         collection = dataset_collection_instance.collection
         dict_value['elements'] = [dictify_element(_) for _ in collection.elements]
         dict_value['populated'] = collection.populated
+    elif view == "element-reference":
+        collection = dataset_collection_instance.collection
+        dict_value['elements'] = [dictify_element_reference(_) for _ in collection.elements]
+
     security.encode_all_ids(dict_value, recursive=True)  # TODO: Use Kyle's recursive formulation of this.
     return dict_value
+
+
+def dictify_element_reference(element):
+    """Load minimal details of elements required to show outline of contents in history panel.
+
+    History panel can use this reference to expand to full details if individual dataset elements
+    are clicked.
+    """
+    dictified = element.to_dict(view="element")
+    element_object = element.element_object
+    if element_object is not None:
+        object_detials = dict(
+            id=element_object.id,
+            model_class=element_object.__class__.__name__,
+        )
+        if element.child_collection:
+            # Recursively yield elements for each nested collection...
+            child_collection = element.child_collection
+            object_detials["elements"] = [dictify_element_reference(_) for _ in child_collection.elements]
+        else:
+            object_detials["state"] = element_object.state
+            object_detials["hda_ldda"] = 'hda'
+            object_detials["history_id"] = element_object.history_id
+
+    else:
+        object_detials = None
+
+    dictified["object"] = object_detials
+    return dictified
 
 
 def dictify_element(element):

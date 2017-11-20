@@ -145,6 +145,13 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         :param  id:         'dataset' or 'dataset_collection'
         :type   history_id: str
         :param  history_id: encoded id string of the HDA's or HDCA's History
+        :type   view:       str
+        :param  view:       view style of the dataset collection to produce,
+                            'collection' returns no element information, 'element'
+                            returns detailed element information for all datasets,
+                            'element-reference' returns a minimal set of information
+                            about datasets (for instance id, type, and state but not
+                            metadata, peek, info, or name).
 
         :rtype:     dict
         :returns:   dictionary containing detailed HDA or HDCA information
@@ -242,7 +249,8 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
     def __show_dataset_collection(self, trans, id, history_id, **kwd):
         dataset_collection_instance = self.__get_accessible_collection(trans, id, history_id)
-        return self.__collection_dict(trans, dataset_collection_instance, view="element")
+        view = kwd.get("view", "element")
+        return self.__collection_dict(trans, dataset_collection_instance, view=view)
 
     def __get_accessible_collection(self, trans, id, history_id):
         return trans.app.dataset_collections_service.get_dataset_collection_instance(
