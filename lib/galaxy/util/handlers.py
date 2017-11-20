@@ -94,21 +94,19 @@ class ConfiguresHandlers:
                 rval.append(elem)
         return rval
 
-    def is_handler(self, server_name):
-        """Given a server name, indicate whether the server is a handler.
+    @property
+    def is_handler(self):
+        """Indicate whether the current server is a handler.
 
         :param server_name: The name to check
         :type server_name: str
 
         :return: bool
         """
-        if (self.app.application_stack.in_pool(self.app.application_stack.pools.JOB_HANDLERS) or
-                (not self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS) and
-                 self.app.job_config.is_default)):
-            # Handlers started as uWSGI mules do not require configuration in the job conf
-            return True
+        if self._is_handler is not None:
+            return self._is_handler
         for collection in self.handlers.values():
-            if server_name in collection:
+            if self.app.config.server_name in collection:
                 return True
         return False
 

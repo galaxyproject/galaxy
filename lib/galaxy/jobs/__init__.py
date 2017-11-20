@@ -148,7 +148,7 @@ class JobConfiguration(object, ConfiguresHandlers):
                             output_size=None,
                             destination_user_concurrent_jobs={},
                             destination_total_concurrent_jobs={})
-        self._is_default = False
+        self._is_handler = None
 
         default_resubmits = []
         default_resubmit_condition = self.app.config.default_job_resubmission_condition
@@ -171,7 +171,6 @@ class JobConfiguration(object, ConfiguresHandlers):
             log.warning('Job configuration "%s" does not exist, using default'
                         ' job configuration (this server will run jobs)',
                         self.app.config.job_config_file)
-            self._is_default = True
             self.__set_default_job_conf()
         except Exception as e:
             raise config_exception(e, job_config_file)
@@ -217,14 +216,12 @@ class JobConfiguration(object, ConfiguresHandlers):
         try:
             self.default_handler_id = self._get_default(self.app.config, handlers_conf, list(self.handlers.keys()))
         except Exception:
-            log.info('No default handler specified in job config, will check for job handlers managed by application stack')
-        if ((self.default_handler_id is None
-                or (len(self.handlers) == 1 and self.app.config.server_name.startswith(self.handlers.keys()[0])))
-                and self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS)):
-            # Shortcut for compatibility with existing job confs that use the default handlers block
-            # There are no defined handlers or there's only one handler and it's this server, and the stack has a handler pool
-            self.handlers = {}
-            self.default_handler_id = None
+            pass
+        if (self.default_handler_id is None
+                or (len(self.handlers) == 1 and self.app.config.base_server_name == self.handlers.keys()[0])):
+            # Shortcut for compatibility with existing job confs that use the default handlers block,
+            # there are no defined handlers, or there's only one handler and it's this server
+            self.__set_default_job_handler()
 
         # Parse destinations
         destinations = root.find('destinations')
@@ -342,17 +339,27 @@ class JobConfiguration(object, ConfiguresHandlers):
         if self.app.config.use_tasked_jobs:
             self.runner_plugins.append(dict(id='tasks', load='tasks', workers=DEFAULT_LOCAL_WORKERS))
         # Set the handlers
-        # FIXME: is this conditional necessary?
-        if not self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS):
-            self.app.application_stack.register_postfork_function(self.make_self_default_handler)
+        self.__set_default_job_handler()
         # Set the destination
         self.default_destination_id = 'local'
         self.destinations['local'] = [JobDestination(id='local', runner='local')]
         log.debug('Done loading job configuration')
 
-    @property
-    def is_default(self):
-        return self._is_default
+    def __set_default_job_handler(self):
+        # Called when self.default_handler_id is None
+        if self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS):
+            if (self.app.application_stack.in_pool(self.app.application_stack.pools.JOB_HANDLERS)):
+                log.info("Found job handler pool managed by application stack, this server (%s) is a member of pool: "
+                         "%s", self.app.config.server_name, self.app.application_stack.pools.JOB_HANDLERS)
+                self._is_handler = True
+            else:
+                log.info("Found job handler pool managed by application stack, this server (%s) will submit jobs to "
+                         "pool: %s", self.app.config.server_name, self.app.application_stack.pools.JOB_HANDLERS)
+        else:
+            log.info('Did not find job handler pool managed by application stack, this server (%s) will handle jobs '
+                     'submitted to it', self.app.config.server_name)
+            self._is_handler = True
+            self.app.application_stack.register_postfork_function(self.make_self_default_handler)
 
     def make_self_default_handler(self):
         self.default_handler_id = self.app.config.server_name

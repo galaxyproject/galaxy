@@ -279,5 +279,6 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         else:
             self.trace_logger = None
 
+    @property
     def is_job_handler(self):
-        return (self.config.track_jobs_in_database and self.job_config.is_handler(self.config.server_name)) or not self.config.track_jobs_in_database
+        return (self.config.track_jobs_in_database and self.job_config.is_handler) or not self.config.track_jobs_in_database

@@ -24,7 +24,7 @@ class JobManager(object):
     def __init__(self, app):
         self.app = app
         self.job_lock = False
-        if self.app.is_job_handler():
+        if self.app.is_job_handler:
             log.debug("Initializing job handler")
             self.job_handler = handler.JobHandler(app)
             self.job_stop_queue = self.job_handler.job_stop_queue

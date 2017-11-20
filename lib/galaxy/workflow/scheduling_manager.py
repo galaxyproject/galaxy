@@ -40,6 +40,7 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
         self.request_monitor = None
 
         self.handlers = {}
+        self._is_handler = None
 
         self.__plugin_classes = self.__plugins_dict()
         self.__init_schedulers()
@@ -93,9 +94,9 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
         # If we have explicitly configured handlers, check them.
         # Else just make sure we are a job handler.
         if self.__handlers_configured:
-            is_handler = self.is_handler(self.app.config.server_name)
+            is_handler = self.is_handler
         else:
-            is_handler = self.app.is_job_handler()
+            is_handler = self.app.is_job_handler
         return is_handler
 
     def _get_handler(self, history_id):
