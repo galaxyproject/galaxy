@@ -736,7 +736,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         """
 
         # define app configuration
-        app = {'jscript' : "viz/trackster"}
+        app = {"jscript" : "tracksterApp"}
 
         # get dataset to add
         id = kwargs.get("id", None)
@@ -780,7 +780,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             }
 
         # fill template
-        return trans.fill_template('galaxy.panels.mako', config={'right_panel': True, 'app': app})
+        return trans.fill_template('galaxy.panels.mako', config={'right_panel': True, 'app': app, 'bundle': 'trackster'})
 
     @web.expose
     def circster(self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None):

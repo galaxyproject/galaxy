@@ -77,6 +77,10 @@
         'libs/require',
     )}
 
+    %if self.galaxy_config.get('bundle', None):
+        ${h.js('bundled/%s.bundled' % self.galaxy_config.get('bundle'))}
+    %endif
+
     <script type="text/javascript">
         // configure require
         // due to our using both script tags and require, we need to access the same jq in both for plugin retention
@@ -123,12 +127,10 @@
         // load any app configured
         define( 'app', function(){
             var jscript = galaxy_config.app.jscript;
-            if( jscript ){
-                require([ jscript ], function( js_lib ){
-                    $( function(){
-                        // load galaxy module application
-                        var module = new js_lib.default.GalaxyApp();
-                    });
+            if( galaxy_config.app.jscript && window[galaxy_config.app.jscript]){
+                $( function(){
+                    // load galaxy module application
+                    window[galaxy_config.app.jscript]();
                 });
             } else {
                 console.error("'galaxy_config.app.jscript' missing.");
