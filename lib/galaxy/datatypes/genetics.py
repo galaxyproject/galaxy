@@ -842,7 +842,7 @@ class LinkageStudies(Text):
         Text.__init__(self, **kwd)
         self.lcount = 0
         self.max_lines = 10
-        # iterate whole file without errors
+        # iterated whole file without errors
         self.eof_res = True
 
     def header_check(self, fio):
@@ -860,7 +860,7 @@ class GenotypeMatrix(LinkageStudies):
     file_ext = "alohomora_gts"
 
     def __init__(self, **kwd):
-        LinkageStudies.__init__(self, **kwd)
+        super(GenotypeMatrix, self).__init__(**kwd)
         self.num_cols = -1
 
     def header_check(self, fio):
@@ -870,7 +870,7 @@ class GenotypeMatrix(LinkageStudies):
             return False
 
         try:
-            [int(sid) > 0 for sid in header_elems[1:]]
+            return all([int(sid) > 0 for sid in header_elems[1:]])
         except ValueError:
             return False
 
@@ -969,7 +969,6 @@ class MarkerMap(LinkageStudies):
 
                 try:
                     chrm, gpos, nam, bpos, row = line.split()
-
                     float(gpos)
                     int(bpos)
 
@@ -993,7 +992,7 @@ class DataIn(LinkageStudies):
     file_ext = "linkage_datain"
 
     def __init__(self, **kwd):
-        LinkageStudies.__init__(self, **kwd)
+        super(DataIn, self).__init__(**kwd)
         self.num_markers = None
         self.intermarkers = 0
 
