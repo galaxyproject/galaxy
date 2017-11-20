@@ -183,7 +183,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new FormWrapper.View({
                     url: `workflow/create`,
-                    redirect: "workflows/list"
+                    redirect: "workflow/editor"
                 })
             );
         },

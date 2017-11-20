@@ -551,7 +551,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             session = trans.sa_session
             session.add(stored_workflow)
             session.flush()
-            return {'message': 'Workflow %s has been created.' % workflow_name}
+            return {'id': trans.security.encode_id(stored_workflow.id), 'message': 'Workflow %s has been created.' % workflow_name}
 
     @web.json
     def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation=""):
