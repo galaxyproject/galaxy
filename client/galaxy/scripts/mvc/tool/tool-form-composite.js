@@ -560,7 +560,7 @@ var View = Backbone.View.extend({
                     if ($.isArray(response) && response.length > 0) {
                         self.$el.append($("<div/>", { id: "webhook-view" }));
                         var WebhookApp = new Webhooks.WebhookView({
-                            urlRoot: `${Galaxy.root}api/webhooks/workflow`,
+                            urlRoot: `${Galaxy.root}api/webhooks/workflow/random`,
                             toolId: job_def.tool_id,
                             toolVersion: job_def.tool_version
                         });

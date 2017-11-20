@@ -616,16 +616,16 @@ def populate_api_routes(webapp, app):
                           action='get_all',
                           conditions=dict(method=["GET"]))
 
-    webapp.mapper.connect('get_random',
+    webapp.mapper.connect('get_all_by_type',
                           '/api/webhooks/{webhook_type}',
                           controller='webhooks',
-                          action='get_random',
+                          action='get_all_by_type',
                           conditions=dict(method=["GET"]))
 
-    webapp.mapper.connect('get_all_by_type',
-                          '/api/webhooks/{webhook_type}/all',
+    webapp.mapper.connect('get_random',
+                          '/api/webhooks/{webhook_type}/random',
                           controller='webhooks',
-                          action='get_all_by_type',
+                          action='get_random',
                           conditions=dict(method=["GET"]))
 
     webapp.mapper.connect('get_data',

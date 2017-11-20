@@ -106,7 +106,7 @@ var Collection = Backbone.Collection.extend({
         // Webhooks
         //
         Webhooks.add({
-            url: "api/webhooks/masthead/all",
+            url: "api/webhooks/masthead",
             callback: function(webhooks) {
                 $(document).ready(() => {
                     $.each(webhooks.models, (index, model) => {
