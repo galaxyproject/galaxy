@@ -550,6 +550,8 @@ class Configuration(object):
         # Allow explicit override of server name in config params
         if "server_name" in kwargs:
             self.server_name = kwargs.get("server_name")
+        # The application stack code may manipulate the server name
+        self.base_server_name = self.server_name
         # Store all configured server names for the message queue routing
         self.server_names = []
         for section in global_conf_parser.sections():

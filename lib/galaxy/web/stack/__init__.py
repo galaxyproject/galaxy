@@ -171,7 +171,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
     transport_class = UWSGIFarmMessageTransport
     log_filter_class = UWSGILogFilter
     log_format = '%(name)s %(levelname)s %(asctime)s [p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] [%(threadName)s] %(message)s'
-    server_name_template = '{server_name}.{server_id}'
+    server_name_template = '{server_name}.{pool_name}.{instance_id}'
 
     postfork_functions = []
 
@@ -244,12 +244,29 @@ class UWSGIApplicationStack(MessageApplicationStack):
                 farms.append(farm)
         return farms
 
+    def _mule_index_in_farm(self, farm_name):
+        try:
+            mules = self._configured_farms[farm_name]
+            return mules.index(uwsgi.mule_id())
+        except (KeyError, ValueError):
+            return -1
+
     @property
     def _farm_name(self):
         try:
             return self._farms[0]
         except IndexError:
             return None
+
+    @property
+    def instance_id(self):
+        if not self._is_mule:
+            instance_id = uwsgi.worker_id()
+        elif self._farm_name:
+            return self._mule_index_in_farm(self._farm_name) + 1
+        else:
+            instance_id = uwsgi.mule_id()
+        return instance_id
 
     def start(self):
         # Does a generalized `is_worker` attribute make sense? Hard to say w/o other stack paradigms.
@@ -273,7 +290,17 @@ class UWSGIApplicationStack(MessageApplicationStack):
     @property
     def facts(self):
         facts = super(UWSGIApplicationStack, self).facts
-        facts.update({'server_id': 'worker%s' % uwsgi.worker_id() if uwsgi.mule_id() == 0 else 'mule%s' % uwsgi.mule_id()})
+        if not self._is_mule:
+            facts.update({
+                'pool_name': 'web',
+                'server_id': uwsgi.worker_id(),
+            })
+        else:
+            facts.update({
+                'pool_name': self._farm_name,
+                'server_id': uwsgi.mule_id(),
+            })
+        facts['instance_id'] = self.instance_id
         return facts
 
     def shutdown(self):
