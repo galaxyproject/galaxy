@@ -54,7 +54,46 @@
                     <tr v-if="jobData.tool_path && !jobData.hda_purged"><td>Full Path:</td><td> {{ jobData.hda_filename }} </td></tr>
                 </tbody>
             </table>
+        <h3>Inheritance Chain</h3>
+        <div class="inherit inherit-chain"> {{ hdaData.name }} </div>
+        <div v-for="dep in inheritChain">
+            <div class="inherit-chain-item">&uarr;</div>
+            <div class="inherit">
+                {{ dep[0].name }} in {{ dep[1] } <br/>
+            </div>
+        </div>
+
+        <div v-if="jobData && jobData.command_line && jobData.tool_path">
+            <h3>Command Line</h3>
+            <pre class="code"> {{ jobData.command_line }} </pre>
+        </div>
+
+        <div v-if="jobData && jobData.dependencies.length > 0">
+            <h3>Job Dependencies</h3>
+            <table class="tabletip">
+                <thead>
+                    <tr>
+                        <th>Dependency</th>
+                        <th>Dependency Type</th>
+                        <th>Version</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="dependency in jobData.dependencies">
+                        <td> {{ dependency['name'] }} </td>
+                        <td> {{ dependency['dependency_type'] }} </td>
+                        <td> {{ dependency['version'] }} </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div v-if="hdaData.peek">
+            <h3>Dataset peek</h3>
+            <pre class="dataset-peek"> {{ hdaData.peek }} </pre>
+        </div>
     </div>
+
 </template>
 
 <script>
@@ -72,7 +111,8 @@ export default {
         return {
             toolName: "",
             hdaData: {},
-            jobData: {}
+            jobData: {},
+            inheritChain: []
         };
     },
     created: function() {
@@ -83,6 +123,8 @@ export default {
                 this.toolName = historyData.tool_name;
                 this.hdaData = historyData.hda;
                 this.jobData = historyData.job;
+                this.inheritChain = historyData.inherit_chain
+
             })
             .catch(e => {
                 console.error(e);
@@ -90,3 +132,27 @@ export default {
     },
 }
 </script>
+
+<style>
+
+.inherit {
+    border: 1px solid #bbb;
+    padding: 15px;
+    text-align: center;
+    background-color: #eee;
+}
+
+.inherit-chain {
+    background-color: #fff;
+    font-weight:bold;
+}
+
+.inherit-chain-item {
+    font-size: 36px;
+    text-align: center;
+    position: relative;
+    top: 3px;
+}
+
+</style>
+

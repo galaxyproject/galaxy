@@ -1098,6 +1098,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         hda_data[ "file_size" ] = nice_size( hda.dataset.file_size )
         hda_data[ "db_key" ] = hda.dbkey
         hda_data[ "format" ] = hda.ext
+        hda_data[ "peek" ] = hda.peek
 
         job_data = dict()
         job_data[ "tool_id" ] = job.tool_id
@@ -1117,11 +1118,14 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         job_data[ "tool_path" ] = trans.user_is_admin() or trans.app.config.expose_dataset_path
         job_data[ "hda_purged" ] = hda.purged
         job_data[ "hda_filename" ] = hda.file_name
+        job_data[ "command_line" ] = job.command_line
+        job_data[ "dependencies" ] = job.dependencies
 
         return {
             'tool_name': tool.name if tool else 'Unknown tool',
             'hda': hda_data,
-            'job': job_data
+            'job': job_data,
+            'inherit_chain': inherit_chain
         }
 
     @web.expose
