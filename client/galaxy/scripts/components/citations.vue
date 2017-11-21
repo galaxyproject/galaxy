@@ -59,7 +59,7 @@ export default {
     },
     computed: {
         formattedReferences: function() {
-            return this.citations.reduce((a, b) => a.concat(`<p>${this.formattedReference(b)}</p>`), "");
+            return this.citations.reduce((a, b) => a.concat(`<p class="formatted-reference">${this.formattedReference(b)}</p>`), "");
         }
     },
     created: function() {
