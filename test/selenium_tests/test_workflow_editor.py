@@ -24,6 +24,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
     @selenium_test
     def test_data_input(self):
         self.workflow_create_new()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
         menu = self.wait_for_selector(".toolMenu")
         self.sleep_for(self.wait_types.UX_RENDER)
         inputs_section = menu.find_element_by_css_selector("#title___workflow__inputs__")
