@@ -217,8 +217,13 @@ class JobConfiguration(object, ConfiguresHandlers):
             self.default_handler_id = self._get_default(self.app.config, handlers_conf, list(self.handlers.keys()))
         except Exception:
             pass
+        # For tets, this may not exist
+        try:
+            base_server_name = self.app.config.base_server_name
+        except AttributeError:
+            base_server_name = self.app.config.get('base_server_name', None)
         if (self.default_handler_id is None
-                or (len(self.handlers) == 1 and self.app.config.base_server_name == self.handlers.keys()[0])):
+                or (len(self.handlers) == 1 and base_server_name == self.handlers.keys()[0])):
             # Shortcut for compatibility with existing job confs that use the default handlers block,
             # there are no defined handlers, or there's only one handler and it's this server
             self.__set_default_job_handler()
