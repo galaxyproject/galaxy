@@ -9,9 +9,9 @@ import os
 import re
 import sys
 from functools import reduce
-from galaxy import util
-
 from yaml import load
+
+from galaxy import util
 
 __version__ = '1.0.0'
 
