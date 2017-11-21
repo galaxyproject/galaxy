@@ -11,13 +11,11 @@
                 Hide BibTeX
             </button>
         </div>
-        <div class="toolFormBody citation-padding">
+        <div class="citations-bibtex toolFormBody citation-padding">
             <div v-if="source === 'histories'" class="infomessage">
                 When writing up your analysis, remember to include all references that should be cited in order
                 to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
             </div>
-        </div>
-        <div class="citations-bibtex toolFormBody citation-padding">
             <span v-if="viewRender" class="citations-formatted">
                 <p v-html="formattedReferences">
                 </p>
