@@ -49,7 +49,6 @@
 
     <script type='text/javascript'>
         $( function() {
-            workflow_view = null;
             workflowApp(${h.dumps(self.editor_config)});
         });
     </script>
@@ -202,11 +201,11 @@
                 <div class="toolTitleNoSection">
             %endif
                 %if "[[" in tool.description and "]]" in tool.description:
-                    ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="workflow_view.add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
+                    ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="workflow_globals.app.add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
                 %elif tool.name:
-                    <a id="link-${tool.id}" href="#" onclick="workflow_view.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
+                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
                 %else:
-                    <a id="link-${tool.id}" href="#" onclick="workflow_view.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
+                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
                 %endif
             </div>
         %else:
@@ -248,7 +247,7 @@
         <div class="toolSectionBg">
             %for module in module_section["modules"]:
                 <div class="toolTitle">
-                    <a href="#" onclick="workflow_view.add_node_for_module( '${module['name']}', '${module['title']}' )">
+                    <a href="#" onclick="workflow_globals.app.add_node_for_module( '${module['name']}', '${module['title']}' )">
                         ${module['description']}
                     </a>
                 </div>
