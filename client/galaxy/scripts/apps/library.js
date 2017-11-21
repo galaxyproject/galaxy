@@ -1,7 +1,7 @@
 import GalaxyLibrary from "galaxy.library";
 
-export function tracksterApp(options) {
+export function App(options) {
     new GalaxyLibrary.GalaxyApp(options);
 }
 
-window.libraryApp = tracksterApp;
+window.libraryApp = App;
