@@ -90,10 +90,9 @@ steps:
         form_element = self.driver.find_element_by_id("submit")
         name = name or self._get_random_name()
         annotation = annotation or self._get_random_name()
-        el_name = self.driver.find_element_by_css_selector("[tour_id=workflow_name] input")
-        el_name.send_keys(name)
-        el_annotation = self.driver.find_element_by_css_selector("[tour_id=workflow_annotation] input")
-        el_annotation.send_keys(annotation)
+        inputs = self.driver.find_elements_by_class_name("ui-input")
+        inputs[0].send_keys(name)
+        inputs[1].send_keys(annotation)
         form_element.click()
 
     @retry_assertion_during_transitions
