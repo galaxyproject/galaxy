@@ -58,10 +58,10 @@ var HistoryContentMixin = {
         var historyId = this.get("history_id");
         var historyContentId = this.get("id");
         var url = `${this.urlRoot}${historyId}/contents/${historyContentType}s/${historyContentId}`;
-        if ( historyContentType == "dataset_collection" ) {
+        if (historyContentType == "dataset_collection") {
             // Don't fetch whole collection - just enought to render outline. Backbone will
             // make a detailed request if any datasets are expanded beyond that point.
-            url = `${url}?view=element-reference`;
+            url = `${url}?view=element-reference&fuzzy_count=1000`;
         }
         return url;
     },

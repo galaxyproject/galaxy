@@ -127,9 +127,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         return rval
 
-    def __collection_dict(self, trans, dataset_collection_instance, view="collection"):
+    def __collection_dict(self, trans, dataset_collection_instance, **kwds):
         return dictify_dataset_collection_instance(dataset_collection_instance,
-            security=trans.security, parent=dataset_collection_instance.history, view=view)
+            security=trans.security, parent=dataset_collection_instance.history, **kwds)
 
     @expose_api_anonymous
     def show(self, trans, id, history_id, **kwd):
@@ -146,12 +146,27 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         :type   history_id: str
         :param  history_id: encoded id string of the HDA's or HDCA's History
         :type   view:       str
-        :param  view:       view style of the dataset collection to produce,
+        :param  view:       if fetching a dataset collection - the view style of
+                            the dataset collection to produce.
                             'collection' returns no element information, 'element'
                             returns detailed element information for all datasets,
                             'element-reference' returns a minimal set of information
                             about datasets (for instance id, type, and state but not
-                            metadata, peek, info, or name).
+                            metadata, peek, info, or name). The default is 'element'.
+        :type  fuzzy_count: int
+        :param fuzzy_count: this value can be used to broadly restrict the magnitude
+                            of the number of elements returned via the API for large
+                            collections. The number of actual elements returned may
+                            be "a bit" more than this number or "a lot" less - varying
+                            on the depth of nesting, balance of nesting at each level,
+                            and size of target collection. The consumer of this API should
+                            not expect a stable number or pre-calculable number of
+                            elements to be produced given this parameter - the only
+                            promise is that this API will not respond with an order
+                            of magnitude more elements estimated with this value.
+                            The UI uses this parameter to fetch a "balanced" concept of
+                            the "start" of large collections at every depth of the
+                            collection.
 
         :rtype:     dict
         :returns:   dictionary containing detailed HDA or HDCA information
@@ -250,7 +265,10 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def __show_dataset_collection(self, trans, id, history_id, **kwd):
         dataset_collection_instance = self.__get_accessible_collection(trans, id, history_id)
         view = kwd.get("view", "element")
-        return self.__collection_dict(trans, dataset_collection_instance, view=view)
+        fuzzy_count = kwd.get("fuzzy_count", None)
+        if fuzzy_count:
+            fuzzy_count = int(fuzzy_count)
+        return self.__collection_dict(trans, dataset_collection_instance, view=view, fuzzy_count=fuzzy_count)
 
     def __get_accessible_collection(self, trans, id, history_id):
         return trans.app.dataset_collections_service.get_dataset_collection_instance(
