@@ -19,21 +19,21 @@ class WebhooksApiTestCase(api.ApiTestCase):
         for expected_name in ["history_test1", "history_test2", "masthead_test", "phdcomics", "trans_object", "xkcd"]:
             assert expected_name in names
 
-    def test_get_random(self):
-        response = self._get('webhooks/tool')
-        self._assert_status_code_is(response, 200)
-        self._assert_is_webhook(response.json())
-
     def test_get_all_by_type(self):
         # Ensure tool type filtering include a valid webhook of type tool and excludes a webhook
         # that isn't of type tool.
-        response = self._get('webhooks/tool/all')
+        response = self._get('webhooks/tool')
 
         self._assert_status_code_is(response, 200)
         webhook_objs = self._assert_are_webhooks(response)
         names = self._get_webhook_names(webhook_objs)
         assert "phdcomics" in names
         assert "trans_object" not in names  # properly filtered out by type
+
+    def test_get_random(self):
+        response = self._get('webhooks/tool/random')
+        self._assert_status_code_is(response, 200)
+        self._assert_is_webhook(response.json())
 
     def test_get_data(self):
         response = self._get('webhooks/trans_object/get_data')

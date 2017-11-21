@@ -3,7 +3,7 @@ API Controller providing Galaxy Webhooks
 """
 import imp
 import logging
-import random
+import numpy as np
 
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as \
     expose_api_anonymous_and_sessionless
@@ -28,9 +28,21 @@ class WebhooksController(BaseAPIController):
         ]
 
     @expose_api_anonymous_and_sessionless
-    def get_random(self, trans, webhook_type, **kwd):
+    def get_all_by_type(self, trans, webhook_type, **kwd):
         """
         *GET /api/webhooks/{webhook_type}
+        Returns all webhooks for a given type
+        """
+        return [
+            webhook.to_dict()
+            for webhook in self.app.webhooks_registry.webhooks
+            if webhook_type in webhook.type
+        ]
+
+    @expose_api_anonymous_and_sessionless
+    def get_random(self, trans, webhook_type, **kwd):
+        """
+        *GET /api/webhooks/{webhook_type}/random
         Returns a random webhook for a given type
         """
         webhooks = [
@@ -39,19 +51,15 @@ class WebhooksController(BaseAPIController):
             if webhook_type in webhook.type and
             webhook.activate is True
         ]
-        return random.choice(webhooks).to_dict() if webhooks else {}
 
-    @expose_api_anonymous_and_sessionless
-    def get_all_by_type(self, trans, webhook_type, **kwd):
-        """
-        *GET /api/webhooks/{webhook_type}/all
-        Returns all webhooks for a given type
-        """
-        return [
-            webhook.to_dict()
-            for webhook in self.app.webhooks_registry.webhooks
-            if webhook_type in webhook.type
-        ]
+        weights = np.array([float(w.weight) for w in webhooks])
+        if len(set(weights)) == 1:
+            normalized_weights = None  # uniform distribution
+        else:
+            normalized_weights = weights / sum(weights)
+
+        return np.random.choice(webhooks, p=normalized_weights).to_dict() \
+            if webhooks else {}
 
     @expose_api_anonymous_and_sessionless
     def get_data(self, trans, webhook_name, **kwd):

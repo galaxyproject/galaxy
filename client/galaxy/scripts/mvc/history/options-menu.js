@@ -171,7 +171,7 @@ var menu = [
 
 // Webhooks
 Webhooks.add({
-    url: "api/webhooks/history-menu/all",
+    url: "api/webhooks/history-menu",
     async: false, // (hypothetically) slows down the performance
     callback: function(webhooks) {
         var webhooks_menu = [];

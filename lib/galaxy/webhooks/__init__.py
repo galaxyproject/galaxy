@@ -12,9 +12,10 @@ log = logging.getLogger(__name__)
 
 
 class Webhook(object):
-    def __init__(self, w_name, w_type, w_activate, w_path):
+    def __init__(self, w_name, w_type, w_weight, w_activate, w_path):
         self.name = w_name
         self.type = w_type
+        self.weight = w_weight
         self.activate = w_activate
         self.path = w_path
         self.styles = ''
@@ -66,10 +67,17 @@ class WebhooksRegistry(object):
             with open(os.path.join(config_dir, config_file)) as file:
                 config = yaml.safe_load(file)
                 path = os.path.normpath(os.path.join(config_dir, '..'))
+                weight = config.get('weight', 1)
+
+                if weight < 1:
+                    raise ValueError(
+                        'Webhook weight must be greater or equal 1.')
+
                 webhook = Webhook(
                     config['name'],
                     config['type'],
-                    config['activate'],
+                    weight,
+                    config.get('activate', False),
                     path,
                 )
 

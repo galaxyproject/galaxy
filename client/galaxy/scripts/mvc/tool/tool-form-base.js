@@ -199,7 +199,7 @@ export default FormBase.extend({
         }
 
         // add tool menu webhooks
-        $.getJSON("/api/webhooks/tool-menu/all", webhooks => {
+        $.getJSON("/api/webhooks/tool-menu", webhooks => {
             _.each(webhooks, webhook => {
                 if (webhook.activate && webhook.config.function) {
                     menu_button.addMenu({
