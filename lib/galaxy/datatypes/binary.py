@@ -1808,7 +1808,7 @@ class ICM(Binary):
             dataset.blurb = 'file purged from disk'
 
     def sniff(self, dataset):
-        line = open(dataset).readline()
+        line = open(dataset).read(100)
         if '>ver = ' in line and 'len = ' in line and 'depth = ' in line and 'periodicity =' in line and 'nodes = ' in line:
             return True
 
