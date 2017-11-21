@@ -76,6 +76,13 @@ Run all selenium tests (Under Linux using Docker):
 Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver):
     ./run_tests.sh -selenium test/selenium_tests/test_registration.py:RegistrationTestCase.test_reregister_username_fails
 
+Run a selenium test against a running server while watching client (fastest iterating on client tests):
+    ./run.sh & # run Galaxy on 8080
+    make client-watch & # watch for client changes
+    export GALAXY_TEST_EXTERNAL=http://localhost:8080/  # Target tests at server.
+    . .venv/bin/activate # source the virtualenv so can skip run_tests.sh.
+    nosetests test/selenium_tests/test_workflow_editor.py:WorkflowEditorTestCase.test_data_input   
+
 Note About Selenium Tests:
 
 If using a local selenium driver such as a Chrome or Firefox based one

@@ -341,6 +341,10 @@ def populate_api_routes(webapp, app):
                           "/api/whoami", controller='configuration',
                           action='whoami',
                           conditions=dict(method=["GET"]))
+    webapp.mapper.connect("api_decode",
+                          "/api/configuration/decode/{encoded_id}", controller='configuration',
+                          action='decode_id',
+                          conditions=dict(method=["GET"]))
     webapp.mapper.resource('datatype',
                            'datatypes',
                            path_prefix='/api',
