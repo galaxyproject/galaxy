@@ -139,6 +139,13 @@ history_panel:
     options_menu: '#history-options-button-menu'
     multi_view_button: '#history-view-multi-button'
 
+    pagination_pages: '.list-pagination .pages'
+    pagination_pages_options: '.list-pagination .pages option'
+    pagination_pages_selected_option: '.list-pagination .pages option:checked'
+    pagination_next: '.list-pagination button.next'
+    pagination_previous: '.list-pagination button.prev'
+
+
   text:
     tooltip_name: 'Click to rename history'
     new_name: 'Unnamed history'

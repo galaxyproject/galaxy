@@ -155,6 +155,14 @@ class NavigatesGalaxy(HasDriver):
         self.driver.switch_to.frame("galaxy_main")
 
     @contextlib.contextmanager
+    def local_storage(self, key, value):
+        self.driver.execute_script('''window.localStorage.setItem("%s", %s);''' % (key, value))
+        try:
+            yield
+        finally:
+            self.driver.execute_script('''window.localStorage.removeItem("%s");''' % key)
+
+    @contextlib.contextmanager
     def main_panel(self):
         try:
             self.switch_to_main_panel()
