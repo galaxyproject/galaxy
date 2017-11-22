@@ -35,7 +35,6 @@
     "webpack": "webpack -d",
     "webpack-watch": "webpack -d --watch",
     "webpack-production": "webpack -p",
-    "webpack-production-watch": "webpack -p --watch",
     "style": "grunt style",
     "style-watch": "grunt watch-style",
     "test": "karma start --verbose --single-run --no-auto-watch karma.config.js",
