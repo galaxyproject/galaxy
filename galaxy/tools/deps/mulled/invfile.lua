@@ -42,7 +42,7 @@ end
 
 local conda_image = VAR.CONDA_IMAGE
 if conda_image == '' then
-    conda_image = 'continuumio/miniconda:latest'
+    conda_image = 'continuumio/miniconda3:latest'
 end
 
 
