@@ -50,13 +50,10 @@ class Html(Text):
         True
         """
         headers = iter_headers(filename, None)
-        try:
-            for i, hdr in enumerate(headers):
-                if hdr and hdr[0].lower().find('<html>') >= 0:
-                    return True
-            return False
-        except Exception:
-            return True
+        for i, hdr in enumerate(headers):
+            if hdr and hdr[0].lower().find('<html>') >= 0:
+                return True
+        return False
 
 
 class Json(Text):
