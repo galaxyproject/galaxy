@@ -105,7 +105,8 @@ def paste_app_factory(global_conf, **kwargs):
     webapp.add_client_route('/admin/repositories', 'admin')
     webapp.add_client_route('/admin/tool_versions', 'admin')
     webapp.add_client_route('/admin/quotas', 'admin')
-    webapp.add_client_route('/admin/form/{form_id}', 'admin')
+    webapp.add_client_route('/admin/forms/{form_id}', 'admin')
+    webapp.add_client_route('/admin/api_keys', 'admin')
     webapp.add_client_route('/tours')
     webapp.add_client_route('/tours/{tour_id}')
     webapp.add_client_route('/user')
@@ -119,6 +120,7 @@ def paste_app_factory(global_conf, **kwargs):
     webapp.add_client_route('/pages/list_published')
     webapp.add_client_route('/pages/create')
     webapp.add_client_route('/pages/edit')
+    webapp.add_client_route('/histories/citations')
     webapp.add_client_route('/histories/list')
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')
@@ -338,6 +340,10 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect("api_whoami",
                           "/api/whoami", controller='configuration',
                           action='whoami',
+                          conditions=dict(method=["GET"]))
+    webapp.mapper.connect("api_decode",
+                          "/api/configuration/decode/{encoded_id}", controller='configuration',
+                          action='decode_id',
                           conditions=dict(method=["GET"]))
     webapp.mapper.resource('datatype',
                            'datatypes',

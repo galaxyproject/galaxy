@@ -38,12 +38,17 @@ var commonLibs = [
 ];
 
 module.exports = {
-    devtool: "source-map",
+    //devtool: "source-map",
     entry: {
         libs: commonLibs,
         login: "./galaxy/scripts/apps/login.js",
         analysis: "./galaxy/scripts/apps/analysis.js",
-        admin: "./galaxy/scripts/apps/admin.js"
+        admin: "./galaxy/scripts/apps/admin.js",
+        workflow: "./galaxy/scripts/apps/workflow.js",
+        masthead: "./galaxy/scripts/apps/masthead.js",
+        viz: "./galaxy/scripts/apps/viz.js",
+        library: "./galaxy/scripts/apps/library.js",
+        adminToolshed: "./galaxy/scripts/apps/admin-toolshed.js"
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
@@ -78,10 +83,10 @@ module.exports = {
                     }
                 ]
             },
-            {
+              {
                 test: /\.vue$/,
                 loader: 'vue-loader',
-            }
+              }
         ]
     },
     node: {
