@@ -48,12 +48,12 @@ gulp.task('scripts', function() {
   return gulp.src(paths.scripts)
     .pipe(plumber())
     .pipe(cached('scripts'))
-    .pipe(sourcemaps.init())
+    //.pipe(sourcemaps.init())
     .pipe(babel({
         plugins: ['transform-es2015-modules-amd']
     }))
     .pipe(gulpif(nopack_mode, beautify(), uglify()))
-    .pipe(sourcemaps.write('../maps/'))
+    //.pipe(sourcemaps.write('../maps/'))
     .pipe(gulp.dest('../static/scripts/'));
 });
 
