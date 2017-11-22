@@ -16,16 +16,19 @@ import six
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
-from galaxy.util import compression_utils
-from galaxy.util import FILENAME_VALID_CHARS
-from galaxy.util import inflector
-from galaxy.util import unicodify
+from galaxy.util import (
+    compression_utils,
+    FILENAME_VALID_CHARS,
+    inflector,
+    unicodify
+)
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
-
-from . import dataproviders
-from . import metadata
+from . import (
+    dataproviders,
+    metadata
+)
 
 XSS_VULNERABLE_MIME_TYPES = [
     'image/svg+xml',  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.

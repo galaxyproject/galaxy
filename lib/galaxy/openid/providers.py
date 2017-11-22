@@ -1,9 +1,9 @@
 """
 Contains OpenID provider functionality
 """
-
-import os
 import logging
+import os
+
 from galaxy.util import parse_xml, string_as_bool
 from galaxy.util.odict import odict
 

@@ -2,11 +2,10 @@
 Middleware that profiles the request with cProfile and displays profiling
 information at the bottom of each page.
 """
-
-import threading
 import cgi
 import cProfile
 import pstats
+import threading
 
 from paste import response
 

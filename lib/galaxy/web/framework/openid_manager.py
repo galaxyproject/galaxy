@@ -2,15 +2,15 @@
 Manage the OpenID consumer and related data stores.
 """
 
+import logging
 import os
 import pickle
-import logging
 
 try:
     from openid import oidutil
-    from openid.store import filestore
     from openid.consumer import consumer
     from openid.extensions import sreg
+    from openid.store import filestore
 except ImportError:
     oidutil = None
 

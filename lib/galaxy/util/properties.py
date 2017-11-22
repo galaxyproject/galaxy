@@ -7,7 +7,6 @@ import os.path
 import sys
 
 import yaml
-
 from six import iteritems
 from six.moves.configparser import ConfigParser
 

@@ -3,7 +3,6 @@ import logging
 import re
 
 from galaxy import util
-
 from ..instrumenters import InstrumentPlugin
 from ...metrics import formatting
 

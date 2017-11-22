@@ -21,17 +21,17 @@ import sys
 import tempfile
 import threading
 import time
-try:
-    import grp
-except ImportError:
-    # For Pulsar on Windows (which does not use the function that uses grp)
-    grp = None
-
 from datetime import datetime
 from hashlib import md5
 from os.path import relpath
 from xml.etree import ElementInclude, ElementTree
 from xml.etree.ElementTree import ParseError
+
+try:
+    import grp
+except ImportError:
+    # For Pulsar on Windows (which does not use the function that uses grp)
+    grp = None
 
 from six import binary_type, iteritems, string_types, text_type
 from six.moves import email_mime_multipart, email_mime_text, xrange, zip
@@ -862,13 +862,25 @@ def string_as_bool_or_none(string):
 
 def listify(item, do_strip=False):
     """
-    Make a single item a single item list, or return a list if passed a
-    list.  Passing a None returns an empty list.
+    Make a single item a single item list.
+
+    If *item* is a string, it is split on comma (``,``) characters to produce the list. Optionally, if *do_strip* is
+    true, any extra whitespace around the split items is stripped.
+
+    If *item* is a list it is returned unchanged. If *item* is a tuple, it is converted to a list and returned. If
+    *item* evaluates to False, an empty list is returned.
+
+    :type  item:        object
+    :param item:        object to make a list from
+    :type  do_strip:    bool
+    :param do_strip:    strip whitespaces from around split items, if set to ``True``
+    :rtype:             list
+    :returns:           The input as a list
     """
     if not item:
         return []
-    elif isinstance(item, list):
-        return item
+    elif isinstance(item, list) or isinstance(item, tuple):
+        return list(item)
     elif isinstance(item, string_types) and item.count(','):
         if do_strip:
             return [token.strip() for token in item.split(',')]

@@ -204,10 +204,10 @@ class WorkflowRequestMonitor(Monitors, object):
         sa_session = self.app.model.context
         workflow_invocation = sa_session.query(model.WorkflowInvocation).get(invocation_id)
 
-        if not workflow_invocation or not workflow_invocation.active:
-            return False
-
         try:
+            if not workflow_invocation or not workflow_invocation.active:
+                return False
+
             # This ensures we're only ever working on the 'first' active
             # workflow invocation in a given history, to force sequential
             # activation.
@@ -220,6 +220,8 @@ class WorkflowRequestMonitor(Monitors, object):
             # TODO: eventually fail this - or fail it right away?
             log.exception("Exception raised while attempting to schedule workflow request.")
             return False
+        finally:
+            sa_session.expunge_all()
 
         # A workflow was obtained and scheduled...
         return True

@@ -7,21 +7,26 @@ The module is named rods to avoid conflicting with the PyRods module, irods
 import logging
 import os
 import time
-
-from posixpath import basename as path_basename
-from posixpath import dirname as path_dirname
-from posixpath import join as path_join
-
-from galaxy.exceptions import ObjectInvalid, ObjectNotFound
-from galaxy.util import safe_relpath
-
-from ..objectstore import DiskObjectStore, local_extra_dirs
+from posixpath import (
+    basename as path_basename,
+    dirname as path_dirname,
+    join as path_join
+)
 
 try:
     import irods
 except ImportError:
     irods = None
 
+from galaxy.exceptions import (
+    ObjectInvalid,
+    ObjectNotFound
+)
+from galaxy.util.path import safe_relpath
+from ..objectstore import (
+    DiskObjectStore,
+    local_extra_dirs
+)
 
 IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this '
                         'feature, please install it')

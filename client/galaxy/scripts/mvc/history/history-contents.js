@@ -267,7 +267,6 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     /** fetch all the deleted==true contents of this collection */
     fetchDeleted: function(options) {
         options = options || {};
-        var self = this;
         options.filters = _.extend(options.filters, {
             // all deleted, purged or not
             deleted: true,
@@ -275,9 +274,9 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         });
         options.remove = false;
 
-        self.trigger("fetching-deleted", self);
-        return self.fetch(options).always(() => {
-            self.trigger("fetching-deleted-done", self);
+        this.trigger("fetching-deleted", this);
+        return this.fetch(options).always(() => {
+            this.trigger("fetching-deleted-done", this);
         });
     },
 

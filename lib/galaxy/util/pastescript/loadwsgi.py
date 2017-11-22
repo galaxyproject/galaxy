@@ -9,7 +9,6 @@ import re
 import sys
 
 import pkg_resources
-
 from six import iteritems
 from six.moves.urllib.parse import unquote
 

@@ -3,8 +3,9 @@ Middleware for sending request statistics to graphite
 """
 from __future__ import absolute_import
 
-import time
 import logging
+import time
+
 log = logging.getLogger(__name__)
 
 try:

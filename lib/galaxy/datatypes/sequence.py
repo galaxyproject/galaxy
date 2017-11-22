@@ -30,9 +30,7 @@ from galaxy.util.checkers import (
     is_bz2,
     is_gzip
 )
-
 from galaxy.util.image_util import check_image_type
-
 from . import data
 
 if sys.version_info > (3,):

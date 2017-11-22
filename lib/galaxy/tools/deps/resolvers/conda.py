@@ -9,7 +9,6 @@ import re
 
 import galaxy.tools.deps.installable
 import galaxy.tools.deps.requirements
-
 from ..conda_util import (
     build_isolated_environment,
     cleanup_failed_install,

@@ -2,21 +2,25 @@
 Manager and Serializer for Datasets.
 """
 import glob
+import logging
 import os
+
 from six import string_types
 
-from galaxy import model
-from galaxy import exceptions
 import galaxy.datatypes.metadata
+from galaxy import (
+    exceptions,
+    model
+)
+from galaxy.managers import (
+    base,
+    deletable,
+    rbac_secured,
+    roles,
+    secured,
+    users
+)
 
-from galaxy.managers import base
-from galaxy.managers import secured
-from galaxy.managers import deletable
-from galaxy.managers import roles
-from galaxy.managers import rbac_secured
-from galaxy.managers import users
-
-import logging
 log = logging.getLogger(__name__)
 
 

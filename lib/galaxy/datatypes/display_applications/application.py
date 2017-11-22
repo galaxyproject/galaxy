@@ -12,7 +12,6 @@ from galaxy.util import (
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
-
 from .parameters import (
     DEFAULT_DATASET_NAME,
     DisplayApplicationDataParameter,

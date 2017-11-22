@@ -33,9 +33,6 @@
                 %if repository.can_reset_metadata:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='reset_repository_metadata', id=trans.security.encode_id( repository.id ) )}">Reset repository metadata</a>
                 %endif
-                %if repository.includes_tools:
-                    <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='set_tool_versions', id=trans.security.encode_id( repository.id ) )}">Set tool versions</a>
-                %endif
                 %if tool_dependency_ids:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', tool_dependency_ids=tool_dependency_ids, repository_id=trans.security.encode_id( repository.id ) )}">Manage tool dependencies</a>
                 %endif

@@ -4,20 +4,23 @@ Manager and Serializer for HDAs.
 HistoryDatasetAssociations (HDAs) are datasets contained or created in a
 history.
 """
-
-import os
 import gettext
-
-from galaxy import model
-from galaxy import exceptions
-from galaxy import datatypes
-from galaxy.managers import datasets
-from galaxy.managers import secured
-from galaxy.managers import taggable
-from galaxy.managers import annotatable
-from galaxy.managers import users
-
 import logging
+import os
+
+from galaxy import (
+    datatypes,
+    exceptions,
+    model
+)
+from galaxy.managers import (
+    annotatable,
+    datasets,
+    secured,
+    taggable,
+    users
+)
+
 log = logging.getLogger(__name__)
 
 

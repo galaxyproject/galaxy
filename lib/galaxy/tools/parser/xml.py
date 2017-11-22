@@ -3,13 +3,11 @@ import re
 import sys
 import traceback
 import uuid
-
 from math import isinf
 
 from galaxy.tools.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
-
 from .interface import (
     InputSource,
     PageSource,
@@ -129,12 +127,13 @@ class XmlToolSource(ToolSource):
         return environment_variables
 
     def parse_interpreter(self):
+        interpreter = None
         command_el = self._command_el
-        interpreter = (command_el is not None) and command_el.get("interpreter", None)
-        if not self.legacy_defaults:
-            log.warning("Deprecated interpeter attribute on command element is now ignored.")
+        if command_el is not None:
+            interpreter = command_el.get("interpreter", None)
+        if interpreter and not self.legacy_defaults:
+            log.warning("Deprecated interpreter attribute on command element is now ignored.")
             interpreter = None
-
         return interpreter
 
     def parse_version_command(self):

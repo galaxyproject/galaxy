@@ -9,6 +9,19 @@ import logging
 import string
 import sys
 from numbers import Number
+from types import (
+    BuiltinFunctionType,
+    BuiltinMethodType,
+    CodeType,
+    FrameType,
+    FunctionType,
+    GeneratorType,
+    GetSetDescriptorType,
+    MemberDescriptorType,
+    MethodType,
+    ModuleType,
+    TracebackType,
+)
 
 try:
     from types import NoneType
@@ -44,20 +57,6 @@ except ImportError:
     # so they are __WRAP_NO_SUBCLASS__.
     BufferType = SliceType
     DictProxyType = SliceType
-
-from types import (
-    BuiltinFunctionType,
-    BuiltinMethodType,
-    CodeType,
-    FrameType,
-    FunctionType,
-    GeneratorType,
-    GetSetDescriptorType,
-    MemberDescriptorType,
-    MethodType,
-    ModuleType,
-    TracebackType,
-)
 
 from six.moves import (
     copyreg as copy_reg,
