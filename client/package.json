@@ -32,7 +32,7 @@
     "watch": "gulp stage-libs && concurrently \"yarn run webpack-watch\" \"yarn run gulp watch\" \"yarn run style-watch\"",
     "build": "NODE_ENV=development gulp stage-libs && concurrently \"yarn run style\" \"yarn run webpack-dev\" \"yarn run gulp clean && yarn run gulp\"",
     "build-production": "gulp stage-libs && concurrently \"yarn run style\" \"yarn run webpack\" \"yarn run gulp clean && yarn run gulp-prod\"",
-    "webpack": "webpack",
+    "webpack": "webpack -p",
     "webpack-watch": "webpack -p --watch",
     "webpack-dev": "webpack -d",
     "webpack-dev-watch": "webpack -d --watch",
