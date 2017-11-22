@@ -459,7 +459,13 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
     else:
         search_cmd.extend(conda_context._override_channels_args)
     search_cmd.append(conda_target.package)
-    res = commands.execute(search_cmd)
+
+    try:
+        res = commands.execute(search_cmd)
+    except commands.CommandLineException as e:
+        log.warning(e)
+        return (None, None)
+
     hits = json.loads(res).get(conda_target.package, [])
     hits = sorted(hits, key=lambda hit: LooseVersion(hit['version']), reverse=True)
 
