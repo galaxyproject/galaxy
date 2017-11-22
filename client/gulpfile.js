@@ -40,20 +40,20 @@ var paths = {
     libs: ['galaxy/scripts/libs/**/*.js']
 };
 
-var nopack_mode = function(){
-    return process.env.GXY_NOPACK || false;
+var dev_mode = function(){
+    return process.env.NODE_ENV != "production";
 };
 
 gulp.task('scripts', function() {
   return gulp.src(paths.scripts)
     .pipe(plumber())
     .pipe(cached('scripts'))
-    //.pipe(sourcemaps.init())
+    .pipe(gulpif(dev_mode, sourcemaps.init()))
     .pipe(babel({
         plugins: ['transform-es2015-modules-amd']
     }))
-    .pipe(gulpif(nopack_mode, beautify(), uglify()))
-    //.pipe(sourcemaps.write('../maps/'))
+    .pipe(gulpif(dev_mode, beautify(), uglify()))
+    .pipe(gulpif(dev_mode, sourcemaps.write('../maps/')))
     .pipe(gulp.dest('../static/scripts/'));
 });
 

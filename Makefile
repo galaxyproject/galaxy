@@ -131,6 +131,9 @@ node-deps: ## Install NodeJS dependencies.
 client: node-deps ## Rebuild all client-side artifacts
 	cd client && yarn run build
 
+client-production: node-deps
+	cd client && yarn run build-production
+
 client-format: node-deps ## Reformat client code
 	cd client && yarn run prettier
 
