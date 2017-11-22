@@ -36,7 +36,7 @@ def main(argv=None):
     args = parser.parse_args()
     for (targets, image_build, name_override) in generate_targets(args.files):
         try:
-            mull_targets(
+            ret = mull_targets(
                 targets,
                 image_build=image_build,
                 name_override=name_override,
@@ -44,6 +44,9 @@ def main(argv=None):
             )
         except BuildExistsException:
             continue
+        if ret > 0:
+            sys.exit(ret)
+        
 
 
 def generate_targets(target_source):
