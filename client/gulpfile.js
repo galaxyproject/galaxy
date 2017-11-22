@@ -16,8 +16,9 @@ var paths = {
     node_modules: './node_modules',
     scripts: [
         'galaxy/scripts/**/*.js',
-        '!galaxy/scripts/apps/**/*.js',
-        '!galaxy/scripts/libs/**/*.js'
+        '!galaxy/scripts/qunit/**/*',
+        '!galaxy/scripts/apps/**/*',
+        '!galaxy/scripts/libs/**/*'
     ],
     lib_locs: {
         // This is a stepping stone towards having all this staged
@@ -25,7 +26,7 @@ var paths = {
         // not be necessary.
         'backbone': [ 'backbone.js', 'backbone.js' ],
         'd3': [ 'd3.js', 'd3.js' ],
-        'bib2json': [ 'Parser.js', 'bibtex.js' ],
+        'bibtex-parse-js': [ 'bibtexParse.js', 'bibtexParse.js' ],
         'jquery': ['dist/jquery.js', 'jquery/jquery.js'],
         'jquery.complexify':     [ 'jquery.complexify.js', 'jquery/jquery.complexify.js' ],
         'jquery.cookie': [ 'jquery.cookie.js', 'jquery/jquery.cookie.js' ],
@@ -34,6 +35,7 @@ var paths = {
         'raven-js': ['dist/raven.js', 'raven.js'],
         'requirejs': [ 'require.js', 'require.js' ],
         'underscore': [ 'underscore.js', 'underscore.js' ],
+        'vue': [ 'dist/vue.js', 'vue.js' ]
     },
     libs: ['galaxy/scripts/libs/**/*.js']
 };
