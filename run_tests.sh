@@ -19,13 +19,11 @@ cat <<EOF
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
 '${0##*/} -unit'                    for running all unit tests (doctests and tests in test/unit)
 '${0##*/} -unit (test_path)'        for running unit tests on specified test path
-'${0##*/} -qunit'                   for running qunit JavaScript tests
-'${0##*/} -qunit testname'          for running single JavaScript test with given name
 '${0##*/} -selenium'                for running all selenium web tests (in test/selenium_tests)
 '${0##*/} -selenium (test_path)'    for running specified selenium web tests (use nosetest path)
 
 This wrapper script largely serves as a point documentation and convenience -
-most tests shipped with Galaxy can be run with nosetests or qunit directly.
+most tests shipped with Galaxy can be run with nosetests directly.
 
 The main test types are as follows:
 
@@ -42,7 +40,7 @@ The main test types are as follows:
 - Unit: These are Python unit tests either defined as doctests or inside of
    test/unit. These should generally not require a Galaxy instance and should
    quickly test just a component or a few components of Galaxy's backend code.
-- QUnit: These are JavaScript unit tests defined in test/qunit.
+- QUnit: These are JavaScript unit tests defined in client/galaxy/scripts/qunit.
 - Selenium: These are full stack tests meant to test the Galaxy UI with real
    browsers and are located in test/selenium_tests.
 - ToolShed: These are web tests that use the older Python web testing
@@ -260,20 +258,6 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-ensure_grunt_for_qunit() {
-    if ! exists "grunt";
-    then
-        PATH="$PATH:./test/qunit/node_modules/grunt/bin"
-        export PATH
-        if ! exists "grunt";
-        then
-            echo "Grunt not on path, cannot run these tests."
-            exit 1
-        fi
-    fi
-}
-
-
 DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.01.4'
 
 test_script="./scripts/functional_tests.py"
@@ -281,8 +265,6 @@ report_file="run_functional_tests.html"
 xunit_report_file=""
 structured_data_report_file=""
 with_framework_test_tools_arg=""
-
-driver="python"
 
 if [ "$1" = "--dockerize" ];
 then
@@ -509,18 +491,6 @@ do
               shift 1
           fi
           ;;
-      -q|-qunit|--qunit)
-          # Requires grunt installed and dependencies configured see
-          # test/qunit/README.txt for more information.
-          driver="grunt"
-          gruntfile="./test/qunit/Gruntfile.js"
-          if [ $# -gt 1 ]; then
-              qunit_name=$2
-              shift 2
-          else
-              shift 1
-          fi
-          ;;
       --no_cleanup)
           GALAXY_TEST_NO_CLEANUP=1
           export GALAXY_TEST_NO_CLEANUP
@@ -631,39 +601,22 @@ else
     extra_args='--exclude="^get" functional'
 fi
 
-if [ "$driver" = "python" ]; then
-    if [ -n "$xunit_report_file" ]; then
-        xunit_args="--with-xunit --xunit-file $xunit_report_file"
-    else
-        xunit_args=""
-    fi
-    if [ -n "$structured_data_report_file" ]; then
-        structured_data_args="--with-structureddata --structured-data-file $structured_data_report_file"
-    else
-        structured_data_args=""
-    fi
-    if [ -n "$with_framework_test_tools_arg" ]; then
-        GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
-        export GALAXY_TEST_TOOL_CONF
-    fi
-    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args
-    exit_status=$?
-    echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
-    exit ${exit_status}
+if [ -n "$xunit_report_file" ]; then
+    xunit_args="--with-xunit --xunit-file $xunit_report_file"
 else
-    ensure_grunt_for_qunit
-    if [ -n "$watch" ]; then
-        grunt_task="watch"
-    else
-        grunt_task=""
-    fi
-    if [ -n "$qunit_name" ]; then
-        grunt_args="--test=$qunit_name"
-    else
-        grunt_args=""
-    fi
-    # TODO: Exapnd javascript helpers to include setting up
-    # grunt deps in npm, "watch"ing directory, and running casper
-    # functional tests.
-    grunt --gruntfile=$gruntfile $grunt_task $grunt_args
+    xunit_args=""
 fi
+if [ -n "$structured_data_report_file" ]; then
+    structured_data_args="--with-structureddata --structured-data-file $structured_data_report_file"
+else
+    structured_data_args=""
+fi
+if [ -n "$with_framework_test_tools_arg" ]; then
+    GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+    export GALAXY_TEST_TOOL_CONF
+fi
+python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args
+exit_status=$?
+echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
+exit ${exit_status}
+

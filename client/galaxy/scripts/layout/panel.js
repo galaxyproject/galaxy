@@ -230,7 +230,7 @@ var CenterPanel = Backbone.View.extend({
             this.$panel
                 .empty()
                 .scrollTop(0)
-                .append(view.$el)
+                .append(view.$el || view)
                 .show();
             Galaxy.trigger("center-panel:load", view);
         }

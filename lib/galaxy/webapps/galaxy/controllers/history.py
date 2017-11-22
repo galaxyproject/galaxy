@@ -457,14 +457,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         kwargs['dict_format'] = True
         return self.shared_list_grid(trans, status=status, message=message, **kwargs)
 
-    # ......................................................................... html
-    @web.expose
-    def citations(self, trans):
-        # Get history
-        history = trans.history
-        history_id = trans.security.encode_id(history.id)
-        return trans.fill_template("history/citations.mako", history=history, history_id=history_id)
-
     @web.expose
     def as_xml(self, trans, id=None, show_deleted=None, show_hidden=None):
         """
