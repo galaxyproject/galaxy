@@ -38,7 +38,7 @@ var commonLibs = [
 ];
 
 module.exports = {
-    devtool: "source-map",
+    //devtool: "source-map",
     entry: {
         libs: commonLibs,
         login: "./galaxy/scripts/apps/login.js",
