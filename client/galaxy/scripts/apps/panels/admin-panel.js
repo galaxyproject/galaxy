@@ -69,7 +69,8 @@ var AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: "API keys",
-                        url: "userskeys/all_users"
+                        url: "admin/api_keys",
+                        target: "__use_router__"
                     },
                     {
                         title: "Impersonate a user",

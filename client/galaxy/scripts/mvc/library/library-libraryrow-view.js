@@ -1,6 +1,4 @@
 // dependencies
-import mod_masthead from "layout/masthead";
-import mod_utils from "utils/utils";
 import mod_toastr from "libs/toastr";
 // galaxy library row view
 var LibraryRowView = Backbone.View.extend({
