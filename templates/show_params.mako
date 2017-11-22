@@ -250,7 +250,7 @@ ${ job.command_line | h }</pre>
 
 %if job and (trans.user_is_admin() or trans.app.config.expose_potentially_sensitive_job_metrics):
 <h3>Job Metrics</h3>
-<% job_metrics = trans.app.job_metrics %>
+<% job_metrics = trans.app.job_metrics %> 
 <% plugins = set([metric.plugin for metric in job.metrics]) %>
     %for plugin in sorted(plugins):
     %if trans.user_is_admin() or plugin != 'env':

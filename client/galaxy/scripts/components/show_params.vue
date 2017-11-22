@@ -54,6 +54,7 @@
                     <tr v-if="jobData.tool_path && !jobData.hda_purged"><td>Full Path:</td><td> {{ jobData.hda_filename }} </td></tr>
                 </tbody>
             </table>
+
         <h3>Inheritance Chain</h3>
         <div class="inherit inherit-chain"> {{ hdaData.name }} </div>
         <div v-for="dep in inheritChain">
@@ -68,7 +69,24 @@
             <pre class="code"> {{ jobData.command_line }} </pre>
         </div>
 
-        <div v-if="jobData && jobData.dependencies.length > 0">
+        <div v-if="jobMetrics && jobMetrics.expose_metrics">
+            <h3>Job Metrics</h3>
+            <span v-for="plugin in jobMetrics.plugins">
+                <span v-if="jobData.user_is_admin || plugin != 'env'">
+                    <h4> {{ plugin }} </h4>
+                    <table class="tabletip info_data_table">
+                        <tbody>
+                            <tr v-for="item in jobMetrics.plugin_metric_displays[ plugin ]">
+                                <td> {{ item[ 0 ] }} </td>
+                                <td> {{ item[ 1 ] }} </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </span>
+            </span>   
+        </div>
+
+        <div v-if="jobData && jobData.dependencies && jobData.dependencies.length > 0">
             <h3>Job Dependencies</h3>
             <table class="tabletip">
                 <thead>
@@ -123,8 +141,8 @@ export default {
                 this.toolName = historyData.tool_name;
                 this.hdaData = historyData.hda;
                 this.jobData = historyData.job;
-                this.inheritChain = historyData.inherit_chain
-
+                this.inheritChain = historyData.inherit_chain;
+                this.jobMetrics = historyData.job_metrics;
             })
             .catch(e => {
                 console.error(e);
@@ -153,6 +171,14 @@ export default {
     position: relative;
     top: 3px;
 }
+
+table.info_data_table {
+        table-layout: fixed;
+        word-break: break-word;
+    }
+    table.info_data_table td:nth-child(1) {
+        width: 25%;
+    }
 
 </style>
 

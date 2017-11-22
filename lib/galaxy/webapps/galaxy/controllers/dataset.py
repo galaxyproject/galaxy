@@ -1086,46 +1086,61 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         # TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
 
         # transform hda object to be passed as json
-        hda_data = dict()
         encoded_id = trans.security.encode_id( hda.id )
         encoded_history_id = trans.security.encode_id( hda.history_id )
 
-        hda_data[ "encoded_hda_id" ] = encoded_id
-        hda_data[ "encoded_history_id" ] = encoded_history_id
-        hda_data[ "number" ] = hda.hid
-        hda_data[ "name" ] = hda.name
-        hda_data[ "created_time" ] = unicodify( hda.create_time.strftime( trans.app.config.pretty_datetime_format ) )
-        hda_data[ "file_size" ] = nice_size( hda.dataset.file_size )
-        hda_data[ "db_key" ] = hda.dbkey
-        hda_data[ "format" ] = hda.ext
-        hda_data[ "peek" ] = hda.peek
+        hda_data = {
+            "encoded_hda_id" : encoded_id,
+            "encoded_history_id" : encoded_history_id,
+            "number" : hda.hid,
+            "name" : hda.name,
+            "created_time" : unicodify( hda.create_time.strftime( trans.app.config.pretty_datetime_format ) ),
+            "file_size" : nice_size( hda.dataset.file_size ),
+            "db_key" : hda.dbkey,
+            "format" : hda.ext,
+            "peek" : hda.peek
+        }
 
-        job_data = dict()
-        job_data[ "tool_id" ] = job.tool_id
-        job_data[ "tool_job_version" ] = job.tool_version
-        job_data[ "tool_hda_version" ] = hda.tool_version
-        job_data[ "tool_std_output" ] = url_for( controller='dataset', action='stdout', dataset_id=encoded_id )
-        job_data[ "tool_std_error" ] = url_for( controller='dataset', action='stderr', dataset_id=encoded_id )
-        job_data[ "tool_exit_code" ] = job.exit_code
-        job_data[ "user_is_admin" ] = trans.user_is_admin()
-        job_data[ "hda_id" ] = hda.id
-        job_data[ "encoded_hda_id" ] = encoded_id
-        job_data[ "job_id" ] = job.id
-        job_data[ "encoded_job_id" ] = trans.security.encode_id( job.id )
-        job_data[ "history_id" ] = hda.history_id
-        job_data[ "encoded_history_id" ] = encoded_history_id
-        job_data[ "hda_dataset_uuid" ] = str( hda.dataset.uuid )
-        job_data[ "tool_path" ] = trans.user_is_admin() or trans.app.config.expose_dataset_path
-        job_data[ "hda_purged" ] = hda.purged
-        job_data[ "hda_filename" ] = hda.file_name
-        job_data[ "command_line" ] = job.command_line
-        job_data[ "dependencies" ] = job.dependencies
+        job_data = {
+            "tool_id" : job.tool_id,
+            "tool_job_version" : job.tool_version,
+            "tool_hda_version" : hda.tool_version,
+            "tool_std_output" : url_for( controller='dataset', action='stdout', dataset_id=encoded_id ),
+            "tool_std_error" : url_for( controller='dataset', action='stderr', dataset_id=encoded_id ),
+            "tool_exit_code" : job.exit_code,
+            "user_is_admin" : trans.user_is_admin(),
+            "hda_id" : hda.id,
+            "encoded_hda_id" : encoded_id,
+            "job_id" : job.id,
+            "encoded_job_id" : trans.security.encode_id( job.id ),
+            "history_id" : hda.history_id,
+            "encoded_history_id" : encoded_history_id,
+            "hda_dataset_uuid" : str( hda.dataset.uuid ),
+            "tool_path" : trans.user_is_admin() or trans.app.config.expose_dataset_path,
+            "hda_purged" : hda.purged,
+            "hda_filename" : hda.file_name,
+            "command_line" : job.command_line,
+            "dependencies" : job.dependencies
+        }
+
+        sorted_plugins = sorted( set( [ metric.plugin for metric in job.metrics ] ) )
+        job_metrics = {
+            "expose_metrics" : True if ( job and ( trans.user_is_admin() or trans.app.config.expose_potentially_sensitive_job_metrics ) ) else False,
+            "plugins" : sorted_plugins,
+        }
+        job_metrics[ "plugin_metric_displays" ] = dict()
+        for plugin in sorted_plugins:
+            plugin_metrics = filter( lambda x: x.plugin == plugin, job.metrics )
+            plugin_metric_displays = [ trans.app.job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) for metric in plugin_metrics ]
+            plugin_metric_displays = sorted( plugin_metric_displays, key=lambda pair: pair[0] ) # Sort on displayed title
+            job_metrics[ "plugin_metric_displays" ][ plugin ] = plugin_metric_displays
 
         return {
             'tool_name': tool.name if tool else 'Unknown tool',
             'hda': hda_data,
             'job': job_data,
-            'inherit_chain': inherit_chain
+            'inherit_chain': inherit_chain,
+            'job_metrics': job_metrics
         }
 
     @web.expose
