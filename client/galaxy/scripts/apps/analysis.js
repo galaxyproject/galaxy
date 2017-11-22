@@ -13,7 +13,7 @@ import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import Workflows from "mvc/workflow/workflow";
-import HistoryImport from "mvc/history/history-import";
+import HistoryImport from "components/history-import.vue";
 import HistoryList from "mvc/history/history-list";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -141,9 +141,10 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_histories_import: function() {
-            this.page.display(
-                new HistoryImport.View()
-            );
+            var historyImportInstance = Vue.extend(HistoryImport);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new historyImportInstance().$mount(vm);
         },
 
         show_histories_permissions: function() {
