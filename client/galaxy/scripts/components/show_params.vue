@@ -55,6 +55,21 @@
                 </tbody>
             </table>
 
+        <h3>Tool Parameters</h3>
+        <table class="tabletip" id="tool-parameters">
+            <thead>
+                <tr>
+                    <th>Input Parameter</th>
+                    <th>Value</th>
+                    <th>Note for rerun</th>
+                </tr>
+            </thead>
+            <tbody v-html="toolParameterTemplate">
+            </tbody>
+        </table>
+       
+        <span v-if="hasParameterErrors"> {{ showError( `One or more of your original parameters may no longer be valid or displayed properly.` ) }} </span>
+
         <h3>Inheritance Chain</h3>
         <div class="inherit inherit-chain"> {{ hdaData.name }} </div>
         <div v-for="dep in inheritChain">
@@ -117,6 +132,9 @@
 <script>
 
 import axios from "axios";
+import * as mod_toastr from "libs/toastr";
+
+mod_toastr.options.timeOut = 10000;
 
 export default {
     props: {
@@ -143,11 +161,18 @@ export default {
                 this.jobData = historyData.job;
                 this.inheritChain = historyData.inherit_chain;
                 this.jobMetrics = historyData.job_metrics;
+                this.toolParameterTemplate = historyData.tool_parameter_template;
+                this.hasParameterErrors = historyData.has_parameter_errors;
             })
             .catch(e => {
-                console.error(e);
+                this.showError( e );
             });
     },
+    methods: {
+        showError: function( errorMsg ) {
+            mod_toastr.error( errorMsg );
+        }
+    }
 }
 </script>
 
