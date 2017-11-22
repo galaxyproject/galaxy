@@ -271,6 +271,7 @@ var DatasetListItemView = _super.extend(
                             $elLatestFrame = $( $elFrame[ $elFrame.length - 1 ] ).find( ".f-content" );
                         // open metadata in a scratchbook
                         $elLatestFrame.html( mountView );
+                        $elLatestFrame.css('overflow', 'auto');
                     }
                     else {
                         // open metadata in the center panel of the Galaxy 
