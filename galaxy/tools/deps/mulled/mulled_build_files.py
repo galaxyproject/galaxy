@@ -15,6 +15,7 @@ Build all recipes discovered in tsv files in a single directory.
 import collections
 import glob
 import os
+import sys
 
 from ._cli import arg_parser
 from .mulled_build import (
