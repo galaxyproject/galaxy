@@ -138,7 +138,7 @@ client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
 	@echo "Remember to 'make client' when finished developing!"
 
-client-test:
+client-test: node-deps ## Run qunit tests via Karma
 	cd client && yarn run test
 
 charts: node-deps ## Rebuild charts
