@@ -9,7 +9,12 @@ History
 17.9.10.dev0
 ---------------------
 
-    
+* Added docs for using mulled-build with your own quay.io account
+  (thanks to @jerowe).
+* Catch errors in Conda search if nothing is found (preventing planemo-monitor
+  from functioning properly) (thanks to @bgruening).
+* Make multi-requirement container building via mulled more stable
+  (thanks to @bgruening).
 
 ---------------------
 17.9.9 (2017-09-27)
