@@ -34,7 +34,7 @@ class SentryPlugin(ErrorPlugin):
         self.custom_dsn = kwargs.get('custom_dsn', None)
         self.sentry = None
         # Use the built in one by default
-        if self.app.sentry_client:
+        if hasattr(self.app, 'sentry_client'):
             self.sentry = self.app.sentry_client
 
         # if they've set a custom one, override.
