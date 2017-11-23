@@ -1217,11 +1217,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             tool_parameter_template += element.hid + ':' + element.name
                     tool_parameter_template += '</td><td></td></tr>'
                 elif input.visible:
-                    if  hasattr( input, "label" ) and input.label:
-                        label = input.label
-                    else:
-                        #value for label not required, fallback to input name (same as tool panel)
-                        label = input.name
+                    label = input.label if ( hasattr( input, "label" ) and input.label ) else input.name
                     tool_parameter_template += '<tr>'
                     tool_parameter_template += self.inputs_recursive_indent( text=label, depth=depth )
                     tool_parameter_template += '<td>' + input.value_to_display_text( param_values[ input.name ] ) + '</td>'
