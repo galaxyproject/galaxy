@@ -3,6 +3,9 @@ from __future__ import print_function
 
 import collections
 import hashlib
+import time
+import threading
+import sys
 
 from distutils.version import LooseVersion
 
@@ -205,6 +208,27 @@ def v2_image_name(targets, image_build=None, name_override=None):
         if version_hash_str or build_suffix:
             suffix = ":%s%s" % (version_hash_str, build_suffix)
         return "mulled-v2-%s%s" % (package_hash.hexdigest(), suffix)
+
+
+class PrintProgress:
+    def __init__(self):
+        self.thread = threading.Thread(target=self.progress)
+        self.stop = False
+
+    def progress(self):
+        while not self.stop:
+            print(".", end="")
+            sys.stdout.flush()
+            time.sleep(60)
+        print("")
+
+    def __enter__(self):
+        self.thread.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop = True
+        self.thread.join()
 
 
 image_name = v1_image_name  # deprecated
