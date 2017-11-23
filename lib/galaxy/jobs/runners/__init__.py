@@ -623,13 +623,14 @@ class AsynchronousJobRunner(Monitors, BaseJobRunner):
                     stdout = ''
                     stderr = 'Job output not returned from cluster'
                     log.error('(%s/%s) %s: %s' % (galaxy_id_tag, external_job_id, stderr, str(e)))
+                    exit_code_str = "123"  # Indicate that job probaly failed, given that we couldn't collect the Job output
                 else:
                     time.sleep(1)
                 which_try += 1
 
         try:
             # This should be an 8-bit exit code, but read ahead anyway:
-            exit_code_str = open(job_state.exit_code_file, "r").read(32)
+            exit_code_str = open(job_state.exit_code_file, "r").read(32) if not exit_code_str else exit_code_str
         except Exception:
             # By default, the exit code is 0, which typically indicates success.
             exit_code_str = "0"
