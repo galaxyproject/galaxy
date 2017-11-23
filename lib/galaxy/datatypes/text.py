@@ -62,7 +62,7 @@ class Json(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "JavaScript Object Notation (JSON)"
         else:
             dataset.peek = 'file does not exist'
@@ -110,7 +110,7 @@ class Ipynb(Json):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Jupyter Notebook"
         else:
             dataset.peek = 'file does not exist'
@@ -183,7 +183,7 @@ class Biom1(Json):
     MetadataElement(name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(Biom1, self).set_peek(dataset, is_multi_byte)
+        super(Biom1, self).set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "Biological Observation Matrix v1"
 
@@ -267,7 +267,7 @@ class Obo(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Open Biomedical Ontology (OBO)"
         else:
             dataset.peek = 'file does not exist'
@@ -306,7 +306,7 @@ class Arff(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
             dataset.blurb += ", %s comments, %s attributes" % (dataset.metadata.comment_lines, dataset.metadata.columns)
         else:

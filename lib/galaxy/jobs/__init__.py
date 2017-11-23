@@ -1287,15 +1287,9 @@ class JobWrapper(object, HasResourceParameters):
                         dataset.metadata.from_JSON_dict(output_filename, path_rewriter=path_rewriter)
                     try:
                         assert context.get('line_count', None) is not None
-                        if (not dataset.datatype.composite_type and dataset.dataset.is_multi_byte()) or self.tool.is_multi_byte:
-                            dataset.set_peek(line_count=context['line_count'], is_multi_byte=True)
-                        else:
-                            dataset.set_peek(line_count=context['line_count'])
+                        dataset.set_peek(line_count=context['line_count'])
                     except Exception:
-                        if (not dataset.datatype.composite_type and dataset.dataset.is_multi_byte()) or self.tool.is_multi_byte:
-                            dataset.set_peek(is_multi_byte=True)
-                        else:
-                            dataset.set_peek()
+                        dataset.set_peek()
                 else:
                     # Handle an empty dataset.
                     dataset.blurb = "empty"

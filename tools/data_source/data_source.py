@@ -105,7 +105,7 @@ def __main__():
         # here import checks that upload tool performs
         if enhanced_handling:
             try:
-                ext = sniff.handle_uploaded_dataset_file(filename, datatypes_registry, ext=data_dict['ext'], is_multi_byte=is_multi_byte)
+                ext = sniff.handle_uploaded_dataset_file(filename, datatypes_registry, ext=data_dict['ext'])
             except Exception as e:
                 stop_err(str(e))
             info = dict(type='dataset',

@@ -20,7 +20,6 @@ from galaxy.datatypes.binary import Binary
 from galaxy.util import (
     compression_utils,
     multi_byte,
-    unicodify
 )
 from galaxy.util.checkers import (
     check_binary,
@@ -204,17 +203,11 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, t
         return (i + 1, temp_name)
 
 
-def iter_headers(fname, sep, count=60, is_multi_byte=False, comment_designator=None):
+def iter_headers(fname, sep, count=60, comment_designator=None):
     with compression_utils.get_fileobj(fname) as in_file:
         idx = 0
         for line in in_file:
             line = line.rstrip('\n\r')
-            if is_multi_byte:
-                # TODO: fix this - sep is never found in line
-                line = unicodify(line, 'utf-8')
-                sep = sep.encode('utf-8')
-                if comment_designator is not None and comment_designator != '':
-                    comment_designator = comment_designator.encode('utf-8')
             if comment_designator is not None and comment_designator != '' and line.startswith(comment_designator):
                 continue
             yield line.split(sep)
@@ -223,22 +216,22 @@ def iter_headers(fname, sep, count=60, is_multi_byte=False, comment_designator=N
                 break
 
 
-def get_headers(fname, sep, count=60, is_multi_byte=False, comment_designator=None):
+def get_headers(fname, sep, count=60, comment_designator=None):
     """
     Returns a list with the first 'count' lines split by 'sep', ignoring lines
     starting with 'comment_designator'
 
     >>> fname = get_test_fname('complete.bed')
-    >>> get_headers(fname,'\\t')
-    [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
+    >>> get_headers(fname,'\\t') == [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
+    True
     >>> fname = get_test_fname('test.gff')
-    >>> get_headers(fname, '\\t', count=5, comment_designator='#')
-    [[''], ['chr7', 'bed2gff', 'AR', '26731313', '26731437', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731491', '26731536', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731541', '26731649', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731659', '26731841', '.', '+', '.', 'score']]
+    >>> get_headers(fname, '\\t', count=5, comment_designator='#') == [[''], ['chr7', 'bed2gff', 'AR', '26731313', '26731437', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731491', '26731536', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731541', '26731649', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731659', '26731841', '.', '+', '.', 'score']]
+    True
     """
-    return list(iter_headers(fname=fname, sep=sep, count=count, is_multi_byte=is_multi_byte, comment_designator=comment_designator))
+    return list(iter_headers(fname=fname, sep=sep, count=count, comment_designator=comment_designator))
 
 
-def is_column_based(fname, sep='\t', skip=0, is_multi_byte=False):
+def is_column_based(fname, sep='\t', skip=0):
     """
     Checks whether the file is column based with respect to a separator
     (defaults to tab separator).
@@ -266,7 +259,10 @@ def is_column_based(fname, sep='\t', skip=0, is_multi_byte=False):
     >>> is_column_based(fname)
     True
     """
-    headers = get_headers(fname, sep, is_multi_byte=is_multi_byte)
+    try:
+        headers = get_headers(fname, sep)
+    except UnicodeDecodeError:
+        return False
     count = 0
     if not headers:
         return False
@@ -284,7 +280,7 @@ def is_column_based(fname, sep='\t', skip=0, is_multi_byte=False):
     return True
 
 
-def guess_ext(fname, sniff_order, is_multi_byte=False):
+def guess_ext(fname, sniff_order):
     """
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
@@ -417,28 +413,16 @@ def guess_ext(fname, sniff_order, is_multi_byte=False):
     # to tsv but it doesn't have a sniffer - is TSV was sniffed just check
     # if it is an okay tabular and use that instead.
     if file_ext == 'tsv':
-        if is_column_based(fname, '\t', 1, is_multi_byte=is_multi_byte):
+        if is_column_based(fname, '\t', 1):
             file_ext = 'tabular'
     if file_ext is not None:
         return file_ext
 
-    headers = get_headers(fname, None)
-    is_binary = False
-    if is_multi_byte:
-        is_binary = False
-    else:
-        for hdr in headers:
-            for char in hdr:
-                # old behavior had 'char' possibly having length > 1,
-                # need to determine when/if this occurs
-                is_binary = util.is_binary(char)
-                if is_binary:
-                    break
-            if is_binary:
-                break
-    if is_binary:
+    try:
+        get_headers(fname, None)
+    except UnicodeDecodeError:
         return 'data'  # default binary data type file extension
-    if is_column_based(fname, '\t', 1, is_multi_byte=is_multi_byte):
+    if is_column_based(fname, '\t', 1):
         return 'tabular'  # default tabular data type file extension
     return 'txt'  # default text data type file extension
 
@@ -492,14 +476,14 @@ def handle_compressed_file(filename, datatypes_registry, ext='auto'):
     return is_valid, ext
 
 
-def handle_uploaded_dataset_file(filename, datatypes_registry, ext='auto', is_multi_byte=False):
+def handle_uploaded_dataset_file(filename, datatypes_registry, ext='auto'):
     is_valid, ext = handle_compressed_file(filename, datatypes_registry, ext=ext)
 
     if not is_valid:
         raise InappropriateDatasetContentError('The compressed uploaded file contains inappropriate content.')
 
     if ext in AUTO_DETECT_EXTENSIONS:
-        ext = guess_ext(filename, sniff_order=datatypes_registry.sniff_order, is_multi_byte=is_multi_byte)
+        ext = guess_ext(filename, sniff_order=datatypes_registry.sniff_order)
 
     if check_binary(filename):
         if not Binary.is_ext_unsniffable(ext) and not datatypes_registry.get_datatype_by_extension(ext).sniff(filename):

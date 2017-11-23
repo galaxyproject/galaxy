@@ -102,7 +102,7 @@ class Ply(object):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Faces: %s, Vertices: %s" % (str(dataset.metadata.face), str(dataset.metadata.vertex))
         else:
             dataset.peek = 'File does not exist'
@@ -429,7 +429,7 @@ class Vtk(object):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = self.get_blurb(dataset)
         else:
             dataset.peek = 'File does not exist'
