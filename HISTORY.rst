@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.9.10.dev0
+17.9.10 (2017-11-23)
 ---------------------
 
 * Added docs for using mulled-build with your own quay.io account
