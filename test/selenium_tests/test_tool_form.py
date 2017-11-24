@@ -108,13 +108,12 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
         self.hda_click_primary_action_button(hid, "info")
 
-        with self.main_panel():
-            self.wait_for_selector_visible("table#dataset-details")
-            tool_parameters_table = self.wait_for_selector_visible("table#tool-parameters")
-            tbody_element = tool_parameters_table.find_element_by_css_selector("tbody")
-            tds = tbody_element.find_elements_by_css_selector("td")
-            assert tds
-            assert any([expected_value in td.text for td in tds])
+        self.wait_for_selector_visible("table#dataset-details")
+        tool_parameters_table = self.wait_for_selector_visible("table#tool-parameters")
+        tbody_element = tool_parameters_table.find_element_by_css_selector("tbody")
+        tds = tbody_element.find_elements_by_css_selector("td")
+        assert tds
+        assert any([expected_value in td.text for td in tds])
 
     def _run_environment_test_tool(self, inttest_value="42"):
         self.home()
