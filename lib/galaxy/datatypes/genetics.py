@@ -840,16 +840,7 @@ class LinkageStudies(Text):
 
     def __init__(self, **kwd):
         Text.__init__(self, **kwd)
-        self.lcount = 0
         self.max_lines = 10
-        # iterated whole file without errors
-        self.eof_res = True
-
-    def header_check(self, fio):
-        """
-        Overrideable post-binary file check function
-        """
-        return True
 
 
 class GenotypeMatrix(LinkageStudies):
@@ -902,10 +893,9 @@ class GenotypeMatrix(LinkageStudies):
             if not self.header_check(fio):
                 return False
 
-            for line in fio:
-                self.lcount += 1
-                if self.lcount > self.max_lines:
-                    return self.eof_res
+            for lcount, line in enumerate(fio):
+                if lcount > self.max_lines:
+                    return True
 
                 tokens = line.split('\t')
 
@@ -916,7 +906,7 @@ class GenotypeMatrix(LinkageStudies):
                 if not VALID_GENOTYPES_LINE.match(line):
                     return False
 
-            return self.eof_res
+            return True
 
 
 class MarkerMap(LinkageStudies):
@@ -962,10 +952,9 @@ class MarkerMap(LinkageStudies):
             if not self.header_check(fio):
                 return False
 
-            for line in fio:
-                self.lcount += 1
-                if self.lcount > self.max_lines:
-                    return self.eof_res
+            for lcount, line in enumerate(fio):
+                if lcount > self.max_lines:
+                    return True
 
                 try:
                     chrm, gpos, nam, bpos, row = line.split()
@@ -981,7 +970,7 @@ class MarkerMap(LinkageStudies):
                 except ValueError:
                     return False
 
-            return self.eof_res
+            return True
 
 
 class DataIn(LinkageStudies):
@@ -1022,25 +1011,21 @@ class DataIn(LinkageStudies):
         """
         with open(filename, "r") as fio:
 
-            if not self.header_check(fio):
-                return False
-
-            for line in fio:
-                self.lcount += 1
-                if self.lcount > self.max_lines:
+            for lcount, line in enumerate(fio):
+                if lcount > self.max_lines:
                     return self.eof_function()
 
                 tokens = line.split()
                 try:
-                    if self.lcount == 1:
+                    if lcount == 0:
                         self.num_markers = int(tokens[0])
                         map(int, tokens[1:])
-                    elif self.lcount == 2:
+                    elif lcount == 1:
                         map(float, tokens)
 
                         if len(tokens) != 4:
                             return False
-                    elif self.lcount == 3:
+                    elif lcount == 2:
                         map(int, tokens)
                         last_token = int(tokens[-1])
 
@@ -1100,10 +1085,9 @@ class AllegroLOD(LinkageStudies):
             if not self.header_check(fio):
                 return False
 
-            for line in fio:
-                self.lcount += 1
-                if self.lcount > self.max_lines:
-                    return self.eof_res
+            for lcount, line in enumerate(fio):
+                if lcount > self.max_lines:
+                    return True
 
                 tokens = line.split()
 
@@ -1117,7 +1101,7 @@ class AllegroLOD(LinkageStudies):
                 except (ValueError, IndexError):
                     return False
 
-            return self.eof_res
+            return True
 
 
 if __name__ == '__main__':
