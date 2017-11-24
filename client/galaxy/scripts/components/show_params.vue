@@ -20,8 +20,8 @@
                     <tr v-if="jobData"> <td>Galaxy Tool ID:</td> <td> {{ jobData.tool_id }} </td> </tr>
                     <tr v-if="jobData"> <td>Galaxy Tool Version:</td> <td> {{ jobData.tool_job_version }} </td> </tr>
                     <tr> <td>Tool Version:</td><td> {{ jobData.tool_hda_version }} </td></tr>
-                    <tr> <td>Tool Standard Output:</td> <td><a v-bind:href="jobData.tool_std_output">stdout</a></td> </tr>
-                    <tr> <td>Tool Standard Error:</td><td><a v-bind:href="jobData.tool_std_error">stderr</a></td> </tr>
+                    <tr> <td>Tool Standard Output:</td> <td><a v-bind:href="jobData.tool_std_output" target="_blank">stdout</a></td> </tr>
+                    <tr> <td>Tool Standard Error:</td><td><a v-bind:href="jobData.tool_std_error" target="_blank">stderr</a></td> </tr>
                     <tr v-if="jobData"> <td> Tool Exit Code:</td> <td> {{ jobData.tool_exit_code }} </td> </tr>
                     <tr> 
                         <td>History Content API ID:</td>
@@ -75,7 +75,7 @@
         <div v-for="dep in inheritChain">
             <div class="inherit-chain-item">&uarr;</div>
             <div class="inherit">
-                {{ dep[0].name }} in {{ dep[1] } <br/>
+                {{ dep[0].name }} in {{ dep[1] }} <br/>
             </div>
         </div>
 
@@ -148,30 +148,50 @@ export default {
             toolName: "",
             hdaData: {},
             jobData: {},
-            inheritChain: []
+            inheritChain: [],
+            jobMetrics: {},
+            toolParameterTemplate: "",
+            hasParameterErrors: false
         };
     },
     created: function() {
-        axios
-            .get(`${Galaxy.root}datasets/${this.metadataId}/show_params`)
-            .then(response => {
-                let historyData = response.data;
-                this.toolName = historyData.tool_name;
-                this.hdaData = historyData.hda;
-                this.jobData = historyData.job;
-                this.inheritChain = historyData.inherit_chain;
-                this.jobMetrics = historyData.job_metrics;
-                this.toolParameterTemplate = historyData.tool_parameter_template;
-                this.hasParameterErrors = historyData.has_parameter_errors;
-            })
-            .catch(e => {
-                this.showError( e );
-            });
+       this.ajaxCall();
     },
     methods: {
+        ajaxCall: function() {
+            axios
+                .get(`${Galaxy.root}datasets/${this.metadataId}/show_params`)
+                .then(response => {
+                    this._updatePageData(response);
+                })
+                .catch(e => {
+                    this.showError( e );
+                });
+        },
+        _updatePageData: function(response) {
+            let historyData = response.data;
+            this.toolName = historyData.tool_name;
+            this.hdaData = historyData.hda;
+            this.jobData = historyData.job;
+            this.inheritChain = historyData.inherit_chain;
+            this.jobMetrics = historyData.job_metrics;
+            this.toolParameterTemplate = historyData.tool_parameter_template;
+            this.hasParameterErrors = historyData.has_parameter_errors;
+        },
         showError: function( errorMsg ) {
             mod_toastr.error( errorMsg );
         }
+    },
+    updated: function() {
+        let self = this;
+        $( '.input-dataset-show-params' ).on( 'click', function( e ) {
+            e.preventDefault();
+            self.metadataId = $( this ).data( 'hda-id' );
+            self.ajaxCall();
+            if( window.parent.Galaxy && window.parent.Galaxy.currHistoryPanel ) {
+                window.parent.Galaxy.currHistoryPanel.scrollToId( 'dataset-' + self.metadataId );
+            }
+        });
     }
 }
 </script>

@@ -14,14 +14,16 @@ from galaxy import (
     util,
     web
 )
-from galaxy.util import nice_size, unicodify
+
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import (
     inflector,
     sanitize_text,
-    smart_str
+    smart_str,
+    nice_size,
+    unicodify
 )
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
@@ -1086,14 +1088,14 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         # TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
 
         # transform hda object to be passed as json
-        encoded_id = trans.security.encode_id( hda.id )
-        encoded_history_id = trans.security.encode_id( hda.history_id )
+        encoded_id = trans.security.encode_id(hda.id)
+        encoded_history_id = trans.security.encode_id(hda.history_id)
 
         hda_data = {
             "number" : hda.hid,
             "name" : hda.name,
-            "created_time" : unicodify( hda.create_time.strftime( trans.app.config.pretty_datetime_format ) ),
-            "file_size" : nice_size( hda.dataset.file_size ),
+            "created_time" : unicodify(hda.create_time.strftime(trans.app.config.pretty_datetime_format)),
+            "file_size" : nice_size(hda.dataset.file_size),
             "db_key" : hda.dbkey,
             "format" : hda.ext,
             "peek" : hda.peek
@@ -1103,17 +1105,17 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             "tool_id" : job.tool_id,
             "tool_job_version" : job.tool_version,
             "tool_hda_version" : hda.tool_version,
-            "tool_std_output" : url_for( controller='dataset', action='stdout', dataset_id=encoded_id ),
-            "tool_std_error" : url_for( controller='dataset', action='stderr', dataset_id=encoded_id ),
+            "tool_std_output" : url_for(controller='dataset', action='stdout', dataset_id=encoded_id),
+            "tool_std_error" : url_for(controller='dataset', action='stderr', dataset_id=encoded_id),
             "tool_exit_code" : job.exit_code,
             "user_is_admin" : trans.user_is_admin(),
             "hda_id" : hda.id,
             "encoded_hda_id" : encoded_id,
             "job_id" : job.id,
-            "encoded_job_id" : trans.security.encode_id( job.id ),
+            "encoded_job_id" : trans.security.encode_id(job.id),
             "history_id" : hda.history_id,
             "encoded_history_id" : encoded_history_id,
-            "hda_dataset_uuid" : str( hda.dataset.uuid ),
+            "hda_dataset_uuid" : str(hda.dataset.uuid),
             "tool_path" : trans.user_is_admin() or trans.app.config.expose_dataset_path,
             "hda_purged" : hda.purged,
             "hda_filename" : hda.file_name,
@@ -1121,22 +1123,22 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             "dependencies" : job.dependencies
         }
 
-        sorted_plugins = sorted( set( [ metric.plugin for metric in job.metrics ] ) )
+        sorted_plugins = sorted(set([metric.plugin for metric in job.metrics]))
         job_metrics = {
-            "expose_metrics" : True if ( job and ( trans.user_is_admin() or trans.app.config.expose_potentially_sensitive_job_metrics ) ) else False,
-            "plugins" : sorted_plugins,
+            "expose_metrics" : True if (job and (trans.user_is_admin() or trans.app.config.expose_potentially_sensitive_job_metrics)) else False,
+            "plugins" : sorted_plugins
         }
-        job_metrics[ "plugin_metric_displays" ] = dict()
+        job_metrics["plugin_metric_displays"] = dict()
         for plugin in sorted_plugins:
-            plugin_metrics = filter( lambda x: x.plugin == plugin, job.metrics )
-            plugin_metric_displays = [ trans.app.job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) for metric in plugin_metrics ]
-            plugin_metric_displays = sorted( plugin_metric_displays, key=lambda pair: pair[0] ) # Sort on displayed title
-            job_metrics[ "plugin_metric_displays" ][ plugin ] = plugin_metric_displays
+            plugin_metrics = filter(lambda x: x.plugin == plugin, job.metrics)
+            plugin_metric_displays = [trans.app.job_metrics.format(metric.plugin, metric.metric_name, metric.metric_value) for metric in plugin_metrics]
+            plugin_metric_displays = sorted(plugin_metric_displays, key=lambda pair: pair[0]) # Sort on displayed title
+            job_metrics["plugin_metric_displays"][plugin] = plugin_metric_displays
 
         # create template for tool parameters using a recursive method
         tool_parameter_template = ''
         if params_objects and tool:
-            tool_parameter_template = self.inputs_recursive( tool.inputs, params_objects, depth=1, upgrade_messages=upgrade_messages )
+            tool_parameter_template = self.inputs_recursive(trans, tool.inputs, params_objects, depth=1, upgrade_messages=upgrade_messages)
         elif params_objects is None:
             tool_parameter_template = '<tr><td colspan="3">Unable to load parameters.</td></tr>'
         else:
@@ -1152,13 +1154,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             'has_parameter_errors': has_parameter_errors
         }
 
-    def inputs_recursive_indent( self, text, depth ):
+    def inputs_recursive_indent(self, text, depth):
         """
         Add an indentation depending on the depth in a <tr>
         """
-        return '<td style="padding-left:' + str( ( depth - 1 ) * 10 ) + 'px">' + text + '</td>'
+        return '<td style="padding-left:' + str((depth - 1) * 10) + 'px">' + text + '</td>'
 
-    def inputs_recursive( self, input_params, param_values, depth=1, upgrade_messages=None ):
+    def inputs_recursive(self, trans, input_params, param_values, depth=1, upgrade_messages=None):
         """
         Recursive method for tool parameter section
         """
@@ -1167,72 +1169,66 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if upgrade_messages is None:
             upgrade_messages = {}
 
-        for input_index, input in enumerate( input_params.itervalues() ):
+        for input_index, input in enumerate(input_params.itervalues()):
             if input.name in param_values:
                 if input.type == "repeat":
-                    for i in range( len(param_values[input.name]) ):
-                        self.inputs_recursive( input.inputs, param_values[input.name][i], depth=depth+1 )
+                    for i in range(len(param_values[input.name])):
+                        self.inputs_recursive(trans, input.inputs, param_values[input.name][i], depth=depth + 1)
                 elif input.type == "section":
                     tool_parameter_template += '<tr>'
-                    ##<!-- Get the value of the current Section parameter -->
-                    tool_parameter_template += self.inputs_recursive_indent( text=input.name, depth=depth ) 
+                    tool_parameter_template += self.inputs_recursive_indent(text=input.name, depth=depth)
                     tool_parameter_template += '<td></td></tr>'
-                    self.inputs_recursive( input.inputs, param_values[ input.name ], depth=depth + 1, upgrade_messages=upgrade_messages.get( input.name ) )
+                    self.inputs_recursive(trans, input.inputs, param_values[input.name], depth=depth + 1, upgrade_messages=upgrade_messages.get(input.name))
                 elif input.type == "conditional":
                     try:
-                        current_case = param_values[ input.name ]['__current_case__']
+                        current_case = param_values[input.name]['__current_case__']
                         is_valid = True
                     except:
                         current_case = None
                         is_valid = False
                     if is_valid:
                         tool_parameter_template += '<tr>'
-                        tool_parameter_template += self.inputs_recursive_indent( text=input.test_param.label, depth=depth )
-                        ##<!-- Get the value of the current Conditional parameter -->
+                        tool_parameter_template += self.inputs_recursive_indent(text=input.test_param.label, depth=depth)
                         tool_parameter_template += '<td>' + input.cases[current_case].value + '</td><td></td></tr>'
-                        self.inputs_recursive( input.cases[current_case].inputs, param_values[input.name], depth=depth + 1, upgrade_messages=upgrade_messages.get( input.name ) )
+                        self.inputs_recursive(trans, input.cases[current_case].inputs, param_values[input.name], depth=depth + 1, upgrade_messages=upgrade_messages.get(input.name))
                     else:
                         tool_parameter_template += '<tr>'
-                        tool_parameter_template += self.inputs_recursive_indent( text=input.name, depth=depth )
+                        tool_parameter_template += self.inputs_recursive_indent(text=input.name, depth=depth)
                         tool_parameter_template += '<td><em> The previously used value is no longer valid </em></td><td></td></tr>'
                 elif input.type == "upload_dataset":
                     tool_parameter_template += '<tr>'
-                    tool_parameter_template += self.inputs_recursive_indent( text=input.group_title( param_values ), depth=depth )
-                    tool_parameter_template += '<td>' + str( len( param_values[ input.name ] ) ) + ' uploaded datasets</td><td></td></tr>'
-                ## files used for inputs
+                    tool_parameter_template += self.inputs_recursive_indent(text=input.group_title(param_values), depth=depth)
+                    tool_parameter_template += '<td>' + str(len(param_values[input.name])) + ' uploaded datasets</td><td></td></tr>'
                 elif input.type == "data":
                     tool_parameter_template += '<tr>'
-                    tool_parameter_template += self.inputs_recursive_indent( text=input.label, depth=depth )
+                    tool_parameter_template += self.inputs_recursive_indent(text=input.label, depth=depth)
                     tool_parameter_template += '<td>'
-                    for i, element in enumerate(listify(param_values[ input.name ])):
+                    for i, element in enumerate(listify(param_values[input.name])):
                         if i > 0:
                             tool_parameter_template += ','
                         if element.history_content_type == "dataset":
                             hda = element
-                            encoded_id = trans.security.encode_id( hda.id )
-                            show_params_url = url_for( controller='dataset', action='show_params', dataset_id=encoded_id )
+                            encoded_id = trans.security.encode_id(hda.id)
                             tool_parameter_template += '<a class="input-dataset-show-params" data-hda-id="' + encoded_id + '"'
-                            tool_parameter_template += 'href="' + show_params_url + '">' + hda.hid + ':' + hda.name + '</a>'
+                            tool_parameter_template += 'href="#">' + str(hda.hid) + ':' + hda.name + '</a>'
                         else:
                             tool_parameter_template += element.hid + ':' + element.name
                     tool_parameter_template += '</td><td></td></tr>'
                 elif input.visible:
-                    label = input.label if ( hasattr( input, "label" ) and input.label ) else input.name
+                    label = input.label if (hasattr(input, "label") and input.label) else input.name
                     tool_parameter_template += '<tr>'
-                    tool_parameter_template += self.inputs_recursive_indent( text=label, depth=depth )
-                    tool_parameter_template += '<td>' + input.value_to_display_text( param_values[ input.name ] ) + '</td>'
-                    tool_parameter_template += '<td>' + upgrade_messages.get( input.name, '' ) + '</td></tr>'
+                    tool_parameter_template += self.inputs_recursive_indent(text=label, depth=depth)
+                    tool_parameter_template += '<td>' + input.value_to_display_text(param_values[input.name]) + '</td>'
+                    tool_parameter_template += '<td>' + upgrade_messages.get(input.name, '') + '</td></tr>'
             else:
-                ## Parameter does not have a stored value.
                 tool_parameter_template += '<tr>'
-                # Get parameter label.
                 if input.type == "conditional":
                     label = input.test_param.label
                 elif input.type == "repeat":
                     label = input.label()
                 else:
                     label = input.label or input.name
-                tool_parameter_template += self.inputs_recursive_indent( text=label, depth=depth )
+                tool_parameter_template += self.inputs_recursive_indent(text=label, depth=depth)
                 tool_parameter_template += '<td><em> not used (parameter was added after this job was run)</em></td><td></td></tr>'
         return tool_parameter_template
 
