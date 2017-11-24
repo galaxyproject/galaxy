@@ -393,6 +393,9 @@ def guess_ext(fname, sniff_order, is_multi_byte=False):
     >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
     >>> guess_ext(fname, sniff_order)
     'biom2'
+    >>> fname = get_test_fname('454Score.pdf')
+    >>> guess_ext(fname, sniff_order)
+    'pdf'
     """
     file_ext = None
     for datatype in sniff_order:
