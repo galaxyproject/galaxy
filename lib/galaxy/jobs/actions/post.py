@@ -228,7 +228,7 @@ class ColumnSetAction(DefaultJobAction):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 for k, v in action.action_arguments.items():
-                    if v != '':
+                    if v:
                         # Try to use both pure integer and 'cX' format.
                         if v[0] == 'c':
                             v = v[1:]

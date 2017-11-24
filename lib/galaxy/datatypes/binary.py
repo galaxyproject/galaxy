@@ -25,7 +25,6 @@ from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite, which
 from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
 
-
 log = logging.getLogger(__name__)
 
 # Currently these supported binary data types must be manually set on upload
@@ -890,6 +889,60 @@ class Biom2(H5):
             return "Biom2 (HDF5) file (%s)" % (nice_size(dataset.get_size()))
 
 
+class Cool(H5):
+    """
+    Class describing the cool format (https://github.com/mirnylab/cooler)
+    """
+
+    file_ext = "cool"
+
+    def sniff(self, filename):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'matrix.cool' )
+        >>> Cool().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'test.mz5' )
+        >>> Cool().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'wiggle.wig' )
+        >>> Cool().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'biom2_sparse_otu_table_hdf5.biom' )
+        >>> Cool().sniff( fname )
+        False
+        """
+
+        MAGIC = "HDF5::Cooler"
+        URL = "https://github.com/mirnylab/cooler"
+
+        if super(Cool, self).sniff(filename):
+            keys = ['chroms', 'bins', 'pixels', 'indexes']
+            with h5py.File(filename, 'r') as handle:
+                fmt = handle.attrs.get('format', None)
+                url = handle.attrs.get('format-url', None)
+                if fmt == MAGIC or url == URL:
+                    if not all(name in handle.keys() for name in keys):
+                        return False
+                    return True
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Cool (HDF5) file for storing genomic interaction data."
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Cool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
+
+
+Binary.register_sniffable_binary_format("cool", "cool", Cool)
 Binary.register_sniffable_binary_format("biom2", "biom2", Biom2)
 Binary.register_sniffable_binary_format("h5", "h5", H5)
 

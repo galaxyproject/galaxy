@@ -56,25 +56,8 @@
             });
         }
         // TODO: ?? move above to base_panels.mako?
-
-        ## load galaxy js-modules
-        require([
-            'layout/masthead',
-            'mvc/ui/ui-modal',
-            'mvc/user/user-model'
-        ], function( Masthead, Modal, user ){
-            if( !Galaxy.user ) {
-                // this doesn't need to wait for the page being readied
-                Galaxy.user = new user.default.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
-            }
-
-            $(function() {
-                if (!Galaxy.masthead) {
-                    Galaxy.masthead = new Masthead.default.View((${ h.dumps( masthead_config ) }));
-                    Galaxy.modal = new Modal.default.View();
-                    $('#masthead').replaceWith( Galaxy.masthead.render().$el );
-                }
-            });
+        $( function() {
+            window.masthead(${h.dumps(masthead_config)});
         });
     </script>
 </%def>

@@ -25,6 +25,7 @@ var commonLibs = [
     "libs/farbtastic",
     "libs/bootstrap",
     "libs/bootstrap-tour",
+    "libs/vue",
     // mvc
     "libs/underscore",
     "libs/backbone",
@@ -37,19 +38,24 @@ var commonLibs = [
 ];
 
 module.exports = {
-    devtool: "source-map",
+    //devtool: "source-map",
     entry: {
         libs: commonLibs,
         login: "./galaxy/scripts/apps/login.js",
         analysis: "./galaxy/scripts/apps/analysis.js",
-        admin: "./galaxy/scripts/apps/admin.js"
+        admin: "./galaxy/scripts/apps/admin.js",
+        workflow: "./galaxy/scripts/apps/workflow.js",
+        masthead: "./galaxy/scripts/apps/masthead.js",
+        viz: "./galaxy/scripts/apps/viz.js",
+        library: "./galaxy/scripts/apps/library.js",
+        adminToolshed: "./galaxy/scripts/apps/admin-toolshed.js"
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
         filename: "[name].bundled.js"
     },
     resolve: {
-        modules: [scriptsBase],
+        modules: [scriptsBase, "node_modules"],
         alias: {
             //TODO: correct our imports and remove these rules
             // Backbone looks for these in the same root directory
@@ -76,8 +82,15 @@ module.exports = {
                         options: "$"
                     }
                 ]
-            }
+            },
+              {
+                test: /\.vue$/,
+                loader: 'vue-loader',
+              }
         ]
+    },
+    node: {
+        setImmediate: false
     },
     resolveLoader: {
         alias: {
