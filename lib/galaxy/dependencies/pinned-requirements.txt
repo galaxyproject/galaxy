@@ -14,7 +14,7 @@ pycrypto==2.6.1
 # pure Python packages
 Paste==2.0.2
 PasteDeploy==1.5.2
-docutils==0.12
+docutils==0.14
 wchartype==0.1
 repoze.lru==0.6
 Routes==2.2
