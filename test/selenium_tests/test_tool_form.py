@@ -1,6 +1,7 @@
 from galaxy_selenium.navigates_galaxy import retry_call_during_transitions
 
 from .framework import (
+    retry_assertion_during_transitions,
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
@@ -110,8 +111,15 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.home()
         self.tool_open("bibtex")
         self.components.tool_form.citations.wait_for_visible()
-        references = self.components.tool_form.reference.all()
-        assert len(references) == 26, len(references)
+
+        @retry_assertion_during_transitions
+        def assert_citations_visible():
+            references = self.components.tool_form.reference.all()
+            assert len(references) == 26, len(references)
+            return references
+
+        references = assert_citations_visible()
+
         doi_resolved_citation = references[0]
         assert "Galaxy: A platform for interactive" in doi_resolved_citation.text
         self.screenshot("tool_form_citations_formatted")
