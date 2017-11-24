@@ -182,6 +182,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         self.screenshot("history_panel_collection_view_paired")
 
     @selenium_test
+    @flakey  # Fails only in Jenkins full suite - possibly due to #3782.
     def test_list_display(self):
         _, failed_collection = self._generate_partially_failed_collection_with_input()
         failed_hid = failed_collection["hid"]
