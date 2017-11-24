@@ -17,7 +17,7 @@ bz2file==0.98; python_version < '3.3'
 ipaddress==1.0.18; python_version < '3.3'
 Paste==2.0.2
 PasteDeploy==1.5.2
-docutils==0.12
+docutils==0.14
 wchartype==0.1
 repoze.lru==0.6
 Routes==2.4.1
