@@ -58,13 +58,18 @@ var View = Backbone.View.extend({
             contentType: "application/json"
         })
             .done(response => {
-                var success_message = {
-                    message: response.message,
-                    status: "success",
-                    persistent: false
-                };
+                var params = {};
+                if (response.id) {
+                    params.id = response.id;
+                } else {
+                    params = {
+                        message: response.message,
+                        status: "success",
+                        persistent: false
+                    }
+                }
                 if (self.redirect) {
-                    window.location = `${Galaxy.root + self.redirect}?${$.param(success_message)}`;
+                    window.location = `${Galaxy.root + self.redirect}?${$.param(params)}`;
                 } else {
                     form.data.matchModel(response, (input, input_id) => {
                         form.field_list[input_id].value(input.value);

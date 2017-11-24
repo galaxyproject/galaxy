@@ -39,7 +39,7 @@ var Collection = Backbone.Collection.extend({
             title: _l("Workflow"),
             tooltip: _l("Chain tools into workflows"),
             disabled: !Galaxy.user.id,
-            url: "workflow"
+            url: "workflows/list"
         });
 
         //

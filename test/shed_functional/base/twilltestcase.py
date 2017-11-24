@@ -392,7 +392,7 @@ class ShedTwillTestCase(TwillTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_all_workflows(self, strings_displayed=None, strings_not_displayed=None):
-        url = '/workflow'
+        url = '/workflows/list'
         self.visit_galaxy_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
