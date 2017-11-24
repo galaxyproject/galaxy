@@ -14,15 +14,14 @@ from galaxy import (
     util,
     web
 )
-
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import (
     inflector,
+    nice_size,
     sanitize_text,
     smart_str,
-    nice_size,
     unicodify
 )
 from galaxy.util.sanitize_html import sanitize_html
@@ -1132,7 +1131,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         for plugin in sorted_plugins:
             plugin_metrics = filter(lambda x: x.plugin == plugin, job.metrics)
             plugin_metric_displays = [trans.app.job_metrics.format(metric.plugin, metric.metric_name, metric.metric_value) for metric in plugin_metrics]
-            plugin_metric_displays = sorted(plugin_metric_displays, key=lambda pair: pair[0]) # Sort on displayed title
+            plugin_metric_displays = sorted(plugin_metric_displays, key=lambda pair: pair[0])
             job_metrics["plugin_metric_displays"][plugin] = plugin_metric_displays
 
         # create template for tool parameters using a recursive method
@@ -1183,7 +1182,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     try:
                         current_case = param_values[input.name]['__current_case__']
                         is_valid = True
-                    except:
+                    except Exception:
                         current_case = None
                         is_valid = False
                     if is_valid:
