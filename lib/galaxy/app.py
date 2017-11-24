@@ -13,13 +13,6 @@ from galaxy import config, jobs
 from galaxy.jobs import metrics as job_metrics
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.tags import GalaxyTagManager
-from galaxy.visualization.genomes import Genomes
-from galaxy.visualization.data_providers.registry import DataProviderRegistry
-from galaxy.visualization.plugins.registry import VisualizationsRegistry
-from galaxy.tools.special_tools import load_lib_tools
-from galaxy.tours import ToursRegistry
-from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
-from galaxy.webhooks import WebhooksRegistry
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.tools.cache import (
@@ -28,12 +21,20 @@ from galaxy.tools.cache import (
 )
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
+from galaxy.tools.special_tools import load_lib_tools
+
+from galaxy.tours import ToursRegistry
 from galaxy.util import (
     ExecutionTimer,
     heartbeat
 )
+from galaxy.visualization.data_providers.registry import DataProviderRegistry
+from galaxy.visualization.genomes import Genomes
+from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.web.proxy import ProxyManager
 from galaxy.web.stack import application_stack_instance
+from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
+from galaxy.webhooks import WebhooksRegistry
 from tool_shed.galaxy_install import update_repository_manager
 
 

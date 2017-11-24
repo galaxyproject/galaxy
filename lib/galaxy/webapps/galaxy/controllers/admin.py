@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from string import punctuation as PUNCTUATION
 
 import six
-from sqlalchemy import and_, false, func, or_
+from sqlalchemy import and_, false, or_
 
 import galaxy.queue_worker
 from galaxy import (

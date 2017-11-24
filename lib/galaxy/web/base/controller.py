@@ -48,15 +48,8 @@ from galaxy.web import (
 )
 from galaxy.web.form_builder import (
     AddressField,
-    build_select_field,
     CheckboxField,
-    HistoryField,
-    PasswordField,
-    SelectField,
-    TextArea,
-    TextField,
-    WorkflowField,
-    WorkflowMappingField
+    PasswordField
 )
 from galaxy.workflow.modules import WorkflowModuleInjector
 

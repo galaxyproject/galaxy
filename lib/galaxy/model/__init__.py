@@ -12,7 +12,6 @@ import numbers
 import operator
 import os
 import pwd
-import socket
 import time
 from datetime import datetime, timedelta
 from string import Template
@@ -32,8 +31,8 @@ from galaxy.managers import tags
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.util import pgcalc
 from galaxy.security import get_permitted_actions
-from galaxy.util import (directory_hash_id, Params, ready_name_for_url,
-                         restore_text, send_mail, unicodify, unique_id)
+from galaxy.util import (directory_hash_id, ready_name_for_url,
+                         unicodify, unique_id)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_secure_hash
@@ -4173,6 +4172,7 @@ class FormDefinition(object, Dictifiable):
             if str(f['layout']) == str(grid_index):
                 gridfields[i] = f
         return gridfields
+
 
 class FormDefinitionCurrent(object):
     def __init__(self, form_definition=None):
