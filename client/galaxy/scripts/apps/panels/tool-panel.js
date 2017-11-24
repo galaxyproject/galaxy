@@ -66,7 +66,7 @@ var ToolPanel = Backbone.View.extend({
             self.$("#internal-workflows").append(
                 self._templateWorkflowLink({
                     title: menu_entry.stored_workflow.name,
-                    href: `workflow/run?id=${menu_entry.encoded_stored_workflow_id}`
+                    href: `workflows/run?id=${menu_entry.encoded_stored_workflow_id}`
                 })
             );
         });
