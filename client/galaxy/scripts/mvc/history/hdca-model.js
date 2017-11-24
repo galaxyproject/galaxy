@@ -11,7 +11,6 @@ var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin;
 
 var DC = DC_MODEL.DatasetCollection;
 
-
 //==============================================================================
 /** @class Backbone model for List Dataset Collection within a History.
  */
@@ -43,5 +42,5 @@ var HistoryDatasetCollection = DC.extend(hcontentMixin).extend(
 
 //==============================================================================
 export default {
-    HistoryDatasetCollection: HistoryDatasetCollection,
+    HistoryDatasetCollection: HistoryDatasetCollection
 };

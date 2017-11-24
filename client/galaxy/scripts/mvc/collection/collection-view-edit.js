@@ -98,5 +98,5 @@ var CollectionViewEdit = _super.extend(
 
 //==============================================================================
 export default {
-    CollectionViewEdit: CollectionViewEdit,
+    CollectionViewEdit: CollectionViewEdit
 };

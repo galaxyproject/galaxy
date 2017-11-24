@@ -357,8 +357,7 @@ var NestedDCDCECollection = DCECollection.extend(
     }
 );
 
-
 //==============================================================================
 export default {
-    DatasetCollection: DatasetCollection,
+    DatasetCollection: DatasetCollection
 };

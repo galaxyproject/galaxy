@@ -194,8 +194,7 @@ CollectionView.prototype.templates = (() => {
     });
 })();
 
-
 //==============================================================================
 export default {
-    CollectionView: CollectionView,
+    CollectionView: CollectionView
 };
