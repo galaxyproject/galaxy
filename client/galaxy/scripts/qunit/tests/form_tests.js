@@ -2,14 +2,14 @@
 define(
     [
         "qunit/test-app",
-        "sinon",
+        "jquery",
         "mvc/form/form-input",
         "mvc/ui/ui-misc",
         "mvc/form/form-data",
         "mvc/tool/tool-form",
         "utils/utils"
     ],
-    function(testApp, sinon, InputElement, Ui, FormData, ToolForm, Utils) {
+    function(testApp, $, InputElement, Ui, FormData, ToolForm, Utils) {
         "use strict";
         InputElement = InputElement.default;
         Ui = Ui.default;
@@ -19,15 +19,19 @@ define(
         QUnit.module("Form test", {
             beforeEach: function() {
                 testApp.create();
-                this.clock = sinon.useFakeTimers();
+                $.fx.off = true;
             },
             afterEach: function() {
                 testApp.destroy();
-                this.clock.restore();
+                $.fx.off = false;
             }
         });
 
         QUnit.test("tool-form", function(assert) {
+            // Huh? The following seems to be needed by tool-form.js - once the global usage
+            // is cleaned up in that module this can be deleted I assume.
+            window.parent.Galaxy = window.Galaxy;
+
             var toolform = new ToolForm.View({ id: "test" });
             var form = toolform.form;
             $("body").prepend(toolform.$el);
@@ -36,7 +40,6 @@ define(
             for (var property in assert) {
                 output += property + ": ; ";
             }
-            assert.ok(true, "MooCow");
             assert.ok(
                 form.$(".portlet-title-text").html() == "<b>_name</b> _description (Galaxy Version _version)",
                 "Title correct"
@@ -62,14 +65,12 @@ define(
                 JSON.stringify(mapped_ids) == '["a","b|c","b|i","b|j","k_0|l","k_0|m|n","k_0|m|s","k_0|m|t"]',
                 "Remapped tour ids correct"
             );
-            this.clock.tick(window.WAIT_FADE);
             var dropdown = form.$("#menu > .dropdown-menu");
             assert.ok(dropdown.children().length == 2, "Found two menu items");
             dropdown
                 .find(".fa-info-circle")
                 .parent()
                 .click();
-            this.clock.tick(window.WAIT_FADE);
             assert.ok(
                 form.$(".ui-message").html() ===
                     '<span>This tool requires req_name_a (Version req_version_a) and req_name_b (Version req_version_b). Click <a target="_blank" href="https://galaxyproject.org/tools/requirements/">here</a> for more information.</span>',
@@ -79,7 +80,6 @@ define(
             var $add = form.$(".form-repeat-add");
             assert.ok(!$add.attr("disabled"), "Adding new repeat possible");
             $add.click();
-            this.clock.tick(window.WAIT_FADE);
             assert.ok($add.attr("disabled"), "Adding new repeat has been disabled");
             form.$(".form-repeat-delete").each(function(i, d) {
                 assert.ok($(d).css("display") == "block", "Delete buttons " + i + " enabled");
@@ -91,7 +91,6 @@ define(
             );
             form.$(".form-repeat-delete:first").click();
             assert.ok(form.$(".form-repeat-delete").css("display") == "none", "Delete button disabled");
-            this.clock.tick(window.WAIT_FADE);
             assert.ok(
                 JSON.stringify(form.data.create()) ==
                     '{"a":"","b|c":"h","b|i":"i","b|j":"j","k_0|l":"l","k_0|m|n":"o","k_0|m|p":"p","k_0|m|q":"q"}',
@@ -148,9 +147,7 @@ define(
             input.model.set("disabled", true);
             assert.ok(input.$field.css("display") == "none", "Input field hidden");
             input.model.set("disabled", false);
-            this.clock.tick(window.WAIT_FADE);
             assert.ok(input.$field.css("display") == "block", "Input field shown, again");
-            this.clock.tick(window.WAIT_FADE);
             input.model.set("color", "red");
             assert.ok(
                 input.$field
