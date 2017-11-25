@@ -1,12 +1,12 @@
 /* global define */
 
-define(["qunit/test-app", "mvc/ui/ui-modal", "sinon"], function(testApp, GalaxyModal, sinon) {
+define(["qunit/test-app", "mvc/ui/ui-modal", "jquery"], function(testApp, GalaxyModal, $) {
     "use strict";
     GalaxyModal = GalaxyModal.default;
     QUnit.module("Modal dialog test", {
         beforeEach: function() {
+            $.fx.off = true;
             testApp.create();
-            this.clock = sinon.useFakeTimers();
             var self = this;
             this.app = new GalaxyModal.View({
                 title: "Test title",
@@ -20,8 +20,8 @@ define(["qunit/test-app", "mvc/ui/ui-modal", "sinon"], function(testApp, GalaxyM
             });
         },
         afterEach: function() {
+            $.fx.off = false;
             testApp.destroy();
-            this.clock.restore();
         }
     });
 
@@ -31,21 +31,15 @@ define(["qunit/test-app", "mvc/ui/ui-modal", "sinon"], function(testApp, GalaxyM
     });
 
     QUnit.test("test dialog visibility", function(assert) {
-        assert.ok(this.app.$el.css("display") == "block", "Modal is initially visible");
         this.app.hide();
-        this.clock.tick(WAIT_FADE);
         assert.ok(this.app.$el.css("display") == "none", "Modal hidden manually");
         this.app.show();
-        this.clock.tick(WAIT_FADE);
         assert.ok(this.app.$el.css("display") == "block", "Modal shown manually");
         this.app.getButton("Ok").trigger("click");
-        this.clock.tick(WAIT_FADE);
         assert.ok(this.app.$el.css("display") == "block", "Modal still visible after clicking Ok");
         this.app.getButton("Cancel").trigger("click");
-        this.clock.tick(WAIT_FADE);
         assert.ok(this.app.$el.css("display") == "none", "Modal hidden after clicking Cancel");
         this.app.show();
-        this.clock.tick(WAIT_FADE);
         assert.ok(this.app.$el.css("display") == "block", "Modal manually shown again");
         assert.ok(!this.app.$header.hasClass("no-separator"), "Title separator tagged as visible.");
         this.app.show({ title_separator: false });
@@ -56,13 +50,13 @@ define(["qunit/test-app", "mvc/ui/ui-modal", "sinon"], function(testApp, GalaxyM
     });
 
     QUnit.test("test dialog closing events", function(assert) {
+        this.app.show();
         this.app.$backdrop.trigger("click");
-        this.clock.tick(WAIT_FADE);
         assert.ok(this.app.$el.css("display") == "block", "Modal shown after backdrop click");
+        this.app.hide();
         this.app.show({ closing_events: true });
         assert.ok(this.app.$el.css("display") == "block", "Modal shown with closing events");
         this.app.$backdrop.trigger("click");
-        this.clock.tick(WAIT_FADE);
         assert.ok(this.app.$el.css("display") == "none", "Modal hidden after backdrop click");
     });
 

@@ -26,6 +26,7 @@ var TESTS_SEPARATE_PACKS = [
     {pattern: 'galaxy/scripts/qunit/tests/utils_test.js', watched: false},
     {pattern: 'galaxy/scripts/qunit/tests/page_tests.js', watched: false},
     {pattern: 'galaxy/scripts/qunit/tests/workflow_editor_tests.js', watched: false},
+    {pattern: 'galaxy/scripts/qunit/tests/modal_tests.js', watched: false},
     // The following tests don't work for state reasons:
 
     // Error: Following test works on its own or with rest but not with 
