@@ -55,7 +55,8 @@ define(["qunit/test-app", "layout/masthead", "galaxy"], function(testApp, Masthe
         assert.ok($tab.css("visibility") == "hidden", "Tab hidden");
         tab.set("visible", true);
         assert.ok($tab.css("visibility") == "visible", "Tab visible, again");
-        assert.ok($toggle.attr("href") == Galaxy.root, "Correct initial url");
+        // TODO: cleanup global usage so window.Galaxy isn't needed here.
+        assert.ok($toggle.attr("href") == window.Galaxy.root, "Correct initial url");
         tab.set("url", "_url");
         assert.ok($toggle.attr("href") == "/_url", "Correct test url");
         tab.set("url", "http://_url");
@@ -119,6 +120,7 @@ define(["qunit/test-app", "layout/masthead", "galaxy"], function(testApp, Masthe
         assert.ok(!$toggle.hasClass("toggle"), "Untoggled before click");
         $toggle.trigger("click");
         assert.ok($toggle.hasClass("toggle"), "Toggled after click");
-        assert.ok(Galaxy.frame.active, "Scratchbook is active");
+        // TODO: cleanup global usage so window.Galaxy isn't needed here.
+        assert.ok(window.Galaxy.frame.active, "Scratchbook is active");
     });
 });

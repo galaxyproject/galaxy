@@ -15,8 +15,11 @@ var single_pack_mode = function(){
 };
 
 var TESTS_SEPARATE_PACKS = [
-    // Something is funky with form_tests.js - needs to come before other tests.
+    // Something is funky with form_tests.js - needs to come before all other tests.
     {pattern: 'galaxy/scripts/qunit/tests/form_tests.js', watched: false},
+    // Something is funky with masthead_tests - needs to come before one of the other
+    // tests - not sure which though...
+    {pattern: 'galaxy/scripts/qunit/tests/masthead_tests.js', watched: false},
     {pattern: 'galaxy/scripts/qunit/tests/list-of-pairs-collection-creator.js', watched: false},
     {pattern: 'galaxy/scripts/qunit/tests/galaxy-app-base.js', watched: false},
     {pattern: 'galaxy/scripts/qunit/tests/graph.js', watched: false},
@@ -39,8 +42,6 @@ var TESTS_SEPARATE_PACKS = [
     // Error: things displayed wrong I guess cause assertions fail on CSS stuff
     // 'galaxy/scripts/qunit/tests/modal_tests.js',
     // 'galaxy/scripts/qunit/tests/upload_dialog_tests.js',
-    // Error: Cannot find module "libs/bibtexParse"
-    // 'galaxy/scripts/qunit/tests/masthead_tests.js',
 ];
 
 var TESTS_AS_SINGLE_PACK = [
