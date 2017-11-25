@@ -37,6 +37,7 @@ define(
             pcc.createList("Heres a collection");
             server.respond();
             assert.deepEqual(requestJSON, DATA._1requestJSON);
+            server.restore();
         });
 
         QUnit.test("Creator base/empty construction/initializiation defaults", function(assert) {
