@@ -10,12 +10,8 @@ from paste.httpexceptions import (
     HTTPNotImplemented,
     HTTPRequestRangeNotSatisfiable
 )
-from six import (
-    string_types,
-    text_type
-)
+from six import string_types
 from sqlalchemy import true
-
 from galaxy import (
     exceptions,
     model,
