@@ -109,6 +109,9 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_bibtex_rendering(self):
         self.home()
+        # prefetch citations so they will be available quickly when rendering tool form.
+        self.api_get("tools/bibtex/citations")
+
         self.tool_open("bibtex")
         self.components.tool_form.citations.wait_for_visible()
 
