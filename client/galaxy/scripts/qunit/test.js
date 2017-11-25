@@ -6,7 +6,7 @@ import gab from "qunit/tests/galaxy_app_base_tests";
 import ml from "qunit/tests/metrics_logger_tests";
 // form_tests seems to need to come before something - maybe multiple things
 import form from "qunit/tests/form_tests";
-// import l from "qunit/tests/list_of_pairs_collection_creator_tests";
+import l from "qunit/tests/list_of_pairs_collection_creator_tests";
 import upd from "qunit/tests/upload_dialog_tests";
 import we from "qunit/tests/workflow_editor_tests";
 import mast from "qunit/tests/masthead_tests";
