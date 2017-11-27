@@ -3,6 +3,7 @@ import * as mod_toastr from "libs/toastr";
 import TAGS from "mvc/tag";
 import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";
+import _l from "utils/localization";
 /** View of the individual workflows */
 var WorkflowItemView = Backbone.View.extend({
     tagName: "tr", // name of (orphan) root tag in this.el
@@ -333,7 +334,7 @@ var WorkflowListView = Backbone.View.extend({
             '<div class="page-container">' +
             '<div class="user-workflows wf">' +
             '<div class="response-message"></div>' +
-            "<h2>Your workflows</h2>" +
+            "<h2>"+_l('Your workflows')+"</h2>" +
             "</div>" +
             "</div>"
         );
