@@ -500,20 +500,19 @@ class SnpSiftDbNSFP(Text):
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
         """
-        self.regenerate_primary_file(dataset)
+        return '<html><head><title>SnpSiftDbNSFP Composite Dataset</title></head></html>'
 
     def regenerate_primary_file(self, dataset):
         """
         cannot do this until we are setting metadata
         """
         annotations = "dbNSFP Annotations: %s\n" % ','.join(dataset.metadata.annotation)
-        f = open(dataset.file_name, 'a')
-        if dataset.metadata.bgzip:
-            bn = dataset.metadata.bgzip
-            f.write(bn)
-            f.write('\n')
-        f.write(annotations)
-        f.close()
+        with open(dataset.file_name, 'a') as f:
+            if dataset.metadata.bgzip:
+                bn = dataset.metadata.bgzip
+                f.write(bn)
+                f.write('\n')
+            f.write(annotations)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         try:
