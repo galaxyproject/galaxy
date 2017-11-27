@@ -30,8 +30,8 @@ masthead:
     user:
       type: xpath
       selector: '//ul[@id="user"]'
-    
-    workflow: 
+
+    workflow:
       type: xpath
       selector: '//ul[@id="workflow"]'
 
@@ -123,7 +123,7 @@ history_panel:
     name: '.title .name'
     name_edit_input: '.name input'
     contents: '#current-history-panel .list-items div.history-content'
-    
+
     empty_message: '.empty-message'
     size: '.history-size'
     tag_icon: '.actions .history-tag-btn'
@@ -249,8 +249,8 @@ libraries:
       import_datasets_ok_button: '.modal-footer .buttons #button-0'
       import_datasets_cancel_button: '.modal-footer .buttons #button-1'
       import_progress_bar: '.progress-bar-import'
-      import_history_content: '#selected_history_content'
-      import_history_contents_items: '#selected_history_content ul li'
+      import_history_content: '.library_selected_history_content'
+      import_history_contents_items: '.library_selected_history_content ul li'
       import_from_path_textarea: '#import_paths'
 
     labels:
