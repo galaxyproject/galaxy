@@ -1,5 +1,7 @@
+import json
 import logging
 
+from six import string_types
 from sqlalchemy import false, or_
 
 from galaxy import util
@@ -328,8 +330,15 @@ class RepositoryInstallationGrid(grids.Grid):
 
     def build_initial_query(self, trans, **kwd):
         clause_list = []
-        tool_shed_repository_ids = util.listify(kwd.get('tool_shed_repository_ids', None))
+        tool_shed_repository_ids = kwd.get('tool_shed_repository_ids', None)
         if tool_shed_repository_ids:
+            if isinstance(tool_shed_repository_ids, string_types):
+                try:
+                    # kwd['tool_shed_repository_ids'] may be a json dump of repo ids like u'['aebaa141e7243ebf']'
+                    tool_shed_repository_ids = json.loads(tool_shed_repository_ids)
+                except ValueError:
+                    pass
+            tool_shed_repository_ids = util.listify(tool_shed_repository_ids)
             for tool_shed_repository_id in tool_shed_repository_ids:
                 clause_list.append(self.model_class.table.c.id == trans.security.decode_id(tool_shed_repository_id))
             if clause_list:
