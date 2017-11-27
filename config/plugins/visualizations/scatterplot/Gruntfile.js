@@ -1,5 +1,5 @@
-// NOTE: use 'sudo npm install .', then 'grunt' to use this file
-
+// NOTE: use 'npm install' from this directory, then 'grunt' to use this file
+// to build scatterplot-edit.js
 module.exports = function(grunt) {
 
     grunt.initConfig({
