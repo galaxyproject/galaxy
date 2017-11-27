@@ -28,6 +28,7 @@ ${h.stylesheet_link( root + 'plugins/visualizations/scatterplot/static/scatterpl
 window.Galaxy = { root: '${ root }' };
 </script>
 ${h.js( 'libs/jquery/jquery',
+        'libs/require',
         'libs/jquery/jquery.migrate',
         'libs/jquery/jquery-ui',
         'libs/bootstrap',
