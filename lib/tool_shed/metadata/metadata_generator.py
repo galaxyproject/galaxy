@@ -361,7 +361,8 @@ class MetadataGenerator(object):
             # If the list of sample files includes a tool_data_table_conf.xml.sample file, load
             # its table elements into memory.
             relative_path, filename = os.path.split(sample_file)
-            if filename == 'tool_data_table_conf.xml.sample':
+            if filename == 'tool_data_table_conf.xml.sample' and self.resetting_all_metadata_on_repository:
+                # Don't load table from temporary locations into memory
                 new_table_elems, error_message = \
                     self.app.tool_data_tables.add_new_entries_from_config_file(config_filename=sample_file,
                                                                                tool_data_path=work_dir,

@@ -532,7 +532,7 @@ class InstallRepositoryManager(object):
                 tdtm.install_tool_data_tables(tool_shed_repository, tool_index_sample_files)
             if tool_data_table_elems:
                 self.app.tool_data_tables.add_new_entries_from_config_file(tool_data_table_conf_filename,
-                                                                           None,
+                                                                           self.app.config.shed_tool_data_path,
                                                                            self.app.config.shed_tool_data_table_config,
                                                                            persist=True)
         if 'tools' in irmm_metadata_dict:
