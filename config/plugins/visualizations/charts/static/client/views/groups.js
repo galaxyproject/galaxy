@@ -8,7 +8,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
             this.chart  = app.chart;
             this.group  = options.group;
             this.setElement( $( '<div/>' ) );
-            this.listenTo( this.chart, 'change:dataset_id change:type', function() { self.render() } );
+            this.listenTo( this.chart, 'change:dataset_id change:type', function() { self.render(); } );
             this.render();
         },
 
@@ -44,7 +44,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
                             });
                             inputs[ '__data_columns' ] = { name: '__data_columns', type: 'hidden', hidden: true, value: data_columns };
                             self.chart.state( 'ok', 'Metadata initialized...' );
-                            self.form = new Form( {
+                            self.form = new Form.View( {
                                 inputs  : inputs,
                                 cls     : 'ui-portlet-plain',
                                 onchange: function() {

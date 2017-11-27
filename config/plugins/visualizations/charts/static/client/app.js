@@ -39,7 +39,7 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
             this.options    = options;
             this.modal      = parent.Galaxy && parent.Galaxy.modal || new Modal.View();
             this.chart      = new Chart( {}, options );
-            this.deferred   = new Deferred();
+            this.deferred   = new Deferred.default();
             this.viewer     = new Viewer( this );
             this.editor     = new Editor( this );
             this.$el.append( this.viewer.$el );

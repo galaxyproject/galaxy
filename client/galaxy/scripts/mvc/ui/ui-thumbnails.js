@@ -1,8 +1,8 @@
 /** This class renders the selection grid. */
 import Utils from "utils/utils";
-import Ui from "mvc/ui/ui-misc";
 import Tabs from "mvc/ui/ui-tabs";
-var View = Backbone.View.extend({
+
+export var View = Backbone.View.extend({
     events: {
         "click .ui-thumbnails-item": "_onclick",
         "dblclick .ui-thumbnails-item": "_ondblclick"
@@ -26,8 +26,6 @@ var View = Backbone.View.extend({
     },
 
     _renderDefault: function() {
-        var self = this;
-        var index = [];
         var title_length = 20;
         var $el = $("<div/>").addClass("ui-thumbnails-grid");
         this.collection.each(model => {
@@ -35,7 +33,7 @@ var View = Backbone.View.extend({
                 var title = model.get("title");
                 $el.append(
                     $(
-                        self._templateThumbnailItem({
+                        this._templateThumbnailItem({
                             id: model.id,
                             title: title.length < title_length ? title : `${title.substr(0, title_length)}...`,
                             title_icon: model.get("title_icon"),
@@ -51,7 +49,7 @@ var View = Backbone.View.extend({
         if ($el.children().length > 0) {
             this.tabs.add({
                 id: Utils.uid(),
-                title: self.model.get("title_default"),
+                title: this.model.get("title_default"),
                 $el: $el
             });
         }
@@ -82,7 +80,9 @@ var View = Backbone.View.extend({
             this.$(`[value="${new_value}"]`).addClass("ui-thumbnail-current");
             var after = this.$(".ui-thumbnail-current").attr("value");
             var change_handler = this.model.get("onchange");
-            after != before && change_handler && change_handler(after);
+            if (after != before && change_handler) {
+                change_handler(after);
+            }
         }
         return this.$(".ui-thumbnail-current").attr("value");
     },
@@ -97,8 +97,10 @@ var View = Backbone.View.extend({
     },
 
     /** Add double click handler */
-    _ondblclick: function(e) {
-        this.model.get("ondblclick") && this.model.get("ondblclick")(this.value());
+    _ondblclick: function() {
+        if (this.model.get("ondblclick")) {
+            this.model.get("ondblclick")(this.value());
+        }
     },
 
     /* Thumbnail template with image */

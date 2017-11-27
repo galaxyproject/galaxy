@@ -30,7 +30,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
                     var model_value = self.chart.settings.get( name );
                     model_value !== undefined && !input.hidden && ( input.value = model_value );
                 });
-                this.form = new Form({
+                this.form = new Form.View({
                     inputs   : inputs,
                     cls      : 'ui-portlet-plain',
                     onchange : function() { self.chart.settings.set( self.form.data.create() ); }
