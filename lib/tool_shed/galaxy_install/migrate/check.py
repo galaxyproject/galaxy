@@ -55,11 +55,10 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
         if not app.config.running_functional_tests:
             if tool_shed_accessible:
                 # Automatically update the value of the migrate_tools.version database table column.
-                config_arg = ''
+                cmd = ['sh', 'manage_db.sh', 'upgrade', 'tools']
                 if galaxy_config_file:
-                    config_arg = " -c %s" % galaxy_config_file
-                cmd = 'sh manage_tools.sh%s upgrade' % config_arg
-                proc = subprocess.Popen(args=cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    cmd[2:2] = ['-c', galaxy_config_file]
+                proc = subprocess.Popen(args=cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 return_code = proc.wait()
                 output = proc.stdout.read(32768)
                 if return_code != 0:

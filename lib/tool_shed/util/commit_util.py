@@ -10,7 +10,8 @@ from collections import namedtuple
 from sqlalchemy.sql.expression import null
 
 import tool_shed.repository_types.util as rt_util
-from galaxy.util import checkers, safe_relpath
+from galaxy.util import checkers
+from galaxy.util.path import safe_relpath
 from tool_shed.tools import data_table_manager
 from tool_shed.util import basic_util, hg_util, shed_util_common as suc
 
