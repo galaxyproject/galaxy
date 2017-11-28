@@ -4,6 +4,7 @@ import * as Backbone from "libs/backbone";
 import "jquery-ui-bundle";
 import * as d3 from "libs/d3";
 import "ui/peek-column-selector";
+import "ui/pagination";
 
 /**
  *  Two Variable scatterplot visualization using d3
