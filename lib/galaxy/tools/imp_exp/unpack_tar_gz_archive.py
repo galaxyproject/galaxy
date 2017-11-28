@@ -49,7 +49,7 @@ def check_archive(archive_file, dest_dir):
     Ensure that a tar archive has no absolute paths or relative paths outside
     the archive.
     """
-    with tarfile.open(archive_file, mode='r:gz') as archive_fp:
+    with tarfile.open(archive_file, mode='r') as archive_fp:
         for arc_path in archive_fp.getnames():
             assert os.path.normpath(
                 os.path.join(
@@ -64,7 +64,7 @@ def unpack_archive(archive_file, dest_dir):
     """
     Unpack a tar and/or gzipped archive into a destination directory.
     """
-    archive_fp = tarfile.open(archive_file, mode='r:gz')
+    archive_fp = tarfile.open(archive_file, mode='r')
     archive_fp.extractall(path=dest_dir)
     archive_fp.close()
 
