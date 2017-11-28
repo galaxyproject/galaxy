@@ -1,33 +1,32 @@
 <template>
     <div class="ui-portlet-limited">
-            <div class="portlet-header">
-                <div class="portlet-title">
-                    <i class="portlet-title-icon fa fa-upload"></i>
-                    <span class="portlet-title-text"><b>Import a History from an Archive</b></span>
-                </div>
-            </div>
-            <div class="portlet-content">
-                <div v-if="errormessage" class="ui-message alert alert-danger ui-error-message">
-                    {{ errormessage }}
-                </div>
-                <div class="portlet-body">
-                    <div class="ui-message"/>
-                    <form ref="form">
-                        <div class="ui-form-element">
-                            <div class="ui-form-title">Archived History URL</div>
-                            <input class="ui-input" type="text" name="archive_source"/>
-                        </div>
-                        <div class="ui-form-element">
-                            <div class="ui-form-title">Archived History file</div>
-                            <input type="file" name="archive_file"/>
-                        </div>
-                    </form>
-                </div>
-                <div class="portlet-buttons">
-                    <input class="btn btn-primary" type="button" value="Import History" @click="submit"/>
-                </div>
+        <div class="portlet-header">
+            <div class="portlet-title">
+                <i class="portlet-title-icon fa fa-upload"></i>
+                <span class="portlet-title-text"><b>Import a History from an Archive</b></span>
             </div>
         </div>
+        <div class="portlet-content">
+            <div v-if="errormessage" class="ui-message alert alert-danger">
+                {{ errormessage }}
+            </div>
+            <div class="portlet-body">
+                <form ref="form">
+                    <div class="ui-form-element">
+                        <div class="ui-form-title">Archived History URL</div>
+                        <input class="ui-input" type="text" name="archive_source"/>
+                    </div>
+                    <div class="ui-form-element">
+                        <div class="ui-form-title">Archived History file</div>
+                        <input type="file" name="archive_file"/>
+                    </div>
+                </form>
+            </div>
+            <div class="portlet-buttons">
+                <input class="btn btn-primary" type="button" value="Import History" @click="submit"/>
+            </div>
+        </div>
+    </div>
 </template>
 <script>
 export default {
@@ -58,7 +57,7 @@ export default {
 };
 </script>
 <style>
-.ui-error-message {
+.ui-message {
     display: block;
 }
 </style>
