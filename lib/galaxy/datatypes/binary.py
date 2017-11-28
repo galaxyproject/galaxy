@@ -1088,7 +1088,7 @@ class TwoBit(Binary):
             dataset.peek = "Binary TwoBit format nucleotide file"
             dataset.blurb = nice_size(dataset.get_size())
         else:
-            return super(TwoBit, self).set_peek(dataset, is_multi_byte)
+            return super(TwoBit, self).set_peek(dataset)
 
     def display_peek(self, dataset):
         try:

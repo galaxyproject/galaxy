@@ -314,13 +314,14 @@ class Registry(object):
         def append_to_sniff_order():
             # Just in case any supported data types are not included in the config's sniff_order section.
             for ext, datatype in self.datatypes_by_extension.items():
-                included = False
-                for atype in self.sniff_order:
-                    if isinstance(atype, datatype.__class__):
-                        included = True
-                        break
-                if not included:
-                    self.sniff_order.append(datatype)
+                if hasattr(datatype, 'sniff'):
+                    included = False
+                    for atype in self.sniff_order:
+                        if isinstance(atype, datatype.__class__):
+                            included = True
+                            break
+                    if not included:
+                        self.sniff_order.append(datatype)
         append_to_sniff_order()
 
     def _load_build_sites(self, root):
