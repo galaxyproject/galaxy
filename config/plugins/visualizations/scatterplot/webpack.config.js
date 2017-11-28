@@ -1,7 +1,7 @@
 var path = require("path");
 var croot = path.resolve(__dirname, "../../../../");
 var webpack = require("webpack");
-var lroot  = path.resolve(croot, "client/galaxy/scripts/libs");
+var lroot = path.resolve(croot, "client/galaxy/scripts/libs");
 
 module.exports = {
     entry: path.resolve(__dirname, "./src/scatterplot.js"),
@@ -10,10 +10,7 @@ module.exports = {
         filename: "scatterplot.bundle.js"
     },
     resolve: {
-        modules: [
-            path.resolve(croot, "client/galaxy/scripts"),
-            path.resolve(croot, "client/node_modules")
-        ],
+        modules: [path.resolve(croot, "client/galaxy/scripts"), path.resolve(croot, "client/node_modules")],
         alias: {
             jquery: path.join(lroot, "jquery/jquery"),
             underscore: path.join(lroot, "underscore.js"),
@@ -33,7 +30,7 @@ module.exports = {
         new webpack.ProvidePlugin({
             $: "jquery",
             _: "underscore",
-            Backbone: "backbone",
+            Backbone: "backbone"
         })
     ]
 };
