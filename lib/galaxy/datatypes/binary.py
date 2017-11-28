@@ -673,7 +673,6 @@ Binary.register_sniffable_binary_format('cram', 'cram', CRAM)
 class BaseBcf(Binary):
     edam_format = "format_3020"
     edam_data = "data_3498"
-    file_ext = "bcf"
 
 
 class Bcf(BaseBcf):
@@ -688,6 +687,7 @@ class Bcf(BaseBcf):
     >>> Bcf().sniff(fname)
     False
     """
+    file_ext = "bcf"
 
     MetadataElement(name="bcf_index", desc="BCF Index File", param=metadata.FileParameter, file_ext="csi", readonly=True, no_value=None, visible=False, optional=True)
 
@@ -1014,6 +1014,7 @@ class BigWig(Binary):
     """
     edam_format = "format_3006"
     edam_data = "data_3002"
+    file_ext = "bigwig"
     track_type = "LineTrack"
     data_sources = {"data_standalone": "bigwig"}
 
@@ -1054,6 +1055,7 @@ class BigBed(BigWig):
     """BigBed support from UCSC."""
     edam_format = "format_3004"
     edam_data = "data_3002"
+    file_ext = "bigbed"
     data_sources = {"data_standalone": "bigbed"}
 
     def __init__(self, **kwd):
@@ -1472,6 +1474,7 @@ class OxliCountGraph(OxliBinary):
     >>> OxliCountGraph().sniff( fname )
     True
     """
+    file_ext = 'oxlicg'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"01")
@@ -1500,6 +1503,7 @@ class OxliNodeGraph(OxliBinary):
     >>> OxliNodeGraph().sniff( fname )
     True
     """
+    file_ext = 'oxling'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"02")
@@ -1529,6 +1533,7 @@ class OxliTagSet(OxliBinary):
     >>> OxliTagSet().sniff( fname )
     True
     """
+    file_ext = 'oxlits'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"03")
@@ -1552,6 +1557,7 @@ class OxliStopTags(OxliBinary):
     >>> OxliStopTags().sniff( fname )
     True
     """
+    file_ext = 'oxlist'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"04")
@@ -1581,6 +1587,7 @@ class OxliSubset(OxliBinary):
     >>> OxliSubset().sniff( fname )
     True
     """
+    file_ext = 'oxliss'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"05")
@@ -1610,6 +1617,7 @@ class OxliGraphLabels(OxliBinary):
     >>> OxliGraphLabels().sniff( fname )
     True
     """
+    file_ext = 'oxligl'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"06")
