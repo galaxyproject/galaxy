@@ -28,31 +28,27 @@ ${h.stylesheet_link( root + 'plugins/visualizations/scatterplot/static/scatterpl
 window.Galaxy = { root: '${ root }' };
 </script>
 ${h.js( 'libs/jquery/jquery',
-        'libs/require',
-        'libs/jquery/jquery.migrate',
         'libs/jquery/jquery-ui',
+        'libs/require',
         'libs/bootstrap',
         'libs/underscore',
         'libs/backbone',
-        'libs/d3',
-        'ui/peek-column-selector',
-        'ui/pagination',
-        'mvc/visualization/visualization-model' )}
+        'libs/d3')}
 
-${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot-edit.js' )}
-
-<script type="text/javascript">
-function getModel(){
-    return new ScatterplotModel({
-        id      : ${h.dumps( visualization_id )} || undefined,
-        title   : "${title or default_title}",
-        config  : ${h.dumps( config, indent=2 )}
-    });
-}
-function getHDAJSON(){
-    return ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )};
-}
-</script>
+${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot.bundle.js' )}
+    <script type="text/javascript">
+    function getModel(){
+        return new ScatterplotModel({
+            id      : ${h.dumps( visualization_id )} || undefined,
+            title   : "${title or default_title}",
+            config  : ${h.dumps( config, indent=2 )}
+        });
+    }
+    function getHDAJSON(){
+        return ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )};
+    }
+    window.jQuery = window.jquery = window.$;
+    </script>
 
 </head>
 

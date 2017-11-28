@@ -4,7 +4,7 @@
  *  @augments Backbone.Model
  *  @constructs
  */
-var Visualization = Backbone.Model.extend(
+export var Visualization = Backbone.Model.extend(
     /** @lends Visualization.prototype */ {
         ///** logger used to record this.log messages, commonly set to console */
         //// comment this out to suppress log output
@@ -76,7 +76,7 @@ var Visualization = Backbone.Model.extend(
  *
  *  @constructs
  */
-var VisualizationCollection = Backbone.Collection.extend(
+export var VisualizationCollection = Backbone.Collection.extend(
     /** @lends VisualizationCollection.prototype */ {
         model: Visualization,
 
