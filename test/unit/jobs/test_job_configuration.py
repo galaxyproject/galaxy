@@ -6,6 +6,7 @@ import unittest
 
 from galaxy.jobs import JobConfiguration
 from galaxy.util import bunch
+from galaxy.web.stack import ApplicationStack
 
 # File would be slightly more readable if contents were embedded directly, but
 # there are advantages to testing the documentation/examples.
@@ -24,9 +25,10 @@ class JobConfXmlParserTestCase(unittest.TestCase):
             job_resource_params_file="/tmp/fake_absent_path",
             config_dict={},
             default_job_resubmission_condition="",
+            server_name="main",
         )
         self.__write_config_from(SIMPLE_JOB_CONF)
-        self.app = bunch.Bunch(config=self.config, job_metrics=MockJobMetrics())
+        self.app = bunch.Bunch(config=self.config, job_metrics=MockJobMetrics(), application_stack=ApplicationStack())
         self.__job_configuration = None
 
     def tearDown(self):

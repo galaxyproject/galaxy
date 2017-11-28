@@ -309,7 +309,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         attribute_inputs.append({
                             'type'      : 'select',
                             'multiple'  : attributes.multiple,
-                            'optional'  : attributes.optional,
+                            'optional'  : spec.get('optional'),
                             'name'      : name,
                             'label'     : spec.desc,
                             'options'   : attributes.options,

@@ -61,7 +61,7 @@ class ModelOperationToolAction(DefaultToolAction):
         trans.sa_session.flush()  # ensure job.id are available
 
         # Queue the job for execution
-        # trans.app.job_queue.put( job.id, tool.id )
+        # trans.app.job_manager.job_queue.put( job.id, tool.id )
         # trans.log_event( "Added database job action to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
         log.info("Calling produce_outputs, tool is %s" % tool)
         return job, out_data

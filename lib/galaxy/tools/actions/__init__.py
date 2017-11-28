@@ -510,7 +510,7 @@ class DefaultToolAction(object):
             trans.response.send_redirect(url_for(controller='tool_runner', action='redirect', redirect_url=redirect_url))
         else:
             # Put the job in the queue if tracking in memory
-            app.job_queue.put(job.id, job.tool_id)
+            app.job_manager.job_queue.put(job.id, job.tool_id)
             trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
             return job, out_data
 
