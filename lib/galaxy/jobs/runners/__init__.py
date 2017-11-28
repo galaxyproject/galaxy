@@ -41,7 +41,6 @@ STOP_SIGNAL = object()
 JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE = "Invalid job runner parameter for this plugin: %s"
 JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE = "Job runner parameter '%s' value '%s' could not be converted to the correct type"
 JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE = "Job runner parameter %s failed validation"
-JOB_COLLECTION_FAILED_EXIT_CODE = "123"
 
 GALAXY_LIB_ADJUST_TEMPLATE = """GALAXY_LIB="%s"; if [ "$GALAXY_LIB" != "None" ]; then if [ -n "$PYTHONPATH" ]; then PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"; else PYTHONPATH="$GALAXY_LIB"; fi; export PYTHONPATH; fi;"""
 GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then . "$GALAXY_VIRTUAL_ENV/bin/activate"; fi;"""
@@ -630,15 +629,17 @@ class AsynchronousJobRunner(Monitors, BaseJobRunner):
                     time.sleep(1)
                 which_try += 1
 
-        if collect_output_success:
-            try:
-                # This should be an 8-bit exit code, but read ahead anyway:
-                exit_code_str = open(job_state.exit_code_file, "r").read(32)
-            except Exception:
-                # By default, the exit code is 0, which typically indicates success.
-                exit_code_str = "0"
-        else:
-            exit_code_str = JOB_COLLECTION_FAILED_EXIT_CODE
+        if not collect_output_success:
+            job_state.fail_message = stderr
+            self.mark_as_failed(job_state)
+            return
+
+        try:
+            # This should be an 8-bit exit code, but read ahead anyway:
+            exit_code_str = open(job_state.exit_code_file, "r").read(32)
+        except Exception:
+            # By default, the exit code is 0, which typically indicates success.
+            exit_code_str = "0"
 
         try:
             # Decode the exit code. If it's bogus, then just use 0.
