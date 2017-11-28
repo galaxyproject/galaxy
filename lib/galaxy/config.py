@@ -355,6 +355,15 @@ class Configuration(object):
         self.parallelize_workflow_scheduling_within_histories = string_as_bool(kwargs.get('parallelize_workflow_scheduling_within_histories', 'False'))
         self.maximum_workflow_invocation_duration = int(kwargs.get("maximum_workflow_invocation_duration", 2678400))
 
+        workflow_resource_params_mapper = kwargs.get("workflow_resource_params_mapper", None)
+        if not workflow_resource_params_mapper:
+            workflow_resource_params_mapper = None
+        elif ":" not in workflow_resource_params_mapper:
+            # Assume it is not a Python function, so a file
+            workflow_resource_params_mapper = self.resolve_path(workflow_resource_params_mapper)
+        # else: a Python a function!
+        self.workflow_resource_params_mapper = workflow_resource_params_mapper
+
         # Per-user Job concurrency limitations
         self.cache_user_job_count = string_as_bool(kwargs.get('cache_user_job_count', False))
         self.user_job_limit = int(kwargs.get('user_job_limit', 0))

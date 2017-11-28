@@ -1,6 +1,5 @@
 import logging
 import uuid
-from json import dumps
 
 from galaxy import (
     exceptions,
@@ -8,6 +7,7 @@ from galaxy import (
 )
 from galaxy.managers import histories
 from galaxy.tools.parameters.meta import expand_workflow_inputs
+from galaxy.workflow.resources import get_resource_mapper_function
 
 INPUT_STEP_TYPES = ['data_input', 'data_collection_input', 'parameter_input']
 
@@ -42,12 +42,13 @@ class WorkflowRunConfig(object):
     :type param_map: dict
     """
 
-    def __init__(self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, param_map={}, allow_tool_state_corrections=False):
+    def __init__(self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, param_map={}, allow_tool_state_corrections=False, resource_params={}):
         self.target_history = target_history
         self.replacement_dict = replacement_dict
         self.copy_inputs_to_history = copy_inputs_to_history
         self.inputs = inputs
         self.param_map = param_map
+        self.resource_params = resource_params
         self.allow_tool_state_corrections = allow_tool_state_corrections
 
 
@@ -297,14 +298,34 @@ def build_workflow_run_configs(trans, workflow, payload):
                 normalized_inputs[key] = value['content']
             else:
                 normalized_inputs[key] = value
-        if 'workflow_options' in payload:
-            normalized_inputs['workflow_options'] = payload.get('workflow_options', {})
+        resource_params = payload.get('resource_params', {})
+        if resource_params:
+            # quick attempt to validate parameters, just handle select options now since is what
+            # is needed for DTD - arbitrary plugins can define arbitrary logic at runtime in the
+            # destination function. In the future this should be extended to allow arbitrary
+            # pluggable validation.
+            resource_mapper_function = get_resource_mapper_function(trans.app)
+            resource_parameters = resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
+            for resource_parameter in resource_parameters:
+                if resource_parameter.attrib.get("type") == "select":
+                    name = resource_parameter.attrib.get("name")
+                    if name in resource_params:
+                        value = resource_params[name]
+                        valid_option = False
+                        for option_elem in resource_parameter.getchildren():
+                            option_value = option_elem.attrib.get("value")
+                            if value == option_value:
+                                valid_option = True
+                        if not valid_option:
+                            raise exceptions.RequestParameterInvalidException("Invalid value for parameter '%s' found." % name)
+
         run_configs.append(WorkflowRunConfig(
             target_history=history,
             replacement_dict=payload.get('replacement_params', {}),
             inputs=normalized_inputs,
             param_map=param_map,
-            allow_tool_state_corrections=allow_tool_state_corrections
+            allow_tool_state_corrections=allow_tool_state_corrections,
+            resource_params=resource_params,
         ))
 
     return run_configs
@@ -365,9 +386,9 @@ def workflow_run_config_to_request(trans, run_config, workflow):
     for step_id, content in run_config.inputs.items():
         workflow_invocation.add_input(content, step_id)
 
-    if 'workflow_options' in run_config.inputs:
-        workflow_options = dumps(run_config.inputs['workflow_options'])
-        add_parameter("workflow_options", workflow_options, param_types.WORKFLOW_OPTIONS)
+    resource_parameters = run_config.inputs.get("resource_params", {})
+    for key, value in resource_parameters.items():
+        add_parameter(key, value, param_types.RESOURCE_PARAMETERS)
     add_parameter("copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false",
                   param_types.META_PARAMETERS)
     return workflow_invocation
@@ -379,6 +400,7 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
     replacement_dict = {}
     inputs = {}
     param_map = {}
+    resource_params = {}
     copy_inputs_to_history = None
     for parameter in workflow_invocation.input_parameters:
         parameter_type = parameter.type
@@ -388,6 +410,8 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
         elif parameter_type == param_types.META_PARAMETERS:
             if parameter.name == "copy_inputs_to_history":
                 copy_inputs_to_history = (parameter.value == "true")
+        elif parameter_type == param_types.RESOURCE_PARAMETERS:
+            resource_params[parameter.name] = parameter.value
     for input_association in workflow_invocation.input_datasets:
         inputs[input_association.workflow_step_id] = input_association.dataset
     for input_association in workflow_invocation.input_dataset_collections:
@@ -402,6 +426,7 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
         inputs=inputs,
         param_map=param_map,
         copy_inputs_to_history=copy_inputs_to_history,
+        resource_params=resource_params,
     )
     return workflow_run_config
 

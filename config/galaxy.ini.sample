@@ -1352,9 +1352,26 @@ use_interactive = True
 
 # Optional file containing job resource data entry fields definition.
 # These fields will be presented to users in the tool forms and allow them to
-# overwrite default job resources such as number of processors, memory and
-# walltime.
+# overwrite default job resources such as number of processors, memory, walltime
+# and job priority. A dynamic tool destination Python file or a dynamic tool
+# destination rule YAML file needs to be configured to take advantage of these
+# parameters after selected by the user.
 #job_resource_params_file = config/job_resource_params_conf.xml
+
+# Similar to the above parameter, workflows can describe parameters used to
+# influence scheduling of jobs within the workflow. This requires both a description
+# of the fields available (which defaults to the definitions in
+# job_resource_params_file if not set).
+#workflow_resource_params_file = config/workflow_resource_params_conf.xml
+
+# This parameter describes how to map users and workflows to a set of workflow
+# resource parameter to present (typically input IDs from workflow_resource_params_file).
+# If this this is a function reference it will be passed various inputs (workflow model
+# object and user) and it should produce a list of input IDs. If it is a path
+# it is expected to an XML or YAML file describing how to map group names to parameter
+# descriptions (additional types of mappings via these files could be implemented but
+# haven't yet - for instance using workflow tags to do the mapping).
+#workflow_resource_params_mapper = 
 
 # If using job concurrency limits (configured in job_config_file), several
 # extra database queries must be performed to determine the number of jobs a

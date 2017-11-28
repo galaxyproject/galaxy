@@ -3967,6 +3967,7 @@ class WorkflowInvocation(object, Dictifiable):
         self.subworkflow_invocations = []
         self.step_states = []
         self.steps = []
+        self.__resource_parameters = None
 
     def create_subworkflow_invocation_for_step(self, step):
         assert step.type == "subworkflow"
@@ -4112,6 +4113,22 @@ class WorkflowInvocation(object, Dictifiable):
             request_to_content.workflow_step_id = step_id
             self.input_step_parameters.append(request_to_content)
 
+    @property
+    def resource_parameters(self):
+        if self.__resource_parameters is None:
+            self.__cache_resource_parameters()
+        return self.__resource_parameters
+
+    def __cache_resource_parameters(self):
+        # TODO: prefetch and optimize down the road.
+        resource_type = WorkflowRequestInputParameter.types.RESOURCE_PARAMETERS
+        resource_parameters = {}
+        for input_step_parameter in self.input_step_parameters:
+            if input_step_parameter.type == resource_type:
+                resource_parameters[input_step_parameter.name] = input_step_parameter.value
+
+        self.__resource_parameters = resource_parameters
+
     def has_input_for_step(self, step_id):
         for content in self.input_datasets:
             if content.workflow_step_id == step_id:
@@ -4179,7 +4196,7 @@ class WorkflowRequestInputParameter(object, Dictifiable):
     types = Bunch(
         REPLACEMENT_PARAMETERS='replacements',
         META_PARAMETERS='meta',
-        WORKFLOW_OPTIONS='options',
+        RESOURCE_PARAMETERS='resource',
     )
 
     def __init__(self, name=None, value=None, type=None):

@@ -810,6 +810,7 @@ class ToolModule(WorkflowModule):
         else:
             iteration_elements_iter = [None]
 
+        resource_parameters = invocation.resource_parameters
         for iteration_elements in iteration_elements_iter:
             execution_state = tool_state.copy()
             # TODO: Move next step into copy()
@@ -855,8 +856,6 @@ class ToolModule(WorkflowModule):
 
             param_combinations.append(execution_state.inputs)
 
-        workflow_options = self._fetch_workflow_options(trans, invocation.uuid.hex)
-
         try:
             execution_tracker = execute(
                 trans=self.trans,
@@ -865,7 +864,7 @@ class ToolModule(WorkflowModule):
                 history=invocation.history,
                 collection_info=collection_info,
                 workflow_invocation_uuid=invocation.uuid.hex,
-                workflow_options=workflow_options
+                workflow_resource_parameters=resource_parameters
             )
         except ToolInputsNotReadyException:
             delayed_why = "tool [%s] inputs are not ready, this special tool requires inputs to be ready" % tool.id

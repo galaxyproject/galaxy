@@ -421,17 +421,7 @@ class JobConfiguration(object, ConfiguresHandlers):
                     return conditional_element
 
     def __parse_resource_parameters(self):
-        if os.path.exists(self.app.config.job_resource_params_file):
-            resource_param_file = self.app.config.job_resource_params_file
-            try:
-                resource_definitions = util.parse_xml(resource_param_file)
-            except Exception as e:
-                raise config_exception(e, resource_param_file)
-            resource_definitions_root = resource_definitions.getroot()
-            # TODO: Also handling conditionals would be awesome!
-            for parameter_elem in resource_definitions_root.findall("param"):
-                name = parameter_elem.get("name")
-                self.resource_parameters[name] = parameter_elem
+        self.resource_parameters = util.parse_resource_parameters(self.app.config.job_resource_params_file)
 
     def __get_params(self, parent):
         """Parses any child <param> tags in to a dictionary suitable for persistence.

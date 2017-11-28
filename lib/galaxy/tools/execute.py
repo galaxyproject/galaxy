@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 EXECUTION_SUCCESS_MESSAGE = "Tool [%s] created job [%s] %s"
 
 
-def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, workflow_options=None):
+def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, workflow_resource_parameters=None):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
@@ -36,8 +36,12 @@ def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, c
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params['__workflow_invocation_uuid__']
-        if workflow_options:
-            params['__workflow_params__'] = workflow_options
+        if workflow_resource_parameters:
+            params['__workflow_resource_params__'] = workflow_resource_parameters
+        else:
+            # Only workflow invocation code gets to set this, ignore user supplied
+            # values or rerun parameters.
+            del params['__workflow_resource_params__']
         job, result = tool.handle_single_execution(trans, rerun_remap_job_id, params, history, collection_info, execution_cache)
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)

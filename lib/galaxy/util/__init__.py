@@ -817,115 +817,20 @@ def xml_text(root, name=None):
     return ''
 
 
-def validate_workflow_options_xml(resource_param_file):
-    valid = True
-    try:
+def parse_resource_parameters(resource_param_file):
+    """Code shared between jobs and workflows for reading resource parameter configuration files.
+
+    TODO: Allow YAML in addition to XML.
+    """
+    resource_parameters = {}
+    if os.path.exists(resource_param_file):
         resource_definitions = parse_xml(resource_param_file)
+        resource_definitions_root = resource_definitions.getroot()
+        for parameter_elem in resource_definitions_root.findall("param"):
+            name = parameter_elem.get("name")
+            resource_parameters[name] = parameter_elem
 
-        # used to validate that groups that specify options from a select parameter are using valid values
-        select_params = {}
-        all_params = []
-
-        # Validate <parameters>
-        param_definitions_root = resource_definitions.getroot().find("parameters")
-        for param_elem in param_definitions_root.findall("param"):
-            attr = param_elem.attrib
-            if 'name' not in attr:
-                raise Exception("'param' Element is malformed! 'name' attribute not found!")
-            if 'type' not in attr:
-                raise Exception("'param' Element is malformed! 'type' attribute not found!")
-            if attr['type'] == 'select':
-                select_params[attr['name']] = []
-                for option_elem in param_elem.findall("option"):
-                    if 'value' not in option_elem.attrib:
-                        raise Exception("'option' Element is malformed! 'value' attribute not found!")
-                    if 'label' not in option_elem.attrib:
-                        raise Exception("'option' Element is malformed! 'label' attribute not found!")
-                    select_params[attr['name']].append(option_elem.attrib['value'])
-            all_params.append(attr['name'])
-
-        # Validate <groups>
-        group_definitions_root = resource_definitions.getroot().find("groups")
-        if 'default' not in group_definitions_root.attrib:
-            raise Exception("'groups' Element is malformed! No 'default' specified!")
-        default_name = group_definitions_root.attrib['default']
-        has_default = False
-        for group in group_definitions_root.findall("group"):
-            if 'name' not in group.attrib:
-                raise Exception("'group' Element is malformed! 'name' attribute not found!")
-            if group.attrib['name'] == default_name:
-                has_default = True
-            for child in group.getchildren():
-                if child.tag not in all_params:
-                    raise Exception("'group' Element is malformed! "
-                                    "Child '" + child.tag + "' not found in <parameters>!")
-                if child.tag in select_params:
-                    for att in child.text.split(","):
-                        if att not in select_params[child.tag]:
-                            raise Exception("Child '" + child.tag + "' of group '" + group.attrib['name'] +
-                                            "' is malformed! '" + att + "' not found as a param option!")
-        # make sure default is set correctly
-        if has_default is False:
-            raise Exception("Defined default '" + default_name + "' not found!")
-
-    except Exception as e:
-        log.exception(e)
-        valid = False
-        pass
-
-    return valid
-
-
-# Finds which parameters the user can access based on the groups they are in.
-def get_workflow_options_user_permissions(group_definitions_root, user):
-    user_permission = {}
-    user_groups = []
-    for g in user.groups:
-        user_groups.append(g.group.name)
-    default_group = group_definitions_root.attrib['default']
-    for param_element in group_definitions_root.findall("group"):
-        group_name = param_element.attrib['name']
-        if group_name == default_group or group_name in user_groups:
-            for param in param_element.getchildren():
-                if param.tag not in user_permission:
-                    user_permission[param.tag] = {}
-                if param.text is not None:
-                    for s in param.text.split(','):
-                        user_permission[param.tag][s] = {}
-    return user_permission
-
-
-# returns an array of parameters that a users set of permissions can access.
-def get_workflow_options_param_list(param_definitions_root, user_permissions):
-    param_list = []
-    for param_elem in param_definitions_root.findall("param"):
-        attr = param_elem.attrib
-        if attr['name'] in user_permissions:
-            # Allow 'select' type parameters to be used
-            if attr['type'] == 'select':
-                option_data = []
-                reject_list = []
-                for option_elem in param_elem.findall("option"):
-                    if option_elem.attrib['value'] in user_permissions[attr['name']]:
-                        option_data.append({
-                            'label': option_elem.attrib['label'],
-                            'value': option_elem.attrib['value']
-                        })
-                    else:
-                        reject_list.append(option_elem.attrib['label'])
-                attr['data'] = option_data
-
-                attr_help = ""
-                if 'help' in attr:
-                    attr_help = attr['help']
-                if reject_list:
-                    attr_help += "<br/><br/>The following options are available but disabled.<br/>" + \
-                                 str(reject_list) + \
-                                 "<br/>If you believe this is a mistake, please contact your Galaxy admin."
-                attr['help'] = attr_help
-
-            param_list.append(attr)
-    return param_list
+    return resource_parameters
 
 
 # asbool implementation pulled from PasteDeploy

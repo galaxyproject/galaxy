@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import json
 import logging
-import os.path
 import uuid
 from collections import namedtuple
 
@@ -38,6 +37,7 @@ from galaxy.workflow.modules import (
     WorkflowModuleInjector
 )
 from galaxy.workflow.steps import attach_ordered_steps
+from galaxy.workflow.resources import get_resource_mapper_function
 from .base import decode_id
 
 log = logging.getLogger(__name__)
@@ -51,6 +51,7 @@ class WorkflowsManager(object):
 
     def __init__(self, app):
         self.app = app
+        self._resource_mapper_function = get_resource_mapper_function(app)
 
     def get_stored_workflow(self, trans, workflow_id):
         """ Use a supplied ID (UUID or encoded stored workflow ID) to find
@@ -436,28 +437,16 @@ class WorkflowContentsManager(UsesAnnotations):
             'id': trans.app.security.encode_id(stored.id),
             'history_id': trans.app.security.encode_id(trans.history.id) if trans.history else None,
             'name': stored.name,
-            'workflow_options': self._workflow_options_for_user(stored.user),
             'steps': step_models,
             'step_version_changes': step_version_changes,
-            'has_upgrade_messages': has_upgrade_messages
+            'has_upgrade_messages': has_upgrade_messages,
+            'workflow_resource_parameters': self._workflow_resource_parameters(trans, stored, workflow),
         }
 
-    def _workflow_options_for_user(self, user):
-        params = []
-        if os.path.exists(self.app.config.workflow_resource_params_file):
-            resource_param_file = self.app.config.workflow_resource_params_file
-            if util.validate_workflow_options_xml(resource_param_file):
-                try:
-                    resource_definitions = util.parse_xml(resource_param_file)
-                except Exception as e:
-                    raise log.exception(e, resource_param_file)
-
-                permissions = util.get_workflow_options_user_permissions(resource_definitions.getroot().find("groups"),
-                                                                         user)
-                params = util.get_workflow_options_param_list(resource_definitions.getroot().find("parameters"),
-                                                              permissions)
-
-        return params
+    def _workflow_resource_parameters(self, trans, stored, workflow):
+        """Get workflow scheduling resource parameters for this user and workflow or None if unconfigured.
+        """
+        return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
 
     def _workflow_to_dict_editor(self, trans, stored):
         workflow = stored.latest_workflow

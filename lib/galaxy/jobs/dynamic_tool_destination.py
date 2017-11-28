@@ -1244,29 +1244,15 @@ def map_tool_to_destination(
 
     # Priority coming from workflow invocation takes precedence over job specific priorities
     if workflow_params is not None:
-        resource_params = json.loads(workflow_params)
-        if 'priority' in resource_params:
-            workflow_priority = resource_params['priority']
-            # Validate user has permission to use this priority
-            if os.path.exists(app.config.workflow_resource_params_file):
-                resource_param_file = app.config.workflow_resource_params_file
-                if util.validate_workflow_options_xml(resource_param_file):
-                    try:
-                        resource_definitions = util.parse_xml(resource_param_file)
-                    except Exception as e:
-                        raise log.exception(e, resource_param_file)
-                    permissions = util.get_workflow_options_user_permissions(
-                        resource_definitions.getroot().find("groups"), job.user)
-                    if workflow_priority in permissions['priority']:
-                        priority = workflow_priority
-                    else:
-                        fail_message = "User '" + job.user.email
-                        fail_message += "' attempted to use a priority they do not have permission to. ["
-                        fail_message += workflow_priority + "]"
+        if 'priority' in workflow_params:
+            # For by_group mapping, this priority has already been validated when the
+            # request was created.
+            priority = workflow_params['priority']
 
     elif job_params is not None:
         resource_params = json.loads(job_params)
         if 'priority' in resource_params:
+            # Should this really override workflow level priority? -John
             priority = resource_params['priority']
 
     if fail_message is not None:
