@@ -249,6 +249,7 @@ class Registry(object):
                                         datatype_class.edam_format = edam_format
                                     if edam_data:
                                         datatype_class.edam_data = edam_data
+                                datatype_class.is_subclass = make_subclass
                                 self.datatypes_by_extension[extension] = datatype_class()
                                 if mimetype is None:
                                     # Use default mimetype per datatype specification.
@@ -312,16 +313,14 @@ class Registry(object):
         self.set_default_values()
 
         def append_to_sniff_order():
-            # Just in case any supported data types are not included in the config's sniff_order section.
-            for ext, datatype in self.datatypes_by_extension.items():
-                if hasattr(datatype, 'sniff'):
-                    included = False
-                    for atype in self.sniff_order:
-                        if isinstance(atype, datatype.__class__):
-                            included = True
-                            break
-                    if not included:
-                        self.sniff_order.append(datatype)
+            sniff_order_classes = set(type(_) for _ in self.sniff_order)
+            for datatype in self.datatypes_by_extension.values():
+                # Add a datatype only if it is not already in sniff_order, it
+                # has a sniff() method and was not defined with subclass="true"
+                if type(datatype) not in sniff_order_classes and \
+                        hasattr(datatype, 'sniff') and not datatype.is_subclass:
+                    self.sniff_order.append(datatype)
+
         append_to_sniff_order()
 
     def _load_build_sites(self, root):

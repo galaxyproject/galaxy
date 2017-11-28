@@ -396,9 +396,9 @@ def guess_ext(fname, sniff_order):
     file_ext = None
     for datatype in sniff_order:
         """
-        Some classes may not have a sniff function, which is ok.  In fact, the
-        Tabular and Text classes are 2 examples of classes that should never have
-        a sniff function.  Since these classes are default classes, they contain
+        Some classes may not have a sniff function, which is ok.  In fact,
+        Binary, Data, Tabular and Text are examples of classes that should never
+        have a sniff function. Since these classes are default classes, they contain
         few rules to filter out data of other formats, so they should be called
         from this function after all other datatypes in sniff_order have not been
         successfully discovered.
