@@ -14,7 +14,7 @@ module.exports = {
         alias: {
             jquery: path.join(lroot, "jquery/jquery"),
             underscore: path.join(lroot, "underscore.js"),
-            backbone: path.join(lroot, "backbone.js")
+            backbone: path.join(lroot, "backbone.js"),
         }
     },
     module: {
@@ -28,9 +28,9 @@ module.exports = {
     },
     plugins: [
         new webpack.ProvidePlugin({
-            $: "jquery",
-            _: "underscore",
-            Backbone: "backbone"
+            jquery: "jquery",
+            jQuery: "jquery",
+            $: "jquery"
         })
     ]
 };

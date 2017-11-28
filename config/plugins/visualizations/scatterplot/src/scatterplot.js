@@ -1,4 +1,7 @@
 import * as VisualizationModel from "mvc/visualization/visualization-model";
+import * as bootstrap from "bootstrap";
+import * as Backbone from "libs/backbone";
+import * as d3 from "libs/d3";
 
 /**
  *  Two Variable scatterplot visualization using d3

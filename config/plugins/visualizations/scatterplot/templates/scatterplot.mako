@@ -28,15 +28,11 @@ ${h.stylesheet_link( root + 'plugins/visualizations/scatterplot/static/scatterpl
 window.Galaxy = { root: '${ root }' };
 </script>
 ${h.js( 'libs/jquery/jquery',
-        'libs/jquery/jquery-ui',
-        'libs/require',
-        'libs/bootstrap',
         'libs/underscore',
-        'libs/backbone',
         'libs/d3')}
-
 ${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot.bundle.js' )}
-    <script type="text/javascript">
+
+<script type="text/javascript">
     function getModel(){
         return new ScatterplotModel({
             id      : ${h.dumps( visualization_id )} || undefined,
@@ -48,7 +44,7 @@ ${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterpl
         return ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )};
     }
     window.jQuery = window.jquery = window.$;
-    </script>
+</script>
 
 </head>
 
