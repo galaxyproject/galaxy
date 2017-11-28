@@ -51,7 +51,7 @@ var HDCAListItemView = _super.extend(
             var jobStatesSummary = this.model.jobStatesSummary;
             if (jobStatesSummary) {
                 if (jobStatesSummary.new()) {
-                    state = "new";
+                    state = "loading";
                 } else if (jobStatesSummary.errored()) {
                     state = "error";
                 } else if (jobStatesSummary.terminal()) {
@@ -63,7 +63,7 @@ var HDCAListItemView = _super.extend(
                 }
             } else if (this.model.get("job_source_id")) {
                 // Initial rendering - polling will fill in more details in a bit.
-                state = STATES.NEW;
+                state = "loading";
             } else {
                 state = this.model.get("populated_state") ? STATES.OK : STATES.RUNNING;
             }
@@ -101,7 +101,7 @@ var HDCAListItemView = _super.extend(
             } else if (!jobStatesSummary || !jobStatesSummary.hasDetails()) {
                 return `
                     <div class="progress state-progress">
-                        <span class="note">Loading job data for ${collectionTypeDescription}...</span>
+                        <span class="note">Loading job data for ${collectionTypeDescription}.<span class="blinking">..</span></span>
                         <div class="progress-bar info" style="width:100%">
                     </div>`;
             } else {
@@ -110,7 +110,7 @@ var HDCAListItemView = _super.extend(
                 if (isNew) {
                     return `
                         <div class="progress state-progress">
-                            <span class="note">Creating jobs...</span>
+                            <span class="note">Creating jobs.<span class="blinking">..</span></span>
                             <div class="progress-bar info" style="width:100%">
                         </div>`;
                 } else if (jobStatesSummary.errored()) {
