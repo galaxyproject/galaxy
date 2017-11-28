@@ -511,7 +511,7 @@ class InstallRepositoryManager(object):
                                                   resetting_all_metadata_on_repository=False,
                                                   updating_installed_repository=False,
                                                   persist=True)
-        irmm.generate_metadata_for_changeset_revision()
+        irmm.generate_metadata_for_changeset_revision(dry_run=True)
         irmm_metadata_dict = irmm.get_metadata_dict()
         tool_shed_repository.metadata = irmm_metadata_dict
         # Update the tool_shed_repository.tool_shed_status column in the database.
@@ -532,9 +532,9 @@ class InstallRepositoryManager(object):
                 tdtm.install_tool_data_tables(tool_shed_repository, tool_index_sample_files)
             if tool_data_table_elems:
                 self.app.tool_data_tables.add_new_entries_from_config_file(tool_data_table_conf_filename,
-                                                                           None,
+                                                                           self.app.config.shed_tool_data_path,
                                                                            self.app.config.shed_tool_data_table_config,
-                                                                           persist=True)
+                                                                           persist=True,)
         if 'tools' in irmm_metadata_dict:
             # Get the tool_versions from the Tool Shed for each tool in the installed change set.
             self.update_tool_shed_repository_status(tool_shed_repository,

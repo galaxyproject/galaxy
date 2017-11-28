@@ -21,6 +21,7 @@ import requests
 from galaxy import util
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
+from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 
 log = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ class ToolDataTableManager(object):
     def get_tables(self):
         return self.data_tables
 
-    def load_from_config_file(self, config_filename, tool_data_path, from_shed_config=False):
+    def load_from_config_file(self, config_filename, tool_data_path, from_shed_config=False, dry_run=False):
         """
         This method is called under 3 conditions:
 
@@ -102,7 +103,10 @@ class ToolDataTableManager(object):
         2. Just after the ToolDataTableManager is initialized and the additional entries defined by shed_tool_data_table_conf.xml
            are being loaded into the ToolDataTableManager.data_tables.
         3. When a tool shed repository that includes a tool_data_table_conf.xml.sample file is being installed into a local
-           Galaxy instance.  In this case, we have 2 entry types to handle, files whose root tag is <tables>, for example:
+           Galaxy instance.
+
+        When installing a new repository dry_run is set to True and we skip registering the new data table,
+        as it points to temporary files.
         """
         table_elems = []
         if not isinstance(config_filename, list):
@@ -113,16 +117,17 @@ class ToolDataTableManager(object):
             for table_elem in root.findall('table'):
                 table = ToolDataTable.from_elem(table_elem, tool_data_path, from_shed_config, filename=filename, tool_data_path_files=self.tool_data_path_files)
                 table_elems.append(table_elem)
-                if table.name not in self.data_tables:
-                    self.data_tables[table.name] = table
-                    log.debug("Loaded tool data table '%s' from file '%s'", table.name, filename)
-                else:
-                    log.debug("Loading another instance of data table '%s' from file '%s', attempting to merge content.", table.name, filename)
-                    self.data_tables[table.name].merge_tool_data_table(table, allow_duplicates=False)  # only merge content, do not persist to disk, do not allow duplicate rows when merging
-                    # FIXME: This does not account for an entry with the same unique build ID, but a different path.
+                if not dry_run:
+                    if table.name not in self.data_tables:
+                        self.data_tables[table.name] = table
+                        log.debug("Loaded tool data table '%s' from file '%s'", table.name, filename)
+                    else:
+                        log.debug("Loading another instance of data table '%s' from file '%s', attempting to merge content.", table.name, filename)
+                        self.data_tables[table.name].merge_tool_data_table(table, allow_duplicates=False)  # only merge content, do not persist to disk, do not allow duplicate rows when merging
+                        # FIXME: This does not account for an entry with the same unique build ID, but a different path.
         return table_elems
 
-    def add_new_entries_from_config_file(self, config_filename, tool_data_path, shed_tool_data_table_config, persist=False):
+    def add_new_entries_from_config_file(self, config_filename, tool_data_path, shed_tool_data_table_config, persist=False, dry_run=False):
         """
         This method is called when a tool shed repository that includes a tool_data_table_conf.xml.sample file is being
         installed into a local galaxy instance.  We have 2 cases to handle, files whose root tag is <tables>, for example::
@@ -148,7 +153,8 @@ class ToolDataTableManager(object):
         try:
             table_elems = self.load_from_config_file(config_filename=config_filename,
                                                      tool_data_path=tool_data_path,
-                                                     from_shed_config=True)
+                                                     from_shed_config=True,
+                                                     dry_run=dry_run)
         except Exception as e:
             error_message = 'Error attempting to parse file %s: %s' % (str(os.path.split(config_filename)[1]), str(e))
             log.debug(error_message)
@@ -186,7 +192,7 @@ class ToolDataTableManager(object):
         # add new elems
         out_elems.extend(new_elems)
         out_path_is_new = not os.path.exists(full_path)
-        with open(full_path, 'wb') as out:
+        with RenamedTemporaryFile(full_path) as out:
             out.write('<?xml version="1.0"?>\n<tables>\n')
             for elem in out_elems:
                 out.write(util.xml_to_string(elem, pretty=True))

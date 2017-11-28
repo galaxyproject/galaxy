@@ -290,7 +290,7 @@ class MetadataGenerator(object):
         tmp_url = common_util.remove_protocol_and_user_from_clone_url(self.repository_clone_url)
         return '%s/%s/%s/%s' % (tmp_url, guid_type, obj_id, version)
 
-    def generate_metadata_for_changeset_revision(self):
+    def generate_metadata_for_changeset_revision(self, dry_run=False):
         """
         Generate metadata for a repository using its files on disk.  To generate metadata
         for changeset revisions older than the repository tip, the repository will have been
@@ -303,6 +303,7 @@ class MetadataGenerator(object):
         The value of self.persist will be True when the installed repository contains a valid
         tool_data_table_conf.xml.sample file, in which case the entries should ultimately be
         persisted to the file referred to by self.app.config.shed_tool_data_table_config.
+        When dry_run is set to 'True' tool data tables will not be loaded into memory.
         """
         tv = tool_validator.ToolValidator(self.app)
         if self.shed_config_dict is None:
@@ -362,11 +363,13 @@ class MetadataGenerator(object):
             # its table elements into memory.
             relative_path, filename = os.path.split(sample_file)
             if filename == 'tool_data_table_conf.xml.sample':
+                # Don't load table from temporary locations into memory
                 new_table_elems, error_message = \
                     self.app.tool_data_tables.add_new_entries_from_config_file(config_filename=sample_file,
                                                                                tool_data_path=work_dir,
                                                                                shed_tool_data_table_config=work_dir,
-                                                                               persist=False)
+                                                                               persist=False,
+                                                                               dry_run=dry_run)
                 if error_message:
                     self.invalid_file_tups.append((filename, error_message))
         for root, dirs, files in os.walk(files_dir):
