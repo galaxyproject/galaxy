@@ -24,7 +24,6 @@ ${h.stylesheet_link( root + 'plugins/visualizations/scatterplot/static/scatterpl
 
 ## ----------------------------------------------------------------------------
 <script type="text/javascript">
-// TODO: blah
 window.Galaxy = { root: '${ root }' };
 </script>
 ${h.js( 'libs/jquery/jquery',
@@ -66,8 +65,6 @@ ${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterpl
                     embedded: "${embedded}"
                 }).render();
             display.fetchData();
-            //window.model = model;
-            //window.display = display;
         });
         </script>
 

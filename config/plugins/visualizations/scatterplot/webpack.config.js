@@ -17,6 +17,13 @@ module.exports = {
             backbone: path.join(lroot, "backbone.js"),
         }
     },
+    resolveLoader: {
+        alias: {
+            // since we support both requirejs i18n and non-requirejs and both use a similar syntax,
+            // use an alias so we can just use one file
+            i18n: "amdi18n-loader"
+        }
+    },
     module: {
         rules: [
             {
