@@ -136,8 +136,8 @@ var Node = Backbone.Model.extend({
             name: this.name,
             label: this.label,
             annotation: this.annotation,
-            post_job_actions: this.post_job_actions,
-            tool_state: this.tool_state
+            // tool_state: this.tool_state,
+            post_job_actions: this.post_job_actions
         };
         var node = this.workflow.create_node(
             this.type, this.name, this.content_id
@@ -151,11 +151,11 @@ var Node = Backbone.Model.extend({
             data: {
                 type: this.type,
                 tool_id: this.content_id,
-                _: "true"
+                inputs: this.tool_state
             },
             success: function(data) {
                 var newData = Object.assign({}, data, copiedData);
-                newData.config_form.state_inputs = copiedData.tool_state;
+                // newData.config_form.state_inputs = copiedData.tool_state;
 
                 // console.log('data', data);
                 // console.log('copiedData', copiedData);
