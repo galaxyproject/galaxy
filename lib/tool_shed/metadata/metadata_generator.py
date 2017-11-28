@@ -7,6 +7,7 @@ from sqlalchemy import and_
 
 from galaxy import util
 from galaxy.tools.data_manager.manager import DataManager
+from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.loader_directory import looks_like_a_tool
 from galaxy.tools.parser.interface import TestCollectionDef
 from galaxy.web import url_for
@@ -362,11 +363,14 @@ class MetadataGenerator(object):
             # its table elements into memory.
             relative_path, filename = os.path.split(sample_file)
             if filename == 'tool_data_table_conf.xml.sample':
+                # We create a new ToolDataTableManager to avoid adding entries to the app-wide
+                # tool data tables. This is only used for checking that the data table is valid.
+                tool_data_tables = ToolDataTableManager(work_dir)
                 new_table_elems, error_message = \
-                    self.app.tool_data_tables.add_new_entries_from_config_file(config_filename=sample_file,
-                                                                               tool_data_path=work_dir,
-                                                                               shed_tool_data_table_config=work_dir,
-                                                                               persist=False)
+                    tool_data_tables.add_new_entries_from_config_file(config_filename=sample_file,
+                                                                      tool_data_path=work_dir,
+                                                                      shed_tool_data_table_config=work_dir,
+                                                                      persist=False)
                 if error_message:
                     self.invalid_file_tups.append((filename, error_message))
         for root, dirs, files in os.walk(files_dir):
