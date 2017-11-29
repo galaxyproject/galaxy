@@ -125,7 +125,7 @@ var View = Backbone.View.extend({
                     test_param: {
                         name: "type",
                         label: "Definition",
-                        help: "Provide the data source.",
+                        help:  _l("Provide the data source."),
                         type: "select",
                         value: initial_type,
                         data: [

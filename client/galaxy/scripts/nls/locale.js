@@ -247,6 +247,8 @@ define({
  	"Trackster": false,
  	"Visualize": false, 
  	// ---------------------------------------------------------------------------- dataset-error
+ 	"Any additional comments you can provide regarding what you were doing at the time of the bug.": false,
+ 	"Your email address": false,
  	"Report": false,
  	"Error Report": false, 
  	// ---------------------------------------------------------------------------- dataset-li
@@ -325,6 +327,8 @@ define({
  	// ---------------------------------------------------------------------------- workflow-view
  	"Warning": false, 
  	// ---------------------------------------------------------------------------- workflow-forms
+ 	"An email notification will be sent when the job has completed.": false,
+ 	"Add a step label.": false,
  	"Assign columns": false, 
  	// ---------------------------------------------------------------------------- form-repeat
  	"placeholder": false,
@@ -428,6 +432,8 @@ define({
  	"Test button": false, 
  	// ---------------------------------------------------------------------------- ui_tests
  	"title": false, 
+ 	// ---------------------------------------------------------------------------- user-custom-builds
+ 	"Provide the data source.": false, 
  	// ----------------------------------------------------------------------------
     },
     ja: true,
