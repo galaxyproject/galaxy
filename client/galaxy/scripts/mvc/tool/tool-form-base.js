@@ -5,7 +5,7 @@ import Utils from "utils/utils";
 import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
-import Citations from "components/citations.vue";
+import Citations from "components/Citations.vue";
 import Vue from "libs/vue";
 export default FormBase.extend({
     initialize: function(options) {

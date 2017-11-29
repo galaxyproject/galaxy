@@ -10,7 +10,7 @@ import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
 import Vue from "libs/vue";
-import UserAPIKeys from "components/user_api_keys.vue";
+import UserAPIKeys from "components/UserAPIKeys.vue";
 
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
