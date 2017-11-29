@@ -15,7 +15,6 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.tags import GalaxyTagManager
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.queue_worker import GalaxyQueueWorker
-from galaxy.sample_tracking import external_service_types
 from galaxy.tools.cache import (
     ToolCache,
     ToolShedRepositoryCache
@@ -192,10 +191,6 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         self.job_manager = manager.JobManager(self)
         self.application_stack.register_postfork_function(self.job_manager.start)
         self.proxy_manager = ProxyManager(self.config)
-        # Initialize the external service types
-        self.external_service_types = external_service_types.ExternalServiceTypesCollection(
-            self.config.external_service_type_config_file,
-            self.config.external_service_type_path, self)
 
         from galaxy.workflow import scheduling_manager
         # Must be initialized after job_config.
