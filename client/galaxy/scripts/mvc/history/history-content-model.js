@@ -2,6 +2,11 @@ import STATES from "mvc/dataset/states";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
+var collectionFuzzyCountDefault = 1000;
+try {
+    collectionFuzzyCountDefault = localStorage.getItem("collectionFuzzyCountDefault") || collectionFuzzyCountDefault;
+} catch (err) {}
+
 //==============================================================================
 /** @class Mixin for HistoryContents content (HDAs, HDCAs).
  */
@@ -61,7 +66,7 @@ var HistoryContentMixin = {
         if (historyContentType == "dataset_collection") {
             // Don't fetch whole collection - just enought to render outline. Backbone will
             // make a detailed request if any datasets are expanded beyond that point.
-            url = `${url}?view=element-reference&fuzzy_count=1000`;
+            url = `${url}?view=element-reference&fuzzy_count=${collectionFuzzyCountDefault}`;
         }
         return url;
     },

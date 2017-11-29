@@ -110,8 +110,9 @@ history_panel:
       _: '.list-panel.dataset-collection-panel'
       back: '.navigation .back'
       title: '.dataset-collection-panel .controls .title .editable-text'
-      title_input: '.dataset-collection-panel .controls .title  input'
+      title_input: '.dataset-collection-panel .controls .title input'
       subtitle: '.dataset-collection-panel .controls .title .subtitle'
+      elements_warning: '.dataset-collection-panel .controls .elements-warning'
       tag_area_input: '.controls .tags-display .tags-input input'
       list_items: '.dataset-collection-panel .list-items .list-item'
 

@@ -52,6 +52,7 @@ var CollectionView = _super.extend(
         _queueNewRender: function($newRender, speed) {
             speed = speed === undefined ? this.fxSpeed : speed;
             var panel = this;
+            this.handleWarning($newRender);
             panel.log("_queueNewRender:", $newRender, speed);
 
             // TODO: jquery@1.12 doesn't change display when the elem has display: flex
@@ -59,6 +60,16 @@ var CollectionView = _super.extend(
             // animations are removed from this view for now until fixed
             panel._swapNewRender($newRender);
             panel.trigger("rendered", panel);
+        },
+
+        handleWarning: function($newRender) {
+            var viewLength = this.views.length;
+            var elementCount = this.model.get("element_count");
+            if (elementCount && elementCount !== viewLength) {
+                var warning = _l(`displaying only ${viewLength} of ${elementCount} items`);
+                var $warns = $newRender.find(".elements-warning");
+                $warns.html(`<div class="warningmessagesmall">${warning}</div>`);
+            }
         },
 
         // ------------------------------------------------------------------------ sub-views
@@ -165,6 +176,8 @@ CollectionView.prototype.templates = (() => {
                 <div class="subtitle">
                     ${subtitle}
                 </div>
+            </div>
+            <div class="elements-warning">
             </div>
             <div class="tags-display"></div>
             <div class="actions">
