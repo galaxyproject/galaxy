@@ -4,7 +4,6 @@ Galaxy data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
-import codecs
 import errno
 import json
 import logging
@@ -37,7 +36,6 @@ from galaxy.util import (directory_hash_id, Params, ready_name_for_url,
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_secure_hash
-from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      PasswordField, SelectField, TextArea, TextField, WorkflowField,
@@ -1894,15 +1892,7 @@ class Dataset(StorableObject):
     def mark_deleted(self):
         self.deleted = True
 
-    def is_multi_byte(self):
-        if not self.has_data():
-            return False
-        try:
-            return is_multi_byte(codecs.open(self.file_name, 'r', 'utf-8').read(100))
-        except UnicodeDecodeError:
-            return False
     # FIXME: sqlalchemy will replace this
-
     def _delete(self):
         """Remove the file that corresponds to this data"""
         self.object_store.delete(self)
@@ -2102,10 +2092,6 @@ class DatasetInstance(object):
         except AttributeError:
             # extension is None
             return 'data'
-
-    def is_multi_byte(self):
-        """Data consists of multi-byte characters"""
-        return self.dataset.is_multi_byte()
 
     def set_peek(self):
         return self.datatype.set_peek(self)
