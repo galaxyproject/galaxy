@@ -1,7 +1,7 @@
 import logging
 import tarfile
 
-from galaxy.datatypes.binary import Binary, CompressedArchive
+from galaxy.datatypes.binary import CompressedArchive
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.util import nice_size
 
@@ -82,6 +82,3 @@ class Augustus(CompressedArchive):
         except Exception as e:
             log.warning('%s, sniff Exception: %s', self, e)
         return False
-
-
-Binary.register_sniffable_binary_format("augustus", "augustus", Augustus)

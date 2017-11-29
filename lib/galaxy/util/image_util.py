@@ -39,39 +39,3 @@ def check_image_type(filename, types):
     if fmt in types:
         return True
     return False
-
-
-def get_image_ext(file_path):
-    # determine ext
-    fmt = image_type(file_path)
-    if fmt in ['JPG', 'JPEG']:
-        return 'jpg'
-    if fmt == 'PNG':
-        return 'png'
-    if fmt == 'TIFF':
-        return 'tiff'
-    if fmt == 'BMP':
-        return 'bmp'
-    if fmt == 'GIF':
-        return 'gif'
-    if fmt == 'IM':
-        return 'im'
-    if fmt == 'PCD':
-        return 'pcd'
-    if fmt == 'PCX':
-        return 'pcx'
-    if fmt == 'PPM':
-        return 'ppm'
-    if fmt == 'PSD':
-        return 'psd'
-    if fmt == 'XBM':
-        return 'xbm'
-    if fmt == 'XPM':
-        return 'xpm'
-    if fmt == 'RGB':
-        return 'rgb'
-    if fmt == 'PBM':
-        return 'pbm'
-    if fmt == 'PGM':
-        return 'pgm'
-    return None

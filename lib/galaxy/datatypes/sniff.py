@@ -17,10 +17,7 @@ from six import text_type
 
 from galaxy import util
 from galaxy.datatypes.binary import Binary
-from galaxy.util import (
-    compression_utils,
-    multi_byte,
-)
+from galaxy.util import compression_utils
 from galaxy.util.checkers import (
     check_binary,
     check_html,
@@ -44,13 +41,12 @@ def get_test_fname(fname):
 
 
 def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict'):
-    """Writes a stream to the provided file descriptor, returns the file's name and bool( is_multi_byte ). Closes file descriptor"""
+    """Writes a stream to the provided file descriptor, returns the file name. Closes file descriptor"""
     # signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
     CHUNK_SIZE = 1048576
     data_checked = False
     is_compressed = False
     is_binary = False
-    is_multi_byte = False
     try:
         codecs.lookup(target_encoding)
     except Exception:
@@ -72,11 +68,7 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
                 except Exception:
                     pass
             if not is_compressed:
-                # See if we have a multi-byte character file
-                chars = chunk[:100]
-                is_multi_byte = multi_byte.is_multi_byte(chars)
-                if not is_multi_byte:
-                    is_binary = util.is_binary(chunk)
+                is_binary = util.is_binary(chunk)
             data_checked = True
         if not is_compressed and not is_binary:
             if not isinstance(chunk, text_type):
@@ -87,7 +79,7 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
             # while binary files should not be encoded at all.
             os.write(fd, chunk)
     os.close(fd)
-    return filename, is_multi_byte
+    return filename
 
 
 def stream_to_file(stream, suffix='', prefix='', dir=None, text=False, **kwd):

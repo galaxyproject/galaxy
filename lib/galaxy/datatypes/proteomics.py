@@ -52,9 +52,6 @@ class Wiff(Binary):
         return "\n".join(rval)
 
 
-Binary.register_sniffable_binary_format("wiff", "wiff", Wiff)
-
-
 class PepXmlReport(Tabular):
     """pepxml converted to tabular report"""
     edam_data = "data_2536"
@@ -301,9 +298,6 @@ class ThermoRAW(Binary):
             return dataset.peek
         except Exception:
             return "Thermo Finnigan RAW file (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_sniffable_binary_format("thermo.raw", "raw", ThermoRAW)
 
 
 class Msp(Text):
