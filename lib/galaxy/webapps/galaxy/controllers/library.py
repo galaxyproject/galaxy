@@ -13,10 +13,10 @@ class Library(BaseUIController):
     def list(self, trans, **kwd):
         # define app configuration for generic mako template
         app = {
-            'jscript'       : "libraryApp"
+            'jscript'       : "library"
         }
         return trans.fill_template('galaxy.panels.mako',
                                    config={
                                        'title': 'Data Libraries',
                                        'app': app,
-                                       'bundle': 'library'})
+                                       'bundle': 'interface_ext'})

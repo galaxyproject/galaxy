@@ -44,12 +44,12 @@
         "libs/jquery/jquery.form",
         "libs/jquery/jstorage",
         "libs/jquery/jquery.autocomplete",
-        "bundled/workflow.bundled"
+        "bundled/interface_ext.bundled"
     )}
 
     <script type='text/javascript'>
         $( function() {
-            workflowApp(${h.dumps(self.editor_config)});
+            window.bundleEntries.workflow(${h.dumps(self.editor_config)});
         });
     </script>
 </%def>

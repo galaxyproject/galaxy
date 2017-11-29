@@ -127,10 +127,10 @@
         // load any app configured
         define( 'app', function(){
             var jscript = galaxy_config.app.jscript;
-            if( galaxy_config.app.jscript && window[galaxy_config.app.jscript]){
+            if( galaxy_config.app.jscript && window.bundleEntries[galaxy_config.app.jscript]){
                 $( function(){
                     // load galaxy module application
-                    window[galaxy_config.app.jscript]();
+                    window.bundleEntries[galaxy_config.app.jscript]();
                 });
             } else {
                 console.error("'galaxy_config.app.jscript' missing.");
