@@ -7,6 +7,8 @@ function CanvasManager(app, canvas_viewport, overview) {
     this.ov = overview.find("#overview-viewport");
     // Make overview box draggable
     this.init_drag();
+    // Initialize Copy & Paste events
+    this.init_copy_paste();
 }
 $.extend(CanvasManager.prototype, {
     init_drag: function() {
@@ -95,6 +97,27 @@ $.extend(CanvasManager.prototype, {
         /*  Disable dragging for child element of the panel so that resizing can
                 only be done by dragging the borders */
         $("#overview-border div").bind("drag", () => {});
+    },
+    init_copy_paste: function() {
+        document.addEventListener('copy', (e) => {
+            if (this.app.workflow.active_node) {
+                e.clipboardData.setData('application/json', JSON.stringify({
+                    nodeId: this.app.workflow.active_node.id
+                }));
+            }
+            e.preventDefault();
+        });
+
+        document.addEventListener('paste', (e) => {
+            var nodeId;
+            try {
+                nodeId = JSON.parse(e.clipboardData.getData('application/json')).nodeId;
+            } catch (error) {}
+            if (nodeId && this.app.workflow.nodes.hasOwnProperty(nodeId)) {
+                this.app.workflow.nodes[nodeId].clone();
+            }
+            e.preventDefault();
+        });
     },
     update_viewport_overlay: function() {
         var cc = this.cc;
