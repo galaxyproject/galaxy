@@ -2070,8 +2070,8 @@ class DatasetInstance(object):
         """Data consists of multi-byte characters"""
         return self.dataset.is_multi_byte()
 
-    def set_peek(self, is_multi_byte=False):
-        return self.datatype.set_peek(self, is_multi_byte=is_multi_byte)
+    def set_peek(self):
+        return self.datatype.set_peek(self)
 
     def init_meta(self, copy_from=None):
         return self.datatype.init_meta(self, copy_from=copy_from)

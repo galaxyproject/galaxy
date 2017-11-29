@@ -61,7 +61,7 @@ class SequenceSplitLocations(data.Text):
             try:
                 parsed_data = json.load(open(dataset.file_name))
                 # dataset.peek = json.dumps(data, sort_keys=True, indent=4)
-                dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+                dataset.peek = data.get_file_peek(dataset.file_name)
                 dataset.blurb = '%d sections' % len(parsed_data['sections'])
             except Exception:
                 dataset.peek = 'Not FQTOC file'
@@ -112,7 +112,7 @@ class Sequence(data.Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
                 dataset.blurb = "%s sequences" % util.commaify(str(dataset.metadata.sequences))
             else:
@@ -861,7 +861,7 @@ class Maf(Alignment):
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.blocks:
                 dataset.blurb = "%s blocks" % util.commaify(str(dataset.metadata.blocks))
             else:

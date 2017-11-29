@@ -169,7 +169,8 @@ var menu = [
     },
     {
         html: _l("Import from File"),
-        href: "history/import_archive"
+        href: "histories/import",
+        target: "_top"
     }
 ];
 
