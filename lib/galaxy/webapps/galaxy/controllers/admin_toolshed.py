@@ -173,7 +173,7 @@ class AdminToolshed(AdminGalaxy):
     @web.require_admin
     def browse_toolsheds(self, trans, **kwd):
         app = {
-            'jscript': "adminToolshedEntry"
+            'jscript': "adminToolshed"
         }
         return trans.fill_template('galaxy.panels.mako',
                                    config={
