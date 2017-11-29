@@ -4,8 +4,8 @@ import shutil
 
 import galaxy.tools
 from galaxy import util
+from galaxy.datatypes.sniff import is_column_based
 from galaxy.util import checkers
-from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
 from tool_shed.util import basic_util
@@ -125,20 +125,6 @@ def generate_message_for_invalid_tools(app, invalid_file_tups, repository, metad
     return message
 
 
-def get_headers(fname, sep, count=60, is_multi_byte=False):
-    """Returns a list with the first 'count' lines split by 'sep'."""
-    headers = []
-    for idx, line in enumerate(open(fname)):
-        line = line.rstrip('\n\r')
-        if is_multi_byte:
-            line = unicodify(line, 'utf-8')
-            sep = sep.encode('utf-8')
-        headers.append(line.split(sep))
-        if idx == count:
-            break
-    return headers
-
-
 def get_tool_path_install_dir(partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems):
     for elem in config_elems:
         if elem.tag == 'tool':
@@ -182,26 +168,6 @@ def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tup
         repository_tool = app.toolbox.load_tool(os.path.join(tool_path, tup_path), guid=guid, use_cached=False)
         repository_tools_tups[index] = (tup_path, guid, repository_tool)
     return repository_tools_tups, sample_files_copied
-
-
-def is_column_based(fname, sep='\t', skip=0, is_multi_byte=False):
-    """See if the file is column based with respect to a separator."""
-    headers = get_headers(fname, sep, is_multi_byte=is_multi_byte)
-    count = 0
-    if not headers:
-        return False
-    for hdr in headers[skip:]:
-        if hdr and hdr[0] and not hdr[0].startswith('#'):
-            if len(hdr) > 1:
-                count = len(hdr)
-            break
-    if count < 2:
-        return False
-    for hdr in headers[skip:]:
-        if hdr and hdr[0] and not hdr[0].startswith('#'):
-            if len(hdr) != count:
-                return False
-    return True
 
 
 def is_data_index_sample_file(file_path):

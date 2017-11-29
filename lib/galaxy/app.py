@@ -55,12 +55,14 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         self.name = 'galaxy'
         self.startup_timer = ExecutionTimer()
         self.new_installation = False
-        self.application_stack = application_stack_instance()
         # Read config file and check for errors
         self.config = config.Configuration(**kwargs)
         self.config.check()
         config.configure_logging(self.config)
         self.configure_fluent_log()
+        # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
+        self.application_stack = application_stack_instance(app=self)
+        self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_whitelist(explicit='sanitize_whitelist_file' in kwargs)
         self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
         # control_worker *can* be initialized with a queue, but here we don't
@@ -188,10 +190,7 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         # Start the job manager
         from galaxy.jobs import manager
         self.job_manager = manager.JobManager(self)
-        self.job_manager.start()
-        # FIXME: These are exposed directly for backward compatibility
-        self.job_queue = self.job_manager.job_queue
-        self.job_stop_queue = self.job_manager.job_stop_queue
+        self.application_stack.register_postfork_function(self.job_manager.start)
         self.proxy_manager = ProxyManager(self.config)
         # Initialize the external service types
         self.external_service_types = external_service_types.ExternalServiceTypesCollection(
@@ -208,11 +207,15 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
             handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
         self._configure_signal_handlers(handlers)
 
+        # Start web stack message handling
+        self.application_stack.register_postfork_function(self.application_stack.start)
+
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting
         log.info("Galaxy app startup finished %s" % self.startup_timer)
 
     def shutdown(self):
+        log.debug('Shutting down')
         exception = None
         try:
             self.watchers.shutdown()
@@ -258,8 +261,16 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
             exception = exception or e
             log.exception("Failed to shutdown SA database engine cleanly")
 
+        try:
+            self.application_stack.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown application stack interface cleanly")
+
         if exception:
             raise exception
+        else:
+            log.debug('Finished shutting down')
 
     def configure_fluent_log(self):
         if self.config.fluent_log:
@@ -268,5 +279,6 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         else:
             self.trace_logger = None
 
+    @property
     def is_job_handler(self):
-        return (self.config.track_jobs_in_database and self.job_config.is_handler(self.config.server_name)) or not self.config.track_jobs_in_database
+        return (self.config.track_jobs_in_database and self.job_config.is_handler) or not self.config.track_jobs_in_database
