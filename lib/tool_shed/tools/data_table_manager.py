@@ -3,6 +3,7 @@ import os
 import shutil
 from xml.etree import ElementTree as XmlET
 
+from galaxy.tools.data import ToolDataTableManager as tdtm
 from tool_shed.util import hg_util, xml_util
 
 log = logging.getLogger(__name__)
@@ -11,6 +12,7 @@ log = logging.getLogger(__name__)
 class ToolDataTableManager(object):
 
     def __init__(self, app):
+        self.tdtm = tdtm(app.config.shed_tool_data_path)
         self.app = app
 
     def generate_repository_info_elem(self, tool_shed, repository_name, changeset_revision, owner,
@@ -99,7 +101,7 @@ class ToolDataTableManager(object):
         error = False
         message = ''
         try:
-            new_table_elems, message = self.app.tool_data_tables \
+            new_table_elems, message = self.tdtm \
                 .add_new_entries_from_config_file(config_filename=filename,
                                                   tool_data_path=self.app.config.shed_tool_data_path,
                                                   shed_tool_data_table_config=self.app.config.shed_tool_data_table_config,
@@ -167,9 +169,9 @@ class ToolDataTableManager(object):
             # Remove old data_table
             os.unlink(tool_data_table_conf_filename)
             # Persist new data_table content.
-            self.app.tool_data_tables.to_xml_file(tool_data_table_conf_filename, elems)
+            self.tdtm.to_xml_file(tool_data_table_conf_filename, elems)
         return tool_data_table_conf_filename, elems
 
     def reset_tool_data_tables(self):
         # Reset the tool_data_tables to an empty dictionary.
-        self.app.tool_data_tables.data_tables = {}
+        self.tdtm.data_tables = {}
