@@ -37,7 +37,7 @@ var commonLibs = [
     "onload"
 ];
 
-module.exports = {
+let buildconfig = {
     entry: {
         libs: commonLibs,
         login: "./galaxy/scripts/apps/login.js",
@@ -118,3 +118,9 @@ module.exports = {
         // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
     ]
 };
+
+if (process.env.GXY_BUILD_SOURCEMAPS){
+    buildconfig.devtool = 'source-map';
+}
+
+module.exports = buildconfig;

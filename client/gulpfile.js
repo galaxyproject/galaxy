@@ -44,16 +44,20 @@ var dev_mode = function(){
     return process.env.NODE_ENV != "production";
 };
 
+var source_maps = function(){
+    return dev_mode() || process.env.GXY_BUILD_SOURCEMAPS !== undefined;
+};
+
 gulp.task('scripts', function() {
   return gulp.src(paths.scripts)
     .pipe(plumber())
     .pipe(cached('scripts'))
-    .pipe(gulpif(dev_mode, sourcemaps.init()))
+    .pipe(gulpif(source_maps, sourcemaps.init()))
     .pipe(babel({
         plugins: ['transform-es2015-modules-amd']
     }))
     .pipe(gulpif(dev_mode, beautify(), uglify()))
-    .pipe(gulpif(dev_mode, sourcemaps.write('../maps/')))
+    .pipe(gulpif(source_maps, sourcemaps.write('../maps/')))
     .pipe(gulp.dest('../static/scripts/'));
 });
 
