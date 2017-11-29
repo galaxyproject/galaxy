@@ -280,6 +280,13 @@ define({
  	// ---------------------------------------------------------------------------- tours
  	"Tours": false, 
  	// ---------------------------------------------------------------------------- user-preferences
+ 	"Click here to sign out of all sessions.": false,
+ 	"Add or remove custom builds using history datasets.": false,
+ 	"Associate OpenIDs with your account.": false,
+ 	"Customize your Toolbox by displaying or omitting sets of Tools.": false,
+ 	"Access your current API key or create a new one.": false,
+ 	"Enable or disable the communication feature to chat with other users.": false,
+ 	"Allows you to change your login credentials.": false,
  	"User Preferences": false,
  	"Sign out": false,
  	"Manage custom builds": false,

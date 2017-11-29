@@ -19,7 +19,7 @@ var Model = Backbone.Model.extend({
             },
             password: {
                 title:  _l("Change password"),
-                description: "Allows you to change your login credentials.",
+                description:  _l("Allows you to change your login credentials."),
                 icon: "fa-unlock-alt",
                 url: `api/users/${options.user_id}/password/inputs`,
                 submit_title: "Save password",
@@ -27,7 +27,7 @@ var Model = Backbone.Model.extend({
             },
             communication: {
                 title:  _l("Change communication settings"),
-                description: "Enable or disable the communication feature to chat with other users.",
+                description:  _l("Enable or disable the communication feature to chat with other users."),
                 url: `api/users/${options.user_id}/communication/inputs`,
                 icon: "fa-comments-o",
                 redirect: "user"
@@ -43,7 +43,7 @@ var Model = Backbone.Model.extend({
             },
             api_key: {
                 title:  _l("Manage API key"),
-                description: "Access your current API key or create a new one.",
+                description:  _l("Access your current API key or create a new one."),
                 url: `api/users/${options.user_id}/api_key/inputs`,
                 icon: "fa-key",
                 submit_title: "Create a new key",
@@ -51,7 +51,7 @@ var Model = Backbone.Model.extend({
             },
             toolbox_filters: {
                 title:  _l("Manage Toolbox filters"),
-                description: "Customize your Toolbox by displaying or omitting sets of Tools.",
+                description:  _l("Customize your Toolbox by displaying or omitting sets of Tools."),
                 url: `api/users/${options.user_id}/toolbox_filters/inputs`,
                 icon: "fa-filter",
                 submit_title: "Save filters",
@@ -59,7 +59,7 @@ var Model = Backbone.Model.extend({
             },
             openids: {
                 title:  _l("Manage OpenIDs"),
-                description: "Associate OpenIDs with your account.",
+                description:  _l("Associate OpenIDs with your account."),
                 icon: "fa-openid",
                 onclick: function() {
                     window.location.href = `${Galaxy.root}user/openid_manage?cntrller=user&use_panels=True`;
@@ -67,7 +67,7 @@ var Model = Backbone.Model.extend({
             },
             custom_builds: {
                 title:  _l("Manage custom builds"),
-                description: "Add or remove custom builds using history datasets.",
+                description:  _l("Add or remove custom builds using history datasets."),
                 icon: "fa-cubes",
                 onclick: function() {
                     window.location.href = `${Galaxy.root}custom_builds`;
@@ -75,7 +75,7 @@ var Model = Backbone.Model.extend({
             },
             logout: {
                 title:  _l("Sign out"),
-                description: "Click here to sign out of all sessions.",
+                description:  _l("Click here to sign out of all sessions."),
                 icon: "fa-sign-out",
                 onclick: function() {
                     Galaxy.modal.show({
