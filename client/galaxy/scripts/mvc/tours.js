@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /**
  *  This is the primary galaxy tours definition, currently only used for
  *  rendering a tour menu.
@@ -115,7 +116,7 @@ var giveTour = tour_id => {
 };
 
 var ToursView = Backbone.View.extend({
-    title: "Tours",
+    title:  _l("Tours"),
     // initialize
     initialize: function() {
         var self = this;

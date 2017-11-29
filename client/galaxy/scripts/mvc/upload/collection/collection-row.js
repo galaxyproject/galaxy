@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /** Renders the collection uploader rows */
 import Utils from "utils/utils";
 import UploadModel from "mvc/upload/upload-model";
@@ -32,7 +33,7 @@ export default Backbone.View.extend({
 
         // append popup to settings icon
         this.settings = new Popover.View({
-            title: "Upload configuration",
+            title:  _l("Upload configuration"),
             container: this.$(".upload-settings"),
             placement: "bottom"
         });

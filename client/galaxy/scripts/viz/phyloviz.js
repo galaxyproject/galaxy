@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import * as d3 from "libs/d3";
 import visualization_mod from "viz/visualization";
 import data_mod from "mvc/dataset/data";
@@ -224,7 +225,7 @@ var PhyloTree = visualization_mod.Visualization.extend({
         separation: 250, // px dist between nodes of different depth to represent 1 evolutionary until
         leafHeight: 18,
         type: "phyloviz", // visualization type
-        title: "Title",
+        title:  _l("Title"),
         scaleFactor: 1,
         translate: [0, 0],
         fontSize: 12, //fontSize of node label
@@ -784,7 +785,7 @@ var HeaderButtons = Backbone.View.extend({
             [
                 {
                     icon_class: "gear",
-                    title: "PhyloViz Settings",
+                    title:  _l("PhyloViz Settings"),
                     on_click: function() {
                         $("#SettingsMenu").show();
                         self.settingsMenu.updateUI();
@@ -792,7 +793,7 @@ var HeaderButtons = Backbone.View.extend({
                 },
                 {
                     icon_class: "disk",
-                    title: "Save visualization",
+                    title:  _l("Save visualization"),
                     on_click: function() {
                         var nexSelected = $("#phylovizNexSelector option:selected").text();
                         if (nexSelected) {
@@ -810,7 +811,7 @@ var HeaderButtons = Backbone.View.extend({
                 },
                 {
                     icon_class: "information",
-                    title: "Phyloviz Help",
+                    title:  _l("Phyloviz Help"),
                     on_click: function() {
                         window.open("https://galaxyproject.org/learn/visualization/phylogenetic-tree/");
                         // https://docs.google.com/document/d/1AXFoJgEpxr21H3LICRs3EyMe1B1X_KFPouzIgrCz3zk/edit
@@ -831,14 +832,14 @@ var HeaderButtons = Backbone.View.extend({
             [
                 {
                     icon_class: "zoom-in",
-                    title: "Zoom in",
+                    title:  _l("Zoom in"),
                     on_click: function() {
                         self.phylovizView.zoomAndPan({ zoom: "+" });
                     }
                 },
                 {
                     icon_class: "zoom-out",
-                    title: "Zoom out",
+                    title:  _l("Zoom out"),
                     on_click: function() {
                         self.phylovizView.zoomAndPan({ zoom: "-" });
                     }

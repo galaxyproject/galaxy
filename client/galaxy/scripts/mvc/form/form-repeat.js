@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /** This class creates a ui component which enables the dynamic creation of portlets */
 import Utils from "utils/utils";
 import Portlet from "mvc/ui/ui-portlet";
@@ -6,7 +7,7 @@ var View = Backbone.View.extend({
     initialize: function(options) {
         this.list = {};
         this.options = Utils.merge(options, {
-            title: "Repeat",
+            title:  _l("Repeat"),
             empty_text: "Not available.",
             max: null,
             min: null
@@ -48,7 +49,7 @@ var View = Backbone.View.extend({
         });
         var portlet = new Portlet.View({
             id: options.id,
-            title: "placeholder",
+            title:  _l("placeholder"),
             cls: options.cls || "ui-portlet-repeat",
             operations: { button_delete: button_delete }
         });

@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 // dependencies
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
@@ -13,7 +14,7 @@ var View = Backbone.View.extend({
 
         // create insert new list element button
         this.browse_button = new Ui.ButtonIcon({
-            title: "Browse",
+            title:  _l("Browse"),
             icon: "fa fa-sign-in",
             tooltip: "Browse GenomeSpace",
             onclick: function() {

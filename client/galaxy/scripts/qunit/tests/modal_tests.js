@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /* global define */
 
 define(["qunit/test-app", "mvc/ui/ui-modal", "sinon"], function(testApp, GalaxyModal, sinon) {
@@ -9,7 +10,7 @@ define(["qunit/test-app", "mvc/ui/ui-modal", "sinon"], function(testApp, GalaxyM
             this.clock = sinon.useFakeTimers();
             var self = this;
             this.app = new GalaxyModal.View({
-                title: "Test title",
+                title:  _l("Test title"),
                 body: "Test body",
                 buttons: {
                     Ok: function() {},

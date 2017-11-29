@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
 var View = Backbone.View.extend({
@@ -19,7 +20,7 @@ var View = Backbone.View.extend({
         var repositories = that.model.models;
         that.$el.html(
             repo_queue_template({
-                title: "Repository Installation Queue",
+                title:  _l("Repository Installation Queue"),
                 repositories: repositories,
                 queue: toolshed_util.queueLength()
             })

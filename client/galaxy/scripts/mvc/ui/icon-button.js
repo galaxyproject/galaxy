@@ -1,10 +1,11 @@
+import _l from "utils/localization";
 //=============================================================================
 /**
  * backbone model for icon buttons
  */
 var IconButton = Backbone.Model.extend({
     defaults: {
-        title: "",
+        title:  _l(""),
         icon_class: "",
         on_click: null,
         menu_options: null,

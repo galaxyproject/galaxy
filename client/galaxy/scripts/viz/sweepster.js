@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /**
  * Visualization and components for Sweepster, a visualization for exploring a tool's parameter space via
  * genomic visualization.
@@ -414,14 +415,14 @@ var SweepsterTrackView = Backbone.View.extend({
 
         var icon_menu = mod_icon_btn.create_icon_buttons_menu([
             {
-                title: "Settings",
+                title:  _l("Settings"),
                 icon_class: "gear track-settings",
                 on_click: function() {
                     settings_div.toggle();
                 }
             },
             {
-                title: "Remove",
+                title:  _l("Remove"),
                 icon_class: "cross-circle",
                 on_click: function() {
                     self.$el.remove();
@@ -533,7 +534,7 @@ var ToolInputValOrSweepView = Backbone.View.extend({
         var menu = mod_icon_btn.create_icon_buttons_menu(
             [
                 {
-                    title: "Add parameter to tree",
+                    title:  _l("Add parameter to tree"),
                     icon_class: "plus-button",
                     on_click: function() {
                         input.set("in_ptree", true);
@@ -544,7 +545,7 @@ var ToolInputValOrSweepView = Backbone.View.extend({
                     }
                 },
                 {
-                    title: "Remove parameter from tree",
+                    title:  _l("Remove parameter from tree"),
                     icon_class: "toggle",
                     on_click: function() {
                         // Remove parameter from tree params where name matches clicked paramter.
@@ -822,7 +823,7 @@ var SweepsterVisualizationView = Backbone.View.extend({
 
         var close_button = mod_icon_btn.create_icon_buttons_menu([
             {
-                title: "Close",
+                title:  _l("Close"),
                 icon_class: "cross-circle",
                 on_click: function() {
                     $(".tooltip").remove();
@@ -871,7 +872,7 @@ var SweepsterVisualizationView = Backbone.View.extend({
                 // Close viz.
                 {
                     icon_class: "cross-circle",
-                    title: "Close",
+                    title:  _l("Close"),
                     on_click: function() {
                         window.location = "${h.url_for( controller='visualization', action='list' )}";
                     }

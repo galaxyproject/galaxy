@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /** Workflow view */
 import * as mod_toastr from "libs/toastr";
 import TAGS from "mvc/tag";
@@ -152,7 +153,7 @@ var WorkflowItemView = Backbone.View.extend({
 
 /** View of the main workflow list page */
 var WorkflowListView = Backbone.View.extend({
-    title: "Workflows",
+    title:  _l("Workflows"),
     initialize: function() {
         this.setElement("<div/>");
         _.bindAll(this, "adjustActiondropdown");

@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import * as _ from "libs/underscore";
 import visualization from "viz/visualization";
 import viz_views from "viz/viz_views";
@@ -308,7 +309,7 @@ Drawable.prototype.action_icons_def = [
     // Edit settings.
     {
         name: "settings_icon",
-        title: "Edit settings",
+        title:  _l("Edit settings"),
         css_class: "gear",
         on_click_fn: function(drawable) {
             var view = new config_mod.ConfigSettingCollectionView({
@@ -320,7 +321,7 @@ Drawable.prototype.action_icons_def = [
     // Remove.
     {
         name: "remove_icon",
-        title: "Remove",
+        title:  _l("Remove"),
         css_class: "remove-icon",
         on_click_fn: function(drawable) {
             // Tooltip for remove icon must be deleted when drawable is deleted.
@@ -636,7 +637,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         // Replace group with composite track.
         {
             name: "composite_icon",
-            title: "Show composite track",
+            title:  _l("Show composite track"),
             css_class: "layers-stack",
             on_click_fn: function(group) {
                 $(".tooltip").remove();
@@ -646,7 +647,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         // Toggle track filters.
         {
             name: "filters_icon",
-            title: "Filters",
+            title:  _l("Filters"),
             css_class: "ui-slider-050",
             on_click_fn: function(group) {
                 // TODO: update Tooltip text.
@@ -2383,7 +2384,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Change track mode.
         {
             name: "mode_icon",
-            title: "Set display mode",
+            title:  _l("Set display mode"),
             css_class: "chevron-expand",
             on_click_fn: function() {}
         },
@@ -2392,7 +2393,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Set track as overview.
         {
             name: "overview_icon",
-            title: "Set as overview",
+            title:  _l("Set as overview"),
             css_class: "application-dock-270",
             on_click_fn: function(track) {
                 track.view.set_overview(track);
@@ -2403,7 +2404,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Toggle track filters.
         {
             name: "filters_icon",
-            title: "Filters",
+            title:  _l("Filters"),
             css_class: "ui-slider-050",
             on_click_fn: function(drawable) {
                 // TODO: update Tooltip text.
@@ -2418,7 +2419,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Toggle track tool.
         {
             name: "tools_icon",
-            title: "Tool",
+            title:  _l("Tool"),
             css_class: "hammer",
             on_click_fn: function(track) {
                 // TODO: update Tooltip text.
@@ -2438,7 +2439,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Go to parameter exploration visualization.
         {
             name: "param_space_viz_icon",
-            title: "Tool parameter space visualization",
+            title:  _l("Tool parameter space visualization"),
             css_class: "arrow-split",
             on_click_fn: function(track) {
                 var html = `<strong>Tool</strong>:${track.tool.get(
@@ -2699,7 +2700,7 @@ extend(Track.prototype, Drawable.prototype, {
                             .text("View error")
                             .click(() => {
                                 Galaxy.modal.show({
-                                    title: "Trackster Error",
+                                    title:  _l("Trackster Error"),
                                     body: `<pre>${result.message}</pre>`,
                                     buttons: {
                                         Close: function() {
@@ -3687,7 +3688,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         // Create composite track from group's tracks.
         {
             name: "composite_icon",
-            title: "Show individual tracks",
+            title:  _l("Show individual tracks"),
             css_class: "layers-stack",
             on_click_fn: function(track) {
                 $(".tooltip").remove();

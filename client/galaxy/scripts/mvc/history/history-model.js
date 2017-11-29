@@ -41,7 +41,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             /** Adding title and singular tag */
             searchAliases: {
-                title: "name",
+                title:  _l("name"),
                 tag: "tags"
             },
 

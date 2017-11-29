@@ -1806,7 +1806,7 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datase
 
     creator = new PairedCollectionCreator(options);
     Galaxy.modal.show({
-        title: "Create a collection of paired datasets",
+        title:  _l("Create a collection of paired datasets"),
         body: creator.$el,
         width: "80%",
         height: "800px",

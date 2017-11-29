@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import Utils from "utils/utils";
 import Workflow from "mvc/workflow/workflow-manager";
 import WorkflowCanvas from "mvc/workflow/workflow-canvas";
@@ -509,7 +510,7 @@ export default Backbone.View.extend({
                         } else {
                             // don't ruin the workflow by adding 50 steps unprompted.
                             Galaxy.modal.show({
-                                title: "Warning",
+                                title:  _l("Warning"),
                                 body: `This will copy ${workflow.step_count} new steps into your workflow.`,
                                 buttons: {
                                     Cancel: function() {

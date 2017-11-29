@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import mod_utils from "utils/utils";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
@@ -147,7 +148,7 @@ var FolderToolbarView = Backbone.View.extend({
         this.modal = Galaxy.modal;
         this.modal.show({
             closing_events: true,
-            title: "Create New Folder",
+            title:  _l("Create New Folder"),
             body: template(),
             buttons: {
                 Create: function() {
@@ -224,7 +225,7 @@ var FolderToolbarView = Backbone.View.extend({
                     that.modal = Galaxy.modal;
                     that.modal.show({
                         closing_events: true,
-                        title: "Import into History",
+                        title:  _l("Import into History"),
                         body: template({
                             histories: that.histories.models
                         }),
@@ -395,7 +396,7 @@ var FolderToolbarView = Backbone.View.extend({
                 var template_modal = self.templateAddFilesFromHistory();
                 self.modal.show({
                     closing_events: true,
-                    title: "Adding datasets from your history",
+                    title:  _l("Adding datasets from your history"),
                     body: template_modal({
                         histories: self.histories.models
                     }),
@@ -435,7 +436,7 @@ var FolderToolbarView = Backbone.View.extend({
         var template_modal = this.templateImportPathModal();
         this.modal.show({
             closing_events: true,
-            title: "Please enter paths to import",
+            title:  _l("Please enter paths to import"),
             body: template_modal({}),
             buttons: {
                 Import: function() {
@@ -524,7 +525,7 @@ var FolderToolbarView = Backbone.View.extend({
         this.modal = Galaxy.modal;
         this.modal.show({
             closing_events: true,
-            title: "Please select folders or files",
+            title:  _l("Please select folders or files"),
             body: template_modal({}),
             buttons: {
                 Import: function() {
@@ -1098,7 +1099,7 @@ var FolderToolbarView = Backbone.View.extend({
             this.modal = Galaxy.modal;
             this.modal.show({
                 closing_events: true,
-                title: "Deleting selected items",
+                title:  _l("Deleting selected items"),
                 body: template({}),
                 buttons: {
                     Close: function() {
@@ -1178,7 +1179,7 @@ var FolderToolbarView = Backbone.View.extend({
         this.modal = Galaxy.modal;
         this.modal.show({
             closing_events: true,
-            title: "Location Details",
+            title:  _l("Location Details"),
             body: template({ library: library, options: that.options }),
             buttons: {
                 Close: function() {

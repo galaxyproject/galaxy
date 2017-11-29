@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
 var ToolShedRepoStatusView = Backbone.View.extend({
@@ -42,7 +43,7 @@ var ToolShedRepoStatusView = Backbone.View.extend({
         var repo_status_template = this.templateRepoStatus;
         this.$el.html(
             repo_status_template({
-                title: "Repository Status",
+                title:  _l("Repository Status"),
                 repositories: this.model.models,
                 queue: toolshed_util.queueLength()
             })

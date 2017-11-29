@@ -261,7 +261,7 @@ var DatasetListItemView = _super.extend(
                 onclick: function(ev) {
                     if (Galaxy.frame && Galaxy.frame.active) {
                         Galaxy.frame.add({
-                            title: "Dataset details",
+                            title:  _l("Dataset details"),
                             url: this.href
                         });
                         ev.preventDefault();

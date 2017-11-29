@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_utils from "utils/utils";
@@ -179,7 +180,7 @@ var LibraryDatasetView = Backbone.View.extend({
             self.modal = Galaxy.modal;
             self.modal.show({
                 closing_events: true,
-                title: "Import into History",
+                title:  _l("Import into History"),
                 body: template({ histories: self.histories.models }),
                 buttons: {
                     Import: function() {

@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /** This module contains all button views. */
 import Utils from "utils/utils";
 /** This renders the default button which is used e.g. at the bottom of the upload modal. */
@@ -7,7 +8,7 @@ var ButtonDefault = Backbone.View.extend({
             (options && options.model) ||
             new Backbone.Model({
                 id: Utils.uid(),
-                title: "",
+                title:  _l(""),
                 icon: "",
                 cls: "btn btn-default",
                 wait: false,
@@ -101,7 +102,7 @@ var ButtonLink = ButtonDefault.extend({
             (options && options.model) ||
             new Backbone.Model({
                 id: Utils.uid(),
-                title: "",
+                title:  _l(""),
                 icon: "",
                 cls: ""
             }).set(options);
@@ -194,7 +195,7 @@ var ButtonIcon = ButtonDefault.extend({
             (options && options.model) ||
             new Backbone.Model({
                 id: Utils.uid(),
-                title: "",
+                title:  _l(""),
                 icon: "",
                 cls: "ui-button-icon",
                 disabled: false
@@ -242,7 +243,7 @@ var ButtonMenu = ButtonDefault.extend({
             (options && options.model) ||
             new Backbone.Model({
                 id: "",
-                title: "",
+                title:  _l(""),
                 pull: "right",
                 icon: null,
                 onclick: null,
@@ -337,7 +338,7 @@ var ButtonMenu = ButtonDefault.extend({
     addMenu: function(options) {
         this.collection.add(
             Utils.merge(options, {
-                title: "",
+                title:  _l(""),
                 target: "",
                 href: "",
                 onclick: null,

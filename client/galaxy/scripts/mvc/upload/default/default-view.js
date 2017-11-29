@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /** Renders contents of the default uploader */
 import Utils from "utils/utils";
 import UploadModel from "mvc/upload/upload-model";
@@ -44,7 +45,7 @@ export default Backbone.View.extend({
         // append buttons to dom
         this.btnLocal = new Ui.Button({
             id: "btn-local",
-            title: "Choose local file",
+            title:  _l("Choose local file"),
             onclick: function() {
                 self.uploadbox.select();
             },
@@ -52,7 +53,7 @@ export default Backbone.View.extend({
         });
         this.btnFtp = new Ui.Button({
             id: "btn-ftp",
-            title: "Choose FTP file",
+            title:  _l("Choose FTP file"),
             onclick: function() {
                 self._eventFtp();
             },
@@ -68,28 +69,28 @@ export default Backbone.View.extend({
         });
         this.btnStart = new Ui.Button({
             id: "btn-start",
-            title: "Start",
+            title:  _l("Start"),
             onclick: function() {
                 self._eventStart();
             }
         });
         this.btnStop = new Ui.Button({
             id: "btn-stop",
-            title: "Pause",
+            title:  _l("Pause"),
             onclick: function() {
                 self._eventStop();
             }
         });
         this.btnReset = new Ui.Button({
             id: "btn-reset",
-            title: "Reset",
+            title:  _l("Reset"),
             onclick: function() {
                 self._eventReset();
             }
         });
         this.btnClose = new Ui.Button({
             id: "btn-close",
-            title: "Close",
+            title:  _l("Close"),
             onclick: function() {
                 self.app.modal.hide();
             }
@@ -132,7 +133,7 @@ export default Backbone.View.extend({
 
         // add ftp file viewer
         this.ftp = new Popover.View({
-            title: "FTP files",
+            title:  _l("FTP files"),
             container: this.btnFtp.$el
         });
 

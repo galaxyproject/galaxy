@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import Utils from "utils/utils";
 import Form from "mvc/form/form-view";
 import ToolFormBase from "mvc/tool/tool-form-base";
@@ -272,7 +273,7 @@ function _makeSection(output_id, options) {
                 help: "This action will remove tags for the dataset."
             },
             {
-                title: "Assign columns",
+                title:  _l("Assign columns"),
                 type: "section",
                 flat: true,
                 inputs: [

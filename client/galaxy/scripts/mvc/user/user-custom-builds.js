@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /** This class renders the chart configuration form. */
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
@@ -183,7 +184,7 @@ var View = Backbone.View.extend({
                 save: new Ui.Button({
                     icon: "fa-save",
                     tooltip: "Create new Build",
-                    title: "Save",
+                    title:  _l("Save"),
                     cls: "btn btn-primary ui-clear-float",
                     onclick: function() {
                         var data = form.data.create();

@@ -1,10 +1,11 @@
+import _l from "utils/localization";
 /** This class renders the grid list. */
 import Utils from "utils/utils";
 import GridView from "mvc/grid/grid-view";
 import HistoryModel from "mvc/history/history-model";
 import historyCopyDialog from "mvc/history/copy-dialog";
 var View = Backbone.View.extend({
-    title: "Histories",
+    title:  _l("Histories"),
     initialize: function(options) {
         var self = this;
         this.setElement($("<div/>"));

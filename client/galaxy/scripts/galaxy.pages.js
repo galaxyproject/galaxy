@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import "libs/jquery/jquery.form";
 import "libs/jquery/jstorage";
 import "libs/jquery/jquery.wymeditor";
@@ -517,12 +518,12 @@ export default function editor_onload() {
             { name: "Italic", title: "Emphasis", css: "wym_tools_emphasis" },
             {
                 name: "Superscript",
-                title: "Superscript",
+                title:  _l("Superscript"),
                 css: "wym_tools_superscript"
             },
             {
                 name: "Subscript",
-                title: "Subscript",
+                title:  _l("Subscript"),
                 css: "wym_tools_subscript"
             },
             {

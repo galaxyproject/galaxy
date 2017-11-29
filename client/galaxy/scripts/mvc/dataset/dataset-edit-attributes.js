@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /** Dataset edit attributes view */
 import Utils from "utils/utils";
 import Tabs from "mvc/ui/ui-tabs";
@@ -81,28 +82,28 @@ var View = Backbone.View.extend({
         var tabs = new Tabs.View();
         tabs.add({
             id: "attribute",
-            title: "Attributes",
+            title:  _l("Attributes"),
             icon: "fa fa-bars",
             tooltip: "Edit dataset attributes",
             $el: this.forms.attribute.$el
         });
         tabs.add({
             id: "convert",
-            title: "Convert",
+            title:  _l("Convert"),
             icon: "fa-gear",
             tooltip: "Convert to new format",
             $el: this.forms.conversion.$el
         });
         tabs.add({
             id: "datatype",
-            title: "Datatypes",
+            title:  _l("Datatypes"),
             icon: "fa-database",
             tooltip: "Change data type",
             $el: this.forms.datatype.$el
         });
         tabs.add({
             id: "permissions",
-            title: "Permissions",
+            title:  _l("Permissions"),
             icon: "fa-user",
             tooltip: "Permissions",
             $el: this.forms.permission.$el
@@ -114,12 +115,12 @@ var View = Backbone.View.extend({
     _getAttribute: function() {
         var self = this;
         var form = new Form({
-            title: "Edit attributes",
+            title:  _l("Edit attributes"),
             operations: {
                 submit_attributes: new Ui.ButtonIcon({
                     tooltip: "Save attributes of the dataset.",
                     icon: "fa-floppy-o",
-                    title: "Save",
+                    title:  _l("Save"),
                     onclick: function() {
                         self._submit("attributes", form);
                     }
@@ -142,11 +143,11 @@ var View = Backbone.View.extend({
     _getConversion: function() {
         var self = this;
         var form = new Form({
-            title: "Convert to new format",
+            title:  _l("Convert to new format"),
             operations: {
                 submit_conversion: new Ui.ButtonIcon({
                     tooltip: "Convert the datatype to a new format.",
-                    title: "Convert datatype",
+                    title:  _l("Convert datatype"),
                     icon: "fa-exchange",
                     onclick: function() {
                         self._submit("conversion", form);
@@ -161,11 +162,11 @@ var View = Backbone.View.extend({
     _getDatatype: function() {
         var self = this;
         var form = new Form({
-            title: "Change datatype",
+            title:  _l("Change datatype"),
             operations: {
                 submit_datatype: new Ui.ButtonIcon({
                     tooltip: "Change the datatype to a new type.",
-                    title: "Change datatype",
+                    title:  _l("Change datatype"),
                     icon: "fa-exchange",
                     onclick: function() {
                         self._submit("datatype", form);
@@ -180,11 +181,11 @@ var View = Backbone.View.extend({
     _getPermission: function() {
         var self = this;
         var form = new Form({
-            title: "Manage dataset permissions",
+            title:  _l("Manage dataset permissions"),
             operations: {
                 submit_permission: new Ui.ButtonIcon({
                     tooltip: "Save permissions.",
-                    title: "Save permissions",
+                    title:  _l("Save permissions"),
                     icon: "fa-floppy-o ",
                     onclick: function() {
                         self._submit("permission", form);

@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /** Frame view */
 var FrameView = Backbone.View.extend({
     initialize: function(options) {
@@ -13,7 +14,7 @@ var FrameView = Backbone.View.extend({
                         $("<div/>")
                             .addClass("f-icon f-close fa fa-close")
                             .tooltip({
-                                title: "Close",
+                                title:  _l("Close"),
                                 placement: "bottom"
                             })
                     )
@@ -143,7 +144,7 @@ var View = Backbone.View.extend({
     add: function(options) {
         if (this.frame_counter >= this.options.frame_max) {
             Galaxy.modal.show({
-                title: "Warning",
+                title:  _l("Warning"),
                 body: `You have reached the maximum number of allowed frames (${this.options.frame_max}).`,
                 buttons: {
                     Close: function() {
@@ -155,7 +156,7 @@ var View = Backbone.View.extend({
             var frame_id = `#frame-${this.frame_uid++}`;
             if ($(frame_id).length !== 0) {
                 Galaxy.modal.show({
-                    title: "Error",
+                    title:  _l("Error"),
                     body: "This frame already exists. This page might contain multiple frame managers.",
                     buttons: {
                         Close: function() {

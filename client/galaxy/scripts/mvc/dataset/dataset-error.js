@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
@@ -124,12 +125,12 @@ var View = Backbone.View.extend({
         */
 
         var form = new Form({
-            title: "Error Report",
+            title:  _l("Error Report"),
             inputs: inputs,
             buttons: {
                 save: new Ui.Button({
                     icon: "fa-bug",
-                    title: "Report",
+                    title:  _l("Report"),
                     cls: "ui-button btn btn-primary",
                     floating: "clear",
                     onclick: function() {
