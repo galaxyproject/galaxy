@@ -179,7 +179,7 @@ class AdminToolshed(AdminGalaxy):
                                    config={
                                        'title': 'Galaxy Tool Sheds',
                                        'app': app,
-                                       'bundle': 'interface_ext'})
+                                       'bundle': 'extended'})
 
     @web.expose
     @web.require_admin

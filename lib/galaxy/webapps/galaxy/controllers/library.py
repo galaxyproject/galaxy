@@ -19,4 +19,4 @@ class Library(BaseUIController):
                                    config={
                                        'title': 'Data Libraries',
                                        'app': app,
-                                       'bundle': 'interface_ext'})
+                                       'bundle': 'extended'})

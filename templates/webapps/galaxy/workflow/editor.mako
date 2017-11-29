@@ -44,7 +44,7 @@
         "libs/jquery/jquery.form",
         "libs/jquery/jstorage",
         "libs/jquery/jquery.autocomplete",
-        "bundled/interface_ext.bundled"
+        "bundled/extended.bundled"
     )}
 
     <script type='text/javascript'>

@@ -780,7 +780,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             }
 
         # fill template
-        return trans.fill_template('galaxy.panels.mako', config={'right_panel': True, 'app': app, 'bundle': 'interface_ext'})
+        return trans.fill_template('galaxy.panels.mako', config={'right_panel': True, 'app': app, 'bundle': 'extended'})
 
     @web.expose
     def circster(self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None):
@@ -842,7 +842,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         }
 
         # fill template
-        return trans.fill_template('galaxy.panels.mako', config={'app' : app, 'bundle': 'interface_ext'})
+        return trans.fill_template('galaxy.panels.mako', config={'app' : app, 'bundle': 'extended'})
 
     @web.expose
     def sweepster(self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None):

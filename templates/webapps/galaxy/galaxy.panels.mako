@@ -72,14 +72,10 @@
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
-        'bundled/masthead.bundled',
+        'bundled/extended.bundled',
         'libs/d3',
         'libs/require',
     )}
-
-    %if self.galaxy_config.get('bundle', None):
-        ${h.js('bundled/%s.bundled' % self.galaxy_config.get('bundle'))}
-    %endif
 
     <script type="text/javascript">
         // configure require
