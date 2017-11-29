@@ -70,8 +70,11 @@ class IdentityProvider(object):
 
 class AuthnzManager(object):
 
-    def __init__(self, config):
+    def __init__(self, app, config):
         """
+        :type app: galaxy.app.UniverseApplication
+        :param app:
+
         :type config: string
         :param config: sets the path for OAuth2.0 configuration
             file (e.g., OAuth2_config.xml).
@@ -96,20 +99,22 @@ class AuthnzManager(object):
                     continue
                 provider = child.get('name')
                 try:
-                    if provider == 'Google':
-                        from .oidc_idp_google import OIDCIdPGoogle
-                        self.providers[provider] = OIDCIdPGoogle(child)
+                    from .psa_authnz import PSAAuthnz
+                    self.providers[provider] = PSAAuthnz(provider, child)
+                # TODO: capture exception of type `Exception` here, these are the type of errors which can raise if anything goes wrong initializing the provider.
                 except ParseError:
                     log.error("Could not initialize `{}` identity provider; skipping this node.".format(provider))
                     continue
+                # except Exception as e:
+                #     raise Exception(e.message)
             if len(self.providers) == 0:
                 raise ParseError("No valid provider configuration parsed.")
         except ImportError:
             raise
         except ParseError as e:
             raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config, e.message))
-        except Exception:
-            raise ParseError("Malformed OAuth2.0 Configuration XML -- unable to continue.")
+        # except Exception as e:
+        #     raise Exception("Malformed OAuth2.0 Configuration XML -- unable to continue. {}".format(e.message))
 
     def authenticate(self, provider, trans):
         """

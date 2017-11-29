@@ -9,6 +9,7 @@ from sqlalchemy import (
     and_,
     asc,
     Boolean,
+    BOOLEAN,
     Column,
     DateTime,
     desc,
@@ -25,7 +26,8 @@ from sqlalchemy import (
     Text,
     true,
     Unicode,
-    UniqueConstraint
+    UniqueConstraint,
+    VARCHAR
 )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
@@ -100,6 +102,61 @@ model.UserOAuth2.table = Table(
     Column("refresh_token", String),
     Column("expiration_date", DateTime),
     Column("access_token", String))
+
+model.SocialAuthAssociation = Table(
+    "social_auth_association", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('server_url', VARCHAR(255)),
+    Column('handle', VARCHAR(255)),
+    Column('secret', VARCHAR(255)),
+    Column('issued', Integer),
+    Column('lifetime', Integer),
+    Column('assoc_type', VARCHAR(64)))
+
+
+model.SocialAuthCode = Table(
+    "social_auth_code", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('email', VARCHAR(200)),
+    Column('code', VARCHAR(32)))
+
+
+model.SocialAuthNonce = Table(
+    "social_auth_nonce", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('server_url', VARCHAR(255)),
+    Column('timestamp', Integer),
+    Column('salt', VARCHAR(40)))
+
+
+model.SocialAuthPartial = Table(
+    "social_auth_partial", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('token', VARCHAR(32)),
+    Column('data', TEXT),
+    Column('next_step', Integer),
+    Column('backend', VARCHAR(32)))
+
+
+model.SocialAuthUserSocialAuth = Table(
+    "social_auth_usersocialauth", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('provider', VARCHAR(32)),
+    Column('uid', VARCHAR(255)),
+    Column('user_id', Integer, ForeignKey("users.id"), index=True),
+    Column('extra_data', TEXT),
+    Column('lifetime', Integer),
+    Column('assoc_type', VARCHAR(64)))
+
+
+model.PSAUsers = Table(
+    "users", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('username', VARCHAR(200)),
+    Column('password', VARCHAR(200)),
+    Column('name', VARCHAR(100)),
+    Column('email', VARCHAR(200)),
+    Column('active', BOOLEAN))
 
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,

@@ -4995,6 +4995,56 @@ class UserOAuth2(object):
         self.access_token = access_token
 
 
+class SocialAuthAssociation(object):
+    def __init__(self, server_url, handle, secret, issued, lifetime, assoc_type):
+        self.server_url = server_url
+        self.handle = handle
+        self.secret = secret
+        self.issued = issued
+        self.lifetime = lifetime
+        self.assoc_type = assoc_type
+
+
+class SocialAuthCode(object):
+    def __init__(self, email, code):
+        self.email = email
+        self.code = code
+
+
+class SocialAuthNonce(object):
+    def __init__(self, server_url, timestamp, salt):
+        self.server_url = server_url
+        self.timestamp = timestamp
+        self.salt = salt
+
+
+class SocialAuthPartial(object):
+    def __init__(self, token, data, next_step, backend):
+        self.token = token
+        self.data = data
+        self.next_step = next_step
+        self.backend = backend
+
+
+class SocialAuthUserSocialAuth(object):
+    def __init__(self, provider, uid, user_id, extra_data, lifetime, assoc_type):
+        self.provider = provider
+        self.uid = uid
+        self.user_id = user_id
+        self.extra_data = extra_data
+        self.lifetime = lifetime
+        self.assoc_type = assoc_type
+
+
+class PSAUsers(object):
+    def __init__(self, username, password, name, email, active):
+        self.username = username
+        self.password = password
+        self.name = name
+        self.email = email
+        self.active = active
+
+
 class Page(object, Dictifiable):
     dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted']
 
