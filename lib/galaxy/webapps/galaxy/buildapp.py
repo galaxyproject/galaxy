@@ -115,6 +115,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/pages/edit')
     webapp.add_client_route('/histories/citations')
     webapp.add_client_route('/histories/list')
+    webapp.add_client_route('/histories/import')
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')
     webapp.add_client_route('/histories/rename')
