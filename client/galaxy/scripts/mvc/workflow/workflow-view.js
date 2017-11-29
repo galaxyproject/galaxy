@@ -503,7 +503,7 @@ export default Backbone.View.extend({
                 var copy = new Ui.ButtonIcon({
                     icon: "fa fa-copy",
                     cls: "ui-button-icon-plain",
-                    tooltip: "Copy and insert individual steps",
+                    tooltip:  _l("Copy and insert individual steps"),
                     onclick: function() {
                         if (workflow.step_count < 2) {
                             self.copy_into_workflow(workflow.id, workflow.name);

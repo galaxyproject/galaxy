@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /* global define */
 define(
     [
@@ -428,7 +429,7 @@ define(
                     config_form: "{}",
                     tool_state: "ok",
                     tool_errors: false,
-                    tooltip: "tool tooltip",
+                    tooltip:  _l("tool tooltip"),
                     annotation: "tool annotation",
                     workflow_outputs: [{ output_name: "out1" }],
                     label: "Cat that data."

@@ -92,7 +92,7 @@ var View = Backbone.View.extend({
                 new Ui.ButtonIcon({
                     icon: "fa-trash-o",
                     cls: "ui-button-icon-plain",
-                    tooltip: "Delete custom build.",
+                    tooltip:  _l("Delete custom build."),
                     onclick: function() {
                         model.destroy();
                     }
@@ -183,7 +183,7 @@ var View = Backbone.View.extend({
             buttons: {
                 save: new Ui.Button({
                     icon: "fa-save",
-                    tooltip: "Create new Build",
+                    tooltip:  _l("Create new Build"),
                     title:  _l("Save"),
                     cls: "btn btn-primary ui-clear-float",
                     onclick: function() {

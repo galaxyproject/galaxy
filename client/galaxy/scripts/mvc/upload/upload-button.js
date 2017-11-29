@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /** View for upload/progress bar button */
 
 var View = Backbone.View.extend({
@@ -7,7 +8,7 @@ var View = Backbone.View.extend({
             (options && options.model) ||
             new Backbone.Model({
                 icon: "fa-upload",
-                tooltip: "Download from URL or upload files from disk",
+                tooltip:  _l("Download from URL or upload files from disk"),
                 label: "Load Data",
                 percentage: 0,
                 status: "",

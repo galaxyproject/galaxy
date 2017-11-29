@@ -84,28 +84,28 @@ var View = Backbone.View.extend({
             id: "attribute",
             title:  _l("Attributes"),
             icon: "fa fa-bars",
-            tooltip: "Edit dataset attributes",
+            tooltip:  _l("Edit dataset attributes"),
             $el: this.forms.attribute.$el
         });
         tabs.add({
             id: "convert",
             title:  _l("Convert"),
             icon: "fa-gear",
-            tooltip: "Convert to new format",
+            tooltip:  _l("Convert to new format"),
             $el: this.forms.conversion.$el
         });
         tabs.add({
             id: "datatype",
             title:  _l("Datatypes"),
             icon: "fa-database",
-            tooltip: "Change data type",
+            tooltip:  _l("Change data type"),
             $el: this.forms.datatype.$el
         });
         tabs.add({
             id: "permissions",
             title:  _l("Permissions"),
             icon: "fa-user",
-            tooltip: "Permissions",
+            tooltip:  _l("Permissions"),
             $el: this.forms.permission.$el
         });
         return tabs;
@@ -118,7 +118,7 @@ var View = Backbone.View.extend({
             title:  _l("Edit attributes"),
             operations: {
                 submit_attributes: new Ui.ButtonIcon({
-                    tooltip: "Save attributes of the dataset.",
+                    tooltip:  _l("Save attributes of the dataset."),
                     icon: "fa-floppy-o",
                     title:  _l("Save"),
                     onclick: function() {
@@ -146,7 +146,7 @@ var View = Backbone.View.extend({
             title:  _l("Convert to new format"),
             operations: {
                 submit_conversion: new Ui.ButtonIcon({
-                    tooltip: "Convert the datatype to a new format.",
+                    tooltip:  _l("Convert the datatype to a new format."),
                     title:  _l("Convert datatype"),
                     icon: "fa-exchange",
                     onclick: function() {
@@ -165,7 +165,7 @@ var View = Backbone.View.extend({
             title:  _l("Change datatype"),
             operations: {
                 submit_datatype: new Ui.ButtonIcon({
-                    tooltip: "Change the datatype to a new type.",
+                    tooltip:  _l("Change the datatype to a new type."),
                     title:  _l("Change datatype"),
                     icon: "fa-exchange",
                     onclick: function() {
@@ -184,7 +184,7 @@ var View = Backbone.View.extend({
             title:  _l("Manage dataset permissions"),
             operations: {
                 submit_permission: new Ui.ButtonIcon({
-                    tooltip: "Save permissions.",
+                    tooltip:  _l("Save permissions."),
                     title:  _l("Save permissions"),
                     icon: "fa-floppy-o ",
                     onclick: function() {

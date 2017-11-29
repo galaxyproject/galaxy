@@ -248,7 +248,7 @@ var ButtonMenu = ButtonDefault.extend({
                 icon: null,
                 onclick: null,
                 cls: "ui-button-icon ui-button-menu",
-                tooltip: "",
+                tooltip:  _l(""),
                 target: "",
                 href: "",
                 onunload: null,

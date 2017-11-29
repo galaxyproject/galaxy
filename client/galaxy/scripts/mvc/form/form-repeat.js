@@ -41,7 +41,7 @@ var View = Backbone.View.extend({
         }
         var button_delete = new Ui.ButtonIcon({
             icon: "fa-trash-o",
-            tooltip: "Delete this repeat block",
+            tooltip:  _l("Delete this repeat block"),
             cls: "ui-button-icon-plain form-repeat-delete",
             onclick: function() {
                 options.ondel && options.ondel();

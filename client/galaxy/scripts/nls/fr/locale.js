@@ -240,6 +240,12 @@ define({
  	// ---------------------------------------------------------------------------- dataset-li
  	"Dataset details": false, 
  	// ---------------------------------------------------------------------------- dataset-edit-attributes
+ 	"Save permissions.": false,
+ 	"Change the datatype to a new type.": false,
+ 	"Convert the datatype to a new format.": false,
+ 	"Save attributes of the dataset.": false,
+ 	"Change data type": false,
+ 	"Edit dataset attributes": false,
  	"Save permissions": false,
  	"Manage dataset permissions": false,
  	"Change datatype": false,
@@ -311,15 +317,18 @@ define({
  	// ---------------------------------------------------------------------------- workflow
  	"Workflows": false, 
  	// ---------------------------------------------------------------------------- workflow-view
+ 	"Copy and insert individual steps": false,
  	"Warning": false, 
  	// ---------------------------------------------------------------------------- workflow-forms
  	"An email notification will be sent when the job has completed.": false,
  	"Add a step label.": false,
  	"Assign columns": false, 
  	// ---------------------------------------------------------------------------- form-repeat
+ 	"Delete this repeat block": false,
  	"placeholder": false,
  	"Repeat": false, 
  	// ---------------------------------------------------------------------------- ui-select-genomespace
+ 	"Browse GenomeSpace": false,
  	"Browse": false, 
  	// ---------------------------------------------------------------------------- ui-frames
  	"Error": false,
@@ -419,6 +428,23 @@ define({
  	// ---------------------------------------------------------------------------- ui_tests
  	"title": false, 
  	// ---------------------------------------------------------------------------- user-custom-builds
+ 	"Create new Build": false,
+ 	"Delete custom build.": false,
  	"Provide the data source.": false, 
+ 	// ---------------------------------------------------------------------------- scratchbook
+ 	"Next in History": false,
+ 	"Previous in History": false, 
+ 	// ---------------------------------------------------------------------------- generic-nav-view
+ 	"Chat online": false, 
+ 	// ---------------------------------------------------------------------------- ui-select-content
+ 	"Multiple collections": false,
+ 	"Dataset collections": false,
+ 	"Dataset collection": false,
+ 	"Multiple datasets": false,
+ 	"Single dataset": false, 
+ 	// ---------------------------------------------------------------------------- upload-button
+ 	"Download from URL or upload files from disk": false, 
+ 	// ---------------------------------------------------------------------------- workflow_editor_tests
+ 	"tool tooltip": false, 
  	// ----------------------------------------------------------------------------
 });
