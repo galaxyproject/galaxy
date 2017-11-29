@@ -128,11 +128,14 @@ update-and-commit-dependencies:  ## update and commit linting + dev dependencies
 node-deps: ## Install NodeJS dependencies.
 	cd client && yarn install --check-files
 
-client: node-deps ## Rebuild all client-side artifacts
+client: node-deps ## Rebuild client-side artifacts for local development.
 	cd client && yarn run build
 
-client-production: node-deps
+client-production: node-deps ## Rebuild client-side artifacts for a production deployment (or committing to the repository).
 	cd client && yarn run build-production
+
+client-production-maps: node-deps ## Rebuild client-side artifacts for a production deployment, and include sourcemaps to aid in debugging efforts.
+	cd client && yarn run build-production-maps
 
 client-format: node-deps ## Reformat client code
 	cd client && yarn run prettier
