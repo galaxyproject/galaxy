@@ -150,16 +150,7 @@ var CollectionView = _super.extend(
 //------------------------------------------------------------------------------ TEMPLATES
 CollectionView.prototype.templates = (() => {
     var controlsTemplate = (collection, view) => {
-        var subtitle;
-        if (collection.collection_type === "list") {
-            subtitle = _l("a list of datasets");
-        } else if (collection.collection_type === "paired") {
-            subtitle = _l("a pair of datasets");
-        } else if (collection.collection_type === "list:paired") {
-            subtitle = _l("a list of paired datasets");
-        } else if (collection.collection_type === "list:list") {
-            subtitle = _l("a nested list");
-        }
+        var subtitle = collectionDescription(view.model);
         return `
         <div class="controls">
             <div class="navigation">
@@ -190,7 +181,40 @@ CollectionView.prototype.templates = (() => {
     });
 })();
 
+function collectionTypeDescription(collection) {
+    var collectionType = collection.get("collection_type");
+    var collectionTypeDescription;
+    if (collectionType == "list") {
+        collectionTypeDescription = _l("list");
+    } else if (collectionType == "paired") {
+        collectionTypeDescription = _l("dataset pair");
+    } else if (collectionType == "list:paired") {
+        collectionTypeDescription = _l("list of pairs");
+    } else {
+        collectionTypeDescription = _l("nested list");
+    }
+    return collectionTypeDescription;
+}
+
+function collectionDescription(collection) {
+    var elementCount = collection.get("element_count");
+
+    var itemsDescription = `a ${collectionTypeDescription(collection)}`;
+    if (elementCount) {
+        var countDescription;
+        if (elementCount == 1) {
+            countDescription = "with 1 item";
+        } else if (elementCount) {
+            countDescription = `with ${elementCount} items`;
+        }
+        itemsDescription = `${itemsDescription} ${_l(countDescription)}`;
+    }
+    return itemsDescription;
+}
+
 //==============================================================================
 export default {
+    collectionTypeDescription: collectionTypeDescription,
+    collectionDescription: collectionDescription,
     CollectionView: CollectionView
 };
