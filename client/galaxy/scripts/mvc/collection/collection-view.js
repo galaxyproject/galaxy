@@ -149,45 +149,41 @@ var CollectionView = _super.extend(
 
 //------------------------------------------------------------------------------ TEMPLATES
 CollectionView.prototype.templates = (() => {
-    var controlsTemplate = BASE_MVC.wrapTemplate(
-        [
-            '<div class="controls">',
-            '<div class="navigation">',
-            '<a class="back" href="javascript:void(0)">',
-            '<span class="fa fa-icon fa-angle-left"></span>',
-            _l("Back to "),
-            "<%- view.parentName %>",
-            "</a>",
-            "</div>",
-
-            '<div class="title">',
-            '<div class="name"><%- collection.name || collection.element_identifier %></div>',
-            '<div class="subtitle">',
-            '<% if( collection.collection_type === "list" ){ %>',
-            _l("a list of datasets"),
-            '<% } else if( collection.collection_type === "paired" ){ %>',
-            _l("a pair of datasets"),
-            '<% } else if( collection.collection_type === "list:paired" ){ %>',
-            _l("a list of paired datasets"),
-            '<% } else if( collection.collection_type === "list:list" ){ %>',
-            _l("a list of dataset lists"),
-            "<% } %>",
-            "</div>",
-            "</div>",
-
-            '<div class="tags-display"></div>',
-
-            '<div class="actions">',
-            '<a class="download-btn icon-btn" ',
-            'href="<%- view.downloadUrl %>',
-            '" title="" download="" data-original-title="Download Collection">',
-            '<span class="fa fa-floppy-o"></span>',
-            "</a>",
-            "</div>",
-            "</div>"
-        ],
-        "collection"
-    );
+    var controlsTemplate = (collection, view) => {
+        var subtitle;
+        if (collection.collection_type === "list") {
+            subtitle = _l("a list of datasets");
+        } else if (collection.collection_type === "paired") {
+            subtitle = _l("a pair of datasets");
+        } else if (collection.collection_type === "list:paired") {
+            subtitle = _l("a list of paired datasets");
+        } else if (collection.collection_type === "list:list") {
+            subtitle = _l("a nested list");
+        }
+        return `
+        <div class="controls">
+            <div class="navigation">
+            <a class="back" href="javascript:void(0)">
+                <span class="fa fa-icon fa-angle-left"></span>
+                ${_l("Back to ")}
+                ${_.escape(view.parentName)}
+            </a>
+            </div>
+            <div class="title">
+                <div class="name">${_.escape(collection.name) || _.escape(collection.element_identifier)}</div>
+                <div class="subtitle">
+                    ${subtitle}
+                </div>
+            </div>
+            <div class="tags-display"></div>
+            <div class="actions">
+                <a class="download-btn icon-btn" href="${view.downloadUrl}"
+                   title="" download="" data-original-title="Download Collection">
+                   <span class="fa fa-floppy-o"></span>
+                </a>
+            </div>
+        </div>`;
+    };
 
     return _.extend(_.clone(_super.prototype.templates), {
         controls: controlsTemplate
