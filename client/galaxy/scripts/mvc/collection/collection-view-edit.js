@@ -28,7 +28,7 @@ var CollectionViewEdit = _super.extend(
 
         getNestedDCDCEViewClass: function() {
             return DC_EDIT.NestedDCDCEListItemEdit.extend({
-                foldoutPanelClass: NestedCollectionElementViewEdit
+                foldoutPanelClass: CollectionViewEdit
             });
         },
 
@@ -92,25 +92,6 @@ var CollectionViewEdit = _super.extend(
         /** string rep */
         toString: function() {
             return `CollectionViewEdit(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
-// =============================================================================
-/** @class Editable (roughly since these collections are immutable),
- *  View/Controller for a dataset collection.
- */
-var NestedCollectionElementViewEdit = CollectionViewEdit.extend(
-    /** @lends NestedCollectionElementViewEdit.prototype */ {
-        /** Override to remove the editable text from the name/identifier - these collections are considered immutable */
-        _setUpBehaviors: function($where) {
-            _super.prototype._setUpBehaviors.call(this, $where);
-        },
-
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `NestedCollectionElementViewEdit(${this.model ? this.model.get("name") : ""})`;
         }
     }
 );
