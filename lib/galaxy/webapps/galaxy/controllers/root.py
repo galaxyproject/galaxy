@@ -49,7 +49,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
 
     def _get_extended_config(self, trans):
         app = trans.app
-        user_requests = bool(trans.user and (trans.user.requests or app.security_agent.get_accessible_request_types(trans, trans.user)))
         config = {
             'active_view'                   : 'analysis',
             'enable_cloud_launch'           : app.config.get_bool('enable_cloud_launch', False),
@@ -58,8 +57,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             'toolbox_in_panel'              : app.toolbox.to_dict(trans),
             'message_box_visible'           : app.config.message_box_visible,
             'show_inactivity_warning'       : app.config.user_activation_on and trans.user and not trans.user.active,
-            # TODO: move to user
-            'user_requests'                 : user_requests
         }
 
         # TODO: move to user
