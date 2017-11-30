@@ -21,8 +21,7 @@ var CollectionView = _super.extend(
 
         /** sub view class used for datasets */
         DatasetDCEViewClass: DC_LI.DatasetDCEListItemView,
-        /** sub view class used for nested collections */
-        NestedDCDCEViewClass: DC_LI.NestedDCDCEListItemView,
+
         /** key of attribute in model to assign to this.collection */
         modelCollectionKey: "elements",
 
@@ -42,6 +41,12 @@ var CollectionView = _super.extend(
             /** foldout or drilldown */
             this.foldoutStyle = attributes.foldoutStyle || "foldout";
             this.downloadUrl = `${Galaxy.root}api/dataset_collections/${this.model.attributes.id}/download`;
+        },
+
+        getNestedDCDCEViewClass: function() {
+            return DC_LI.NestedDCDCEListItemView.extend({
+                foldoutPanelClass: CollectionView
+            });
         },
 
         _queueNewRender: function($newRender, speed) {
@@ -71,7 +76,7 @@ var CollectionView = _super.extend(
                 case "hda":
                     return this.DatasetDCEViewClass;
                 case "dataset_collection":
-                    return this.NestedDCDCEViewClass;
+                    return this.getNestedDCDCEViewClass();
             }
             throw new TypeError("Unknown element type:", model.get("element_type"));
         },
@@ -189,71 +194,7 @@ CollectionView.prototype.templates = (() => {
     });
 })();
 
-// =============================================================================
-/** @class non-editable, read-only View/Controller for a dataset collection. */
-var ListCollectionView = CollectionView.extend(
-    /** @lends ListCollectionView.prototype */ {
-        //TODO: not strictly needed - due to switch in CollectionView._getContentClass
-        /** sub view class used for datasets */
-        DatasetDCEViewClass: DC_LI.DatasetDCEListItemView,
-
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `ListCollectionView(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
-// =============================================================================
-/** @class non-editable, read-only View/Controller for a dataset collection. */
-var PairCollectionView = ListCollectionView.extend(
-    /** @lends PairCollectionView.prototype */ {
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `PairCollectionView(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
-// =============================================================================
-/** @class non-editable, read-only View/Controller for a dataset collection. */
-var ListOfPairsCollectionView = CollectionView.extend(
-    /** @lends ListOfPairsCollectionView.prototype */ {
-        //TODO: not strictly needed - due to switch in CollectionView._getContentClass
-        /** sub view class used for nested collections */
-        NestedDCDCEViewClass: DC_LI.NestedDCDCEListItemView.extend({
-            foldoutPanelClass: PairCollectionView
-        }),
-
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `ListOfPairsCollectionView(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
-// =============================================================================
-/** @class non-editable, read-only View/Controller for a list of lists dataset collection. */
-var ListOfListsCollectionView = CollectionView.extend({
-    /** sub view class used for nested collections */
-    NestedDCDCEViewClass: DC_LI.NestedDCDCEListItemView.extend({
-        foldoutPanelClass: PairCollectionView
-    }),
-
-    /** string rep */
-    toString: function() {
-        return `ListOfListsCollectionView(${this.model ? this.model.get("name") : ""})`;
-    }
-});
-
 //==============================================================================
 export default {
-    CollectionView: CollectionView,
-    ListCollectionView: ListCollectionView,
-    PairCollectionView: PairCollectionView,
-    ListOfPairsCollectionView: ListOfPairsCollectionView,
-    ListOfListsCollectionView: ListOfListsCollectionView
+    CollectionView: CollectionView
 };

@@ -908,6 +908,11 @@ class NavigatesGalaxy(HasDriver):
         viz_menu_selectors = "%s %s" % (self.history_panel_item_selector(hid), "a.visualization-link")
         return self.driver.find_elements_by_css_selector(viz_menu_selectors)
 
+    def history_panel_item_get_nametags(self, hid):
+        item_component = self.history_panel_item_component(hid=hid)
+        item_component.wait_for_visible()
+        return [e.text for e in item_component.nametags.all()]
+
     def history_panel_item_available_visualizations(self, hid):
         # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu
         return [e.text for e in self.history_panel_item_available_visualizations_elements(hid)]

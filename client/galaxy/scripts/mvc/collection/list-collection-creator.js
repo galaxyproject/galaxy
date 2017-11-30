@@ -173,7 +173,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         /** the class used to display individual elements */
         elementViewClass: DatasetCollectionElementView,
         /** the class this creator will create and save */
-        collectionClass: HDCA.HistoryListDatasetCollection,
+        collectionClass: HDCA.HistoryDatasetCollection,
         className: "list-collection-creator collection-creator flex-row-container",
 
         /** minimum number of valid elements to start with in order to build a collection of this type */

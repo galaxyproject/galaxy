@@ -560,14 +560,42 @@ class BaseDatasetCollectionPopulator(object):
                                              collection_type='list:paired',
                                              name=name)
 
-    def create_nested_collection(self, history_id, collection, collection_type, name):
-        element_identifiers = []
-        for i, pair in enumerate(collection):
-            element_identifiers.append(dict(
-                name="test%d" % i,
-                src="hdca",
-                id=pair
-            ))
+    def nested_collection_identifiers(self, history_id, collection_type):
+        rank_types = list(reversed(collection_type.split(":")))
+        assert len(rank_types) > 0
+        rank_type_0 = rank_types[0]
+        if rank_type_0 == "list":
+            identifiers = self.list_identifiers(history_id)
+        else:
+            identifiers = self.pair_identifiers(history_id)
+        nested_collection_type = rank_type_0
+
+        for i, rank_type in enumerate(reversed(rank_types[1:])):
+            name = "test_level_%d" % (i + 1) if rank_type == "list" else "paired"
+            identifiers = [dict(
+                src="new_collection",
+                name=name,
+                collection_type=nested_collection_type,
+                element_identifiers=identifiers,
+            )]
+            nested_collection_type = "%s:%s" % (rank_type, nested_collection_type)
+        return identifiers
+
+    def create_nested_collection(self, history_id, collection_type, name=None, collection=None, element_identifiers=None):
+        """Create a nested collection either from collection or using collection_type)."""
+        assert collection_type is not None
+        name = name or "Test %s" % collection_type
+        if collection is not None:
+            assert element_identifiers is None
+            element_identifiers = []
+            for i, pair in enumerate(collection):
+                element_identifiers.append(dict(
+                    name="test%d" % i,
+                    src="hdca",
+                    id=pair
+                ))
+        if element_identifiers is None:
+            element_identifiers = self.nested_collection_identifiers(history_id, collection_type)
 
         payload = dict(
             instance_type="history",
@@ -583,6 +611,8 @@ class BaseDatasetCollectionPopulator(object):
         return self.create_list_from_pairs(history_id, [pair1])
 
     def create_list_of_list_in_history(self, history_id, **kwds):
+        # create_nested_collection will generate nested collection from just datasets,
+        # this function uses recursive generation of history hdcas.
         collection_type = kwds.pop('collection_type', 'list:list')
         collection_types = collection_type.split(':')
         list = self.create_list_in_history(history_id, **kwds).json()['id']
@@ -590,9 +620,9 @@ class BaseDatasetCollectionPopulator(object):
         for collection_type in collection_types[1:]:
             current_collection_type = "%s:%s" % (current_collection_type, collection_type)
             response = self.create_nested_collection(history_id=history_id,
-                                                     collection=[list],
                                                      collection_type=current_collection_type,
-                                                     name=current_collection_type)
+                                                     name=current_collection_type,
+                                                     collection=[list])
             list = response.json()['id']
         return response
 

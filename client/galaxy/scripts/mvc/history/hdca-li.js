@@ -29,18 +29,7 @@ var HDCAListItemView = _super.extend(
 
         /** Override to provide the proper collections panels as the foldout */
         _getFoldoutPanelClass: function() {
-            var collectionType = this.model.get("collection_type");
-            switch (collectionType) {
-                case "list":
-                    return DC_VIEW.ListCollectionView;
-                case "paired":
-                    return DC_VIEW.PairCollectionView;
-                case "list:paired":
-                    return DC_VIEW.ListOfPairsCollectionView;
-                case "list:list":
-                    return DC_VIEW.ListOfListsCollectionView;
-            }
-            throw new TypeError(`Unknown collection_type: ${collectionType}`);
+            return DC_VIEW.CollectionView;
         },
 
         /** In this override, add the state as a class for use with state-based CSS */
