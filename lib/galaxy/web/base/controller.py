@@ -251,7 +251,7 @@ class JSAppLauncher(BaseUIController):
     #: window-scoped js function to call to start the app (will be passed options, bootstrapped)
     DEFAULT_ENTRY_FN = "app"
     #: keys used when serializing current user for bootstrapped data
-    USER_BOOTSTRAP_KEYS = ('id', 'email', 'username', 'is_admin', 'tags_used', 'requests',
+    USER_BOOTSTRAP_KEYS = ('id', 'email', 'username', 'is_admin', 'tags_used',
                            'total_disk_usage', 'nice_total_disk_usage', 'quota_percent', 'preferences')
 
     def __init__(self, app):
