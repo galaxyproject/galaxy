@@ -10,10 +10,7 @@ from paste.httpexceptions import (
     HTTPNotImplemented,
     HTTPRequestRangeNotSatisfiable
 )
-from six import (
-    string_types,
-    text_type
-)
+from six import string_types
 from sqlalchemy import true
 
 from galaxy import (
@@ -48,7 +45,6 @@ from galaxy.web import (
 )
 from galaxy.web.form_builder import (
     AddressField,
-    build_select_field,
     CheckboxField,
     PasswordField
 )
