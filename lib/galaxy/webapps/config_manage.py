@@ -556,7 +556,7 @@ def _build_sample_yaml(args, app_desc):
         description = description.lstrip()
         as_comment = "\n".join(["# %s" % l for l in description.split("\n")]) + "\n"
         f.write(as_comment)
-    _write_sample_section(args, f, 'uwsgi', Schema(options), as_comment=False)
+    _write_sample_section(args, f, 'uwsgi', Schema(options), as_comment=False, uwsgi_hack=True)
     _write_sample_section(args, f, app_desc.app_name, schema)
     destination = os.path.join(args.galaxy_root, app_desc.sample_destination)
     _write_to_file(args, f, destination)
@@ -586,13 +586,13 @@ def _order_load_path(path):
         return raw_config
 
 
-def _write_sample_section(args, f, section_header, schema, as_comment=True):
+def _write_sample_section(args, f, section_header, schema, as_comment=True, uwsgi_hack=False):
     _write_header(f, section_header)
     for key, value in schema.app_schema.items():
         default = None if "default" not in value else value["default"]
         option = schema.get_app_option(key)
         option_value = OptionValue(key, default, option)
-        _write_option(args, f, key, option_value, as_comment=as_comment)
+        _write_option(args, f, key, option_value, as_comment=as_comment, uwsgi_hack=uwsgi_hack)
 
 
 def _write_section(args, f, section_header, section_dict):
@@ -605,7 +605,7 @@ def _write_header(f, section_header):
     f.write("%s:\n\n" % section_header)
 
 
-def _write_option(args, f, key, option_value, as_comment=False):
+def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False):
     option, value = _parse_option_value(option_value)
     desc = option["desc"]
     comment = ""
@@ -613,7 +613,10 @@ def _write_option(args, f, key, option_value, as_comment=False):
         comment = "\n".join(YAML_COMMENT_WRAPPER.wrap(desc))
         comment += "\n"
     as_comment_str = "#" if as_comment else ""
-    key_val_str = yaml.dump({key: value}, width=float("inf")).lstrip("{").rstrip("\n}")
+    if uwsgi_hack:
+        key_val_str = "%s: %s" % (key, value)
+    else:
+        key_val_str = yaml.dump({key: value}, width=float("inf")).lstrip("{").rstrip("\n}")
     lines = "%s%s%s" % (comment, as_comment_str, key_val_str)
     lines_idented = "\n".join([("  %s" % l) for l in lines.split("\n")])
     f.write("%s\n\n" % lines_idented)
