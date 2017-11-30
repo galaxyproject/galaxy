@@ -136,12 +136,12 @@ class BaseDatasetPopulator(object):
             self.wait_for_tool_run(history_id, run_response)
         return run_response
 
-    def wait_for_tool_run(self, history_id, run_response):
+    def wait_for_tool_run(self, history_id, run_response, timeout=DEFAULT_TIMEOUT):
         run = run_response.json()
         assert run_response.status_code == 200, run
         job = run["jobs"][0]
-        self.wait_for_job(job["id"])
-        self.wait_for_history(history_id, assert_ok=True)
+        self.wait_for_job(job["id"], timeout=timeout)
+        self.wait_for_history(history_id, assert_ok=True, timeout=timeout)
         return run_response
 
     def wait_for_history(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
