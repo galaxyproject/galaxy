@@ -37,8 +37,7 @@ var commonLibs = [
     "onload"
 ];
 
-module.exports = {
-    //devtool: "source-map",
+let buildconfig = {
     entry: {
         libs: commonLibs,
         login: "./galaxy/scripts/apps/login.js",
@@ -104,6 +103,9 @@ module.exports = {
             name: "libs",
             filename: "libs.bundled.js"
         }),
+        new webpack.SourceMapDevToolPlugin({
+            filename: '[name].js.map',
+        }),
         // this plugin allows using the following keys/globals in scripts (w/o req'ing them first)
         // and webpack will automagically require them in the bundle for you
         new webpack.ProvidePlugin({
@@ -116,3 +118,9 @@ module.exports = {
         // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
     ]
 };
+
+if (process.env.GXY_BUILD_SOURCEMAPS){
+    buildconfig.devtool = 'source-map';
+}
+
+module.exports = buildconfig;
