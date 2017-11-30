@@ -215,6 +215,7 @@ class AppSchema(Schema):
         self.raw_schema = config_all
         app_schema = config_all["mapping"][app_name]
         super(AppSchema, self).__init__(app_schema["mapping"])
+        self.description = config_all.get("desc", None)
 
     def get_app_option(self, name):
         try:
@@ -550,6 +551,11 @@ def _build_sample_yaml(args, app_desc):
                 'uwsgi_module': app_desc.uwsgi_module,
             })
             value[field] = new_field_value
+    description = getattr(schema, "description", None)
+    if description:
+        description = description.lstrip()
+        as_comment = "\n".join(["# %s" % l for l in description.split("\n")]) + "\n"
+        f.write(as_comment)
     _write_sample_section(args, f, 'uwsgi', Schema(options), as_comment=False)
     _write_sample_section(args, f, app_desc.app_name, schema)
     destination = os.path.join(args.galaxy_root, app_desc.sample_destination)
