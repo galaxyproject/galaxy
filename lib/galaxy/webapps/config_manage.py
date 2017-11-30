@@ -285,6 +285,10 @@ def _to_rst(args, app_desc, heading_level="~"):
     schema = app_desc.schema
     for key, value in schema.app_schema.items():
         default = None if "default" not in value else value["default"]
+        if default is True:
+            default = "true"
+        elif default is False:
+            default = "false"
         option = schema.get_app_option(key)
         option_value = OptionValue(key, default, option)
         _write_option_rst(args, rst, key, heading_level, option_value)

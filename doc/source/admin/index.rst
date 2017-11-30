@@ -15,5 +15,6 @@ This documentation is in the midst of being ported and unified based on resource
    dependency_resolvers
    conda_faq
    framework_dependencies
+   options
    reports
    useful_scripts
