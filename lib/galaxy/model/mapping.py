@@ -958,45 +958,6 @@ model.FormDefinition.table = Table(
     Column("type", TrimmedString(255), index=True),
     Column("layout", JSONType()))
 
-model.ExternalService.table = Table(
-    "external_service", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", TrimmedString(255), nullable=False),
-    Column("description", TEXT),
-    Column("external_service_type_id", TrimmedString(255), nullable=False),
-    Column("version", TrimmedString(255)),
-    Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-    Column("deleted", Boolean, index=True, default=False))
-
-model.RequestType.table = Table(
-    "request_type", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", TrimmedString(255), nullable=False),
-    Column("desc", TEXT),
-    Column("request_form_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("sample_form_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("deleted", Boolean, index=True, default=False))
-
-model.RequestTypeExternalServiceAssociation.table = Table(
-    "request_type_external_service_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True),
-    Column("external_service_id", Integer, ForeignKey("external_service.id"), index=True))
-
-model.RequestTypePermissions.table = Table(
-    "request_type_permissions", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("action", TEXT),
-    Column("request_type_id", Integer, ForeignKey("request_type.id"), nullable=True, index=True),
-    Column("role_id", Integer, ForeignKey("role.id"), index=True))
-
 model.FormValues.table = Table(
     "form_values", metadata,
     Column("id", Integer, primary_key=True),
@@ -1004,97 +965,6 @@ model.FormValues.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
     Column("content", JSONType()))
-
-model.Request.table = Table(
-    "request", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", TrimmedString(255), nullable=False),
-    Column("desc", TEXT),
-    Column("notification", JSONType()),
-    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-    Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("deleted", Boolean, index=True, default=False))
-
-model.RequestEvent.table = Table(
-    "request_event", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("request_id", Integer, ForeignKey("request.id"), index=True),
-    Column("state", TrimmedString(255), index=True),
-    Column("comment", TEXT))
-
-model.Sample.table = Table(
-    "sample", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", TrimmedString(255), nullable=False),
-    Column("desc", TEXT),
-    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-    Column("request_id", Integer, ForeignKey("request.id"), index=True),
-    Column("bar_code", TrimmedString(255), index=True),
-    Column("library_id", Integer, ForeignKey("library.id"), index=True),
-    Column("folder_id", Integer, ForeignKey("library_folder.id"), index=True),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("workflow", JSONType, nullable=True),
-    Column("history_id", Integer, ForeignKey("history.id"), nullable=True))
-
-model.SampleState.table = Table(
-    "sample_state", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", TrimmedString(255), nullable=False),
-    Column("desc", TEXT),
-    Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True))
-
-model.SampleEvent.table = Table(
-    "sample_event", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("sample_id", Integer, ForeignKey("sample.id"), index=True),
-    Column("sample_state_id", Integer, ForeignKey("sample_state.id"), index=True),
-    Column("comment", TEXT))
-
-model.SampleDataset.table = Table(
-    "sample_dataset", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("sample_id", Integer, ForeignKey("sample.id"), index=True),
-    Column("name", TrimmedString(255), nullable=False),
-    Column("file_path", TEXT),
-    Column("status", TrimmedString(255), nullable=False),
-    Column("error_msg", TEXT),
-    Column("size", TrimmedString(255)),
-    Column("external_service_id", Integer, ForeignKey("external_service.id"), index=True))
-
-model.Run.table = Table(
-    "run", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("subindex", TrimmedString(255), index=True))
-
-model.RequestTypeRunAssociation.table = Table(
-    "request_type_run_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True, nullable=False),
-    Column("run_id", Integer, ForeignKey("run.id"), index=True, nullable=False))
-
-model.SampleRunAssociation.table = Table(
-    "sample_run_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("sample_id", Integer, ForeignKey("sample.id"), index=True, nullable=False),
-    Column("run_id", Integer, ForeignKey("run.id"), index=True, nullable=False))
 
 model.Page.table = Table(
     "page", metadata,
@@ -1440,78 +1310,9 @@ def simple_mapping(model, **kwds):
     mapper(model, model.table, properties=kwds)
 
 
-mapper(model.Sample, model.Sample.table, properties=dict(
-    events=relation(model.SampleEvent,
-        backref="sample",
-        order_by=desc(model.SampleEvent.table.c.update_time)),
-    datasets=relation(model.SampleDataset,
-        backref="sample",
-        order_by=desc(model.SampleDataset.table.c.update_time)),
-    values=relation(model.FormValues,
-        primaryjoin=(model.Sample.table.c.form_values_id == model.FormValues.table.c.id)),
-    request=relation(model.Request,
-        primaryjoin=(model.Sample.table.c.request_id == model.Request.table.c.id)),
-    folder=relation(model.LibraryFolder,
-        primaryjoin=(model.Sample.table.c.folder_id == model.LibraryFolder.table.c.id)),
-    library=relation(model.Library,
-        primaryjoin=(model.Sample.table.c.library_id == model.Library.table.c.id)),
-    history=relation(model.History,
-        primaryjoin=(model.Sample.table.c.history_id == model.History.table.c.id)),
-))
-
 mapper(model.FormValues, model.FormValues.table, properties=dict(
     form_definition=relation(model.FormDefinition,
         primaryjoin=(model.FormValues.table.c.form_definition_id == model.FormDefinition.table.c.id))
-))
-
-mapper(model.Request, model.Request.table, properties=dict(
-    values=relation(model.FormValues,
-        primaryjoin=(model.Request.table.c.form_values_id == model.FormValues.table.c.id)),
-    type=relation(model.RequestType,
-        primaryjoin=(model.Request.table.c.request_type_id == model.RequestType.table.c.id)),
-    user=relation(model.User,
-        primaryjoin=(model.Request.table.c.user_id == model.User.table.c.id),
-        backref="requests"),
-    samples=relation(model.Sample,
-        primaryjoin=(model.Request.table.c.id == model.Sample.table.c.request_id),
-        order_by=asc(model.Sample.table.c.id)),
-    events=relation(model.RequestEvent,
-        backref="request",
-        order_by=desc(model.RequestEvent.table.c.update_time))
-))
-
-mapper(model.RequestEvent, model.RequestEvent.table, properties=None)
-
-mapper(model.ExternalService, model.ExternalService.table, properties=dict(
-    form_definition=relation(model.FormDefinition,
-        primaryjoin=(model.ExternalService.table.c.form_definition_id == model.FormDefinition.table.c.id)),
-    form_values=relation(model.FormValues,
-        primaryjoin=(model.ExternalService.table.c.form_values_id == model.FormValues.table.c.id))
-))
-
-mapper(model.RequestType, model.RequestType.table, properties=dict(
-    states=relation(model.SampleState,
-        backref="request_type",
-        primaryjoin=(model.RequestType.table.c.id == model.SampleState.table.c.request_type_id),
-        order_by=asc(model.SampleState.table.c.update_time)),
-    request_form=relation(model.FormDefinition,
-        primaryjoin=(model.RequestType.table.c.request_form_id == model.FormDefinition.table.c.id)),
-    sample_form=relation(model.FormDefinition,
-        primaryjoin=(model.RequestType.table.c.sample_form_id == model.FormDefinition.table.c.id)),
-))
-
-mapper(model.RequestTypeExternalServiceAssociation, model.RequestTypeExternalServiceAssociation.table, properties=dict(
-    request_type=relation(model.RequestType,
-        primaryjoin=((model.RequestTypeExternalServiceAssociation.table.c.request_type_id == model.RequestType.table.c.id)),
-        backref="external_service_associations"),
-    external_service=relation(model.ExternalService,
-        primaryjoin=(model.RequestTypeExternalServiceAssociation.table.c.external_service_id == model.ExternalService.table.c.id))
-))
-
-
-mapper(model.RequestTypePermissions, model.RequestTypePermissions.table, properties=dict(
-    request_type=relation(model.RequestType, backref="actions"),
-    role=relation(model.Role, backref="request_type_actions")
 ))
 
 mapper(model.FormDefinition, model.FormDefinition.table, properties=dict(
@@ -1527,36 +1328,6 @@ mapper(model.FormDefinitionCurrent, model.FormDefinitionCurrent.table, propertie
     latest_form=relation(model.FormDefinition,
         post_update=True,
         primaryjoin=(model.FormDefinitionCurrent.table.c.latest_form_id == model.FormDefinition.table.c.id))
-))
-
-mapper(model.SampleEvent, model.SampleEvent.table, properties=dict(
-    state=relation(model.SampleState,
-        primaryjoin=(model.SampleEvent.table.c.sample_state_id == model.SampleState.table.c.id)),
-))
-
-mapper(model.SampleState, model.SampleState.table, properties=None)
-
-mapper(model.SampleDataset, model.SampleDataset.table, properties=dict(
-    external_service=relation(model.ExternalService,
-        primaryjoin=(model.SampleDataset.table.c.external_service_id == model.ExternalService.table.c.id))
-))
-
-
-mapper(model.SampleRunAssociation, model.SampleRunAssociation.table, properties=dict(
-    sample=relation(model.Sample, backref="runs", order_by=desc(model.Run.table.c.update_time)),
-    run=relation(model.Run, backref="samples", order_by=asc(model.Sample.table.c.id))
-))
-
-mapper(model.RequestTypeRunAssociation, model.RequestTypeRunAssociation.table, properties=dict(
-    request_type=relation(model.RequestType, backref="run"),
-    run=relation(model.Run, backref="request_type")
-))
-
-mapper(model.Run, model.Run.table, properties=dict(
-    template=relation(model.FormDefinition,
-        primaryjoin=(model.Run.table.c.form_definition_id == model.FormDefinition.table.c.id)),
-    info=relation(model.FormValues,
-        primaryjoin=(model.Run.table.c.form_values_id == model.FormValues.table.c.id))
 ))
 
 mapper(model.UserAddress, model.UserAddress.table, properties=dict(
