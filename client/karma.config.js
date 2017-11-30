@@ -15,29 +15,30 @@ var single_pack_mode = function(){
 };
 
 var TESTS_SEPARATE_PACKS = [
-    {pattern: 'galaxy/scripts/qunit/tests/list-of-pairs-collection-creator.js', watched: false},
-    {pattern: 'galaxy/scripts/qunit/tests/galaxy-app-base.js', watched: false},
-    {pattern: 'galaxy/scripts/qunit/tests/graph.js', watched: false},
-    {pattern: 'galaxy/scripts/qunit/tests/hda-base.js', watched: false},
+    {pattern: 'galaxy/scripts/qunit/tests/galaxy_app_base_tests.js', watched: false},
+    // Something is funky with form_tests.js - needs to come before all other tests.
+    {pattern: 'galaxy/scripts/qunit/tests/form_tests.js', watched: false},
+    {pattern: 'galaxy/scripts/qunit/tests/upload_dialog_tests.js', watched: false},
+    // Something is funky with masthead_tests - needs to come before one of the other
+    // tests - not sure which though...
+    {pattern: 'galaxy/scripts/qunit/tests/masthead_tests.js', watched: false},
+    //{pattern: 'galaxy/scripts/qunit/tests/list_of_pairs_collection_creator_tests.js', watched: false},
+    {pattern: 'galaxy/scripts/qunit/tests/graph_tests.js', watched: false},
+    {pattern: 'galaxy/scripts/qunit/tests/hda_base_tests.js', watched: false},
     {pattern: 'galaxy/scripts/qunit/tests/history_contents_model_tests.js', watched: false},
-    {pattern: 'galaxy/scripts/qunit/tests/job-dag.js', watched: false},
-    {pattern: 'galaxy/scripts/qunit/tests/metrics-logger.js', watched: false},
+    {pattern: 'galaxy/scripts/qunit/tests/job_dag_tests.js', watched: false},
+    {pattern: 'galaxy/scripts/qunit/tests/metrics_logger_tests.js', watched: false},
     {pattern: 'galaxy/scripts/qunit/tests/popover_tests.js', watched: false},
-    {pattern: 'galaxy/scripts/qunit/tests/utils_test.js', watched: false},
+    {pattern: 'galaxy/scripts/qunit/tests/utils_tests.js', watched: false},
     {pattern: 'galaxy/scripts/qunit/tests/page_tests.js', watched: false},
     {pattern: 'galaxy/scripts/qunit/tests/workflow_editor_tests.js', watched: false},
+    {pattern: 'galaxy/scripts/qunit/tests/modal_tests.js', watched: false},
     // The following tests don't work for state reasons:
 
     // Error: Following test works on its own or with rest but not with 
-    //     list-of-pairs-collection-creator in the same suite. Not as much isolation
+    //     list_of_pairs_collection_creator in the same suite. Not as much isolation
     //     as seperate page setup of previous runner.
-    // 'galaxy/scripts/qunit/tests/ui_tests.js',
-    // Error: things displayed wrong I guess cause assertions fail on CSS stuff
-    // 'galaxy/scripts/qunit/tests/modal_tests.js',
-    // 'galaxy/scripts/qunit/tests/upload_dialog_tests.js',
-    // Error: Cannot find module "libs/bibtexParse"
-    // 'galaxy/scripts/qunit/tests/form_tests.js',
-    // 'galaxy/scripts/qunit/tests/masthead_tests.js',
+    // {pattern: 'galaxy/scripts/qunit/tests/ui_tests.js', watched: false},
 ];
 
 var TESTS_AS_SINGLE_PACK = [
