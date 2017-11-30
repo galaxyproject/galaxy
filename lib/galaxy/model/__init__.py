@@ -12,7 +12,6 @@ import numbers
 import operator
 import os
 import pwd
-import socket
 import time
 from datetime import datetime, timedelta
 from string import Template
@@ -33,7 +32,7 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.util import pgcalc
 from galaxy.security import get_permitted_actions
 from galaxy.util import (directory_hash_id, Params, ready_name_for_url,
-                         restore_text, send_mail, unicodify, unique_id)
+                         restore_text, unicodify, unique_id)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_secure_hash
@@ -4715,7 +4714,6 @@ class LibraryDatasetCollectionAnnotationAssociation(object):
 
 
 # Item rating classes.
-
 class ItemRatingAssociation(object):
     def __init__(self, id=None, user=None, item=None, rating=0):
         self.id = id
@@ -4763,7 +4761,7 @@ class LibraryDatasetCollectionRatingAssociation(ItemRatingAssociation):
         self.dataset_collection = dataset_collection
 
 
-# Data Manager Classes
+# Data manager classes.
 class DataManagerHistoryAssociation(object):
     def __init__(self, id=None, history=None, user=None):
         self.id = id
@@ -4776,7 +4774,6 @@ class DataManagerJobAssociation(object):
         self.id = id
         self.job = job
         self.data_manager_id = data_manager_id
-# end of Data Manager Classes
 
 
 class UserPreference (object):
@@ -4803,14 +4800,7 @@ class APIKeys(object):
         self.key = key
 
 
-def copy_list(lst, *args, **kwds):
-    if lst is None:
-        return lst
-    else:
-        return [el.copy(*args, **kwds) for el in lst]
-
-
-# Sample request associated class
+# Sample request classes.
 class Request(object, Dictifiable):
     pass
 
@@ -4825,6 +4815,7 @@ class ExternalService(object):
 
 class RequestType(object, Dictifiable):
     pass
+
 
 class RequestTypeExternalServiceAssociation(object):
     pass
@@ -4860,3 +4851,10 @@ class RequestTypeRunAssociation(object):
 
 class SampleRunAssociation(object):
     pass
+
+
+def copy_list(lst, *args, **kwds):
+    if lst is None:
+        return lst
+    else:
+        return [el.copy(*args, **kwds) for el in lst]
