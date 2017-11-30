@@ -4800,59 +4800,6 @@ class APIKeys(object):
         self.key = key
 
 
-# Sample request classes.
-class Request(object, Dictifiable):
-    pass
-
-
-class RequestEvent(object):
-    pass
-
-
-class ExternalService(object):
-    pass
-
-
-class RequestType(object, Dictifiable):
-    pass
-
-
-class RequestTypeExternalServiceAssociation(object):
-    pass
-
-
-class RequestTypePermissions(object):
-    pass
-
-
-class Sample(object, Dictifiable):
-    pass
-
-
-class SampleState(object):
-    pass
-
-
-class SampleEvent(object):
-    pass
-
-
-class SampleDataset(object):
-    pass
-
-
-class Run(object):
-    pass
-
-
-class RequestTypeRunAssociation(object):
-    pass
-
-
-class SampleRunAssociation(object):
-    pass
-
-
 def copy_list(lst, *args, **kwds):
     if lst is None:
         return lst
