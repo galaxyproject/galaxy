@@ -12,7 +12,6 @@ import numbers
 import operator
 import os
 import pwd
-import socket
 import time
 from datetime import datetime, timedelta
 from string import Template
@@ -32,8 +31,8 @@ from galaxy.managers import tags
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.util import pgcalc
 from galaxy.security import get_permitted_actions
-from galaxy.util import (directory_hash_id, Params, ready_name_for_url,
-                         restore_text, send_mail, unicodify, unique_id)
+from galaxy.util import (directory_hash_id, ready_name_for_url,
+                         unicodify, unique_id)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_secure_hash
@@ -2682,32 +2681,6 @@ class Library(object, Dictifiable, HasName):
             active_folders.extend(self.get_active_folders(active_folder, folders))
         return sort_by_attr(active_folders, 'id')
 
-    def get_info_association(self, restrict=False, inherited=False):
-        if self.info_association:
-            if not inherited or self.info_association[0].inheritable:
-                return self.info_association[0], inherited
-            else:
-                return None, inherited
-        return None, inherited
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templates - the returned value for
-        # inherited is not applicable at the library level.  The get_contents
-        # param is passed by callers that are inheriting a template - these
-        # are usually new library datsets for which we want to include template
-        # fields on the upload form, but not necessarily the contents of the
-        # inherited template saved for the parent.
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            template = info_association.template
-            if get_contents:
-                # See if we have any field contents
-                info = info_association.info
-                if info:
-                    return template.get_widgets(trans.user, contents=info.content)
-            return template.get_widgets(trans.user)
-        return []
-
     def get_access_roles(self, trans):
         roles = []
         for lp in self.actions:
@@ -2738,51 +2711,6 @@ class LibraryFolder(object, Dictifiable, HasName):
         folder.order_id = self.item_count
         self.item_count += 1
 
-    def get_info_association(self, restrict=False, inherited=False):
-        # If restrict is True, we will return this folder's info_association, not inheriting.
-        # If restrict is False, we'll return the next available info_association in the
-        # inheritable hierarchy if it is "inheritable".  True is also returned if the
-        # info_association was inherited and False if not.  This enables us to eliminate
-        # displaying any contents of the inherited template.
-        if self.info_association:
-            if not inherited or self.info_association[0].inheritable:
-                return self.info_association[0], inherited
-            else:
-                return None, inherited
-        if restrict:
-            return None, inherited
-        if self.parent:
-            return self.parent.get_info_association(inherited=True)
-        if self.library_root:
-            return self.library_root[0].get_info_association(inherited=True)
-        return None, inherited
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templates.  The get_contents
-        # param is passed by callers that are inheriting a template - these
-        # are usually new library datsets for which we want to include template
-        # fields on the upload form.
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            if inherited:
-                template = info_association.template.current.latest_form
-            else:
-                template = info_association.template
-            # See if we have any field contents, but only if the info_association was
-            # not inherited ( we do not want to display the inherited contents ).
-            # (gvk: 8/30/10) Based on conversations with Dan, we agreed to ALWAYS inherit
-            # contents.  We'll use this behavior until we hear from the community that
-            # contents should not be inherited.  If we don't hear anything for a while,
-            # eliminate the old commented out behavior.
-            # if not inherited and get_contents:
-            if get_contents:
-                info = info_association.info
-                if info:
-                    return template.get_widgets(trans.user, info.content)
-            else:
-                return template.get_widgets(trans.user)
-        return []
-
     @property
     def activatable_library_datasets(self):
         # This needs to be a list
@@ -2790,13 +2718,6 @@ class LibraryFolder(object, Dictifiable, HasName):
 
     def to_dict(self, view='collection', value_mapper=None):
         rval = super(LibraryFolder, self).to_dict(view=view, value_mapper=value_mapper)
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            if inherited:
-                template = info_association.template.current.latest_form
-            else:
-                template = info_association.template
-            rval['data_template'] = template.name
         rval['library_path'] = self.library_path
         rval['parent_library_id'] = self.parent_library.id
         return rval
@@ -3002,19 +2923,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName):
     def has_manage_permissions_roles(self, trans):
         return self.dataset.has_manage_permissions_roles(trans)
 
-    def get_info_association(self, restrict=False, inherited=False):
-        # If restrict is True, we will return this ldda's info_association whether it
-        # exists or not ( in which case None will be returned ).  If restrict is False,
-        # we'll return the next available info_association in the inheritable hierarchy.
-        # True is also returned if the info_association was inherited, and False if not.
-        # This enables us to eliminate displaying any contents of the inherited template.
-        # SM: Accessing self.info_association can cause a query to be emitted
-        if self.info_association:
-            return self.info_association[0], inherited
-        if restrict:
-            return None, inherited
-        return self.library_dataset.folder.get_info_association(inherited=True)
-
     def to_dict(self, view='collection'):
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
@@ -3058,33 +2966,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName):
                 val = getattr(ldda.datatype, name)
             rval['metadata_' + name] = val
         return rval
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templatesThe get_contents
-        # param is passed by callers that are inheriting a template - these
-        # are usually new library datsets for which we want to include template
-        # fields on the upload form, but not necessarily the contents of the
-        # inherited template saved for the parent.
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            if inherited:
-                template = info_association.template.current.latest_form
-            else:
-                template = info_association.template
-            # See if we have any field contents, but only if the info_association was
-            # not inherited ( we do not want to display the inherited contents ).
-            # (gvk: 8/30/10) Based on conversations with Dan, we agreed to ALWAYS inherit
-            # contents.  We'll use this behavior until we hear from the community that
-            # contents should not be inherited.  If we don't hear anything for a while,
-            # eliminate the old commented out behavior.
-            # if not inherited and get_contents:
-            if get_contents:
-                info = info_association.info
-                if info:
-                    return template.get_widgets(trans.user, info.content)
-            else:
-                return template.get_widgets(trans.user)
-        return []
 
     def templates_dict(self, use_name=False):
         """
@@ -4429,14 +4310,9 @@ class MetadataFile(StorableObject):
 class FormDefinition(object, Dictifiable):
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField]
-    types = Bunch(REQUEST='Sequencing Request Form',
-                  SAMPLE='Sequencing Sample Form',
-                  EXTERNAL_SERVICE='External Service Information Form',
-                  RUN_DETAILS_TEMPLATE='Sample run details template',
-                  LIBRARY_INFO_TEMPLATE='Library information template',
-                  USER_INFO='User Information')
-    dict_collection_visible_keys = ['id', 'name']
-    dict_element_visible_keys = ['id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout']
+    types = Bunch(USER_INFO='User Information')
+    dict_collection_visible_keys = ('id', 'name')
+    dict_element_visible_keys = ('id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout')
 
     def __init__(self, name=None, desc=None, fields=[], form_definition_current=None, form_type=None, layout=None):
         self.name = name
@@ -4470,98 +4346,6 @@ class FormDefinition(object, Dictifiable):
                 gridfields[i] = f
         return gridfields
 
-    def get_widgets(self, user, contents={}, **kwd):
-        '''
-        Return the list of widgets that comprise a form definition,
-        including field contents if any.
-        '''
-        params = Params(kwd)
-        widgets = []
-        for index, field in enumerate(self.fields):
-            field_type = field['type']
-            if 'name' in field:
-                field_name = field['name']
-            else:
-                # Default to names like field_0, field_1, etc for backward compatibility
-                # (not sure this is necessary)...
-                field_name = 'field_%i' % index
-            # Determine the value of the field
-            if field_name in kwd:
-                # The form was submitted via refresh_on_change
-                if field_type == 'CheckboxField':
-                    value = CheckboxField.is_checked(params.get(field_name, False))
-                else:
-                    value = restore_text(params.get(field_name, ''))
-            elif contents:
-                try:
-                    # This field has a saved value.
-                    value = str(contents[field['name']])
-                except Exception:
-                    # If there was an error getting the saved value, we'll still
-                    # display the widget, but it will be empty.
-                    if field_type == 'AddressField':
-                        value = 'none'
-                    elif field_type == 'CheckboxField':
-                        # Since we do not have contents, set checkbox value to False
-                        value = False
-                    else:
-                        # Set other field types to empty string
-                        value = ''
-            else:
-                # If none of the above, then leave the field empty
-                if field_type == 'AddressField':
-                    value = 'none'
-                elif field_type == 'CheckboxField':
-                    # Since we do not have contents, set checkbox value to False
-                    value = False
-                else:
-                    # Set other field types to the default value of the field
-                    value = field.get('default', '')
-            # Create the field widget
-            field_widget = eval(field_type)(field_name)
-            if field_type in ['TextField', 'PasswordField']:
-                field_widget.set_size(40)
-                field_widget.value = value
-            elif field_type == 'TextArea':
-                field_widget.set_size(3, 40)
-                field_widget.value = value
-            elif field_type in ['AddressField', 'WorkflowField', 'WorkflowMappingField', 'HistoryField']:
-                field_widget.user = user
-                field_widget.value = value
-                field_widget.params = params
-            elif field_type == 'SelectField':
-                for option in field['selectlist']:
-                    if option == value:
-                        field_widget.add_option(option, option, selected=True)
-                    else:
-                        field_widget.add_option(option, option)
-            elif field_type == 'CheckboxField':
-                field_widget.set_checked(value)
-            if field['required'] == 'required':
-                req = 'Required'
-            else:
-                req = 'Optional'
-            if field['helptext']:
-                helptext = '%s (%s)' % (field['helptext'], req)
-            else:
-                helptext = '(%s)' % req
-            widgets.append(dict(label=field['label'], widget=field_widget, helptext=helptext))
-        return widgets
-
-    def field_as_html(self, field):
-        """Generates disabled html for a field"""
-        type = field['type']
-        form_field = None
-        for field_type in self.supported_field_types:
-            if type == field_type.__name__:
-                # Name it AddressField, CheckboxField, etc.
-                form_field = field_type(type)
-                break
-        if form_field:
-            return form_field.get_html(disabled=True)
-        # Return None if unsupported field type
-        return None
-
 
 class FormDefinitionCurrent(object):
     def __init__(self, form_definition=None):
@@ -4572,497 +4356,6 @@ class FormValues(object):
     def __init__(self, form_def=None, content=None):
         self.form_definition = form_def
         self.content = content
-
-
-class Request(object, Dictifiable):
-    states = Bunch(NEW='New',
-                   SUBMITTED='In Progress',
-                   REJECTED='Rejected',
-                   COMPLETE='Complete')
-    dict_collection_visible_keys = ['id', 'name', 'state']
-
-    def __init__(self, name=None, desc=None, request_type=None, user=None, form_values=None, notification=None):
-        self.name = name
-        self.desc = desc
-        self.type = request_type
-        self.values = form_values
-        self.user = user
-        self.notification = notification
-        self.samples_list = []
-
-    @property
-    def state(self):
-        latest_event = self.latest_event
-        if latest_event:
-            return latest_event.state
-        return None
-
-    @property
-    def latest_event(self):
-        if self.events:
-            return self.events[0]
-        return None
-
-    @property
-    def samples_have_common_state(self):
-        """
-        Returns the state of this request's samples when they are all
-        in one common state. Otherwise returns False.
-        """
-        state_for_comparison = self.samples[0].state
-        if state_for_comparison is None:
-            for s in self.samples:
-                if s.state is not None:
-                    return False
-        for s in self.samples:
-            if s.state.id != state_for_comparison.id:
-                return False
-        return state_for_comparison
-
-    @property
-    def last_comment(self):
-        latest_event = self.latest_event
-        if latest_event:
-            if latest_event.comment:
-                return latest_event.comment
-            return ''
-        return 'No comment'
-
-    def get_sample(self, sample_name):
-        for sample in self.samples:
-            if sample.name == sample_name:
-                return sample
-        return None
-
-    @property
-    def is_unsubmitted(self):
-        return self.state in [self.states.REJECTED, self.states.NEW]
-
-    @property
-    def is_rejected(self):
-        return self.state == self.states.REJECTED
-
-    @property
-    def is_submitted(self):
-        return self.state == self.states.SUBMITTED
-
-    @property
-    def is_new(self):
-
-        return self.state == self.states.NEW
-
-    @property
-    def is_complete(self):
-        return self.state == self.states.COMPLETE
-
-    @property
-    def samples_without_library_destinations(self):
-        # Return all samples that are not associated with a library
-        samples = []
-        for sample in self.samples:
-            if not sample.library:
-                samples.append(sample)
-        return samples
-
-    @property
-    def samples_with_bar_code(self):
-        # Return all samples that have associated bar code
-        samples = []
-        for sample in self.samples:
-            if sample.bar_code:
-                samples.append(sample)
-        return samples
-
-    def send_email_notification(self, trans, common_state, final_state=False):
-        # Check if an email notification is configured to be sent when the samples
-        # are in this state
-        if self.notification and common_state.id not in self.notification['sample_states']:
-            return
-        comments = ''
-        # Send email
-        if trans.app.config.smtp_server is not None and self.notification and self.notification['email']:
-            body = """
-Galaxy Sample Tracking Notification
-===================================
-
-User:                     %(user)s
-
-Sequencing request:       %(request_name)s
-Sequencer configuration:  %(request_type)s
-Sequencing request state: %(request_state)s
-
-Number of samples:        %(num_samples)s
-All samples in state:     %(sample_state)s
-
-"""
-            values = dict(user=self.user.email,
-                          request_name=self.name,
-                          request_type=self.type.name,
-                          request_state=self.state,
-                          num_samples=str(len(self.samples)),
-                          sample_state=common_state.name,
-                          create_time=self.create_time,
-                          submit_time=self.create_time)
-            body = body % values
-            # check if this is the final state of the samples
-            if final_state:
-                txt = "Sample Name -> Data Library/Folder\r\n"
-                for s in self.samples:
-                    if s.library:
-                        library_name = s.library.name
-                        folder_name = s.folder.name
-                    else:
-                        library_name = 'No target data library'
-                        folder_name = 'No target data library folder'
-                    txt = txt + "%s -> %s/%s\r\n" % (s.name, library_name, folder_name)
-                body = body + txt
-            to = self.notification['email']
-            frm = trans.app.config.email_from
-            if frm is None:
-                host = trans.request.host.split(':')[0]
-                if host in ['localhost', '127.0.0.1', '0.0.0.0']:
-                    host = socket.getfqdn()
-                frm = 'galaxy-no-reply@' + host
-            subject = "Galaxy Sample Tracking notification: '%s' sequencing request" % self.name
-            try:
-                send_mail(frm, to, subject, body, trans.app.config)
-                comments = "Email notification sent to %s." % ", ".join(to).strip().strip(',')
-            except Exception as e:
-                comments = "Email notification failed. (%s)" % str(e)
-            # update the request history with the email notification event
-        elif not trans.app.config.smtp_server:
-            comments = "Email notification failed as SMTP server not set in config file"
-        if comments:
-            event = RequestEvent(self, self.state, comments)
-            trans.sa_session.add(event)
-            trans.sa_session.flush()
-        return comments
-
-
-class RequestEvent(object):
-    def __init__(self, request=None, request_state=None, comment=''):
-        self.request = request
-        self.state = request_state
-        self.comment = comment
-
-
-class ExternalService(object):
-    data_transfer_protocol = Bunch(HTTP='http',
-                                   HTTPS='https',
-                                   SCP='scp')
-
-    def __init__(self, name=None, description=None, external_service_type_id=None, version=None, form_definition_id=None, form_values_id=None, deleted=None):
-        self.name = name
-        self.description = description
-        self.external_service_type_id = external_service_type_id
-        self.version = version
-        self.form_definition_id = form_definition_id
-        self.form_values_id = form_values_id
-        self.deleted = deleted
-        self.label = None  # Used in the request_type controller's __build_external_service_select_field() method
-
-    def get_external_service_type(self, trans):
-        return trans.app.external_service_types.all_external_service_types[self.external_service_type_id]
-
-    def load_data_transfer_settings(self, trans):
-        trans.app.external_service_types.reload(self.external_service_type_id)
-        self.data_transfer = {}
-        external_service_type = self.get_external_service_type(trans)
-        for data_transfer_protocol, data_transfer_obj in external_service_type.data_transfer.items():
-            if data_transfer_protocol == self.data_transfer_protocol.SCP:
-                scp_configs = {}
-                automatic_transfer = data_transfer_obj.config.get('automatic_transfer', 'false')
-                scp_configs['automatic_transfer'] = galaxy.util.string_as_bool(automatic_transfer)
-                scp_configs['host'] = self.form_values.content.get(data_transfer_obj.config.get('host', ''), '')
-                scp_configs['user_name'] = self.form_values.content.get(data_transfer_obj.config.get('user_name', ''), '')
-                scp_configs['password'] = self.form_values.content.get(data_transfer_obj.config.get('password', ''), '')
-                scp_configs['data_location'] = self.form_values.content.get(data_transfer_obj.config.get('data_location', ''), '')
-                scp_configs['rename_dataset'] = self.form_values.content.get(data_transfer_obj.config.get('rename_dataset', ''), '')
-                self.data_transfer[self.data_transfer_protocol.SCP] = scp_configs
-            if data_transfer_protocol == self.data_transfer_protocol.HTTP:
-                http_configs = {}
-                automatic_transfer = data_transfer_obj.config.get('automatic_transfer', 'false')
-                http_configs['automatic_transfer'] = galaxy.util.string_as_bool(automatic_transfer)
-                self.data_transfer[self.data_transfer_protocol.HTTP] = http_configs
-
-    def populate_actions(self, trans, item, param_dict=None):
-        return self.get_external_service_type(trans).actions.populate(self, item, param_dict=param_dict)
-
-
-class RequestType(object, Dictifiable):
-    dict_collection_visible_keys = ['id', 'name', 'desc']
-    dict_element_visible_keys = ['id', 'name', 'desc', 'request_form_id', 'sample_form_id']
-    rename_dataset_options = Bunch(NO='Do not rename',
-                                   SAMPLE_NAME='Preprend sample name',
-                                   EXPERIMENT_NAME='Prepend experiment name',
-                                   EXPERIMENT_AND_SAMPLE_NAME='Prepend experiment and sample name')
-    permitted_actions = get_permitted_actions(filter='REQUEST_TYPE')
-
-    def __init__(self, name=None, desc=None, request_form=None, sample_form=None):
-        self.name = name
-        self.desc = desc
-        self.request_form = request_form
-        self.sample_form = sample_form
-
-    @property
-    def external_services(self):
-        external_services = []
-        for rtesa in self.external_service_associations:
-            external_services.append(rtesa.external_service)
-        return external_services
-
-    def get_external_service(self, external_service_type_id):
-        for rtesa in self.external_service_associations:
-            if rtesa.external_service.external_service_type_id == external_service_type_id:
-                return rtesa.external_service
-        return None
-
-    def get_external_services_for_manual_data_transfer(self, trans):
-        '''Returns all external services that use manual data transfer'''
-        external_services = []
-        for rtesa in self.external_service_associations:
-            external_service = rtesa.external_service
-            # load data transfer settings
-            external_service.load_data_transfer_settings(trans)
-            if external_service.data_transfer:
-                for transfer_type, transfer_type_settings in external_service.data_transfer.items():
-                    if not transfer_type_settings['automatic_transfer']:
-                        external_services.append(external_service)
-        return external_services
-
-    def delete_external_service_associations(self, trans):
-        '''Deletes all external service associations.'''
-        flush_needed = False
-        for rtesa in self.external_service_associations:
-            trans.sa_session.delete(rtesa)
-            flush_needed = True
-        if flush_needed:
-            trans.sa_session.flush()
-
-    def add_external_service_association(self, trans, external_service):
-        rtesa = trans.model.RequestTypeExternalServiceAssociation(self, external_service)
-        trans.sa_session.add(rtesa)
-        trans.sa_session.flush()
-
-    @property
-    def final_sample_state(self):
-        # The states mapper for this object orders ascending
-        return self.states[-1]
-
-    @property
-    def run_details(self):
-        if self.run:
-            # self.run[0] is [RequestTypeRunAssociation]
-            return self.run[0]
-        return None
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templates.  The get_contents param
-        # is passed by callers that are inheriting a template - these are
-        # usually new samples for which we want to include template fields,
-        # but not necessarily the contents of the inherited template.
-        rtra = self.run_details
-        if rtra:
-            run = rtra.run
-            template = run.template
-            if get_contents:
-                # See if we have any field contents
-                info = run.info
-                if info:
-                    return template.get_widgets(trans.user, contents=info.content)
-            return template.get_widgets(trans.user)
-        return []
-
-
-class RequestTypeExternalServiceAssociation(object):
-    def __init__(self, request_type, external_service):
-        self.request_type = request_type
-        self.external_service = external_service
-
-
-class RequestTypePermissions(object):
-    def __init__(self, action, request_type, role):
-        self.action = action
-        self.request_type = request_type
-        self.role = role
-
-
-class Sample(object, Dictifiable):
-    # The following form_builder classes are supported by the Sample class.
-    supported_field_types = [CheckboxField, SelectField, TextField, WorkflowField, WorkflowMappingField, HistoryField]
-    bulk_operations = Bunch(CHANGE_STATE='Change state',
-                            SELECT_LIBRARY='Select data library and folder')
-    dict_collection_visible_keys = ['id', 'name']
-
-    def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None, library=None, folder=None, workflow=None, history=None):
-        self.name = name
-        self.desc = desc
-        self.request = request
-        self.values = form_values
-        self.bar_code = bar_code
-        self.library = library
-        self.folder = folder
-        self.history = history
-        self.workflow = workflow
-
-    @property
-    def state(self):
-        latest_event = self.latest_event
-        if latest_event:
-            return latest_event.state
-        return None
-
-    @property
-    def latest_event(self):
-        if self.events:
-            return self.events[0]
-        return None
-
-    @property
-    def adding_to_library_dataset_files(self):
-        adding_to_library_datasets = []
-        for dataset in self.datasets:
-            if dataset.status == SampleDataset.transfer_status.ADD_TO_LIBRARY:
-                adding_to_library_datasets.append(dataset)
-        return adding_to_library_datasets
-
-    @property
-    def inprogress_dataset_files(self):
-        inprogress_datasets = []
-        for dataset in self.datasets:
-            if dataset.status not in [SampleDataset.transfer_status.NOT_STARTED, SampleDataset.transfer_status.COMPLETE]:
-                inprogress_datasets.append(dataset)
-        return inprogress_datasets
-
-    @property
-    def queued_dataset_files(self):
-        queued_datasets = []
-        for dataset in self.datasets:
-            if dataset.status == SampleDataset.transfer_status.IN_QUEUE:
-                queued_datasets.append(dataset)
-        return queued_datasets
-
-    @property
-    def transfer_error_dataset_files(self):
-        transfer_error_datasets = []
-        for dataset in self.datasets:
-            if dataset.status == SampleDataset.transfer_status.ERROR:
-                transfer_error_datasets.append(dataset)
-        return transfer_error_datasets
-
-    @property
-    def transferred_dataset_files(self):
-        transferred_datasets = []
-        for dataset in self.datasets:
-            if dataset.status == SampleDataset.transfer_status.COMPLETE:
-                transferred_datasets.append(dataset)
-        return transferred_datasets
-
-    @property
-    def transferring_dataset_files(self):
-        transferring_datasets = []
-        for dataset in self.datasets:
-            if dataset.status == SampleDataset.transfer_status.TRANSFERRING:
-                transferring_datasets.append(dataset)
-        return transferring_datasets
-
-    @property
-    def untransferred_dataset_files(self):
-        untransferred_datasets = []
-        for dataset in self.datasets:
-            if dataset.status != SampleDataset.transfer_status.COMPLETE:
-                untransferred_datasets.append(dataset)
-        return untransferred_datasets
-
-    @property
-    def run_details(self):
-        # self.runs is a list of SampleRunAssociations ordered descending on update_time.
-        if self.runs:
-            # Always use the latest run details template, self.runs[0] is a SampleRunAssociation
-            return self.runs[0]
-        # Inherit this sample's RequestType run details, if one exists.
-        return self.request.type.run_details
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # Samples have a one-to-many relationship with run details, so we return the
-        # widgets for last associated template.  The get_contents param will populate
-        # the widget fields with values from the template inherited from the sample's
-        # RequestType.
-        template = None
-        if self.runs:
-            # The self.runs mapper orders descending on update_time.
-            run = self.runs[0].run
-            template = run.template
-        if template is None:
-            # There are no run details associated with this sample, so inherit the
-            # run details template from the sample's RequestType.
-            rtra = self.request.type.run_details
-            if rtra:
-                run = rtra.run
-                template = run.template
-        if template:
-            if get_contents:
-                # See if we have any field contents
-                info = run.info
-                if info:
-                    return template.get_widgets(trans.user, contents=info.content)
-            return template.get_widgets(trans.user)
-        return []
-
-    def populate_external_services(self, param_dict=None, trans=None):
-        if self.request and self.request.type:
-            return [service.populate_actions(item=self, param_dict=param_dict, trans=trans) for service in self.request.type.external_services]
-
-
-class SampleState(object):
-    def __init__(self, name=None, desc=None, request_type=None):
-        self.name = name
-        self.desc = desc
-        self.request_type = request_type
-
-
-class SampleEvent(object):
-    def __init__(self, sample=None, sample_state=None, comment=''):
-        self.sample = sample
-        self.state = sample_state
-        self.comment = comment
-
-
-class SampleDataset(object):
-    transfer_status = Bunch(NOT_STARTED='Not started',
-                            IN_QUEUE='In queue',
-                            TRANSFERRING='Transferring dataset',
-                            ADD_TO_LIBRARY='Adding to data library',
-                            COMPLETE='Complete',
-                            ERROR='Error')
-
-    def __init__(self, sample=None, name=None, file_path=None, status=None, error_msg=None, size=None, external_service=None):
-        self.sample = sample
-        self.name = name
-        self.file_path = file_path
-        self.status = status
-        self.error_msg = error_msg
-        self.size = size
-        self.external_service = external_service
-
-
-class Run(object):
-    def __init__(self, form_definition, form_values, subindex=None):
-        self.template = form_definition
-        self.info = form_values
-        self.subindex = subindex
-
-
-class RequestTypeRunAssociation(object):
-    def __init__(self, request_type, run):
-        self.request_type = request_type
-        self.run = run
-
-
-class SampleRunAssociation(object):
-    def __init__(self, sample, run):
-        self.sample = sample
-        self.run = run
 
 
 class UserAddress(object):
@@ -5477,3 +4770,56 @@ def copy_list(lst, *args, **kwds):
         return lst
     else:
         return [el.copy(*args, **kwds) for el in lst]
+
+
+# Sample request associated class
+class Request(object, Dictifiable):
+    pass
+
+
+class RequestEvent(object):
+    pass
+
+
+class RequestType(object, Dictifiable):
+    pass
+
+
+class ExternalService(object):
+    pass
+
+
+class RequestTypeExternalServiceAssociation(object):
+    pass
+
+
+class RequestTypePermissions(object):
+    pass
+
+
+class Sample(object):
+    pass
+
+
+class SampleState(object):
+    pass
+
+
+class SampleEvent(object):
+    pass
+
+
+class SampleDataset(object):
+    pass
+
+
+class Run(object):
+    pass
+
+
+class RequestTypeRunAssociation(object):
+    pass
+
+
+class SampleRunAssociation(object):
+    pass
