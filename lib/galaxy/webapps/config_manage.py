@@ -613,7 +613,7 @@ def _write_option(args, f, key, option_value, as_comment=False):
         comment = "\n".join(YAML_COMMENT_WRAPPER.wrap(desc))
         comment += "\n"
     as_comment_str = "#" if as_comment else ""
-    key_val_str = yaml.dump({key: value}).lstrip("{").rstrip("\n}")
+    key_val_str = yaml.dump({key: value}, width=float("inf")).lstrip("{").rstrip("\n}")
     lines = "%s%s%s" % (comment, as_comment_str, key_val_str)
     lines_idented = "\n".join([("  %s" % l) for l in lines.split("\n")])
     f.write("%s\n\n" % lines_idented)
