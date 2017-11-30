@@ -4256,12 +4256,7 @@ class MetadataFile(StorableObject):
 class FormDefinition(object, Dictifiable):
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField]
-    types = Bunch(REQUEST='Sequencing Request Form',
-                  SAMPLE='Sequencing Sample Form',
-                  EXTERNAL_SERVICE='External Service Information Form',
-                  RUN_DETAILS_TEMPLATE='Sample run details template',
-                  LIBRARY_INFO_TEMPLATE='Library information template',
-                  USER_INFO='User Information')
+    types = Bunch(USER_INFO='User Information')
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout']
 
