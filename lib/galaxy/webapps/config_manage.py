@@ -302,7 +302,7 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
     rst.write("\n")
     type = option.get("type", None)
     default = option.get("default", "*null*")
-    rst.write(":Default: %s\n" % default)
+    rst.write(":Default: ``%s``\n" % default)
     if type:
         rst.write(":Type: %s\n" % type)
     rst.write("\n\n")
