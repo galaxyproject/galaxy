@@ -1313,28 +1313,6 @@ class UsesFormDefinitionsMixin:
                                                             form_type=form_type))
         return forms
 
-    def widget_fields_have_contents(self, widgets):
-        # Return True if any of the fields in widgets contain contents, widgets is a list of dictionaries that looks something like:
-        # [{'widget': <galaxy.web.form_builder.TextField object at 0x10867aa10>, 'helptext': 'Field 0 help (Optional)', 'label': 'Field 0'}]
-        for field in widgets:
-            if (isinstance(field['widget'], TextArea) or isinstance(field['widget'], TextField)) and field['widget'].value:
-                return True
-            if isinstance(field['widget'], SelectField) and field['widget'].options:
-                for option_label, option_value, selected in field['widget'].options:
-                    if selected:
-                        return True
-            if isinstance(field['widget'], CheckboxField) and field['widget'].checked:
-                return True
-            if isinstance(field['widget'], WorkflowField) and str(field['widget'].value).lower() not in ['none']:
-                return True
-            if isinstance(field['widget'], WorkflowMappingField) and str(field['widget'].value).lower() not in ['none']:
-                return True
-            if isinstance(field['widget'], HistoryField) and str(field['widget'].value).lower() not in ['none']:
-                return True
-            if isinstance(field['widget'], AddressField) and str(field['widget'].value).lower() not in ['none']:
-                return True
-        return False
-
     def clean_field_contents(self, widgets, **kwd):
         field_contents = {}
         for widget_dict in widgets:
