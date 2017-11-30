@@ -1299,20 +1299,6 @@ class UsesFormDefinitionsMixin:
         else:
             return [fdc.latest_form for fdc in fdc_list if fdc.latest_form.type == form_type]
 
-    def get_all_forms_by_type(self, trans, cntrller, form_type):
-        forms = self.get_all_forms(trans,
-                                   filter=dict(deleted=False),
-                                   form_type=form_type)
-        if not forms:
-            message = "There are no forms on which to base the template, so create a form and then add the template."
-            return trans.response.send_redirect(web.url_for(controller='forms',
-                                                            action='create_form_definition',
-                                                            cntrller=cntrller,
-                                                            message=message,
-                                                            status='done',
-                                                            form_type=form_type))
-        return forms
-
     def field_param_values_ok(self, widget_name, widget_type, **kwd):
         # Make sure required fields have contents, etc
         params = util.Params(kwd)
