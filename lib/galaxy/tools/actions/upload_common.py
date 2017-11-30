@@ -124,7 +124,7 @@ def persist_uploads(params, trans):
             elif type(f) == dict and 'local_filename' not in f:
                 raise Exception('Uploaded file was encoded in a way not understood by Galaxy.')
             if upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
-                upload_dataset['url_paste'], is_multi_byte = datatypes.sniff.stream_to_file(
+                upload_dataset['url_paste'] = datatypes.sniff.stream_to_file(
                     StringIO(validate_url(upload_dataset['url_paste'], trans.app.config.fetch_url_whitelist_ips)),
                     prefix="strio_url_paste_"
                 )
