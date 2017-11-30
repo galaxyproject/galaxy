@@ -1375,14 +1375,6 @@ class UsesFormDefinitionsMixin:
             values[field_name] = field_value
         return values
 
-    def build_form_id_select_field(self, trans, forms, selected_value='none'):
-        return build_select_field(trans,
-                                  objs=forms,
-                                  label_attr='name',
-                                  select_field_name='form_id',
-                                  selected_value=selected_value,
-                                  refresh_on_change=True)
-
 
 class SharableMixin:
     """ Mixin for a controller that manages an item that can be shared. """
