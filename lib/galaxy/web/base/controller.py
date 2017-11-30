@@ -1375,62 +1375,6 @@ class UsesFormDefinitionsMixin:
             values[field_name] = field_value
         return values
 
-    def get_item_and_stuff(self, trans, item_type, **kwd):
-        # Return an item, description, action and an id based on the item_type.  Valid item_types are
-        # library, folder, ldda, request_type, sample.
-        if item_type == 'library':
-            library_id = kwd.get('library_id', None)
-            id = library_id
-            try:
-                item = trans.sa_session.query(trans.app.model.Library).get(trans.security.decode_id(library_id))
-            except Exception:
-                item = None
-            item_desc = 'data library'
-            action = 'library_info'
-        elif item_type == 'folder':
-            folder_id = kwd.get('folder_id', None)
-            id = folder_id
-            try:
-                item = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(folder_id))
-            except Exception:
-                item = None
-            item_desc = 'folder'
-            action = 'folder_info'
-        elif item_type == 'ldda':
-            ldda_id = kwd.get('ldda_id', None)
-            id = ldda_id
-            try:
-                item = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(trans.security.decode_id(ldda_id))
-            except Exception:
-                item = None
-            item_desc = 'dataset'
-            action = 'ldda_edit_info'
-        elif item_type == 'request_type':
-            request_type_id = kwd.get('request_type_id', None)
-            id = request_type_id
-            try:
-                item = trans.sa_session.query(trans.app.model.RequestType).get(trans.security.decode_id(request_type_id))
-            except Exception:
-                item = None
-            item_desc = 'request type'
-            action = 'view_editable_request_type'
-        elif item_type == 'sample':
-            sample_id = kwd.get('sample_id', None)
-            id = sample_id
-            try:
-                item = trans.sa_session.query(trans.app.model.Sample).get(trans.security.decode_id(sample_id))
-            except Exception:
-                item = None
-            item_desc = 'sample'
-            action = 'view_sample'
-        else:
-            item = None
-            # message = "Invalid item type ( %s )" % str( item_type )
-            item_desc = None
-            action = None
-            id = None
-        return item, item_desc, action, id
-
     def build_form_id_select_field(self, trans, forms, selected_value='none'):
         return build_select_field(trans,
                                   objs=forms,
