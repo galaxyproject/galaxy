@@ -572,7 +572,7 @@ var TracksterView = Backbone.View.extend({
         // close selection/finalize template
         html += `</select></div><div style="clear: both;"></div></div><div class="form-row">Is the build not listed here? <a href="${
             Galaxy.root
-        }user/dbkeys?use_panels=True">Add a Custom Build</a></div></form>`;
+        }custom_builds">Add a Custom Build</a></div></form>`;
 
         // return
         return html;
