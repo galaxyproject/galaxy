@@ -1375,50 +1375,6 @@ class UsesFormDefinitionsMixin:
             values[field_name] = field_value
         return values
 
-    def populate_widgets_from_kwd(self, trans, widgets, **kwd):
-        # A form submitted via refresh_on_change requires us to populate the widgets with the contents of
-        # the form fields the user may have entered so that when the form refreshes the contents are retained.
-        params = util.Params(kwd)
-        populated_widgets = []
-        for widget_dict in widgets:
-            widget = widget_dict['widget']
-            if params.get(widget.name, False):
-                # The form included a field whose contents should be used to set the
-                # value of the current widget (widget.name is the name set by the
-                # user when they defined the FormDefinition).
-                if isinstance(widget, AddressField):
-                    value = util.restore_text(params.get(widget.name, ''))
-                    if value == 'none':
-                        value = ''
-                    widget.value = value
-                    widget_dict['widget'] = widget
-                    # Populate the AddressField params with the form field contents
-                    widget_params_dict = {}
-                    for field_name, label, help_text in widget.fields():
-                        form_param_name = '%s_%s' % (widget.name, field_name)
-                        widget_params_dict[form_param_name] = util.restore_text(params.get(form_param_name, ''))
-                    widget.params = widget_params_dict
-                elif isinstance(widget, CheckboxField):
-                    # Check the value from kwd since util.Params would have
-                    # stringify'd the list if the checkbox is checked.
-                    value = kwd.get(widget.name, '')
-                    if CheckboxField.is_checked(value):
-                        widget.value = 'true'
-                        widget_dict['widget'] = widget
-                elif isinstance(widget, SelectField):
-                    # Ensure the selected option remains selected.
-                    value = util.restore_text(params.get(widget.name, ''))
-                    processed_options = []
-                    for option_label, option_value, option_selected in widget.options:
-                        selected = value == option_value
-                        processed_options.append((option_label, option_value, selected))
-                    widget.options = processed_options
-                else:
-                    widget.value = util.restore_text(params.get(widget.name, ''))
-                    widget_dict['widget'] = widget
-            populated_widgets.append(widget_dict)
-        return populated_widgets
-
     def get_item_and_stuff(self, trans, item_type, **kwd):
         # Return an item, description, action and an id based on the item_type.  Valid item_types are
         # library, folder, ldda, request_type, sample.
