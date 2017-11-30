@@ -1,3 +1,5 @@
+from base.populators import flakey
+
 from .framework import (
     selenium_test,
     SeleniumTestCase
@@ -9,6 +11,7 @@ class HistoryPanelPaginationTestCase(SeleniumTestCase):
     ensure_registered = True
 
     @selenium_test
+    @flakey  # The next button doesn't always work - maybe a delay in JS callback registering for that.
     def test_pagination(self):
         history_id = self.current_history_id()
 
