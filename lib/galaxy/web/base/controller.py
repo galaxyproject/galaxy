@@ -1313,20 +1313,6 @@ class UsesFormDefinitionsMixin:
                                                             form_type=form_type))
         return forms
 
-    def clean_field_contents(self, widgets, **kwd):
-        field_contents = {}
-        for widget_dict in widgets:
-            widget = widget_dict['widget']
-            value = kwd.get(widget.name, '')
-            if isinstance(widget, CheckboxField):
-                # CheckboxField values are lists if the checkbox is checked
-                value = str(widget.is_checked(value)).lower()
-            elif isinstance(widget, AddressField):
-                # If the address was new, is has already been saved and widget.value is the new address.id
-                value = widget.value
-            field_contents[widget.name] = util.restore_text(value)
-        return field_contents
-
     def field_param_values_ok(self, widget_name, widget_type, **kwd):
         # Make sure required fields have contents, etc
         params = util.Params(kwd)
