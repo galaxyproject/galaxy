@@ -201,14 +201,11 @@ class AddressField(BaseField):
 
 
 class WorkflowField(BaseField):
-    def __init__(self, name, user=None, value=None, params=None, security=None, **kwds):
+    def __init__(self, name, user=None, value=None, security=None, **kwds):
         super(WorkflowField, self).__init__(name, value, **kwds)
-        self.name = name
         self.user = user
         self.value = value
         self.security = security
-        self.select_workflow = None
-        self.params = params
 
     def to_dict(self):
         d = super(WorkflowField, self).to_dict()
