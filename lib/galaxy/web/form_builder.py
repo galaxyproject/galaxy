@@ -53,11 +53,6 @@ class BaseField(object):
 class TextField(BaseField):
     """
     A standard text input box.
-
-    >>> print(TextField( "foo" ).get_html())
-    <input type="text" name="foo" size="10" value="">
-    >>> print(TextField( "bins", size=4, value="default" ).get_html())
-    <input type="text" name="bins" size="4" value="default">
     """
 
     def __init__(self, name, size=None, value=None, **kwds):
@@ -81,11 +76,6 @@ class TextField(BaseField):
 class PasswordField(BaseField):
     """
     A password input box. text appears as "******"
-
-    >>> print(PasswordField( "foo" ).get_html())
-    <input type="password" name="foo" size="10" value="">
-    >>> print(PasswordField( "bins", size=4, value="default" ).get_html())
-    <input type="password" name="bins" size="4" value="default">
     """
 
     def __init__(self, name, size=None, value=None, **kwds):
@@ -110,11 +100,6 @@ class PasswordField(BaseField):
 class TextArea(BaseField):
     """
     A standard text area box.
-
-    >>> print(TextArea( "foo" ).get_html())
-    <textarea name="foo" rows="5" cols="25"></textarea>
-    >>> print(TextArea( "bins", size="4x5", value="default" ).get_html())
-    <textarea name="bins" rows="4" cols="5">default</textarea>
     """
     _DEFAULT_SIZE = "5x25"
 
@@ -145,11 +130,6 @@ class TextArea(BaseField):
 class CheckboxField(BaseField):
     """
     A checkbox (boolean input)
-
-    >>> print(CheckboxField( "foo" ).get_html())
-    <input type="checkbox" id="foo" name="foo" value="__CHECKED__"><input type="hidden" name="foo" value="__NOTHING__">
-    >>> print(CheckboxField( "bar", checked="yes" ).get_html())
-    <input type="checkbox" id="bar" name="bar" value="__CHECKED__" checked="checked"><input type="hidden" name="bar" value="__NOTHING__">
     """
 
     def __init__(self, name, checked=None, refresh_on_change=False, refresh_on_change_values=None, value=None, **kwds):
@@ -195,11 +175,6 @@ class CheckboxField(BaseField):
 class FileField(BaseField):
     """
     A file upload input.
-
-    >>> print(FileField( "foo" ).get_html())
-    <input type="file" name="foo">
-    >>> print(FileField( "foo", ajax = True ).get_html())
-    <input type="file" name="foo" galaxy-ajax-upload="true">
     """
 
     def __init__(self, name, value=None, ajax=False, **kwds):
@@ -242,9 +217,6 @@ class GenomespaceFileField(BaseField):
 class HiddenField(BaseField):
     """
     A hidden field.
-
-    >>> print(HiddenField( "foo", 100 ).get_html())
-    <input type="hidden" name="foo" value="100">
     """
 
     def __init__(self, name, value=None, **kwds):
@@ -265,39 +237,6 @@ class HiddenField(BaseField):
 class SelectField(BaseField):
     """
     A select field.
-
-    >>> t = SelectField( "foo", multiple=True )
-    >>> t.add_option( "tuti", 1 )
-    >>> t.add_option( "fruity", "x" )
-    >>> print(t.get_html())
-    <select name="foo" multiple>
-    <option value="1">tuti</option>
-    <option value="x">fruity</option>
-    </select>
-
-    >>> t = SelectField( "bar" )
-    >>> t.add_option( "automatic", 3 )
-    >>> t.add_option( "bazooty", 4, selected=True )
-    >>> print(t.get_html())
-    <select name="bar" last_selected_value="4">
-    <option value="3">automatic</option>
-    <option value="4" selected>bazooty</option>
-    </select>
-
-    >>> t = SelectField( "foo", display="radio" )
-    >>> t.add_option( "tuti", 1 )
-    >>> t.add_option( "fruity", "x" )
-    >>> print(t.get_html())
-    <div><input type="radio" name="foo" value="1" id="foo|1"><label class="inline" for="foo|1">tuti</label></div>
-    <div><input type="radio" name="foo" value="x" id="foo|x"><label class="inline" for="foo|x">fruity</label></div>
-
-    >>> t = SelectField( "bar", multiple=True, display="checkboxes" )
-    >>> t.add_option( "automatic", 3 )
-    >>> t.add_option( "bazooty", 4, selected=True )
-    >>> print(t.get_html())
-    <div class="checkUncheckAllPlaceholder" checkbox_name="bar"></div>
-    <div><input type="checkbox" name="bar" value="3" id="bar|3"><label class="inline" for="bar|3">automatic</label></div>
-    <div><input type="checkbox" name="bar" value="4" id="bar|4" checked='checked'><label class="inline" for="bar|4">bazooty</label></div>
     """
 
     def __init__(self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None, field_id=None, value=None, selectlist=None, **kwds):
