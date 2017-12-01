@@ -4528,20 +4528,6 @@ class FormDefinition(object, Dictifiable):
             widgets.append(dict(label=field['label'], widget=field_widget, helptext=helptext))
         return widgets
 
-    def field_as_html(self, field):
-        """Generates disabled html for a field"""
-        type = field['type']
-        form_field = None
-        for field_type in self.supported_field_types:
-            if type == field_type.__name__:
-                # Name it AddressField, CheckboxField, etc.
-                form_field = field_type(type)
-                break
-        if form_field:
-            return form_field.get_html(disabled=True)
-        # Return None if unsupported field type
-        return None
-
 
 class FormDefinitionCurrent(object):
     def __init__(self, form_definition=None):
