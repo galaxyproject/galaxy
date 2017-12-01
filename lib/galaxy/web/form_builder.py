@@ -75,11 +75,6 @@ class CheckboxField(BaseField):
     """
     A checkbox (boolean input)
     """
-
-    def __init__(self, name, checked=None, refresh_on_change=False, refresh_on_change_values=None, value=None, **kwds):
-        super(CheckboxField, self).__init__(name, value, **kwds)
-        self.name = name
-
     @staticmethod
     def is_checked(value):
         if value in [True, "true"]:
