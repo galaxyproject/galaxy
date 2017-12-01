@@ -498,6 +498,7 @@
     <!-- Annotation Datatypes -->
     <datatype extension="snaphmm" type="galaxy.datatypes.annotation:SnapHmm" display_in_upload="true" />
     <datatype extension="augustus" type="galaxy.datatypes.annotation:Augustus" display_in_upload="true" />
+    <datatype extension="icm" type="galaxy.datatypes.binary:ICM" display_in_upload="true"/>
     <!-- MSA Datatypes -->
     <datatype extension="hmm2" type="galaxy.datatypes.msa:Hmmer2" display_in_upload="true" />
     <datatype extension="hmm3" type="galaxy.datatypes.msa:Hmmer3" display_in_upload="true" />
@@ -704,6 +705,7 @@
     <sniffer type="galaxy.datatypes.binary:Fast5ArchiveBz2" />
     <sniffer type="galaxy.datatypes.binary:Fast5Archive" />
     <sniffer type="galaxy.datatypes.binary:PostgresqlArchive"/>
+    <sniffer type="galaxy.datatypes.annotation:ICM" />
     <sniffer type="galaxy.datatypes.annotation:Augustus" />
     <sniffer type="galaxy.datatypes.triples:Rdf"/>
     <sniffer type="galaxy.datatypes.blast:BlastXml"/>

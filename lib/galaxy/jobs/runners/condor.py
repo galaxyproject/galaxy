@@ -210,7 +210,7 @@ class CondorJobRunner(AsynchronousJobRunner):
         external_id = job.job_runner_external_id
         failure_message = condor_stop(external_id)
         if failure_message:
-            log.debug("(%s/%s). Failed to stop condor %s" % (external_id, failure_message))
+            log.debug("(%s). Failed to stop condor %s" % (external_id, failure_message))
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""

@@ -257,7 +257,7 @@ class DefaultToolAction(object):
         # Add the dbkey to the incoming parameters
         incoming["dbkey"] = input_dbkey
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
-        wrapped_params = self._wrapped_params(trans, tool, incoming)
+        wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
         out_data = odict()
         input_collections = dict((k, v[0][0]) for k, v in inp_dataset_collections.items())
@@ -518,8 +518,8 @@ class DefaultToolAction(object):
             trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
             return job, out_data
 
-    def _wrapped_params(self, trans, tool, incoming):
-        wrapped_params = WrappedParameters(trans, tool, incoming)
+    def _wrapped_params(self, trans, tool, incoming, input_datasets=None):
+        wrapped_params = WrappedParameters(trans, tool, incoming, input_datasets=input_datasets)
         return wrapped_params
 
     def _get_on_text(self, inp_data):
