@@ -220,6 +220,21 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         self._click_and_wait_for_collection_view(collection_hid)
         self.screenshot("history_panel_collection_view_list_list")
 
+    @selenium_test
+    def test_limiting_collection_rendering(self):
+        history_id = self.current_history_id()
+        collection = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json()
+        collection_hid = collection["hid"]
+
+        with self.local_storage("collectionFuzzyCountDefault", 2):
+            self.home()
+
+            self.history_panel_wait_for_hid_state(collection_hid, "ok")
+            self._click_and_wait_for_collection_view(collection_hid)
+            self.screenshot("history_panel_collection_view_limiting")
+            warning_text = self.components.history_panel.collection_view.elements_warning.wait_for_text()
+            assert "only 2 of 4 items" in warning_text, warning_text
+
     def _generate_partially_failed_collection_with_input(self):
         history_id = self.current_history_id()
         input_collection = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json()

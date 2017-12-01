@@ -67,30 +67,17 @@ var HDCAListItemView = _super.extend(
             var elementCount = collection.get("element_count");
             var jobStateSource = collection.get("job_source_type");
             var collectionType = this.model.get("collection_type");
-            var collectionTypeDescription;
-            if (collectionType == "list") {
-                collectionTypeDescription = "list";
-            } else if (collectionType == "paired") {
-                collectionTypeDescription = "dataset pair";
-            } else if (collectionType == "list:paired") {
-                collectionTypeDescription = "list of pairs";
-            } else {
-                collectionTypeDescription = "nested list";
-            }
-            var itemsDescription = "";
-            if (elementCount == 1) {
-                itemsDescription = ` with 1 item`;
-            } else if (elementCount) {
-                itemsDescription = ` with ${elementCount} items`;
-            }
+            var collectionTypeDescription = DC_VIEW.collectionTypeDescription(collection);
+            var simpleDescription = DC_VIEW.collectionDescription(collection);
             var jobStatesSummary = collection.jobStatesSummary;
-            var simpleDescription = `${collectionTypeDescription}${itemsDescription}`;
             if (!jobStateSource || jobStateSource == "Job") {
-                return `a ${simpleDescription}`;
+                return simpleDescription;
             } else if (!jobStatesSummary || !jobStatesSummary.hasDetails()) {
                 return `
                     <div class="progress state-progress">
-                        <span class="note">Loading job data for ${collectionTypeDescription}.<span class="blinking">..</span></span>
+                        <span class="note">Loading job data for ${
+                            collectionTypeDescription
+                        }.<span class="blinking">..</span></span>
                         <div class="progress-bar info" style="width:100%">
                     </div>`;
             } else {
@@ -106,7 +93,7 @@ var HDCAListItemView = _super.extend(
                     var errorCount = jobStatesSummary.numInError();
                     return `a ${collectionTypeDescription} with ${errorCount} / ${jobCount} jobs in error`;
                 } else if (jobStatesSummary.terminal()) {
-                    return `a ${simpleDescription}`;
+                    return simpleDescription;
                 } else {
                     var running = jobStatesSummary.states()["running"] || 0;
                     var ok = jobStatesSummary.states()["ok"] || 0;
