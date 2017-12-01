@@ -944,7 +944,7 @@ use_interactive = True
 
 # -- Toolbox Search
 
-# The following boosts are used to customize this instance's toolbox search.
+# Boosts are used to customize this instance's toolbox search.
 # The higher the boost, the more importance the scoring algorithm gives to the
 # given field.  Section refers to the tool group in the tool panel.  Rest of
 # the fields are tool's attributes.
@@ -965,8 +965,10 @@ use_interactive = True
 # each ngram
 #tool_enable_ngram_search = False
 
-# Set minimum and maximum sizes of ngrams
+# Set minimum size of ngrams
 #tool_ngram_minsize = 3
+
+# Set maximum size of ngrams
 #tool_ngram_maxsize = 4
 
 # -- Users and Security
@@ -1086,10 +1088,12 @@ use_interactive = True
 # Set the following to a number of threads greater than 1 to spawn
 # a Python task queue for dealing with large tool submissions (either
 # through the tool form or as part of an individual workflow step across
-# large collection). The size of a "large" tool request is controlled by
-# the second parameter below and defaults to 10. This affects workflow
-# scheduling and web processes, not job handlers.
+# large collection). This affects workflow scheduling and web processes,
+# not job handlers. This is a beta option and should not be used in production.
 #tool_submission_burst_threads = 1
+
+# If tool_submission_burst_threads is set to a number greater than 1, this
+# is the number of jobs to schedule at which the task queue will be created.
 #tool_submission_burst_at = 10
 
 # Enable beta workflow modules that should not yet be considered part of Galaxy's
@@ -1136,8 +1140,12 @@ use_interactive = True
 # Enable authentication via OpenID.  Allows users to log in to their Galaxy
 # account by authenticating with an OpenID provider.
 #enable_openid = False
-# .sample used if default does not exist
+
+# If OpenID is enabled, this configuration file specifies providers to use.
+# Falls back to the .sample variant in config if default does not exist.
 #openid_config_file = config/openid_conf.xml
+
+# If OpenID is enabled, consumer cache directory to use.
 #openid_consumer_cache_path = database/openid_consumer_cache
 
 # XML config file that allows the use of different authentication providers
@@ -1316,19 +1324,26 @@ use_interactive = True
 # always, onsuccess, never
 #cleanup_job = always
 
-# For sites where all users in Galaxy match users on the system on which Galaxy
-# runs, the DRMAA job runner can be configured to submit jobs to the DRM as the
-# actual user instead of as the user running the Galaxy server process.  For
-# details on these options, see the documentation at:
-#
-# https://galaxyproject.org/admin/config/performance/cluster
-#
+# When running DRMAA jobs as the Galaxy user 
+# (https://galaxyproject.org/admin/config/performance/cluster/#submitting-jobs-as-the-real-user)
+# this script is used to run the job script Galaxy generates for a tool execution.
 #drmaa_external_runjob_script = sudo -E scripts/drmaa_external_runner.py --assign_all_groups
+
+# When running DRMAA jobs as the Galaxy user 
+# (https://galaxyproject.org/admin/config/performance/cluster/#submitting-jobs-as-the-real-user)
+# this script is used to kill such jobs by Galaxy (e.g. if the user cancels
+# the job).
 #drmaa_external_killjob_script = sudo -E scripts/drmaa_external_killer.py
+
+# When running DRMAA jobs as the Galaxy user 
+# (https://galaxyproject.org/admin/config/performance/cluster/#submitting-jobs-as-the-real-user)
+# this script is used transfer permissions back and forth between the Galaxy user
+# and the user that is running the job.
 #external_chown_script = sudo -E scripts/external_chown_script.py
 
-# For the job submission as the actual system user, Galaxy can extract
-# the user name from the email address (actually the local-part before the @)
+# When running DRMAA jobs as the Galaxy user 
+# (https://galaxyproject.org/admin/config/performance/cluster/#submitting-jobs-as-the-real-user)
+# Galaxy can extract the user name from the email address (actually the local-part before the @)
 # or the username which are both stored in the Galaxy data base.
 # The latter option is particularly useful for installations that get the
 # authentication from LDAP.
@@ -1367,24 +1382,32 @@ use_interactive = True
 
 # -- ToolBox filtering
 
-# Modules from lib/galaxy/tools/toolbox/filters/ can be specified in
-# the following lines.  tool_* filters will be applied for all users
-# and can not be changed by them.  user_tool_* filters will be shown
-# under user preferences and can be toggled on and off at
-# runtime.  Example shown below are not real defaults (no custom
-# filters are applied by default), but can be enabled by renaming the
-# examples.py.sample in the filters directory to examples.py.
-
+# Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
+# that admins may use to restrict the tools to display.
 #tool_filters =
+
+# Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
+# that admins may use to restrict the tool labels to display.
 #tool_label_filters =
+
+# Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
+# that admins may use to restrict the tool sections to display.
 #tool_section_filters =
+
+# Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
+# that users may use to restrict the tools to display.
 #user_tool_filters = examples:restrict_upload_to_admins, examples:restrict_encode
+
+# Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
+# that users may use to restrict the tool sections to display.
 #user_tool_section_filters = examples:restrict_text
+
+# Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
+# that users may use to restrict the tool labels to display.
 #user_tool_label_filters = examples:restrict_upload_to_admins, examples:restrict_encode
 
-# The base modules that are searched for modules as described above
-# can be modified and modules external to Galaxy can be searched by
-# modifying the following option.
+# The base module(s) that are searched for modules for toolbox filtering
+# (https://galaxyproject.org/user-defined-toolbox-filters/) producedures.
 #toolbox_filter_base_modules = galaxy.tools.toolbox.filters,galaxy.tools.filters
 
 # -- Galaxy Application Internal Message Queue
