@@ -50,14 +50,6 @@ class TextField(BaseField):
     """
     A standard text input box.
     """
-
-    def __init__(self, name, size=None, value=None, **kwds):
-        super(TextField, self).__init__(name, value, **kwds)
-        self.size = int(size or 10)
-
-    def set_size(self, size):
-        self.size = int(size)
-
     def to_dict(self):
         d = super(TextField, self).to_dict()
         d['type'] = 'text'
@@ -68,16 +60,6 @@ class PasswordField(BaseField):
     """
     A password input box. text appears as "******"
     """
-
-    def __init__(self, name, size=None, value=None, **kwds):
-        super(PasswordField, self).__init__(name, value, **kwds)
-        self.name = name
-        self.size = int(size or 10)
-        self.value = value or ""
-
-    def set_size(self, size):
-        self.size = int(size)
-
     def to_dict(self):
         d = super(PasswordField, self).to_dict()
         d['type'] = 'password'
@@ -88,21 +70,6 @@ class TextArea(BaseField):
     """
     A standard text area box.
     """
-    _DEFAULT_SIZE = "5x25"
-
-    def __init__(self, name, size=None, value=None, **kwds):
-        super(TextArea, self).__init__(name, value, **kwds)
-        self.name = name
-        size = size or self._DEFAULT_SIZE
-        self.size = size.split("x")
-        self.rows = int(self.size[0])
-        self.cols = int(self.size[-1])
-        self.value = value or ""
-
-    def set_size(self, rows, cols):
-        self.rows = rows
-        self.cols = cols
-
     def to_dict(self):
         d = super(TextArea, self).to_dict()
         d['type'] = 'text'
