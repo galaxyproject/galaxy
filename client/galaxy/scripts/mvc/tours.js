@@ -96,7 +96,7 @@ var Tours = Backbone.Collection.extend({
     model: TourItem
 });
 
-let startTourWithData = data => {
+let giveTourWithData = data => {
         let hookedTourData = hooked_tour_from_data(data);
         sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
         // Store tour steps in sessionStorage to easily persist w/o hackery.
@@ -108,12 +108,13 @@ let startTourWithData = data => {
         tour.init();
         tour.goTo(0);
         tour.restart();
+        return tour;
 };
 
 var giveTourById = tour_id => {
     var url = `${gxy_root}api/tours/${tour_id}`;
     $.getJSON(url, data => {
-        startTourWithData(data);
+        giveTourWithData(data);
     });
 };
 
@@ -212,7 +213,7 @@ export function activeGalaxyTourRunner() {
 
 export default {
     ToursView: ToursView,
-    hooked_tour_from_data: hooked_tour_from_data,
+    giveTourWithData: giveTourWithData,
     giveTourById: giveTourById,
     activeGalaxyTourRunner: activeGalaxyTourRunner
 };
