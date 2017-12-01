@@ -2675,24 +2675,6 @@ class Library(object, Dictifiable, HasName):
                 return None, inherited
         return None, inherited
 
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templates - the returned value for
-        # inherited is not applicable at the library level.  The get_contents
-        # param is passed by callers that are inheriting a template - these
-        # are usually new library datsets for which we want to include template
-        # fields on the upload form, but not necessarily the contents of the
-        # inherited template saved for the parent.
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            template = info_association.template
-            if get_contents:
-                # See if we have any field contents
-                info = info_association.info
-                if info:
-                    return template.get_widgets(trans.user, contents=info.content)
-            return template.get_widgets(trans.user)
-        return []
-
     def get_access_roles(self, trans):
         roles = []
         for lp in self.actions:
@@ -2741,32 +2723,6 @@ class LibraryFolder(object, Dictifiable, HasName):
         if self.library_root:
             return self.library_root[0].get_info_association(inherited=True)
         return None, inherited
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templates.  The get_contents
-        # param is passed by callers that are inheriting a template - these
-        # are usually new library datsets for which we want to include template
-        # fields on the upload form.
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            if inherited:
-                template = info_association.template.current.latest_form
-            else:
-                template = info_association.template
-            # See if we have any field contents, but only if the info_association was
-            # not inherited ( we do not want to display the inherited contents ).
-            # (gvk: 8/30/10) Based on conversations with Dan, we agreed to ALWAYS inherit
-            # contents.  We'll use this behavior until we hear from the community that
-            # contents should not be inherited.  If we don't hear anything for a while,
-            # eliminate the old commented out behavior.
-            # if not inherited and get_contents:
-            if get_contents:
-                info = info_association.info
-                if info:
-                    return template.get_widgets(trans.user, info.content)
-            else:
-                return template.get_widgets(trans.user)
-        return []
 
     @property
     def activatable_library_datasets(self):
@@ -3043,33 +2999,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName):
                 val = getattr(ldda.datatype, name)
             rval['metadata_' + name] = val
         return rval
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templatesThe get_contents
-        # param is passed by callers that are inheriting a template - these
-        # are usually new library datsets for which we want to include template
-        # fields on the upload form, but not necessarily the contents of the
-        # inherited template saved for the parent.
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            if inherited:
-                template = info_association.template.current.latest_form
-            else:
-                template = info_association.template
-            # See if we have any field contents, but only if the info_association was
-            # not inherited ( we do not want to display the inherited contents ).
-            # (gvk: 8/30/10) Based on conversations with Dan, we agreed to ALWAYS inherit
-            # contents.  We'll use this behavior until we hear from the community that
-            # contents should not be inherited.  If we don't hear anything for a while,
-            # eliminate the old commented out behavior.
-            # if not inherited and get_contents:
-            if get_contents:
-                info = info_association.info
-                if info:
-                    return template.get_widgets(trans.user, info.content)
-            else:
-                return template.get_widgets(trans.user)
-        return []
 
     def templates_dict(self, use_name=False):
         """
@@ -4449,78 +4378,6 @@ class FormDefinition(object, Dictifiable):
             if str(f['layout']) == str(grid_index):
                 gridfields[i] = f
         return gridfields
-
-    def get_widgets(self, user, contents={}, **kwd):
-        '''
-        Return the list of widgets that comprise a form definition,
-        including field contents if any.
-        '''
-        params = Params(kwd)
-        widgets = []
-        for index, field in enumerate(self.fields):
-            field_type = field['type']
-            if 'name' in field:
-                field_name = field['name']
-            else:
-                # Default to names like field_0, field_1, etc for backward compatibility
-                # (not sure this is necessary)...
-                field_name = 'field_%i' % index
-            # Determine the value of the field
-            if field_name in kwd:
-                # The form was submitted via refresh_on_change
-                if field_type == 'CheckboxField':
-                    value = CheckboxField.is_checked(params.get(field_name, False))
-                else:
-                    value = restore_text(params.get(field_name, ''))
-            elif contents:
-                try:
-                    # This field has a saved value.
-                    value = str(contents[field['name']])
-                except Exception:
-                    # If there was an error getting the saved value, we'll still
-                    # display the widget, but it will be empty.
-                    if field_type == 'AddressField':
-                        value = 'none'
-                    elif field_type == 'CheckboxField':
-                        # Since we do not have contents, set checkbox value to False
-                        value = False
-                    else:
-                        # Set other field types to empty string
-                        value = ''
-            else:
-                # If none of the above, then leave the field empty
-                if field_type == 'AddressField':
-                    value = 'none'
-                elif field_type == 'CheckboxField':
-                    # Since we do not have contents, set checkbox value to False
-                    value = False
-                else:
-                    # Set other field types to the default value of the field
-                    value = field.get('default', '')
-            # Create the field widget
-            field_widget = eval(field_type)(field_name)
-            if field_type in ['TextField', 'TextArea', 'PasswordField', 'CheckboxField']:
-                field_widget.value = value
-            elif field_type in ['AddressField', 'WorkflowField', 'WorkflowMappingField', 'HistoryField']:
-                field_widget.user = user
-                field_widget.value = value
-                field_widget.params = params
-            elif field_type == 'SelectField':
-                for option in field['selectlist']:
-                    if option == value:
-                        field_widget.add_option(option, option, selected=True)
-                    else:
-                        field_widget.add_option(option, option)
-            if field['required'] == 'required':
-                req = 'Required'
-            else:
-                req = 'Optional'
-            if field['helptext']:
-                helptext = '%s (%s)' % (field['helptext'], req)
-            else:
-                helptext = '(%s)' % req
-            widgets.append(dict(label=field['label'], widget=field_widget, helptext=helptext))
-        return widgets
 
 
 class FormDefinitionCurrent(object):
