@@ -219,7 +219,7 @@ class ToolValidator(object):
         # intended to help handle sample files that are in the manifest, but have been deleted from disk.
         sample_files, deleted_sample_files = self.get_list_of_copied_sample_files(repo, ctx, dir=work_dir)
         if sample_files:
-            self.app.config.tool_data_path = work_dir
+            # self.app.config.tool_data_path = work_dir
             if 'tool_data_table_conf.xml.sample' in sample_files:
                 # Load entries into the tool_data_tables if the tool requires them.
                 tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
@@ -256,7 +256,7 @@ class ToolValidator(object):
                                                                tool_config_filepath,
                                                                changeset_revision)
         if can_use_disk_file:
-            self.app.config.tool_data_path = work_dir
+            # self.app.config.tool_data_path = work_dir
             tool, valid, message, sample_files = \
                 self.handle_sample_files_and_load_tool_from_disk(repo_files_dir,
                                                                  repository_id,

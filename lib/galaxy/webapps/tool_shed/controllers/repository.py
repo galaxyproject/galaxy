@@ -2884,7 +2884,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         tool_lineage = []
         tool = None
         guid = None
-        original_tool_data_path = trans.app.config.tool_data_path
         revision_label = hg_util.get_revision_label(trans.app, repository, changeset_revision, include_date=False)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
         if repository_metadata:
@@ -2905,7 +2904,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                                                                  full_path_to_tool_config,
                                                                                  changeset_revision)
                             if can_use_disk_file:
-                                trans.app.config.tool_data_path = work_dir
                                 tool, valid, message, sample_files = \
                                     tv.handle_sample_files_and_load_tool_from_disk(repo_files_dir,
                                                                                    repository_id,
@@ -2937,7 +2935,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                                                                            selected_value=changeset_revision,
                                                                                            add_id_to_name=False,
                                                                                            downloadable=False)
-        trans.app.config.tool_data_path = original_tool_data_path
         return trans.fill_template("/webapps/tool_shed/repository/view_tool_metadata.mako",
                                    render_repository_actions_for=render_repository_actions_for,
                                    repository=repository,
