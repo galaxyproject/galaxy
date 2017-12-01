@@ -96,25 +96,24 @@ var Tours = Backbone.Collection.extend({
     model: TourItem
 });
 
-var giveTour = tour_id => {
-    var url = `${gxy_root}api/tours/${tour_id}`;
-    $.getJSON(url, data => {
-        // Set hooks for additional click and data entry actions.
-        var tourdata = hooked_tour_from_data(data);
+let startTourWithData = data => {
+        let hookedTourData = hooked_tour_from_data(data);
         sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
         // Store tour steps in sessionStorage to easily persist w/o hackery.
-        var tour = new Tour(
-            _.extend(
-                {
-                    steps: tourdata.steps
-                },
-                tour_opts
-            )
+        let tour = new Tour(
+            _.extend({steps: hookedTourData.steps},
+            tour_opts)
         );
-        // Always clean restart, since this is a new, explicit giveTour execution.
+        // Always clean restart, since this is a new, explicit execution.
         tour.init();
         tour.goTo(0);
         tour.restart();
+};
+
+var giveTourById = tour_id => {
+    var url = `${gxy_root}api/tours/${tour_id}`;
+    $.getJSON(url, data => {
+        startTourWithData(data);
     });
 };
 
@@ -168,7 +167,7 @@ var ToursView = Backbone.View.extend({
             )
             .on("click", ".tourItem", function(e) {
                 e.preventDefault();
-                giveTour($(this).data("tour.id"));
+                giveTourById($(this).data("tour.id"));
             })
             .on("click", ".tag-selector-button", e => {
                 var elem = $(e.target);
@@ -214,6 +213,6 @@ export function activeGalaxyTourRunner() {
 export default {
     ToursView: ToursView,
     hooked_tour_from_data: hooked_tour_from_data,
-    giveTour: giveTour,
+    giveTourById: giveTourById,
     activeGalaxyTourRunner: activeGalaxyTourRunner
 };
