@@ -99,23 +99,6 @@ class CheckboxField(BaseField):
         return d
 
 
-class HiddenField(BaseField):
-    """
-    A hidden field.
-    """
-
-    def __init__(self, name, value=None, **kwds):
-        super(HiddenField, self).__init__(name, value, **kwds)
-        self.name = name
-        self.value = value or ""
-
-    def to_dict(self):
-        d = super(HiddenField, self).to_dict()
-        d['type'] = 'hidden'
-        d['hidden'] = True
-        return d
-
-
 class SelectField(BaseField):
     """
     A select field.
