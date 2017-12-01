@@ -24,7 +24,7 @@ addons:
 
 install:
   - pip install tox
-  - if [ "$TOX_ENV" == "first_startup" ]; then bash -c "bash scripts/common_startup.sh && wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite && mv db_gx_rev_0127.sqlite database/universe.sqlite && bash manage_db.sh -c ./config/galaxy.ini.sample upgrade"; fi
+  - if [ "$TOX_ENV" == "first_startup" ]; then bash -c "bash scripts/common_startup.sh && wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite && mv db_gx_rev_0127.sqlite database/universe.sqlite && bash manage_db.sh -c ./config/galaxy.yml.sample upgrade"; fi
 
 script: tox -e $TOX_ENV
 

@@ -61,12 +61,15 @@ for rmfile in $RMFILES; do
     [ -f "$rmfile" ] && rm -f "$rmfile"
 done
 
-: ${GALAXY_CONFIG_FILE:=config/galaxy.ini}
+: ${GALAXY_CONFIG_FILE:=config/galaxy.yml}
+if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
+    GALAXY_CONFIG_FILE=config/galaxy.ini
+fi
 if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
     GALAXY_CONFIG_FILE=universe_wsgi.ini
 fi
 if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
-    GALAXY_CONFIG_FILE=config/galaxy.ini.sample
+    GALAXY_CONFIG_FILE=config/galaxy.yml.sample
 fi
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}

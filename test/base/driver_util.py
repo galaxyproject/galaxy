@@ -508,7 +508,7 @@ def build_galaxy_app(simple_kwargs):
     """
     log.info("Galaxy database connection: %s", simple_kwargs["database_connection"])
     simple_kwargs['global_conf'] = get_webapp_global_conf()
-    simple_kwargs['global_conf']['__file__'] = "config/galaxy.ini.sample"
+    simple_kwargs['global_conf']['__file__'] = "config/galaxy.yml.sample"
     simple_kwargs = load_app_properties(
         kwds=simple_kwargs
     )
@@ -532,7 +532,7 @@ def build_shed_app(simple_kwargs):
     """
     log.info("Tool shed database connection: %s", simple_kwargs["database_connection"])
     # TODO: Simplify global_conf to match Galaxy above...
-    simple_kwargs['__file__'] = 'tool_shed_wsgi.ini.sample'
+    simple_kwargs['__file__'] = 'tool_shed_wsgi.yml.sample'
     simple_kwargs['global_conf'] = get_webapp_global_conf()
 
     app = ToolshedUniverseApplication(**simple_kwargs)
