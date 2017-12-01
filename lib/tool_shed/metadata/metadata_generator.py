@@ -322,6 +322,8 @@ class MetadataGenerator(object):
             metadata_dict = {}
         readme_files = []
         invalid_tool_configs = []
+        old_tool_data_tables = self.app.tool_data_tables
+        old_tool_data_table_path = self.app.config.tool_data_path
         if self.resetting_all_metadata_on_repository:
             if not self.relative_install_dir:
                 raise Exception("The value of self.repository.repo_path must be set when resetting all metadata on a repository.")
@@ -477,8 +479,12 @@ class MetadataGenerator(object):
                 self.invalid_file_tups.append((rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME, error_message))
         if invalid_tool_configs:
             metadata_dict['invalid_tools'] = invalid_tool_configs
+        else:
+            pass
         self.metadata_dict = metadata_dict
         basic_util.remove_dir(work_dir)
+        self.app.tool_data_tables = old_tool_data_tables
+        self.app.config.tool_data_path = old_tool_data_table_path
 
     def generate_package_dependency_metadata(self, elem, valid_tool_dependencies_dict, invalid_tool_dependencies_dict):
         """

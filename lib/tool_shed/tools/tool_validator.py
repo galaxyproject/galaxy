@@ -4,6 +4,8 @@ import os
 import tempfile
 
 from galaxy.tools import (
+    create_tool_from_source,
+    get_tool_source,
     parameters,
     Tool
 )
@@ -202,13 +204,14 @@ class ToolValidator(object):
         """
         message = ''
         sample_files = self.copy_disk_sample_files_to_dir(repo_files_dir, work_dir)
+        tool_data_table_config = None
         if sample_files:
             if 'tool_data_table_conf.xml.sample' in sample_files:
                 # Load entries into the tool_data_tables if the tool requires them.
                 tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
                 error, message = self.stdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
                                                                                    persist=False)
-        tool, valid, message2 = self.load_tool_from_config(repository_id, tool_config_filepath)
+        tool, valid, message2 = self.load_tool_from_config(repository_id, tool_config_filepath, tool_data_table_config)
         message = self.concat_messages(message, message2)
         return tool, valid, message, sample_files
 
@@ -244,7 +247,6 @@ class ToolValidator(object):
         the received valid changeset revision and the first changeset revision in the repository,
         searching backwards.
         """
-        original_tool_data_path = self.app.config.tool_data_path
         repository = repository_util.get_repository_in_tool_shed(self.app, repository_id)
         repo_files_dir = repository.repo_path(self.app)
         repo = hg_util.get_repo_for_repository(self.app, repository=None, repo_path=repo_files_dir, create=False)
@@ -286,14 +288,25 @@ class ToolValidator(object):
                                                                        tool_config_filename,
                                                                        work_dir)
         basic_util.remove_dir(work_dir)
-        self.app.config.tool_data_path = original_tool_data_path
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
         self.stdtm.reset_tool_data_tables()
         return repository, tool, message
 
-    def load_tool_from_config(self, repository_id, full_path):
+    def load_tool_from_config(self, repository_id, full_path, tool_data_table_config=None):
+        tool_source = get_tool_source(
+            full_path,
+            enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
+            tool_location_fetcher=ToolLocationFetcher(),
+        )
+        old_tool_data_tables = self.app.tool_data_tables
+        old_tool_data_path = self.app.config.tool_data_path
+        tool_data_path = os.path.dirname(full_path)
+        self.app.config.tool_data_path = tool_data_path
         try:
-            tool = self.app.toolbox.load_tool(full_path, repository_id=repository_id, allow_code_files=False, use_cached=False)
+            self.app.tool_data_tables = ToolDataTableManager(tool_data_path)
+            self.app.tool_data_tables.add_new_entries_from_config_file(full_path, tool_data_path=tool_data_path, shed_tool_data_table_config='')
+            tool = create_tool_from_source(config_file=full_path, app=self.app, tool_source=tool_source, repository_id=repository_id)
+            # tool = self.app.toolbox.load_tool(full_path, repository_id=repository_id, allow_code_files=False, use_cached=False)
             valid = True
             error_message = None
         except KeyError as e:
@@ -303,6 +316,7 @@ class ToolValidator(object):
             error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
             error_message += 'this error.  '
         except Exception as e:
+            raise
             tool = None
             valid = False
             error_message = str(e)
