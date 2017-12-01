@@ -72,7 +72,8 @@ class ToolValidator(object):
                         if sample_tool_data_table_conf:
                             error, correction_msg = \
                                 self.stdtm.handle_sample_tool_data_table_conf_file(sample_tool_data_table_conf,
-                                                                                  persist=False)
+                                                                                  persist=False,
+                                                                                  tool_data_tables=tool.app.tool_data_tables)
                             if error:
                                 invalid_files_and_errors_tups.append(('tool_data_table_conf.xml.sample', correction_msg))
                         else:
@@ -82,9 +83,9 @@ class ToolValidator(object):
                             invalid_tup = (tool_config_name, correction_msg)
                             if invalid_tup not in invalid_files_and_errors_tups:
                                 invalid_files_and_errors_tups.append(invalid_tup)
-                    if options.index_file or options.missing_index_file:
+                    if options.index_file or options.tool_data_table and options.tool_data_table.missing_index_file:
                         # Make sure the repository contains the required xxx.loc.sample file.
-                        index_file = options.index_file or options.missing_index_file
+                        index_file = options.index_file or options.tool_data_table.missing_index_file
                         index_file_name = basic_util.strip_path(index_file)
                         sample_found = False
                         for sample_file in sample_files:

@@ -90,7 +90,7 @@ class ShedToolDataTableManager(object):
             self.reset_tool_data_tables()
         return repository_tools_tups
 
-    def handle_sample_tool_data_table_conf_file(self, filename, persist=False):
+    def handle_sample_tool_data_table_conf_file(self, filename, persist=False, tool_data_tables=None):
         """
         Parse the incoming filename and add new entries to the in-memory
         self.app.tool_data_tables dictionary.  If persist is True (should
@@ -100,8 +100,9 @@ class ShedToolDataTableManager(object):
         """
         error = False
         message = ''
+        tdtm = tool_data_tables or self.tdtm
         try:
-            new_table_elems, message = self.tdtm \
+            new_table_elems, message = tdtm \
                 .add_new_entries_from_config_file(config_filename=filename,
                                                   tool_data_path=self.app.config.shed_tool_data_path,
                                                   shed_tool_data_table_config=self.app.config.shed_tool_data_table_config,
