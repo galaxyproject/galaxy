@@ -108,34 +108,6 @@ class SelectField(BaseField):
     def add_option(self, text, value, selected=False):
         self.options.append((text, value, selected))
 
-    def get_selected(self, return_label=False, return_value=False, multi=False):
-        '''
-        Return the currently selected option's label, value or both as a tuple.  For
-        multi-select lists, a list is returned.
-        '''
-        if multi:
-            selected_options = []
-        for label, value, selected in self.options:
-            if selected:
-                if return_label and return_value:
-                    if multi:
-                        selected_options.append((label, value))
-                    else:
-                        return (label, value)
-                elif return_label:
-                    if multi:
-                        selected_options.append(label)
-                    else:
-                        return label
-                elif return_value:
-                    if multi:
-                        selected_options.append(value)
-                    else:
-                        return value
-        if multi:
-            return selected_options
-        return None
-
     def to_dict(self):
         d = super(SelectField, self).to_dict()
         d['type'] = 'select'
