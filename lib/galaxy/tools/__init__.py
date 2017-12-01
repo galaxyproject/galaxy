@@ -309,11 +309,9 @@ class ToolBox(BaseGalaxyToolBox):
     def __build_tool_version_select_field(self, tools, tool_id, set_selected):
         """Build a SelectField whose options are the ids for the received list of tools."""
         options = []
-        refresh_on_change_values = []
         for tool in tools:
             options.insert(0, (tool.version, tool.id))
-            refresh_on_change_values.append(tool.id)
-        select_field = SelectField(name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values)
+        select_field = SelectField(name='tool_id')
         for option_tup in options:
             selected = set_selected and option_tup[1] == tool_id
             if selected:
