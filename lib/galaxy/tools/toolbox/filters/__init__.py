@@ -56,7 +56,8 @@ class FilterFactory(object):
         for filter in filters:
             if validate is None or filter in validate or filter in self.default_filters:
                 filter_function = self.build_filter_function(filter)
-                toolbox_filters[key].append(filter_function)
+                if filter_function is not None:
+                    toolbox_filters[key].append(filter_function)
             else:
                 log.warning("Refusing to load %s filter '%s' which is not defined in config", key, filter)
         return toolbox_filters
