@@ -581,14 +581,6 @@ class Configuration(object):
         # Store advanced job management config
         self.job_handlers = [x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',')]
         self.default_job_handlers = [x.strip() for x in kwargs.get('default_job_handlers', ','.join(self.job_handlers)).split(',')]
-        # Galaxy messaging (AMQP) configuration options
-        self.amqp = {}
-        try:
-            amqp_config = global_conf_parser.items("galaxy_amqp")
-        except configparser.NoSectionError:
-            amqp_config = {}
-        for k, v in amqp_config:
-            self.amqp[k] = v
         # Galaxy internal control queue configuration.
         # If specified in universe, use it, otherwise we use whatever 'real'
         # database is specified.  Lastly, we create and use new sqlite database
