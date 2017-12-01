@@ -87,7 +87,7 @@ class FilterFactory(object):
             module = sys.modules[full_module_name]
             if hasattr(module, function_name):
                 return getattr(module, function_name)
-        log.warning("Failed to load module for '%s'.", function_name, exc_info=True)
+        log.warning("Failed to load module for '%s.%s'.", module_name, function_name, exc_info=True)
 
 
 # Stock Filter Functions
