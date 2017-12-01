@@ -86,14 +86,6 @@ class CheckboxField(BaseField):
         super(CheckboxField, self).__init__(name, value, **kwds)
         self.name = name
         self.checked = (checked is True) or (isinstance(checked, string_types) and (checked.lower() in ("yes", "true", "on")))
-        self.refresh_on_change = refresh_on_change
-        self.refresh_on_change_values = refresh_on_change_values or []
-        if self.refresh_on_change:
-            self.refresh_on_change_text = ' refresh_on_change="true" '
-            if self.refresh_on_change_values:
-                self.refresh_on_change_text = '%s refresh_on_change_values="%s" ' % (self.refresh_on_change_text, ",".join(self.refresh_on_change_values))
-        else:
-            self.refresh_on_change_text = ''
 
     @staticmethod
     def is_checked(value):
