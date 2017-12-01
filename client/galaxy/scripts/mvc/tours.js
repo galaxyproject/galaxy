@@ -4,7 +4,10 @@ import _l from "utils/localization";
  *  rendering a tour menu.
  */
 
-import * as BootstrapTour from "libs/bootstrap-tour";
+// bootstrap-tour configures a window.Tour object; keep a local ref.
+import "libs/bootstrap-tour";
+let Tour = window.Tour;
+
 var gxy_root = typeof Galaxy === "undefined" ? "/" : Galaxy.root;
 
 var tourpage_template = `<h2>Galaxy Tours</h2>
@@ -211,7 +214,6 @@ export function activeGalaxyTourRunner() {
 export default {
     ToursView: ToursView,
     hooked_tour_from_data: hooked_tour_from_data,
-    tour_opts: tour_opts,
     giveTour: giveTour,
     activeGalaxyTourRunner: activeGalaxyTourRunner
 };
