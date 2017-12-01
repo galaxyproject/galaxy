@@ -2667,14 +2667,6 @@ class Library(object, Dictifiable, HasName):
             active_folders.extend(self.get_active_folders(active_folder, folders))
         return sort_by_attr(active_folders, 'id')
 
-    def get_info_association(self, restrict=False, inherited=False):
-        if self.info_association:
-            if not inherited or self.info_association[0].inheritable:
-                return self.info_association[0], inherited
-            else:
-                return None, inherited
-        return None, inherited
-
     def get_access_roles(self, trans):
         roles = []
         for lp in self.actions:
@@ -2705,25 +2697,6 @@ class LibraryFolder(object, Dictifiable, HasName):
         folder.order_id = self.item_count
         self.item_count += 1
 
-    def get_info_association(self, restrict=False, inherited=False):
-        # If restrict is True, we will return this folder's info_association, not inheriting.
-        # If restrict is False, we'll return the next available info_association in the
-        # inheritable hierarchy if it is "inheritable".  True is also returned if the
-        # info_association was inherited and False if not.  This enables us to eliminate
-        # displaying any contents of the inherited template.
-        if self.info_association:
-            if not inherited or self.info_association[0].inheritable:
-                return self.info_association[0], inherited
-            else:
-                return None, inherited
-        if restrict:
-            return None, inherited
-        if self.parent:
-            return self.parent.get_info_association(inherited=True)
-        if self.library_root:
-            return self.library_root[0].get_info_association(inherited=True)
-        return None, inherited
-
     @property
     def activatable_library_datasets(self):
         # This needs to be a list
@@ -2731,13 +2704,6 @@ class LibraryFolder(object, Dictifiable, HasName):
 
     def to_dict(self, view='collection', value_mapper=None):
         rval = super(LibraryFolder, self).to_dict(view=view, value_mapper=value_mapper)
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            if inherited:
-                template = info_association.template.current.latest_form
-            else:
-                template = info_association.template
-            rval['data_template'] = template.name
         rval['library_path'] = self.library_path
         rval['parent_library_id'] = self.parent_library.id
         return rval
@@ -2811,15 +2777,6 @@ class LibraryDataset(object):
         # display in other objects, we can't use the simpler method used by
         # other model classes.
         ldda = self.library_dataset_dataset_association
-        template_data = {}
-        for temp_info in ldda.info_association:
-            template = temp_info.template
-            content = temp_info.info.content
-            tmp_dict = {}
-            for field in template.fields:
-                tmp_dict[field['label']] = content[field['name']]
-            template_data[template.name] = tmp_dict
-
         rval = dict(id=self.id,
                     ldda_id=ldda.id,
                     parent_library_id=self.folder.parent_library.id,
@@ -2837,8 +2794,7 @@ class LibraryDataset(object):
                     genome_build=ldda.dbkey,
                     misc_info=ldda.info,
                     misc_blurb=ldda.blurb,
-                    peek=(lambda ldda: ldda.display_peek() if ldda.peek and ldda.peek != 'no peek' else None)(ldda),
-                    template_data=template_data)
+                    peek=(lambda ldda: ldda.display_peek() if ldda.peek and ldda.peek != 'no peek' else None)(ldda))
         if ldda.dataset.uuid is None:
             rval['uuid'] = None
         else:
@@ -2943,19 +2899,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName):
     def has_manage_permissions_roles(self, trans):
         return self.dataset.has_manage_permissions_roles(trans)
 
-    def get_info_association(self, restrict=False, inherited=False):
-        # If restrict is True, we will return this ldda's info_association whether it
-        # exists or not ( in which case None will be returned ).  If restrict is False,
-        # we'll return the next available info_association in the inheritable hierarchy.
-        # True is also returned if the info_association was inherited, and False if not.
-        # This enables us to eliminate displaying any contents of the inherited template.
-        # SM: Accessing self.info_association can cause a query to be emitted
-        if self.info_association:
-            return self.info_association[0], inherited
-        if restrict:
-            return None, inherited
-        return self.library_dataset.folder.get_info_association(inherited=True)
-
     def to_dict(self, view='collection'):
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
@@ -2999,28 +2942,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName):
                 val = getattr(ldda.datatype, name)
             rval['metadata_' + name] = val
         return rval
-
-    def templates_dict(self, use_name=False):
-        """
-        Returns a dict of template info
-        """
-        # TODO: Should have a method that allows names and labels to be returned together in a structured way
-        template_data = {}
-        for temp_info in self.info_association:
-            template = temp_info.template
-            content = temp_info.info.content
-            tmp_dict = {}
-            for field in template.fields:
-                if use_name:
-                    name = field['name']
-                else:
-                    name = field['label']
-                tmp_dict[name] = content.get(field['name'])
-            template_data[template.name] = tmp_dict
-        return template_data
-
-    def templates_json(self, use_name=False):
-        return json.dumps(self.templates_dict(use_name=use_name))
 
 
 class ExtendedMetadata(object):
