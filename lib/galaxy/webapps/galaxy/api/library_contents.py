@@ -300,18 +300,12 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         roles = kwd.get('roles', '')
         is_admin = trans.user_is_admin()
         current_user_roles = trans.get_current_user_roles()
-        widgets = []
-        info_association, inherited = None, None
-        template_id = "None"
         if replace_id not in ['', None, 'None']:
             replace_dataset = trans.sa_session.query(trans.app.model.LibraryDataset).get(trans.security.decode_id(replace_id))
             self._check_access(trans, is_admin, replace_dataset, current_user_roles)
             self._check_modify(trans, is_admin, replace_dataset, current_user_roles)
             library = replace_dataset.folder.parent_library
             folder = replace_dataset.folder
-            info_association, inherited = replace_dataset.library_dataset_dataset_association.get_info_association()
-            if info_association and (not(inherited) or info_association.inheritable):
-                widgets = replace_dataset.library_dataset_dataset_association.get_template_widgets(trans)
             # The name is stored - by the time the new ldda is created, replace_dataset.name
             # will point to the new ldda, not the one it's replacing.
             if not last_used_build:
@@ -342,56 +336,9 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         if error:
             return 400, message
         else:
-            # See if we have any inherited templates.
-            if not info_association:
-                info_association, inherited = folder.get_info_association(inherited=True)
-            if info_association and info_association.inheritable:
-                template_id = str(info_association.template.id)
-                widgets = folder.get_template_widgets(trans, get_contents=True)
-                processed_widgets = []
-                # The list of widgets may include an AddressField which we need to save if it is new
-                for index, widget_dict in enumerate(widgets):
-                    widget = widget_dict['widget']
-                    if isinstance(widget, AddressField):
-                        value = kwd.get(widget.name, '')
-                        if value == 'new':
-                            if self.field_param_values_ok(widget.name, 'AddressField', **kwd):
-                                # Save the new address
-                                address = trans.app.model.UserAddress(user=trans.user)
-                                self.save_widget_field(trans, address, widget.name, **kwd)
-                                widget.value = str(address.id)
-                                widget_dict['widget'] = widget
-                                processed_widgets.append(widget_dict)
-                                # It is now critical to update the value of 'field_%i', replacing the string
-                                # 'new' with the new address id.  This is necessary because the upload_dataset()
-                                # method below calls the handle_library_params() method, which does not parse the
-                                # widget fields, it instead pulls form values from kwd.  See the FIXME comments in the
-                                # handle_library_params() method, and the CheckboxField code in the next conditional.
-                                kwd[widget.name] = str(address.id)
-                            else:
-                                # The invalid address won't be saved, but we cannot display error
-                                # messages on the upload form due to the ajax upload already occurring.
-                                # When we re-engineer the upload process ( currently under way ), we
-                                # will be able to check the form values before the ajax upload occurs
-                                # in the background.  For now, we'll do nothing...
-                                pass
-                    elif isinstance(widget, CheckboxField):
-                        # We need to check the value from kwd since util.Params would have munged the list if
-                        # the checkbox is checked.
-                        value = kwd.get(widget.name, '')
-                        if CheckboxField.is_checked(value):
-                            widget.value = 'true'
-                            widget_dict['widget'] = widget
-                            processed_widgets.append(widget_dict)
-                            kwd[widget.name] = 'true'
-                    else:
-                        processed_widgets.append(widget_dict)
-                widgets = processed_widgets
             created_outputs_dict = self._upload_dataset(trans,
                                                         library_id=trans.security.encode_id(library.id),
                                                         folder_id=trans.security.encode_id(folder.id),
-                                                        template_id=template_id,
-                                                        widgets=widgets,
                                                         replace_dataset=replace_dataset,
                                                         **kwd)
             if created_outputs_dict:
