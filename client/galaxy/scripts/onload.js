@@ -19,12 +19,12 @@ import layout_modal from "layout/modal";
 _.extend(window, layout_modal);
 import async_save_text from "utils/async-save-text";
 window.async_save_text = async_save_text;
-import POPUPMENU from "ui/popupmenu";
-window.make_popupmenu = POPUPMENU.make_popupmenu;
-window.make_popup_menus = POPUPMENU.make_popup_menus;
+import Popupmenu from "ui/popupmenu";
+window.make_popupmenu = Popupmenu.make_popupmenu;
+window.make_popup_menus = Popupmenu.make_popup_menus;
 import init_tag_click_function from "ui/autocom_tagging";
 window.init_tag_click_function = init_tag_click_function;
-import TOURS from "mvc/tours";
+import Tours from "mvc/tours";
 // console.debug( 'galaxy globals loaded' );
 
 // ============================================================================
@@ -149,7 +149,7 @@ $(document).ready(() => {
         $("[title]").tooltip();
     }
     // Make popup menus.
-    POPUPMENU.make_popup_menus();
+    Popupmenu.make_popup_menus();
 
     // Replace big selects.
     replace_big_select_inputs(20, 1500);
@@ -173,7 +173,7 @@ $(document).ready(() => {
         return anchor;
     });
 
-    TOURS.activeGalaxyTourRunner();
+    Tours.activeGalaxyTourRunner();
 
     function onloadWebhooks() {
         // Wait until Galaxy.config is loaded.
