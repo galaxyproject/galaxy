@@ -4,7 +4,6 @@ Galaxy data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
-import codecs
 import errno
 import json
 import logging
@@ -36,7 +35,6 @@ from galaxy.util import (directory_hash_id, Params, ready_name_for_url,
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_secure_hash
-from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      PasswordField, SelectField, TextArea, TextField, WorkflowField,
@@ -114,6 +112,19 @@ class HasName:
         name = self.name
         name = unicodify(name, 'utf-8')
         return name
+
+
+class UsesCreateAndUpdateTime:
+
+    @property
+    def seconds_since_updated(self):
+        update_time = self.update_time or galaxy.model.orm.now.now()  # In case not yet flushed
+        return (galaxy.model.orm.now.now() - update_time).total_seconds()
+
+    @property
+    def seconds_since_created(self):
+        create_time = self.create_time or galaxy.model.orm.now.now()  # In case not yet flushed
+        return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
 class JobLike:
@@ -423,7 +434,7 @@ class TaskMetricNumeric(BaseJobMetric):
     pass
 
 
-class Job(object, JobLike, Dictifiable):
+class Job(object, JobLike, UsesCreateAndUpdateTime, Dictifiable):
     dict_collection_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time']
     dict_element_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time']
 
@@ -804,10 +815,6 @@ class Job(object, JobLike, Dictifiable):
             config_value = default
         return config_value
 
-    @property
-    def seconds_since_update(self):
-        return (galaxy.model.orm.now.now() - self.update_time).total_seconds()
-
 
 class Task(object, JobLike):
     """
@@ -1041,6 +1048,33 @@ class ImplicitlyCreatedDatasetCollectionInput(object):
     def __init__(self, name, input_dataset_collection):
         self.name = name
         self.input_dataset_collection = input_dataset_collection
+
+
+class ImplicitCollectionJobs(object):
+
+    populated_states = Bunch(
+        NEW='new',  # New implicit jobs object, unpopulated job associations
+        OK='ok',  # Job associations are set and fixed.
+        FAILED='failed',  # There were issues populating job associations, object is in error.
+    )
+
+    def __init__(
+        self,
+        id=None,
+        populated_state=None,
+    ):
+        self.id = id
+        self.populated_state = populated_state or ImplicitCollectionJobs.populated_states.NEW
+
+    @property
+    def job_list(self):
+        return [icjja.job for icjja in self.jobs]
+
+
+class ImplicitCollectionJobsJobAssociation(object):
+
+    def __init__(self):
+        pass
 
 
 class PostJobAction(object):
@@ -1857,15 +1891,7 @@ class Dataset(StorableObject):
     def mark_deleted(self):
         self.deleted = True
 
-    def is_multi_byte(self):
-        if not self.has_data():
-            return False
-        try:
-            return is_multi_byte(codecs.open(self.file_name, 'r', 'utf-8').read(100))
-        except UnicodeDecodeError:
-            return False
     # FIXME: sqlalchemy will replace this
-
     def _delete(self):
         """Remove the file that corresponds to this data"""
         self.object_store.delete(self)
@@ -2065,10 +2091,6 @@ class DatasetInstance(object):
         except AttributeError:
             # extension is None
             return 'data'
-
-    def is_multi_byte(self):
-        """Data consists of multi-byte characters"""
-        return self.dataset.is_multi_byte()
 
     def set_peek(self):
         return self.datatype.set_peek(self)
@@ -3207,6 +3229,15 @@ class DatasetCollection(object, Dictifiable, UsesAnnotations):
         self.populated_state = DatasetCollection.populated_states.FAILED
         self.populated_state_message = message
 
+    def finalize(self):
+        # All jobs have written out their elements - everything should be populated
+        # but might not be - check that second case! (TODO)
+        self.mark_as_populated()
+        if self.has_subcollections:
+            # THIS IS WRONG - SHOULD ONLY BE TO THE DEPTH OF THE MAP OVER.
+            for element in self.elements:
+                element.child_collection.finalize()
+
     @property
     def dataset_instances(self):
         instances = []
@@ -3307,6 +3338,7 @@ class DatasetCollectionInstance(object, HasName):
             populated=self.populated,
             populated_state=self.collection.populated_state,
             populated_state_message=self.collection.populated_state_message,
+            element_count=self.collection.element_count,
             type="collection",  # contents type (distinguished from file or folder (in case of library))
         )
 
@@ -3382,6 +3414,19 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         return ((type_coerce(cls.content_type, types.Unicode) + u'-' +
                  type_coerce(cls.id, types.Unicode)).label('type_id'))
 
+    @property
+    def job_source_type(self):
+        if self.implicit_collection_jobs_id:
+            return "ImplicitCollectionJobs"
+        elif self.job_id:
+            return "Job"
+        else:
+            return None
+
+    @property
+    def job_source_id(self):
+        return self.implicit_collection_jobs_id or self.job_id
+
     def to_hda_representative(self, multiple=False):
         rval = []
         for dataset in self.collection.dataset_elements:
@@ -3399,6 +3444,8 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
             history_content_type=self.history_content_type,
             visible=self.visible,
             deleted=self.deleted,
+            job_source_id=self.job_source_id,
+            job_source_type=self.job_source_type,
             **self._base_to_dict(view=view)
         )
 
@@ -3430,6 +3477,11 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
             name=self.name,
             copied_from_history_dataset_collection_association=self,
         )
+        if self.implicit_collection_jobs_id:
+            hdca.implicit_collection_jobs_id = self.implicit_collection_jobs_id
+        elif self.job_id:
+            hdca.job_id = self.job_id
+
         collection_copy = self.collection.copy(
             destination=hdca,
             element_destination=element_destination,
@@ -3474,6 +3526,8 @@ class DatasetCollectionElement(object, Dictifiable):
     dict_collection_visible_keys = ['id', 'element_type', 'element_index', 'element_identifier']
     dict_element_visible_keys = ['id', 'element_type', 'element_index', 'element_identifier']
 
+    UNINITIALIZED_ELEMENT = object()
+
     def __init__(
         self,
         id=None,
@@ -3488,7 +3542,7 @@ class DatasetCollectionElement(object, Dictifiable):
             self.ldda = element
         elif isinstance(element, DatasetCollection):
             self.child_collection = element
-        else:
+        elif element != self.UNINITIALIZED_ELEMENT:
             raise AttributeError('Unknown element type provided: %s' % type(element))
 
         self.id = id
@@ -3506,7 +3560,7 @@ class DatasetCollectionElement(object, Dictifiable):
             # TOOD: Rename element_type to element_type.
             return "dataset_collection"
         else:
-            raise Exception("Unknown element instance type")
+            return None
 
     @property
     def is_collection(self):
@@ -3521,7 +3575,7 @@ class DatasetCollectionElement(object, Dictifiable):
         elif self.child_collection:
             return self.child_collection
         else:
-            raise Exception("Unknown element instance type")
+            return None
 
     @property
     def dataset_instance(self):
@@ -3951,7 +4005,7 @@ class StoredWorkflowMenuEntry(object):
         self.order_index = None
 
 
-class WorkflowInvocation(object, Dictifiable):
+class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
     dict_collection_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
     dict_element_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
     states = Bunch(
@@ -4026,17 +4080,16 @@ class WorkflowInvocation(object, Dictifiable):
         step_invocations = {}
         for invocation_step in self.steps:
             step_id = invocation_step.workflow_step_id
-            if step_id not in step_invocations:
-                step_invocations[step_id] = []
-            step_invocations[step_id].append(invocation_step)
+            assert step_id not in step_invocations
+            step_invocations[step_id] = invocation_step
         return step_invocations
 
-    def step_invocations_for_step_id(self, step_id):
-        step_invocations = []
+    def step_invocation_for_step_id(self, step_id):
+        target_invocation_step = None
         for invocation_step in self.steps:
             if step_id == invocation_step.workflow_step_id:
-                step_invocations.append(invocation_step)
-        return step_invocations
+                target_invocation_step = invocation_step
+        return target_invocation_step
 
     @staticmethod
     def poll_active_workflow_ids(
@@ -4062,6 +4115,24 @@ class WorkflowInvocation(object, Dictifiable):
         # is relatively intutitive.
         return [wid for wid in query.all()]
 
+    def add_output(self, workflow_output, step, output_object):
+        if output_object.history_content_type == "dataset":
+            output_assoc = WorkflowInvocationOutputDatasetAssociation()
+            output_assoc.workflow_invocation = self
+            output_assoc.workflow_output = workflow_output
+            output_assoc.workflow_step = step
+            output_assoc.dataset = output_object
+            self.output_datasets.append(output_assoc)
+        elif output_object.history_content_type == "dataset_collection":
+            output_assoc = WorkflowInvocationOutputDatasetCollectionAssociation()
+            output_assoc.workflow_invocation = self
+            output_assoc.workflow_output = workflow_output
+            output_assoc.workflow_step = step
+            output_assoc.dataset_collection = output_object
+            self.output_dataset_collections.append(output_assoc)
+        else:
+            raise Exception("Uknown output type encountered")
+
     def to_dict(self, view='collection', value_mapper=None, step_details=False):
         rval = super(WorkflowInvocation, self).to_dict(view=view, value_mapper=value_mapper)
         if view == 'element':
@@ -4077,17 +4148,43 @@ class WorkflowInvocation(object, Dictifiable):
             inputs = {}
             for step in self.steps:
                 if step.workflow_step.type == 'tool':
-                    for step_input in step.workflow_step.input_connections:
-                        output_step_type = step_input.output_step.type
-                        if output_step_type in ['data_input', 'data_collection_input']:
-                            src = "hda" if output_step_type == 'data_input' else 'hdca'
-                            for job_input in step.job.input_datasets:
-                                if job_input.name == step_input.input_name:
-                                    inputs[str(step_input.output_step.order_index)] = {
-                                        "id": job_input.dataset_id, "src": src,
-                                        "uuid" : str(job_input.dataset.dataset.uuid) if job_input.dataset.dataset.uuid is not None else None
-                                    }
+                    for job in step.jobs:
+                        for step_input in step.workflow_step.input_connections:
+                            output_step_type = step_input.output_step.type
+                            if output_step_type in ['data_input', 'data_collection_input']:
+                                src = "hda" if output_step_type == 'data_input' else 'hdca'
+                                for job_input in job.input_datasets:
+                                    if job_input.name == step_input.input_name:
+                                        inputs[str(step_input.output_step.order_index)] = {
+                                            "id": job_input.dataset_id, "src": src,
+                                            "uuid" : str(job_input.dataset.dataset.uuid) if job_input.dataset.dataset.uuid is not None else None
+                                        }
             rval['inputs'] = inputs
+
+            outputs = {}
+            for output_assoc in self.output_datasets:
+                label = output_assoc.workflow_output.label
+                if not label:
+                    continue
+
+                outputs[label] = {
+                    'src': 'hda',
+                    'id': output_assoc.dataset_id,
+                }
+
+            output_collections = {}
+            for output_assoc in self.output_dataset_collections:
+                label = output_assoc.workflow_output.label
+                if not label:
+                    continue
+
+                output_collections[label] = {
+                    'src': 'hdca',
+                    'id': output_assoc.dataset_collection_id,
+                }
+
+            rval['outputs'] = outputs
+            rval['output_collections'] = output_collections
         return rval
 
     def update(self):
@@ -4120,11 +4217,6 @@ class WorkflowInvocation(object, Dictifiable):
                 return True
         return False
 
-    @property
-    def seconds_since_created(self):
-        create_time = self.create_time or galaxy.model.orm.now.now()  # In case not flushed yet
-        return (galaxy.model.orm.now.now() - create_time).total_seconds()
-
 
 class WorkflowInvocationToSubworkflowInvocationAssociation(object, Dictifiable):
     dict_collection_visible_keys = ['id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id']
@@ -4132,34 +4224,81 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(object, Dictifiable):
 
 
 class WorkflowInvocationStep(object, Dictifiable):
-    dict_collection_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'action']
-    dict_element_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'action']
+    dict_collection_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'state', 'action']
+    dict_element_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'state', 'action']
+    states = Bunch(
+        NEW='new',  # Brand new workflow invocation step
+        READY='ready',  # Workflow invocation step ready for another iteration of scheduling.
+        SCHEDULED='scheduled',  # Workflow invocation step has been scheduled.
+        # CANCELLED='cancelled',  TODO: implement and expose
+        # FAILED='failed',  TODO: implement and expose
+    )
 
     def update(self):
         self.workflow_invocation.update()
+
+    @property
+    def is_new(self):
+        return self.state == self.states.NEW
+
+    def add_output(self, output_name, output_object):
+        if output_object.history_content_type == "dataset":
+            output_assoc = WorkflowInvocationStepOutputDatasetAssociation()
+            output_assoc.workflow_invocation_step = self
+            output_assoc.dataset = output_object
+            output_assoc.output_name = output_name
+            self.output_datasets.append(output_assoc)
+        elif output_object.history_content_type == "dataset_collection":
+            output_assoc = WorkflowInvocationStepOutputDatasetCollectionAssociation()
+            output_assoc.workflow_invocation_step = self
+            output_assoc.dataset_collection = output_object
+            output_assoc.output_name = output_name
+            self.output_dataset_collections.append(output_assoc)
+        else:
+            raise Exception("Uknown output type encountered")
+
+    @property
+    def jobs(self):
+        if self.job:
+            return [self.job]
+        elif self.implicit_collection_jobs:
+            return self.implicit_collection_jobs.job_list
+        else:
+            return []
 
     def to_dict(self, view='collection', value_mapper=None):
         rval = super(WorkflowInvocationStep, self).to_dict(view=view, value_mapper=value_mapper)
         rval['order_index'] = self.workflow_step.order_index
         rval['workflow_step_label'] = self.workflow_step.label
         rval['workflow_step_uuid'] = str(self.workflow_step.uuid)
-        rval['state'] = self.job.state if self.job is not None else None
-        if self.job is not None and view == 'element':
-            output_dict = {}
-            for i in self.job.output_datasets:
-                if i.dataset is not None:
-                    output_dict[i.name] = {
-                        "id" : i.dataset.id, "src" : "hda",
-                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
-                    }
-            for i in self.job.output_library_datasets:
-                if i.dataset is not None:
-                    output_dict[i.name] = {
-                        "id" : i.dataset.id, "src" : "ldda",
-                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
-                    }
-            rval['outputs'] = output_dict
+        # Following no longer makes sense...
+        # rval['state'] = self.job.state if self.job is not None else None
+        if view == 'element':
+            outputs = {}
+            for output_assoc in self.output_datasets:
+                name = output_assoc.output_name
+                outputs[name] = {
+                    'src': 'hda',
+                    'id': output_assoc.dataset.id,
+                    'uuid': str(output_assoc.dataset.dataset.uuid) if output_assoc.dataset.dataset.uuid is not None else None
+                }
+
+            output_collections = {}
+            for output_assoc in self.output_dataset_collections:
+                name = output_assoc.output_name
+                output_collections[name] = {
+                    'src': 'hdca',
+                    'id': output_assoc.dataset_collection.id,
+                }
+
+            rval['outputs'] = outputs
+            rval['output_collections'] = output_collections
         return rval
+
+
+class WorkflowInvocationStepJobAssociation(object, Dictifiable):
+    dict_collection_visible_keys = ('id', 'job_id', 'workflow_invocation_step_id')
+    dict_element_visible_keys = ('id', 'job_id', 'workflow_invocation_step_id')
 
 
 class WorkflowRequest(object, Dictifiable):
@@ -4214,6 +4353,26 @@ class WorkflowRequestInputStepParmeter(object, Dictifiable):
     """ Workflow step parameter inputs.
     """
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'parameter_value']
+
+
+class WorkflowInvocationOutputDatasetAssociation(object, Dictifiable):
+    """Represents links to output datasets for the workflow."""
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_id', 'name']
+
+
+class WorkflowInvocationOutputDatasetCollectionAssociation(object, Dictifiable):
+    """Represents links to output dataset collections for the workflow."""
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
+
+
+class WorkflowInvocationStepOutputDatasetAssociation(object, Dictifiable):
+    """Represents links to output datasets for the workflow."""
+    dict_collection_visible_keys = ['id', 'workflow_invocation_step_id', 'dataset_id', 'output_name']
+
+
+class WorkflowInvocationStepOutputDatasetCollectionAssociation(object, Dictifiable):
+    """Represents links to output dataset collections for the workflow."""
+    dict_collection_visible_keys = ['id', 'workflow_invocation_step_id', 'dataset_collection_id', 'output_name']
 
 
 class MetadataFile(StorableObject):

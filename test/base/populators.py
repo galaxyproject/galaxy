@@ -92,6 +92,18 @@ def skip_without_datatype(extension):
     return method_wrapper
 
 
+def summarize_instance_history_on_error(method):
+    @wraps(method)
+    def wrapped_method(api_test_case, *args, **kwds):
+        try:
+            method(api_test_case, *args, **kwds)
+        except Exception:
+            api_test_case.dataset_populator._summarize_history(api_test_case.history_id)
+            raise
+
+    return wrapped_method
+
+
 def _raise_skip_if(check):
     if check:
         from nose.plugins.skip import SkipTest
@@ -136,12 +148,12 @@ class BaseDatasetPopulator(object):
             self.wait_for_tool_run(history_id, run_response)
         return run_response
 
-    def wait_for_tool_run(self, history_id, run_response):
+    def wait_for_tool_run(self, history_id, run_response, timeout=DEFAULT_TIMEOUT):
         run = run_response.json()
         assert run_response.status_code == 200, run
         job = run["jobs"][0]
-        self.wait_for_job(job["id"])
-        self.wait_for_history(history_id, assert_ok=True)
+        self.wait_for_job(job["id"], timeout=timeout)
+        self.wait_for_history(history_id, assert_ok=True, timeout=timeout)
         return run_response
 
     def wait_for_history(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
@@ -150,6 +162,23 @@ class BaseDatasetPopulator(object):
         except AssertionError:
             self._summarize_history(history_id)
             raise
+
+    def wait_for_history_jobs(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
+        query_params = {"history_id": history_id}
+
+        def has_active_jobs():
+            jobs_response = self._get("jobs", query_params)
+            assert jobs_response.status_code == 200
+            active_jobs = [j for j in jobs_response.json() if j["state"] in ["new", "upload", "waiting", "queued", "running"]]
+
+            if len(active_jobs) == 0:
+                return True
+            else:
+                return None
+
+        wait_on(has_active_jobs, "active jobs", timeout=timeout)
+        if assert_ok:
+            return self.wait_for_history(history_id, assert_ok=True, timeout=timeout)
 
     def wait_for_job(self, job_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
         return wait_on_state(lambda: self.get_job_details(job_id), assert_ok=assert_ok, timeout=timeout)
@@ -262,6 +291,21 @@ class BaseDatasetPopulator(object):
         assert details_response.status_code == 200, details_response.content
         return details_response.json()
 
+    def run_collection_creates_list(self, history_id, hdca_id):
+        inputs = {
+            "input1": {"src": "hdca", "id": hdca_id},
+        }
+        self.wait_for_history(history_id, assert_ok=True)
+        return self.run_tool("collection_creates_list", inputs, history_id)
+
+    def run_exit_code_from_file(self, history_id, hdca_id):
+        exit_code_inputs = {
+            "input": {'batch': True, 'values': [{"src": "hdca", "id": hdca_id}]},
+        }
+        response = self.run_tool("exit_code_from_file", exit_code_inputs, history_id, assert_ok=False).json()
+        self.wait_for_history(history_id, assert_ok=False)
+        return response
+
     def __history_content_id(self, history_id, wait=True, **kwds):
         if wait:
             assert_ok = kwds.get("assert_ok", True)
@@ -270,6 +314,8 @@ class BaseDatasetPopulator(object):
         # the last dataset in the history will be fetched.
         if "dataset_id" in kwds:
             history_content_id = kwds["dataset_id"]
+        elif "content_id" in kwds:
+            history_content_id = kwds["content_id"]
         elif "dataset" in kwds:
             history_content_id = kwds["dataset"]["id"]
         else:
@@ -371,7 +417,21 @@ class BaseWorkflowPopulator(object):
         """ Wait for a workflow invocation to completely schedule and then history
         to be complete. """
         self.wait_for_invocation(workflow_id, invocation_id, timeout=timeout)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok, timeout=timeout)
+        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok, timeout=timeout)
+
+    def invoke_workflow(self, history_id, workflow_id, inputs={}, request={}, assert_ok=True):
+        request["history"] = "hist_id=%s" % history_id,
+        if inputs:
+            request["inputs"] = json.dumps(inputs)
+            request["inputs_by"] = 'step_index'
+        url = "workflows/%s/usage" % (workflow_id)
+        invocation_response = self._post(url, data=request)
+        if assert_ok:
+            api_asserts.assert_status_code_is(invocation_response, 200)
+            invocation_id = invocation_response.json()["id"]
+            return invocation_id
+        else:
+            return invocation_response
 
 
 class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
@@ -500,14 +560,42 @@ class BaseDatasetCollectionPopulator(object):
                                              collection_type='list:paired',
                                              name=name)
 
-    def create_nested_collection(self, history_id, collection, collection_type, name):
-        element_identifiers = []
-        for i, pair in enumerate(collection):
-            element_identifiers.append(dict(
-                name="test%d" % i,
-                src="hdca",
-                id=pair
-            ))
+    def nested_collection_identifiers(self, history_id, collection_type):
+        rank_types = list(reversed(collection_type.split(":")))
+        assert len(rank_types) > 0
+        rank_type_0 = rank_types[0]
+        if rank_type_0 == "list":
+            identifiers = self.list_identifiers(history_id)
+        else:
+            identifiers = self.pair_identifiers(history_id)
+        nested_collection_type = rank_type_0
+
+        for i, rank_type in enumerate(reversed(rank_types[1:])):
+            name = "test_level_%d" % (i + 1) if rank_type == "list" else "paired"
+            identifiers = [dict(
+                src="new_collection",
+                name=name,
+                collection_type=nested_collection_type,
+                element_identifiers=identifiers,
+            )]
+            nested_collection_type = "%s:%s" % (rank_type, nested_collection_type)
+        return identifiers
+
+    def create_nested_collection(self, history_id, collection_type, name=None, collection=None, element_identifiers=None):
+        """Create a nested collection either from collection or using collection_type)."""
+        assert collection_type is not None
+        name = name or "Test %s" % collection_type
+        if collection is not None:
+            assert element_identifiers is None
+            element_identifiers = []
+            for i, pair in enumerate(collection):
+                element_identifiers.append(dict(
+                    name="test%d" % i,
+                    src="hdca",
+                    id=pair
+                ))
+        if element_identifiers is None:
+            element_identifiers = self.nested_collection_identifiers(history_id, collection_type)
 
         payload = dict(
             instance_type="history",
@@ -523,6 +611,8 @@ class BaseDatasetCollectionPopulator(object):
         return self.create_list_from_pairs(history_id, [pair1])
 
     def create_list_of_list_in_history(self, history_id, **kwds):
+        # create_nested_collection will generate nested collection from just datasets,
+        # this function uses recursive generation of history hdcas.
         collection_type = kwds.pop('collection_type', 'list:list')
         collection_types = collection_type.split(':')
         list = self.create_list_in_history(history_id, **kwds).json()['id']
@@ -530,9 +620,9 @@ class BaseDatasetCollectionPopulator(object):
         for collection_type in collection_types[1:]:
             current_collection_type = "%s:%s" % (current_collection_type, collection_type)
             response = self.create_nested_collection(history_id=history_id,
-                                                     collection=[list],
                                                      collection_type=current_collection_type,
-                                                     name=current_collection_type)
+                                                     name=current_collection_type,
+                                                     collection=[list])
             list = response.json()['id']
         return response
 
@@ -587,7 +677,7 @@ class BaseDatasetCollectionPopulator(object):
         return element_identifiers
 
     def list_identifiers(self, history_id, contents=None):
-        count = 3 if not contents else len(contents)
+        count = 3 if contents is None else len(contents)
         # Contents can be a list of strings (with name auto-assigned here) or a list of
         # 2-tuples of form (name, dataset_content).
         if contents and isinstance(contents[0], tuple):

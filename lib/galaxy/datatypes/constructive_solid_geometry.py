@@ -131,9 +131,6 @@ class PlyBinary(Ply, Binary):
         Binary.__init__(self, **kwd)
 
 
-Binary.register_sniffable_binary_format("plybinary", "plybinary", PlyBinary)
-
-
 class Vtk(object):
     r"""
     The Visualization Toolkit provides a number of source and writer objects to
@@ -456,9 +453,6 @@ class VtkBinary(Vtk, Binary):
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
-
-
-Binary.register_sniffable_binary_format("vtkbinary", "vtkbinary", VtkBinary)
 
 
 class STL(data.Data):

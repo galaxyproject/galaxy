@@ -734,7 +734,7 @@ class FastqCSSanger(Fastq):
     file_ext = "fastqcssanger"
 
 
-class FastqGz (BaseFastq, Binary):
+class FastqGz(BaseFastq, Binary):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.gz"
@@ -742,6 +742,8 @@ class FastqGz (BaseFastq, Binary):
 
     def sniff(self, filename):
         """Determines whether the file is in gzip-compressed FASTQ format"""
+        if not SNIFF_COMPRESSED_FASTQS:
+            return False
         if not is_gzip(filename):
             return False
         return BaseFastq.sniff(self, filename)
@@ -757,11 +759,6 @@ class FastqSolexaGz(FastqGz):
     """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa.gz"
-
-
-if SNIFF_COMPRESSED_FASTQS:
-    Binary.register_sniffable_binary_format("fastqsanger.gz", "fastqsanger.gz", FastqSangerGz)
-    Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
 
 
 class FastqIlluminaGz(FastqGz):
@@ -783,6 +780,8 @@ class FastqBz2 (BaseFastq, Binary):
 
     def sniff(self, filename):
         """Determine whether the file is in bzip2-compressed FASTQ format"""
+        if not SNIFF_COMPRESSED_FASTQS:
+            return False
         if not is_bz2(filename):
             return False
         return BaseFastq.sniff(self, filename)
@@ -792,11 +791,6 @@ class FastqSangerBz2(FastqBz2):
     """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
     file_ext = "fastqsanger.bz2"
-
-
-if SNIFF_COMPRESSED_FASTQS:
-    Binary.register_sniffable_binary_format("fastqsanger.bz2", "fastqsanger.bz2", FastqSangerBz2)
-    Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
 
 
 class FastqSolexaBz2(FastqBz2):

@@ -66,7 +66,7 @@ var View = Backbone.View.extend({
                         message: response.message,
                         status: "success",
                         persistent: false
-                    }
+                    };
                 }
                 if (self.redirect) {
                     window.location = `${Galaxy.root + self.redirect}?${$.param(params)}`;

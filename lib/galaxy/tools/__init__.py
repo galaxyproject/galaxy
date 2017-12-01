@@ -84,7 +84,10 @@ from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.work.context import WorkRequestContext
 from tool_shed.util import common_util
-from .execute import execute as execute_job
+from .execute import (
+    execute as execute_job,
+    MappingParameters,
+)
 from .loader import (
     imported_macro_paths,
     raw_tool_xml_tree,
@@ -1244,8 +1247,6 @@ class Tool(object, Dictifiable):
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
         expanded_incomings, collection_info = expand_meta_parameters(trans, self, incoming)
-        if not expanded_incomings:
-            raise exceptions.MessageException('Tool execution failed, trying to run a tool over an empty collection.')
 
         # Remapping a single job to many jobs doesn't make sense, so disable
         # remap if multi-runs of tools are being used.
@@ -1295,24 +1296,38 @@ class Tool(object, Dictifiable):
             err_data = {key: value for d in all_errors for (key, value) in d.items()}
             raise exceptions.MessageException(', '.join(msg for msg in err_data.values()), err_data=err_data)
         else:
-            execution_tracker = execute_job(trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info)
-            if execution_tracker.successful_jobs:
-                return dict(out_data=execution_tracker.output_datasets,
-                            num_jobs=len(execution_tracker.successful_jobs),
-                            job_errors=execution_tracker.execution_errors,
-                            jobs=execution_tracker.successful_jobs,
-                            output_collections=execution_tracker.output_collections,
-                            implicit_collections=execution_tracker.implicit_collections)
-            else:
+            mapping_params = MappingParameters(incoming, all_params)
+            execution_tracker = execute_job(trans, self, mapping_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info)
+            # Raise an exception if there were jobs to execute and none of them were submitted,
+            # if at least one is submitted or there are no jobs to execute - return aggregate
+            # information including per-job errors. Arguably we should just always return the
+            # aggregate information - we just haven't done that historically.
+            raise_execution_exception = not execution_tracker.successful_jobs and len(all_params) > 0
+
+            if raise_execution_exception:
                 raise exceptions.MessageException(execution_tracker.execution_errors[0])
 
-    def handle_single_execution(self, trans, rerun_remap_job_id, params, history, mapping_over_collection, execution_cache=None):
+            return dict(out_data=execution_tracker.output_datasets,
+                        num_jobs=len(execution_tracker.successful_jobs),
+                        job_errors=execution_tracker.execution_errors,
+                        jobs=execution_tracker.successful_jobs,
+                        output_collections=execution_tracker.output_collections,
+                        implicit_collections=execution_tracker.implicit_collections)
+
+    def handle_single_execution(self, trans, rerun_remap_job_id, execution_slice, history, execution_cache=None):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
         """
         try:
-            job, out_data = self.execute(trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection, execution_cache=execution_cache)
+            job, out_data = self.execute(
+                trans,
+                incoming=execution_slice.param_combination,
+                history=history,
+                rerun_remap_job_id=rerun_remap_job_id,
+                execution_cache=execution_cache,
+                dataset_collection_elements=execution_slice.dataset_collection_elements,
+            )
         except httpexceptions.HTTPFound as e:
             # if it's a paste redirect exception, pass it up the stack
             raise e
@@ -2255,7 +2270,7 @@ class DatabaseOperationTool(Tool):
     def check_inputs_ready(self, input_datasets, input_dataset_collections):
         def check_dataset_instance(input_dataset):
             if input_dataset.is_pending:
-                raise ToolInputsNotReadyException()
+                raise ToolInputsNotReadyException("An input dataset is pending.")
 
             if self.require_dataset_ok:
                 if input_dataset.state != input_dataset.dataset.states.OK:
@@ -2267,7 +2282,7 @@ class DatabaseOperationTool(Tool):
         for input_dataset_collection_pairs in input_dataset_collections.values():
             for input_dataset_collection, is_mapped in input_dataset_collection_pairs:
                 if not input_dataset_collection.collection.populated:
-                    raise ToolInputsNotReadyException()
+                    raise ToolInputsNotReadyException("An input collection is not populated.")
 
             map(check_dataset_instance, input_dataset_collection.dataset_instances)
 

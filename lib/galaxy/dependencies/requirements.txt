@@ -21,7 +21,6 @@ boltons
 Paste
 PasteDeploy
 docutils
-wchartype
 repoze.lru
 Routes
 WebOb

@@ -21,8 +21,7 @@ var CollectionView = _super.extend(
 
         /** sub view class used for datasets */
         DatasetDCEViewClass: DC_LI.DatasetDCEListItemView,
-        /** sub view class used for nested collections */
-        NestedDCDCEViewClass: DC_LI.NestedDCDCEListItemView,
+
         /** key of attribute in model to assign to this.collection */
         modelCollectionKey: "elements",
 
@@ -44,9 +43,16 @@ var CollectionView = _super.extend(
             this.downloadUrl = `${Galaxy.root}api/dataset_collections/${this.model.attributes.id}/download`;
         },
 
+        getNestedDCDCEViewClass: function() {
+            return DC_LI.NestedDCDCEListItemView.extend({
+                foldoutPanelClass: CollectionView
+            });
+        },
+
         _queueNewRender: function($newRender, speed) {
             speed = speed === undefined ? this.fxSpeed : speed;
             var panel = this;
+            this.handleWarning($newRender);
             panel.log("_queueNewRender:", $newRender, speed);
 
             // TODO: jquery@1.12 doesn't change display when the elem has display: flex
@@ -54,6 +60,16 @@ var CollectionView = _super.extend(
             // animations are removed from this view for now until fixed
             panel._swapNewRender($newRender);
             panel.trigger("rendered", panel);
+        },
+
+        handleWarning: function($newRender) {
+            var viewLength = this.views.length;
+            var elementCount = this.model.get("element_count");
+            if (elementCount && elementCount !== viewLength) {
+                var warning = _l(`displaying only ${viewLength} of ${elementCount} items`);
+                var $warns = $newRender.find(".elements-warning");
+                $warns.html(`<div class="warningmessagesmall">${warning}</div>`);
+            }
         },
 
         // ------------------------------------------------------------------------ sub-views
@@ -71,7 +87,7 @@ var CollectionView = _super.extend(
                 case "hda":
                     return this.DatasetDCEViewClass;
                 case "dataset_collection":
-                    return this.NestedDCDCEViewClass;
+                    return this.getNestedDCDCEViewClass();
             }
             throw new TypeError("Unknown element type:", model.get("element_type"));
         },
@@ -144,116 +160,74 @@ var CollectionView = _super.extend(
 
 //------------------------------------------------------------------------------ TEMPLATES
 CollectionView.prototype.templates = (() => {
-    var controlsTemplate = BASE_MVC.wrapTemplate(
-        [
-            '<div class="controls">',
-            '<div class="navigation">',
-            '<a class="back" href="javascript:void(0)">',
-            '<span class="fa fa-icon fa-angle-left"></span>',
-            _l("Back to "),
-            "<%- view.parentName %>",
-            "</a>",
-            "</div>",
-
-            '<div class="title">',
-            '<div class="name"><%- collection.name || collection.element_identifier %></div>',
-            '<div class="subtitle">',
-            '<% if( collection.collection_type === "list" ){ %>',
-            _l("a list of datasets"),
-            '<% } else if( collection.collection_type === "paired" ){ %>',
-            _l("a pair of datasets"),
-            '<% } else if( collection.collection_type === "list:paired" ){ %>',
-            _l("a list of paired datasets"),
-            '<% } else if( collection.collection_type === "list:list" ){ %>',
-            _l("a list of dataset lists"),
-            "<% } %>",
-            "</div>",
-            "</div>",
-
-            '<div class="tags-display"></div>',
-
-            '<div class="actions">',
-            '<a class="download-btn icon-btn" ',
-            'href="<%- view.downloadUrl %>',
-            '" title="" download="" data-original-title="Download Collection">',
-            '<span class="fa fa-floppy-o"></span>',
-            "</a>",
-            "</div>",
-            "</div>"
-        ],
-        "collection"
-    );
+    var controlsTemplate = (collection, view) => {
+        var subtitle = collectionDescription(view.model);
+        return `
+        <div class="controls">
+            <div class="navigation">
+            <a class="back" href="javascript:void(0)">
+                <span class="fa fa-icon fa-angle-left"></span>
+                ${_l("Back to ")}
+                ${_.escape(view.parentName)}
+            </a>
+            </div>
+            <div class="title">
+                <div class="name">${_.escape(collection.name) || _.escape(collection.element_identifier)}</div>
+                <div class="subtitle">
+                    ${subtitle}
+                </div>
+            </div>
+            <div class="elements-warning">
+            </div>
+            <div class="tags-display"></div>
+            <div class="actions">
+                <a class="download-btn icon-btn" href="${view.downloadUrl}"
+                   title="" download="" data-original-title="Download Collection">
+                   <span class="fa fa-floppy-o"></span>
+                </a>
+            </div>
+        </div>`;
+    };
 
     return _.extend(_.clone(_super.prototype.templates), {
         controls: controlsTemplate
     });
 })();
 
-// =============================================================================
-/** @class non-editable, read-only View/Controller for a dataset collection. */
-var ListCollectionView = CollectionView.extend(
-    /** @lends ListCollectionView.prototype */ {
-        //TODO: not strictly needed - due to switch in CollectionView._getContentClass
-        /** sub view class used for datasets */
-        DatasetDCEViewClass: DC_LI.DatasetDCEListItemView,
+function collectionTypeDescription(collection) {
+    var collectionType = collection.get("collection_type");
+    var collectionTypeDescription;
+    if (collectionType == "list") {
+        collectionTypeDescription = _l("list");
+    } else if (collectionType == "paired") {
+        collectionTypeDescription = _l("dataset pair");
+    } else if (collectionType == "list:paired") {
+        collectionTypeDescription = _l("list of pairs");
+    } else {
+        collectionTypeDescription = _l("nested list");
+    }
+    return collectionTypeDescription;
+}
 
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `ListCollectionView(${this.model ? this.model.get("name") : ""})`;
+function collectionDescription(collection) {
+    var elementCount = collection.get("element_count");
+
+    var itemsDescription = `a ${collectionTypeDescription(collection)}`;
+    if (elementCount) {
+        var countDescription;
+        if (elementCount == 1) {
+            countDescription = "with 1 item";
+        } else if (elementCount) {
+            countDescription = `with ${elementCount} items`;
         }
+        itemsDescription = `${itemsDescription} ${_l(countDescription)}`;
     }
-);
-
-// =============================================================================
-/** @class non-editable, read-only View/Controller for a dataset collection. */
-var PairCollectionView = ListCollectionView.extend(
-    /** @lends PairCollectionView.prototype */ {
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `PairCollectionView(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
-// =============================================================================
-/** @class non-editable, read-only View/Controller for a dataset collection. */
-var ListOfPairsCollectionView = CollectionView.extend(
-    /** @lends ListOfPairsCollectionView.prototype */ {
-        //TODO: not strictly needed - due to switch in CollectionView._getContentClass
-        /** sub view class used for nested collections */
-        NestedDCDCEViewClass: DC_LI.NestedDCDCEListItemView.extend({
-            foldoutPanelClass: PairCollectionView
-        }),
-
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `ListOfPairsCollectionView(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
-// =============================================================================
-/** @class non-editable, read-only View/Controller for a list of lists dataset collection. */
-var ListOfListsCollectionView = CollectionView.extend({
-    /** sub view class used for nested collections */
-    NestedDCDCEViewClass: DC_LI.NestedDCDCEListItemView.extend({
-        foldoutPanelClass: PairCollectionView
-    }),
-
-    /** string rep */
-    toString: function() {
-        return `ListOfListsCollectionView(${this.model ? this.model.get("name") : ""})`;
-    }
-});
+    return itemsDescription;
+}
 
 //==============================================================================
 export default {
-    CollectionView: CollectionView,
-    ListCollectionView: ListCollectionView,
-    PairCollectionView: PairCollectionView,
-    ListOfPairsCollectionView: ListOfPairsCollectionView,
-    ListOfListsCollectionView: ListOfListsCollectionView
+    collectionTypeDescription: collectionTypeDescription,
+    collectionDescription: collectionDescription,
+    CollectionView: CollectionView
 };

@@ -623,7 +623,6 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
 
             var url = `${Galaxy.root}api/histories/${this.historyId}/contents/dataset_collections`;
 
-            //TODO: use ListPairedCollection.create()
             var ajaxData = {
                 type: "dataset_collection",
                 collection_type: "list:paired",

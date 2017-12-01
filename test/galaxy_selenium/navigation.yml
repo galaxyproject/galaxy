@@ -92,6 +92,7 @@ history_panel:
       download_button: '${_} .icon-btn.download-btn'
       info_button: '${_} .icon-btn.params-btn'
       rerun_button: '${_} .icon-btn.rerun-btn'
+      nametags: '${_} .nametags .label'
 
   multi_operations:
     selectors:
@@ -103,6 +104,17 @@ history_panel:
       build_pair: "Build Dataset Pair"
       build_list: "Build Dataset List"
       build_list_pairs: "Build List of Dataset Pairs"
+
+  collection_view:
+    selectors:
+      _: '.list-panel.dataset-collection-panel'
+      back: '.navigation .back'
+      title: '.dataset-collection-panel .controls .title .editable-text'
+      title_input: '.dataset-collection-panel .controls .title input'
+      subtitle: '.dataset-collection-panel .controls .title .subtitle'
+      elements_warning: '.dataset-collection-panel .controls .elements-warning'
+      tag_area_input: '.controls .tags-display .tags-input input'
+      list_items: '.dataset-collection-panel .list-items .list-item'
 
   selectors:
     _: '#current-history-panel'
@@ -126,11 +138,39 @@ history_panel:
     options_button: '#history-options-button'
     options_button_icon: '#history-options-button span.fa-cog'
     options_menu: '#history-options-button-menu'
+    multi_view_button: '#history-view-multi-button'
+
+    pagination_pages: '.list-pagination .pages'
+    pagination_pages_options: '.list-pagination .pages option'
+    pagination_pages_selected_option: '.list-pagination .pages option:checked'
+    pagination_next: '.list-pagination button.next'
+    pagination_previous: '.list-pagination button.prev'
+
 
   text:
     tooltip_name: 'Click to rename history'
     new_name: 'Unnamed history'
     new_size: '(empty)'
+
+multi_history_view:
+
+  selectors:
+    _: '.multi-panel-history'
+    current_label: '.current-label'
+    create_new_button: '.create-new'
+    drag_drop_help: '.history-drop-target-help'
+
+history_copy_elements:
+
+  selectors:
+    # Following two don't really work as CSS would only work as jQuery/sizzle I think
+    # since the page is dynamically generated.
+    # https://stackoverflow.com/questions/10645552/is-it-possible-to-use-an-input-value-attribute-as-a-css-selector
+    dataset_checkbox: "input[id='dataset|${id}']"
+    collection_checkbox: 'input[id="dataset_collection|${id}"]'
+    new_history_name: '#new_history_name'
+    copy_button: "input[type='submit']"
+    done_link: '.donemessage a'
 
 collection_builders:
 
@@ -164,6 +204,10 @@ tool_form:
   selectors:
     options: '#options .dropdown-toggle'
     execute: 'button#execute'
+    citations: '.citations-formatted'
+    reference: '.citations-formatted .formatted-reference'
+    show_bibtex: 'button.citations-to-bibtex'
+    bibtex_area: '.citations-bibtex textarea'
 
   labels:
     generate_tour: 'Generate Tour'
@@ -221,3 +265,8 @@ libraries:
 published_grids:
   selectors:
     search: '#input-free-text-search-filter'
+
+charts:
+  selectors:
+    visualize_button: '.ui-portlet .button i.fa-line-chart'  # without icon - it waits on other buttons that aren't visible, need more specific class
+    viewport_canvas: 'svg.charts-viewport-canvas'

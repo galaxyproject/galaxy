@@ -6,7 +6,6 @@ import zipfile
 
 from six.moves.urllib.parse import quote_plus
 
-from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.text import Html as HtmlFromText
 from galaxy.util import nice_size
 from galaxy.util.image_util import check_image_type
@@ -161,9 +160,6 @@ class Pdf(Image):
         """Determine if the file is in pdf format."""
         with open(filename, 'rb') as fh:
             return fh.read(4) == b"%PDF"
-
-
-Binary.register_sniffable_binary_format("pdf", "pdf", Pdf)
 
 
 def create_applet_tag_peek(class_name, archive, params):

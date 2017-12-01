@@ -124,7 +124,7 @@ sprite-*.less
 # JS, Local node_modules, and bower_components directories
 static/scripts/bundled/[0-9]*
 static/maps
-static/scripts/bundled/*.js.map
+static/scripts/bundled/*.map
 node_modules
 bower_components
 client/galaxy/scripts/libs/*
