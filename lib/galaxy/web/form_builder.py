@@ -99,19 +99,6 @@ class CheckboxField(BaseField):
         return d
 
 
-class GenomespaceFileField(BaseField):
-    """
-    A genomspace file browser field.
-    """
-    def __init__(self, name, value=None):
-        self.name = name
-        self.value = value or ""
-
-    def to_dict(self):
-        return dict(name=self.name,
-                    token_field=self.token_field)
-
-
 class HiddenField(BaseField):
     """
     A hidden field.
