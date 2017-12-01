@@ -691,10 +691,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         for filter_type in filter_types:
             new_filters = []
             for prefixed_name in payload:
-                if payload.get(prefixed_name) == 'true':
-                    prefix = filter_type + '|'
-                    if prefixed_name.startswith(filter_type):
-                        new_filters.append(prefixed_name[len(prefix):])
+                prefix = filter_type + '|'
+                if payload.get(prefixed_name) == 'true' and prefixed_name.startswith(filter_type):
+                    new_filters.append(prefixed_name[len(prefix):])
             user.preferences[filter_type] = ','.join(new_filters)
         trans.sa_session.add(user)
         trans.sa_session.flush()
