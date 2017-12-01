@@ -219,14 +219,9 @@ class WorkflowField(BaseField):
 
 
 class WorkflowMappingField(BaseField):
-    def __init__(self, name, user=None, value=None, params=None, **kwd):
-        # DBTODO integrate this with the new __build_workflow approach in requests_common.  As it is, not particularly useful.
-        self.name = name
+    def __init__(self, name, user=None, value=None, **kwd):
+        super(WorkflowMappingField, self).__init__(name, value, **kwds)
         self.user = user
-        self.value = value
-        self.select_workflow = None
-        self.params = params
-        self.workflow_inputs = []
 
 
 class HistoryField(BaseField):
