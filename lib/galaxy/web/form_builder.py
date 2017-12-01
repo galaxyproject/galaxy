@@ -79,19 +79,11 @@ class CheckboxField(BaseField):
     def __init__(self, name, checked=None, refresh_on_change=False, refresh_on_change_values=None, value=None, **kwds):
         super(CheckboxField, self).__init__(name, value, **kwds)
         self.name = name
-        self.checked = (checked is True) or (isinstance(checked, string_types) and (checked.lower() in ("yes", "true", "on")))
 
     @staticmethod
     def is_checked(value):
         if value in [True, "true"]:
             return True
-        return isinstance(value, list) and ('__CHECKED__' in value or len(value) == 2)
-
-    def set_checked(self, value):
-        if isinstance(value, string_types):
-            self.checked = value.lower() in ["yes", "true", "on"]
-        else:
-            self.checked = value
 
     def to_dict(self):
         d = super(CheckboxField, self).to_dict()

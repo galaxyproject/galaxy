@@ -4499,11 +4499,7 @@ class FormDefinition(object, Dictifiable):
                     value = field.get('default', '')
             # Create the field widget
             field_widget = eval(field_type)(field_name)
-            if field_type in ['TextField', 'PasswordField']:
-                field_widget.set_size(40)
-                field_widget.value = value
-            elif field_type == 'TextArea':
-                field_widget.set_size(3, 40)
+            if field_type in ['TextField', 'TextArea', 'PasswordField', 'CheckboxField']:
                 field_widget.value = value
             elif field_type in ['AddressField', 'WorkflowField', 'WorkflowMappingField', 'HistoryField']:
                 field_widget.user = user
@@ -4515,8 +4511,6 @@ class FormDefinition(object, Dictifiable):
                         field_widget.add_option(option, option, selected=True)
                     else:
                         field_widget.add_option(option, option)
-            elif field_type == 'CheckboxField':
-                field_widget.set_checked(value)
             if field['required'] == 'required':
                 req = 'Required'
             else:
