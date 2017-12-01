@@ -29,12 +29,6 @@ class BaseField(object):
             self.optional = kwds.get('required', 'optional') == 'optional'
         self.help = kwds.get('helptext')
 
-    def get_disabled_str(self, disabled=False):
-        if disabled:
-            return ' disabled="disabled"'
-        else:
-            return ''
-
     def to_dict(self):
         return {
             'name'      : self.name,
