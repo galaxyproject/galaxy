@@ -9,7 +9,7 @@ import tool_shed.repository_types.util as rt_util
 from galaxy import util, web
 from galaxy.tools.deps import views
 from galaxy.util import unicodify
-from galaxy.web.form_builder import CheckboxField
+from tool_shed.util.form_util import CheckboxField
 from tool_shed.galaxy_install import (
     dependency_display,
     install_manager
