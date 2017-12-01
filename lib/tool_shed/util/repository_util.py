@@ -11,8 +11,7 @@ import tool_shed.dependencies.repository
 import tool_shed.util.metadata_util as metadata_util
 from galaxy import util
 from galaxy import web
-from galaxy.web.form_builder import build_select_field
-from tool_shed.util import basic_util, common_util, encoding_util, hg_util
+from tool_shed.util import basic_util, common_util, encoding_util, form_util, hg_util
 from tool_shed.util.web_util import escape
 
 log = logging.getLogger(__name__)
@@ -25,7 +24,7 @@ def build_allow_push_select_field(trans, current_push_list, selected_value='none
     for user in trans.sa_session.query(trans.model.User):
         if user.username not in current_push_list:
             options.append(user)
-    return build_select_field(trans,
+    return form_util.build_select_field(trans,
                               objs=options,
                               label_attr='username',
                               select_field_name='allow_push',
