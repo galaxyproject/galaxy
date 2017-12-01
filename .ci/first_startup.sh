@@ -10,7 +10,7 @@ bash run.sh --daemon && \
         sleep 1
         i=$((i + 1))
     done
-kill -9 "$(cat paster.pid)"
+kill -9 "$(cat galaxy.pid)"
 echo "exit code:$EXIT_CODE, showing startup log:"
-cat paster.log
+cat galaxy.log
 exit $EXIT_CODE
