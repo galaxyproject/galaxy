@@ -5,7 +5,7 @@ from sqlalchemy import false
 
 from galaxy import util
 from galaxy.util import inflector
-from galaxy.web.form_builder import SelectField
+from tool_shed.util.form_util import SelectField
 from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.metadata import metadata_generator
 from tool_shed.util import common_util

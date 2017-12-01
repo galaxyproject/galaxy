@@ -17,7 +17,90 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
-class SelectField(object):
+class BaseField(object):
+    def __init__(self, name, value=None, label=None, **kwds):
+        self.name = name
+        self.label = label
+        self.value = value
+        self.disabled = kwds.get('disabled', False)
+        if 'optional' in kwds:
+            self.optional = asbool(kwds.get('optional'))
+        else:
+            self.optional = kwds.get('required', 'optional') == 'optional'
+        self.help = kwds.get('helptext')
+
+    def get_html(self, prefix=""):
+        """Returns the html widget corresponding to the parameter"""
+        raise TypeError("Abstract Method")
+
+    def get_disabled_str(self, disabled=False):
+        if disabled:
+            return ' disabled="disabled"'
+        else:
+            return ''
+
+    def to_dict(self):
+        return {
+            'name'      : self.name,
+            'label'     : self.label,
+            'disabled'  : self.disabled,
+            'optional'  : self.optional,
+            'value'     : self.value,
+            'help'      : self.help
+        }
+
+
+class CheckboxField(BaseField):
+    """
+    A checkbox (boolean input)
+
+    >>> print(CheckboxField( "foo" ).get_html())
+    <input type="checkbox" id="foo" name="foo" value="__CHECKED__"><input type="hidden" name="foo" value="__NOTHING__">
+    >>> print(CheckboxField( "bar", checked="yes" ).get_html())
+    <input type="checkbox" id="bar" name="bar" value="__CHECKED__" checked="checked"><input type="hidden" name="bar" value="__NOTHING__">
+    """
+
+    def __init__(self, name, checked=None, refresh_on_change=False, refresh_on_change_values=None, value=None, **kwds):
+        super(CheckboxField, self).__init__(name, value, **kwds)
+        self.name = name
+        self.checked = (checked is True) or (isinstance(checked, string_types) and (checked.lower() in ("yes", "true", "on")))
+        self.refresh_on_change = refresh_on_change
+        self.refresh_on_change_values = refresh_on_change_values or []
+        if self.refresh_on_change:
+            self.refresh_on_change_text = ' refresh_on_change="true" '
+            if self.refresh_on_change_values:
+                self.refresh_on_change_text = '%s refresh_on_change_values="%s" ' % (self.refresh_on_change_text, ",".join(self.refresh_on_change_values))
+        else:
+            self.refresh_on_change_text = ''
+
+    def get_html(self, prefix="", disabled=False):
+        if self.checked:
+            checked_text = ' checked="checked"'
+        else:
+            checked_text = ''
+        id_name = prefix + self.name
+        return unicodify('<input type="checkbox" id="%s" name="%s" value="__CHECKED__"%s%s%s><input type="hidden" name="%s" value="__NOTHING__"%s>'
+                         % (id_name, id_name, checked_text, self.get_disabled_str(disabled), self.refresh_on_change_text, id_name, self.get_disabled_str(disabled)))
+
+    @staticmethod
+    def is_checked(value):
+        if value in [True, "true"]:
+            return True
+        return isinstance(value, list) and ('__CHECKED__' in value or len(value) == 2)
+
+    def set_checked(self, value):
+        if isinstance(value, string_types):
+            self.checked = value.lower() in ["yes", "true", "on"]
+        else:
+            self.checked = value
+
+    def to_dict(self):
+        d = super(CheckboxField, self).to_dict()
+        d['type'] = 'boolean'
+        return d
+
+
+class SelectField(BaseField):
     """
     A select field.
 
@@ -56,18 +139,12 @@ class SelectField(object):
     """
 
     def __init__(self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None, field_id=None, value=None, selectlist=None, **kwds):
+        super(SelectField, self).__init__(name, value, **kwds)
         self.name = name
-        self.label = label
-        self.value = value
-        self.disabled = kwds.get('disabled', False)
-        if 'optional' in kwds:
-            self.optional = asbool(kwds.get('optional'))
-        else:
-            self.optional = kwds.get('required', 'optional') == 'optional'
-        self.help = kwds.get('helptext')
         self.field_id = field_id
         self.multiple = multiple or False
         self.selectlist = selectlist or []
+        self.value = value
         self.size = size
         self.options = list()
         if display == "checkboxes":
@@ -85,12 +162,6 @@ class SelectField(object):
                 self.refresh_on_change_text = '%s refresh_on_change_values="%s"' % (self.refresh_on_change_text, escape(",".join(self.refresh_on_change_values), quote=True))
         else:
             self.refresh_on_change_text = ''
-
-    def get_disabled_str(self, disabled=False):
-        if disabled:
-            return ' disabled="disabled"'
-        else:
-            return ''
 
     def add_option(self, text, value, selected=False):
         self.options.append((text, value, selected))
@@ -213,7 +284,25 @@ class SelectField(object):
             return selected_options
         return None
 
+    def to_dict(self):
+        d = super(SelectField, self).to_dict()
+        d['type'] = 'select'
+        d['display'] = self.display
+        d['multiple'] = self.multiple
+        d['data'] = []
+        for value in self.selectlist:
+            d['data'].append({'label': value, 'value': value})
+        return d
 
+
+def get_suite():
+    """Get unittest suite for this module"""
+    import doctest
+    import sys
+    return doctest.DocTestSuite(sys.modules[__name__])
+
+
+# --------- Utility methods -----------------------------
 def build_select_field(trans, objs, label_attr, select_field_name, initial_value='none',
                        selected_value='none', refresh_on_change=False, multiple=False, display=None, size=None):
     """
