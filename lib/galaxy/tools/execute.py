@@ -9,7 +9,6 @@ import logging
 from threading import Thread
 
 import six
-
 from six.moves.queue import Queue
 
 from galaxy import model

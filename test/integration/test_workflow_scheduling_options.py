@@ -1,7 +1,6 @@
 """Integration tests for workflow scheduling configuration option."""
 
 import time
-
 from json import dumps
 
 from base import integration_util

@@ -4,7 +4,9 @@ Contains library functions
 import json
 import logging
 import os.path
+
 from markupsafe import escape
+
 from galaxy import util
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state

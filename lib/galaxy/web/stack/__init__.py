@@ -19,7 +19,6 @@ from six import string_types
 from galaxy.util.bunch import Bunch
 from galaxy.util.facts import get_facts
 from galaxy.util.properties import nice_config_parser
-
 from .message import ApplicationStackMessage, ApplicationStackMessageDispatcher
 from .transport import ApplicationStackTransport, UWSGIFarmMessageTransport
 

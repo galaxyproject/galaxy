@@ -8,7 +8,7 @@ from uuid import uuid4
 import yaml
 from requests import delete, put
 
-from base import api  # noqa: I100
+from base import api  # noqa: I100,I202
 from base.populators import (  # noqa: I100
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -16,7 +16,7 @@ from base.populators import (  # noqa: I100
     wait_on,
     WorkflowPopulator
 )
-from galaxy.exceptions import error_codes
+from galaxy.exceptions import error_codes  # noqa: I201
 from galaxy.tools.verify.test_data import TestDataResolver
 
 

@@ -5,7 +5,6 @@ order to test something that cannot be tested with the default functional/api
 tessting configuration.
 """
 import os
-
 from unittest import skip, TestCase
 
 from .api import UsesApiTestCaseMixin
