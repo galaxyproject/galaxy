@@ -65,8 +65,7 @@ class SentryPlugin(ErrorPlugin):
                 extra['email'] = unicodify(kwargs['email'])
 
             # User submitted message
-            if 'message' in kwargs:
-                extra['message'] = unicodify(kwargs['message'])
+            extra['message'] = unicodify(kwargs.get('message', ''))
 
             # Construct the error message to send to sentry. The first line
             # will be the issue title, everything after that becomes the

@@ -103,4 +103,9 @@ class ManagesIntegratedToolPanelMixin:
             shutil.copy(filename, filename + ".copy")
             filename = filename + ".copy"
         shutil.move(filename, destination)
-        os.chmod(self._integrated_tool_panel_config, 0o644)
+        try:
+            os.chmod(destination, 0o644)
+        except OSError:
+            # That can happen if multiple threads are simultaneously moving/chmod'ing this file
+            # Should be harmless, though this race condition should be avoided.
+            pass

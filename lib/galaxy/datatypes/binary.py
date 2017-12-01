@@ -1793,6 +1793,29 @@ class DMND(Binary):
             return False
 
 
+class ICM(Binary):
+    """
+    Class describing an ICM (interpolated context model) file, used by Glimmer
+    """
+    file_ext = "icm"
+    edam_data = "data_0950"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary ICM (interpolated context model) file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff(self, dataset):
+        line = open(dataset).read(100)
+        if '>ver = ' in line and 'len = ' in line and 'depth = ' in line and 'periodicity =' in line and 'nodes = ' in line:
+            return True
+
+        return False
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod(sys.modules[__name__])

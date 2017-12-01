@@ -12,6 +12,7 @@ from galaxy.tools.wrappers import (
     DatasetCollectionWrapper,
     DatasetFilenameWrapper,
     DatasetListWrapper,
+    ElementIdentifierMapper,
     InputValueWrapper,
     SelectToolParameterWrapper
 )
@@ -21,11 +22,12 @@ PARAMS_UNWRAPPED = object()
 
 class WrappedParameters(object):
 
-    def __init__(self, trans, tool, incoming):
+    def __init__(self, trans, tool, incoming, input_datasets=None):
         self.trans = trans
         self.tool = tool
         self.incoming = incoming
         self._params = PARAMS_UNWRAPPED
+        self._input_datasets = input_datasets
 
     @property
     def params(self):
@@ -39,6 +41,8 @@ class WrappedParameters(object):
         trans = self.trans
         tool = self.tool
         incoming = self.incoming
+
+        element_identifier_mapper = ElementIdentifierMapper(self._input_datasets)
 
         # Wrap tool inputs as necessary
         for input in inputs.values():
@@ -64,11 +68,16 @@ class WrappedParameters(object):
                                        tool=tool,
                                        name=input.name)
             elif isinstance(input, DataToolParameter):
-                input_values[input.name] = \
-                    DatasetFilenameWrapper(value,
-                                           datatypes_registry=trans.app.datatypes_registry,
-                                           tool=tool,
-                                           name=input.name)
+                wrapper_kwds = dict(
+                    datatypes_registry=trans.app.datatypes_registry,
+                    tool=tool,
+                    name=input.name
+                )
+                element_identifier = element_identifier_mapper.identifier(value, input_values)
+                if element_identifier:
+                    wrapper_kwds["identifier"] = element_identifier
+
+                input_values[input.name] = DatasetFilenameWrapper(value, **wrapper_kwds)
             elif isinstance(input, SelectToolParameter):
                 input_values[input.name] = SelectToolParameterWrapper(input, input_values[input.name], other_values=incoming)
             elif isinstance(input, DataCollectionToolParameter):

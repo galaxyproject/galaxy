@@ -95,6 +95,7 @@
   <tool file="identifier_multiple_in_conditional.xml" />
   <tool file="identifier_multiple_in_repeat.xml" />
   <tool file="identifier_collection.xml" />
+  <tool file="identifier_in_actions.xml" />
   <tool file="tool_directory.xml" />
   <tool file="output_action_change_format.xml" />
   <tool file="collection_paired_test.xml" />
