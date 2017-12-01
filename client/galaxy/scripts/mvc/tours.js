@@ -183,9 +183,35 @@ var ToursView = Backbone.View.extend({
     }
 });
 
+export function activeGalaxyTourRunner() {
+    var et = JSON.parse(sessionStorage.getItem("activeGalaxyTour"));
+    if (et) {
+        et = hooked_tour_from_data(et);
+        if (et && et.steps) {
+            if (window && window.self === window.top) {
+                // Only kick off a new tour if this is the toplevel window (non-iframe).  This
+                // functionality actually *could* be useful, but we'd need to handle it better and
+                // come up with some design guidelines for tours jumping between windows.
+                // Disabling for now.
+                var tour = new Tour(
+                    _.extend(
+                        {
+                            steps: et.steps
+                        },
+                        tour_opts
+                    )
+                );
+                tour.init();
+                tour.restart();
+            }
+        }
+    }
+}
+
 export default {
     ToursView: ToursView,
     hooked_tour_from_data: hooked_tour_from_data,
     tour_opts: tour_opts,
-    giveTour: giveTour
+    giveTour: giveTour,
+    activeGalaxyTourRunner: activeGalaxyTourRunner
 };

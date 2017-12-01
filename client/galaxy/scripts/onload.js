@@ -25,7 +25,6 @@ window.make_popup_menus = POPUPMENU.make_popup_menus;
 import init_tag_click_function from "ui/autocom_tagging";
 window.init_tag_click_function = init_tag_click_function;
 import TOURS from "mvc/tours";
-import QUERY_STRING from "utils/query-string-parsing";
 // console.debug( 'galaxy globals loaded' );
 
 // ============================================================================
@@ -150,7 +149,7 @@ $(document).ready(() => {
         $("[title]").tooltip();
     }
     // Make popup menus.
-    make_popup_menus();
+    POPUPMENU.make_popup_menus();
 
     // Replace big selects.
     replace_big_select_inputs(20, 1500);
@@ -174,28 +173,7 @@ $(document).ready(() => {
         return anchor;
     });
 
-    var et = JSON.parse(sessionStorage.getItem("activeGalaxyTour"));
-    if (et) {
-        et = TOURS.hooked_tour_from_data(et);
-        if (et && et.steps) {
-            if (window && window.self === window.top) {
-                // Only kick off a new tour if this is the toplevel window (non-iframe).  This
-                // functionality actually *could* be useful, but we'd need to handle it better and
-                // come up with some design guidelines for tours jumping between windows.
-                // Disabling for now.
-                var tour = new Tour(
-                    _.extend(
-                        {
-                            steps: et.steps
-                        },
-                        TOURS.tour_opts
-                    )
-                );
-                tour.init();
-                tour.restart();
-            }
-        }
-    }
+    TOURS.activeGalaxyTourRunner();
 
     function onloadWebhooks() {
         // Wait until Galaxy.config is loaded.
