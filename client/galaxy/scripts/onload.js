@@ -204,20 +204,23 @@ $(document).ready(() => {
     }
 
     function onloadWebhooks() {
-        if (Galaxy.root !== undefined) {
-            // Load all webhooks with the type 'onload'
-            $.getJSON(`${Galaxy.root}api/webhooks/onload/all`, webhooks => {
-                _.each(webhooks, webhook => {
-                    if (webhook.activate && webhook.script) {
-                        $("<script/>", { type: "text/javascript" })
-                            .text(webhook.script)
-                            .appendTo("head");
-                        $("<style/>", { type: "text/css" })
-                            .text(webhook.styles)
-                            .appendTo("head");
-                    }
+        // Wait until Galaxy.config is loaded.
+        if (Galaxy.config) {
+            if (Galaxy.config.enable_webhooks){
+                // Load all webhooks with the type 'onload'
+                $.getJSON(`${Galaxy.root}api/webhooks/onload/all`, webhooks => {
+                    _.each(webhooks, webhook => {
+                        if (webhook.activate && webhook.script) {
+                            $("<script/>", { type: "text/javascript" })
+                                .text(webhook.script)
+                                .appendTo("head");
+                            $("<style/>", { type: "text/css" })
+                                .text(webhook.styles)
+                                .appendTo("head");
+                        }
+                    });
                 });
-            });
+            }
         } else {
             setTimeout(onloadWebhooks, 100);
         }
