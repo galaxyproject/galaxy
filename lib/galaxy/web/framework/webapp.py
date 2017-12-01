@@ -872,15 +872,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         """
         return self.show_message(message, 'warning', refresh_frames, use_panels=use_panels, active_view=active_view)
 
-    def show_form(self, form, header=None, template="form.mako", use_panels=False, active_view=""):
-        """
-        Convenience method for displaying a simple page with a single HTML
-        form.
-        """
-        return self.fill_template(template, form=form, header=header,
-                                  use_panels=(form.use_panels or use_panels),
-                                  active_view=active_view)
-
     @property
     def session_csrf_token(self):
         token = ''
