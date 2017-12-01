@@ -19,7 +19,7 @@ from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment impor
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import StepManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
 from tool_shed.galaxy_install.tools import data_manager, tool_panel_manager
-from tool_shed.tools import data_table_manager
+from tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from tool_shed.util import basic_util, encoding_util, hg_util, repository_util
 from tool_shed.util import shed_util_common as suc, tool_dependency_util
 from tool_shed.util import tool_util, xml_util
@@ -499,7 +499,7 @@ class InstallRepositoryManager(object):
         reinstalling an uninstalled repository.
         """
         shed_config_dict = self.app.toolbox.get_shed_config_dict_by_filename(shed_tool_conf)
-        tdtm = data_table_manager.ToolDataTableManager(self.app)
+        stdtm = ShedToolDataTableManager(self.app)
         irmm = InstalledRepositoryMetadataManager(app=self.app,
                                                   tpm=self.tpm,
                                                   repository=tool_shed_repository,
@@ -527,9 +527,9 @@ class InstallRepositoryManager(object):
                                                                 set_status=True)
         if 'sample_files' in irmm_metadata_dict:
             sample_files = irmm_metadata_dict.get('sample_files', [])
-            tool_index_sample_files = tdtm.get_tool_index_sample_files(sample_files)
+            tool_index_sample_files = stdtm.get_tool_index_sample_files(sample_files)
             tool_data_table_conf_filename, tool_data_table_elems = \
-                tdtm.install_tool_data_tables(tool_shed_repository, tool_index_sample_files)
+                stdtm.install_tool_data_tables(tool_shed_repository, tool_index_sample_files)
             if tool_data_table_elems:
                 self.app.tool_data_tables.add_new_entries_from_config_file(tool_data_table_conf_filename,
                                                                            self.app.config.shed_tool_data_path,
@@ -538,13 +538,13 @@ class InstallRepositoryManager(object):
         if 'tools' in irmm_metadata_dict:
             tool_panel_dict = self.tpm.generate_tool_panel_dict_for_new_install(irmm_metadata_dict['tools'], tool_section)
             sample_files = irmm_metadata_dict.get('sample_files', [])
-            tool_index_sample_files = tdtm.get_tool_index_sample_files(sample_files)
+            tool_index_sample_files = stdtm.get_tool_index_sample_files(sample_files)
             tool_util.copy_sample_files(self.app, tool_index_sample_files, tool_path=tool_path)
             sample_files_copied = [str(s) for s in tool_index_sample_files]
             repository_tools_tups = irmm.get_repository_tools_tups()
             if repository_tools_tups:
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-                repository_tools_tups = tdtm.handle_missing_data_table_entry(relative_install_dir,
+                repository_tools_tups = stdtm.handle_missing_data_table_entry(relative_install_dir,
                                                                              tool_path,
                                                                              repository_tools_tups)
                 # Handle missing index files for tool parameters that are dynamically generated select lists.

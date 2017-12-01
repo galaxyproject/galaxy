@@ -9,7 +9,7 @@ from tool_shed.util import hg_util, xml_util
 log = logging.getLogger(__name__)
 
 
-class ToolDataTableManager(object):
+class ShedToolDataTableManager(object):
 
     def __init__(self, app):
         self.tdtm = tdtm(app.config.shed_tool_data_path)

@@ -7,8 +7,10 @@ from galaxy.tools import (
     parameters,
     Tool
 )
+from galaxy.tools.data import ToolDataTableManager
+from galaxy.tools.fetcher import ToolLocationFetcher
 from galaxy.tools.parameters import dynamic_options
-from tool_shed.tools import data_table_manager
+from tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from tool_shed.util import (
     basic_util,
     hg_util,
@@ -24,7 +26,7 @@ class ToolValidator(object):
 
     def __init__(self, app):
         self.app = app
-        self.tdtm = data_table_manager.ToolDataTableManager(self.app)
+        self.stdtm = ShedToolDataTableManager(self.app)
 
     def can_use_tool_config_disk_file(self, repository, repo, file_path, changeset_revision):
         """
@@ -67,7 +69,7 @@ class ToolValidator(object):
                         sample_tool_data_table_conf = hg_util.get_config_from_disk('tool_data_table_conf.xml.sample', repo_dir)
                         if sample_tool_data_table_conf:
                             error, correction_msg = \
-                                self.tdtm.handle_sample_tool_data_table_conf_file(sample_tool_data_table_conf,
+                                self.stdtm.handle_sample_tool_data_table_conf_file(sample_tool_data_table_conf,
                                                                                   persist=False)
                             if error:
                                 invalid_files_and_errors_tups.append(('tool_data_table_conf.xml.sample', correction_msg))
@@ -204,7 +206,7 @@ class ToolValidator(object):
             if 'tool_data_table_conf.xml.sample' in sample_files:
                 # Load entries into the tool_data_tables if the tool requires them.
                 tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
-                error, message = self.tdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
+                error, message = self.stdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
                                                                                    persist=False)
         tool, valid, message2 = self.load_tool_from_config(repository_id, tool_config_filepath)
         message = self.concat_messages(message, message2)
@@ -224,7 +226,7 @@ class ToolValidator(object):
                 # Load entries into the tool_data_tables if the tool requires them.
                 tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
                 if tool_data_table_config:
-                    error, message = self.tdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
+                    error, message = self.stdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
                                                                                        persist=False)
                     if error:
                         log.debug(message)
@@ -286,7 +288,7 @@ class ToolValidator(object):
         basic_util.remove_dir(work_dir)
         self.app.config.tool_data_path = original_tool_data_path
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        self.tdtm.reset_tool_data_tables()
+        self.stdtm.reset_tool_data_tables()
         return repository, tool, message
 
     def load_tool_from_config(self, repository_id, full_path):
