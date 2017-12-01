@@ -184,12 +184,10 @@ class AddressField(BaseField):
                 ("country", "Country", ""),
                 ("phone", "Phone", "")]
 
-    def __init__(self, name, user=None, value=None, params=None, security=None, **kwds):
+    def __init__(self, name, user=None, value=None, security=None, **kwds):
         super(AddressField, self).__init__(name, value, **kwds)
         self.user = user
         self.security = security
-        self.select_address = None
-        self.params = params
 
     def to_dict(self):
         d = super(AddressField, self).to_dict()
