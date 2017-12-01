@@ -1519,8 +1519,8 @@ var FolderToolbarView = Backbone.View.extend({
                 "<br>",
                 "<div>",
                 '<label class="checkbox-inline tag-files">',
-                "Tag datasets based on file names.",
-                '<input class="tag-files" type="checkbox" value="tag_using_filenames" checked="checked">',
+                "Tag datasets based on file names",
+                '<input class="tag-files" type="checkbox" value="tag_using_filenames">',
                 "</label>",
                 "</div>",
                 "</div>"
@@ -1561,8 +1561,8 @@ var FolderToolbarView = Backbone.View.extend({
                 "</div>",
                 "<div>",
                 '<label class="checkbox-inline tag-files">',
-                "Tag datasets based on file names.",
-                '<input class="tag-files" type="checkbox" value="tag_using_filenames" checked="checked">',
+                "Tag datasets based on file names",
+                '<input class="tag-files" type="checkbox" value="tag_using_filenames">',
                 "</label>",
                 "</div>",
                 "</div>"
