@@ -4,10 +4,10 @@ import json
 
 from requests import delete, put
 
-from base import api  # noqa: I100
+from base import api  # noqa: I100,I202
 from base.populators import (  # noqa: I100
-    DatasetPopulator,
     DatasetCollectionPopulator,
+    DatasetPopulator,
     LibraryPopulator,
     skip_without_tool,
     TestsDatasets,

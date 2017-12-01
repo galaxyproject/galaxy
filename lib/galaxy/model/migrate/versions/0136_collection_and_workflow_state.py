@@ -5,7 +5,6 @@ from __future__ import print_function
 
 import datetime
 import logging
-
 from collections import OrderedDict
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table
