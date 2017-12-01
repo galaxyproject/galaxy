@@ -22,7 +22,7 @@ ALIASES = {
     'http': ('httprouter', 'socket', 'uwsgi-socket', 'suwsgi-socket', 'ssl-socket'),
 }
 DEFAULT_ARGS = {
-    '_all_': ('virtualenv', 'pythonpath', 'master', 'threads', 'http', 'static-map', 'die-on-term', 'hook-master-start', 'enable-threads'),
+    '_all_': ('virtualenv', 'pythonpath', 'threads', 'http', 'static-map', 'die-on-term', 'hook-master-start', 'enable-threads'),
     'galaxy': ('py-call-osafterfork',),
     'reports': (),
     'tool_shed': (),
@@ -89,7 +89,6 @@ def _get_uwsgi_args(cliargs, kwargs):
     defaults = {
         'virtualenv': os.environ.get('VIRTUAL_ENV', './.venv'),
         'pythonpath': 'lib',
-        'master': True,
         'threads': '4',
         'http': 'localhost:{port}'.format(port=DEFAULT_PORTS[cliargs.app]),
         'static-map': ('/static/style={here}/static/style/blue'.format(here=os.getcwd()),
