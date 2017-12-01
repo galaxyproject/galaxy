@@ -39,6 +39,15 @@ class BaseField(object):
         else:
             return ''
 
+    def to_dict(self):
+        return {
+            'name'      : self.name,
+            'label'     : self.label,
+            'disabled'  : self.disabled,
+            'optional'  : self.optional,
+            'value'     : self.value,
+            'help'      : self.help
+        }
 
 class CheckboxField(BaseField):
     """
@@ -83,6 +92,11 @@ class CheckboxField(BaseField):
             self.checked = value.lower() in ["yes", "true", "on"]
         else:
             self.checked = value
+
+    def to_dict(self):
+        d = super(CheckboxField, self).to_dict()
+        d['type'] = 'boolean'
+        return d
 
 
 class SelectField(BaseField):
@@ -268,6 +282,16 @@ class SelectField(BaseField):
         if multi:
             return selected_options
         return None
+
+    def to_dict(self):
+        d = super(SelectField, self).to_dict()
+        d['type'] = 'select'
+        d['display'] = self.display
+        d['multiple'] = self.multiple
+        d['data'] = []
+        for value in self.selectlist:
+            d['data'].append({'label': value, 'value': value})
+        return d
 
 
 def get_suite():
