@@ -4567,30 +4567,6 @@ class UserAddress(object):
                 'country'      : sanitize_html(self.country),
                 'phone'        : sanitize_html(self.phone)}
 
-    def get_html(self):
-        # This should probably be deprecated eventually.  It should currently
-        # sanitize.
-        # TODO Find out where else uses this and replace with
-        # templates
-        html = ''
-        if self.name:
-            html = html + sanitize_html(self.name)
-        if self.institution:
-            html = html + '<br/>' + sanitize_html(self.institution)
-        if self.address:
-            html = html + '<br/>' + sanitize_html(self.address)
-        if self.city:
-            html = html + '<br/>' + sanitize_html(self.city)
-        if self.state:
-            html = html + ' ' + sanitize_html(self.state)
-        if self.postal_code:
-            html = html + ' ' + sanitize_html(self.postal_code)
-        if self.country:
-            html = html + '<br/>' + sanitize_html(self.country)
-        if self.phone:
-            html = html + '<br/>' + 'phone: ' + sanitize_html(self.phone)
-        return html
-
 
 class UserOpenID(object):
     def __init__(self, user=None, session=None, openid=None):
