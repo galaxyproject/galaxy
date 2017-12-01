@@ -99,18 +99,6 @@ class CheckboxField(BaseField):
         return d
 
 
-class FileField(BaseField):
-    """
-    A file upload input.
-    """
-
-    def __init__(self, name, value=None, ajax=False, **kwds):
-        super(FileField, self).__init__(name, value, **kwds)
-        self.name = name
-        self.ajax = ajax
-        self.value = value
-
-
 class GenomespaceFileField(BaseField):
     """
     A genomspace file browser field.
