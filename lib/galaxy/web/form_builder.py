@@ -93,12 +93,9 @@ class SelectField(BaseField):
 
     def __init__(self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None, field_id=None, value=None, selectlist=None, **kwds):
         super(SelectField, self).__init__(name, value, **kwds)
-        self.name = name
         self.field_id = field_id
         self.multiple = multiple or False
         self.selectlist = selectlist or []
-        self.value = value
-        self.size = size
         self.options = list()
         if display == "checkboxes":
             assert multiple, "Checkbox display only supported for multiple select"
@@ -107,14 +104,6 @@ class SelectField(BaseField):
         elif display is not None:
             raise Exception("Unknown display type: %s" % display)
         self.display = display
-        self.refresh_on_change = refresh_on_change
-        self.refresh_on_change_values = refresh_on_change_values or []
-        if self.refresh_on_change:
-            self.refresh_on_change_text = ' refresh_on_change="true"'
-            if self.refresh_on_change_values:
-                self.refresh_on_change_text = '%s refresh_on_change_values="%s"' % (self.refresh_on_change_text, escape(",".join(self.refresh_on_change_values), quote=True))
-        else:
-            self.refresh_on_change_text = ''
 
     def add_option(self, text, value, selected=False):
         self.options.append((text, value, selected))
