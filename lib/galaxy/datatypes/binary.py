@@ -33,7 +33,6 @@ log = logging.getLogger(__name__)
 class Binary(data.Data):
     """Binary data"""
     edam_format = "format_2333"
-    unsniffable_binary_formats = []
 
     @staticmethod
     def register_sniffable_binary_format(data_type, ext, type_class):
@@ -42,11 +41,8 @@ class Binary(data.Data):
 
     @staticmethod
     def register_unsniffable_binary_ext(ext):
-        Binary.unsniffable_binary_formats.append(ext.lower())
-
-    @staticmethod
-    def is_ext_unsniffable(ext):
-        return ext in Binary.unsniffable_binary_formats
+        """Deprecated method."""
+        pass
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
@@ -91,9 +87,6 @@ class Ab1(Binary):
             return dataset.peek
         except Exception:
             return "Binary ab1 sequence file (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_unsniffable_binary_ext("ab1")
 
 
 class Idat(Binary):
@@ -164,9 +157,6 @@ class CompressedArchive(Binary):
             return "Compressed binary file (%s)" % (nice_size(dataset.get_size()))
 
 
-Binary.register_unsniffable_binary_ext("compressed_archive")
-
-
 class CompressedZipArchive(CompressedArchive):
     """
         Class describing an compressed binary file
@@ -189,17 +179,11 @@ class CompressedZipArchive(CompressedArchive):
             return "Compressed zip file (%s)" % (nice_size(dataset.get_size()))
 
 
-Binary.register_unsniffable_binary_ext("zip")
-
-
 class GenericAsn1Binary(Binary):
     """Class for generic ASN.1 binary format"""
     file_ext = "asn1-binary"
     edam_format = "format_1966"
     edam_data = "data_0849"
-
-
-Binary.register_unsniffable_binary_ext("asn1-binary")
 
 
 @dataproviders.decorators.has_dataproviders
@@ -927,9 +911,6 @@ class Scf(Binary):
             return dataset.peek
         except Exception:
             return "Binary scf sequence file (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_unsniffable_binary_ext("scf")
 
 
 class Sff(Binary):
