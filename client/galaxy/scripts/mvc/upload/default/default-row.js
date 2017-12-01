@@ -34,7 +34,7 @@ export default Backbone.View.extend({
 
         // append popup to settings icon
         this.settings = new Popover.View({
-            title:  _l("Upload configuration"),
+            title: _l("Upload configuration"),
             container: this.$(".upload-settings"),
             placement: "bottom"
         });

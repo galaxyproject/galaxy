@@ -1,4 +1,3 @@
-import _l from "utils/localization";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 var View = Backbone.View.extend({
@@ -10,7 +9,7 @@ var View = Backbone.View.extend({
             new Backbone.Model({
                 id: Utils.uid(),
                 cls: "ui-portlet",
-                title:  _l(""),
+                title: "",
                 icon: "",
                 buttons: null,
                 body: null,

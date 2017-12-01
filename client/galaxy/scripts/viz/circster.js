@@ -1151,7 +1151,7 @@ var Circster = Backbone.View.extend({
             [
                 {
                     icon_class: "plus-button",
-                    title:  _l("Add tracks"),
+                    title: _l("Add tracks"),
                     on_click: function() {
                         visualization.select_datasets({ dbkey: vis.get("dbkey") }, tracks => {
                             vis.add_tracks(tracks);
@@ -1160,7 +1160,7 @@ var Circster = Backbone.View.extend({
                 },
                 {
                     icon_class: "gear",
-                    title:  _l("Settings"),
+                    title: _l("Settings"),
                     on_click: function() {
                         var view = new config.ConfigSettingCollectionView({
                             collection: vis.get("config")
@@ -1170,11 +1170,11 @@ var Circster = Backbone.View.extend({
                 },
                 {
                     icon_class: "disk--arrow",
-                    title:  _l("Save"),
+                    title: _l("Save"),
                     on_click: function() {
                         // show saving dialog box
                         Galaxy.modal.show({
-                            title:  _l("Saving..."),
+                            title: _l("Saving..."),
                             body: "progress"
                         });
 
@@ -1198,7 +1198,7 @@ var Circster = Backbone.View.extend({
                             .error(() => {
                                 // show dialog
                                 Galaxy.modal.show({
-                                    title:  _l("Could Not Save"),
+                                    title: _l("Could Not Save"),
                                     body: "Could not save visualization. Please try again later.",
                                     buttons: {
                                         Cancel: function() {
@@ -1211,7 +1211,7 @@ var Circster = Backbone.View.extend({
                 },
                 {
                     icon_class: "cross-circle",
-                    title:  _l("Close"),
+                    title: _l("Close"),
                     on_click: function() {
                         window.location = `${Galaxy.root}visualizations/list`;
                     }

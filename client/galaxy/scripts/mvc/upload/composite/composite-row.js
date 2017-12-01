@@ -59,13 +59,13 @@ export default Backbone.View.extend({
         // source selection popup
         this.button_menu = new Ui.ButtonMenu({
             icon: "fa-caret-down",
-            title:  _l("Select"),
+            title: _l("Select"),
             pull: "left"
         });
         this.$source.append(this.button_menu.$el);
         this.button_menu.addMenu({
             icon: "fa-laptop",
-            title:  _l("Choose local file"),
+            title: _l("Choose local file"),
             onclick: function() {
                 self.uploadinput.dialog();
             }
@@ -73,7 +73,7 @@ export default Backbone.View.extend({
         if (this.app.ftp_upload_site) {
             this.button_menu.addMenu({
                 icon: "fa-folder-open-o",
-                title:  _l("Choose FTP file"),
+                title: _l("Choose FTP file"),
                 onclick: function() {
                     self._showFtp();
                 }
@@ -99,7 +99,7 @@ export default Backbone.View.extend({
 
         // append popup to settings icon
         this.settings = new Popover.View({
-            title:  _l("Upload configuration"),
+            title: _l("Upload configuration"),
             container: this.$settings,
             placement: "bottom"
         });

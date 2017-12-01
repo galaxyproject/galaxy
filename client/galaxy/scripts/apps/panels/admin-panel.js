@@ -14,76 +14,76 @@ var AdminPanel = Backbone.View.extend({
         });
         this.categories = new Backbone.Collection([
             {
-                title:  _l("Server"),
+                title: _l("Server"),
                 items: [
                     {
-                        title:  _l("Data types"),
+                        title: _l("Data types"),
                         url: "admin/view_datatypes_registry"
                     },
                     {
-                        title:  _l("Data tables"),
+                        title: _l("Data tables"),
                         url: "admin/view_tool_data_tables"
                     },
                     {
-                        title:  _l("Display applications"),
+                        title: _l("Display applications"),
                         url: "admin/display_applications"
                     },
                     {
-                        title:  _l("Manage jobs"),
+                        title: _l("Manage jobs"),
                         url: "admin/jobs"
                     },
                     {
-                        title:  _l("Local data"),
+                        title: _l("Local data"),
                         url: "data_manager"
                     }
                 ]
             },
             {
-                title:  _l("User Management"),
+                title: _l("User Management"),
                 items: [
                     {
-                        title:  _l("Users"),
+                        title: _l("Users"),
                         url: "admin/users",
                         target: "__use_router__"
                     },
                     {
-                        title:  _l("Quotas"),
+                        title: _l("Quotas"),
                         url: "admin/quotas",
                         target: "__use_router__",
                         enabled: self.config.enable_quotas
                     },
                     {
-                        title:  _l("Groups"),
+                        title: _l("Groups"),
                         url: "admin/groups",
                         target: "__use_router__"
                     },
                     {
-                        title:  _l("Roles"),
+                        title: _l("Roles"),
                         url: "admin/roles",
                         target: "__use_router__"
                     },
                     {
-                        title:  _l("Forms"),
+                        title: _l("Forms"),
                         url: "admin/forms",
                         target: "__use_router__"
                     },
                     {
-                        title:  _l("API keys"),
+                        title: _l("API keys"),
                         url: "admin/api_keys",
                         target: "__use_router__"
                     },
                     {
-                        title:  _l("Impersonate a user"),
+                        title: _l("Impersonate a user"),
                         url: "admin/impersonate",
                         enabled: self.config.allow_user_impersonation
                     }
                 ]
             },
             {
-                title:  _l("Tool Management"),
+                title: _l("Tool Management"),
                 items: [
                     {
-                        title:  _l("Install new tools"),
+                        title: _l("Install new tools"),
                         url: "admin_toolshed/browse_tool_sheds",
                         enabled: self.settings.is_tool_shed_installed
                     },
@@ -93,40 +93,40 @@ var AdminPanel = Backbone.View.extend({
                         enabled: self.settings.is_tool_shed_installed && self.config.enable_beta_ts_api_install
                     },
                     {
-                        title:  _l("Monitor installation"),
+                        title: _l("Monitor installation"),
                         url: "admin_toolshed/monitor_repository_installation",
                         enabled: self.settings.installing_repository_ids
                     },
                     {
-                        title:  _l("Manage tools"),
+                        title: _l("Manage tools"),
                         url: "admin/repositories",
                         enabled: self.settings.is_repo_installed,
                         target: "__use_router__"
                     },
                     {
-                        title:  _l("Manage metadata"),
+                        title: _l("Manage metadata"),
                         url: "admin_toolshed/reset_metadata_on_selected_installed_repositories",
                         enabled: self.settings.is_repo_installed
                     },
                     {
-                        title:  _l("Manage whitelist"),
+                        title: _l("Manage whitelist"),
                         url: "admin/sanitize_whitelist"
                     },
                     {
-                        title:  _l("Manage dependencies"),
+                        title: _l("Manage dependencies"),
                         url: "admin/manage_tool_dependencies"
                     },
                     {
-                        title:  _l("View lineage"),
+                        title: _l("View lineage"),
                         url: "admin/tool_versions",
                         target: "__use_router__"
                     },
                     {
-                        title:  _l("View migration stages"),
+                        title: _l("View migration stages"),
                         url: "admin/review_tool_migration_stages"
                     },
                     {
-                        title:  _l("View error logs"),
+                        title: _l("View error logs"),
                         url: "admin/tool_errors"
                     }
                 ]

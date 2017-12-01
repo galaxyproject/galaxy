@@ -91,7 +91,7 @@ var GenericNavView = Backbone.View.extend({
         navItem = {
             id: "show-chat-online",
             icon: "fa-comment-o",
-            tooltip:  _l("Chat online"),
+            tooltip: _l("Chat online"),
             visible: false,
             onclick: self.makeModalIframe
         };

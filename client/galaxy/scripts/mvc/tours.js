@@ -116,7 +116,7 @@ var giveTour = tour_id => {
 };
 
 var ToursView = Backbone.View.extend({
-    title:  _l("Tours"),
+    title: _l("Tours"),
     // initialize
     initialize: function() {
         var self = this;

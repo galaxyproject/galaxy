@@ -20,7 +20,7 @@ var View = Backbone.View.extend({
         var repositories = that.model.models;
         that.$el.html(
             repo_queue_template({
-                title:  _l("Repository Installation Queue"),
+                title: _l("Repository Installation Queue"),
                 repositories: repositories,
                 queue: toolshed_util.queueLength()
             })

@@ -518,12 +518,12 @@ export default function editor_onload() {
             { name: "Italic", title: "Emphasis", css: "wym_tools_emphasis" },
             {
                 name: "Superscript",
-                title:  _l("Superscript"),
+                title: _l("Superscript"),
                 css: "wym_tools_superscript"
             },
             {
                 name: "Subscript",
-                title:  _l("Subscript"),
+                title: _l("Subscript"),
                 css: "wym_tools_subscript"
             },
             {

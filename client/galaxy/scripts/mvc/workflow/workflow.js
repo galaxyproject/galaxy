@@ -153,7 +153,7 @@ var WorkflowItemView = Backbone.View.extend({
 
 /** View of the main workflow list page */
 var WorkflowListView = Backbone.View.extend({
-    title:  _l("Workflows"),
+    title: _l("Workflows"),
     initialize: function() {
         this.setElement("<div/>");
         _.bindAll(this, "adjustActiondropdown");

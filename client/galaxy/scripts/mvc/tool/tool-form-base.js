@@ -138,7 +138,7 @@ export default FormBase.extend({
             });
             menu_button.addMenu({
                 icon: "fa-search",
-                title:  _l("Search"),
+                title: _l("Search"),
                 onclick: function() {
                     window.open(`${options.biostar_url}/local/search/page/?q=${options.name}`);
                 }
@@ -146,7 +146,7 @@ export default FormBase.extend({
         }
         menu_button.addMenu({
             icon: "fa-share",
-            title:  _l("Share"),
+            title: _l("Share"),
             onclick: function() {
                 prompt(
                     "Copy to clipboard: Ctrl+C, Enter",
@@ -159,7 +159,7 @@ export default FormBase.extend({
         if (Galaxy.user && Galaxy.user.get("is_admin")) {
             menu_button.addMenu({
                 icon: "fa-download",
-                title:  _l("Download"),
+                title: _l("Download"),
                 onclick: function() {
                     window.location.href = `${Galaxy.root}api/tools/${options.id}/download`;
                 }
@@ -170,7 +170,7 @@ export default FormBase.extend({
         if (options.requirements && options.requirements.length > 0) {
             menu_button.addMenu({
                 icon: "fa-info-circle",
-                title:  _l("Requirements"),
+                title: _l("Requirements"),
                 onclick: function() {
                     if (!this.requirements_visible || self.portlet.collapsed) {
                         this.requirements_visible = true;
@@ -192,7 +192,7 @@ export default FormBase.extend({
         if (options.sharable_url) {
             menu_button.addMenu({
                 icon: "fa-external-link",
-                title:  _l("See in Tool Shed"),
+                title: _l("See in Tool Shed"),
                 onclick: function() {
                     window.open(options.sharable_url);
                 }

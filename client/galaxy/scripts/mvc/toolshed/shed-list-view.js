@@ -26,7 +26,7 @@ var View = Backbone.View.extend({
         var toolshed_list_template = this.templateToolshedList;
         this.$el.html(
             toolshed_list_template({
-                title:  _l("Configured Galaxy Tool Sheds"),
+                title: _l("Configured Galaxy Tool Sheds"),
                 tool_sheds: this.model.models,
                 queue: toolshed_util.queueLength()
             })

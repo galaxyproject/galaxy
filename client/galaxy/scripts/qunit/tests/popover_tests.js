@@ -1,4 +1,3 @@
-import _l from "utils/localization";
 /* global define */
 define(["qunit/test-app", "mvc/ui/ui-misc", "mvc/ui/ui-popover"], function(testApp, Ui, Popover) {
     "use strict";
@@ -9,14 +8,14 @@ define(["qunit/test-app", "mvc/ui/ui-misc", "mvc/ui/ui-popover"], function(testA
             testApp.create();
             var self = this;
             this.button = new Ui.Button({
-                title:  _l("Test button"),
+                title: "Test button"
                 onclick: function() {
                     self.popover.show();
                 }
             });
             this.$parent = $("<div/>").append(this.button.$el);
             this.popover = new Popover.View({
-                title:  _l("Test Title"),
+                title: "Test Title"
                 body: "Test Body",
                 placement: "bottom",
                 container: this.button.$el

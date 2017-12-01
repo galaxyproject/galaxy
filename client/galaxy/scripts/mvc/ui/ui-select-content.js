@@ -11,21 +11,21 @@ var Configurations = {
         {
             src: "hda",
             icon: "fa-file-o",
-            tooltip:  _l("Single dataset"),
+            tooltip: _l("Single dataset"),
             multiple: false,
             batch: Batch.DISABLED
         },
         {
             src: "hda",
             icon: "fa-files-o",
-            tooltip:  _l("Multiple datasets"),
+            tooltip: _l("Multiple datasets"),
             multiple: true,
             batch: Batch.LINKED
         },
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip:  _l("Dataset collection"),
+            tooltip: _l("Dataset collection"),
             multiple: false,
             batch: Batch.LINKED
         }
@@ -34,14 +34,14 @@ var Configurations = {
         {
             src: "hda",
             icon: "fa-files-o",
-            tooltip:  _l("Multiple datasets"),
+            tooltip: _l("Multiple datasets"),
             multiple: true,
             batch: Batch.DISABLED
         },
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip:  _l("Dataset collections"),
+            tooltip: _l("Dataset collections"),
             multiple: true,
             batch: Batch.DISABLED
         }
@@ -50,7 +50,7 @@ var Configurations = {
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip:  _l("Dataset collection"),
+            tooltip: _l("Dataset collection"),
             multiple: false,
             batch: Batch.DISABLED
         }
@@ -59,7 +59,7 @@ var Configurations = {
         {
             src: "hda",
             icon: "fa-file-o",
-            tooltip:  _l("Single dataset"),
+            tooltip: _l("Single dataset"),
             multiple: false,
             batch: Batch.DISABLED
         }
@@ -68,7 +68,7 @@ var Configurations = {
         {
             src: "hda",
             icon: "fa-files-o",
-            tooltip:  _l("Multiple datasets"),
+            tooltip: _l("Multiple datasets"),
             multiple: true,
             batch: Batch.DISABLED
         }
@@ -77,7 +77,7 @@ var Configurations = {
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip:  _l("Dataset collection"),
+            tooltip: _l("Dataset collection"),
             multiple: false,
             batch: Batch.DISABLED
         }
@@ -86,14 +86,14 @@ var Configurations = {
         {
             src: "hda",
             icon: "fa-file-o",
-            tooltip:  _l("Single dataset"),
+            tooltip: _l("Single dataset"),
             multiple: false,
             batch: Batch.DISABLED
         },
         {
             src: "hda",
             icon: "fa-files-o",
-            tooltip:  _l("Multiple datasets"),
+            tooltip: _l("Multiple datasets"),
             multiple: true,
             batch: Batch.ENABLED
         }
@@ -102,14 +102,14 @@ var Configurations = {
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip:  _l("Dataset collection"),
+            tooltip: _l("Dataset collection"),
             multiple: false,
             batch: Batch.DISABLED
         },
         {
             src: "hdca",
             icon: "fa-folder",
-            tooltip:  _l("Multiple collections"),
+            tooltip: _l("Multiple collections"),
             multiple: true,
             batch: Batch.ENABLED
         }

@@ -115,7 +115,7 @@ window.app = function app(options, bootstrapped) {
             var id = `?id=${QueryStringParsing.get("id")}`;
             var form_defs = {
                 reset_user_password: {
-                    title:  _l("Reset passwords"),
+                    title: _l("Reset passwords"),
                     url: `admin/reset_user_password${id}`,
                     icon: "fa-user",
                     submit_title: "Save new password",

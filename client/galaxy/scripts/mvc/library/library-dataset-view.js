@@ -180,7 +180,7 @@ var LibraryDatasetView = Backbone.View.extend({
             self.modal = Galaxy.modal;
             self.modal.show({
                 closing_events: true,
-                title:  _l("Import into History"),
+                title: _l("Import into History"),
                 body: template({ histories: self.histories.models }),
                 buttons: {
                     Import: function() {

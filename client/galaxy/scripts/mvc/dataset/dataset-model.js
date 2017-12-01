@@ -225,7 +225,7 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
              *      following attr keys.
              */
             searchAliases: {
-                title:  _l("name"),
+                title: _l("name"),
                 format: "file_ext",
                 database: "genome_build",
                 blurb: "misc_blurb",

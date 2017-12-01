@@ -82,30 +82,30 @@ var View = Backbone.View.extend({
         var tabs = new Tabs.View();
         tabs.add({
             id: "attribute",
-            title:  _l("Attributes"),
+            title: _l("Attributes"),
             icon: "fa fa-bars",
-            tooltip:  _l("Edit dataset attributes"),
+            tooltip: _l("Edit dataset attributes"),
             $el: this.forms.attribute.$el
         });
         tabs.add({
             id: "convert",
-            title:  _l("Convert"),
+            title: _l("Convert"),
             icon: "fa-gear",
-            tooltip:  _l("Convert to new format"),
+            tooltip: _l("Convert to new format"),
             $el: this.forms.conversion.$el
         });
         tabs.add({
             id: "datatype",
-            title:  _l("Datatypes"),
+            title: _l("Datatypes"),
             icon: "fa-database",
-            tooltip:  _l("Change data type"),
+            tooltip: _l("Change data type"),
             $el: this.forms.datatype.$el
         });
         tabs.add({
             id: "permissions",
-            title:  _l("Permissions"),
+            title: _l("Permissions"),
             icon: "fa-user",
-            tooltip:  _l("Permissions"),
+            tooltip: _l("Permissions"),
             $el: this.forms.permission.$el
         });
         return tabs;
@@ -115,12 +115,12 @@ var View = Backbone.View.extend({
     _getAttribute: function() {
         var self = this;
         var form = new Form({
-            title:  _l("Edit attributes"),
+            title: _l("Edit attributes"),
             operations: {
                 submit_attributes: new Ui.ButtonIcon({
-                    tooltip:  _l("Save attributes of the dataset."),
+                    tooltip: _l("Save attributes of the dataset."),
                     icon: "fa-floppy-o",
-                    title:  _l("Save"),
+                    title: _l("Save"),
                     onclick: function() {
                         self._submit("attributes", form);
                     }
@@ -143,11 +143,11 @@ var View = Backbone.View.extend({
     _getConversion: function() {
         var self = this;
         var form = new Form({
-            title:  _l("Convert to new format"),
+            title: _l("Convert to new format"),
             operations: {
                 submit_conversion: new Ui.ButtonIcon({
-                    tooltip:  _l("Convert the datatype to a new format."),
-                    title:  _l("Convert datatype"),
+                    tooltip: _l("Convert the datatype to a new format."),
+                    title: _l("Convert datatype"),
                     icon: "fa-exchange",
                     onclick: function() {
                         self._submit("conversion", form);
@@ -162,11 +162,11 @@ var View = Backbone.View.extend({
     _getDatatype: function() {
         var self = this;
         var form = new Form({
-            title:  _l("Change datatype"),
+            title: _l("Change datatype"),
             operations: {
                 submit_datatype: new Ui.ButtonIcon({
-                    tooltip:  _l("Change the datatype to a new type."),
-                    title:  _l("Change datatype"),
+                    tooltip: _l("Change the datatype to a new type."),
+                    title: _l("Change datatype"),
                     icon: "fa-exchange",
                     onclick: function() {
                         self._submit("datatype", form);
@@ -181,11 +181,11 @@ var View = Backbone.View.extend({
     _getPermission: function() {
         var self = this;
         var form = new Form({
-            title:  _l("Manage dataset permissions"),
+            title: _l("Manage dataset permissions"),
             operations: {
                 submit_permission: new Ui.ButtonIcon({
-                    tooltip:  _l("Save permissions."),
-                    title:  _l("Save permissions"),
+                    tooltip: _l("Save permissions."),
+                    title: _l("Save permissions"),
                     icon: "fa-floppy-o ",
                     onclick: function() {
                         self._submit("permission", form);

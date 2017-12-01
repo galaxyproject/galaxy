@@ -70,7 +70,7 @@ var LibraryToolbarView = Backbone.View.extend({
         this.modal = Galaxy.modal;
         this.modal.show({
             closing_events: true,
-            title:  _l("Create New Library"),
+            title: _l("Create New Library"),
             body: this.templateNewLibraryInModal(),
             buttons: {
                 Create: function() {

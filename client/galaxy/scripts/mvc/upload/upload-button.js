@@ -8,7 +8,7 @@ var View = Backbone.View.extend({
             (options && options.model) ||
             new Backbone.Model({
                 icon: "fa-upload",
-                tooltip:  _l("Download from URL or upload files from disk"),
+                tooltip: _l("Download from URL or upload files from disk"),
                 label: "Load Data",
                 percentage: 0,
                 status: "",

@@ -62,7 +62,7 @@ var View = Backbone.View.extend({
                                 } else {
                                     Galaxy.modal &&
                                         Galaxy.modal.show({
-                                            title:  _l("Tool request failed"),
+                                            title: _l("Tool request failed"),
                                             body: error_message,
                                             buttons: {
                                                 Close: function() {
@@ -120,7 +120,7 @@ var View = Backbone.View.extend({
         var execute_button = new Ui.Button({
             icon: "fa-check",
             tooltip: `Execute: ${options.name} (${options.version})`,
-            title:  _l("Execute"),
+            title: _l("Execute"),
             cls: "btn btn-primary ui-clear-float",
             wait_cls: "btn btn-info ui-clear-float",
             onclick: function() {
@@ -217,7 +217,7 @@ var View = Backbone.View.extend({
                 }
                 if (!input_found) {
                     self.modal.show({
-                        title:  _l("Job submission failed"),
+                        title: _l("Job submission failed"),
                         body: self._templateError(job_def, response && response.err_msg),
                         buttons: {
                             Close: function() {

@@ -1,4 +1,3 @@
-import _l from "utils/localization";
 /* global define */
 define(
     [
@@ -98,7 +97,7 @@ define(
                     {
                         id: "id",
                         keywords: "default",
-                        title:  _l("title"),
+                        title: "title"
                         title_icon: "title_icon",
                         image_src: "image_src",
                         description: "description"

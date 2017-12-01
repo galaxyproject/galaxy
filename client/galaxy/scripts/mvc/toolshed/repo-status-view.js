@@ -43,7 +43,7 @@ var ToolShedRepoStatusView = Backbone.View.extend({
         var repo_status_template = this.templateRepoStatus;
         this.$el.html(
             repo_status_template({
-                title:  _l("Repository Status"),
+                title: _l("Repository Status"),
                 repositories: this.model.models,
                 queue: toolshed_util.queueLength()
             })

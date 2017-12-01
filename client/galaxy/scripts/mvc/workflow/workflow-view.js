@@ -503,14 +503,14 @@ export default Backbone.View.extend({
                 var copy = new Ui.ButtonIcon({
                     icon: "fa fa-copy",
                     cls: "ui-button-icon-plain",
-                    tooltip:  _l("Copy and insert individual steps"),
+                    tooltip: _l("Copy and insert individual steps"),
                     onclick: function() {
                         if (workflow.step_count < 2) {
                             self.copy_into_workflow(workflow.id, workflow.name);
                         } else {
                             // don't ruin the workflow by adding 50 steps unprompted.
                             Galaxy.modal.show({
-                                title:  _l("Warning"),
+                                title: _l("Warning"),
                                 body: `This will copy ${workflow.step_count} new steps into your workflow.`,
                                 buttons: {
                                     Cancel: function() {

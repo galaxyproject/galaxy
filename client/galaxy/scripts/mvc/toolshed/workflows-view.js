@@ -20,7 +20,7 @@ var View = Backbone.View.extend({
         var workflows = that.model.models;
         that.$el.html(
             workflows_missing_tools({
-                title:  _l("Workflows Missing Tools"),
+                title: _l("Workflows Missing Tools"),
                 workflows: workflows,
                 queue: toolshed_util.queueLength()
             })

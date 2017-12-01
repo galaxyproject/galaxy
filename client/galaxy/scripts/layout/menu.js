@@ -374,7 +374,7 @@ var Tab = Backbone.View.extend({
     _buildMenuItem: function(options) {
         var self = this;
         options = _.defaults(options || {}, {
-            title:  _l(""),
+            title: "",
             url: "",
             target: "_parent",
             noscratchbook: false

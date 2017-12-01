@@ -45,7 +45,7 @@ export default Backbone.View.extend({
         // append buttons to dom
         this.btnLocal = new Ui.Button({
             id: "btn-local",
-            title:  _l("Choose local file"),
+            title: _l("Choose local file"),
             onclick: function() {
                 self.uploadbox.select();
             },
@@ -53,7 +53,7 @@ export default Backbone.View.extend({
         });
         this.btnFtp = new Ui.Button({
             id: "btn-ftp",
-            title:  _l("Choose FTP file"),
+            title: _l("Choose FTP file"),
             onclick: function() {
                 self._eventFtp();
             },
@@ -69,28 +69,28 @@ export default Backbone.View.extend({
         });
         this.btnStart = new Ui.Button({
             id: "btn-start",
-            title:  _l("Start"),
+            title: _l("Start"),
             onclick: function() {
                 self._eventStart();
             }
         });
         this.btnStop = new Ui.Button({
             id: "btn-stop",
-            title:  _l("Pause"),
+            title: _l("Pause"),
             onclick: function() {
                 self._eventStop();
             }
         });
         this.btnReset = new Ui.Button({
             id: "btn-reset",
-            title:  _l("Reset"),
+            title: _l("Reset"),
             onclick: function() {
                 self._eventReset();
             }
         });
         this.btnClose = new Ui.Button({
             id: "btn-close",
-            title:  _l("Close"),
+            title: _l("Close"),
             onclick: function() {
                 self.app.modal.hide();
             }
@@ -133,7 +133,7 @@ export default Backbone.View.extend({
 
         // add ftp file viewer
         this.ftp = new Popover.View({
-            title:  _l("FTP files"),
+            title: _l("FTP files"),
             container: this.btnFtp.$el
         });
 

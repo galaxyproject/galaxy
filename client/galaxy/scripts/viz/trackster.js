@@ -106,7 +106,7 @@ var TracksterUI = Base.extend({
             .error(() => {
                 // show dialog
                 Galaxy.modal.show({
-                    title:  _l("Could Not Save"),
+                    title: _l("Could Not Save"),
                     body: "Could not save visualization. Please try again later.",
                     buttons: {
                         Cancel: function() {
@@ -127,7 +127,7 @@ var TracksterUI = Base.extend({
             [
                 {
                     icon_class: "plus-button",
-                    title:  _l("Add tracks"),
+                    title: _l("Add tracks"),
                     on_click: function() {
                         visualization.select_datasets({ dbkey: view.dbkey }, new_tracks => {
                             _.each(new_tracks, track => {
@@ -138,7 +138,7 @@ var TracksterUI = Base.extend({
                 },
                 {
                     icon_class: "block--plus",
-                    title:  _l("Add group"),
+                    title: _l("Add group"),
                     on_click: function() {
                         view.add_drawable(
                             new tracks.DrawableGroup(view, view, {
@@ -149,7 +149,7 @@ var TracksterUI = Base.extend({
                 },
                 {
                     icon_class: "bookmarks",
-                    title:  _l("Bookmarks"),
+                    title: _l("Bookmarks"),
                     on_click: function() {
                         // HACK -- use style to determine if panel is hidden and hide/show accordingly.
                         force_right_panel($("div#right").css("right") == "0px" ? "hide" : "show");
@@ -157,21 +157,21 @@ var TracksterUI = Base.extend({
                 },
                 {
                     icon_class: "globe",
-                    title:  _l("Circster"),
+                    title: _l("Circster"),
                     on_click: function() {
                         window.location = `${self.baseURL}visualization/circster?id=${view.vis_id}`;
                     }
                 },
                 {
                     icon_class: "disk--arrow",
-                    title:  _l("Save"),
+                    title: _l("Save"),
                     on_click: function() {
                         self.save_viz();
                     }
                 },
                 {
                     icon_class: "cross-circle",
-                    title:  _l("Close"),
+                    title: _l("Close"),
                     on_click: function() {
                         self.handle_unsaved_changes(view);
                     }
@@ -358,7 +358,7 @@ var TracksterUI = Base.extend({
         if (view.has_changes) {
             var self = this;
             Galaxy.modal.show({
-                title:  _l("Close visualization"),
+                title: _l("Close visualization"),
                 body: "There are unsaved changes to your visualization which will be lost if you do not save them.",
                 buttons: {
                     Cancel: function() {
@@ -463,7 +463,7 @@ var TracksterView = Backbone.View.extend({
             embedded: true
         });
         Galaxy.modal.show({
-            title:  _l("Add Data to Saved Visualization"),
+            title: _l("Add Data to Saved Visualization"),
             body: tracks_grid.$el,
             buttons: {
                 Cancel: function() {
@@ -519,7 +519,7 @@ var TracksterView = Backbone.View.extend({
             success: function(response) {
                 // show dialog
                 Galaxy.modal.show({
-                    title:  _l("New Visualization"),
+                    title: _l("New Visualization"),
                     body: self.template_view_new(response),
                     buttons: {
                         Cancel: function() {

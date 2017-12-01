@@ -25,7 +25,7 @@ var HistoryPanel = Backbone.View.extend({
         // build buttons
         this.buttonRefresh = new Ui.ButtonLink({
             id: "history-refresh-button",
-            title:  _l("Refresh history"),
+            title: _l("Refresh history"),
             cls: "panel-header-button",
             icon: "fa fa-refresh",
             onclick: function() {
@@ -34,7 +34,7 @@ var HistoryPanel = Backbone.View.extend({
         });
         this.buttonOptions = new Ui.ButtonLink({
             id: "history-options-button",
-            title:  _l("History options"),
+            title: _l("History options"),
             cls: "panel-header-button",
             target: "galaxy_main",
             icon: "fa fa-cog",
@@ -42,7 +42,7 @@ var HistoryPanel = Backbone.View.extend({
         });
         this.buttonViewMulti = new Ui.ButtonLink({
             id: "history-view-multi-button",
-            title:  _l("View all histories"),
+            title: _l("View all histories"),
             cls: "panel-header-button",
             icon: "fa fa-columns",
             href: `${this.root}history/view_multiple`

@@ -7,7 +7,7 @@ var View = Backbone.View.extend({
     initialize: function(options) {
         this.list = {};
         this.options = Utils.merge(options, {
-            title:  _l("Repeat"),
+            title: _l("Repeat"),
             empty_text: "Not available.",
             max: null,
             min: null
@@ -41,7 +41,7 @@ var View = Backbone.View.extend({
         }
         var button_delete = new Ui.ButtonIcon({
             icon: "fa-trash-o",
-            tooltip:  _l("Delete this repeat block"),
+            tooltip: _l("Delete this repeat block"),
             cls: "ui-button-icon-plain form-repeat-delete",
             onclick: function() {
                 options.ondel && options.ondel();
@@ -49,7 +49,7 @@ var View = Backbone.View.extend({
         });
         var portlet = new Portlet.View({
             id: options.id,
-            title:  _l("placeholder"),
+            title: _l("placeholder"),
             cls: options.cls || "ui-portlet-repeat",
             operations: { button_delete: button_delete }
         });

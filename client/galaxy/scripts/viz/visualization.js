@@ -61,18 +61,18 @@ var select_datasets = (filters, success_fn) => {
     var tabs = new Tabs.View();
     tabs.add({
         id: "histories",
-        title:  _l("Histories"),
+        title: _l("Histories"),
         $el: $("<div/>").append(history_grid.$el)
     });
     tabs.add({
         id: "libraries",
-        title:  _l("Libraries"),
+        title: _l("Libraries"),
         $el: $("<div/>").append(library_grid.$el)
     });
 
     // modal
     Galaxy.modal.show({
-        title:  _l("Select datasets for new tracks"),
+        title: _l("Select datasets for new tracks"),
         body: tabs.$el,
         closing_events: true,
         buttons: {
@@ -1022,7 +1022,7 @@ var BackboneTrackCollection = Backbone.Collection.extend({
  */
 var Visualization = Backbone.Model.extend({
     defaults: {
-        title:  _l(""),
+        title: "",
         type: ""
     },
 
