@@ -707,7 +707,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         for filter_name in filter_config:
             function = factory.build_filter_function(filter_name)
             if function is None:
-                errors['%s|%s' % (filter_type, filter_name)] = 'Filter module not found.'
+                errors['%s|%s' % (filter_type, filter_name)] = 'Filter function not found.'
             filter_inputs.append({
                 'type': 'boolean',
                 'name': filter_name,
