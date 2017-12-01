@@ -224,7 +224,9 @@ def __splitext_ignore(path, ignore=None):
     ignore = map(__ext_strip_sep, __listify(ignore))
     root, ext = __splitext_no_sep(path)
     if ext in ignore:
-        root, ext = __splitext_no_sep(path)
+        new_path = path[0:(-len(ext) - 1)]
+        root, ext = __splitext_no_sep(new_path)
+
     return (root, ext)
 
 
