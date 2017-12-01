@@ -89,10 +89,7 @@ function init_refresh_on_change() {
         .change(function() {
             var select_field = $(this);
             var select_val = select_field.val();
-            var refresh = false;
-
             var ref_on_change_vals = select_field.attr("refresh_on_change_values");
-
             if (ref_on_change_vals) {
                 ref_on_change_vals = ref_on_change_vals.split(",");
                 var last_selected_value = select_field.attr("last_selected_value");
@@ -114,10 +111,7 @@ function init_refresh_on_change() {
         .click(function() {
             var select_field = $(this);
             var select_val = select_field.val();
-            var refresh = false;
-
             var ref_on_change_vals = select_field.attr("refresh_on_change_values");
-
             if (ref_on_change_vals) {
                 ref_on_change_vals = ref_on_change_vals.split(",");
                 var last_selected_value = select_field.attr("last_selected_value");
@@ -165,7 +159,7 @@ $(document).ready(() => {
     // add use_panels=True and set target to self.
     $("a").click(function() {
         var anchor = $(this);
-        var galaxy_main_exists = parent.frames && parent.frames.galaxy_main;
+        var galaxy_main_exists = window.parent.frames && window.parent.frames.galaxy_main;
         if (anchor.attr("target") == "galaxy_main" && !galaxy_main_exists) {
             var href = anchor.attr("href");
             if (href.indexOf("?") == -1) {
@@ -206,7 +200,7 @@ $(document).ready(() => {
     function onloadWebhooks() {
         // Wait until Galaxy.config is loaded.
         if (Galaxy.config) {
-            if (Galaxy.config.enable_webhooks){
+            if (Galaxy.config.enable_webhooks) {
                 // Load all webhooks with the type 'onload'
                 $.getJSON(`${Galaxy.root}api/webhooks/onload/all`, webhooks => {
                     _.each(webhooks, webhook => {
