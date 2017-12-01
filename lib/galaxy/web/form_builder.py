@@ -225,14 +225,11 @@ class WorkflowMappingField(BaseField):
 
 
 class HistoryField(BaseField):
-    def __init__(self, name, user=None, value=None, params=None, security=None, **kwds):
+    def __init__(self, name, user=None, value=None, security=None, **kwds):
         super(HistoryField, self).__init__(name, value, **kwds)
-        self.name = name
         self.user = user
         self.value = value
         self.security = security
-        self.select_history = None
-        self.params = params
 
     def to_dict(self):
         d = super(HistoryField, self).to_dict()
