@@ -58,7 +58,6 @@ class ToolValidator(object):
         generated using external data files to make sure the files exist.
         """
         invalid_files_and_errors_tups = []
-        correction_msg = ''
         for input_param in tool.input_params:
             if isinstance(input_param, parameters.basic.SelectToolParameter) and input_param.is_dynamic:
                 # If the tool refers to .loc files or requires an entry in the tool_data_table_conf.xml,
@@ -224,7 +223,6 @@ class ToolValidator(object):
         # intended to help handle sample files that are in the manifest, but have been deleted from disk.
         sample_files, deleted_sample_files = self.get_list_of_copied_sample_files(repo, ctx, dir=work_dir)
         if sample_files:
-            # self.app.config.tool_data_path = work_dir
             if 'tool_data_table_conf.xml.sample' in sample_files:
                 # Load entries into the tool_data_tables if the tool requires them.
                 tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
@@ -250,9 +248,6 @@ class ToolValidator(object):
         repository = repository_util.get_repository_in_tool_shed(self.app, repository_id)
         repo_files_dir = repository.repo_path(self.app)
         repo = hg_util.get_repo_for_repository(self.app, repository=None, repo_path=repo_files_dir, create=False)
-        message = ''
-        tool = None
-        can_use_disk_file = False
         tool_config_filepath = repository_util.get_absolute_path_to_file_in_repository(repo_files_dir, tool_config_filename)
         work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-ltfcr")
         can_use_disk_file = self.can_use_tool_config_disk_file(repository,
@@ -308,7 +303,6 @@ class ToolValidator(object):
             error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
             error_message += 'this error.  '
         except Exception as e:
-            raise
             tool = None
             valid = False
             error_message = str(e)
