@@ -940,9 +940,10 @@ class Tool(object, Dictifiable):
         for citation_elem in citations_elem:
             if citation_elem.tag != "citation":
                 pass
-            citation = self.app.citations_manager.parse_citation(citation_elem, self.tool_dir)
-            if citation:
-                citations.append(citation)
+            if hasattr(self.app, 'citations_manager'):
+                citation = self.app.citations_manager.parse_citation(citation_elem, self.tool_dir)
+                if citation:
+                    citations.append(citation)
         return citations
 
     def parse_input_elem(self, page_source, enctypes, context=None):
