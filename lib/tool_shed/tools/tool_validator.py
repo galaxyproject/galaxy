@@ -212,7 +212,7 @@ class ToolValidator(object):
                 tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
                 error, message = self.stdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
                                                                                    persist=False)
-        tool, valid, message2 = self.load_tool_from_config(repository_id, tool_config_filepath, tool_data_table_config)
+        tool, valid, message2 = self.load_tool_from_config(repository_id, tool_config_filepath)
         message = self.concat_messages(message, message2)
         return tool, valid, message, sample_files
 
@@ -261,7 +261,6 @@ class ToolValidator(object):
                                                                tool_config_filepath,
                                                                changeset_revision)
         if can_use_disk_file:
-            # self.app.config.tool_data_path = work_dir
             tool, valid, message, sample_files = \
                 self.handle_sample_files_and_load_tool_from_disk(repo_files_dir,
                                                                  repository_id,
@@ -293,21 +292,14 @@ class ToolValidator(object):
         self.stdtm.reset_tool_data_tables()
         return repository, tool, message
 
-    def load_tool_from_config(self, repository_id, full_path, tool_data_table_config=None):
+    def load_tool_from_config(self, repository_id, full_path):
         tool_source = get_tool_source(
             full_path,
             enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
             tool_location_fetcher=ToolLocationFetcher(),
         )
-        old_tool_data_tables = self.app.tool_data_tables
-        old_tool_data_path = self.app.config.tool_data_path
-        tool_data_path = os.path.dirname(full_path)
-        self.app.config.tool_data_path = tool_data_path
         try:
-            self.app.tool_data_tables = ToolDataTableManager(tool_data_path)
-            self.app.tool_data_tables.add_new_entries_from_config_file(full_path, tool_data_path=tool_data_path, shed_tool_data_table_config='')
             tool = create_tool_from_source(config_file=full_path, app=self.app, tool_source=tool_source, repository_id=repository_id)
-            # tool = self.app.toolbox.load_tool(full_path, repository_id=repository_id, allow_code_files=False, use_cached=False)
             valid = True
             error_message = None
         except KeyError as e:

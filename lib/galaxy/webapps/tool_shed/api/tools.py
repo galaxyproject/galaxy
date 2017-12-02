@@ -163,10 +163,11 @@ class ToolsController(BaseAPIController):
             trans.response.status = 404
             return {'status': 'error', 'message': message}
 
-        tv = tool_validator.ToolValidator(trans.app)
-        repository, tool, message = tv.load_tool_from_changeset_revision(tsr_id,
-                                                                         changeset,
-                                                                         found_tool.tool_config)
+        with util.miniapp.MiniApp.from_app(trans.app) as miniapp:
+            tv = tool_validator.ToolValidator(miniapp)
+            repository, tool, message = tv.load_tool_from_changeset_revision(tsr_id,
+                                                                             changeset,
+                                                                             found_tool.tool_config)
         if message:
             status = 'error'
             return dict(message=message, status=status)

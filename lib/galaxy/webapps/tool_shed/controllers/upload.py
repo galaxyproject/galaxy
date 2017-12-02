@@ -17,6 +17,7 @@ from tool_shed.dependencies import attribute_handlers
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
+from tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from tool_shed.util import (
     basic_util,
     commit_util,
@@ -27,7 +28,6 @@ from tool_shed.util import (
     xml_util
 )
 from tool_shed.util.web_util import escape
-from tool_shed.tools.data_table_manager import ShedToolDataTableManager
 
 log = logging.getLogger(__name__)
 

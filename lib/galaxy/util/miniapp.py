@@ -5,24 +5,36 @@ import tempfile
 
 from contextlib import contextmanager
 
-from .bunch import Bunch
 from galaxy.datatypes.registry import Registry
 from galaxy.tools.data import ToolDataTableManager
+from .bunch import Bunch
 
 
 class MiniApp(object):
     """Minimal App object for tool validation."""
 
-    def __init__(self, app_name, security, tool_data_path, shed_tool_data_path, tool_data_tables=None, registry=None):
+    def __init__(self, app_name,
+                 security,
+                 model,
+                 tool_data_path,
+                 shed_tool_data_path,
+                 tool_data_tables=None,
+                 registry=None,
+                 hgweb_config_manager=None):
         self.name = app_name
         self.security = security
+        self.model = model
         self.config = Bunch()
         self.config.tool_data_path = tool_data_path
         self.config.shed_tool_data_path = shed_tool_data_path
         _, self.config.tool_data_table_config = tempfile.mkstemp()
         _, self.config.shed_tool_data_table_config = tempfile.mkstemp()
         self.tool_data_tables = tool_data_tables
-        self.datatypes_registry=registry or Registry()
+        self.datatypes_registry = registry or Registry()
+        self.hgweb_config_manager = hgweb_config_manager
+
+    def __enter__(self):
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
@@ -32,19 +44,22 @@ class MiniApp(object):
         except Exception:
             pass
 
-    @contextmanager
     @staticmethod
+    @contextmanager
     def from_app(app, work_dir=None):
         cleanup = False
         if not work_dir:
             work_dir = tempfile.mkdtemp()
             cleanup = True
         tool_data_tables = ToolDataTableManager(work_dir)
-        app_name = app.name
-        yield MiniApp(app_name=app_name,
-                       security=app.security,
-                       tool_data_path=work_dir,
-                       shed_tool_data_path=work_dir,
-                       tool_data_tables=tool_data_tables)
+        with MiniApp(app_name=app.name,
+                     security=app.security,
+                     model=app.model,
+                     tool_data_path=work_dir,
+                     shed_tool_data_path=work_dir,
+                     tool_data_tables=tool_data_tables,
+                     hgweb_config_manager=getattr(app, 'hgweb_config_manager', None)
+                     ) as app:
+            yield app
         if cleanup:
             shutil.rmtree(work_dir, ignore_errors=True)

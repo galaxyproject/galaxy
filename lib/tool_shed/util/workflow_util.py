@@ -7,6 +7,7 @@ import os
 
 import galaxy.tools
 import galaxy.tools.parameters
+from galaxy.util.miniapp import MiniApp
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.modules import (
     module_types,
@@ -36,17 +37,18 @@ class RepoToolModule(ToolModule):
         self.tool = None
         self.errors = None
         self.tool_version = None
-        self.tv = tool_validator.ToolValidator(trans.app)
         if trans.webapp.name == 'tool_shed':
             # We're in the tool shed.
-            for tool_dict in tools_metadata:
-                if self.tool_id in [tool_dict['id'], tool_dict['guid']]:
-                    repository, self.tool, message = self.tv.load_tool_from_changeset_revision(repository_id,
-                                                                                               changeset_revision,
-                                                                                               tool_dict['tool_config'])
-                    if message and self.tool is None:
-                        self.errors = 'unavailable'
-                    break
+            with MiniApp.from_app(trans.app) as miniapp:
+                tv = tool_validator.ToolValidator(miniapp)
+                for tool_dict in tools_metadata:
+                    if self.tool_id in [tool_dict['id'], tool_dict['guid']]:
+                        repository, self.tool, message = tv.load_tool_from_changeset_revision(repository_id,
+                                                                                              changeset_revision,
+                                                                                              tool_dict['tool_config'])
+                        if message and self.tool is None:
+                            self.errors = 'unavailable'
+                        break
         else:
             # We're in Galaxy.
             self.tool = trans.app.toolbox.get_tool(self.tool_id, tool_version=self.tool_version)
