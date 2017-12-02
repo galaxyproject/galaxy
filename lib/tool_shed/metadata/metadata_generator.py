@@ -6,6 +6,7 @@ import tempfile
 from sqlalchemy import and_
 
 from galaxy import util
+from galaxy.util.miniapp import MiniApp
 from galaxy.tools.data_manager.manager import DataManager
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.loader_directory import looks_like_a_tool
@@ -305,7 +306,6 @@ class MetadataGenerator(object):
         tool_data_table_conf.xml.sample file, in which case the entries should ultimately be
         persisted to the file referred to by self.app.config.shed_tool_data_table_config.
         """
-        tv = tool_validator.ToolValidator(self.app)
         if self.shed_config_dict is None:
             self.shed_config_dict = {}
         if self.updating_installed_repository:
@@ -322,8 +322,6 @@ class MetadataGenerator(object):
             metadata_dict = {}
         readme_files = []
         invalid_tool_configs = []
-        old_tool_data_tables = self.app.tool_data_tables
-        old_tool_data_table_path = self.app.config.tool_data_path
         if self.resetting_all_metadata_on_repository:
             if not self.relative_install_dir:
                 raise Exception("The value of self.repository.repo_path must be set when resetting all metadata on a repository.")
@@ -342,6 +340,8 @@ class MetadataGenerator(object):
             files_dir = self.relative_install_dir
             if self.shed_config_dict.get('tool_path'):
                 files_dir = os.path.join(self.shed_config_dict['tool_path'], files_dir)
+        app = MiniApp.from_app(app=self.app, work_dir=work_dir)
+        tv = tool_validator.ToolValidator(app)
         # Handle proprietary datatypes, if any.
         datatypes_config = hg_util.get_config_from_disk(suc.DATATYPES_CONFIG_FILENAME, files_dir)
         if datatypes_config:
@@ -483,8 +483,6 @@ class MetadataGenerator(object):
             pass
         self.metadata_dict = metadata_dict
         basic_util.remove_dir(work_dir)
-        self.app.tool_data_tables = old_tool_data_tables
-        self.app.config.tool_data_path = old_tool_data_table_path
 
     def generate_package_dependency_metadata(self, elem, valid_tool_dependencies_dict, invalid_tool_dependencies_dict):
         """

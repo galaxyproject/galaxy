@@ -990,7 +990,6 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                                                                    self.metadata_dict)
             status = 'error'
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        self.app.tool_data_tables.data_tables = {}
         return message, status
 
     def set_repository_metadata_due_to_new_tip(self, host, content_alert_str=None, **kwd):
