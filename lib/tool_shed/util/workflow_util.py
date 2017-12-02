@@ -7,7 +7,7 @@ import os
 
 import galaxy.tools
 import galaxy.tools.parameters
-from galaxy.tools.repositories import ValidationConext
+from galaxy.tools.repositories import ValidationContext
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.modules import (
     module_types,
@@ -39,7 +39,7 @@ class RepoToolModule(ToolModule):
         self.tool_version = None
         if trans.webapp.name == 'tool_shed':
             # We're in the tool shed.
-            with ValidationConext.from_app(trans.app) as validation_context:
+            with ValidationContext.from_app(trans.app) as validation_context:
                 tv = tool_validator.ToolValidator(validation_context)
                 for tool_dict in tools_metadata:
                     if self.tool_id in [tool_dict['id'], tool_dict['guid']]:

@@ -478,8 +478,6 @@ class MetadataGenerator(object):
                 self.invalid_file_tups.append((rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME, error_message))
         if invalid_tool_configs:
             metadata_dict['invalid_tools'] = invalid_tool_configs
-        else:
-            pass
         self.metadata_dict = metadata_dict
         basic_util.remove_dir(work_dir)
 
@@ -574,7 +572,6 @@ class MetadataGenerator(object):
         Generate a repository dependencies dictionary based on valid information defined in the received
         repository_dependencies_config.  This method is called from the tool shed as well as from Galaxy.
         """
-        error_message = ''
         # Make sure we're looking at a valid repository_dependencies.xml file.
         tree, error_message = xml_util.parse_xml(repository_dependencies_config)
         if tree is None:
@@ -824,6 +821,7 @@ class MetadataGenerator(object):
         return relative_path_to_file
 
     def get_sample_files_from_disk(self, repository_files_dir, tool_path=None, relative_install_dir=None):
+        work_dir = ''
         if self.resetting_all_metadata_on_repository:
             # Keep track of the location where the repository is temporarily cloned so that we can strip
             # it when setting metadata.
@@ -895,8 +893,6 @@ class MetadataGenerator(object):
             # Default to the current tool shed.
             toolshed = str(url_for('/', qualified=True)).rstrip('/')
             repository_dependency_tup[0] = toolshed
-        user = None
-        repository = None
         toolshed = common_util.remove_protocol_from_tool_shed_url(toolshed)
         if self.app.name == 'galaxy':
             # We're in Galaxy.  We reach here when we're generating the metadata for a tool
@@ -1094,15 +1090,6 @@ class MetadataGenerator(object):
         else:
             repository_dependencies_dict = metadata.get('invalid_repository_dependencies', None)
         for repository_dependency_tup in repository_dependency_tups:
-            if is_valid:
-                tool_shed, name, owner, changeset_revision, \
-                    prior_installation_required, \
-                    only_if_compiling_contained_td = repository_dependency_tup
-            else:
-                tool_shed, name, owner, changeset_revision, \
-                    prior_installation_required, \
-                    only_if_compiling_contained_td, error_message = \
-                    repository_dependency_tup
             if repository_dependencies_dict:
                 repository_dependencies = repository_dependencies_dict.get('repository_dependencies', [])
                 for repository_dependency_tup in repository_dependency_tups:
