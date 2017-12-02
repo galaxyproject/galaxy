@@ -50,20 +50,12 @@ social_auth_usersocialauth = Table(
     Column('id', Integer, primary_key=True),
     Column('provider', VARCHAR(32)),
     Column('uid', VARCHAR(255)),
-    Column('user_id', Integer, ForeignKey("users.id"), index=True),
+    Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
     Column('extra_data', TEXT),
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
 
-users = Table(
-    "users", metadata,
-    Column('id', Integer, primary_key=True),
-    Column('username', VARCHAR(200)),
-    Column('password', VARCHAR(200)),
-    Column('name', VARCHAR(100)),
-    Column('email', VARCHAR(200)),
-    Column('active', BOOLEAN))
 
 
 
@@ -79,7 +71,6 @@ def upgrade(migrate_engine):
         social_auth_nonce.create()
         social_auth_partial.create()
         social_auth_usersocialauth.create()
-        users.create()
     except Exception as e:
         log.exception("Creating UserOAuth2 table failed: %s" % str(e))
 
@@ -95,6 +86,5 @@ def downgrade(migrate_engine):
         social_auth_nonce.drop()
         social_auth_partial.drop()
         social_auth_usersocialauth.drop()
-        users.drop()
     except Exception as e:
         log.exception("Dropping UserOAuth2 table failed: %s" % str(e))

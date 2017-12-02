@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 
 
 class OIDCIdPGoogle(IdentityProvider):
-    def __init__(self, config):
+    def __init__(self, app, config):
         client_secret_file = config.find('client_secret_file')
         if client_secret_file is None:
             log.error("Did not find `client_secret_file` key in the configuration; skipping the node '{}'."

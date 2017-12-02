@@ -103,6 +103,7 @@ model.UserOAuth2.table = Table(
     Column("expiration_date", DateTime),
     Column("access_token", String))
 
+# TODO: add '.table'
 model.SocialAuthAssociation = Table(
     "social_auth_association", metadata,
     Column('id', Integer, primary_key=True),
@@ -113,14 +114,14 @@ model.SocialAuthAssociation = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
-
+# TODO: add '.table'
 model.SocialAuthCode = Table(
     "social_auth_code", metadata,
     Column('id', Integer, primary_key=True),
     Column('email', VARCHAR(200)),
     Column('code', VARCHAR(32)))
 
-
+# TODO: add '.table'
 model.SocialAuthNonce = Table(
     "social_auth_nonce", metadata,
     Column('id', Integer, primary_key=True),
@@ -128,7 +129,7 @@ model.SocialAuthNonce = Table(
     Column('timestamp', Integer),
     Column('salt', VARCHAR(40)))
 
-
+# TODO: add '.table'
 model.SocialAuthPartial = Table(
     "social_auth_partial", metadata,
     Column('id', Integer, primary_key=True),
@@ -138,17 +139,17 @@ model.SocialAuthPartial = Table(
     Column('backend', VARCHAR(32)))
 
 
-model.SocialAuthUserSocialAuth = Table(
+model.UserAuthnAssociation.table = Table(
     "social_auth_usersocialauth", metadata,
     Column('id', Integer, primary_key=True),
     Column('provider', VARCHAR(32)),
     Column('uid', VARCHAR(255)),
-    Column('user_id', Integer, ForeignKey("users.id"), index=True),
+    Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
     Column('extra_data', TEXT),
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
-
+# TODO: delete this
 model.PSAUsers = Table(
     "users", metadata,
     Column('id', Integer, primary_key=True),
@@ -1648,6 +1649,12 @@ mapper(model.UserOpenID, model.UserOpenID.table, properties=dict(
 mapper(model.UserOAuth2, model.UserOAuth2.table, properties=dict(
     user=relation(model.User,
         primaryjoin=(model.UserOAuth2.table.c.user_id == model.User.table.c.id))
+))
+
+mapper(model.UserAuthnAssociation, model.UserAuthnAssociation.table, properties=dict(
+    user=relation(model.User,
+                  primaryjoin=(model.UserAuthnAssociation.table.c.user_id == model.User.table.c.id),
+                  backref='social_auth')
 ))
 
 mapper(model.ValidationError, model.ValidationError.table)

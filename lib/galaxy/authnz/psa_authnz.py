@@ -81,7 +81,6 @@ class PSAAuthnz(IdentityProvider):
         self._parse_config(config_xml)
 
     def _parse_config(self, config_xml):
-
         auth_uri = config_xml.find('auth_uri')
         token_uri = config_xml.find('token_uri')
 
@@ -133,6 +132,11 @@ class PSAAuthnz(IdentityProvider):
         # .format(config.get('name')))
         #    raise ParseError
 
+        # TODO: this is temporary; user should not be defined at such global level. Find a better workaround.
+        global _user
+        _user = trans.user
+        _trans = trans
+
         backend_label = 'google-openidconnect'
         self.strategy = Strategy(trans, Storage)  # self.load_strategy()
         self.backend = self.load_backend(self.strategy, backend_label, uri)
@@ -145,6 +149,11 @@ class PSAAuthnz(IdentityProvider):
         return do_auth(self.backend)
 
     def callback(self, state_token, authz_code, trans):
+        _trans = trans
+
+        # TODO:
+        trans.app.model.UserAuthnAssociation._trans = trans
+
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
         backend_label = 'google-openidconnect'
         self.strategy = Strategy(trans, Storage)  # self.load_strategy()
@@ -172,12 +181,21 @@ class Strategy(BaseStrategy):
         self.trans = trans
         self.request = trans.request
         self.session = trans.session if trans.session else {}
+        config['SOCIAL_AUTH_PIPELINE'] = AUTH_PIPELINE
+
+        # Both the following are fine
+        # config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_ID_TOKEN_MAX_AGE'] = 3600
+        config['ID_TOKEN_MAX_AGE'] = 3600
+
         config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.trans.request.host.startswith('https:') else False
         super(Strategy, self).__init__(storage, tpl)
 
     # Settings
     def get_setting(self, name):
         """Return value for given setting name"""
+        print '\n', ('>' * 50)
+        print '\tasking for: ', name
+        print '\treturning : ', config[name]
         return config[name]
 
     # Session
@@ -337,58 +355,107 @@ SocialBase = declarative_base()
 
 UID_LENGTH = config.get(setting_name('UID_LENGTH'), 255)
 
-from ..authnz.models import User
-User = User # module_member(config[setting_name('USER_MODEL')])
+# from ..authnz.models import User
+# User = User # module_member(config[setting_name('USER_MODEL')])
 
-
-
-# TODO: Find a better name for this.
-class WebpySocialBase(object):
+class GalaxySocialBase(object):
     @classmethod
     def _session(cls):
         return _trans.sa_session
 
 
-class UserSocialAuth(WebpySocialBase, SQLAlchemyUserMixin, SocialBase):
-    """Social Auth association model"""
-    uid = Column(String(UID_LENGTH))
-    user_id = Column(User.id.type, ForeignKey(User.id),
-                     nullable=False, index=True)
-    user = relationship(User, backref='social_auth')
+# class UserSocialAuth(GalaxySocialBase, SQLAlchemyUserMixin, SocialBase):
+#     """Social Auth association model"""
+#     uid = Column(String(UID_LENGTH))
+#     user_id = Column(User.id.type, ForeignKey(User.id),
+#                      nullable=False, index=True)
+#     user = relationship(User, backref='social_auth')
+#
+#     def __init__(self):
+#         self.user_id = _user.id
+#
+#     @classmethod
+#     def username_max_length(cls):
+#         return 255  # TODO: This is a temporary solution, this number should be retrieved from user table.
+#
+#     @classmethod
+#     def user_model(cls):
+#         return _user  # User
 
-    @classmethod
-    def username_max_length(cls):
-        return User.__table__.columns.get('username').type.length
 
-    @classmethod
-    def user_model(cls):
-        return User
-
-
-class Nonce(WebpySocialBase, SQLAlchemyNonceMixin, SocialBase):
+class Nonce(GalaxySocialBase, SQLAlchemyNonceMixin, SocialBase):
     """One use numbers"""
     pass
 
 
-class Association(WebpySocialBase, SQLAlchemyAssociationMixin, SocialBase):
+class Association(GalaxySocialBase, SQLAlchemyAssociationMixin, SocialBase):
     """OpenId account association"""
     pass
 
 
-class Code(WebpySocialBase, SQLAlchemyCodeMixin, SocialBase):
+class Code(GalaxySocialBase, SQLAlchemyCodeMixin, SocialBase):
     """Mail validation single one time use code"""
     pass
 
 
-class Partial(WebpySocialBase, SQLAlchemyPartialMixin, SocialBase):
+class Partial(GalaxySocialBase, SQLAlchemyPartialMixin, SocialBase):
     """Partial pipeline storage"""
     pass
 
+from ..model import UserAuthnAssociation
 
-class Storage(BaseSQLAlchemyStorage):
-    user = UserSocialAuth
+class Storage:  # (BaseSQLAlchemyStorage):
+    user = UserAuthnAssociation  # UserSocialAuth
     nonce = Nonce
     association = Association
     code = Code
     partial = Partial
 
+    @classmethod
+    def is_integrity_error(cls, exception):
+        return exception.__class__ is IntegrityError
+
+
+AUTH_PIPELINE = (
+    # Get the information we can about the user and return it in a simple
+    # format to create the user instance later. On some cases the details are
+    # already part of the auth response from the provider, but sometimes this
+    # could hit a provider API.
+    'social_core.pipeline.social_auth.social_details',
+
+    # Get the social uid from whichever service we're authing thru. The uid is
+    # the unique identifier of the given user in the provider.
+    'social_core.pipeline.social_auth.social_uid',
+
+    # Verifies that the current auth process is valid within the current
+    # project, this is where emails and domains whitelists are applied (if
+    # defined).
+    'social_core.pipeline.social_auth.auth_allowed',
+
+    # Checks if the current social-account is already associated in the site.
+    'social_core.pipeline.social_auth.social_user',
+
+    # Make up a username for this person, appends a random string at the end if
+    # there's any collision.
+    'social_core.pipeline.user.get_username',
+
+    # Send a validation email to the user to verify its email address.
+    # 'social_core.pipeline.mail.mail_validation',
+
+    # Associates the current social details with another user account with
+    # a similar email address.
+    # 'social_core.pipeline.social_auth.associate_by_email',
+
+    # Create a user account if we haven't found one yet.
+    # 'social_core.pipeline.user.create_user',
+
+    # Create the record that associated the social account with this user.
+    'social_core.pipeline.social_auth.associate_user',
+
+    # Populate the extra_data field in the social record with the values
+    # specified by settings (and the default ones like access_token, etc).
+    'social_core.pipeline.social_auth.load_extra_data',
+
+    # Update the user record with any changed info from the auth service.
+    'social_core.pipeline.user.user_details'
+)

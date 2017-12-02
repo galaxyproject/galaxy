@@ -22,7 +22,9 @@ from six import string_types
 from sqlalchemy import (and_, func, join, not_, or_, select, true, type_coerce,
                         types)
 from sqlalchemy.ext import hybrid
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import aliased, joinedload, object_session
+from sqlalchemy.schema import UniqueConstraint
 
 import galaxy.model.metadata
 import galaxy.model.orm.now
@@ -44,6 +46,8 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      PasswordField, SelectField, TextArea, TextField, WorkflowField,
                                      WorkflowMappingField)
 from galaxy.web.framework.helpers import to_unicode
+
+from social_core.storage import UserMixin
 
 log = logging.getLogger(__name__)
 
@@ -389,6 +393,18 @@ class User(object, Dictifiable):
         """
         environment = User.user_template_environment(user)
         return Template(in_string).safe_substitute(environment)
+
+    def is_active(self):
+        return self.active
+
+    def is_authenticated(self):
+        # TODO: is required for python social auth (PSA); however, a user authentication is relative to the backend.
+        # For instance, a user how is authenticated with Google, is not necessarily authenticated
+        # with Amazon. Therefore, this function should also receive the backend and check if this
+        # user is already authenticated on that backend or not. For now, returning always True
+        # seems reasonable. Besides, this is also how a PSA example is implemented:
+        # https://github.com/python-social-auth/social-examples/blob/master/example-cherrypy/example/db/user.py
+        return True
 
 
 class PasswordResetToken(object):
@@ -5026,7 +5042,9 @@ class SocialAuthPartial(object):
         self.backend = backend
 
 
-class SocialAuthUserSocialAuth(object):
+class UserAuthnAssociation(UserMixin):
+    __table_args__ = (UniqueConstraint('provider', 'uid'),)
+
     def __init__(self, provider, uid, user_id, extra_data, lifetime, assoc_type):
         self.provider = provider
         self.uid = uid
@@ -5034,6 +5052,141 @@ class SocialAuthUserSocialAuth(object):
         self.extra_data = extra_data
         self.lifetime = lifetime
         self.assoc_type = assoc_type
+
+    # TODO: all the following functions should be checked and fixed.
+    @classmethod
+    def username_max_length(cls):
+        return 255  # TODO: This is a temporary solution, this number should be retrieved from user table.
+
+    @classmethod
+    def user_model(cls):
+        return User
+
+    @declared_attr
+    def extra_data(cls):
+        return Column(MutableDict.as_mutable(JSONType))
+
+    @classmethod
+    def changed(cls, user):
+        cls._save_instance(user)
+
+    def set_extra_data(self, extra_data=None):
+        if super(UserAuthnAssociation, self).set_extra_data(extra_data):
+            self._save_instance(self)
+
+    @classmethod
+    def allowed_to_disconnect(cls, user, backend_name, association_id=None):
+        if association_id is not None:
+            qs = cls._query().filter(cls.id != association_id)
+        else:
+            qs = cls._query().filter(cls.provider != backend_name)
+        qs = qs.filter(cls.user == user)
+
+        if hasattr(user, 'has_usable_password'):  # TODO
+            valid_password = user.has_usable_password()
+        else:
+            valid_password = True
+        return valid_password or qs.count() > 0
+
+    @classmethod
+    def disconnect(cls, entry):
+        cls._session().delete(entry)
+        cls._flush()
+
+    @classmethod
+    def user_query(cls):
+        return cls._session().query(cls.user_model())
+
+    @classmethod
+    def user_exists(cls, *args, **kwargs):
+        """
+        Return True/False if a User instance exists with the given arguments.
+        Arguments are directly passed to filter() manager method.
+        """
+        return cls.user_query().filter_by(*args, **kwargs).count() > 0
+
+    @classmethod
+    def get_username(cls, user):
+        return getattr(user, 'username', None)
+
+    @classmethod
+    def create_user(cls, *args, **kwargs):
+        return cls._new_instance(cls.user_model(), *args, **kwargs)
+
+    @classmethod
+    def get_user(cls, pk):
+        return cls.user_query().get(pk)
+
+    @classmethod
+    def get_users_by_email(cls, email):
+        return cls.user_query().filter_by(email=email)
+
+    @classmethod
+    def get_social_auth(cls, provider, uid):
+        #if not isinstance(uid, six.string_types):
+        uid = str(uid)
+        try:
+            return cls._query().filter_by(provider=provider,
+                                          uid=uid)[0]
+        except IndexError:
+            return None
+
+    @classmethod
+    def get_social_auth_for_user(cls, user, provider=None, id=None):
+        qs = cls._query().filter_by(user_id=user.id)
+        if provider:
+            qs = qs.filter_by(provider=provider)
+        if id:
+            qs = qs.filter_by(id=id)
+        return qs
+
+    @classmethod
+    def create_social_auth(cls, user, uid, provider):
+        # if not isinstance(uid, six.string_types):
+        uid = str(uid)
+        return cls._new_instance(cls, user=user, uid=uid, provider=provider)
+
+
+
+    # TODO: all the following should be already provided by Galaxy
+    COMMIT_SESSION = True
+
+    @classmethod
+    def _session(cls):
+        return cls._trans.sa_session
+
+    @classmethod
+    def _query(cls):
+        return cls._session().query(cls)
+
+    @classmethod
+    def _new_instance(cls, model, *args, **kwargs):
+        print '\n\n\n args: \t{}\n\nkwargs: \t{}\nmodel: \t{}\n\n\n'.format(args, kwargs, model)
+        return cls._save_instance(model(*args, **kwargs))
+
+    @classmethod
+    def _save_instance(cls, instance):
+        cls._session().add(instance)
+        if cls.COMMIT_SESSION:
+            # cls._session().commit()
+            cls._session().flush()
+        else:
+            cls._flush()
+        return instance
+
+    @classmethod
+    def _flush(cls):
+        try:
+            cls._session().flush()
+        except AssertionError:
+            if transaction:
+                with transaction.manager as manager:
+                    manager.commit()
+            else:
+                cls._session().commit()
+
+    def save(self):
+        self._save_instance(self)
 
 
 class PSAUsers(object):
