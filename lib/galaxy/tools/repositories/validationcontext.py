@@ -1,4 +1,4 @@
-"""Create a smaller version of app for verifying tools"""
+"""Provides a subset of app for verifying tools."""
 import os
 import shutil
 import tempfile
@@ -6,11 +6,11 @@ from contextlib import contextmanager
 
 from galaxy.datatypes.registry import Registry
 from galaxy.tools.data import ToolDataTableManager
+from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
-from .bunch import Bunch
 
 
-class MiniApp(object):
+class ValidationContext(object):
     """Minimal App object for tool validation."""
 
     def __init__(self, app_name,
@@ -57,14 +57,14 @@ class MiniApp(object):
             work_dir = tempfile.mkdtemp()
             cleanup = True
         tool_data_tables = ToolDataTableManager(work_dir)
-        with MiniApp(app_name=app.name,
-                     security=app.security,
-                     model=app.model,
-                     tool_data_path=work_dir,
-                     shed_tool_data_path=work_dir,
-                     tool_data_tables=tool_data_tables,
-                     hgweb_config_manager=getattr(app, 'hgweb_config_manager', None)
-                     ) as app:
+        with ValidationContext(app_name=app.name,
+                               security=app.security,
+                               model=app.model,
+                               tool_data_path=work_dir,
+                               shed_tool_data_path=work_dir,
+                               tool_data_tables=tool_data_tables,
+                               hgweb_config_manager=getattr(app, 'hgweb_config_manager', None)
+                               ) as app:
             yield app
         if cleanup:
             shutil.rmtree(work_dir, ignore_errors=True)

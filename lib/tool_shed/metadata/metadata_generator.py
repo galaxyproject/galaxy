@@ -9,7 +9,7 @@ from galaxy import util
 from galaxy.tools.data_manager.manager import DataManager
 from galaxy.tools.loader_directory import looks_like_a_tool
 from galaxy.tools.parser.interface import TestCollectionDef
-from galaxy.util.miniapp import MiniApp
+from galaxy.tools.repositories import ValidationContext
 from galaxy.web import url_for
 from tool_shed.repository_types import util as rt_util
 from tool_shed.tools import tool_validator
@@ -339,9 +339,9 @@ class MetadataGenerator(object):
             files_dir = self.relative_install_dir
             if self.shed_config_dict.get('tool_path'):
                 files_dir = os.path.join(self.shed_config_dict['tool_path'], files_dir)
-        # Create a MiniApp object to load and validate tools, data tables and datatypes
-        with MiniApp.from_app(app=self.app, work_dir=work_dir) as miniapp:
-            tv = tool_validator.ToolValidator(miniapp)
+        # Create ValidationContext to load and validate tools, data tables and datatypes
+        with ValidationContext.from_app(app=self.app, work_dir=work_dir) as validation_context:
+            tv = tool_validator.ToolValidator(validation_context)
             # Handle proprietary datatypes, if any.
             datatypes_config = hg_util.get_config_from_disk(suc.DATATYPES_CONFIG_FILENAME, files_dir)
             if datatypes_config:
@@ -368,10 +368,10 @@ class MetadataGenerator(object):
                     # We create a new ToolDataTableManager to avoid adding entries to the app-wide
                     # tool data tables. This is only used for checking that the data table is valid.
                     new_table_elems, error_message = \
-                        miniapp.tool_data_tables.add_new_entries_from_config_file(config_filename=sample_file,
-                                                                              tool_data_path=work_dir,
-                                                                              shed_tool_data_table_config=work_dir,
-                                                                              persist=False)
+                        validation_context.tool_data_tables.add_new_entries_from_config_file(config_filename=sample_file,
+                                                                                             tool_data_path=work_dir,
+                                                                                             shed_tool_data_table_config=work_dir,
+                                                                                             persist=False)
                     if error_message:
                         self.invalid_file_tups.append((filename, error_message))
             for root, dirs, files in os.walk(files_dir):

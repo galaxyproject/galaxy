@@ -18,6 +18,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.tools.repositories import ValidationContext
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids
@@ -864,8 +865,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         render_repository_actions_for = kwd.get('render_repository_actions_for', 'tool_shed')
-        with util.miniapp.MiniApp.from_app(trans.app) as miniapp:
-            tv = tool_validator.ToolValidator(miniapp)
+        with ValidationContext.from_app(trans.app) as validation_context:
+            tv = tool_validator.ToolValidator(validation_context)
             repository, tool, message = tv.load_tool_from_changeset_revision(repository_id,
                                                                              changeset_revision,
                                                                              tool_config)
@@ -1759,18 +1760,18 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         message = escape(kwd.get('message', ''))
         render_repository_actions_for = kwd.get('render_repository_actions_for', 'tool_shed')
 
-        with util.miniapp.MiniApp.from_app(trans.app) as miniapp:
-            tv = tool_validator.ToolValidator(miniapp)
+        with ValidationContext.from_app(trans.app) as validation_context:
+            tv = tool_validator.ToolValidator(validation_context)
             repository, tool, error_message = tv.load_tool_from_changeset_revision(repository_id,
                                                                                    changeset_revision,
                                                                                    tool_config)
-        tool_state = tool_util.new_state(trans, tool, invalid=True)
-        invalid_file_tups = []
-        if tool:
-            invalid_file_tups = tv.check_tool_input_params(repository.repo_path(trans.app),
-                                                           tool_config,
-                                                           tool,
-                                                           [])
+            tool_state = tool_util.new_state(trans, tool, invalid=True)
+            invalid_file_tups = []
+            if tool:
+                invalid_file_tups = tv.check_tool_input_params(repository.repo_path(trans.app),
+                                                               tool_config,
+                                                               tool,
+                                                               [])
         if invalid_file_tups:
             message = tool_util.generate_message_for_invalid_tools(trans.app,
                                                                    invalid_file_tups,
@@ -2894,8 +2895,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             metadata = repository_metadata.metadata
             if metadata:
                 if 'tools' in metadata:
-                    with util.miniapp.MiniApp.from_app(trans.app) as miniapp:
-                        tv = tool_validator.ToolValidator(miniapp)
+                    with ValidationContext.from_app(trans.app) as validation_context:
+                        tv = tool_validator.ToolValidator(validation_context)
                         for tool_metadata_dict in metadata['tools']:
                             if tool_metadata_dict['id'] == tool_id:
                                 work_dir = tempfile.mkdtemp()
