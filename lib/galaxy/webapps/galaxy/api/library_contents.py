@@ -32,10 +32,6 @@ from galaxy.web.base.controller import (
     UsesLibraryMixin,
     UsesLibraryMixinItems
 )
-from galaxy.web.form_builder import (
-    AddressField,
-    CheckboxField,
-)
 log = logging.getLogger(__name__)
 
 

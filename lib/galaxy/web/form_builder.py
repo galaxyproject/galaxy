@@ -4,14 +4,9 @@ Classes for generating HTML forms
 from __future__ import print_function
 
 import logging
-from cgi import escape
-
-from six import string_types
 
 from galaxy.util import (
-    asbool,
-    restore_text,
-    unicodify
+    asbool
 )
 
 log = logging.getLogger(__name__)
@@ -167,7 +162,7 @@ class WorkflowField(BaseField):
 
 
 class WorkflowMappingField(BaseField):
-    def __init__(self, name, user=None, value=None, **kwd):
+    def __init__(self, name, user=None, value=None, **kwds):
         super(WorkflowMappingField, self).__init__(name, value, **kwds)
         self.user = user
 

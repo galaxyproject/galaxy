@@ -1,7 +1,7 @@
 import logging
 
-from tool_shed.util.form_util import SelectField
 from tool_shed.util import hg_util, metadata_util
+from tool_shed.util.form_util import SelectField
 
 log = logging.getLogger(__name__)
 

@@ -10,7 +10,6 @@ from six import string_types
 
 from galaxy.util import (
     asbool,
-    restore_text,
     unicodify
 )
 
@@ -48,6 +47,7 @@ class BaseField(object):
             'value'     : self.value,
             'help'      : self.help
         }
+
 
 class CheckboxField(BaseField):
     """
