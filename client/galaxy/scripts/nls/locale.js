@@ -238,7 +238,7 @@ define({
 
         // ---------------------------------------------------------------------------- misc. MVC
         Tags: false,
-        "Edit annotation": false
+        "Edit annotation": false,
 
         // ---------------------------------------------------------------------------- galaxy.pages
  	"Subscript": false,
@@ -457,7 +457,7 @@ define({
  	// ---------------------------------------------------------------------------- upload-button
  	"Download from URL or upload files from disk": false, 
  	// ---------------------------------------------------------------------------- workflow_editor_tests
- 	"tool tooltip": false, 
+ 	"tool tooltip": false 
  	// ----------------------------------------------------------------------------
     },
     ja: true,

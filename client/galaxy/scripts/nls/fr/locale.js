@@ -225,7 +225,7 @@ define({
 
         // ---------------------------------------------------------------------------- misc. MVC
         Tags: "Mots-clés",
-        "Edit annotation": "Editer les annotations"
+        "Edit annotation": "Editer les annotations",
 	// ---------------------------------------------------------------------------- galaxy.pages
  	"Subscript": false,
  	"Superscript": false, 
@@ -443,6 +443,6 @@ define({
  	// ---------------------------------------------------------------------------- upload-button
  	"Download from URL or upload files from disk": false, 
  	// ---------------------------------------------------------------------------- workflow_editor_tests
- 	"tool tooltip": false, 
+ 	"tool tooltip": false 
  	// ----------------------------------------------------------------------------
 });
