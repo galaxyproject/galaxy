@@ -2,11 +2,11 @@
 import os
 import shutil
 import tempfile
-
 from contextlib import contextmanager
 
 from galaxy.datatypes.registry import Registry
 from galaxy.tools.data import ToolDataTableManager
+from galaxy.util.dbkeys import GenomeBuilds
 from .bunch import Bunch
 
 
@@ -32,12 +32,17 @@ class MiniApp(object):
         self.tool_data_tables = tool_data_tables
         self.datatypes_registry = registry or Registry()
         self.hgweb_config_manager = hgweb_config_manager
+        _, self.config.len_file_path = tempfile.mkstemp()
+        self.config.builds_file_path = tempfile.mkdtemp()
+        self.genome_builds = GenomeBuilds(self)
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
+            shutil.rmtree(self.config.builds_file_path, ignore_errors=True)
+            os.remove(self.config.len_file_path)
             os.remove(self.config.tool_data_table_config)
             if self.config.shed_tool_data_table_config != self.config.tool_data_table_config:
                 os.remove(self.config.shed_tool_data_table_config)

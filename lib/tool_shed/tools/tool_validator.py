@@ -9,7 +9,6 @@ from galaxy.tools import (
     parameters,
     Tool
 )
-from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.fetcher import ToolLocationFetcher
 from galaxy.tools.parameters import dynamic_options
 from tool_shed.tools.data_table_manager import ShedToolDataTableManager
