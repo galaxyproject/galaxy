@@ -8,14 +8,14 @@ define(["qunit/test-app", "mvc/ui/ui-misc", "mvc/ui/ui-popover"], function(testA
             testApp.create();
             var self = this;
             this.button = new Ui.Button({
-                title: "Test button"
+                title: "Test button",
                 onclick: function() {
                     self.popover.show();
                 }
             });
             this.$parent = $("<div/>").append(this.button.$el);
             this.popover = new Popover.View({
-                title: "Test Title"
+                title: "Test Title",
                 body: "Test Body",
                 placement: "bottom",
                 container: this.button.$el

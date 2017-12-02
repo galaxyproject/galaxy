@@ -97,7 +97,7 @@ define(
                     {
                         id: "id",
                         keywords: "default",
-                        title: "title"
+                        title: "title",
                         title_icon: "title_icon",
                         image_src: "image_src",
                         description: "description"

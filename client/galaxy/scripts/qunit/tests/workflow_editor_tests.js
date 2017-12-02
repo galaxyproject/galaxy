@@ -428,7 +428,7 @@ define(
                     config_form: "{}",
                     tool_state: "ok",
                     tool_errors: false,
-                    tooltip: "tool tooltip"
+                    tooltip: "tool tooltip",
                     annotation: "tool annotation",
                     workflow_outputs: [{ output_name: "out1" }],
                     label: "Cat that data."
