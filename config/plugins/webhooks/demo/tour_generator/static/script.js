@@ -58,7 +58,7 @@ $(document).ready(function() {
             },
 
             _generateTour: function(data) {
-                var tour = Tours.startTourWithData(data);
+                var tour = Tours.giveTourWithData(data);
                 // Force ending the tour when pressing the Execute button
                 $('#execute').on('mousedown', function() {
                     if (tour) {
