@@ -4,6 +4,11 @@
 Conda for Tool Dependencies
 ===========================
 
+.. note:: This document describes configuring Galaxy using YAML based configuraiton
+  options. For Galaxy instances before version 18.01, `this variant
+  <https://docs.galaxyproject.org/en/release_17.09/admin/conda_faq.html>`__ of this
+  document will be more directly relatable.
+
 Galaxy tools (also called wrappers) have tradionally used Tool Shed package
 recipes to install their dependencies. These were too tightly tied to Galaxy
 and to the Tool Shed and so have been replaced with Conda as the package
