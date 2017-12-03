@@ -213,21 +213,13 @@ class Bam(Binary):
 
         :param split_files: List of bam file paths to merge
         :param output_file: Write merged bam file to this location
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> bamfile = get_test_fname('1.bam')
-        >>> out_dir = tempfile.mkdtemp()
-        >>> outpath = os.path.join(out_dir, 'out.bam')
-        >>> Bam.merge([bamfile, bamfile], outpath)
-        >>> assert int(pysam.view('-c', outpath).strip()) == 2 * int(pysam.view('-c', bamfile).strip())
-        >>> shutil.rmtree(outpath, ignore_errors=True)
         """
         pysam.merge('-O', 'BAM', output_file, *split_files)
 
     @staticmethod
     def _is_coordinate_sorted(file_name):
         """
-        See if the input BAM file is sorted from the header information.
+        Check if the input BAM file is sorted from the header information.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> bamfile = get_test_fname('1.bam')
@@ -247,20 +239,7 @@ class Bam(Binary):
 
     def dataset_content_needs_grooming(self, file_name):
         """
-        See if file_name is a coordinate-sorted BAM file
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> bamfile = get_test_fname('1.bam')
-        >>> b = Bam()
-        >>> b.dataset_content_needs_grooming(bamfile)
-        False
-        >>> out_dir = tempfile.mkdtemp()
-        >>> qname_sorted = os.path.join(out_dir, 'qname_sorted.bam')
-        >>> _ = pysam.sort('-n', bamfile, '-o', qname_sorted )
-        >>> assert b.dataset_content_needs_grooming(qname_sorted) == True
-        >>> shutil.rmtree(out_dir, ignore_errors=True)
-        >>> unsorted_bam = get_test_fname('1.unsorted.bam')
-        >>> assert b.dataset_content_needs_grooming(unsorted_bam) == True
+        Check if file_name is a coordinate-sorted BAM file
         """
         # We check if the input BAM file is coordinate-sorted from the header information.
         return not self._is_coordinate_sorted(file_name)
@@ -305,25 +284,6 @@ class Bam(Binary):
         Binary.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        """
-        Creates the index for the BAM file.
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> from galaxy.util.bunch import Bunch
-        >>> dataset = Bunch()
-        >>> dataset.file_name = get_test_fname('1.bam')
-        >>> dataset.metadata = Bunch()
-        >>> dataset.metadata.bam_index = Bunch()
-        >>> _, dataset.metadata.bam_index.file_name = tempfile.mkstemp()
-        >>> b = Bam()
-        >>> b.set_meta(dataset=dataset)
-        >>> dataset.metadata.sort_order
-        'coordinate'
-        >>> bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb', index_filename=dataset.metadata.bam_index.file_name)
-        >>> bam_file.has_index()
-        True
-        >>> os.remove(dataset.metadata.bam_index.file_name)
-        """
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.bam_index
         if not index_file:
@@ -333,13 +293,11 @@ class Bam(Binary):
         # Now use pysam with BAI index to determine additional metadata
         try:
             bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb', index_filename=index_file.file_name)
-            # Reference names, lengths, read_groups and headers can become very large,
-            # but even small files error out with
-            # OperationalError: (psycopg2.OperationalError) index row size 3616 exceeds maximum 2712 for index "ix_history_dataset_association_metadata"
-            # dataset.metadata.reference_names = list(bam_file.references)
-            # dataset.metadata.reference_lengths = list(bam_file.lengths)
-            # dataset.metadata.bam_header = bam_file.header
-            # dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
+            # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
+            dataset.metadata.reference_names = list(bam_file.references)
+            dataset.metadata.reference_lengths = list(bam_file.lengths)
+            dataset.metadata.bam_header = bam_file.header
+            dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
             dataset.metadata.sort_order = bam_file.header.get('HD', {}).get('SO', None)
             dataset.metadata.bam_version = bam_file.header.get('HD', {}).get('VN', None)
         except Exception:
