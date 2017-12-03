@@ -3,7 +3,6 @@ import os
 import shutil
 from xml.etree import ElementTree as XmlET
 
-from galaxy.tools.data import ToolDataTableManager as tdtm
 from tool_shed.util import hg_util, xml_util
 
 log = logging.getLogger(__name__)

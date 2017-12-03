@@ -45,10 +45,10 @@ class ValidationContext(object):
                          self.config.tool_data_table_config,
                          self.config.shed_tool_data_table_config}
         for path in cleanup_paths:
-           try:
-               os.remove(path)
-           except Exception:
-               pass
+            try:
+                os.remove(path)
+            except Exception:
+                pass
 
     @staticmethod
     @contextmanager
