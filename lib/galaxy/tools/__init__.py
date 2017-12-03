@@ -1379,7 +1379,7 @@ class Tool(object, Dictifiable):
         for input_param in self.input_params:
             if isinstance(input_param, SelectToolParameter) and input_param.is_dynamic:
                 options = input_param.options
-                if options and options.missing_index_file and input_param not in params:
+                if options and options.tool_data_table and options.tool_data_table.missing_index_file and input_param not in params:
                     params.append(input_param)
         return params
 
