@@ -33,21 +33,22 @@ class ValidationContext(object):
         self.datatypes_registry = registry or Registry()
         self.hgweb_config_manager = hgweb_config_manager
         _, self.config.len_file_path = tempfile.mkstemp()
-        self.config.builds_file_path = tempfile.mkdtemp()
+        _, self.config.builds_file_path = tempfile.mkstemp()
         self.genome_builds = GenomeBuilds(self)
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            shutil.rmtree(self.config.builds_file_path, ignore_errors=True)
-            os.remove(self.config.len_file_path)
-            os.remove(self.config.tool_data_table_config)
-            if self.config.shed_tool_data_table_config != self.config.tool_data_table_config:
-                os.remove(self.config.shed_tool_data_table_config)
-        except Exception:
-            pass
+        cleanup_paths = {self.config.builds_file_path,
+                         self.config.len_file_path,
+                         self.config.tool_data_table_config,
+                         self.config.shed_tool_data_table_config}
+        for path in cleanup_paths:
+           try:
+               os.remove(path)
+           except Exception:
+               pass
 
     @staticmethod
     @contextmanager
