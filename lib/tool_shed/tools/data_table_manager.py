@@ -12,7 +12,6 @@ log = logging.getLogger(__name__)
 class ShedToolDataTableManager(object):
 
     def __init__(self, app):
-        self.tdtm = tdtm(app.config.shed_tool_data_path)
         self.app = app
 
     def generate_repository_info_elem(self, tool_shed, repository_name, changeset_revision, owner,
@@ -90,7 +89,7 @@ class ShedToolDataTableManager(object):
             self.reset_tool_data_tables()
         return repository_tools_tups
 
-    def handle_sample_tool_data_table_conf_file(self, filename, persist=False, tool_data_tables=None):
+    def handle_sample_tool_data_table_conf_file(self, filename, persist=False):
         """
         Parse the incoming filename and add new entries to the in-memory
         self.app.tool_data_tables dictionary.  If persist is True (should
@@ -99,10 +98,8 @@ class ShedToolDataTableManager(object):
         file on disk.
         """
         error = False
-        message = ''
-        tdtm = tool_data_tables or self.tdtm
         try:
-            new_table_elems, message = tdtm \
+            new_table_elems, message = self.app.tool_data_tables \
                 .add_new_entries_from_config_file(config_filename=filename,
                                                   tool_data_path=self.app.config.shed_tool_data_path,
                                                   shed_tool_data_table_config=self.app.config.shed_tool_data_table_config,
@@ -170,9 +167,9 @@ class ShedToolDataTableManager(object):
             # Remove old data_table
             os.unlink(tool_data_table_conf_filename)
             # Persist new data_table content.
-            self.tdtm.to_xml_file(tool_data_table_conf_filename, elems)
+            self.app.tool_data_tables.to_xml_file(tool_data_table_conf_filename, elems)
         return tool_data_table_conf_filename, elems
 
     def reset_tool_data_tables(self):
         # Reset the tool_data_tables to an empty dictionary.
-        self.tdtm.data_tables = {}
+        self.app.tool_data_tables.data_tables = {}

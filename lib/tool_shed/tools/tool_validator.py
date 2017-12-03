@@ -70,8 +70,7 @@ class ToolValidator(object):
                         if sample_tool_data_table_conf:
                             error, correction_msg = \
                                 self.stdtm.handle_sample_tool_data_table_conf_file(sample_tool_data_table_conf,
-                                                                                  persist=False,
-                                                                                  tool_data_tables=tool.app.tool_data_tables)
+                                                                                  persist=False)
                             if error:
                                 invalid_files_and_errors_tups.append(('tool_data_table_conf.xml.sample', correction_msg))
                         else:
