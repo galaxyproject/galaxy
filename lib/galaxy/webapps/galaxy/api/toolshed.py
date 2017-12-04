@@ -252,7 +252,6 @@ class ToolShedController(BaseAPIController):
             repository_data['repository'] = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'repositories', repository_id]))
         repository_data['repository']['metadata'] = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'repositories', repository_id, 'metadata']))
         repository_data['shed_conf'] = tool_util.build_shed_tool_conf_select_field(trans.app).to_dict()
-        repository_data['panel_section'] = tool_panel_section_select_field.to_dict()
         repository_data['panel_section_dict'] = tool_panel_section_dict
         for changeset, metadata in repository_data['repository']['metadata'].items():
             if changeset not in tool_dependencies:
