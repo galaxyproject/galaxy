@@ -705,7 +705,7 @@
     <sniffer type="galaxy.datatypes.binary:Fast5ArchiveBz2" />
     <sniffer type="galaxy.datatypes.binary:Fast5Archive" />
     <sniffer type="galaxy.datatypes.binary:PostgresqlArchive"/>
-    <sniffer type="galaxy.datatypes.annotation:ICM" />
+    <sniffer type="galaxy.datatypes.binary:ICM" />
     <sniffer type="galaxy.datatypes.annotation:Augustus" />
     <sniffer type="galaxy.datatypes.triples:Rdf"/>
     <sniffer type="galaxy.datatypes.blast:BlastXml"/>
