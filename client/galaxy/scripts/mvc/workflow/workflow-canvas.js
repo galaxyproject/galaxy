@@ -100,26 +100,38 @@ $.extend(CanvasManager.prototype, {
     },
     init_copy_paste: function() {
         document.addEventListener("copy", e => {
-            if (this.app.workflow.active_node) {
-                e.clipboardData.setData(
-                    "application/json",
-                    JSON.stringify({
-                        nodeId: this.app.workflow.active_node.id
-                    })
-                );
+            // If it appears that the user is trying to copy/paste text, we
+            // pass that through.
+            if (window.getSelection.toString() === "") {
+                if (this.app.workflow.active_node) {
+                    e.clipboardData.setData(
+                        "application/json",
+                        JSON.stringify({
+                            nodeId: this.app.workflow.active_node.id
+                        })
+                    );
+                }
+                e.preventDefault();
             }
-            e.preventDefault();
         });
 
         document.addEventListener("paste", e => {
-            var nodeId;
-            try {
-                nodeId = JSON.parse(e.clipboardData.getData("application/json")).nodeId;
-            } catch (error) {}
-            if (nodeId && this.app.workflow.nodes.hasOwnProperty(nodeId)) {
-                this.app.workflow.nodes[nodeId].clone();
+            // If it appears that the user is trying to paste into a text box,
+            // pass that through and skip the workflow copy/paste logic.
+            if (
+                document.activeElement &&
+                document.activeElement.type !== "textarea" &&
+                document.activeElement.type !== "text"
+            ) {
+                var nodeId;
+                try {
+                    nodeId = JSON.parse(e.clipboardData.getData("application/json")).nodeId;
+                } catch (error) {}
+                if (nodeId && this.app.workflow.nodes.hasOwnProperty(nodeId)) {
+                    this.app.workflow.nodes[nodeId].clone();
+                }
+                e.preventDefault();
             }
-            e.preventDefault();
         });
     },
     update_viewport_overlay: function() {
