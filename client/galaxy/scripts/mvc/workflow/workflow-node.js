@@ -137,9 +137,7 @@ var Node = Backbone.Model.extend({
             annotation: this.annotation,
             post_job_actions: this.post_job_actions
         };
-        var node = this.app.workflow.create_node(
-            this.type, this.name, this.content_id
-        );
+        var node = this.app.workflow.create_node(this.type, this.name, this.content_id);
 
         Utils.request({
             type: "POST",
@@ -149,7 +147,7 @@ var Node = Backbone.Model.extend({
                 tool_id: this.content_id,
                 inputs: this.tool_state
             },
-            success: (data) => {
+            success: data => {
                 var newData = Object.assign({}, data, copiedData);
                 node.init_field_data(newData);
                 node.update_field_data(newData);

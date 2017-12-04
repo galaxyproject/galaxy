@@ -99,19 +99,22 @@ $.extend(CanvasManager.prototype, {
         $("#overview-border div").bind("drag", () => {});
     },
     init_copy_paste: function() {
-        document.addEventListener('copy', (e) => {
+        document.addEventListener("copy", e => {
             if (this.app.workflow.active_node) {
-                e.clipboardData.setData('application/json', JSON.stringify({
-                    nodeId: this.app.workflow.active_node.id
-                }));
+                e.clipboardData.setData(
+                    "application/json",
+                    JSON.stringify({
+                        nodeId: this.app.workflow.active_node.id
+                    })
+                );
             }
             e.preventDefault();
         });
 
-        document.addEventListener('paste', (e) => {
+        document.addEventListener("paste", e => {
             var nodeId;
             try {
-                nodeId = JSON.parse(e.clipboardData.getData('application/json')).nodeId;
+                nodeId = JSON.parse(e.clipboardData.getData("application/json")).nodeId;
             } catch (error) {}
             if (nodeId && this.app.workflow.nodes.hasOwnProperty(nodeId)) {
                 this.app.workflow.nodes[nodeId].clone();
