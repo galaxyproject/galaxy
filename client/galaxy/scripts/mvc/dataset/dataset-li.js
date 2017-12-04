@@ -286,16 +286,10 @@ var DatasetListItemView = _super.extend(
                 return this._renderMetaFileDownloadButton();
             }
 
-            return $(
-                [
-                    '<a class="download-btn icon-btn" ',
-                    'href="',
-                    this.model.urls.download,
-                    `" title="${_l("Download")}" download>`,
-                    '<span class="fa fa-floppy-o"></span>',
-                    "</a>"
-                ].join("")
-            );
+            return $(`
+                <a class="download-btn icon-btn" href="${this.model.urls.download}" title="${_l("Download")}">
+                    <span class="fa fa-floppy-o"></span>
+                </a>`);
         },
 
         /** Render the download button which opens a dropdown with links to download assoc. meta files (indeces, etc.) */
