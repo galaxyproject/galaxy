@@ -1,3 +1,4 @@
+import Utils from "utils/utils";
 import NodeView from "mvc/workflow/workflow-view-node";
 var Node = Backbone.Model.extend({
     initialize: function(app, attr) {
@@ -127,6 +128,33 @@ var Node = Backbone.Model.extend({
         });
         $.each(this.output_terminals, (_, t) => {
             t.redraw();
+        });
+    },
+    clone: function() {
+        var copiedData = {
+            name: this.name,
+            label: this.label,
+            annotation: this.annotation,
+            post_job_actions: this.post_job_actions
+        };
+        var node = this.app.workflow.create_node(
+            this.type, this.name, this.content_id
+        );
+
+        Utils.request({
+            type: "POST",
+            url: `${Galaxy.root}api/workflows/build_module`,
+            data: {
+                type: this.type,
+                tool_id: this.content_id,
+                inputs: this.tool_state
+            },
+            success: (data) => {
+                var newData = Object.assign({}, data, copiedData);
+                node.init_field_data(newData);
+                node.update_field_data(newData);
+                this.app.workflow.activate_node(node);
+            }
         });
     },
     destroy: function() {
