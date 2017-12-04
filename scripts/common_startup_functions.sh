@@ -41,7 +41,7 @@ parse_common_args() {
                 paster_args="$paster_args --pid-file $PID_FILE --log-file $LOG_FILE --daemon"
                 # --daemonize2 waits until after the application has loaded
                 # to daemonize, thus it stops if any errors are found
-                uwsgi_args="$uwsgi_args --daemonize2 $LOG_FILE --safe-pidfile $PID_FILE"
+                uwsgi_args="--daemonize2 $LOG_FILE --pidfile2 $PID_FILE $uwsgi_args"
                 daemon_or_restart_arg_set=1
                 shift
                 ;;
