@@ -7,7 +7,7 @@
 
 <%def name="javascripts()">
 ${parent.javascripts()}
-${h.js("bundled/masthead.bundled")}
+${h.js("bundled/extended.bundled")}
 </%def>
 
 <%def name="late_javascripts()">

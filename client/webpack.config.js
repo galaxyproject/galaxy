@@ -43,11 +43,7 @@ let buildconfig = {
         login: "./galaxy/scripts/apps/login.js",
         analysis: "./galaxy/scripts/apps/analysis.js",
         admin: "./galaxy/scripts/apps/admin.js",
-        workflow: "./galaxy/scripts/apps/workflow.js",
-        masthead: "./galaxy/scripts/apps/masthead.js",
-        viz: "./galaxy/scripts/apps/viz.js",
-        library: "./galaxy/scripts/apps/library.js",
-        adminToolshed: "./galaxy/scripts/apps/admin-toolshed.js"
+        extended: "./galaxy/scripts/apps/extended.js"
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),

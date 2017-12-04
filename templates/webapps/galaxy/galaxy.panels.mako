@@ -72,14 +72,10 @@
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
-        'bundled/masthead.bundled',
+        'bundled/extended.bundled',
         'libs/d3',
         'libs/require',
     )}
-
-    %if self.galaxy_config.get('bundle', None):
-        ${h.js('bundled/%s.bundled' % self.galaxy_config.get('bundle'))}
-    %endif
 
     <script type="text/javascript">
         // configure require
@@ -127,10 +123,10 @@
         // load any app configured
         define( 'app', function(){
             var jscript = galaxy_config.app.jscript;
-            if( galaxy_config.app.jscript && window[galaxy_config.app.jscript]){
+            if( galaxy_config.app.jscript && window.bundleEntries[galaxy_config.app.jscript]){
                 $( function(){
                     // load galaxy module application
-                    window[galaxy_config.app.jscript]();
+                    window.bundleEntries[galaxy_config.app.jscript]();
                 });
             } else {
                 console.error("'galaxy_config.app.jscript' missing.");
