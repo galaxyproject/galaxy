@@ -18,6 +18,7 @@ FETCH_WHEELS=1
 CREATE_VENV=1
 REPLACE_PIP=$SET_VENV
 COPY_SAMPLE_FILES=1
+SKIP_CLIENT_BUILD=0
 
 for arg in "$@"; do
     [ "$arg" = "--skip-eggs" ] && FETCH_WHEELS=0
@@ -28,6 +29,7 @@ for arg in "$@"; do
     [ "$arg" = "--replace-pip" ] && REPLACE_PIP=1
     [ "$arg" = "--stop-daemon" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
+    [ "$arg" = "--no-client-build" ] && SKIP_CLIENT_BUILD=1
 done
 
 SAMPLES="
@@ -60,6 +62,28 @@ fi
 for rmfile in $RMFILES; do
     [ -f "$rmfile" ] && rm -f "$rmfile"
 done
+
+# Check client build state.
+if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
+    gitbranch=$(git rev-parse --abbrev-ref HEAD)
+    if [ $gitbranch == "dev" ]; then
+        # We're on dev.  This branch (only, currently) doesn't have build artifacts.  Compare hash.
+        if [ -f static/client_build_hash.txt ]; then
+            githash=$(git rev-parse HEAD)
+            statichash=$(cat static/client_build_hash.txt)
+            if [ $githash == $statichash ]; then
+                SKIP_CLIENT_BUILD=1
+            fi
+        fi
+    else
+        # Not on dev.  We're not going to bug people about building.
+        SKIP_CLIENT_BUILD=1
+    fi
+    if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
+        echo "The Galaxy client build is out of date.  Please run 'make client-production' or your choice of build target.  Please see ./client/README.md for more information."
+        exit 1
+    fi
+fi
 
 : ${GALAXY_CONFIG_FILE:=config/galaxy.ini}
 if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
