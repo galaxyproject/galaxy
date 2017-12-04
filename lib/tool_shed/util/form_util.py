@@ -288,9 +288,8 @@ class SelectField(BaseField):
         d['type'] = 'select'
         d['display'] = self.display
         d['multiple'] = self.multiple
-        d['data'] = []
-        for value in self.selectlist:
-            d['data'].append({'label': value, 'value': value})
+        d['data'] = [{'label': value, 'value': value} for value in self.selectlist]
+        d['options'] = [{'label': option[0], 'value': option[1], 'selected': option[2]} for option in self.options]
         return d
 
 
