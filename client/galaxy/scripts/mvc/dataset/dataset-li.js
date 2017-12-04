@@ -298,7 +298,7 @@ var DatasetListItemView = _super.extend(
             return $(
                 [
                     '<div class="metafile-dropdown dropdown">',
-                    '<a class="download-btn icon-btn" href="javascript:void(0)" data-toggle="dropdown"',
+                    `<a class="download-btn icon-btn" href="${this.model.urls.download}" data-toggle="dropdown"`,
                     ` title="${_l("Download")}">`,
                     '<span class="fa fa-floppy-o"></span>',
                     "</a>",
