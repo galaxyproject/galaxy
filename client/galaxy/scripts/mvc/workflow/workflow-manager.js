@@ -306,6 +306,7 @@ $.extend(Workflow.prototype, {
         if (this.active_node != node) {
             this.check_changes_in_active_form();
             this.clear_active_node();
+            document.activeElement.blur();
             this.app.showForm(node.config_form, node);
             node.make_active();
             this.active_node = node;
