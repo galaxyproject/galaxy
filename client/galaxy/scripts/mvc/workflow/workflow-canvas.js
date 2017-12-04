@@ -102,7 +102,7 @@ $.extend(CanvasManager.prototype, {
         document.addEventListener("copy", e => {
             // If it appears that the user is trying to copy/paste text, we
             // pass that through.
-            if (window.getSelection.toString() === "") {
+            if (window.getSelection().toString() === "") {
                 if (this.app.workflow.active_node) {
                     e.clipboardData.setData(
                         "application/json",
