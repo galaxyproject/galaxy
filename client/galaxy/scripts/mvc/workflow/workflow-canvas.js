@@ -255,27 +255,28 @@ $.extend(ScrollPanel.prototype, {
         close_dist = 5;
 
         var nudge = 23;
+        var t = 0;
         if (x - close_dist < min_x) {
             if (panel_pos.left < p_max_x) {
-                var t = Math.min(nudge, p_max_x - panel_pos.left);
+                t = Math.min(nudge, p_max_x - panel_pos.left);
                 panel.css("left", panel_pos.left + t);
                 moved = true;
             }
         } else if (x + close_dist > max_x) {
             if (panel_pos.left > p_min_x) {
-                var t = Math.min(nudge, panel_pos.left - p_min_x);
+                t = Math.min(nudge, panel_pos.left - p_min_x);
                 panel.css("left", panel_pos.left - t);
                 moved = true;
             }
         } else if (y - close_dist < min_y) {
             if (panel_pos.top < p_max_y) {
-                var t = Math.min(nudge, p_max_y - panel_pos.top);
+                t = Math.min(nudge, p_max_y - panel_pos.top);
                 panel.css("top", panel_pos.top + t);
                 moved = true;
             }
         } else if (y + close_dist > max_y) {
             if (panel_pos.top > p_min_y) {
-                var t = Math.min(nudge, panel_pos.top - p_min_x);
+                t = Math.min(nudge, panel_pos.top - p_min_x);
                 panel.css("top", `${panel_pos.top - t}px`);
                 moved = true;
             }
@@ -283,13 +284,12 @@ $.extend(ScrollPanel.prototype, {
         if (moved) {
             // Keep moving even if mouse doesn't move
             onmove();
-            var panel = this;
             this.timeout = setTimeout(() => {
-                panel.test(e, onmove);
+                this.test(e, onmove);
             }, 50);
         }
     },
-    stop: function(e, ui) {
+    stop: function() {
         clearTimeout(this.timeout);
     }
 });
