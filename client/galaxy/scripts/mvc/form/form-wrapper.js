@@ -23,6 +23,8 @@ var View = Backbone.View.extend({
                     message: options.message,
                     status: options.status || "warning",
                     icon: options.icon,
+                    initial_errors: true,
+                    errors: options.errors,
                     inputs: options.inputs,
                     buttons: {
                         submit: new Ui.Button({
