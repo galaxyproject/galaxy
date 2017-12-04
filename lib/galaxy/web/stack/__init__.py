@@ -18,6 +18,7 @@ from six import string_types
 
 from galaxy.util.bunch import Bunch
 from galaxy.util.facts import get_facts
+from galaxy.util.path import has_ext
 from galaxy.util.properties import nice_config_parser
 from .message import ApplicationStackMessage, ApplicationStackMessageDispatcher
 from .transport import ApplicationStackTransport, UWSGIFarmMessageTransport
@@ -181,21 +182,24 @@ class UWSGIApplicationStack(MessageApplicationStack):
             'config_section': config_section,
         }
         uwsgi_opt = uwsgi.opt
-        # check for --yaml or --json uWSGI config options first
-        config_file = uwsgi_opt.get("yaml") or uwsgi_opt.get("json")
-        # --ini and --ini-paste don't behave the same way, but this method will only be called by mules if the main
-        # application was loaded with --ini-paste, so we can make some assumptions, most notably, uWSGI does not have
-        # any way to set the app name when loading with paste.deploy:loadapp(), so hardcoding the alternate section
-        # name to `app:main` is fine.
-        if config_file is None and uwsgi_opt.get("ini") or uwsgi_opt.get("ini-paste"):
-            config_file = uwsgi_opt.get("ini") or uwsgi_opt.get("ini-paste")
-            parser = nice_config_parser(config_file)
-            if not parser.has_section(config_section) and parser.has_section('app:main'):
-                kwds['config_section'] = 'app:main'
+        config_file = None
         # check for --set galaxy_config_file=<path>, this overrides whatever config file uWSGI was loaded with (which
         # may not actually include a Galaxy config)
         if uwsgi_opt.get("galaxy_config_file"):
             config_file = uwsgi_opt.get("galaxy_config_file")
+        # check for --yaml or --json uWSGI config options next
+        if config_file is None:
+            config_file = uwsgi_opt.get("yaml") or uwsgi_opt.get("json")
+        # --ini and --ini-paste don't behave the same way, but this method will only be called by mules if the main
+        # application was loaded with --ini-paste, so we can make some assumptions, most notably, uWSGI does not have
+        # any way to set the app name when loading with paste.deploy:loadapp(), so hardcoding the alternate section
+        # name to `app:main` is fine.
+        if ((config_file is None and uwsgi_opt.get("ini") or uwsgi_opt.get("ini-paste"))
+                or has_ext(config_file, "ini", aliases=True, ignore="sample")):
+            config_file = config_file or uwsgi_opt.get("ini") or uwsgi_opt.get("ini-paste")
+            parser = nice_config_parser(config_file)
+            if not parser.has_section(config_section) and parser.has_section('app:main'):
+                kwds['config_section'] = 'app:main'
         kwds['config_file'] = config_file
         return kwds
 
