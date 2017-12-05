@@ -1,6 +1,7 @@
 import WorkflowView from "mvc/workflow/workflow-view";
 import Trackster from "viz/trackster";
 import Circster from "viz/circster";
+import Phyloviz from "viz/phyloviz";
 import GalaxyLibrary from "galaxy.library";
 import AdminToolshed from "admin.toolshed";
 import Masthead from "layout/masthead";
@@ -46,7 +47,8 @@ export const bundleEntries = {
     trackster: tracksterEntry,
     circster: circsterEntry,
     adminToolshed: adminToolshedEntry,
-    pages: pagesEditorOnload
+    pages: pagesEditorOnload,
+    phyloviz: Phyloviz.PhylovizView,
 };
 
 window.bundleEntries = bundleEntries;
