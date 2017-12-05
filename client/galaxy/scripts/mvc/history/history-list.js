@@ -12,8 +12,8 @@ var View = Backbone.View.extend({
         Utils.get({
             url: `${Galaxy.root}history/${options.action_id}?${$.param(Galaxy.params)}`,
             success: function(response) {
-                response["dict_format"] = true;
-                _.each(response["operations"], operation => {
+                response.dict_format = true;
+                _.each(response.operations, operation => {
                     if (operation.label == "Copy") {
                         operation.onclick = id => {
                             self._showCopyDialog(id);
