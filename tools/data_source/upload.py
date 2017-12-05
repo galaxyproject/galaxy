@@ -36,11 +36,6 @@ else:
 assert sys.version_info[:2] >= (2, 7)
 
 
-def stop_err(msg, ret=1):
-    sys.stderr.write(msg)
-    sys.exit(ret)
-
-
 def file_err(msg, dataset, json_file):
     json_file.write(dumps(dict(type='dataset',
                                ext='data',
@@ -249,22 +244,18 @@ def add_file(dataset, registry, json_file, output_path):
                             dataset.name = uncompressed_name
                     data_type = 'zip'
             if not data_type:
-                # TODO refactor this logic.  check_binary isn't guaranteed to be
-                # correct since it only looks at whether the first 100 chars are
-                # printable or not.  If someone specifies a known unsniffable
-                # binary datatype and check_binary fails, the file gets mangled.
-                if check_binary(dataset.path) or Binary.is_ext_unsniffable(dataset.file_type):
+                if check_binary(dataset.path) or registry.is_extension_unsniffable_binary(dataset.file_type):
                     # We have a binary dataset, but it is not Bam, Sff or Pdf
                     data_type = 'binary'
-                    # binary_ok = False
                     parts = dataset.name.split(".")
                     if len(parts) > 1:
                         ext = parts[-1].strip().lower()
-                        if check_content and not Binary.is_ext_unsniffable(ext):
+                        is_ext_unsniffable_binary = registry.is_extension_unsniffable_binary(ext)
+                        if check_content and not is_ext_unsniffable_binary:
                             file_err('The uploaded binary file contains inappropriate content', dataset, json_file)
                             return
-                        elif Binary.is_ext_unsniffable(ext) and dataset.file_type != ext:
-                            err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % (ext.capitalize(), ext)
+                        elif is_ext_unsniffable_binary and dataset.file_type != ext:
+                            err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % (ext, ext)
                             file_err(err_msg, dataset, json_file)
                             return
             if not data_type:

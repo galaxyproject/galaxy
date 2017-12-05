@@ -16,7 +16,6 @@ import zipfile
 from six import text_type
 
 from galaxy import util
-from galaxy.datatypes.binary import Binary
 from galaxy.util import compression_utils
 from galaxy.util.checkers import (
     check_binary,
@@ -478,7 +477,7 @@ def handle_uploaded_dataset_file(filename, datatypes_registry, ext='auto'):
         ext = guess_ext(filename, sniff_order=datatypes_registry.sniff_order)
 
     if check_binary(filename):
-        if not Binary.is_ext_unsniffable(ext) and not datatypes_registry.get_datatype_by_extension(ext).sniff(filename):
+        if not datatypes_registry.is_extension_unsniffable_binary(ext) and not datatypes_registry.get_datatype_by_extension(ext).sniff(filename):
             raise InappropriateDatasetContentError('The binary uploaded file contains inappropriate content.')
     elif check_html(filename):
         raise InappropriateDatasetContentError('The uploaded file contains inappropriate HTML content.')
