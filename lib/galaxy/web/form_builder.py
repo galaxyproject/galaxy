@@ -74,6 +74,7 @@ class CheckboxField(BaseField):
     def is_checked(value):
         if value in [True, "true"]:
             return True
+        return False
 
     def to_dict(self):
         d = super(CheckboxField, self).to_dict()
