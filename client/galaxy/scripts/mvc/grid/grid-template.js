@@ -25,16 +25,15 @@ export default {
     },
 
     // template
-    grid_table: function(options) {
-        return (
-            '<form method="post" onsubmit="return false;">' +
-            '<table id="grid-table" class="grid">' +
-            '<thead id="grid-table-header"></thead>' +
-            '<tbody id="grid-table-body"></tbody>' +
-            '<tfoot id="grid-table-footer"></tfoot>' +
-            "</table>" +
-            "</form>"
-        );
+    grid_table: function() {
+        return `
+            <form method="post" onsubmit="return false;">
+                <table id="grid-table" class="grid">
+                    <thead id="grid-table-header"></thead>
+                    <tbody id="grid-table-body"></tbody>
+                    <tfoot id="grid-table-footer"></tfoot>
+                </table>
+            </form>`;
     },
 
     // template
@@ -119,7 +118,7 @@ export default {
         var items_length = options.items.length;
 
         // empty grid?
-        if (items_length == 0) {
+        if (items_length === 0) {
             // No results.
             tmpl += '<tr><td colspan="100"><em>No Items</em></td></tr>';
             num_rows_rendered = 1;
@@ -130,7 +129,6 @@ export default {
             // encode ids
             var item = options.items[i];
             var encoded_id = item.encode_id;
-            var popupmenu_id = `grid-${i}-popup`;
 
             // Tag current
             tmpl += "<tr ";
@@ -175,7 +173,7 @@ export default {
                     if (column.attach_popup) {
                         id = `grid-${i}-popup`;
                         cls = "menubutton";
-                        if (link != "") {
+                        if (link !== "") {
                             cls += " split";
                         }
                         cls += " popup";
@@ -186,13 +184,13 @@ export default {
 
                     // Link
                     if (link) {
-                        if (options.operations.length != 0) {
+                        if (options.operations.length !== 0) {
                             tmpl += `<div id="${id}" class="${cls}" style="float: left;">`;
                         }
                         tmpl += `<a class="menubutton-label use-target" target="${target}" href="${
                             link
                         }" onclick="return false;">${value}</a>`;
-                        if (options.operations.length != 0) {
+                        if (options.operations.length !== 0) {
                             tmpl += "</div>";
                         }
                     } else {
@@ -213,6 +211,8 @@ export default {
     footer: function(options) {
         // create template string
         var tmpl = "";
+        var i;
+        var operation;
 
         // paging
         if (options.use_paging && options.num_pages > 1) {
@@ -247,7 +247,7 @@ export default {
 
             // Second and final pass on min page to add any unused
             // offset from max to min.
-            if (max_offset != 0) {
+            if (max_offset !== 0) {
                 min_page -= max_offset;
                 if (min_page < 1) {
                     min_page = 1;
@@ -290,25 +290,26 @@ export default {
             tmpl += "</span>";
 
             // Show all link
-            tmpl +=
-                '<span class="page-link" id="show-all-link-span"> | <a href="javascript:void(0);" onclick="return false;" page_num="all">Show All</a></span>' +
-                "</td>" +
-                "</tr>";
+            tmpl += `
+                    <span class="page-link" id="show-all-link-span"> | <a href="javascript:void(0);" onclick="return false;" page_num="all">Show All</a></span>
+                    </td>
+                </tr>`;
         }
 
         // Grid operations for multiple items.
         if (options.show_item_checkboxes) {
             // start template
-            tmpl +=
-                "<tr>" +
-                '<input type="hidden" id="operation" name="operation" value="">' +
-                "<td></td>" +
-                '<td colspan="100">' +
-                'For <span class="grid-selected-count"></span> selected items: ';
+            tmpl += `
+                <tr>
+                    <input type="hidden" id="operation" name="operation" value="">
+                    <td></td>
+                    <td colspan="100">
+                        For <span class="grid-selected-count"></span> selected items: 
+            `;
 
             // configure buttons for operations
-            for (var i in options.operations) {
-                var operation = options.operations[i];
+            for (i in options.operations) {
+                operation = options.operations[i];
                 if (operation.allow_multiple) {
                     tmpl += `<input type="button" value="${
                         operation.label
@@ -333,7 +334,7 @@ export default {
         if (found_global) {
             tmpl += "<tr>" + '<td colspan="100">';
             for (i in options.operations) {
-                var operation = options.operations[i];
+                operation = options.operations[i];
                 if (operation.global_operation) {
                     tmpl += `<a class="action-button" href="${operation.global_operation}">${operation.label}</a>`;
                 }
@@ -366,6 +367,7 @@ export default {
         // get filters
         var default_filter_dict = options.default_filter_dict;
         var filters = options.filters;
+        var column;
 
         // show advanced search if flag set or if there are filters for advanced search fields
         var advanced_search_display = "none";
@@ -376,7 +378,7 @@ export default {
         // identify columns with advanced filtering
         var show_advanced_search_link = false;
         for (var i in options.columns) {
-            var column = options.columns[i];
+            column = options.columns[i];
             if (column.filterable == "advanced") {
                 var column_key = column.key;
                 var f_key = filters[column_key];
@@ -402,8 +404,8 @@ export default {
         };"><table><tr><td style="padding: 0;"><table>`;
 
         // add standard filters
-        for (var i in options.columns) {
-            var column = options.columns[i];
+        for (i in options.columns) {
+            column = options.columns[i];
             if (column.filterable == "standard") {
                 tmpl += this.grid_column_filter(options, column);
             }
@@ -428,8 +430,8 @@ export default {
         }; margin-top: 5px; border: 1px solid #ccc;"><table><tr><td style="text-align: left" colspan="100"><a href="" class="advanced-search-toggle">Close Advanced Search</a></td></tr>`;
 
         // add advanced filters
-        for (var i in options.columns) {
-            var column = options.columns[i];
+        for (i in options.columns) {
+            column = options.columns[i];
             if (column.filterable == "advanced") {
                 tmpl += this.grid_column_filter(options, column);
             }
@@ -445,10 +447,10 @@ export default {
     // template
     grid_column_filter: function(options, column) {
         // collect parameters
-        var default_filter_dict = options.default_filter_dict;
         var filters = options.filters;
         var column_label = column.label;
         var column_key = column.key;
+        var i;
         if (column.filterable == "advanced") {
             column_label = column_label.toLowerCase();
         }
@@ -496,16 +498,14 @@ export default {
 
                 // multiple filter values
                 if (type == "array") {
-                    for (var i in column_filter) {
-                        // get filter
-                        var filter = column_filter[i];
+                    for (i in column_filter) {
 
                         // copy filters and remove entry
                         var params = column_filter;
                         params = params.slice(i);
 
                         // append template
-                        tmpl += this.filter_element(column_key, filter);
+                        tmpl += this.filter_element(column_key, column_filter[i]);
                     }
                 }
             }
@@ -515,22 +515,25 @@ export default {
 
             // Set value, size of search input field. Minimum size is 20 characters.
             var value = "";
+            var size=20;
             if (column.filterable == "standard") {
                 value = column.label.toLowerCase();
-                var size = value.length;
-                if (size < 20) {
-                    size = 20;
+                if (value.length < 20) {
+                    size = value.length;
                 }
                 // +4 to account for space after placeholder
                 size = size + 4;
             }
 
             // print input field for column
-            tmpl += `<span class="search-box"><input class="search-box-input" id="input-${column_key}-filter" name="f-${
-                column_key
-            }" type="text" placeholder="${value}" size="${
-                size
-            }"/><button type="submit" style="background: transparent; border: none; padding: 4px; margin: 0px;"><i class="fa fa-search"></i></button></span></form>`;
+            tmpl += `
+                <span class="search-box">
+                    <input class="search-box-input" id="input-${column_key}-filter" name="f-${ column_key }" type="text" placeholder="${value}" size="${ size }"/>
+                    <button type="submit" style="background: transparent; border: none; padding: 4px; margin: 0px;">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </span>
+            </form>`;
         } else {
             // filter criteria
             tmpl += `<span id="${column_key}-filtering-criteria">`;
