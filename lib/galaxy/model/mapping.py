@@ -149,15 +149,6 @@ model.UserAuthnAssociation.table = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
-# TODO: delete this
-model.PSAUsers = Table(
-    "users", metadata,
-    Column('id', Integer, primary_key=True),
-    Column('username', VARCHAR(200)),
-    Column('password', VARCHAR(200)),
-    Column('name', VARCHAR(100)),
-    Column('email', VARCHAR(200)),
-    Column('active', BOOLEAN))
 
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,

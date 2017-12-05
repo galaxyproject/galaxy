@@ -5189,15 +5189,6 @@ class UserAuthnAssociation(UserMixin):
         self._save_instance(self)
 
 
-class PSAUsers(object):
-    def __init__(self, username, password, name, email, active):
-        self.username = username
-        self.password = password
-        self.name = name
-        self.email = email
-        self.active = active
-
-
 class Page(object, Dictifiable):
     dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted']
 
