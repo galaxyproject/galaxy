@@ -42,7 +42,6 @@ var ToolShedRepositoryView = Backbone.View.extend({
         this.options.shed_tool_conf = this.templateShedToolConf({
             shed_tool_confs: models.get("shed_conf")
         });
-        console.log(models.get("shed_conf"));
         this.options.panel_section_dict = models.get("panel_section_dict");
         this.options.api_url = `${Galaxy.root}api/tool_shed_repositories/install?async=True`;
         this.options = _.extend(this.options, options);
