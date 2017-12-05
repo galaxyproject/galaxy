@@ -6,6 +6,7 @@ import AdminToolshed from "admin.toolshed";
 import Masthead from "layout/masthead";
 import user from "mvc/user/user-model";
 import Modal from "mvc/ui/ui-modal";
+import pagesEditorOnload from "galaxy.pages";
 
 export function mastheadEntry(options) {
     if (!Galaxy.user) {
@@ -44,7 +45,8 @@ export const bundleEntries = {
     workflow: workflowEntry,
     trackster: tracksterEntry,
     circster: circsterEntry,
-    adminToolshed: adminToolshedEntry
+    adminToolshed: adminToolshedEntry,
+    pages: pagesEditorOnload
 };
 
 window.bundleEntries = bundleEntries;
