@@ -15,6 +15,9 @@ import tempfile
 from cgi import escape
 from json import dumps
 
+import pysam
+import pysam.bcftools
+
 from galaxy import util
 from galaxy.datatypes import binary, data, metadata
 from galaxy.datatypes.metadata import MetadataElement
@@ -23,6 +26,8 @@ from galaxy.datatypes.sniff import (
     iter_headers
 )
 from galaxy.util import compression_utils
+from galaxy.util.checkers import is_gzip
+
 from . import dataproviders
 
 if sys.version_info > (3,):
@@ -733,12 +738,22 @@ class BaseVcf(Tabular):
 class Vcf(BaseVcf):
     file_ext = 'vcf'
 
+    def sniff(self, filename):
+        if is_gzip(filename):
+            return False
+        return BaseVcf.sniff(self, filename)
+
 
 class VcfGz(BaseVcf, binary.Binary):
     file_ext = 'vcf_bgzip'
     compressed = True
 
     MetadataElement(name="tabix_index", desc="Vcf Index File", param=metadata.FileParameter, file_ext="tbi", readonly=True, no_value=None, visible=False, optional=True)
+
+    def sniff(self, filename):
+        if not is_gzip(filename):
+            return False
+        return BaseVcf.sniff(self, filename)
 
     def set_meta(self, dataset, **kwd):
         super(BaseVcf, self).set_meta(dataset, **kwd)
@@ -747,26 +762,11 @@ class VcfGz(BaseVcf, binary.Binary):
         index_file = dataset.metadata.bcf_index
         if not index_file:
             index_file = dataset.metadata.spec['tabix_index'].param.new_file(dataset=dataset)
-        # Create the bcf index
-        # $ bcftools index
-        # Usage: bcftools index <in.bcf>
 
-        dataset_symlink = os.path.join(os.path.dirname(index_file.file_name),
-                                       '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name))) + ".vcf.gz"
-        os.symlink(dataset.file_name, dataset_symlink)
-
-        stderr_name = tempfile.NamedTemporaryFile(prefix="bcf_index_stderr").name
-        command = ['bcftools', 'index', '-t', dataset_symlink]
         try:
-            subprocess.check_call(args=command, stderr=open(stderr_name, 'wb'))
-            shutil.move(dataset_symlink + '.tbi', index_file.file_name)  # this will fail if bcftools < 1.0 is used, because it creates a .bci index file instead of .csi
+            pysam.tabix_index(dataset.file_name, index_file)
         except Exception as e:
-            stderr = open(stderr_name).read().strip()
-            raise Exception('Error setting BCF metadata: %s' % (stderr or str(e)))
-        finally:
-            # Remove temp file and symlink
-            os.remove(stderr_name)
-            os.remove(dataset_symlink)
+            raise Exception('Error setting VCF.gz metadata: %s' % (str(e)))
         dataset.metadata.tabix_index = index_file
 
 

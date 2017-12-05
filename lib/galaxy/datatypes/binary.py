@@ -16,6 +16,7 @@ from json import dumps
 
 import h5py
 import pysam
+import pysam.bcftools
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
 from galaxy import util
@@ -516,13 +517,6 @@ class Bcf(BaseBcf):
     """
     Class describing a (BGZF-compressed) BCF file
 
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('1.bcf')
-    >>> Bcf().sniff(fname)
-    True
-    >>> fname = get_test_fname('1.bcf_uncompressed')
-    >>> Bcf().sniff(fname)
-    False
     """
     file_ext = "bcf"
 
@@ -546,24 +540,16 @@ class Bcf(BaseBcf):
         if not index_file:
             index_file = dataset.metadata.spec['bcf_index'].param.new_file(dataset=dataset)
         # Create the bcf index
-        # $ bcftools index
-        # Usage: bcftools index <in.bcf>
-
         dataset_symlink = os.path.join(os.path.dirname(index_file.file_name),
                                        '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
         os.symlink(dataset.file_name, dataset_symlink)
-
-        stderr_name = tempfile.NamedTemporaryFile(prefix="bcf_index_stderr").name
-        command = ['bcftools', 'index', dataset_symlink]
         try:
-            subprocess.check_call(args=command, stderr=open(stderr_name, 'wb'))
-            shutil.move(dataset_symlink + '.csi', index_file.file_name)  # this will fail if bcftools < 1.0 is used, because it creates a .bci index file instead of .csi
+            pysam.bcftools.index(dataset_symlink)
+            shutil.move(dataset_symlink + '.csi', index_file.file_name)
         except Exception as e:
-            stderr = open(stderr_name).read().strip()
-            raise Exception('Error setting BCF metadata: %s' % (stderr or str(e)))
+            raise Exception('Error setting BCF metadata: %s' % (str(e)))
         finally:
             # Remove temp file and symlink
-            os.remove(stderr_name)
             os.remove(dataset_symlink)
         dataset.metadata.bcf_index = index_file
 
