@@ -216,49 +216,33 @@ class Bam(Binary):
         """
         pysam.merge('-O', 'BAM', output_file, *split_files)
 
-    @staticmethod
-    def _is_coordinate_sorted(file_name):
-        """
-        Check if the input BAM file is sorted from the header information.
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> bamfile = get_test_fname('1.bam')
-        >>> Bam._is_coordinate_sorted(bamfile)
-        True
-        >>> bamfile = get_test_fname('1.unsorted.bam')
-        >>> Bam._is_coordinate_sorted(bamfile)
-        False
-        """
-        f = pysam.AlignmentFile(file_name)
-        coordinate_sorted = False
-        try:
-            coordinate_sorted = f.header['HD']['SO'] == 'coordinate'
-        except Exception:
-            pass
-        return coordinate_sorted
-
     def dataset_content_needs_grooming(self, file_name):
         """
         Check if file_name is a coordinate-sorted BAM file
         """
-        # We check if the input BAM file is coordinate-sorted from the header information.
-        return not self._is_coordinate_sorted(file_name)
+        # The best way to ensure that BAM files are coordinate-sorted and indexable
+        # is to actually index them.
+        index_name = tempfile.NamedTemporaryFile(prefix="bam_index").name
+        try:
+            # If pysam fails to index a file it will write to stderr,
+            # and this causes the set_meta script to fail. So instead
+            # we start another process and discard stderr.
+            cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s')" % (file_name, index_name)]
+            with open(os.devnull, 'w') as devnull:
+                subprocess.check_call(cmd, stderr=devnull, shell=False)
+            needs_sorting = False
+        except Exception:
+            needs_sorting = True
+        try:
+            os.unlink(index_name)
+        except Exception:
+            pass
+        return needs_sorting
 
     def groom_dataset_content(self, file_name):
         """
         Ensures that the Bam file contents are sorted.  This function is called
         on an output dataset after the content is initially generated.
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> bamfile = get_test_fname('1.unsorted.bam')
-        >>> # Grooming happens in-place, so we copy the test dataset to a new location
-        >>> _, temp_path = tempfile.mkstemp()
-        >>> shutil.copy(bamfile, temp_path)
-        >>> b = Bam()
-        >>> b.groom_dataset_content(temp_path)
-        >>> b.dataset_content_needs_grooming(temp_path)
-        False
-        >>> os.remove(temp_path)
         """
         # Use pysam to sort the Bam file
         # This command may also creates temporary files <out.prefix>.%d.bam when the
@@ -500,24 +484,7 @@ class CRAM(Binary):
 
     def set_index_file(self, dataset, index_file):
         try:
-            # @todo when pysam 1.2.1 or pysam 1.3.0 gets released and becomes
-            # a dependency of galaxy, use pysam.index(alignment, target_idx)
-            # This currently gives coredump in the current release but is
-            # fixed in the dev branch:
-            # xref: https://github.com/samtools/samtools/issues/199
-
-            dataset_symlink = os.path.join(os.path.dirname(index_file.file_name), '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
-            os.symlink(dataset.file_name, dataset_symlink)
-            pysam.index(dataset_symlink)
-
-            tmp_index = dataset_symlink + ".crai"
-            if os.path.isfile(tmp_index):
-                shutil.move(tmp_index, index_file.file_name)
-                return index_file.file_name
-            else:
-                os.unlink(dataset_symlink)
-                log.warning('%s, expected crai index not created for: %s', self, dataset.file_name)
-                return False
+            pysam.index(dataset.file_name, index_file.file_name)
         except Exception as exc:
             log.warning('%s, set_index_file Exception: %s', self, exc)
             return False

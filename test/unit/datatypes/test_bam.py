@@ -19,35 +19,38 @@ def test_merge_bam():
 
 def test_dataset_content_needs_grooming():
     b = Bam()
-    with get_input_files('1.bam') as input_files:
-        assert b.dataset_content_needs_grooming(input_files[0]) is False
-        with get_tmp_path() as qname_sorted:
-            pysam.sort('-n', input_files[0], '-o', qname_sorted)
-            assert b.dataset_content_needs_grooming(qname_sorted) is True
-    with get_input_files('1.unsorted.bam') as input_files:
-        assert b.dataset_content_needs_grooming(input_files[0]) is True
+    with get_input_files('1.bam', '2.shuffled.bam') as input_files:
+        sorted_bam, shuffled_bam = input_files
+        assert b.dataset_content_needs_grooming(sorted_bam) is False
+        assert b.dataset_content_needs_grooming(shuffled_bam) is True
 
 
 def test_groom_dataset_content():
     b = Bam()
-    with get_input_files('1.unsorted.bam') as input_files:
+    with get_input_files('2.shuffled.bam') as input_files:
         b.groom_dataset_content(input_files[0])
         assert b.dataset_content_needs_grooming(input_files[0]) is False
 
 
-def test_set_meta():
+def test_set_meta_presorted():
     b = Bam()
-    dataset = Bunch()
-    with get_input_files('1.bam') as input_files, get_tmp_path() as index_path:
-        dataset.file_name = input_files[0]
-        dataset.metadata = Bunch()
-        dataset.metadata.bam_index = Bunch()
-        dataset.metadata.bam_index.file_name = index_path
+    with get_dataset('1.bam') as dataset:
         b.set_meta(dataset=dataset)
         assert dataset.metadata.sort_order == 'coordinate'
         bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb',
                                        index_filename=dataset.metadata.bam_index.file_name)
         assert bam_file.has_index() is True
+
+
+@contextmanager
+def get_dataset(file):
+    dataset = Bunch()
+    dataset.metadata = Bunch()
+    dataset.metadata.bam_index = Bunch()
+    with get_input_files(file) as input_files, get_tmp_path() as index_path:
+        dataset.file_name = input_files[0]
+        dataset.metadata.bam_index.file_name = index_path
+        yield dataset
 
 
 @contextmanager
