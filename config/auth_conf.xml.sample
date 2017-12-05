@@ -26,6 +26,11 @@
                  False. -->
 <!--        <allow-password-change>False</allow-password-change>
 -->
+            <!-- Whether roles (and groups) should be automatically created if
+                 the attribute specified under auto-register-roles can be found.
+                 Default is False. -->
+<!--        <auto-create-roles>False</auto-create-roles>
+-->
 
             <!-- LDAP-specific options -->
 <!--        <server>ldap://dc1.example.com</server>
@@ -88,12 +93,14 @@
             <bind-password>{password}</bind-password>
             <auto-register-username>{sAMAccountName}</auto-register-username>
             <auto-register-email>{mail}</auto-register-email>
+            <auto-register-roles>gidNumber</auto-register-roles>
 -->
             <!-- For OpenLDAP: -->
 <!--        <bind-user>{dn}</bind-user>
             <bind-password>{password}</bind-password>
             <auto-register-username>{uid}</auto-register-username>
             <auto-register-email>{mail}</auto-register-email>
+            <auto-register-roles>gid</auto-register-roles>
 -->
 <!--    </options>
     </authenticator>

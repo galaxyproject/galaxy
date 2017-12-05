@@ -776,6 +776,37 @@ class GalaxyRBACAgent(RBACAgent):
                 return None
         return role
 
+    def get_admin_role(self, name):
+        # will raise exception if not found
+        return self.sa_session.query(self.model.Role) \
+            .filter(and_(self.model.Role.table.c.name == name,
+                     self.model.Role.table.c.type == self.model.Role.types.ADMIN)) \
+            .one()
+
+    def create_admin_role(self, name, description, in_users, in_groups, create_group_for_role=False):
+        role = self.model.Role(name=name, description=description, type=self.model.Role.types.ADMIN)
+        self.sa_session.add(role)
+        # Create the UserRoleAssociations
+        for user in [self.sa_session.query(self.model.User).get(x) for x in in_users]:
+            ura = self.model.UserRoleAssociation(user, role)
+            self.sa_session.add(ura)
+        # Create the GroupRoleAssociations
+        for group in [self.sa_session.query(self.model.Group).get(x) for x in in_groups]:
+            gra = self.model.GroupRoleAssociation(group, role)
+            self.sa_session.add(gra)
+        if create_group_for_role:
+            # Create the group
+            group = self.model.Group(name=name)
+            self.sa_session.add(group)
+            # Associate the group with the role
+            gra = self.model.GroupRoleAssociation(group, role)
+            self.sa_session.add(gra)
+            num_in_groups = len(in_groups) + 1
+        else:
+            num_in_groups = len(in_groups)
+        self.sa_session.flush()
+        return role, num_in_groups
+
     def get_sharing_roles(self, user):
         return self.sa_session.query(self.model.Role) \
                               .filter(and_((self.model.Role.table.c.name).like("Sharing role for: %" + user.email + "%"),
