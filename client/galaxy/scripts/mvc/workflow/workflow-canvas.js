@@ -35,6 +35,9 @@ $.extend(CanvasManager.prototype, {
         var x_adjust;
         var y_adjust;
         this.cv
+            .bind("click", function() {
+                document.activeElement.blur();
+            })
             .bind("dragstart", function() {
                 var o = $(this).offset();
                 var p = self.cc.position();
