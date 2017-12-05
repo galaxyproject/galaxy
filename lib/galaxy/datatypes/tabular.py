@@ -759,12 +759,12 @@ class VcfGz(BaseVcf, binary.Binary):
         super(BaseVcf, self).set_meta(dataset, **kwd)
         """ Creates the index for the VCF file. """
         # These metadata values are not accessible by users, always overwrite
-        index_file = dataset.metadata.bcf_index
+        index_file = dataset.metadata.tabix_index
         if not index_file:
             index_file = dataset.metadata.spec['tabix_index'].param.new_file(dataset=dataset)
 
         try:
-            pysam.tabix_index(dataset.file_name, index_file)
+            pysam.tabix_index(dataset.file_name, index_file, preset='vcf')
         except Exception as e:
             raise Exception('Error setting VCF.gz metadata: %s' % (str(e)))
         dataset.metadata.tabix_index = index_file
