@@ -1,12 +1,12 @@
 /**
     This is the main class of the form plugin. It is referenced as 'app' in lower level modules.
 */
-import Utils from "utils/utils";
 import Portlet from "mvc/ui/ui-portlet";
 import Ui from "mvc/ui/ui-misc";
 import FormSection from "mvc/form/form-section";
 import FormData from "mvc/form/form-data";
-export default Backbone.View.extend({
+
+export var View = Backbone.View.extend({
     initialize: function(options) {
         this.model = new Backbone.Model({
             initial_errors: false,
@@ -95,7 +95,6 @@ export default Backbone.View.extend({
         if (options && options.errors) {
             var error_messages = this.data.matchResponse(options.errors);
             for (var input_id in this.element_list) {
-                var input = this.element_list[input_id];
                 if (error_messages[input_id]) {
                     this.highlight(input_id, error_messages[input_id], true);
                 }
@@ -118,7 +117,9 @@ export default Backbone.View.extend({
         this.data = new FormData.Manager(this);
         this._renderForm();
         this.data.create();
-        this.model.get("initial_errors") && this.errors(this.model.attributes);
+        if (this.model.get("initial_errors")) {
+            this.errors(this.model.attributes);
+        }
         // add listener which triggers on checksum change, and reset the form input wrappers
         var current_check = this.data.checksum();
         this.on("change", input_id => {
@@ -160,13 +161,18 @@ export default Backbone.View.extend({
         this.portlet.append(this.message.$el);
         this.portlet.append(this.section.$el);
         this.$el.empty();
-        options.inputs && this.$el.append(this.portlet.$el);
-        options.message &&
+        if (options.inputs) {
+            this.$el.append(this.portlet.$el);
+        }
+        if (options.message) {
             this.message.update({
                 persistent: true,
                 status: options.status,
                 message: options.message
             });
+        }
         Galaxy.emit.debug("form-view::initialize()", "Completed");
     }
 });
+
+export default View;

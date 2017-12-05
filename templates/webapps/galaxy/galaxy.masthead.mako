@@ -57,7 +57,7 @@
         }
         // TODO: ?? move above to base_panels.mako?
         $( function() {
-            window.masthead(${h.dumps(masthead_config)});
+            window.bundleEntries.masthead(${h.dumps(masthead_config)});
         });
     </script>
 </%def>

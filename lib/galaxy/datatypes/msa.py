@@ -92,9 +92,6 @@ class HmmerPress(Binary):
         self.add_composite_file('model.hmm.h3p', is_binary=True)
 
 
-Binary.register_unsniffable_binary_ext("hmmpress")
-
-
 class Stockholm_1_0(Text):
     edam_data = "data_0863"
     edam_format = "format_1961"
