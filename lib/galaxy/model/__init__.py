@@ -182,7 +182,7 @@ class User(object, Dictifiable):
     # attributes that will be accessed and returned when calling to_dict( view='element' )
     dict_element_visible_keys = ('id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'deleted', 'active', 'last_password_change')
 
-    def __init__(self, email=None, password=None):
+    def __init__(self, username=None, email=None, password=None):
         self.email = email
         self.password = password
         self.external = False
@@ -190,7 +190,7 @@ class User(object, Dictifiable):
         self.purged = False
         self.active = False
         self.activation_token = None
-        self.username = None
+        self.username = username
         self.last_password_change = None
         # Relationships
         self.histories = []
@@ -5045,10 +5045,13 @@ class SocialAuthPartial(object):
 class UserAuthnAssociation(UserMixin):
     __table_args__ = (UniqueConstraint('provider', 'uid'),)
 
-    def __init__(self, provider, uid, user_id, extra_data, lifetime, assoc_type):
+    def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None, password=None):
+        # TODO: user and password arguments are temporary. Because since the "model" at "_new_instance" can be
+        # both Galaxy user and this class, and in case it is the Galaxy user, it is required to have
+        # a password.
         self.provider = provider
         self.uid = uid
-        self.user_id = user_id
+        self.user_id = user.id
         self.extra_data = extra_data
         self.lifetime = lifetime
         self.assoc_type = assoc_type
@@ -5064,6 +5067,7 @@ class UserAuthnAssociation(UserMixin):
 
     @declared_attr
     def extra_data(cls):
+        print '%' * 200, '\nat extra data\n', '%' * 200
         return Column(MutableDict.as_mutable(JSONType))
 
     @classmethod
@@ -5071,6 +5075,9 @@ class UserAuthnAssociation(UserMixin):
         cls._save_instance(user)
 
     def set_extra_data(self, extra_data=None):
+        print '#' * 200, '\nat set extra data\n', '#' * 200
+        # TODO: unicode conversion is temporary -- any better approach ?
+        if extra_data is not None: extra_data = unicode(extra_data)
         if super(UserAuthnAssociation, self).set_extra_data(extra_data):
             self._save_instance(self)
 
@@ -5095,6 +5102,7 @@ class UserAuthnAssociation(UserMixin):
 
     @classmethod
     def user_query(cls):
+        print '\n\n **** session: {}\n\n'.format(cls._session())
         return cls._session().query(cls.user_model())
 
     @classmethod
@@ -5161,12 +5169,15 @@ class UserAuthnAssociation(UserMixin):
 
     @classmethod
     def _new_instance(cls, model, *args, **kwargs):
+        # TODO: VERY IMPORTANT: THIS IS TEMPORARY !!!!
+        kwargs['password'] = 'qazwsx'
         print '\n\n\n args: \t{}\n\nkwargs: \t{}\nmodel: \t{}\n\n\n'.format(args, kwargs, model)
         return cls._save_instance(model(*args, **kwargs))
 
     @classmethod
     def _save_instance(cls, instance):
         cls._session().add(instance)
+        print '\n\n\n\n saving this instnace: {}\n\n\n\n'.format(instance)
         if cls.COMMIT_SESSION:
             # cls._session().commit()
             cls._session().flush()

@@ -403,6 +403,7 @@ class Partial(GalaxySocialBase, SQLAlchemyPartialMixin, SocialBase):
     pass
 
 from ..model import UserAuthnAssociation
+from sqlalchemy.exc import IntegrityError
 
 class Storage:  # (BaseSQLAlchemyStorage):
     user = UserAuthnAssociation  # UserSocialAuth
@@ -447,7 +448,7 @@ AUTH_PIPELINE = (
     # 'social_core.pipeline.social_auth.associate_by_email',
 
     # Create a user account if we haven't found one yet.
-    # 'social_core.pipeline.user.create_user',
+    'social_core.pipeline.user.create_user',
 
     # Create the record that associated the social account with this user.
     'social_core.pipeline.social_auth.associate_user',
@@ -459,3 +460,19 @@ AUTH_PIPELINE = (
     # Update the user record with any changed info from the auth service.
     'social_core.pipeline.user.user_details'
 )
+
+
+def create_user(strategy, details, backend, user=None, *args, **kwargs):
+    print '\n\n', '@' * 50
+    if user:
+        return {'is_new': False}
+
+    fields = dict((name, kwargs.get(name, details.get(name)))
+                  for name in backend.setting('USER_FIELDS', USER_FIELDS))
+    if not fields:
+        return
+
+    return {
+        'is_new': True,
+        'user': strategy.create_user(**fields)
+    }
