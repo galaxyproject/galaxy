@@ -116,7 +116,9 @@ export default Backbone.View.extend({
 
         // attach global event handler
         // TODO: redundant (the onload/standard page handlers do this) - but needed because these are constructed after page ready
-        init_refresh_on_change();
+        if (window.init_refresh_on_change){
+            window.init_refresh_on_change();
+        }
     },
 
     // Initialize grid controls
@@ -247,7 +249,7 @@ export default Backbone.View.extend({
         // add inbound/outbound events
         //
         this.$el.find(".use-target").each(function() {
-            $(this).click(function(e) {
+            $(this).click(function() {
                 self.execute({
                     href: $(this).attr("href"),
                     target: $(this).attr("target")
@@ -258,7 +260,7 @@ export default Backbone.View.extend({
 
         // empty grid?
         var items_length = options.items.length;
-        if (items_length == 0) {
+        if (items_length === 0) {
             return;
         }
 
@@ -266,7 +268,7 @@ export default Backbone.View.extend({
         _.each(options.items, (item, index) => {
             var button = self.$(`#grid-${index}-popup`).off();
             var popup = new PopupMenu(button);
-            _.each(options["operations"], operation => {
+            _.each(options.operations, operation => {
                 self._add_operation(popup, operation, item);
             });
         });
@@ -448,9 +450,9 @@ export default Backbone.View.extend({
         // identify operation
         var operation_name = $(operation_button).val();
 
-        // verify in any item is selected
+        // verify any item is selected
         var number_of_checked_ids = this.$el.find('input[name="id"]:checked').length;
-        if (!number_of_checked_ids > 0) {
+        if (number_of_checked_ids < 1) {
             return false;
         }
 
@@ -548,7 +550,7 @@ export default Backbone.View.extend({
             // show confirmation box
             if (
                 confirmation_text &&
-                confirmation_text != "" &&
+                confirmation_text !== "" &&
                 confirmation_text != "None" &&
                 confirmation_text != "null"
             )
@@ -640,7 +642,7 @@ export default Backbone.View.extend({
             type: method,
             url: self.grid.get("url_base"),
             data: self.grid.get_url_data(),
-            error: function(response) {
+            error: function() {
                 alert("Grid refresh failed");
             },
             success: function(response_text) {
