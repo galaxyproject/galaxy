@@ -1,3 +1,5 @@
+import pysam
+
 from galaxy.datatypes.tabular import (
     Vcf,
     VcfGz,
@@ -20,6 +22,8 @@ def test_vcf_sniff():
 
 
 def test_vcf_gz_set_meta():
-    vcf_gz = Vcf()
+    vcf_gz = VcfGz()
     with get_input_files('1.vcf.gz') as input_files, get_dataset(input_files[0], index_attr='tabix_index') as dataset:
         vcf_gz.set_meta(dataset)
+        f = pysam.VariantFile(dataset.file_name, index_filename=dataset.metadata.tabix_index)
+        assert isinstance(f.index, pysam.libcbcf.TabixIndex) is True

@@ -15,9 +15,7 @@ def get_dataset(file, index_attr='bam_index', dataset_id=1, has_data=True):
     dataset.metadata = Bunch()
     with get_input_files(file) as input_files, get_tmp_path() as index_path:
         dataset.file_name = input_files[0]
-        index = Bunch()
-        index.file_name = index_path
-        setattr(dataset.metadata, index_attr, index)
+        setattr(dataset.metadata, index_attr, index_path)
         yield dataset
 
 
