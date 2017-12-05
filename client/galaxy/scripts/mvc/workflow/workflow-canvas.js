@@ -35,6 +35,9 @@ $.extend(CanvasManager.prototype, {
         var x_adjust;
         var y_adjust;
         this.cv
+            .bind("click", function() {
+                document.activeElement.blur();
+            })
             .bind("dragstart", function() {
                 var o = $(this).offset();
                 var p = self.cc.position();
@@ -99,24 +102,39 @@ $.extend(CanvasManager.prototype, {
         $("#overview-border div").bind("drag", () => {});
     },
     init_copy_paste: function() {
-        document.addEventListener('copy', (e) => {
-            if (this.app.workflow.active_node) {
-                e.clipboardData.setData('application/json', JSON.stringify({
-                    nodeId: this.app.workflow.active_node.id
-                }));
+        document.addEventListener("copy", e => {
+            // If it appears that the user is trying to copy/paste text, we
+            // pass that through.
+            if (window.getSelection().toString() === "") {
+                if (this.app.workflow.active_node) {
+                    e.clipboardData.setData(
+                        "application/json",
+                        JSON.stringify({
+                            nodeId: this.app.workflow.active_node.id
+                        })
+                    );
+                }
+                e.preventDefault();
             }
-            e.preventDefault();
         });
 
-        document.addEventListener('paste', (e) => {
-            var nodeId;
-            try {
-                nodeId = JSON.parse(e.clipboardData.getData('application/json')).nodeId;
-            } catch (error) {}
-            if (nodeId && this.app.workflow.nodes.hasOwnProperty(nodeId)) {
-                this.app.workflow.nodes[nodeId].clone();
+        document.addEventListener("paste", e => {
+            // If it appears that the user is trying to paste into a text box,
+            // pass that through and skip the workflow copy/paste logic.
+            if (
+                document.activeElement &&
+                document.activeElement.type !== "textarea" &&
+                document.activeElement.type !== "text"
+            ) {
+                var nodeId;
+                try {
+                    nodeId = JSON.parse(e.clipboardData.getData("application/json")).nodeId;
+                } catch (error) {}
+                if (nodeId && this.app.workflow.nodes.hasOwnProperty(nodeId)) {
+                    this.app.workflow.nodes[nodeId].clone();
+                }
+                e.preventDefault();
             }
-            e.preventDefault();
         });
     },
     update_viewport_overlay: function() {
@@ -252,27 +270,28 @@ $.extend(ScrollPanel.prototype, {
         close_dist = 5;
 
         var nudge = 23;
+        var t = 0;
         if (x - close_dist < min_x) {
             if (panel_pos.left < p_max_x) {
-                var t = Math.min(nudge, p_max_x - panel_pos.left);
+                t = Math.min(nudge, p_max_x - panel_pos.left);
                 panel.css("left", panel_pos.left + t);
                 moved = true;
             }
         } else if (x + close_dist > max_x) {
             if (panel_pos.left > p_min_x) {
-                var t = Math.min(nudge, panel_pos.left - p_min_x);
+                t = Math.min(nudge, panel_pos.left - p_min_x);
                 panel.css("left", panel_pos.left - t);
                 moved = true;
             }
         } else if (y - close_dist < min_y) {
             if (panel_pos.top < p_max_y) {
-                var t = Math.min(nudge, p_max_y - panel_pos.top);
+                t = Math.min(nudge, p_max_y - panel_pos.top);
                 panel.css("top", panel_pos.top + t);
                 moved = true;
             }
         } else if (y + close_dist > max_y) {
             if (panel_pos.top > p_min_y) {
-                var t = Math.min(nudge, panel_pos.top - p_min_x);
+                t = Math.min(nudge, panel_pos.top - p_min_x);
                 panel.css("top", `${panel_pos.top - t}px`);
                 moved = true;
             }
@@ -280,13 +299,12 @@ $.extend(ScrollPanel.prototype, {
         if (moved) {
             // Keep moving even if mouse doesn't move
             onmove();
-            var panel = this;
             this.timeout = setTimeout(() => {
-                panel.test(e, onmove);
+                this.test(e, onmove);
             }, 50);
         }
     },
-    stop: function(e, ui) {
+    stop: function() {
         clearTimeout(this.timeout);
     }
 });

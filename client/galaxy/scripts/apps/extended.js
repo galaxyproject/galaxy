@@ -39,12 +39,12 @@ function libraryEntry(options) {
 }
 
 export const bundleEntries = {
-    "library": libraryEntry,
-    "masthead": mastheadEntry,
-    "workflow": workflowEntry,
-    "trackster": tracksterEntry,
-    "circster": circsterEntry,
-    "adminToolshed": adminToolshedEntry
+    library: libraryEntry,
+    masthead: mastheadEntry,
+    workflow: workflowEntry,
+    trackster: tracksterEntry,
+    circster: circsterEntry,
+    adminToolshed: adminToolshedEntry
 };
 
 window.bundleEntries = bundleEntries;
