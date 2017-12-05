@@ -1,12 +1,11 @@
-import os
-import shutil
-import tempfile
-from contextlib import contextmanager
-
 import pysam
 
 from galaxy.datatypes.binary import Bam
-from galaxy.util.bunch import Bunch
+from .util import (
+    get_dataset,
+    get_input_files,
+    get_tmp_path
+)
 
 
 def test_merge_bam():
@@ -40,35 +39,3 @@ def test_set_meta_presorted():
         bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb',
                                        index_filename=dataset.metadata.bam_index.file_name)
         assert bam_file.has_index() is True
-
-
-@contextmanager
-def get_dataset(file):
-    dataset = Bunch()
-    dataset.metadata = Bunch()
-    dataset.metadata.bam_index = Bunch()
-    with get_input_files(file) as input_files, get_tmp_path() as index_path:
-        dataset.file_name = input_files[0]
-        dataset.metadata.bam_index.file_name = index_path
-        yield dataset
-
-
-@contextmanager
-def get_tmp_path():
-    _, path = tempfile.mkstemp()
-    os.remove(path)
-    yield path
-    os.remove(path)
-
-
-@contextmanager
-def get_input_files(*args):
-    # need to import here, otherwise get_test_fname is treated as a test
-    from galaxy.datatypes.sniff import get_test_fname
-    temp_dir = tempfile.mkdtemp()
-    test_files = []
-    for file in args:
-        shutil.copy(get_test_fname(file), temp_dir)
-        test_files.append(os.path.join(temp_dir, file))
-    yield test_files
-    shutil.rmtree(temp_dir, ignore_errors=True)
