@@ -27,12 +27,12 @@ def main():
     if options.preset:
         # Preset type.
         pysam.tabix_index(filename=index_fname, preset=options.preset, keep_original=True,
-                          index_filename=out_fname)
+                          index=out_fname, force=True)
     else:
         # For interval files; column indices are 0-based.
         pysam.tabix_index(filename=index_fname, seq_col=(options.chrom_col - 1),
                           start_col=(options.start_col - 1), end_col=(options.end_col - 1),
-                          keep_original=True, index_filename=out_fname)
+                          keep_original=True, index=out_fname, force=True)
     if os.path.getsize(index_fname) == 0:
         sys.stderr.write("The converted tabix index file is empty, meaning the input data is invalid.")
 
