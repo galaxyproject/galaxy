@@ -499,7 +499,6 @@ export default {
                 // multiple filter values
                 if (type == "array") {
                     for (i in column_filter) {
-
                         // copy filters and remove entry
                         var params = column_filter;
                         params = params.slice(i);
@@ -515,7 +514,7 @@ export default {
 
             // Set value, size of search input field. Minimum size is 20 characters.
             var value = "";
-            var size=20;
+            var size = 20;
             if (column.filterable == "standard") {
                 value = column.label.toLowerCase();
                 if (value.length < 20) {
@@ -528,7 +527,9 @@ export default {
             // print input field for column
             tmpl += `
                 <span class="search-box">
-                    <input class="search-box-input" id="input-${column_key}-filter" name="f-${ column_key }" type="text" placeholder="${value}" size="${ size }"/>
+                    <input class="search-box-input" id="input-${column_key}-filter" name="f-${
+                column_key
+            }" type="text" placeholder="${value}" size="${size}"/>
                     <button type="submit" style="background: transparent; border: none; padding: 4px; margin: 0px;">
                         <i class="fa fa-search"></i>
                     </button>

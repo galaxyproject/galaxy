@@ -116,7 +116,7 @@ export default Backbone.View.extend({
 
         // attach global event handler
         // TODO: redundant (the onload/standard page handlers do this) - but needed because these are constructed after page ready
-        if (window.init_refresh_on_change){
+        if (window.init_refresh_on_change) {
             window.init_refresh_on_change();
         }
     },
