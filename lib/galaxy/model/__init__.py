@@ -2144,12 +2144,6 @@ class DatasetInstance(object):
         # See if we can convert the dataset
         if target_ext not in self.get_converter_types():
             raise NoConverterException("Conversion from '%s' to '%s' not possible" % (self.extension, target_ext))
-        deps = {}
-        # List of string of dependencies
-        try:
-            depends_list = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
-        except KeyError:
-            depends_list = []
         # See if converted dataset already exists, either in metadata in conversions.
         converted_dataset = self.get_metadata_dataset(target_ext)
         if converted_dataset:
@@ -2157,6 +2151,12 @@ class DatasetInstance(object):
         converted_dataset = self.get_converted_files_by_type(target_ext)
         if converted_dataset:
             return converted_dataset
+        deps = {}
+        # List of string of dependencies
+        try:
+            depends_list = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
+        except KeyError:
+            depends_list = []
         # Conversion is possible but hasn't been done yet, run converter.
         # Check if we have dependencies
         try:
