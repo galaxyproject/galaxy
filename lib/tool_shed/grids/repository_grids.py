@@ -110,7 +110,11 @@ class RepositoryGrid(grids.Grid):
             # A repository's metadata revisions may not all be installable, as some may contain only invalid tools.
             select_field = grids_util.build_changeset_revision_select_field(trans, repository, downloadable=False)
             if len(select_field.options) > 1:
-                return select_field.get_html()
+                tmpl = "<select name='%s'>" % select_field.name
+                for o in select_field.options:
+                    tmpl += "<option value='%s'>%s</option>" % (o[1], o[0])
+                tmpl += "</select>"
+                return tmpl
             elif len(select_field.options) == 1:
                 option_items = select_field.options[0][0]
                 rev_label, rev_date = option_items.split(' ')
@@ -1331,7 +1335,11 @@ class ValidRepositoryGrid(RepositoryGrid):
             """Display a SelectField whose options are the changeset_revision strings of all download-able revisions of this repository."""
             select_field = grids_util.build_changeset_revision_select_field(trans, repository, downloadable=True)
             if len(select_field.options) > 1:
-                return select_field.get_html()
+                tmpl = "<select name='%s'>" % select_field.name
+                for o in select_field.options:
+                    tmpl += "<option value='%s'>%s</option>" % (o[1], o[0])
+                tmpl += "</select>"
+                return tmpl
             elif len(select_field.options) == 1:
                 return select_field.options[0][0]
             return ''

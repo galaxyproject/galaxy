@@ -314,11 +314,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
         <form name="user_access" id="user_access" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
             <div class="form-row">
                 <label>Username:</label>
-                <select name="allow_push" refresh_on_change="true">
-                    %for o in allow_push_select_field.options:
-                        <option value="${o[1]}">${o[0]}</option>
-                    %endfor
-                </select>
+                ${render_select(allow_push_select_field, refresh_on_change="true")}
                 <div class="toolParamHelp" style="clear: both;">
                     Multi-select usernames to grant permission to make changes to this repository
                 </div>
