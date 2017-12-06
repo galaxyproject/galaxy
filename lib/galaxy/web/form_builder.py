@@ -87,7 +87,7 @@ class SelectField(BaseField):
     A select field.
     """
 
-    def __init__(self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None, field_id=None, value=None, selectlist=None, **kwds):
+    def __init__(self, name, multiple=None, display=None, field_id=None, value=None, selectlist=None, **kwds):
         super(SelectField, self).__init__(name, value, **kwds)
         self.field_id = field_id
         self.multiple = multiple or False

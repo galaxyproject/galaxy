@@ -1038,9 +1038,6 @@ class Tool(object, Dictifiable):
                 group.file_type_name = elem.get('file_type_name', group.file_type_name)
                 group.default_file_type = elem.get('default_file_type', group.default_file_type)
                 group.metadata_ref = elem.get('metadata_ref', group.metadata_ref)
-                rval[group.file_type_name].refresh_on_change = True
-                rval[group.file_type_name].refresh_on_change_values = \
-                    self.app.datatypes_registry.get_composite_extensions()
                 group_page_source = XmlPageSource(elem)
                 group.inputs = self.parse_input_elem(group_page_source, enctypes, context)
                 rval[group.name] = group
