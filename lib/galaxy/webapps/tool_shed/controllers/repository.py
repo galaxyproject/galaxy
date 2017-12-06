@@ -1819,8 +1819,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 message = 'You will receive email alerts for all new valid tool shed repositories.'
             else:
                 message = 'You will not receive any email alerts for new valid tool shed repositories.'
-        checked = new_repo_alert_checked or (user and user.new_repo_alert)
-        new_repo_alert_check_box = CheckboxField('new_repo_alert', checked=checked)
+        new_repo_alert_checked = new_repo_alert_checked or (user and user.new_repo_alert)
+        new_repo_alert_check_box = CheckboxField('new_repo_alert')
         email_alert_repositories = []
         for repository in trans.sa_session.query(trans.model.Repository) \
                                           .filter(and_(trans.model.Repository.table.c.deleted == false(),
@@ -1830,6 +1830,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 email_alert_repositories.append(repository)
         return trans.fill_template("/webapps/tool_shed/user/manage_email_alerts.mako",
                                    new_repo_alert_check_box=new_repo_alert_check_box,
+                                   new_repo_alert_checked=new_repo_alert_checked,
                                    email_alert_repositories=email_alert_repositories,
                                    message=message,
                                    status=status)
