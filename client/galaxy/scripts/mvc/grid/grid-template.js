@@ -50,8 +50,7 @@ export default {
                     '<li><a class="action-button" id="popup-global-actions" class="menubutton">Actions</a></li>' +
                     '<div popupmenu="popup-global-actions">';
             }
-            for (var i in options.global_actions) {
-                var action = options.global_actions[i];
+            for (let action of options.global_actions) {
                 tmpl += `<li><a class="action-button use-target" target="${action.target}" href="${
                     action.url_args
                 }" onclick="return false;" >${action.label}</a></li>`;
@@ -90,8 +89,7 @@ export default {
         }
 
         // create header elements
-        for (var i in options.columns) {
-            var column = options.columns[i];
+        for (let column of options.columns) {
             if (column.visible) {
                 tmpl += `<th id="${column.key}-header">`;
                 if (column.href) {
@@ -125,9 +123,8 @@ export default {
         }
 
         // create rows
-        for (var i in options.items) {
+        for (let item of options.items) {
             // encode ids
-            var item = options.items[i];
             var encoded_id = item.encode_id;
 
             // Tag current
@@ -171,7 +168,7 @@ export default {
                     var id = "";
                     var cls = "";
                     if (column.attach_popup) {
-                        id = `grid-${i}-popup`;
+                        id = `grid-${encoded_id}-popup`;
                         cls = "menubutton";
                         if (link !== "") {
                             cls += " split";
@@ -211,8 +208,6 @@ export default {
     footer: function(options) {
         // create template string
         var tmpl = "";
-        var i;
-        var operation;
 
         // paging
         if (options.use_paging && options.num_pages > 1) {
@@ -308,8 +303,7 @@ export default {
             `;
 
             // configure buttons for operations
-            for (i in options.operations) {
-                operation = options.operations[i];
+            for (let operation of options.operations) {
                 if (operation.allow_multiple) {
                     tmpl += `<input type="button" value="${
                         operation.label
@@ -323,8 +317,8 @@ export default {
 
         // count global operations
         var found_global = false;
-        for (i in options.operations) {
-            if (options.operations[i].global_operation) {
+        for (let operation of options.operations) {
+            if (operation.global_operation) {
                 found_global = true;
                 break;
             }
@@ -333,8 +327,7 @@ export default {
         // add global operations
         if (found_global) {
             tmpl += "<tr>" + '<td colspan="100">';
-            for (i in options.operations) {
-                operation = options.operations[i];
+            for (let operation of options.operations) {
                 if (operation.global_operation) {
                     tmpl += `<a class="action-button" href="${operation.global_operation}">${operation.label}</a>`;
                 }
@@ -367,7 +360,6 @@ export default {
         // get filters
         var default_filter_dict = options.default_filter_dict;
         var filters = options.filters;
-        var column;
 
         // show advanced search if flag set or if there are filters for advanced search fields
         var advanced_search_display = "none";
@@ -377,8 +369,7 @@ export default {
 
         // identify columns with advanced filtering
         var show_advanced_search_link = false;
-        for (var i in options.columns) {
-            column = options.columns[i];
+        for (let column of options.columns) {
             if (column.filterable == "advanced") {
                 var column_key = column.key;
                 var f_key = filters[column_key];
@@ -404,8 +395,7 @@ export default {
         };"><table><tr><td style="padding: 0;"><table>`;
 
         // add standard filters
-        for (i in options.columns) {
-            column = options.columns[i];
+        for (let column of options.columns) {
             if (column.filterable == "standard") {
                 tmpl += this.grid_column_filter(options, column);
             }
@@ -430,8 +420,7 @@ export default {
         }; margin-top: 5px; border: 1px solid #ccc;"><table><tr><td style="text-align: left" colspan="100"><a href="" class="advanced-search-toggle">Close Advanced Search</a></td></tr>`;
 
         // add advanced filters
-        for (i in options.columns) {
-            column = options.columns[i];
+        for (let column of options.columns) {
             if (column.filterable == "advanced") {
                 tmpl += this.grid_column_filter(options, column);
             }
@@ -450,7 +439,6 @@ export default {
         var filters = options.filters;
         var column_label = column.label;
         var column_key = column.key;
-        var i;
         if (column.filterable == "advanced") {
             column_label = column_label.toLowerCase();
         }
@@ -465,15 +453,14 @@ export default {
         if (column.is_text) {
             tmpl += `<form class="text-filter-form" column_key="${column_key}" action="${options.url}" method="get" >`;
             // Carry forward filtering criteria with hidden inputs.
-            for (i in options.columns) {
-                var temp_column = options.columns[i];
-                var filter_value = filters[temp_column.key];
+            for (let column of options.columns) {
+                var filter_value = filters[column.key];
                 if (filter_value) {
                     if (filter_value != "All") {
-                        if (temp_column.is_text) {
+                        if (column.is_text) {
                             filter_value = JSON.stringify(filter_value);
                         }
-                        tmpl += `<input type="hidden" id="${temp_column.key}" name="f-${temp_column.key}" value="${
+                        tmpl += `<input type="hidden" id="${column.key}" name="f-${column.key}" value="${
                             filter_value
                         }"/>`;
                     }
@@ -498,7 +485,7 @@ export default {
 
                 // multiple filter values
                 if (type == "array") {
-                    for (i in column_filter) {
+                    for (let i in column_filter) {
                         // copy filters and remove entry
                         var params = column_filter;
                         params = params.slice(i);
