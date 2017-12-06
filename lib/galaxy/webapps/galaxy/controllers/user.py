@@ -5,6 +5,7 @@ Contains the user interface in the Universe class
 import logging
 import random
 import socket
+import os
 from datetime import datetime, timedelta
 
 from markupsafe import escape
@@ -21,6 +22,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.exceptions import ConfigurationError
 from galaxy.queue_worker import send_local_control_task
 from galaxy.security.validate_user_input import (
     transform_publicname,
@@ -510,7 +512,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                     if success:
                         # The handle_user_login() method has a call to the history_set_default_permissions() method
                         # (needed when logging in with a history), user needs to have default permissions set before logging in
-                        trans.handle_user_login(user)
+                        self.handle_user_login(trans, user)
                         trans.log_event("User (auto) created a new account")
                         trans.log_event("User logged in")
                     else:
@@ -555,12 +557,31 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                 status = 'warning'
         return (message, status, user, success)
 
+    def check_user_library_import_dir(self, user):
+        user_base_dir = self.app.config.user_library_import_dir
+        if self.app.config.user_library_import_dir_auto_creation:
+            # try to create a user library import directory
+            try:
+                self.app.config._ensure_directory(os.path.join(user_base_dir, user.email))
+            except ConfigurationError as e:
+                self.log_event(str(e))
+
+    def user_checks(self, user):
+        """
+        This could contain more checks around a user upon login
+        """
+        self.check_user_library_import_dir(user)
+
+    def handle_user_login(self, trans, user):
+        self.user_checks(user)
+        trans.handle_user_login(user)
+
     def proceed_login(self, trans, user, redirect):
         """
         Function processes user login. It is called in case all the login requirements are valid.
         """
         message = ''
-        trans.handle_user_login(user)
+        self.handle_user_login(trans, user)
         if trans.webapp.name == 'galaxy':
             trans.log_event("User logged in")
             message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
