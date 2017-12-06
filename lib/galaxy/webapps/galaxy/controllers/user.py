@@ -558,11 +558,10 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         return (message, status, user, success)
 
     def check_user_library_import_dir(self, user):
-        user_base_dir = self.app.config.user_library_import_dir
         if self.app.config.user_library_import_dir_auto_creation:
             # try to create a user library import directory
             try:
-                self.app.config._ensure_directory(os.path.join(user_base_dir, user.email))
+                self.app.config._ensure_directory(os.path.join(self.app.config.user_library_import_dir, user.email))
             except ConfigurationError as e:
                 self.log_event(str(e))
 
