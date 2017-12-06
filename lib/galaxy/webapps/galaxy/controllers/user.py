@@ -3,9 +3,9 @@ Contains the user interface in the Universe class
 """
 
 import logging
+import os
 import random
 import socket
-import os
 from datetime import datetime, timedelta
 
 from markupsafe import escape
