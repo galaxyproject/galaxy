@@ -1,3 +1,16 @@
+<%def name="render_checkbox(checkbox)">
+    <% from galaxy.web.form_builder import CheckboxField %>
+    <input type="checkbox" id="${checkbox.name}" name="${checkbox.name}" value="true" ${"checked" if CheckboxField.is_checked(checkbox.value) else ""} >
+</%def>
+
+<%def name="render_select(select)">
+    <select name="${select.name}" refresh_on_change="true">
+        %for o in select.options:
+            <option value="${o[1]}">${o[0]}</option>
+        %endfor
+    </select>
+</%def>
+
 <%def name="common_misc_javascripts()">
     <script type="text/javascript">
         function checkAllFields( chkAll, name )

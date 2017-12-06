@@ -131,12 +131,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
         <div class="toolFormBody">
             <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
-                    <select name="changeset_revision" refresh_on_change="true">
-                        %for o in changeset_revision_select_field.options:
-                            <option value="${o[1]}">${o[0]}</option>
-                        %endfor
-                    </select>
-                    <i>${tip_str}</i>
+                    ${render_select(changeset_revision_select_field)} <i>${tip_str}</i>
                     <div class="toolParamHelp" style="clear: both;">
                         %if can_review_repository:
                             Select a revision to inspect for adding or managing a review or for download or installation.
@@ -404,7 +399,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
             <form name="malicious" id="malicious" action="${h.url_for( controller='repository', action='set_malicious', id=trans.security.encode_id( repository.id ), ctx_str=changeset_revision )}" method="post">
                 <div class="form-row">
                     <label>Define repository tip as malicious:</label>
-                    <input type="checkbox" id="malicious" name="malicious" value="true" ${"checked" if malicious_checked else ""} >
+                    ${render_checkbox(malicious_check_box)}
                     <div class="toolParamHelp" style="clear: both;">
                         Check the box and click <b>Save</b> to define this repository's tip as malicious, restricting it from being download-able.
                     </div>

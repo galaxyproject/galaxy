@@ -7,6 +7,7 @@ def inherit(context):
         return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
 <%def name="init()">
 <%
@@ -59,6 +60,8 @@ def inherit(context):
     <%
         if form_action is None:
             form_action = h.url_for( controller='user', action='create', cntrller=cntrller )
+        from galaxy.web.form_builder import CheckboxField
+        subscribe_check_box = CheckboxField( 'subscribe' )
     %>
 
     <script type="text/javascript">
@@ -167,7 +170,7 @@ def inherit(context):
             %if trans.app.config.smtp_server and trans.app.config.mailing_join_addr:
                 <div class="form-row">
                     <label>Subscribe to mailing list:</label>
-                    <input type="checkbox" id="subscribe" name="subscribe" value="true" ${"checked" if subscribe_checked else ""} >
+                    ${render_checkbox(subscribe_check_box)}
                     <p>See <a href="https://galaxyproject.org/mailing-lists/" target="_blank">
                     all Galaxy project mailing lists</a>.</p>
                 </div>
