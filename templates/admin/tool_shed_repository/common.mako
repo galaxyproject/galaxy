@@ -222,7 +222,7 @@
     %if requirements_status and install_resolver_dependencies_check_box:
     <div class="form-row">
         <label>When available, install <a href="https://docs.galaxyproject.org/en/master/admin/conda_faq.html" target="_blank">Conda</a> managed tool dependencies?</label>
-        ${install_resolver_dependencies_check_box.get_html()}
+        ${render_checkbox(install_resolver_dependencies_check_box)}
         <div class="toolParamHelp" style="clear: both;">
             Select to automatically install tool dependencies via Conda.
         </div>
