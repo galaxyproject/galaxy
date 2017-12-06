@@ -6,15 +6,13 @@ This document is a reference for the job configuration file.  [Detailed document
 
 **The most up-to-date details of advanced job configuration features can be found in the [sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/config/job_conf.xml.sample_advanced) found in the Galaxy distribution.**
 
-### Galaxy Configuration
-
 Configuration of where to run jobs is performed in the `job_conf.xml` file in `$GALAXY_ROOT/config/`.  The path to the config file can be overridden by setting the value of `job_config_file` in `config/galaxy.ini`.  Sample configurations are provided at `galaxy-dist/config/job_conf.xml.sample_basic` and `galaxy-dist/config/job_conf.xml.sample_advanced`.  The job configuration file is not required - if it does not exist, a default configuration that runs jobs on the local system (with a maximum of 4 concurrent jobs) will be used.  `job_conf.xml.sample_basic` provides a configuration identical to the default configuration if no `job_conf.xml` exists.
 
 ## job_conf.xml Syntax
 
 The root element is `<job_conf>`.
 
-## Job Runner Plugins
+### Job Runner Plugins
 
 The `<plugins>` collection defines job runner plugins that should be loaded when Galaxy starts.
 
@@ -38,7 +36,7 @@ workers
     on ``plugins`` configuration).
 ```
 
-## Job Handlers
+### Job Handlers
 
 The `<handlers>` configuration elements defines which Galaxy server processes (when [running multiple server processes](https://galaxyproject.org/admin/config/performance/scaling/)) should be used for running jobs, and how to group those processes.
 
@@ -55,7 +53,7 @@ tags
     A comma-separated set of strings that optional define tags to which this handler belongs. 
 ```
 
-## Job Destinations
+### Job Destinations
 
 The `<destinations>` collection defines the parameters that should be used to run a job that is sent to the specified destination. This configuration element should define a ``default``
 attribute that should be the ``id`` of the ``destination`` to used if no explicit destination is defined for a job.
@@ -75,7 +73,7 @@ tags
 
 ``destination`` elements may contain zero or more ``<param>``s, which are passed to the destination's defined runner plugin and interpreted in a way native to that plugin. For details on the parameter specification, see the documentation on [Cluster configuration](cluster.html).
 
-## Environment Modifications
+### Environment Modifications
 
 As of the June 2014 release, destinations may contain additional `env` elements to configure the environment for jobs on that resource. These each map to shell commands that will be injected to Galaxy's job script and executed on the destination resource.
 
