@@ -274,6 +274,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             saved_component_names = []
             for component_name in components_dict.keys():
                 flushed = False
+                private = None
                 # Retrieve the review information from the form.
                 # The star rating form field is a radio button list, so it will not be received if it was not clicked in the form.
                 # Due to this behavior, default the value to 0.

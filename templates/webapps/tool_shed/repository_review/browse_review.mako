@@ -73,7 +73,7 @@ ${render_tool_shed_repository_actions( repository=repository, changeset_revision
                                         <tr>
                                             <td>
                                                 <label>Private:</label>
-                                                ${private_check_box.get_html( disabled=True )}
+                                                ${render_checkbox(private_check_box, disabled=True)}
                                                 <div class="toolParamHelp" style="clear: both;">
                                                     A private review can be accessed only by the owner of the repository and authorized repository reviewers.
                                                 </div>
