@@ -5,8 +5,8 @@ import shutil
 from sqlalchemy import and_
 
 from galaxy import util
+from galaxy.web.form_builder import SelectField
 from tool_shed.util import (
-    form_util,
     hg_util,
     xml_util
 )
@@ -20,7 +20,7 @@ def build_tool_dependencies_select_field(app, tool_shed_repository, name, multip
     Generate a SelectField consisting of the current list of tool dependency ids
     for an installed tool shed repository.
     """
-    tool_dependencies_select_field = form_util.SelectField(name=name, multiple=multiple, display=display)
+    tool_dependencies_select_field = SelectField(name=name, multiple=multiple, display=display)
     for tool_dependency in tool_shed_repository.tool_dependencies:
         if uninstalled_only:
             if tool_dependency.status not in [app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,

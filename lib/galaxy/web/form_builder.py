@@ -87,10 +87,11 @@ class SelectField(BaseField):
     A select field.
     """
 
-    def __init__(self, name, multiple=None, display=None, field_id=None, value=None, selectlist=None, **kwds):
+    def __init__(self, name, multiple=None, display=None, field_id=None, value=None, selectlist=None, refresh_on_change=False, **kwds):
         super(SelectField, self).__init__(name, value, **kwds)
         self.field_id = field_id
         self.multiple = multiple or False
+        self.refresh_on_change = refresh_on_change
         self.selectlist = selectlist or []
         self.options = list()
         if display == "checkboxes":

@@ -5,12 +5,12 @@ from sqlalchemy import false, or_
 
 from galaxy import util
 from galaxy.util import inflector
+from galaxy.web.form_builder import SelectField
 from tool_shed.metadata import metadata_generator
 from tool_shed.repository_types import util as rt_util
 from tool_shed.repository_types.metadata import TipOnly
 from tool_shed.util import (basic_util, common_util, hg_util, metadata_util,
     repository_util, shed_util_common as suc, tool_util)
-from tool_shed.util.form_util import SelectField
 
 log = logging.getLogger(__name__)
 

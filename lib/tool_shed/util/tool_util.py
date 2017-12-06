@@ -7,8 +7,8 @@ from galaxy import util
 from galaxy.datatypes.sniff import is_column_based
 from galaxy.util import checkers
 from galaxy.util.expressions import ExpressionContext
+from galaxy.web.form_builder import SelectField
 from tool_shed.util import basic_util
-from tool_shed.util.form_util import SelectField
 
 log = logging.getLogger(__name__)
 

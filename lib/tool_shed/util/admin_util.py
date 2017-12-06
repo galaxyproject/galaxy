@@ -4,7 +4,7 @@ from sqlalchemy import false, func
 
 from galaxy import util, web
 from galaxy.util import inflector
-from tool_shed.util.form_util import CheckboxField
+from galaxy.web.form_builder import CheckboxField
 from tool_shed.util.web_util import escape
 
 

@@ -1932,7 +1932,20 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             current_allow_push_list = current_allow_push.split(',')
         else:
             current_allow_push_list = []
-        allow_push_select_field = repository_util.build_allow_push_select_field(trans, current_allow_push_list)
+        options = []
+        for user in trans.sa_session.query(trans.model.User):
+            if user.username not in current_push_list:
+                options.append(user)
+        allow_push_select_field = SelectField(name='allow_push',
+                                              multiple=True,
+                                              display=display,
+                                              value=selected_value)
+        for obj in objs:
+            label = getattr(obj, 'username')
+            if str(selected_value) == str(obj.id) or str(selected_value) == trans.security.encode_id(obj.id):
+                allow_push_select_field.add_option(label, trans.security.encode_id(obj.id), selected=True)
+            else:
+                allow_push_select_field.add_option(label, trans.security.encode_id(obj.id))
         checked = alerts_checked or user.email in email_alerts
         alerts_check_box = CheckboxField('alerts', value=checked)
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field(trans,

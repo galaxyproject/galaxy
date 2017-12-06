@@ -1,6 +1,6 @@
 import logging
 
-from tool_shed.util.form_util import SelectField
+from galaxy.web.form_builder import SelectField
 
 log = logging.getLogger(__name__)
 
