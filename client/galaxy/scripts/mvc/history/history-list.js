@@ -47,8 +47,7 @@ var HistoryGridView = GridView.extend({
                 }
             });
         }
-    },
-
+    }
 });
 
 var View = Backbone.View.extend({
@@ -70,9 +69,7 @@ var View = Backbone.View.extend({
     render: function() {
         var grid = new HistoryGridView(this.model.attributes);
         this.$el.empty().append(grid.$el);
-    },
-
-
+    }
 });
 
 export default {
