@@ -5,6 +5,7 @@ from contextlib import contextmanager
 
 from galaxy.datatypes.sniff import get_test_fname
 from galaxy.util.bunch import Bunch
+from galaxy.util.hash_util import md5_hash_file
 
 
 @contextmanager
@@ -22,9 +23,10 @@ def get_dataset(file, index_attr='bam_index', dataset_id=1, has_data=True):
 
 
 @contextmanager
-def get_tmp_path():
+def get_tmp_path(should_exist=False):
     _, path = tempfile.mkstemp()
-    os.remove(path)
+    if not should_exist:
+        os.remove(path)
     yield path
     try:
         os.remove(path)
@@ -34,11 +36,16 @@ def get_tmp_path():
 
 @contextmanager
 def get_input_files(*args):
-    # need to import here, otherwise get_test_fname is treated as a test
     temp_dir = tempfile.mkdtemp()
     test_files = []
-    for file in args:
-        shutil.copy(get_test_fname(file), temp_dir)
-        test_files.append(os.path.join(temp_dir, file))
-    yield test_files
-    shutil.rmtree(temp_dir, ignore_errors=True)
+    try:
+        for file in args:
+            shutil.copy(get_test_fname(file), temp_dir)
+            test_files.append(os.path.join(temp_dir, file))
+        md5_sums = [md5_hash_file(f) for f in test_files]
+        yield test_files
+        new_md5_sums = [md5_hash_file(f) for f in test_files]
+        for old_hash, new_hash, f in zip(md5_sums, new_md5_sums, test_files):
+            assert old_hash == new_hash, 'Unexpected change of content for file %s' % f
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)

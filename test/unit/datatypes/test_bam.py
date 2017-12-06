@@ -26,9 +26,16 @@ def test_dataset_content_needs_grooming():
 
 def test_groom_dataset_content():
     b = Bam()
-    with get_input_files('2.shuffled.bam') as input_files:
-        b.groom_dataset_content(input_files[0])
-        assert b.dataset_content_needs_grooming(input_files[0]) is False
+    try:
+        with get_input_files('2.shuffled.bam') as input_files:
+            b.groom_dataset_content(input_files[0])
+            assert b.dataset_content_needs_grooming(input_files[0]) is False
+    except AssertionError as e:
+        # Grooming modifies files in-place, so the md5 hash comparison has to fail
+        assert 'Unexpected change' in e.message
+        return
+    # should not reach this part of the test
+    raise Exception('Bam grooming did not occur in-place')
 
 
 def test_set_meta_presorted():
