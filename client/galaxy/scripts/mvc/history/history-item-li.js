@@ -7,7 +7,7 @@ function _labelIfName(tag) {
 }
 
 function nametagTemplate(historyItem) {
-    return `<span class="nametags">${_.sortBy(_.uniq(historyItem.tags))
+    return `<div class="nametags">${_.sortBy(_.uniq(historyItem.tags))
         .map(_labelIfName)
         .join("")}</span>`;
 }
