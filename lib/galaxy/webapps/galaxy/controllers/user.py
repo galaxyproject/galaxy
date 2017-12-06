@@ -536,7 +536,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                 try:
                                     # first try to find the role
                                     role = trans.app.security_agent.get_admin_role(role_name)
-                                except NoResultFound as e:
+                                except NoResultFound:
                                     # or create it
                                     role, num_in_groups = trans.app.security_agent.create_admin_role(
                                         role_name, "Auto created upon user registration", [user.id], [],
