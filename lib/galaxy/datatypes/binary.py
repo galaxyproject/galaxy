@@ -255,8 +255,9 @@ class Bam(Binary):
         tmp_dir = tempfile.mkdtemp()
         tmp_sorted_dataset_file_name_prefix = os.path.join(tmp_dir, 'sorted')
         sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix  # samtools accepts a prefix, not a filename, it always adds .bam to the prefix
+        slots = os.environ.get('GALAXY_SLOTS', 1)
         try:
-            pysam.sort(file_name, '-T', tmp_sorted_dataset_file_name_prefix, '-O', 'BAM', '-o', sorted_file_name)
+            pysam.sort("-@%s" % slots, file_name, '-T', tmp_sorted_dataset_file_name_prefix, '-O', 'BAM', '-o', sorted_file_name)
         except Exception:
             shutil.rmtree(tmp_dir, ignore_errors=True)
             raise
