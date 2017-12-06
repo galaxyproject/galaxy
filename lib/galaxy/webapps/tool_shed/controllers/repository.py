@@ -1998,7 +1998,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 message += malicious_error
             status = 'error'
         repository_type_select_field = rt_util.build_repository_type_select_field(trans, repository=repository)
-        malicious_check_box = CheckboxField('malicious', checked=is_malicious)
+        malicious_checked = is_malicious
+        malicious_check_box = CheckboxField('malicious')
         categories = suc.get_categories(trans.app)
         selected_categories = [_rca.category_id for _rca in repository.categories]
         tsucm = ToolShedUtilityContainerManager(trans.app)
@@ -2037,6 +2038,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                    alerts_check_box=alerts_check_box,
                                    alerts_checked=alerts_checked,
                                    malicious_check_box=malicious_check_box,
+                                   malicious_checked=malicious_checked,
                                    repository_type_select_field=repository_type_select_field,
                                    message=message,
                                    status=status)
