@@ -283,7 +283,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
             <form name="receive_email_alerts" id="receive_email_alerts" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
                     <label>Receive email alerts:</label>
-                    ${alerts_check_box.get_html()}
+                    <input type="checkbox" id="alerts" name="alerts" value="true" ${"checked" if alerts_checked else ""} >
                     <div class="toolParamHelp" style="clear: both;">
                         Check the box and click <b>Save</b> to receive email alerts when updates to this repository occur.
                     </div>

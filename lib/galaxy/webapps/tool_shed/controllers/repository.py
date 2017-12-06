@@ -1933,8 +1933,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             current_allow_push_list = []
         allow_push_select_field = repository_util.build_allow_push_select_field(trans, current_allow_push_list)
-        checked = alerts_checked or user.email in email_alerts
-        alerts_check_box = CheckboxField('alerts', checked=checked)
+        alerts_checked = alerts_checked or user.email in email_alerts
+        alerts_check_box = CheckboxField('alerts')
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field(trans,
                                                                                            repository,
                                                                                            selected_value=changeset_revision,
@@ -2034,6 +2034,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                    display_reviews=display_reviews,
                                    num_ratings=num_ratings,
                                    alerts_check_box=alerts_check_box,
+                                   alerts_checked=alerts_checked,
                                    malicious_check_box=malicious_check_box,
                                    repository_type_select_field=repository_type_select_field,
                                    message=message,
