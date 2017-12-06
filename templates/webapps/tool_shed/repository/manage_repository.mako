@@ -125,14 +125,18 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
 %if deprecated_repository_dependency_tups:
     ${render_deprecated_repository_dependencies_message( deprecated_repository_dependency_tups )}
 %endif
-
 %if len( changeset_revision_select_field.options ) > 1:
     <div class="toolForm">
         <div class="toolFormTitle">Repository revision</div>
         <div class="toolFormBody">
             <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
-                    ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
+                    <select name="changeset_revision" refresh_on_change="true">
+                        %for o in changeset_revision_select_field.options:
+                            <option value="${o[1]}">${o[0]}</option>
+                        %endfor
+                    </select>
+                    <i>${tip_str}</i>
                     <div class="toolParamHelp" style="clear: both;">
                         %if can_review_repository:
                             Select a revision to inspect for adding or managing a review or for download or installation.
