@@ -530,7 +530,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                         trans.log_event("User (auto) created a new account")
                         trans.log_event("User logged in")
                         if "attributes" in autoreg and "roles" in autoreg["attributes"]:
-                            log.debug("roles found")
                             for role_name in autoreg["attributes"]["roles"]:
                                 created = False
                                 try:
