@@ -1,5 +1,5 @@
 function _labelIfName(tag) {
-    if (tag.indexOf("name:") == 0) {
+    if (tag.indexOf("name:") === 0) {
         return `<span class="label label-info">${_.escape(tag.slice(5))}</span>`;
     } else {
         return "";
@@ -7,9 +7,11 @@ function _labelIfName(tag) {
 }
 
 function nametagTemplate(historyItem) {
-    return `<div class="nametags">${_.sortBy(_.uniq(historyItem.tags))
-        .map(_labelIfName)
-        .join("")}</span>`;
+    let nametags = _.sortBy(_.uniq(historyItem.tags)).map(_labelIfName);
+    return `
+        <div class="nametags" title="${nametags.length} nametags">
+            ${nametags.join("")}
+        </div>`;
 }
 
 export default {
