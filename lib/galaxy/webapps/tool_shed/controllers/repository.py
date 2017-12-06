@@ -1082,12 +1082,11 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             else:
                 message = "No search performed - each field must contain the same number of comma-separated items."
                 status = "error"
-        exact_matches_check_box = CheckboxField('exact_matches', checked=exact_matches_checked)
         return trans.fill_template('/webapps/tool_shed/repository/find_tools.mako',
                                    tool_id=basic_util.stringify(tool_ids),
                                    tool_name=basic_util.stringify(tool_names),
                                    tool_version=basic_util.stringify(tool_versions),
-                                   exact_matches_check_box=exact_matches_check_box,
+                                   exact_matches_checked=exact_matches_checked,
                                    message=message,
                                    status=status)
 
@@ -1174,10 +1173,9 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             exact_matches_checked = False
             workflow_names = []
-        exact_matches_check_box = CheckboxField('exact_matches', checked=exact_matches_checked)
         return trans.fill_template('/webapps/tool_shed/repository/find_workflows.mako',
                                    workflow_name=basic_util.stringify(workflow_names),
-                                   exact_matches_check_box=exact_matches_check_box,
+                                   exact_matches_checked=exact_matches_checked,
                                    message=message,
                                    status=status)
 

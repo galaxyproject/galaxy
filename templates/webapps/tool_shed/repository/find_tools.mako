@@ -47,7 +47,7 @@
             <div style="clear: both"></div>
             <div class="form-row">
                 <label>Exact matches only:</label>
-                ${exact_matches_check_box.get_html()}
+                <input type="checkbox" id="exact_matches" name="exact_matches" value="true" ${"checked" if exact_matches_checked else ""} >
                 <div class="toolParamHelp" style="clear: both;">
                     Check the box to match text exactly (text case doesn't matter as all strings are forced to lower case).
                 </div>

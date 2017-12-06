@@ -404,7 +404,6 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
             <form name="malicious" id="malicious" action="${h.url_for( controller='repository', action='set_malicious', id=trans.security.encode_id( repository.id ), ctx_str=changeset_revision )}" method="post">
                 <div class="form-row">
                     <label>Define repository tip as malicious:</label>
-                    ${malicious_check_box.get_html()}
                     <input type="checkbox" id="malicious" name="malicious" value="true" ${"checked" if malicious_checked else ""} >
                     <div class="toolParamHelp" style="clear: both;">
                         Check the box and click <b>Save</b> to define this repository's tip as malicious, restricting it from being download-able.
