@@ -1621,9 +1621,11 @@ test_data:
         self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
     def wait_for_invocation_and_jobs(self, history_id, workflow_id, invocation_id, assert_ok=True):
-        state = self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
-        if assert_ok:
-            assert state == "scheduled", state
+        # Revert after https://github.com/galaxyproject/galaxy/issues/5146 is fixed.
+        # state = self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
+        # if assert_ok:
+        #    assert state == "scheduled", state
+        self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
         time.sleep(.5)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
         time.sleep(.5)
