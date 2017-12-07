@@ -187,6 +187,10 @@ var View = Backbone.View.extend({
                     });
                 },
                 formatResult: function(result) {
+                    let extraTagWarning = "";
+                    if (result.tags.length > 5){
+                        extraTagWarning = `&nbsp;<div class="label label-warning">${result.tags.length - 5} more tags</div>`;
+                    }
                     return `
                     ${_.escape(result.text)}
                     <div class="ui-tags">
@@ -200,6 +204,7 @@ var View = Backbone.View.extend({
                             },
                             ""
                         )}
+                        ${extraTagWarning}
                    </div>`;
                 }
             });
