@@ -76,7 +76,7 @@ window.app = function app(options, bootstrapped) {
 
         show_tours: function(tour_id) {
             if (tour_id) {
-                Tours.giveTour(tour_id);
+                Tours.giveTourById(tour_id);
             } else {
                 this.page.display(new Tours.ToursView());
             }
