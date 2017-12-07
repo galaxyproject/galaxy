@@ -5,7 +5,7 @@
 </%def>
 
 <%def name="render_select(select)">
-    <select id="${select.field_id}"  name="${select.name}">
+    <select id="${select.field_id}" name="${select.name}" multiple="${select.multiple}">
         %for o in select.options:
             <option value="${o[1]}">${o[0]}</option>
         %endfor
