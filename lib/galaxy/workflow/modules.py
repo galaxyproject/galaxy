@@ -292,7 +292,7 @@ class SubWorkflowModule(WorkflowModule):
                     name=name,
                     label=name,
                     multiple=False,
-                    extensions="input",
+                    extensions=["data"],
                     input_type=step_to_input_type[step_type],
                 )
                 inputs.append(input)
