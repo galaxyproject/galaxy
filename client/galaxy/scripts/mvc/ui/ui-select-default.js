@@ -187,16 +187,20 @@ var View = Backbone.View.extend({
                     });
                 },
                 formatResult: function(result) {
-                    return `${_.escape(result.text)}<div class="ui-tags">${_.reduce(
-                        result.tags,
-                        (memo, tag) => {
-                            if (self.matched_tags[tag]) {
-                                return `${memo}&nbsp;<div class="label label-info">${_.escape(tag)}</div>`;
-                            }
-                            return memo;
-                        },
-                        ""
-                    )}</div>`;
+                    return `
+                    ${_.escape(result.text)}
+                    <div class="ui-tags">
+                        ${_.reduce(
+                            result.tags.slice(0, 5),
+                            (memo, tag) => {
+                                if (self.matched_tags[tag]) {
+                                    return `${memo}&nbsp;<div class="label label-info">${_.escape(tag)}</div>`;
+                                }
+                                return memo;
+                            },
+                            ""
+                        )}
+                   </div>`;
                 }
             });
             this.$(".select2-container .select2-search input").off("blur");
