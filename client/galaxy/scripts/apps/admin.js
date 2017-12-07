@@ -98,13 +98,13 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_user_api_keys: function() {
-            var vueMount = document.createElement('div');
+            var vueMount = document.createElement("div");
             this.page.display(vueMount);
             new Vue(UserAPIKeys).$mount(vueMount);
         },
 
         show_data_tables: function() {
-            var vueMount = document.createElement('div');
+            var vueMount = document.createElement("div");
             this.page.display(vueMount);
             new Vue(DataTables).$mount(vueMount);
         },
