@@ -208,7 +208,7 @@ define({
 
     "Edit dataset tags": "Editer les mots-clés du jeu de données",
     "Edit dataset annotation": "Editer les annotations du jeu de données",
-    "Tool Help": false,
+    "Tool Help": "Aide outil",
     // ---------------------------------------------------------------------------- admin
     "Reset passwords": false,
     "Search Tool Shed": false,
