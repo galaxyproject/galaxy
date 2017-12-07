@@ -180,7 +180,7 @@ For this to work, the user under which your nginx server runs will need read acc
 ### External user authentication
 
 - [Apache for External Authentication](https://galaxyproject.org/admin/config/apache-external-user-auth/)
-- [Built-in Galaxy External Authentication](../authentication.md)
+- [Built-in Galaxy External Authentication](../authentication.html)
 
 ### Display Sites
 
