@@ -269,7 +269,7 @@ define({
     "Tools and Tool Shed": "ツールと Tool Shed",
     "User Management": "ユーザ管理",
     Data: "データ",
-    "Form Definitions": "フォーム定義"
+    "Form Definitions": "フォーム定義",
     // ---------------------------------------------------------------------------- misc. MVC
     //"Tags" :
     //false,
@@ -277,4 +277,5 @@ define({
     //false,
     //"Edit annotation" :
     //false,
+    "Your workflows": "あなたのワークフロー"
 });
