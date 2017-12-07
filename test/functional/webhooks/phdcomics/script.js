@@ -32,7 +32,7 @@ $(document).ready(function() {
 
         getRandomComic: function() {
             var me = this,
-                url = galaxyRoot + 'api/webhooks/phdcomics/get_data';
+                url = galaxyRoot + 'api/webhooks/phdcomics/data';
 
             this.$comicImg.html($('<div/>', {
                 id: 'phdcomics-loader'

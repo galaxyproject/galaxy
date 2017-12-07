@@ -105,11 +105,11 @@ var Collection = Backbone.Collection.extend({
         //
         // Webhooks
         //
-        Webhooks.add({
-            url: "api/webhooks/masthead/all",
-            callback: function(webhooks) {
+        Webhooks.load({
+            type: "masthead",
+            callback: function (webhooks) {
                 $(document).ready(() => {
-                    $.each(webhooks.models, (index, model) => {
+                    webhooks.each((model) => {
                         var webhook = model.toJSON();
                         if (webhook.activate) {
                             var obj = {

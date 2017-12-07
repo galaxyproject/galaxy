@@ -10,7 +10,7 @@ $(document).ready(function() {
                 $('#execute').attr('tour_id', 'execute');
 
                 Toastr.info('Tour generation might take some time.');
-                $.getJSON('/api/webhooks/tour_generator/get_data/', {
+                $.getJSON('/api/webhooks/tour_generator/data/', {
                     tool_id: me.toolId,
                     tool_version: me.toolVersion
                 }, function(obj) {

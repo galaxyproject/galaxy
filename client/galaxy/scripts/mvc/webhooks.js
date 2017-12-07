@@ -1,66 +1,58 @@
-/**
-  Webhooks
-**/
+import Utils from 'utils/utils';
 
-var WebhookModel = Backbone.Model.extend({
-    defaults: {
-        activate: false
-    }
+const Webhooks = Backbone.Collection.extend({
+  url: `${Galaxy.root}api/webhooks`
 });
 
-var Webhooks = Backbone.Collection.extend({
-    model: WebhookModel
-});
+const WebhookView = Backbone.View.extend({
+  el: '#webhook-view',
 
-var WebhookView = Backbone.View.extend({
-    el: "#webhook-view",
+  initialize: function (options) {
+    const toolId = options.toolId || '';
+    const toolVersion = options.toolVersion || '';
 
-    initialize: function(options) {
-        var me = this;
-        var toolId = options.toolId || "";
-        var toolVersion = options.toolVersion || "";
+    this.$el.attr('tool_id', toolId);
+    this.$el.attr('tool_version', toolVersion);
 
-        this.$el.attr("tool_id", toolId);
-        this.$el.attr("tool_version", toolVersion);
-
-        this.model = new WebhookModel();
-        this.model.urlRoot = options.urlRoot;
-        this.model.fetch({
-            success: function() {
-                me.render();
-            }
-        });
-    },
-
-    render: function() {
-        var webhook = this.model.toJSON();
-
-        this.$el.html(`<div id="${webhook.name}"></div>`);
-        if (webhook.styles)
-            $("<style/>", { type: "text/css" })
-                .text(webhook.styles)
-                .appendTo("head");
-        if (webhook.script)
-            $("<script/>", { type: "text/javascript" })
-                .text(webhook.script)
-                .appendTo("head");
-
-        return this;
-    }
-});
-
-var add = options => {
-    var webhooks = new Webhooks();
-
-    webhooks.url = Galaxy.root + options.url;
+    const webhooks = new Webhooks();
     webhooks.fetch({
-        async: options.async ? options.async : true,
-        success: options.callback
+      success: data => {
+        data.reset(filterType(data, options.type));
+
+        if (data.length > 0) {
+          const index = _.random(0, data.length - 1);
+          this.render(data.at(index));
+        }
+      }
     });
+  },
+
+  render: function (model) {
+    const webhook = model.toJSON();
+    this.$el.html(`<div id="${webhook.id}"></div>`);
+    Utils.appendScriptStyle(webhook);
+    return this;
+  }
+});
+
+const load = options => {
+  const webhooks = new Webhooks();
+  webhooks.fetch({
+    async: options.async !== undefined ? options.async : true,
+    success: data => {
+      if (options.type) {
+        data.reset(filterType(data, options.type));
+      }
+      options.callback(data);
+    }
+  });
 };
 
+function filterType (data, type) {
+  return _.filter(data.models, item => item.get('type').indexOf(type) !== -1);
+}
+
 export default {
-    Webhooks: Webhooks,
-    WebhookView: WebhookView,
-    add: add
+  WebhookView: WebhookView,
+  load: load
 };

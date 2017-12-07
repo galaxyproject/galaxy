@@ -38,7 +38,7 @@ $(document).ready(function() {
                 e.stopPropagation();
                 if ( $( '.search-screen-overlay' ).is( ':visible' ) ){
                     self.removeOverlay();
-                } 
+                }
                 else {
                     self.clearSearchResults();
                     self.showOverlay();

@@ -1,5 +1,5 @@
-name: masthead_test
-type: 
+id: masthead_test
+type:
   - masthead
 activate: true
 
