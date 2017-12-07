@@ -366,7 +366,12 @@ class WorkflowProgress(object):
     def get_replacement_workflow_output(self, workflow_output):
         step = workflow_output.workflow_step
         output_name = workflow_output.output_name
-        return self.outputs[step.id][output_name]
+        step_outputs = self.outputs[step.id]
+        if step_outputs is STEP_OUTPUT_DELAYED:
+            delayed_why = "depends on workflow output [%s] but that output has not been created yet" % output_name
+            raise modules.DelayedWorkflowEvaluation(why=delayed_why)
+        else:
+            return step_outputs[output_name]
 
     def set_outputs_for_input(self, invocation_step, outputs=None):
         step = invocation_step.workflow_step
