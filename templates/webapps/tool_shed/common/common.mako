@@ -14,7 +14,7 @@
             </div>
         %endfor
     %else:
-        <select id="${select.field_id}" name="${select.name}" multiple="${select.multiple}" refresh_on_change="${select.refresh_on_change}">
+        <select id="${select.field_id}" name="${select.name}" ${"multiple" if select.multiple else ""} refresh_on_change="${select.refresh_on_change}">
             %for o in select.options:
                 <option value="${escape(o[1])}">${escape(o[0])}</option>
             %endfor
