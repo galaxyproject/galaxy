@@ -10,7 +10,7 @@ import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
 import Vue from "libs/vue";
-import UserAPIKeys from "components/UserAPIKeys.vue";
+import UserAPIKeys from "components/admin/UserAPIKeys.vue";
 import DataTables from "components/admin/DataTables.vue";
 
 window.app = function app(options, bootstrapped) {
