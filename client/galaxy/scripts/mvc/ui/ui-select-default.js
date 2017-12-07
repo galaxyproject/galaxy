@@ -196,20 +196,18 @@ var View = Backbone.View.extend({
                 },
                 formatResult: result => {
                     let extraTagWarning = "";
-                    if (Object.keys(this.matched_tags).length > 5) {
-                        extraTagWarning = `&nbsp;<div class="label label-warning">${this.matched_tags.length -
+                    let filteredTags = _.filter(result.tags, t => this.matched_tags.hasOwnProperty(t));
+                    if (filteredTags.length > 5) {
+                        extraTagWarning = `&nbsp;<div class="label label-warning">${filteredTags.length -
                             5} more tags</div>`;
                     }
                     return `
                     ${_.escape(result.text)}
                     <div class="ui-tags">
                         ${_.reduce(
-                            result.tags.slice(0, 5),
+                            filteredTags.slice(0, 5),
                             (memo, tag) => {
-                                if (this.matched_tags[tag]) {
-                                    return `${memo}&nbsp;<div class="label label-info">${_.escape(tag)}</div>`;
-                                }
-                                return memo;
+                                return `${memo}&nbsp;<div class="label label-info">${_.escape(tag)}</div>`;
                             },
                             ""
                         )}
