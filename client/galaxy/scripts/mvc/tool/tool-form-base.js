@@ -6,6 +6,7 @@ import Utils from "utils/utils";
 import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
+import Webhooks from "mvc/webhooks";
 import Citations from "components/Citations.vue";
 import Vue from "vue";
 export default FormBase.extend({
@@ -200,19 +201,23 @@ export default FormBase.extend({
         }
 
         // add tool menu webhooks
-        $.getJSON("/api/webhooks/tool-menu/all", webhooks => {
-            _.each(webhooks, webhook => {
-                if (webhook.activate && webhook.config.function) {
-                    menu_button.addMenu({
-                        icon: webhook.config.icon,
-                        title: webhook.config.title,
-                        onclick: function() {
-                            var func = new Function("options", webhook.config.function);
-                            func(options);
-                        }
-                    });
-                }
-            });
+        Webhooks.load({
+            type: "tool-menu",
+            callback: function(webhooks) {
+                webhooks.each((model) => {
+                    var webhook = model.toJSON();
+                    if (webhook.activate && webhook.config.function) {
+                        menu_button.addMenu({
+                            icon: webhook.config.icon,
+                            title: webhook.config.title,
+                            onclick: function() {
+                                var func = new Function("options", webhook.config.function);
+                                func(options);
+                            }
+                        });
+                    }
+                });
+            }
         });
 
         return {

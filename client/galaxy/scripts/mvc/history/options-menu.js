@@ -175,13 +175,13 @@ var menu = [
 ];
 
 // Webhooks
-Webhooks.add({
-    url: "api/webhooks/history-menu/all",
-    async: false, // (hypothetically) slows down the performance
+Webhooks.load({
+    type: "history-menu",
+    async: false,  // (hypothetically) slows down the performance
     callback: function(webhooks) {
         var webhooks_menu = [];
 
-        $.each(webhooks.models, (index, model) => {
+        webhooks.each((model) => {
             var webhook = model.toJSON();
             if (webhook.activate) {
                 webhooks_menu.push({

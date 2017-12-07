@@ -1,4 +1,4 @@
-name: tour_generator
+id: tour_generator
 type:
   - onload
   - tool-menu
