@@ -1927,6 +1927,11 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             message = "The repository information has been updated."
         if error:
             status = 'error'
+        allow_push_select_field = SelectField(name='allow_push',
+                                              multiple=True,
+                                              display='checkboxes',
+                                              value='none',
+                                              refresh_on_change=True)
         current_allow_push = repository.allow_push(trans.app)
         if current_allow_push:
             current_allow_push_list = current_allow_push.split(',')
@@ -1936,11 +1941,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         for user in trans.sa_session.query(trans.model.User):
             if user.username not in current_allow_push_list:
                 options.append(user)
-        allow_push_select_field = SelectField(name='allow_push',
-                                              multiple=True,
-                                              display=display,
-                                              value='none')
-        for obj in current_allow_push_list:
+        for obj in options:
             label = getattr(obj, 'username')
             allow_push_select_field.add_option(label, trans.security.encode_id(obj.id))
         checked = alerts_checked or user.email in email_alerts

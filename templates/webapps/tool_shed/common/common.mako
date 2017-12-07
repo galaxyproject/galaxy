@@ -1,3 +1,5 @@
+<% from markupsafe import escape %>
+
 <%def name="render_checkbox(checkbox, disabled=False, refresh_on_change=False)">
     <% from galaxy.web.form_builder import CheckboxField %>
     <input type="checkbox" id="${checkbox.name}" name="${checkbox.name}" value="true" refresh_on_change="${refresh_on_change}" ${"checked" if CheckboxField.is_checked(checkbox.value) else ""} ${"disabled" if disabled else ""}
@@ -5,12 +7,20 @@
 </%def>
 
 <%def name="render_select(select)">
-    <select id="${select.field_id}" name="${select.name}" multiple="${select.multiple}" refresh_on_change="${select.refresh_on_change}">
-        <% from markupsafe import escape %>
+    %if select.display == "checkboxes":
         %for o in select.options:
-            <option value="${o[1]}">${escape(o[0])}</option>
+            <div>
+                <input type="checkbox" name="${select.name}" value="${o[1]}" refresh_on_change="${select.refresh_on_change}" ${"disabled" if disabled else ""}>
+                ${o[0]}
+            </div>
         %endfor
-    </select>
+    %else:
+        <select id="${select.field_id}" name="${select.name}" multiple="${select.multiple}" refresh_on_change="${select.refresh_on_change}">
+            %for o in select.options:
+                <option value="${o[1]}">${o[0]}</option>
+            %endfor
+        </select>
+    %endif
 </%def>
 
 <%def name="common_misc_javascripts()">
