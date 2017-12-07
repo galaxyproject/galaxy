@@ -168,11 +168,12 @@ To enable it, you must first install `mod_xsendfile`, this is usually available 
 </Location>
 ```
 
-Finally edit your `$GALAXY_ROOT/config/galaxy.ini` and make the following change before restarting Galaxy:
+Finally edit your `$GALAXY_ROOT/config/galaxy.yml` and make the following change before restarting Galaxy:
 
-```ini
-[app:main]
-apache_xsendfile = True
+```yaml
+galaxy:
+  # ...
+  apache_xsendfile: true
 ```
 
 For this to work, the user under which your nginx server runs will need read access to Galaxy's `$GALAXY_ROOT/database/files/` directory and its contents.
@@ -184,7 +185,7 @@ For this to work, the user under which your nginx server runs will need read acc
 
 ### Display Sites
 
-Display sites such as UCSC work not by sending data directly from Galaxy to UCSC via the client's browser, but by sending UCSC a URL to the data in Galaxy that the UCSC server will retrieve data from. Since enabling authentication will place **all** of Galaxy behind authentication, such display sites will no longer be able to access data via that URL. If `display_servers` is set to a non-empty value in `$GALAXY_ROOT/config/galaxy.ini`, this tells Galaxy it should allow the named servers access to data in Galaxy. However, you still need to configure Apache to allow access to the datasets. An example config is provided here that allows the UCSC Main/Test backends:
+Display sites such as UCSC work not by sending data directly from Galaxy to UCSC via the client's browser, but by sending UCSC a URL to the data in Galaxy that the UCSC server will retrieve data from. Since enabling authentication will place **all** of Galaxy behind authentication, such display sites will no longer be able to access data via that URL. If `display_servers` is set to a non-empty value in `$GALAXY_ROOT/config/galaxy.yml`, this tells Galaxy it should allow the named servers access to data in Galaxy. However, you still need to configure Apache to allow access to the datasets. An example config is provided here that allows the UCSC Main/Test backends:
 
 ```apache
 <Location "/root/display_as">
@@ -211,7 +212,7 @@ Display sites such as UCSC work not by sending data directly from Galaxy to UCSC
 
 ### Proxying multiple galaxy worker threads
 
-If you've configured multiple threads for galaxy in the `config/galaxy.ini` file, you will need a `ProxyBalancer` to manage sending requests to each of the threads. You can do that with apache configuration as follows:
+If you've configured multiple threads for galaxy in the `config/galaxy.yml` file, you will need a `ProxyBalancer` to manage sending requests to each of the threads. You can do that with apache configuration as follows:
 
 ```apache
 <Proxy balancer://galaxy>

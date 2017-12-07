@@ -109,7 +109,7 @@ http {
 }
 ```
 
-2. The Galaxy application needs to be aware that it is running with a prefix (for generating URLs in dynamic pages). This is accomplished by configuring a Paste proxy-prefix filter in the `[app:main]` section of `config/galaxy.ini` and restarting Galaxy:
+2. The Galaxy application needs to be aware that it is running with a prefix (for generating URLs in dynamic pages). This is accomplished by configuring a Paste proxy-prefix filter in the `galaxy` section of `config/galaxy.ini` and restarting Galaxy:
 
 
 ```ini
@@ -198,11 +198,12 @@ http {
 }
 ```
 
-Finally edit your `$GALAXY_ROOT/config/galaxy.ini` and make the following change before restarting Galaxy:
+Finally edit your `$GALAXY_ROOT/config/galaxy.yml` and make the following change before restarting Galaxy:
 
-```ini
-[app:main]
-nginx_x_accel_redirect_base = /_x_accel_redirect
+```yaml
+galaxy:
+  #...
+  nginx_x_accel_redirect_base: '/_x_accel_redirect'
 ```
 
 For this to work, the user under which your nginx server runs will need read access to Galaxy's `$GALAXY_ROOT/database/files/` directory and its contents.
@@ -245,12 +246,13 @@ http {
 
 Note the `user` directive. To ensure that Galaxy has write permission on the uploaded files, nginx's workers will need to run as the same user as Galaxy.
 
-Finally edit your `$GALAXY_ROOT/config/galaxy.ini` and make the following change before restarting Galaxy:
+Finally edit your `$GALAXY_ROOT/config/galaxy.yml` and make the following change before restarting Galaxy:
 
-```ini
-[app:main]
-nginx_upload_store = database/tmp/upload_store
-nginx_upload_path = /_upload
+```yaml
+galaxy:
+  #...
+  nginx_upload_store: database/tmp/upload_store
+  nginx_upload_path: '/_upload'
 ```
 
 When serving Galaxy with a prefix, as described in the serving Galaxy in a sub-directory section above, you will need to change one line in the `\_upload\_done` section. If your galaxy instance is available from `/galaxy`, then the first line should include this prefix:

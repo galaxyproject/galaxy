@@ -2,7 +2,7 @@
 
 The Galaxy framework is written in Python and makes extensive use of threads.  However, one of the drawbacks of Python is the [Global Interpreter Lock](http://docs.python.org/c-api/init.html#thread-state-and-the-global-interpreter-lock), which prevents more than one thread from being on CPU at a time.  Because of this, having a multi-core system will not improve the Galaxy framework's performance out of the box since Galaxy can use (at most) one core at a time.  However, Galaxy can easily run in multiple separate processes, which solves this problem.  For a more thorough explanation of this problem and why you will almost surely want to switch to the load balanced configuration if running for more than a small handful of users, see the [production configuration](production.html) page.
 
-Just to be clear: increasing the values of `threadpool_workers` in `galaxy.ini` or the number of plugin workers in `job_conf.xml` will not make you Galaxy server much more responsive.  The key to scaling Galaxy is the ability to run *multiple* Galaxy servers which co-operatively work on the same database.
+Just to be clear: increasing the values of `threadpool_workers` in `galaxy.yml` or the number of plugin workers in `job_conf.xml` will not make you Galaxy server much more responsive.  The key to scaling Galaxy is the ability to run *multiple* Galaxy servers which co-operatively work on the same database.
 
 A simple configuration:
 * 1 "job handler" process - responsible for starting and monitoring jobs, submitting jobs to a cluster (if configured), and for setting metadata (externally or internally).
@@ -124,9 +124,9 @@ Using web processes as handlers is possible, but it is not recommended since han
 
 ### Remaining configuration options
 
-If you do not have a `job_conf.xml` file, you will need to create one.  There are samples for a basic configuration and an advanced configuration provided in the distribution.  Please note that creating `job_conf.xml` overrides any legacy job running settings in `galaxy.ini`.  See the [jobs configuration documentation](jobs.html) for more detail on job configuration.
+If you do not have a `job_conf.xml` file, you will need to create one.  There are samples for a basic configuration and an advanced configuration provided in the distribution.  Please note that creating `job_conf.xml` overrides any legacy job running settings in `galaxy.yml`.  See the [jobs configuration documentation](jobs.html) for more detail on job configuration.
 
-In `job_conf.xml`, create `<handler>` tags with `id` attributes that match the handler server names you defined in `galaxy.ini`.  For example, using the configuration above, the `<handlers>` section of `job_conf.xml` would look like:
+In `job_conf.xml`, create `<handler>` tags with `id` attributes that match the handler server names you defined in `galaxy.yml`.  For example, using the configuration above, the `<handlers>` section of `job_conf.xml` would look like:
 
 ```xml
 <handlers default="handlers">

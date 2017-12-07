@@ -6,7 +6,7 @@ This document is a reference for the job configuration file.  [Detailed document
 
 **The most up-to-date details of advanced job configuration features can be found in the [sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/config/job_conf.xml.sample_advanced) found in the Galaxy distribution.**
 
-Configuration of where to run jobs is performed in the `job_conf.xml` file in `$GALAXY_ROOT/config/`.  The path to the config file can be overridden by setting the value of `job_config_file` in `config/galaxy.ini`.  Sample configurations are provided at `galaxy-dist/config/job_conf.xml.sample_basic` and `galaxy-dist/config/job_conf.xml.sample_advanced`.  The job configuration file is not required - if it does not exist, a default configuration that runs jobs on the local system (with a maximum of 4 concurrent jobs) will be used.  `job_conf.xml.sample_basic` provides a configuration identical to the default configuration if no `job_conf.xml` exists.
+Configuration of where to run jobs is performed in the `job_conf.xml` file in `$GALAXY_ROOT/config/`.  The path to the config file can be overridden by setting the value of `job_config_file` in `config/galaxy.yml`.  Sample configurations are provided at `galaxy-dist/config/job_conf.xml.sample_basic` and `galaxy-dist/config/job_conf.xml.sample_advanced`.  The job configuration file is not required - if it does not exist, a default configuration that runs jobs on the local system (with a maximum of 4 concurrent jobs) will be used.  `job_conf.xml.sample_basic` provides a configuration identical to the default configuration if no `job_conf.xml` exists.
 
 ## job_conf.xml Syntax
 
@@ -237,7 +237,7 @@ The above examples demonstrate that the dynamic job destination framework will p
 
 ```eval_rst
 ``app``
-    Global Galaxy application object, has attributes such as config (the configuration parameters loaded from ``config/galaxy.ini``) and ``job_config`` (Galaxy representation of the data loaded in from ``job_conf.xml``).
+    Global Galaxy application object, has attributes such as config (the configuration parameters loaded from ``config/galaxy.yml``) and ``job_config`` (Galaxy representation of the data loaded in from ``job_conf.xml``).
 
 ``user_email``
     E-mail of user submitting this job.
