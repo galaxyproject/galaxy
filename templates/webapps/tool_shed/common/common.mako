@@ -9,14 +9,14 @@
     %if select.display == "checkboxes":
         %for o in select.options:
             <div>
-                <input type="checkbox" name="${select.name}" value="${o[1]}" refresh_on_change="${select.refresh_on_change}" ${"disabled" if disabled else ""}>
+                <input type="checkbox" name="${select.name}" value="${escape(o[1])}" refresh_on_change="${select.refresh_on_change}" ${"disabled" if disabled else ""}>
                 ${escape(o[0])}
             </div>
         %endfor
     %else:
         <select id="${select.field_id}" name="${select.name}" multiple="${select.multiple}" refresh_on_change="${select.refresh_on_change}">
             %for o in select.options:
-                <option value="${o[1]}">${escape(o[0])}</option>
+                <option value="${escape(o[1])}">${escape(o[0])}</option>
             %endfor
         </select>
     %endif
