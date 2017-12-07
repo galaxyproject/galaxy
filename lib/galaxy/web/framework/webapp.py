@@ -24,7 +24,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import util
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import ConfigurationError, MessageException
 from galaxy.managers import context
 from galaxy.util import (
     asbool,
@@ -630,16 +630,31 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         self.set_cookie(self.security.encode_guid(self.galaxy_session.session_key),
                         name=name, path=self.app.config.cookie_path)
 
+    def check_user_library_import_dir(self, user):
+        if self.app.config.user_library_import_dir_auto_creation:
+            # try to create a user library import directory
+            try:
+                self.app.config._ensure_directory(os.path.join(self.app.config.user_library_import_dir, user.email))
+            except ConfigurationError as e:
+                self.log_event(str(e))
+
+    def user_checks(self, user):
+        """
+        This could contain more checks around a user upon login
+        """
+        self.check_user_library_import_dir(user)
+
     def handle_user_login(self, user):
         """
         Login a new user (possibly newly created)
-
+           - do some 'system' checks (if any) for this user
            - create a new session
            - associate new session with user
            - if old session had a history and it was not associated with a user, associate it with the new session,
              otherwise associate the current session's history with the user
            - add the disk usage of the current session to the user's total disk usage
         """
+        self.user_checks(user)
         # Set the previous session
         prev_galaxy_session = self.galaxy_session
         prev_galaxy_session.is_valid = False
