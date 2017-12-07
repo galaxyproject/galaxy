@@ -334,7 +334,9 @@ var WorkflowListView = Backbone.View.extend({
             '<div class="page-container">' +
             '<div class="user-workflows wf">' +
             '<div class="response-message"></div>' +
-            "<h2>"+_l('Your workflows')+"</h2>" +
+            "<h2>" +
+            _l("Your workflows") +
+            "</h2>" +
             "</div>" +
             "</div>"
         );

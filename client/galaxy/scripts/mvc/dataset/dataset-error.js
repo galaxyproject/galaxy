@@ -100,7 +100,9 @@ var View = Backbone.View.extend({
                 value: Galaxy.user.get("email")
             },
             {
-                help: _l("Any additional comments you can provide regarding what you were doing at the time of the bug."),
+                help: _l(
+                    "Any additional comments you can provide regarding what you were doing at the time of the bug."
+                ),
                 options: [],
                 type: "text",
                 area: true,

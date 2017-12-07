@@ -28,8 +28,8 @@ var ToolShedRepositoryView = Backbone.View.extend({
             tool_shed: this.model.tool_shed,
             queue: toolshed_util.queueLength()
         };
-        var changesets = Object.keys(this.options.repository.metadata).sort(function (a, b) {
-            return parseInt(a.split(":")[0] - b.split(":")[0])
+        var changesets = Object.keys(this.options.repository.metadata).sort(function(a, b) {
+            return parseInt(a.split(":")[0] - b.split(":")[0]);
         });
         var ordered_metadata = {};
         var unordered_metadata = this.options.repository.metadata;
