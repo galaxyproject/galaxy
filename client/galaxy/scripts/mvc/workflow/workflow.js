@@ -1,4 +1,3 @@
-import _l from "utils/localization";
 /** Workflow view */
 import * as mod_toastr from "libs/toastr";
 import TAGS from "mvc/tag";
