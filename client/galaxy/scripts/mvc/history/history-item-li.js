@@ -3,7 +3,7 @@ function _templateNametag(tag) {
 }
 
 function nametagTemplate(historyItem) {
-    let uniqueNametags = _.filter(_.uniq(historyItem.tags), (t) => t.indexOf("name:") === 0);
+    let uniqueNametags = _.filter(_.uniq(historyItem.tags), t => t.indexOf("name:") === 0);
     let nametagsDisplay = _.sortBy(uniqueNametags).map(_templateNametag);
     return `
         <div class="nametags" title="${uniqueNametags.length} nametags">

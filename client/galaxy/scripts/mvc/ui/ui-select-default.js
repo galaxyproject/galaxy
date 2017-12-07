@@ -5,7 +5,6 @@ import Utils from "utils/utils";
 import Buttons from "mvc/ui/ui-buttons";
 var View = Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         this.data = [];
         this.data2 = [];
         this.model =
@@ -28,7 +27,9 @@ var View = Backbone.View.extend({
                 pagesize: 20
             }).set(options);
         this.on("change", () => {
-            self.model.get("onchange") && self.model.get("onchange")(self.value());
+            if (this.model.get("onchange")) {
+                this.model.get("onchange")(this.value());
+            }
         });
         this.listenTo(this.model, "change:data", this._changeData, this);
         this.listenTo(this.model, "change:disabled", this._changeDisabled, this);
@@ -40,8 +41,11 @@ var View = Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
-        this.model.get("searchable") ? this._renderSearchable() : this._renderClassic();
+        if (this.model.get("searchable")) {
+            this._renderSearchable();
+        } else {
+            this._renderClassic();
+        }
         this.$el.addClass(this.model.get("cls")).attr("id", this.model.get("id"));
         this.$select
             .empty()
@@ -49,8 +53,8 @@ var View = Backbone.View.extend({
             .attr("id", `${this.model.get("id")}_select`)
             .prop("multiple", this.model.get("multiple"))
             .on("change", () => {
-                self.value(self._getValue());
-                self.trigger("change");
+                this.value(this._getValue());
+                this.trigger("change");
             });
         this._changeData();
         this._changeWait();
@@ -103,7 +107,9 @@ var View = Backbone.View.extend({
         this.$dropdown.hide();
         if (!this.model.get("multiple")) {
             this.$dropdown.show().on("click", () => {
-                self.$select.select2 && self.$select.select2("open");
+                if (self.$select.select2) {
+                    self.$select.select2("open");
+                }
             });
         }
         this.all_button = null;
@@ -111,10 +117,11 @@ var View = Backbone.View.extend({
             this.all_button = new Buttons.ButtonCheck({
                 onclick: function() {
                     var new_value = [];
-                    self.all_button.value() !== 0 &&
+                    if (self.all_button.value() !== 0) {
                         _.each(self.model.get("data"), option => {
                             new_value.push(option.value);
                         });
+                    }
                     self.value(new_value);
                     self.trigger("change");
                 }
@@ -127,7 +134,7 @@ var View = Backbone.View.extend({
     _match: function(term, text) {
         return (
             !term ||
-            term == "" ||
+            term === "" ||
             String(text)
                 .toUpperCase()
                 .indexOf(term.toUpperCase()) >= 0
@@ -136,18 +143,17 @@ var View = Backbone.View.extend({
 
     /** Updates the selection options */
     _changeData: function() {
-        var self = this;
         this.data = [];
         if (!this.model.get("multiple") && this.model.get("optional")) {
             this.data.push({
                 value: "__null__",
-                label: self.model.get("empty_text")
+                label: this.model.get("empty_text")
             });
         }
         _.each(this.model.get("data"), option => {
-            self.data.push(option);
+            this.data.push(option);
         });
-        if (this.length() == 0) {
+        if (this.length() === 0) {
             this.data.push({
                 value: "__null__",
                 label: this.model.get("error_text")
@@ -156,40 +162,43 @@ var View = Backbone.View.extend({
         if (this.model.get("searchable")) {
             this.data2 = [];
             _.each(this.data, (option, index) => {
-                self.data2.push({
+                this.data2.push({
                     order: index,
                     id: option.value,
                     text: option.label,
                     tags: option.tags
                 });
             });
-            this.$select.data("select2") && this.$select.select2("destroy");
+            if (this.$select.data("select2")) {
+                this.$select.select2("destroy");
+            }
             this.matched_tags = {};
             this.$select.select2({
-                data: self.data2,
+                data: this.data2,
                 closeOnSelect: !this.model.get("multiple"),
                 multiple: this.model.get("multiple"),
-                query: function(q) {
-                    self.matched_tags = {};
-                    var pagesize = self.model.get("pagesize");
-                    var results = _.filter(self.data2, e => {
+                query: q => {
+                    this.matched_tags = {};
+                    var pagesize = this.model.get("pagesize");
+                    var results = _.filter(this.data2, e => {
                         var found = false;
                         _.each(e.tags, tag => {
-                            if (self._match(q.term, tag)) {
-                                found = self.matched_tags[tag] = true;
+                            if (this._match(q.term, tag)) {
+                                found = this.matched_tags[tag] = true;
                             }
                         });
-                        return found || self._match(q.term, e.text);
+                        return found || this._match(q.term, e.text);
                     });
                     q.callback({
                         results: results.slice((q.page - 1) * pagesize, q.page * pagesize),
                         more: results.length >= q.page * pagesize
                     });
                 },
-                formatResult: function(result) {
+                formatResult: result => {
                     let extraTagWarning = "";
-                    if (result.tags.length > 5){
-                        extraTagWarning = `&nbsp;<div class="label label-warning">${result.tags.length - 5} more tags</div>`;
+                    if (Object.keys(this.matched_tags).length > 5) {
+                        extraTagWarning = `&nbsp;<div class="label label-warning">${this.matched_tags.length -
+                            5} more tags</div>`;
                     }
                     return `
                     ${_.escape(result.text)}
@@ -197,7 +206,7 @@ var View = Backbone.View.extend({
                         ${_.reduce(
                             result.tags.slice(0, 5),
                             (memo, tag) => {
-                                if (self.matched_tags[tag]) {
+                                if (this.matched_tags[tag]) {
                                     return `${memo}&nbsp;<div class="label label-info">${_.escape(tag)}</div>`;
                                 }
                                 return memo;
@@ -212,14 +221,14 @@ var View = Backbone.View.extend({
         } else {
             this.$select.find("option").remove();
             _.each(this.data, option => {
-                self.$select.append(
+                this.$select.append(
                     $("<option/>")
                         .attr("value", option.value)
                         .html(_.escape(option.label))
                 );
             });
         }
-        this.model.set("disabled", this.model.get("readonly") || this.length() == 0);
+        this.model.set("disabled", this.model.get("readonly") || this.length() === 0);
         this._changeValue();
     },
 
@@ -261,7 +270,9 @@ var View = Backbone.View.extend({
 
     /** Return/Set current selection */
     value: function(new_value) {
-        new_value !== undefined && this.model.set("value", new_value);
+        if (new_value !== undefined) {
+            this.model.set("value", new_value);
+        }
         return this._getValue();
     },
 
@@ -320,9 +331,13 @@ var View = Backbone.View.extend({
     /** Update all available options at once */
     add: function(options, sorter) {
         _.each(this.model.get("data"), v => {
-            v.keep && !_.findWhere(options, { value: v.value }) && options.push(v);
+            if (v.keep && !_.findWhere(options, { value: v.value })) {
+                options.push(v);
+            }
         });
-        sorter && options && options.sort(sorter);
+        if (sorter && options) {
+            options.sort(sorter);
+        }
         this.model.set("data", options);
     },
 
@@ -361,7 +376,9 @@ var View = Backbone.View.extend({
                 var val = [];
                 _.each(new_value, v => {
                     var d = _.findWhere(self.data2, { id: v });
-                    d && val.push(d);
+                    if (d) {
+                        val.push(d);
+                    }
                 });
                 new_value = val;
             } else {
