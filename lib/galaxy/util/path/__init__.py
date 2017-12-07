@@ -6,14 +6,14 @@ import errno
 import imp
 from functools import partial
 from grp import getgrgid
-from itertools import starmap
 import logging
+from itertools import starmap
 from operator import getitem
 from os import (
     extsep,
     makedirs,
-    walk,
-    stat
+    stat,
+    walk
 )
 from os.path import (
     abspath,
@@ -30,7 +30,7 @@ from os.path import (
 from pwd import getpwuid
 
 from six import iteritems, string_types
-from six.moves import filterfalse, map, zip
+from six.moves import map, zip
 log = logging.getLogger(__name__)
 
 
