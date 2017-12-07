@@ -34,6 +34,7 @@ from ..parameters import (
     history_query
 )
 from ..parser import get_input_source as ensure_input_source
+from ..repositories import ValidationContext
 
 log = logging.getLogger(__name__)
 
@@ -1435,7 +1436,7 @@ class BaseDataToolParameter(ToolParameter):
         super(BaseDataToolParameter, self).__init__(tool, input_source)
         self.refresh_on_change = True
 
-    def _datatypes_registery(self, trans, tool):
+    def _datatypes_registry(self, trans, tool):
         # Find datatypes_registry
         if tool is None:
             if trans:
@@ -1448,22 +1449,26 @@ class BaseDataToolParameter(ToolParameter):
                 datatypes_registry = galaxy.datatypes.registry.Registry()
                 datatypes_registry.load_datatypes()
         else:
-            datatypes_registry = tool.app.datatypes_registry
+            if isinstance(tool.app, ValidationContext):
+                datatypes_registry = {}
+            else:
+                datatypes_registry = tool.app.datatypes_registry
         return datatypes_registry
 
     def _parse_formats(self, trans, tool, input_source):
-        datatypes_registry = self._datatypes_registery(trans, tool)
-
+        datatypes_registry = self._datatypes_registry(trans, tool)
+        formats = []
         # Build list of classes for supported data formats
         self.extensions = input_source.get('format', 'data').split(",")
         normalized_extensions = [extension.strip().lower() for extension in self.extensions]
-        formats = []
-        for extension in normalized_extensions:
-            datatype = datatypes_registry.get_datatype_by_extension(extension)
-            if datatype is not None:
-                formats.append(datatype)
-            else:
-                log.warning("Datatype class not found for extension '%s', which is used in the 'format' attribute of parameter '%s'" % (extension, self.name))
+        if datatypes_registry:
+            # Skip during validation since no datatypes are loaded
+            for extension in normalized_extensions:
+                datatype = datatypes_registry.get_datatype_by_extension(extension)
+                if datatype is not None:
+                    formats.append(datatype)
+                else:
+                    log.warning("Datatype class not found for extension '%s', which is used in the 'format' attribute of parameter '%s'" % (extension, self.name))
         self.formats = formats
 
     def _parse_options(self, input_source):
@@ -1777,9 +1782,9 @@ class DataToolParameter(BaseDataToolParameter):
         # create dictionary and fill default parameters
         d = super(DataToolParameter, self).to_dict(trans)
         extensions = self.extensions
-        datatypes_registery = self._datatypes_registery(trans, self.tool)
-        all_edam_formats = datatypes_registery.edam_formats if hasattr(datatypes_registery, 'edam_formats') else {}
-        all_edam_data = datatypes_registery.edam_data if hasattr(datatypes_registery, 'edam_formats') else {}
+        datatypes_registry = self._datatypes_registry(trans, self.tool)
+        all_edam_formats = datatypes_registry.edam_formats if hasattr(datatypes_registry, 'edam_formats') else {}
+        all_edam_data = datatypes_registry.edam_data if hasattr(datatypes_registry, 'edam_formats') else {}
         edam_formats = [all_edam_formats.get(ext, None) for ext in extensions]
         edam_data = [all_edam_data.get(ext, None) for ext in extensions]
 
