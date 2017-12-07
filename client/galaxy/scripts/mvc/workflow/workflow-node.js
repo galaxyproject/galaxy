@@ -1,3 +1,4 @@
+import Utils from "utils/utils";
 import NodeView from "mvc/workflow/workflow-view-node";
 var Node = Backbone.Model.extend({
     initialize: function(app, attr) {
@@ -14,7 +15,7 @@ var Node = Backbone.Model.extend({
         });
     },
     isWorkflowOutput: function(outputName) {
-        return this.getWorkflowOutput(outputName) != undefined;
+        return this.getWorkflowOutput(outputName) !== undefined;
     },
     removeWorkflowOutput: function(outputName) {
         while (this.isWorkflowOutput(outputName)) {
@@ -25,7 +26,7 @@ var Node = Backbone.Model.extend({
         if (!this.isWorkflowOutput(outputName)) {
             var output = { output_name: outputName };
             if (label) {
-                output["label"] = label;
+                output.label = label;
             }
             this.workflow_outputs.push(output);
             return true;
@@ -37,8 +38,8 @@ var Node = Backbone.Model.extend({
         var oldLabel = null;
         if (this.isWorkflowOutput(outputName)) {
             var workflowOutput = this.getWorkflowOutput(outputName);
-            oldLabel = workflowOutput["label"];
-            workflowOutput["label"] = label;
+            oldLabel = workflowOutput.label;
+            workflowOutput.label = label;
             changed = oldLabel != label;
         } else {
             changed = this.addWorkflowOutput(outputName, label);
@@ -127,6 +128,31 @@ var Node = Backbone.Model.extend({
         });
         $.each(this.output_terminals, (_, t) => {
             t.redraw();
+        });
+    },
+    clone: function() {
+        var copiedData = {
+            name: this.name,
+            label: this.label,
+            annotation: this.annotation,
+            post_job_actions: this.post_job_actions
+        };
+        var node = this.app.workflow.create_node(this.type, this.name, this.content_id);
+
+        Utils.request({
+            type: "POST",
+            url: `${Galaxy.root}api/workflows/build_module`,
+            data: {
+                type: this.type,
+                tool_id: this.content_id,
+                inputs: this.tool_state
+            },
+            success: data => {
+                var newData = Object.assign({}, data, copiedData);
+                node.init_field_data(newData);
+                node.update_field_data(newData);
+                this.app.workflow.activate_node(node);
+            }
         });
     },
     destroy: function() {
@@ -239,7 +265,7 @@ var Node = Backbone.Model.extend({
         this.config_form = data.config_form;
         this.tool_version = this.config_form && this.config_form.version;
         this.errors = data.errors;
-        this.annotation = data["annotation"];
+        this.annotation = data.annotation;
         this.label = data.label;
         if ("post_job_actions" in data) {
             // Won't be present in response for data inputs
@@ -271,7 +297,7 @@ var Node = Backbone.Model.extend({
         old_body.replaceWith(new_body);
         if ("workflow_outputs" in data) {
             // Won't be present in response for data inputs
-            this.workflow_outputs = workflow_outputs ? workflow_outputs : [];
+            this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
         }
         // If active, reactivate with new config_form
         this.markChanged();

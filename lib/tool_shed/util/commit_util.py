@@ -10,8 +10,9 @@ from collections import namedtuple
 from sqlalchemy.sql.expression import null
 
 import tool_shed.repository_types.util as rt_util
-from galaxy.util import checkers, safe_relpath
-from tool_shed.tools import data_table_manager
+from galaxy.util import checkers
+from galaxy.util.path import safe_relpath
+from tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from tool_shed.util import basic_util, hg_util, shed_util_common as suc
 
 if sys.version_info < (3, 3):
@@ -213,8 +214,8 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
             # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded
             # by parsing the file and adding new entries to the in-memory app.tool_data_tables
             # dictionary.
-            tdtm = data_table_manager.ToolDataTableManager(app)
-            error, message = tdtm.handle_sample_tool_data_table_conf_file(filename_in_archive, persist=False)
+            stdtm = ShedToolDataTableManager(app)
+            error, message = stdtm.handle_sample_tool_data_table_conf_file(filename_in_archive, persist=False)
             if error:
                 return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
     hg_util.commit_changeset(repo.ui,

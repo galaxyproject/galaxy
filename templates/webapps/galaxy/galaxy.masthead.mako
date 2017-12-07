@@ -30,7 +30,6 @@
             'ftp_upload_dir'            : app.config.get("ftp_upload_dir",  None),
             'ftp_upload_site'           : app.config.get("ftp_upload_site",  None),
             'datatypes_disable_auto'    : app.config.get_bool("datatypes_disable_auto",  False),
-            'user_requests'             : bool( trans.user and ( trans.user.requests or app.security_agent.get_accessible_request_types( trans, trans.user ) ) ),
             'user_json'                 : get_user_dict()
         }
     %>
@@ -57,25 +56,8 @@
             });
         }
         // TODO: ?? move above to base_panels.mako?
-
-        ## load galaxy js-modules
-        require([
-            'layout/masthead',
-            'mvc/ui/ui-modal',
-            'mvc/user/user-model'
-        ], function( Masthead, Modal, user ){
-            if( !Galaxy.user ) {
-                // this doesn't need to wait for the page being readied
-                Galaxy.user = new user.default.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
-            }
-
-            $(function() {
-                if (!Galaxy.masthead) {
-                    Galaxy.masthead = new Masthead.default.View((${ h.dumps( masthead_config ) }));
-                    Galaxy.modal = new Modal.default.View();
-                    $('#masthead').replaceWith( Galaxy.masthead.render().$el );
-                }
-            });
+        $( function() {
+            window.bundleEntries.masthead(${h.dumps(masthead_config)});
         });
     </script>
 </%def>

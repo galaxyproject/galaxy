@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import * as _ from "libs/underscore";
 var extend = _.extend;
 
@@ -659,14 +660,14 @@ extend(FiltersManager.prototype, {
                 if (response.error) {
                     // General error.
                     Galaxy.modal.show({
-                        title: "Filter Dataset",
+                        title: _l("Filter Dataset"),
                         body: `Error running tool ${tool_id}`,
                         buttons: { Close: Galaxy.modal.hide() }
                     });
                 } else if (filters.length === 0) {
                     // No more filters to run.
                     Galaxy.modal.show({
-                        title: "Filtering Dataset",
+                        title: _l("Filtering Dataset"),
                         body: "Filter(s) are running on the complete dataset. Outputs are in dataset's history.",
                         buttons: { Close: Galaxy.modal.hide() }
                     });

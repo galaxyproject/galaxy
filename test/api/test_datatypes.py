@@ -2,7 +2,7 @@ import time
 
 from requests import put
 
-from base import api  # noqa: I100
+from base import api  # noqa: I100,I202
 
 HIDDEN_DURING_UPLOAD_DATATYPE = "fli"
 

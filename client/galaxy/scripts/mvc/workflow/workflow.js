@@ -3,6 +3,7 @@ import * as mod_toastr from "libs/toastr";
 import TAGS from "mvc/tag";
 import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";
+import _l from "utils/localization";
 /** View of the individual workflows */
 var WorkflowItemView = Backbone.View.extend({
     tagName: "tr", // name of (orphan) root tag in this.el
@@ -36,7 +37,7 @@ var WorkflowItemView = Backbone.View.extend({
         this.model.save();
         // This reloads the whole page, so that the workflow appears in the tool panel.
         // Ideally we would notify only the tool panel of a change
-        window.location = `${Galaxy.root}workflow`;
+        window.location = `${Galaxy.root}workflows/list`;
     },
 
     removeWorkflow: function() {
@@ -127,7 +128,7 @@ var WorkflowItemView = Backbone.View.extend({
         if (this.model.get("owner") === Galaxy.user.attributes.username) {
             return `<ul class="dropdown-menu action-dpd"><li><a href="${Galaxy.root}workflow/editor?id=${
                 this.model.id
-            }">Edit</a></li><li><a href="${Galaxy.root}workflow/run?id=${this.model.id}">Run</a></li><li><a href="${
+            }">Edit</a></li><li><a href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a></li><li><a href="${
                 Galaxy.root
             }workflow/sharing?id=${this.model.id}">Share</a></li><li><a href="${Galaxy.root}api/workflows/${
                 this.model.id
@@ -141,7 +142,7 @@ var WorkflowItemView = Backbone.View.extend({
                 Galaxy.root
             }workflow/display_by_username_and_slug?username=${this.model.get("owner")}&slug=${this.model.get(
                 "slug"
-            )}">View</a></li><li><a href="${Galaxy.root}workflow/run?id=${
+            )}">View</a></li><li><a href="${Galaxy.root}workflows/run?id=${
                 this.model.id
             }">Run</a></li><li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li><li><a class="link-confirm-shared-${
                 this.model.id
@@ -152,7 +153,7 @@ var WorkflowItemView = Backbone.View.extend({
 
 /** View of the main workflow list page */
 var WorkflowListView = Backbone.View.extend({
-    title: "Workflows",
+    title: _l("Workflows"),
     initialize: function() {
         this.setElement("<div/>");
         _.bindAll(this, "adjustActiondropdown");
@@ -305,9 +306,9 @@ var WorkflowListView = Backbone.View.extend({
     _templateActionButtons: function() {
         return `<ul class="manage-table-actions"><li><input class="search-wf form-control" type="text" autocomplete="off" placeholder="search for workflow..."></li><li><a class="action-button fa fa-plus wf-action" id="new-workflow" title="Create new workflow" href="${
             Galaxy.root
-        }workflow/create"></a></li><li><a class="action-button fa fa-upload wf-action" id="import-workflow" title="Upload or import workflow" href="${
+        }workflows/create"></a></li><li><a class="action-button fa fa-upload wf-action" id="import-workflow" title="Upload or import workflow" href="${
             Galaxy.root
-        }workflow/import_workflow"></a></li></ul>`;
+        }workflows/import_workflow"></a></li></ul>`;
     },
 
     /** Template for workflow table */
@@ -333,7 +334,9 @@ var WorkflowListView = Backbone.View.extend({
             '<div class="page-container">' +
             '<div class="user-workflows wf">' +
             '<div class="response-message"></div>' +
-            "<h2>Your workflows</h2>" +
+            "<h2>" +
+            _l("Your workflows") +
+            "</h2>" +
             "</div>" +
             "</div>"
         );

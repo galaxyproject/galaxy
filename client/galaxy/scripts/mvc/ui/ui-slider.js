@@ -1,4 +1,5 @@
 import Utils from "utils/utils";
+
 var View = Backbone.View.extend({
     initialize: function(options) {
         var self = this;

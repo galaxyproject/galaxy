@@ -21,7 +21,7 @@ class GenericXml(data.Text):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'XML data'
         else:
             dataset.peek = 'file does not exist'
@@ -68,7 +68,7 @@ class MEMEXml(GenericXml):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'MEME XML data'
         else:
             dataset.peek = 'file does not exist'
@@ -85,7 +85,7 @@ class CisML(GenericXml):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'CisML data'
         else:
             dataset.peek = 'file does not exist'
@@ -104,7 +104,7 @@ class Phyloxml(GenericXml):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'Phyloxml data'
         else:
             dataset.peek = 'file does not exist'
@@ -139,7 +139,7 @@ class Owl(GenericXml):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "Web Ontology Language OWL"
         else:
             dataset.peek = 'file does not exist'

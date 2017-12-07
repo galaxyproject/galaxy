@@ -5,7 +5,6 @@
 # to be reflected in galaxy.web.controllers.tool_runner and galaxy.tools
 from __future__ import print_function
 
-import codecs
 import errno
 import gzip
 import os
@@ -21,10 +20,13 @@ from galaxy import util
 from galaxy.datatypes import sniff
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.registry import Registry
-from galaxy.util import multi_byte
-from galaxy.util.checkers import check_binary, check_bz2, check_gzip, check_html, check_zip
-from galaxy.util.image_util import get_image_ext
-
+from galaxy.util.checkers import (
+    check_binary,
+    check_bz2,
+    check_gzip,
+    check_html,
+    check_zip
+)
 
 if sys.version_info < (3, 3):
     import bz2file as bz2
@@ -32,11 +34,6 @@ else:
     import bz2
 
 assert sys.version_info[:2] >= (2, 7)
-
-
-def stop_err(msg, ret=1):
-    sys.stderr.write(msg)
-    sys.exit(ret)
 
 
 def file_err(msg, dataset, json_file):
@@ -98,7 +95,7 @@ def add_file(dataset, registry, json_file, output_path):
     if dataset.type == 'url':
         try:
             page = urlopen(dataset.path)  # page will be .close()ed by sniff methods
-            temp_name, dataset.is_multi_byte = sniff.stream_to_file(page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers(page.headers))
+            temp_name = sniff.stream_to_file(page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers(page.headers))
         except Exception as e:
             file_err('Unable to fetch %s\n%s' % (dataset.path, str(e)), dataset, json_file)
             return
@@ -110,29 +107,15 @@ def add_file(dataset, registry, json_file, output_path):
     if not os.path.getsize(dataset.path) > 0:
         file_err('The uploaded file is empty', dataset, json_file)
         return
-    if not dataset.type == 'url':
-        # Already set is_multi_byte above if type == 'url'
-        try:
-            dataset.is_multi_byte = multi_byte.is_multi_byte(codecs.open(dataset.path, 'r', 'utf-8').read(100))
-        except UnicodeDecodeError as e:
-            dataset.is_multi_byte = False
-    # Is dataset an image?
-    i_ext = get_image_ext(dataset.path)
-    if i_ext:
-        ext = i_ext
-        data_type = ext
-    # Is dataset content multi-byte?
-    elif dataset.is_multi_byte:
-        data_type = 'multi-byte char'
-        ext = sniff.guess_ext(dataset.path, registry.sniff_order, is_multi_byte=True)
     # Is dataset content supported sniffable binary?
-    else:
-        # FIXME: This ignores the declared sniff order in datatype_conf.xml
-        # resulting in improper behavior
-        type_info = Binary.is_sniffable_binary(dataset.path)
-        if type_info:
-            data_type = type_info[0]
-            ext = type_info[1]
+    if check_binary(dataset.path):
+        # Sniff the data type
+        guessed_ext = sniff.guess_ext(dataset.path, registry.sniff_order)
+        # Set data_type only if guessed_ext is a binary datatype
+        datatype = registry.get_datatype_by_extension(guessed_ext)
+        if isinstance(datatype, Binary):
+            data_type = guessed_ext
+            ext = guessed_ext
     if not data_type:
         root_datatype = registry.get_datatype_by_extension(dataset.file_type)
         if getattr(root_datatype, 'compressed', False):
@@ -241,9 +224,8 @@ def add_file(dataset, registry, json_file, output_path):
                             else:
                                 # python < 2.5 doesn't have a way to read members in chunks(!)
                                 try:
-                                    outfile = open(uncompressed, 'wb')
-                                    outfile.write(z.read(name))
-                                    outfile.close()
+                                    with open(uncompressed, 'wb') as outfile:
+                                        outfile.write(z.read(name))
                                     uncompressed_name = name
                                     unzipped = True
                                 except IOError:
@@ -262,22 +244,18 @@ def add_file(dataset, registry, json_file, output_path):
                             dataset.name = uncompressed_name
                     data_type = 'zip'
             if not data_type:
-                # TODO refactor this logic.  check_binary isn't guaranteed to be
-                # correct since it only looks at whether the first 100 chars are
-                # printable or not.  If someone specifies a known unsniffable
-                # binary datatype and check_binary fails, the file gets mangled.
-                if check_binary(dataset.path) or Binary.is_ext_unsniffable(dataset.file_type):
+                if check_binary(dataset.path) or registry.is_extension_unsniffable_binary(dataset.file_type):
                     # We have a binary dataset, but it is not Bam, Sff or Pdf
                     data_type = 'binary'
-                    # binary_ok = False
                     parts = dataset.name.split(".")
                     if len(parts) > 1:
                         ext = parts[-1].strip().lower()
-                        if check_content and not Binary.is_ext_unsniffable(ext):
+                        is_ext_unsniffable_binary = registry.is_extension_unsniffable_binary(ext)
+                        if check_content and not is_ext_unsniffable_binary:
                             file_err('The uploaded binary file contains inappropriate content', dataset, json_file)
                             return
-                        elif Binary.is_ext_unsniffable(ext) and dataset.file_type != ext:
-                            err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % (ext.capitalize(), ext)
+                        elif is_ext_unsniffable_binary and dataset.file_type != ext:
+                            err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % (ext, ext)
                             file_err(err_msg, dataset, json_file)
                             return
             if not data_type:
@@ -360,7 +338,7 @@ def add_composite_file(dataset, json_file, output_path, files_path):
                 isurl = dp.find('://') != -1  # todo fixme
                 if isurl:
                     try:
-                        temp_name, dataset.is_multi_byte = sniff.stream_to_file(urlopen(dp), prefix='url_paste')
+                        temp_name = sniff.stream_to_file(urlopen(dp), prefix='url_paste')
                     except Exception as e:
                         file_err('Unable to fetch %s\n%s' % (dp, str(e)), dataset, json_file)
                         return

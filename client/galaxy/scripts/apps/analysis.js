@@ -13,6 +13,7 @@ import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import Workflows from "mvc/workflow/workflow";
+import HistoryImport from "components/HistoryImport.vue";
 import HistoryList from "mvc/history/history-list";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -20,6 +21,8 @@ import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
+import Citations from "components/Citations.vue";
+import Vue from "libs/vue";
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -44,19 +47,22 @@ window.app = function app(options, bootstrapped) {
             "(/)tours(/)(:tour_id)": "show_tours",
             "(/)user(/)": "show_user",
             "(/)user(/)(:form_id)": "show_user_form",
-            "(/)workflow(/)": "show_workflows",
-            "(/)workflow/run(/)": "show_run",
             "(/)pages(/)create(/)": "show_pages_create",
             "(/)pages(/)edit(/)": "show_pages_edit",
             "(/)pages(/)(:action_id)": "show_pages",
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
             "(/)visualizations/(:action_id)": "show_visualizations",
+            "(/)workflows/import_workflow": "show_import_workflow",
+            "(/)workflows/run(/)": "show_run",
+            "(/)workflows(/)list": "show_workflows",
             "(/)workflows/list_published(/)": "show_workflows_published",
+            "(/)workflows/create(/)": "show_workflows_create",
+            "(/)histories(/)citations(/)": "show_history_citations",
             "(/)histories(/)rename(/)": "show_histories_rename",
+            "(/)histories(/)import(/)": "show_histories_import",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
             "(/)histories(/)(:action_id)": "show_histories",
             "(/)datasets(/)list(/)": "show_datasets",
-            "(/)workflow/import_workflow": "show_import_workflow",
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
             "(/)datasets/error": "show_dataset_error"
@@ -119,6 +125,13 @@ window.app = function app(options, bootstrapped) {
             this.page.display(new HistoryList.View({ action_id: action_id }));
         },
 
+        show_history_citations: function() {
+            var citationInstance = Vue.extend(Citations);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new citationInstance({ propsData: { id: QueryStringParsing.get("id"), source: "histories" } }).$mount(vm);
+        },
+
         show_histories_rename: function() {
             this.page.display(
                 new FormWrapper.View({
@@ -126,6 +139,13 @@ window.app = function app(options, bootstrapped) {
                     redirect: "histories/list"
                 })
             );
+        },
+
+        show_histories_import: function() {
+            var historyImportInstance = Vue.extend(HistoryImport);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new historyImportInstance().$mount(vm);
         },
 
         show_histories_permissions: function() {
@@ -178,6 +198,15 @@ window.app = function app(options, bootstrapped) {
             this.page.display(new Workflows.View());
         },
 
+        show_workflows_create: function() {
+            this.page.display(
+                new FormWrapper.View({
+                    url: `workflow/create`,
+                    redirect: "workflow/editor"
+                })
+            );
+        },
+
         show_run: function() {
             this._loadWorkflow();
         },
@@ -187,11 +216,10 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_custom_builds: function() {
-            var self = this;
             var historyPanel = this.page.historyPanel.historyView;
             if (!historyPanel || !historyPanel.model || !historyPanel.model.id) {
                 window.setTimeout(() => {
-                    self.show_custom_builds();
+                    this.show_custom_builds();
                 }, 500);
                 return;
             }
@@ -247,20 +275,19 @@ window.app = function app(options, bootstrapped) {
 
         /** load workflow by its url in run mode */
         _loadWorkflow: function() {
-            var self = this;
             Utils.get({
                 url: `${Galaxy.root}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
-                success: function(response) {
-                    self.page.display(new ToolFormComposite.View(response));
+                success: response => {
+                    this.page.display(new ToolFormComposite.View(response));
                 },
-                error: function(response) {
+                error: response => {
                     var error_msg = response.err_msg || "Error occurred while loading the resource.";
                     var options = {
                         message: error_msg,
                         status: "danger",
                         persistent: true
                     };
-                    self.page.display(new Ui.Message(options));
+                    this.page.display(new Ui.Message(options));
                 }
             });
         }

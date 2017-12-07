@@ -52,9 +52,6 @@ class Wiff(Binary):
         return "\n".join(rval)
 
 
-Binary.register_sniffable_binary_format("wiff", "wiff", Wiff)
-
-
 class PepXmlReport(Tabular):
     """pepxml converted to tabular report"""
     edam_data = "data_2536"
@@ -114,7 +111,7 @@ class ProteomicsXml(GenericXml):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = self.blurb
         else:
             dataset.peek = 'file does not exist'
@@ -221,7 +218,7 @@ class Mgf(Text):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'mgf Mascot Generic Format'
         else:
             dataset.peek = 'file does not exist'
@@ -249,7 +246,7 @@ class MascotDat(Text):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'mascotdat Mascot Search Results'
         else:
             dataset.peek = 'file does not exist'
@@ -303,9 +300,6 @@ class ThermoRAW(Binary):
             return "Thermo Finnigan RAW file (%s)" % (nice_size(dataset.get_size()))
 
 
-Binary.register_sniffable_binary_format("thermo.raw", "raw", ThermoRAW)
-
-
 class Msp(Text):
     """ Output of NIST MS Search Program chemdata.nist.gov/mass-spc/ftp/mass-spc/PepLib.pdf """
     file_ext = "msp"
@@ -334,7 +328,7 @@ class SPLibNoIndex(Text):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'Spectral Library without index files'
         else:
             dataset.peek = 'file does not exist'
@@ -374,7 +368,7 @@ class SPLib(Msp):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'splib Spectral Library Format'
         else:
             dataset.peek = 'file does not exist'

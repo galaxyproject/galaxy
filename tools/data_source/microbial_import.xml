@@ -102,13 +102,5 @@ Current datasets available include
 -----
 
 Organisms in **bold** are available at the UCSC Browser.
-
------
-
-.. class:: infomark
-
-**Note:** Having trouble locating your organism?  Click here_ for a list of available species and their location.
-
-.. _here: https://wiki.galaxyproject.org/Main/Data%20Libraries/Microbes
   </help>
 </tool>

@@ -155,6 +155,14 @@ class NavigatesGalaxy(HasDriver):
         self.driver.switch_to.frame("galaxy_main")
 
     @contextlib.contextmanager
+    def local_storage(self, key, value):
+        self.driver.execute_script('''window.localStorage.setItem("%s", %s);''' % (key, value))
+        try:
+            yield
+        finally:
+            self.driver.execute_script('''window.localStorage.removeItem("%s");''' % key)
+
+    @contextlib.contextmanager
     def main_panel(self):
         try:
             self.switch_to_main_panel()
@@ -843,6 +851,9 @@ class NavigatesGalaxy(HasDriver):
         menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
 
+    def history_panel_click_copy_elements(self):
+        self.click_history_option("Copy Datasets")
+
     @retry_during_transitions
     def histories_click_advanced_search(self):
         search_selector = '#standard-search .advanced-search-toggle'
@@ -904,6 +915,11 @@ class NavigatesGalaxy(HasDriver):
         # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu
         viz_menu_selectors = "%s %s" % (self.history_panel_item_selector(hid), "a.visualization-link")
         return self.driver.find_elements_by_css_selector(viz_menu_selectors)
+
+    def history_panel_item_get_nametags(self, hid):
+        item_component = self.history_panel_item_component(hid=hid)
+        item_component.wait_for_visible()
+        return [e.text for e in item_component.nametags.all()]
 
     def history_panel_item_available_visualizations(self, hid):
         # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu

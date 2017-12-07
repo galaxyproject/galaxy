@@ -6,7 +6,7 @@ from operator import itemgetter
 
 from requests import put
 
-from base import api  # noqa: I100
+from base import api  # noqa: I100,I202
 from base.api_asserts import assert_status_code_is_ok  # noqa: I100
 from base.populators import (  # noqa: I100
     DatasetCollectionPopulator,

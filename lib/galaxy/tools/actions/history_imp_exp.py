@@ -59,7 +59,7 @@ class ImportHistoryToolAction(ToolAction):
         trans.sa_session.flush()
 
         # Queue the job for execution
-        trans.app.job_queue.put(job.id, tool.id)
+        trans.app.job_manager.job_queue.put(job.id, tool.id)
         trans.log_event("Added import history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
 
         return job, odict()
@@ -138,7 +138,7 @@ class ExportHistoryToolAction(ToolAction):
         trans.sa_session.flush()
 
         # Queue the job for execution
-        trans.app.job_queue.put(job.id, tool.id)
+        trans.app.job_manager.job_queue.put(job.id, tool.id)
         trans.log_event("Added export history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
 
         return job, odict()

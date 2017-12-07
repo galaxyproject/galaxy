@@ -103,7 +103,7 @@ export default Backbone.View.extend({
                         menu: [
                             {
                                 icon: "fa fa-chevron-circle-left",
-                                tooltip: "Previous in History",
+                                tooltip: _l("Previous in History"),
                                 onclick: function(frame) {
                                     _loadDatasetOffset(current_dataset, -1, frame);
                                 },
@@ -113,7 +113,7 @@ export default Backbone.View.extend({
                             },
                             {
                                 icon: "fa fa-chevron-circle-right",
-                                tooltip: "Next in History",
+                                tooltip: _l("Next in History"),
                                 onclick: function(frame) {
                                     _loadDatasetOffset(current_dataset, 1, frame);
                                 },

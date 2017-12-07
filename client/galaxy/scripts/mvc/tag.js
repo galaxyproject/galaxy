@@ -103,7 +103,7 @@ var TagsEditor = Backbone.View.extend(baseMVC.LoggableMixin)
 
         _renderTags: function() {
             var tags = this.model.get("tags");
-            var addButton = "static/images/fugue/tag--plus.png";
+            var addButton = `${Galaxy.root}static/images/fugue/tag--plus.png`;
             var renderedArray = [];
             _.each(tags, tag => {
                 tag = tag.indexOf("name:") == 0 ? tag.slice(5) : tag;

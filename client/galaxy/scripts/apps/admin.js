@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import jQuery from "jquery";
 var $ = jQuery;
 import GalaxyApp from "galaxy";
@@ -9,6 +10,8 @@ import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
+import Vue from "libs/vue";
+import UserAPIKeys from "components/UserAPIKeys.vue";
 
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
@@ -24,7 +27,8 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)quotas": "show_quotas",
             "(/)admin(/)repositories": "show_repositories",
             "(/)admin(/)forms": "show_forms",
-            "(/)admin(/)form(/)(:form_id)": "show_form"
+            "(/)admin(/)form(/)(:form_id)": "show_form",
+            "(/)admin/api_keys": "show_user_api_keys"
         },
 
         authenticate: function(args, name) {
@@ -91,6 +95,12 @@ window.app = function app(options, bootstrapped) {
             );
         },
 
+        show_user_api_keys: function() {
+            var vuemount = document.createElement("div");
+            this.page.display(vuemount);
+            new Vue(UserAPIKeys).$mount(vuemount);
+        },
+
         show_forms: function() {
             this.page.display(
                 new GridView({
@@ -105,7 +115,7 @@ window.app = function app(options, bootstrapped) {
             var id = `?id=${QueryStringParsing.get("id")}`;
             var form_defs = {
                 reset_user_password: {
-                    title: "Reset passwords",
+                    title: _l("Reset passwords"),
                     url: `admin/reset_user_password${id}`,
                     icon: "fa-user",
                     submit_title: "Save new password",

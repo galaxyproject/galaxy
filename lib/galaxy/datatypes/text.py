@@ -50,13 +50,10 @@ class Html(Text):
         True
         """
         headers = iter_headers(filename, None)
-        try:
-            for i, hdr in enumerate(headers):
-                if hdr and hdr[0].lower().find('<html>') >= 0:
-                    return True
-            return False
-        except Exception:
-            return True
+        for i, hdr in enumerate(headers):
+            if hdr and hdr[0].lower().find('<html>') >= 0:
+                return True
+        return False
 
 
 class Json(Text):
@@ -65,7 +62,7 @@ class Json(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "JavaScript Object Notation (JSON)"
         else:
             dataset.peek = 'file does not exist'
@@ -113,7 +110,7 @@ class Ipynb(Json):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Jupyter Notebook"
         else:
             dataset.peek = 'file does not exist'
@@ -186,7 +183,7 @@ class Biom1(Json):
     MetadataElement(name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(Biom1, self).set_peek(dataset, is_multi_byte)
+        super(Biom1, self).set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "Biological Observation Matrix v1"
 
@@ -270,7 +267,7 @@ class Obo(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Open Biomedical Ontology (OBO)"
         else:
             dataset.peek = 'file does not exist'
@@ -309,7 +306,7 @@ class Arff(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
             dataset.blurb += ", %s comments, %s attributes" % (dataset.metadata.comment_lines, dataset.metadata.columns)
         else:
@@ -503,20 +500,19 @@ class SnpSiftDbNSFP(Text):
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
         """
-        self.regenerate_primary_file(dataset)
+        return '<html><head><title>SnpSiftDbNSFP Composite Dataset</title></head></html>'
 
     def regenerate_primary_file(self, dataset):
         """
         cannot do this until we are setting metadata
         """
         annotations = "dbNSFP Annotations: %s\n" % ','.join(dataset.metadata.annotation)
-        f = open(dataset.file_name, 'a')
-        if dataset.metadata.bgzip:
-            bn = dataset.metadata.bgzip
-            f.write(bn)
-            f.write('\n')
-        f.write(annotations)
-        f.close()
+        with open(dataset.file_name, 'a') as f:
+            if dataset.metadata.bgzip:
+                bn = dataset.metadata.bgzip
+                f.write(bn)
+                f.write('\n')
+            f.write(annotations)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         try:
