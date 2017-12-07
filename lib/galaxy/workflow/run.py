@@ -366,7 +366,12 @@ class WorkflowProgress(object):
     def get_replacement_workflow_output(self, workflow_output):
         step = workflow_output.workflow_step
         output_name = workflow_output.output_name
-        return self.outputs[step.id][output_name]
+        step_outputs = self.outputs[step.id]
+        if step_outputs is STEP_OUTPUT_DELAYED:
+            delayed_why = "depends on workflow output [%s] but that output has not been created yet" % output_name
+            raise modules.DelayedWorkflowEvaluation(why=delayed_why)
+        else:
+            return step_outputs[output_name]
 
     def set_outputs_for_input(self, invocation_step, outputs=None):
         step = invocation_step.workflow_step
@@ -400,7 +405,15 @@ class WorkflowProgress(object):
             for workflow_output in step.workflow_outputs:
                 output_name = workflow_output.output_name
                 if output_name not in outputs:
-                    raise KeyError("Failed to find [%s] in step outputs [%s]" % (output_name, outputs))
+                    message = "Failed to find expected workflow output [%s] in step outputs [%s]" % (output_name, outputs)
+                    # raise KeyError(message)
+                    # Pre-18.01 we would have never even detected this output wasn't configured
+                    # and even in 18.01 we don't have a way to tell the user something bad is
+                    # happening so I guess we just log a debug message and continue sadly for now.
+                    # Once https://github.com/galaxyproject/galaxy/issues/5142 is complete we could
+                    # at least tell the user what happened, give them a warning.
+                    log.debug(message)
+                    continue
                 output = outputs[output_name]
                 self._record_workflow_output(
                     step,
