@@ -64,7 +64,6 @@ var View = Backbone.View.extend({
 
     /** Renders the classic selection field */
     _renderClassic: function() {
-        var self = this;
         this.$el
             .addClass(this.model.get("multiple") ? "ui-select-multiple" : "ui-select")
             .append((this.$select = $("<select/>")))
@@ -80,12 +79,12 @@ var View = Backbone.View.extend({
                 .off("mousedown")
                 .on("mousedown", event => {
                     var currentY = event.pageY;
-                    var currentHeight = self.$select.height();
-                    self.minHeight = self.minHeight || currentHeight;
+                    var currentHeight = this.$select.height();
+                    this.minHeight = this.minHeight || currentHeight;
                     $("#dd-helper")
                         .show()
                         .on("mousemove", event => {
-                            self.$select.height(Math.max(currentHeight + (event.pageY - currentY), self.minHeight));
+                            this.$select.height(Math.max(currentHeight + (event.pageY - currentY), this.minHeight));
                         })
                         .on("mouseup mouseleave", () => {
                             $("#dd-helper")
@@ -102,28 +101,27 @@ var View = Backbone.View.extend({
 
     /** Renders the default select2 field */
     _renderSearchable: function() {
-        var self = this;
         this.$el.append((this.$select = $("<div/>"))).append((this.$dropdown = $("<div/>")));
         this.$dropdown.hide();
         if (!this.model.get("multiple")) {
             this.$dropdown.show().on("click", () => {
-                if (self.$select.select2) {
-                    self.$select.select2("open");
+                if (this.$select.select2) {
+                    this.$select.select2("open");
                 }
             });
         }
         this.all_button = null;
         if (this.model.get("multiple") && !this.model.get("individual") && !this.model.get("readonly")) {
             this.all_button = new Buttons.ButtonCheck({
-                onclick: function() {
+                onclick: () => {
                     var new_value = [];
-                    if (self.all_button.value() !== 0) {
-                        _.each(self.model.get("data"), option => {
+                    if (this.all_button.value() !== 0) {
+                        _.each(this.model.get("data"), option => {
                             new_value.push(option.value);
                         });
                     }
-                    self.value(new_value);
-                    self.trigger("change");
+                    this.value(new_value);
+                    this.trigger("change");
                 }
             });
             this.$el.prepend(this.all_button.$el);
@@ -356,7 +354,6 @@ var View = Backbone.View.extend({
 
     /** Set value to dom */
     _setValue: function(new_value) {
-        var self = this;
         if (new_value === null || new_value === undefined) {
             new_value = "__null__";
         }
@@ -373,7 +370,7 @@ var View = Backbone.View.extend({
             if ($.isArray(new_value)) {
                 var val = [];
                 _.each(new_value, v => {
-                    var d = _.findWhere(self.data2, { id: v });
+                    var d = _.findWhere(this.data2, { id: v });
                     if (d) {
                         val.push(d);
                     }
