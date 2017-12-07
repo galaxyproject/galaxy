@@ -13,9 +13,9 @@
 
 <script>
 import axios from 'axios';
-import Message from '../message.vue';
-import DataTablesGrid from './data-tables-grid.vue';
-import DataManagerGrid from './data-manager-grid.vue';
+import Message from '../Message.vue';
+import DataTablesGrid from './DataTablesGrid.vue';
+import DataManagerGrid from './DataManagerGrid.vue';
 
 export default {
   data() {

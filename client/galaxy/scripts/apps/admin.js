@@ -5,14 +5,13 @@ import GalaxyApp from "galaxy";
 import AdminPanel from "./panels/admin-panel";
 import FormWrapper from "mvc/form/form-wrapper";
 import GridView from "mvc/grid/grid-view";
-import Ui from "mvc/ui/ui-misc";
 import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
 import Vue from "libs/vue";
 import UserAPIKeys from "components/UserAPIKeys.vue";
-import DataTables from "components/admin/data-tables.vue";
+import DataTables from "components/admin/DataTables.vue";
 
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
@@ -33,7 +32,7 @@ window.app = function app(options, bootstrapped) {
             "(/)admin/data_tables": "show_data_tables"
         },
 
-        authenticate: function(args, name) {
+        authenticate: function() {
             return Galaxy.user && Galaxy.user.id && Galaxy.user.get("is_admin");
         },
 

@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import BaseGrid from './base-grid.vue';
+import BaseGrid from './BaseGrid.vue';
 
 export default {
   props: {
