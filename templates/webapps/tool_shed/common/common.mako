@@ -6,8 +6,9 @@
 
 <%def name="render_select(select)">
     <select id="${select.field_id}" name="${select.name}" multiple="${select.multiple}" refresh_on_change="${select.refresh_on_change}">
+        <% from markupsafe import escape %>
         %for o in select.options:
-            <option value="${o[1]}">${o[0]}</option>
+            <option value="${o[1]}">${escape(o[0])}</option>
         %endfor
     </select>
 </%def>
