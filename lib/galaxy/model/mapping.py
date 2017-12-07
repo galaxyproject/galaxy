@@ -93,7 +93,7 @@ model.UserOpenID.table = Table(
     Column("provider", TrimmedString(255)))
 
 model.UserOAuth2.table = Table(
-    "galaxy_user_oauth2", metadata,
+    "oidc_rp", metadata,
     Column("id", Integer, primary_key=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), nullable=False, index=True),
     Column("provider", String, nullable=False),

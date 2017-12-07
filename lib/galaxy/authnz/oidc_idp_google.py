@@ -110,7 +110,7 @@ class OIDCIdPGoogle(IdentityProvider):
                          .format(trans.user.username, self.provider))
             return False  # results in re-authentication.
             # A callback should follow a request from Galaxy; and if a request was (successfully) made by Galaxy,
-            # the a record in the `galaxy_user_oauth2` table with valid `user_id`, `provider`, and `state_token`
+            # the a record in the `oidc_rp` table with valid `user_id`, `provider`, and `state_token`
             # should exist (see _redirect_uri function). Since such record does not exist, Galaxy should not
             # trust the token, and does not attempt to associate with a user. Alternatively, we could linearly scan
             # the users table and find a username which creates a `state_token` matching the received `state_token`,

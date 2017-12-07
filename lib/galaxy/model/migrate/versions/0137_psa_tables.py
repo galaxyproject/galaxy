@@ -1,5 +1,5 @@
 """
-Migration script to add a new table named `galaxy_user_oauth2` for authentication and authorization.
+Migration script to add a new table named `oidc_rp` for authentication and authorization.
 """
 from __future__ import print_function
 

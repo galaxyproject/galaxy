@@ -1,5 +1,5 @@
 """
-Migration script to add a new table named `galaxy_user_oauth2` for authentication and authorization.
+Migration script to add a new table named `oidc_rp` for authentication and authorization.
 """
 from __future__ import print_function
 
@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 metadata = MetaData()
 
 UserOAuth2Table = Table(
-    "galaxy_user_oauth2", metadata,
+    "oidc_rp", metadata,
     Column("id", Integer, primary_key=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), nullable=False, index=True),
     Column("provider", TEXT, nullable=False),
