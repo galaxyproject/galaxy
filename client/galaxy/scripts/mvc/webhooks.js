@@ -20,8 +20,7 @@ const WebhookView = Backbone.View.extend({
         data.reset(filterType(data, options.type));
 
         if (data.length > 0) {
-          const index = _.random(0, data.length - 1);
-          this.render(data.at(index));
+          this.render(weightedRandomPick(data));
         }
       }
     });
@@ -49,7 +48,26 @@ const load = options => {
 };
 
 function filterType (data, type) {
-  return _.filter(data.models, item => item.get('type').indexOf(type) !== -1);
+  return data.models.filter(item => item.get('type').indexOf(type) !== -1);
+}
+
+function weightedRandomPick (data) {
+  const weights = data.pluck('weight');
+  const sum = weights.reduce((a, b) => a + b);
+
+  const normalizedWeightsMap = new Map();
+  weights.forEach((weight, index) => {
+    normalizedWeightsMap.set(index, parseFloat((weight / sum).toFixed(2)));
+  });
+
+  const table = [];
+  for (const [index, weight] of normalizedWeightsMap) {
+    for (let i = 0; i < weight * 100; i++) {
+      table.push(index);
+    }
+  }
+
+  return data.at(table[Math.floor(Math.random() * table.length)]);
 }
 
 export default {

@@ -27,6 +27,7 @@ class Webhook(object):
             'id': self.id,
             'type': self.type,
             'activate': self.activate,
+            'weight': self.weight,
             'styles': self.styles,
             'script': self.script,
             'config': self.config,
