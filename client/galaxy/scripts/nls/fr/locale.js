@@ -210,8 +210,8 @@ define({
     "Edit dataset annotation": "Editer les annotations du jeu de données",
     "Tool Help": "Aide outil",
     // ---------------------------------------------------------------------------- admin
-    "Reset passwords": false,
-    "Search Tool Shed": false,
+    "Reset passwords": "Réinitialiser les mots de passe",
+    "Search Tool Shed": "Chercher via un Tool Shed",
     "Monitor installing repositories": false,
     "Manage installed tools": false,
     "Reset metadata": false,
